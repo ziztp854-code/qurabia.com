@@ -99,7 +99,10 @@ describe('fetchBankQuestions', () => {
       time: 'ANY',
     });
 
-    expect(result).toEqual({ status: 'error', message: 'لا توجد أسئلة منشورة مطابقة للفلاتر الحالية.' });
+    expect(result).toEqual({
+      status: 'error',
+      message: 'لا توجد أسئلة منشورة بخيارات إجابة مطابقة للفلاتر الحالية.',
+    });
     expect(prisma.question.findMany).toHaveBeenCalledTimes(1);
   });
 

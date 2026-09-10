@@ -54,6 +54,7 @@ function buildQuizBuilderQuestionWhere({
 }): Prisma.QuestionWhereInput {
   return {
     gameTypes: { has: gameMode },
+    options: { some: {} },
     ...(canManage
       ? { status: { in: ['PUBLISHED', 'DRAFT'] } }
       : {
@@ -298,6 +299,7 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
       where: {
         id: { in: questionIds },
         gameTypes: { has: quizInput.gameMode },
+        options: { some: {} },
         ...(canManageQuestions(user.role)
           ? { status: { not: 'ARCHIVED' } }
           : {
@@ -313,7 +315,7 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
     if (availableQuestions.length !== questionIds.length) {
       return {
         status: 'error',
-        message: 'تعذّر حفظ المسابقة لأن بعض الأسئلة غير متاحة في البنك لهذا الوضع.',
+        message: 'تعذّر حفظ المسابقة لأن بعض الأسئلة غير متاحة في البنك، أو بلا خيارات إجابة.',
       };
     }
     const questionVersions = new Map(

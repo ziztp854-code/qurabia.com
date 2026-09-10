@@ -62,10 +62,18 @@ export async function fetchBankQuestions(input: {
       ? await loadCategorySubtreeIds(prisma, filters.category)
       : undefined;
     const where = buildQuestionWhere(filters, { categoryIds });
+    // الأسئلة بلا خيارات لا يمكن لعبها: استبعدها من الجلب مباشرة.
+    const playableWhere: typeof where = { ...where, options: { some: {} } };
 
-    const candidates = await prisma.question.findMany({ where, select: { id: true } });
+    const candidates = await prisma.question.findMany({
+      where: playableWhere,
+      select: { id: true },
+    });
     if (candidates.length === 0) {
-      return { status: 'error', message: 'لا توجد أسئلة منشورة مطابقة للفلاتر الحالية.' };
+      return {
+        status: 'error',
+        message: 'لا توجد أسئلة منشورة بخيارات إجابة مطابقة للفلاتر الحالية.',
+      };
     }
 
     const selectedIds = selectRandomQuestionIds(
