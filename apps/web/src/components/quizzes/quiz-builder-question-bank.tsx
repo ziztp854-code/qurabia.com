@@ -119,6 +119,27 @@ export function QuizBuilderQuestionBank({
 
   const resetPage = () => setPage(1);
 
+  const runPick = (counts: { EASY: number; MEDIUM: number; HARD: number }) => {
+    if (!pickRandomQuestions) return;
+    setLoading(true);
+    setRandomNotice('');
+    void pickRandomQuestions({
+      query: debouncedQuery,
+      categoryId,
+      gameMode,
+      counts,
+    })
+      .then((result) => {
+        if (result.status === 'error') {
+          setRandomNotice(result.message);
+          return;
+        }
+        onAddMany(result.questions);
+        setRandomNotice(`سُحب ${formatNumber(result.questions.length)} سؤالًا من كامل النتائج.`);
+      })
+      .finally(() => setLoading(false));
+  };
+
   return (
     <section aria-labelledby="quiz-question-bank-heading">
       <div className={styles.sectionHeading}>
@@ -205,28 +226,22 @@ export function QuizBuilderQuestionBank({
             <Button
               type="button"
               variant="outline"
-              disabled={loading || Object.values(randomCounts).every((count) => count === 0)}
-              onClick={() => {
-                setLoading(true);
-                setRandomNotice('');
-                void pickRandomQuestions({
-                  query: debouncedQuery,
-                  categoryId,
-                  gameMode,
-                  counts: randomCounts,
+              disabled={loading}
+              onClick={() =>
+                runPick({
+                  EASY: 7,
+                  MEDIUM: 7,
+                  HARD: 6,
                 })
-                  .then((result) => {
-                    if (result.status === 'error') {
-                      setRandomNotice(result.message);
-                      return;
-                    }
-                    onAddMany(result.questions);
-                    setRandomNotice(
-                      `سُحب ${formatNumber(result.questions.length)} سؤالًا من كامل النتائج.`,
-                    );
-                  })
-                  .finally(() => setLoading(false));
-              }}
+              }
+            >
+              جلب 20 سؤالًا
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading || Object.values(randomCounts).every((count) => count === 0)}
+              onClick={() => runPick(randomCounts)}
             >
               سحب وإضافة
             </Button>

@@ -159,11 +159,20 @@ export function QuizBuilder({
         questionVersion: question.questionVersion,
       }));
     if (fresh.length === 0) {
-      setNotice('كل الأسئلة المحددة مضافة مسبقًا، أو بلغت المسودة حد 100 سؤال.');
+      setNotice(
+        draft.questions.length >= 100
+          ? 'بلغت المسودة حد 100 سؤال. احذف بعض الأسئلة أو انشر المسابقة لبدء مسودة جديدة.'
+          : 'الأسئلة المُجلَبة مضافة مسبقًا في المسودة الحالية.',
+      );
       return;
     }
     updateDraft('questions', [...draft.questions, ...fresh]);
-    setNotice(`أُضيف ${formatNumber(fresh.length)} سؤالًا إلى المسودة.`);
+    const skipped = questions.length - fresh.length;
+    setNotice(
+      skipped > 0
+        ? `أُضيف ${formatNumber(fresh.length)} سؤالًا، وتجاهل ${formatNumber(skipped)} سؤالًا مكررًا.`
+        : `أُضيف ${formatNumber(fresh.length)} سؤالًا إلى المسودة.`,
+    );
   };
 
   const updateQuestion = (id: string, field: 'duration' | 'points', value: number) => {
@@ -210,6 +219,7 @@ export function QuizBuilder({
       setSavedRoomCode(result.roomCode);
       setSavedQuizId(result.quizId);
       setSavedGameMode(draft.gameMode);
+      setDraft(createEmptyQuizDraft());
       setNotice(`نُشرت المسابقة. رمز الغرفة: ${result.roomCode}`);
     } catch {
       setSaveFailed(true);
