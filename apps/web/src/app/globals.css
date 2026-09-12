@@ -4443,28 +4443,69 @@ tr:last-child td {
 }
 .stepper {
   justify-content: space-between;
+  gap: 0.35rem;
   counter-reset: step;
 }
-.stepper li {
+.stepper-step {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 0.5rem;
+  min-inline-size: 0;
   color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
-.stepper li span {
+
+.stepper-dot {
+  flex: 0 0 auto;
   inline-size: 1.8rem;
   block-size: 1.8rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
+  border: 1px solid var(--border);
   background: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-.stepper li.active {
+
+.stepper-dot svg {
+  inline-size: 0.95rem;
+}
+
+.stepper-label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepper-step.is-done {
   color: var(--foreground);
 }
-.stepper li.active span {
+
+.stepper-step.is-done .stepper-dot {
+  border-color: color-mix(in srgb, var(--success) 55%, var(--border));
+  background: color-mix(in srgb, var(--success) 16%, var(--muted));
+  color: var(--success);
+}
+
+.stepper-step.is-active {
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.stepper-step.is-active .stepper-dot {
+  border-color: transparent;
   background: var(--primary);
   color: var(--primary-foreground);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+@media (max-width: 40rem) {
+  .stepper-step .stepper-label {
+    display: none;
+  }
 }
 .separator {
   border: 0;

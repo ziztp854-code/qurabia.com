@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn, formatNumber } from '@/lib/utils';
 import { Button } from './button';
@@ -13,5 +13,23 @@ export function Table({ headers, rows }: { headers: string[]; rows: ReactNode[][
 export const DataTable = Table;
 export function Pagination() { return <nav className="pagination" aria-label="التنقل بين الصفحات"><Button variant="outline" size="icon" aria-label="الصفحة السابقة"><ChevronRight /></Button><Button aria-current="page">1</Button><Button variant="ghost">2</Button><Button variant="ghost">3</Button><Button variant="outline" size="icon" aria-label="الصفحة التالية"><ChevronLeft /></Button></nav>; }
 export function Tabs({ tabs, active = 0 }: { tabs: string[]; active?: number }) { return <div className="tabs" role="tablist">{tabs.map((tab, index) => <button key={tab} role="tab" aria-selected={index === active}>{tab}</button>)}</div>; }
-export function Stepper({ steps, current }: { steps: string[]; current: number }) { return <ol className="stepper">{steps.map((step, index) => <li key={step} className={index <= current ? 'active' : ''}><span>{index + 1}</span>{step}</li>)}</ol>; }
+export function Stepper({ steps, current }: { steps: string[]; current: number }) {
+  return (
+    <ol className="stepper" aria-label={`الخطوة ${formatNumber(current + 1)} من ${formatNumber(steps.length)}`}>
+      {steps.map((step, index) => {
+        const state = index < current ? 'done' : index === current ? 'active' : 'upcoming';
+        return (
+          <li
+            key={step}
+            className={`stepper-step is-${state}`}
+            aria-current={index === current ? 'step' : undefined}
+          >
+            <span className="stepper-dot">{index < current ? <Check aria-hidden="true" /> : index + 1}</span>
+            <span className="stepper-label">{step}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 export function Toast({ children }: { children: ReactNode }) { return <div className="toast" role="status">{children}</div>; }
