@@ -2,6 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuizBuilder } from './quiz-builder';
+import { createQuiz } from '@/app/quizzes/actions';
+import { createEmptyQuizDraft, QUIZ_DRAFT_STORAGE_KEY } from '@/lib/quizzes/quiz-draft';
+
+vi.mock('@/app/quizzes/actions', () => ({
+  createQuiz: vi.fn(),
+  listQuizBuilderQuestions: vi.fn(),
+  pickRandomQuizBuilderQuestions: vi.fn(),
+}));
 
 vi.mock('@/app/questions/actions', () => ({
   createQuestion: vi.fn().mockResolvedValue({ status: 'success', message: 'تم الحفظ.' }),
@@ -10,6 +18,38 @@ vi.mock('@/app/questions/actions', () => ({
 describe('QuizBuilder', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('keeps the draft and returns to the rejected questions so only those can be removed', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      QUIZ_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        ...createEmptyQuizDraft(),
+        title: 'مسابقة محفوظة',
+        questions: [
+          { id: 'valid', prompt: 'سؤال صالح', category: '', duration: 20, points: 1000 },
+          { id: 'missing', prompt: 'سؤال قديم', category: '', duration: 20, points: 1000 },
+        ],
+      }),
+    );
+    vi.mocked(createQuiz).mockResolvedValue({
+      status: 'error',
+      message: 'راجع الأسئلة',
+      unavailableQuestionIds: ['missing'],
+    });
+    render(<QuizBuilder />);
+    await screen.findByText('استُعيدت المسودة المحلية المحفوظة.');
+    for (const name of ['اختيار الأسئلة', 'الإعدادات', 'المعاينة', 'النشر']) {
+      await user.click(screen.getByRole('button', { name: `التالي: ${name}` }));
+    }
+    await user.click(screen.getByRole('button', { name: 'نشر المسابقة' }));
+    await screen.findByRole('heading', { name: 'اختيار الأسئلة' });
+    expect(screen.getByText(/سؤال قديم/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'إزالة الأسئلة غير المتاحة' }));
+    expect(screen.queryByText(/سؤال قديم/)).not.toBeInTheDocument();
+    expect(screen.getByText(/سؤال صالح/)).toBeInTheDocument();
   });
 
   it('يحفظ المسودة الحالية على الجهاز', async () => {

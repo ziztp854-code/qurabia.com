@@ -12,7 +12,12 @@ import {
 } from '@tahaddi/contracts';
 import { revalidatePath } from 'next/cache';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
-import { ROLE_LABELS, canManageQuestions, isAppRole, isManagerRole } from '@/lib/auth/authorization';
+import {
+  ROLE_LABELS,
+  canManageQuestions,
+  isAppRole,
+  isManagerRole,
+} from '@/lib/auth/authorization';
 import { requireActiveUser } from '@/lib/auth/session';
 import {
   generateUniqueActivityRoomCode,
@@ -28,10 +33,13 @@ import type {
 import {
   selectRandomQuestionIds,
   selectRandomQuestionsByDifficulty,
+  selectCategoryBalancedQuestions,
+  QUIZ_DRAW_POINTS,
 } from '@/lib/questions/random-selection';
 
 export type QuizActionResult =
-  { status: 'success'; quizId: string; roomCode: string } | { status: 'error'; message: string };
+  | { status: 'success'; quizId: string; roomCode: string }
+  | { status: 'error'; message: string; unavailableQuestionIds?: string[] };
 
 export type CreateQuizInput = QuizBuilderInput;
 
@@ -111,7 +119,10 @@ export async function listQuizBuilderQuestions(
 ): Promise<QuizBuilderQuestionPage> {
   const parsed = quizBuilderQuestionPageSchema.safeParse(input);
   if (!parsed.success) {
-    return { status: 'error', message: parsed.error.issues[0]?.message ?? 'عوامل التصفية غير صالحة.' };
+    return {
+      status: 'error',
+      message: parsed.error.issues[0]?.message ?? 'عوامل التصفية غير صالحة.',
+    };
   }
   if (!hasDatabaseUrl()) {
     return { status: 'success', questions: [], categories: [], page: 1, pageCount: 1, total: 0 };
@@ -174,7 +185,10 @@ export async function pickRandomQuizBuilderQuestions(
 ): Promise<QuizBuilderRandomSelectionResult> {
   const parsed = quizBuilderRandomSelectionSchema.safeParse(input);
   if (!parsed.success) {
-    return { status: 'error', message: parsed.error.issues[0]?.message ?? 'إعدادات السحب غير صالحة.' };
+    return {
+      status: 'error',
+      message: parsed.error.issues[0]?.message ?? 'إعدادات السحب غير صالحة.',
+    };
   }
   if (!hasDatabaseUrl()) {
     return { status: 'success', questions: [] };
@@ -183,26 +197,25 @@ export async function pickRandomQuizBuilderQuestions(
   const user = await requireActiveUser('/quizzes/new');
   const filters = parsed.data;
   const prisma = getPrismaClient();
+  const diverse = filters.preset === 'DIVERSE_20';
   const where = buildQuizBuilderQuestionWhere({
     userId: user.id,
     canManage: canManageQuestions(user.role),
     gameMode: filters.gameMode,
-    query: filters.query,
-    categoryId: filters.categoryId,
+    query: diverse ? '' : filters.query,
+    categoryId: diverse ? '' : filters.categoryId,
   });
 
   try {
     const candidates = await prisma.question.findMany({
-      where,
-      select: { id: true, difficulty: true },
+      where: { ...where, id: { notIn: filters.excludeIds ?? [] } },
+      select: { id: true, difficulty: true, categoryId: true },
     });
-    const selectedIds = selectRandomQuestionsByDifficulty(
-      candidates,
-      filters.counts,
-      randomUUID(),
-    );
+    const selectedIds = diverse
+      ? selectCategoryBalancedQuestions(candidates, randomUUID(), 20)
+      : selectRandomQuestionsByDifficulty(candidates, filters.counts, randomUUID());
     const selected = await prisma.question.findMany({
-      where: { id: { in: selectedIds } },
+      where: { ...where, id: { in: selectedIds } },
       select: {
         id: true,
         prompt: true,
@@ -220,7 +233,14 @@ export async function pickRandomQuizBuilderQuestions(
       status: 'success',
       questions: selectedIds.flatMap((id) => {
         const question = byId.get(id);
-        return question ? [mapBuilderQuestion(question)] : [];
+        return question
+          ? [
+              {
+                ...mapBuilderQuestion(question),
+                ...(diverse ? { points: QUIZ_DRAW_POINTS[question.difficulty] } : {}),
+              },
+            ]
+          : [];
       }),
     };
   } catch {
@@ -298,24 +318,24 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
     const availableQuestions = await prisma.question.findMany({
       where: {
         id: { in: questionIds },
-        gameTypes: { has: quizInput.gameMode },
-        options: { some: {} },
-        ...(canManageQuestions(user.role)
-          ? { status: { not: 'ARCHIVED' } }
-          : {
-              OR: [
-                { ownerId: user.id, status: { not: 'ARCHIVED' } },
-                { status: 'PUBLISHED' },
-              ],
-          }),
+        ...buildQuizBuilderQuestionWhere({
+          userId: user.id,
+          canManage: canManageQuestions(user.role),
+          gameMode: quizInput.gameMode,
+          query: '',
+          categoryId: '',
+        }),
       },
       select: { id: true, version: true },
     });
 
     if (availableQuestions.length !== questionIds.length) {
+      const availableIds = new Set(availableQuestions.map((question) => question.id));
       return {
         status: 'error',
-        message: 'تعذّر حفظ المسابقة لأن بعض الأسئلة غير متاحة في البنك، أو بلا خيارات إجابة.',
+        message:
+          'بعض الأسئلة المحددة غير متوافقة مع وضع اللعب، أو لم تعد متاحة بإجابات. راجع الأسئلة المشار إليها ثم أعد النشر.',
+        unavailableQuestionIds: questionIds.filter((id) => !availableIds.has(id)),
       };
     }
     const questionVersions = new Map(
@@ -338,8 +358,8 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
       const roomCode = await generateUniqueActivityRoomCode(prisma);
       const orderedQuestions =
         quizInput.presentationMode === 'RANDOM'
-          ? selectRandomQuestionIds(questionIds, roomCode, questionIds.length).map(
-              (id) => quizInput.questions.find((question) => question.id === id)!,
+          ? selectRandomQuestionIds(questionIds, roomCode, questionIds.length).map((id) =>
+              quizInput.questions.find((question) => question.id === id)!,
             )
           : quizInput.questions;
       try {

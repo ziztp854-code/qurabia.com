@@ -27,8 +27,10 @@ function prismaStub(rows: Array<Record<string, unknown>>) {
     question: {
       findMany: vi
         .fn()
-        .mockResolvedValueOnce(rows.map((row) => ({ id: row.id })))
-        .mockResolvedValueOnce(rows),
+        .mockResolvedValueOnce(
+          rows.map((row) => ({ id: row.id, categoryId: row.categoryId ?? null })),
+        )
+        .mockResolvedValueOnce(rows.map((row) => ({ difficulty: 'EASY', ...row }))),
     },
   };
 }
@@ -40,6 +42,45 @@ describe('fetchBankQuestions', () => {
     vi.clearAllMocks();
     mocks.requirePermission.mockResolvedValue(actor);
     mocks.hasDatabaseUrl.mockReturnValue(true);
+  });
+
+  it('draws across categories despite filters and assigns 500/700/1000 by difficulty', async () => {
+    const prisma = prismaStub(
+      ['EASY', 'MEDIUM', 'HARD'].map((difficulty, index) => ({
+        id: `level-${index}`,
+        difficulty,
+        categoryId: `cat-${index}`,
+        category: { name: `فئة ${index}` },
+        prompt: 'سؤال',
+        timeLimit: 20,
+        basePoints: 9999,
+        version: 1,
+      })),
+    );
+    mocks.getPrismaClient.mockReturnValue(prisma);
+    const result = await fetchBankQuestions({
+      category: 'cat-0',
+      q: 'بحث',
+      difficulty: 'EASY',
+      game: 'QUIZ',
+      time: 'SHORT',
+    });
+    expect(result.status).toBe('success');
+    if (result.status !== 'success') return;
+    expect(Object.fromEntries(result.questions.map((q) => [q.id, q.points]))).toEqual({
+      'level-0': 500,
+      'level-1': 700,
+      'level-2': 1000,
+    });
+    const where = prisma.question.findMany.mock.calls[0][0].where;
+    expect(where).not.toHaveProperty('categoryId');
+    expect(where).not.toHaveProperty('difficulty');
+    expect(where).not.toHaveProperty('AND');
+    expect(where).toMatchObject({
+      status: 'PUBLISHED',
+      gameTypes: { has: 'QUIZ' },
+      options: { some: {} },
+    });
   });
 
   it('pulls a random sample capped at 20 published questions', async () => {
@@ -108,7 +149,14 @@ describe('fetchBankQuestions', () => {
 
   it('maps rows into clean quiz-draft questions', async () => {
     const prisma = prismaStub([
-      { id: 'q-9', prompt: 'سؤال تجريبي', timeLimit: 15, basePoints: 500, version: 3, category: { name: 'تاريخ' } },
+      {
+        id: 'q-9',
+        prompt: 'سؤال تجريبي',
+        timeLimit: 15,
+        basePoints: 500,
+        version: 3,
+        category: { name: 'تاريخ' },
+      },
     ]);
     mocks.getPrismaClient.mockReturnValue(prisma);
 

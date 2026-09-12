@@ -94,6 +94,7 @@ export function QuizBuilder({
   const [savedGameMode, setSavedGameMode] = useState<QuizBuilderGameMode | null>(null);
   const [batchDuration, setBatchDuration] = useState(20);
   const [batchPoints, setBatchPoints] = useState(1_000);
+  const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -211,6 +212,8 @@ export function QuizBuilder({
     try {
       const result = await createQuiz(quizValidation.data);
       if (result.status === 'error') {
+        setUnavailableIds(result.unavailableQuestionIds ?? []);
+        if (result.unavailableQuestionIds?.length) setCurrentStep(1);
         setSaveFailed(true);
         setNotice(result.message);
         return;
@@ -241,6 +244,9 @@ export function QuizBuilder({
                 {formatNumber(index + 1)}. {question.prompt}
               </strong>
               <p className="muted">{question.category || 'عام'}</p>
+              {unavailableIds.includes(question.id) ? (
+                <p className="text-danger">غير متاح لهذا الوضع؛ أزله واختر بديلًا من البنك.</p>
+              ) : null}
               <div className={styles.questionSettings}>
                 <NumberInput
                   label="الوقت (ثوانٍ)"
@@ -386,7 +392,7 @@ export function QuizBuilder({
             <div className={styles.sectionHeading}>
               <div>
                 <h2>اختيار الأسئلة</h2>
-                <p className="muted">اختر من كامل البنك دون بتر النتائج بعد أول 1200 سؤال.</p>
+                <p className="muted">اختر حتى 100 سؤال، وابحث حسب التصنيف ومستوى الصعوبة.</p>
               </div>
               <Badge>{formatNumber(draft.questions.length)} مختارة</Badge>
             </div>
@@ -408,6 +414,22 @@ export function QuizBuilder({
               </Button>
             ) : null}
             {selectedQuestions}
+            {draft.questions.some((question) => unavailableIds.includes(question.id)) ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  updateDraft(
+                    'questions',
+                    draft.questions.filter((question) => !unavailableIds.includes(question.id)),
+                  );
+                  setUnavailableIds([]);
+                  setNotice('أُزيلت الأسئلة غير المتاحة. اختر بدائل من البنك ثم أعد النشر.');
+                }}
+              >
+                إزالة الأسئلة غير المتاحة
+              </Button>
+            ) : null}
             <QuizBuilderQuestionBank
               initialBank={bank}
               gameMode={draft.gameMode}
@@ -417,6 +439,12 @@ export function QuizBuilder({
               pickRandomQuestions={effectiveRandomPicker}
               onAdd={(question) => addQuestions([question])}
               onAddMany={addQuestions}
+              onRemove={(id) =>
+                updateDraft(
+                  'questions',
+                  draft.questions.filter((question) => question.id !== id),
+                )
+              }
             />
           </>
         ) : null}

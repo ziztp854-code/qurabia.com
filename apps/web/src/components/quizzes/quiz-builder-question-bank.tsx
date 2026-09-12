@@ -5,9 +5,10 @@ import type {
   QuizBuilderRandomSelectionInput,
 } from '@tahaddi/contracts';
 import { ListPlus, Search } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { QuestionComposer } from '@/components/questions/question-composer';
 import { QuestionEditor } from '@/components/questions/question-editor';
+import { Badge } from '@/components/ui';
 import { Button, Input, NumberInput, Select } from '@/components/ui';
 import { formatNumber } from '@/lib/utils';
 import type {
@@ -17,6 +18,7 @@ import type {
   QuizBuilderRandomSelectionResult,
 } from '@/lib/quizzes/quiz-draft';
 import styles from './quiz-builder.module.css';
+import { questionSupportsGameMode } from '@/lib/quizzes/quiz-draft';
 
 type QuestionPageLoader = (input: QuizBuilderQuestionPageInput) => Promise<QuizBuilderQuestionPage>;
 type RandomQuestionLoader = (
@@ -24,6 +26,11 @@ type RandomQuestionLoader = (
 ) => Promise<QuizBuilderRandomSelectionResult>;
 
 const difficultyLabel = { EASY: 'سهل', MEDIUM: 'متوسط', HARD: 'صعب' } as const;
+const difficultyBadge = {
+  EASY: 'badge-success',
+  MEDIUM: 'badge-gold',
+  HARD: 'badge-live',
+} as const;
 
 export function QuizBuilderQuestionBank({
   initialBank,
@@ -34,6 +41,7 @@ export function QuizBuilderQuestionBank({
   pickRandomQuestions,
   onAdd,
   onAddMany,
+  onRemove,
 }: {
   initialBank: QuizBuilderQuestionPage;
   gameMode: QuizBuilderGameMode;
@@ -43,6 +51,7 @@ export function QuizBuilderQuestionBank({
   pickRandomQuestions?: RandomQuestionLoader;
   onAdd: (question: AvailableBankQuestion) => void;
   onAddMany: (questions: AvailableBankQuestion[]) => void;
+  onRemove?: (id: string) => void;
 }) {
   const [bank, setBank] = useState(initialBank);
   const [query, setQuery] = useState('');
@@ -51,10 +60,9 @@ export function QuizBuilderQuestionBank({
   const [difficulty, setDifficulty] = useState<'ALL' | 'EASY' | 'MEDIUM' | 'HARD'>('ALL');
   const [page, setPage] = useState(1);
   const [hideSelected, setHideSelected] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(loadQuestionPage));
   const [randomCounts, setRandomCounts] = useState({ EASY: 2, MEDIUM: 2, HARD: 2 });
   const [randomNotice, setRandomNotice] = useState('');
-  const firstRequest = useRef(true);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -63,15 +71,18 @@ export function QuizBuilderQuestionBank({
 
   useEffect(() => {
     if (!loadQuestionPage) return;
-    if (firstRequest.current) {
-      firstRequest.current = false;
-      return;
-    }
     let active = true;
-    setLoading(true);
-    void loadQuestionPage({ query: debouncedQuery, categoryId, difficulty, gameMode, page })
+    void Promise.resolve()
+      .then(() => {
+        if (!active) return;
+        setLoading(true);
+        return loadQuestionPage({ query: debouncedQuery, categoryId, difficulty, gameMode, page });
+      })
       .then((result) => {
-        if (active) setBank(result);
+        if (active && result) setBank(result);
+      })
+      .catch(() => {
+        if (active) setBank({ status: 'error', message: 'تعذّر تحميل الأسئلة. أعد المحاولة.' });
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -82,7 +93,10 @@ export function QuizBuilderQuestionBank({
   }, [categoryId, debouncedQuery, difficulty, gameMode, loadQuestionPage, page]);
 
   const visibleQuestions = useMemo(() => {
-    const sourceQuestions = bank.status === 'success' ? bank.questions : [];
+    const sourceQuestions =
+      bank.status === 'success'
+        ? bank.questions.filter((question) => questionSupportsGameMode(question, gameMode))
+        : [];
     if (loadQuestionPage) {
       return hideSelected
         ? sourceQuestions.filter((question) => !selectedIds.has(question.id))
@@ -119,8 +133,13 @@ export function QuizBuilderQuestionBank({
 
   const resetPage = () => setPage(1);
 
-  const runPick = (counts: { EASY: number; MEDIUM: number; HARD: number }) => {
+  const runPick = (counts: { EASY: number; MEDIUM: number; HARD: number }, diverse = false) => {
     if (!pickRandomQuestions) return;
+    const remaining = Math.max(0, 100 - selectedIds.size);
+    if (Object.values(counts).reduce((sum, count) => sum + count, 0) > remaining) {
+      setRandomNotice(`يمكن إضافة ${formatNumber(remaining)} سؤالًا فقط. قلّل أعداد السحب.`);
+      return;
+    }
     setLoading(true);
     setRandomNotice('');
     void pickRandomQuestions({
@@ -128,6 +147,8 @@ export function QuizBuilderQuestionBank({
       categoryId,
       gameMode,
       counts,
+      excludeIds: [...selectedIds],
+      ...(diverse ? { preset: 'DIVERSE_20' as const } : {}),
     })
       .then((result) => {
         if (result.status === 'error') {
@@ -137,6 +158,7 @@ export function QuizBuilderQuestionBank({
         onAddMany(result.questions);
         setRandomNotice(`سُحب ${formatNumber(result.questions.length)} سؤالًا من كامل النتائج.`);
       })
+      .catch(() => setRandomNotice('تعذّر سحب الأسئلة. أعد المحاولة.'))
       .finally(() => setLoading(false));
   };
 
@@ -145,7 +167,7 @@ export function QuizBuilderQuestionBank({
       <div className={styles.sectionHeading}>
         <div>
           <h3 id="quiz-question-bank-heading">بنك الأسئلة</h3>
-          <p className="muted">نتائج خادمية، 40 سؤالًا في الصفحة.</p>
+          <p className="muted">اختر الأسئلة المتوافقة مع وضع اللعب، أو أضف الصفحة دفعة واحدة.</p>
         </div>
       </div>
 
@@ -228,11 +250,14 @@ export function QuizBuilderQuestionBank({
               variant="outline"
               disabled={loading}
               onClick={() =>
-                runPick({
-                  EASY: 7,
-                  MEDIUM: 7,
-                  HARD: 6,
-                })
+                runPick(
+                  {
+                    EASY: 7,
+                    MEDIUM: 7,
+                    HARD: 6,
+                  },
+                  true,
+                )
               }
             >
               جلب 20 سؤالًا
@@ -246,6 +271,10 @@ export function QuizBuilderQuestionBank({
               سحب وإضافة
             </Button>
           </div>
+          <p className="muted">
+            جلب 20 سؤالًا يوزّع الأسئلة على جميع الفئات المتاحة لوضع اللعب، بصرف النظر عن فلاتر
+            البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
+          </p>
           {randomNotice ? (
             <p className="muted" role="status">
               {randomNotice}
@@ -267,7 +296,11 @@ export function QuizBuilderQuestionBank({
           type="button"
           size="sm"
           variant="secondary"
-          disabled={visibleQuestions.length === 0}
+          disabled={
+            loading ||
+            selectedIds.size >= 100 ||
+            visibleQuestions.every((question) => selectedIds.has(question.id))
+          }
           onClick={() => onAddMany(visibleQuestions)}
         >
           <ListPlus aria-hidden="true" />
@@ -286,24 +319,38 @@ export function QuizBuilderQuestionBank({
           {visibleQuestions.map((question) => {
             const isAdded = selectedIds.has(question.id);
             return (
-              <article key={question.id} className={styles.bankItem}>
+              <article
+                key={question.id}
+                className={styles.bankItem}
+                data-difficulty={question.difficulty || undefined}
+                data-added={isAdded || undefined}
+              >
                 <div>
+                  {question.difficulty || question.status === 'DRAFT' ? (
+                    <div className={styles.bankItemMeta}>
+                      {question.difficulty ? (
+                        <Badge className={difficultyBadge[question.difficulty] ?? undefined}>
+                          {difficultyLabel[question.difficulty]}
+                        </Badge>
+                      ) : null}
+                      {question.status === 'DRAFT' ? <Badge>مسودة</Badge> : null}
+                    </div>
+                  ) : null}
                   <strong>{question.prompt}</strong>
                   <p className="muted">
                     {question.category || 'عام'} · {formatNumber(question.duration)} ث ·{' '}
                     {formatNumber(question.points)} نقطة
-                    {question.difficulty ? ` · ${difficultyLabel[question.difficulty]}` : ''}
-                    {question.status === 'DRAFT' ? ' · مسودة' : ''}
                   </p>
                 </div>
                 <Button
                   type="button"
                   size="sm"
                   variant={isAdded ? 'outline' : 'secondary'}
-                  disabled={isAdded}
-                  onClick={() => onAdd(question)}
+                  disabled={loading || (isAdded ? !onRemove : selectedIds.size >= 100)}
+                  aria-pressed={isAdded}
+                  onClick={() => (isAdded ? onRemove?.(question.id) : onAdd(question))}
                 >
-                  {isAdded ? 'مضاف' : 'إضافة'}
+                  {isAdded ? 'إلغاء الاختيار' : 'إضافة'}
                 </Button>
               </article>
             );

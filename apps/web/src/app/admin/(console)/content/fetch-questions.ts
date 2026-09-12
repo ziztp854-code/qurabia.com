@@ -3,15 +3,11 @@
 import { randomUUID } from 'node:crypto';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { requirePermission } from '@/lib/auth/session';
+import { buildQuestionWhere, parseQuestionBankFilters } from '@/lib/questions/admin-filters';
 import {
-  buildQuestionWhere,
-  parseQuestionBankFilters,
-} from '@/lib/questions/admin-filters';
-import {
-  categoryScopeNeedsSubtree,
-  loadCategorySubtreeIds,
-} from '@/lib/questions/category-scope';
-import { selectRandomQuestionIds } from '@/lib/questions/random-selection';
+  selectCategoryBalancedQuestions,
+  QUIZ_DRAW_POINTS,
+} from '@/lib/questions/random-selection';
 
 export type FetchedBankQuestion = {
   id: string;
@@ -20,17 +16,16 @@ export type FetchedBankQuestion = {
   duration: number;
   points: number;
   questionVersion: number;
+  gameTypes: string[];
 };
 
 export type FetchBankQuestionsResult =
-  | { status: 'success'; questions: FetchedBankQuestion[] }
-  | { status: 'error'; message: string };
+  { status: 'success'; questions: FetchedBankQuestion[] } | { status: 'error'; message: string };
 
 const FETCH_QUESTIONS_COUNT = 20;
 
 /**
- * Pulls a random sample of up to 20 published questions matching the
- * current bank filters, ready to be appended to the quiz-builder draft.
+ * Pulls up to 20 published questions balanced across all categories for the game.
  * Published-only by design: only playable questions belong in a room.
  */
 export async function fetchBankQuestions(input: {
@@ -47,27 +42,24 @@ export async function fetchBankQuestions(input: {
   }
 
   const filters = parseQuestionBankFilters({
-    category: input.category,
-    q: input.q,
-    difficulty: input.difficulty,
+    category: 'ALL',
+    q: '',
+    difficulty: 'ALL',
     game: input.game,
-    time: input.time,
+    time: 'ANY',
     status: 'PUBLISHED',
     includeDescendants: input.includeDescendants ? '1' : undefined,
   });
 
   const prisma = getPrismaClient();
   try {
-    const categoryIds = categoryScopeNeedsSubtree(filters.category, filters.includeDescendants)
-      ? await loadCategorySubtreeIds(prisma, filters.category)
-      : undefined;
-    const where = buildQuestionWhere(filters, { categoryIds });
+    const where = buildQuestionWhere(filters);
     // الأسئلة بلا خيارات لا يمكن لعبها: استبعدها من الجلب مباشرة.
     const playableWhere: typeof where = { ...where, options: { some: {} } };
 
     const candidates = await prisma.question.findMany({
       where: playableWhere,
-      select: { id: true },
+      select: { id: true, categoryId: true },
     });
     if (candidates.length === 0) {
       return {
@@ -76,19 +68,20 @@ export async function fetchBankQuestions(input: {
       };
     }
 
-    const selectedIds = selectRandomQuestionIds(
-      candidates.map((candidate) => candidate.id),
+    const selectedIds = selectCategoryBalancedQuestions(
+      candidates,
       randomUUID(),
       FETCH_QUESTIONS_COUNT,
     );
     const rows = await prisma.question.findMany({
-      where: { id: { in: selectedIds } },
+      where: { ...playableWhere, id: { in: selectedIds } },
       select: {
         id: true,
         prompt: true,
         timeLimit: true,
-        basePoints: true,
+        difficulty: true,
         version: true,
+        gameTypes: true,
         category: { select: { name: true } },
       },
     });
@@ -104,8 +97,9 @@ export async function fetchBankQuestions(input: {
             prompt: row.prompt,
             category: row.category?.name ?? '',
             duration: row.timeLimit,
-            points: row.basePoints,
+            points: QUIZ_DRAW_POINTS[row.difficulty],
             questionVersion: row.version,
+            gameTypes: row.gameTypes,
           },
         ];
       }),

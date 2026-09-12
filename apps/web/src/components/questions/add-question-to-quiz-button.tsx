@@ -10,7 +10,11 @@ import {
   type QuizDraftQuestion,
 } from '@/lib/quizzes/quiz-draft';
 
-export function AddQuestionToQuizButton({ question }: { question: QuizDraftQuestion }) {
+export function AddQuestionToQuizButton({
+  question,
+}: {
+  question: QuizDraftQuestion & { gameTypes?: string[] };
+}) {
   // React 19 "store information from previous renders" idiom: when the parent
   // re-renders with a different question we re-check the external quiz-draft
   // store during render itself. This sidesteps both `set-state-in-effect`

@@ -42,8 +42,7 @@ export type QuizBuilderQuestionPage =
     }
   | { status: 'error'; message: string };
 export type QuizBuilderRandomSelectionResult =
-  | { status: 'success'; questions: AvailableBankQuestion[] }
-  | { status: 'error'; message: string };
+  { status: 'success'; questions: AvailableBankQuestion[] } | { status: 'error'; message: string };
 
 export type QuizDraft = QuizBuilderDraft;
 
@@ -92,7 +91,9 @@ export function parseQuizDraft(value: string): QuizDraft | null {
 
 export function readQuizDraft(): QuizDraft {
   if (typeof window === 'undefined') return createEmptyQuizDraft();
-  return parseQuizDraft(localStorage.getItem(QUIZ_DRAFT_STORAGE_KEY) || '') ?? createEmptyQuizDraft();
+  return (
+    parseQuizDraft(localStorage.getItem(QUIZ_DRAFT_STORAGE_KEY) || '') ?? createEmptyQuizDraft()
+  );
 }
 
 export function writeQuizDraft(draft: QuizDraft): void {
@@ -108,9 +109,19 @@ export type AddQuestionToDraftResult =
   | { status: 'error'; message: string };
 
 /** Adds a bank question into the local quiz-builder draft used by /quizzes/new. */
-export function addQuestionToQuizDraft(question: QuizDraftQuestion): AddQuestionToDraftResult {
+export function addQuestionToQuizDraft({
+  gameTypes,
+  ...question
+}: QuizDraftQuestion & { gameTypes?: string[] }): AddQuestionToDraftResult {
   try {
     const draft = readQuizDraft();
+    if (gameTypes && !gameTypes.includes(draft.gameMode)) {
+      return {
+        status: 'error',
+        message:
+          'السؤال غير متوافق مع وضع المسابقة الحالي. غيّر الوضع في منشئ المسابقة أو اختر سؤالًا آخر.',
+      };
+    }
     if (draft.questions.some((existing) => existing.id === question.id)) {
       return { status: 'exists', count: draft.questions.length };
     }
@@ -119,7 +130,10 @@ export function addQuestionToQuizDraft(question: QuizDraftQuestion): AddQuestion
       questions: [...draft.questions, question],
     });
     if (!next.success) {
-      return { status: 'error', message: next.error.issues[0]?.message ?? 'بيانات السؤال غير صالحة.' };
+      return {
+        status: 'error',
+        message: next.error.issues[0]?.message ?? 'بيانات السؤال غير صالحة.',
+      };
     }
     writeQuizDraft(next.data);
     return { status: 'added', count: next.data.questions.length };

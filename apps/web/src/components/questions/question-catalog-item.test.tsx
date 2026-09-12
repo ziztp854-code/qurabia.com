@@ -16,6 +16,13 @@ const question: CatalogQuestion = {
 };
 
 describe('QuestionCatalogItem', () => {
+  it('requires answer options before offering to add a question', () => {
+    render(<QuestionCatalogItem question={{ ...question, options: [] }} view="list" />);
+    expect(
+      screen.queryByRole('button', { name: 'إضافة السؤال إلى المسابقة' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('أضف خيارات إجابة قبل اختيار السؤال.')).toBeInTheDocument();
+  });
   it('renders stage metadata with icons instead of emoji difficulty marks', () => {
     const { container } = render(<QuestionCatalogItem question={question} view="stage" />);
 

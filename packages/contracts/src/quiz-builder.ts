@@ -25,6 +25,8 @@ export const quizBuilderQuestionPageSchema = z
 
 export const quizBuilderRandomSelectionSchema = z
   .object({
+    preset: z.literal('DIVERSE_20').optional(),
+    excludeIds: z.array(z.string().trim().min(1).max(64)).max(100).optional(),
     query: z.string().trim().max(200, 'عبارة البحث طويلة جدًا.').default(''),
     categoryId: z.string().trim().max(64, 'التصنيف غير صالح.').default(''),
     gameMode: quizBuilderGameModeSchema,
@@ -70,10 +72,7 @@ export const quizBuilderQuestionSchema = z
 export const quizBuilderDraftSchema = z
   .object({
     version: z.literal(5),
-    title: z
-      .string()
-      .trim()
-      .max(160, 'عنوان المسابقة يجب أن يكون بين 3 و160 حرفًا.'),
+    title: z.string().trim().max(160, 'عنوان المسابقة يجب أن يكون بين 3 و160 حرفًا.'),
     description: z.string().trim().max(1_000, 'وصف المسابقة يجب ألا يتجاوز 1000 حرف.'),
     roundName: z.string().trim().max(160, 'اسم الجولة يجب ألا يتجاوز 160 حرفًا.'),
     presentationMode: quizPresentationModeSchema,
@@ -87,9 +86,7 @@ export const quizBuilderDraftSchema = z
     speedScoring: z.boolean(),
     visibility: quizVisibilitySchema,
     gameMode: quizBuilderGameModeSchema,
-    questions: z
-      .array(quizBuilderQuestionSchema)
-      .max(100, 'لا يمكن إضافة أكثر من 100 سؤال.'),
+    questions: z.array(quizBuilderQuestionSchema).max(100, 'لا يمكن إضافة أكثر من 100 سؤال.'),
   })
   .strict()
   .superRefine((quiz, context) => {

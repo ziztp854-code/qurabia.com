@@ -17,6 +17,17 @@ const sample = {
 };
 
 describe('quiz-draft', () => {
+  it('rejects incompatible bank questions without changing the draft', () => {
+    writeQuizDraft(createEmptyQuizDraft());
+    expect(addQuestionToQuizDraft({ ...sample, gameTypes: ['LADDER'] })).toMatchObject({
+      status: 'error',
+    });
+    expect(parseQuizDraft(localStorage.getItem(QUIZ_DRAFT_STORAGE_KEY)!)?.questions).toEqual([]);
+    expect(addQuestionToQuizDraft({ ...sample, gameTypes: ['QUIZ'] })).toEqual({
+      status: 'added',
+      count: 1,
+    });
+  });
   it('parses a valid draft and defaults gameMode', () => {
     const draft = createEmptyQuizDraft();
     draft.questions.push(sample);

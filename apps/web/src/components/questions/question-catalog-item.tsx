@@ -22,6 +22,7 @@ export type CatalogQuestion = {
   status: string;
   basePoints: number;
   version?: number;
+  gameTypes?: string[];
   options: Array<{ id: string }>;
   category?: { id: string; name: string } | null;
 };
@@ -108,16 +109,21 @@ export function QuestionCatalogItem({
       </div>
       {question.status !== 'ARCHIVED' ? (
         <div className={styles.actions}>
-          <AddQuestionToQuizButton
-            question={{
-              id: question.id,
-              prompt: question.prompt,
-              category: question.category?.name ?? '',
-              duration: question.timeLimit,
-              points: question.basePoints,
-              questionVersion: question.version,
-            }}
-          />
+          {optionCount > 0 ? (
+            <AddQuestionToQuizButton
+              question={{
+                id: question.id,
+                prompt: question.prompt,
+                category: question.category?.name ?? '',
+                duration: question.timeLimit,
+                points: question.basePoints,
+                questionVersion: question.version,
+                gameTypes: question.gameTypes,
+              }}
+            />
+          ) : (
+            <span className="text-danger">أضف خيارات إجابة قبل اختيار السؤال.</span>
+          )}
           <Link href={`/questions/${question.id}`} className={styles.editLink}>
             <Pencil size={16} aria-hidden="true" />
             تعديل

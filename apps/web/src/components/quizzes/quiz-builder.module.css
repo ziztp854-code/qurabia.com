@@ -148,6 +148,60 @@
   background: var(--surface-soft);
 }
 
+.bankItem {
+  position: relative;
+  overflow: hidden;
+  padding-inline-start: calc(var(--space-4) + 0.45rem);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.bankItem::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.7rem;
+  inset-inline-start: 0;
+  inline-size: 0.28rem;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  pointer-events: none;
+}
+
+.bankItem[data-difficulty='EASY']::before {
+  background: var(--success);
+}
+
+.bankItem[data-difficulty='HARD']::before {
+  background: var(--danger);
+}
+
+.bankItem:hover {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+}
+
+.bankItem[data-added] {
+  border-color: color-mix(in srgb, var(--success) 55%, var(--border));
+  background: color-mix(in srgb, var(--success) 7%, var(--surface-soft));
+}
+
+.bankItem[data-added]::before {
+  background: var(--success);
+}
+
+.bankItemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block-end: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bankItem {
+    transition: none;
+  }
+}
+
 .selectedItem > div:first-child,
 .bankItem > div:first-child {
   min-inline-size: 0;

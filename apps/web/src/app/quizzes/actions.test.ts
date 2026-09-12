@@ -20,7 +20,8 @@ vi.mock('@/lib/quiz/room-code', () => ({
   normalizeRoomCode: vi.fn((value: string) => value),
 }));
 
-import { createQuiz, listQuizBuilderQuestions } from './actions';
+import { createQuiz, listQuizBuilderQuestions, pickRandomQuizBuilderQuestions } from './actions';
+import { createEmptyQuizDraft } from '@/lib/quizzes/quiz-draft';
 
 describe('listQuizBuilderQuestions', () => {
   beforeEach(() => {
@@ -70,6 +71,99 @@ describe('createQuiz', () => {
     mocks.generateUniqueActivityRoomCode.mockResolvedValue('ROOM12');
   });
 
+  it('draws the 20-question preset across categories and assigns difficulty points', async () => {
+    const rows = (['EASY', 'MEDIUM', 'HARD'] as const).map((difficulty, index) => ({
+      id: `level-${index}`,
+      difficulty,
+      categoryId: `cat-${index}`,
+      category: { name: `فئة ${index}` },
+      prompt: 'سؤال',
+      timeLimit: 20,
+      basePoints: 9999,
+      version: 1,
+      gameTypes: ['QUIZ'],
+      status: 'PUBLISHED',
+    }));
+    const findMany = vi.fn().mockResolvedValue(rows);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany } });
+    const result = await pickRandomQuizBuilderQuestions({
+      preset: 'DIVERSE_20',
+      query: 'بحث',
+      categoryId: 'cat-0',
+      gameMode: 'QUIZ',
+      excludeIds: ['already-added'],
+      counts: { EASY: 7, MEDIUM: 7, HARD: 6 },
+    });
+    expect(result.status).toBe('success');
+    if (result.status !== 'success') return;
+    expect(Object.fromEntries(result.questions.map((q) => [q.id, q.points]))).toEqual({
+      'level-0': 500,
+      'level-1': 700,
+      'level-2': 1000,
+    });
+    const where = findMany.mock.calls[0][0].where;
+    expect(where).not.toHaveProperty('categoryId');
+    expect(where).not.toHaveProperty('AND');
+    expect(where).toMatchObject({
+      id: { notIn: ['already-added'] },
+      gameTypes: { has: 'QUIZ' },
+      options: { some: {} },
+    });
+  });
+
+  it('identifies only rejected selections and does not create a partial quiz', async () => {
+    const create = vi.fn();
+    const findMany = vi.fn().mockResolvedValue([{ id: 'valid', version: 1 }]);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany }, quiz: { create } });
+    const result = await createQuiz({
+      ...createEmptyQuizDraft(),
+      title: 'مسابقة تجريبية',
+      questions: ['valid', 'missing'].map((id) => ({
+        id,
+        prompt: 'سؤال',
+        category: '',
+        duration: 20,
+        points: 1000,
+      })),
+    });
+    expect(result).toMatchObject({ status: 'error', unavailableQuestionIds: ['missing'] });
+    expect(create).not.toHaveBeenCalled();
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          options: { some: {} },
+          gameTypes: { has: 'QUIZ' },
+          OR: [
+            { ownerId: 'user-1', status: { in: ['PUBLISHED', 'DRAFT'] } },
+            { status: 'PUBLISHED' },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it('excludes selected questions from random candidates and rechecks access when fetching them', async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany } });
+    await pickRandomQuizBuilderQuestions({
+      query: '',
+      categoryId: '',
+      gameMode: 'QUIZ',
+      counts: { EASY: 1, MEDIUM: 0, HARD: 0 },
+      excludeIds: ['selected'],
+    });
+    expect(findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ where: expect.objectContaining({ id: { notIn: ['selected'] } }) }),
+    );
+    expect(findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({ options: { some: {} }, gameTypes: { has: 'QUIZ' } }),
+      }),
+    );
+  });
+
   it('publishes an owned public quiz and persists question versions and overrides', async () => {
     const create = vi.fn().mockResolvedValue({ id: 'quiz-1', roomCode: 'ROOM12' });
     mocks.getPrismaClient.mockReturnValue({
@@ -95,8 +189,22 @@ describe('createQuiz', () => {
       visibility: 'PUBLIC',
       gameMode: 'QUIZ',
       questions: [
-        { id: 'q1', prompt: 'السؤال الأول', category: 'علوم', duration: 30, points: 800, questionVersion: 3 },
-        { id: 'q2', prompt: 'السؤال الثاني', category: 'تاريخ', duration: 45, points: 1200, questionVersion: 5 },
+        {
+          id: 'q1',
+          prompt: 'السؤال الأول',
+          category: 'علوم',
+          duration: 30,
+          points: 800,
+          questionVersion: 3,
+        },
+        {
+          id: 'q2',
+          prompt: 'السؤال الثاني',
+          category: 'تاريخ',
+          duration: 45,
+          points: 1200,
+          questionVersion: 5,
+        },
       ],
     });
 
@@ -108,8 +216,20 @@ describe('createQuiz', () => {
         isPublic: true,
         questions: {
           create: [
-            { questionId: 'q1', position: 0, durationOverride: 30, pointsOverride: 800, questionVersion: 3 },
-            { questionId: 'q2', position: 1, durationOverride: 45, pointsOverride: 1200, questionVersion: 5 },
+            {
+              questionId: 'q1',
+              position: 0,
+              durationOverride: 30,
+              pointsOverride: 800,
+              questionVersion: 3,
+            },
+            {
+              questionId: 'q2',
+              position: 1,
+              durationOverride: 45,
+              pointsOverride: 1200,
+              questionVersion: 5,
+            },
           ],
         },
       }),
