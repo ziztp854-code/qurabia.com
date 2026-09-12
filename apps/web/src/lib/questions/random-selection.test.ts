@@ -1,5 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { selectRandomQuestionIds, selectRandomQuestionsByDifficulty } from './random-selection';
+import {
+  selectRandomQuestionIds,
+  selectRandomQuestionsByDifficulty,
+  selectCategoryBalancedQuestions,
+} from './random-selection';
+
+describe('selectCategoryBalancedQuestions', () => {
+  it('balances an unequal bank across every category without duplicates or mutation', () => {
+    const candidates = ['science', 'history', 'sport', 'language'].flatMap((categoryId, group) =>
+      Array.from({ length: group === 0 ? 100 : 5 }, (_, index) => ({
+        id: `${categoryId}-${index}`,
+        categoryId,
+      })),
+    );
+    const before = JSON.stringify(candidates);
+    const selected = selectCategoryBalancedQuestions(candidates, 'balanced', 20);
+    expect(selected).toHaveLength(20);
+    expect(new Set(selected).size).toBe(20);
+    for (const category of ['science', 'history', 'sport', 'language']) {
+      expect(selected.filter((id) => id.startsWith(category))).toHaveLength(5);
+    }
+    expect(JSON.stringify(candidates)).toBe(before);
+  });
+
+  it('covers 20 distinct categories when there are more than 20 and fills sparse pools', () => {
+    const many = Array.from({ length: 25 }, (_, index) => ({
+      id: `q${index}`,
+      categoryId: `c${index}`,
+    }));
+    expect(selectCategoryBalancedQuestions(many, 'a', 20)).toHaveLength(20);
+    expect(selectCategoryBalancedQuestions(many, 'a', 20)).not.toEqual(
+      selectCategoryBalancedQuestions(many, 'b', 20),
+    );
+    expect(
+      selectCategoryBalancedQuestions(
+        [
+          { id: 'one', categoryId: null },
+          { id: 'two', categoryId: 'c' },
+        ],
+        'a',
+        20,
+      ),
+    ).toHaveLength(2);
+  });
+});
 
 describe('selectRandomQuestionIds', () => {
   it('returns a stable, unique sample from the full matching set and changes it for a new seed', () => {

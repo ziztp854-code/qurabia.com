@@ -7,6 +7,37 @@ function seedToUint32(seed: string): number {
   return hash >>> 0;
 }
 
+export const QUIZ_DRAW_POINTS = { EASY: 500, MEDIUM: 700, HARD: 1000 } as const;
+
+/** Draws one question per category each round, with random category and question order. */
+export function selectCategoryBalancedQuestions(
+  candidates: readonly { id: string; categoryId: string | null }[],
+  seed: string,
+  limit: number,
+): string[] {
+  const byId = new Map(candidates.map((question) => [question.id, question]));
+  const categories = new Map<string, string[]>();
+  for (const id of selectRandomQuestionIds([...byId.keys()], seed, byId.size)) {
+    const category = byId.get(id)!.categoryId ?? '';
+    const bucket = categories.get(category);
+    if (bucket) bucket.push(id);
+    else categories.set(category, [id]);
+  }
+  const order = selectRandomQuestionIds(
+    [...categories.keys()],
+    `${seed}:categories`,
+    categories.size,
+  );
+  const selected: string[] = [];
+  for (let round = 0; selected.length < Math.min(limit, byId.size); round += 1) {
+    for (const category of order) {
+      const id = categories.get(category)![round];
+      if (id && selected.length < limit) selected.push(id);
+    }
+  }
+  return selected;
+}
+
 function createSeededRandom(seed: string): () => number {
   let state = seedToUint32(seed);
   return () => {
