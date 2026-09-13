@@ -3,9 +3,211 @@
   gap: var(--space-6);
 }
 
-.stepPanel {
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   gap: var(--space-5);
+  min-block-size: 18rem;
+  padding: clamp(var(--space-5), 4vw, var(--space-10));
+  border-color: color-mix(in srgb, var(--gold) 42%, var(--border));
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, var(--surface-strong) 92%, transparent),
+      var(--card)
+    ),
+    var(--card);
+  box-shadow: var(--shadow-lg);
+}
+
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero::before {
+  inset-block: 0;
+  inset-inline-end: clamp(3rem, 22vw, 19rem);
+  inline-size: 1px;
+  background: linear-gradient(transparent, var(--gold), transparent);
+  opacity: 0.45;
+  transform: rotate(18deg);
+}
+
+.hero::after {
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--gold) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--gold) 9%, transparent) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: linear-gradient(90deg, transparent 20%, black 100%);
+  opacity: 0.35;
+}
+
+.heroGlow {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -8rem;
+  inset-inline-start: -5rem;
+  inline-size: 22rem;
+  aspect-ratio: 1;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  filter: blur(5rem);
+  pointer-events: none;
+}
+
+.heroLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(var(--space-5), 5vw, var(--space-12));
+}
+
+.heroCopy {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.heroCopy h2,
+.heroCopy p {
+  margin: 0;
+}
+
+.heroCopy h2 {
+  max-inline-size: 12ch;
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.heroCopy > p:not(.eyebrow) {
+  max-inline-size: 38rem;
+  color: var(--muted-foreground);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1.8;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.eyebrow svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.stageDial {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  inline-size: clamp(9.5rem, 16vw, 13rem);
+  aspect-ratio: 1;
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--gold) 46%, var(--border));
+  border-radius: var(--radius-full);
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--gold) 13%, transparent), transparent 62%),
+    var(--surface-soft);
+  box-shadow:
+    inset 0 0 0 0.45rem color-mix(in srgb, var(--gold) 5%, transparent),
+    var(--shadow-sm);
+  text-align: center;
+}
+
+.stageDial span,
+.stageDial b {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+.stageDial strong {
+  color: var(--foreground);
+  font-size: clamp(2.5rem, 5vw, 4.25rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.stageDial small {
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+
+.stageDial b {
+  color: var(--foreground);
+}
+
+.heroProgress {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.heroProgress :global(.progress) {
+  block-size: 0.28rem;
+  background: color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.heroProgress :global(.progress > span) {
+  background: linear-gradient(90deg, var(--gold), var(--primary));
+}
+
+.heroProgress :global(.stepper) {
+  margin: 0;
+}
+
+.notice {
+  width: fit-content;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, currentColor 8%, var(--surface-soft));
+}
+
+.stepPanel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-5);
+  min-block-size: 28rem;
+  padding: clamp(var(--space-5), 3vw, var(--space-8));
+  border-color: color-mix(in srgb, var(--gold) 30%, var(--border));
+  background:
+    linear-gradient(140deg, color-mix(in srgb, var(--gold) 4%, transparent), transparent 38%),
+    var(--card);
+}
+
+.stepPanel::after {
+  content: '0' attr(data-stage);
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -0.3em;
+  inset-inline-end: 0.12em;
+  color: color-mix(in srgb, var(--gold) 8%, transparent);
+  font-size: clamp(7rem, 19vw, 16rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.stepPanel > h2,
+.sectionHeading h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.8vw, 2.25rem);
+  text-wrap: balance;
 }
 
 .modePicker {
@@ -33,6 +235,8 @@
 }
 
 .modeOption {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
@@ -42,6 +246,21 @@
   border-radius: var(--radius-lg);
   background: var(--surface);
   cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.modeOption::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 0.28rem;
+  background: transparent;
+  transition: background-color 160ms ease;
+  pointer-events: none;
 }
 
 .modeOption input {
@@ -60,23 +279,33 @@
   line-height: 1.7;
 }
 
+.modeOption > span > strong {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
 .modeOption > span > span {
   color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 
-.modeOption:hover,
-.modeOption:has(input:checked) {
-  border-color: var(--primary);
+.modeOption:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
 }
 
 .modeOption:has(input:checked) {
-  background: var(--secondary);
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--border));
+  background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+}
+
+.modeOption:has(input:checked)::before {
+  background: var(--gold);
 }
 
 .modeOption:has(input:focus-visible) {
-  outline: 2px solid var(--ring);
-  outline-offset: 3px;
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .sectionHeading,
@@ -197,8 +426,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bankItem {
+  .bankItem,
+  .modeOption {
     transition: none;
+  }
+
+  .modeOption:hover {
+    transform: none;
   }
 }
 
@@ -221,10 +455,24 @@
 }
 
 .summaryGrid > div {
+  position: relative;
+  overflow: hidden;
   padding: var(--space-4);
+  padding-inline-start: calc(var(--space-4) + 0.45rem);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-soft);
+}
+
+.summaryGrid > div::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.7rem;
+  inset-inline-start: 0;
+  inline-size: 0.28rem;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  pointer-events: none;
 }
 
 .summaryGrid strong,
@@ -232,9 +480,21 @@
   display: block;
 }
 
+.summaryGrid strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.summaryGrid span {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .navigation {
-  position: sticky;
-  inset-block-end: var(--space-3);
+  position: static;
   z-index: var(--z-sticky);
   padding: var(--space-3);
   border: 1px solid var(--border);
@@ -244,6 +504,27 @@
 }
 
 @media (max-width: 700px) {
+  .hero {
+    min-block-size: auto;
+  }
+
+  .heroLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .stageDial {
+    inline-size: 8.5rem;
+    justify-self: end;
+  }
+
+  .hero::before {
+    inset-inline-end: 25%;
+  }
+
+  .stepPanel {
+    min-block-size: 24rem;
+  }
+
   .sectionHeading,
   .bankMeta,
   .selectedItem,
@@ -254,7 +535,6 @@
   }
 
   .navigation {
-    position: static;
     flex-wrap: wrap;
   }
 

@@ -237,6 +237,8 @@ describe('QuizBuilder', () => {
     render(<QuizBuilder />);
 
     expect(screen.getByRole('heading', { name: 'البيانات الأساسية' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '20');
+    expect(screen.getByLabelText('المرحلة الحالية: البيانات')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'التالي: اختيار الأسئلة' }));
     expect(screen.getByRole('heading', { name: 'اختيار الأسئلة' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'التالي: الإعدادات' }));
@@ -245,6 +247,8 @@ describe('QuizBuilder', () => {
     expect(screen.getByRole('heading', { name: 'معاينة المسابقة' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'التالي: النشر' }));
     expect(screen.getByRole('heading', { name: 'نشر المسابقة' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+    expect(screen.getByLabelText('المرحلة الحالية: النشر')).toBeInTheDocument();
   });
 
   it('يؤجل البحث ثم يطلب صفحة مصفحة من الخادم', async () => {

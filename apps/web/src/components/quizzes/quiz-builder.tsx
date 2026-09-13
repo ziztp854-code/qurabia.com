@@ -1,7 +1,7 @@
 'use client';
 
 import { quizBuilderSchema } from '@tahaddi/contracts';
-import { ArrowDown, ArrowUp, CheckCircle2, ClipboardList, Save, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, Save, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   createQuiz,
@@ -15,6 +15,7 @@ import {
   Card,
   Input,
   NumberInput,
+  Progress,
   Select,
   Stepper,
   Switch,
@@ -318,25 +319,43 @@ export function QuizBuilder({
 
   return (
     <div className={`quiz-builder ${styles.shell}`} dir="rtl">
-      <Card className="quiz-builder-intro">
-        <div className="inline-between">
-          <div>
-            <h2>
-              <ClipboardList aria-hidden="true" /> منشئ المسابقة
-            </h2>
-            <p className="muted">خمس خطوات واضحة، ومسودة تلقائية لا تفقد مدخلاتك.</p>
+      <Card className={styles.hero}>
+        <span className={styles.heroGlow} aria-hidden="true" />
+        <div className={styles.heroLayout}>
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>
+              <Sparkles aria-hidden="true" /> استوديو بناء الجولة
+            </p>
+            <h2>منشئ المسابقة</h2>
+            <p>رتّب الفكرة والأسئلة والإيقاع، ثم أطلق جولة تحمل بصمتك.</p>
+            <Badge>{savedRoomCode ? `رمز ${savedRoomCode}` : 'مسودتك تُحفظ تلقائيًا'}</Badge>
           </div>
-          <Badge>{savedRoomCode ? `رمز ${savedRoomCode}` : 'حفظ تلقائي'}</Badge>
+          <div className={styles.stageDial} aria-label={`المرحلة الحالية: ${STEPS[currentStep]}`}>
+            <span>المرحلة الحالية</span>
+            <strong dir="ltr">
+              {formatNumber(currentStep + 1)} <small>/ {formatNumber(STEPS.length)}</small>
+            </strong>
+            <b>{STEPS[currentStep]}</b>
+          </div>
         </div>
-        <Stepper steps={STEPS} current={currentStep} />
+        <div className={styles.heroProgress}>
+          <Progress
+            value={((currentStep + 1) / STEPS.length) * 100}
+            label={`اكتمل ${formatNumber(currentStep + 1)} من ${formatNumber(STEPS.length)} مراحل`}
+          />
+          <Stepper steps={STEPS} current={currentStep} />
+        </div>
         {notice ? (
-          <p className={saveFailed ? 'text-danger' : 'text-success'} role="status">
+          <p
+            className={`${styles.notice} ${saveFailed ? 'text-danger' : 'text-success'}`}
+            role="status"
+          >
             {notice}
           </p>
         ) : null}
       </Card>
 
-      <Card className={styles.stepPanel}>
+      <Card className={styles.stepPanel} data-stage={currentStep + 1}>
         {currentStep === 0 ? (
           <>
             <h2>البيانات الأساسية</h2>
@@ -569,6 +588,10 @@ export function QuizBuilder({
           <>
             <h2>معاينة المسابقة</h2>
             <div className={styles.summaryGrid}>
+              <div>
+                <strong>{QUIZ_BUILDER_GAME_MODE_LABELS[draft.gameMode]}</strong>
+                <span>وضع اللعب</span>
+              </div>
               <div>
                 <strong>{draft.title || 'بلا عنوان'}</strong>
                 <span>العنوان</span>
