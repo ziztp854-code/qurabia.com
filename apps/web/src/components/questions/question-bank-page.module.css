@@ -3,6 +3,111 @@
   gap: var(--space-6);
 }
 
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-areas: 'copy crown';
+  grid-template-columns: minmax(16rem, 0.85fr) minmax(20rem, 1.3fr);
+  align-items: center;
+  min-block-size: 8.3rem;
+  border: 1px solid var(--qb-border, var(--surface-stage-line));
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
+  background:
+    linear-gradient(90deg, rgb(6 10 13 / 98%) 0 42%, rgb(8 12 15 / 62%) 70%, rgb(7 10 12 / 96%)),
+    url('/home/tahaddi-hero-background-3344x1882.webp') center 42% / cover;
+}
+
+.hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(110deg, transparent 28%, rgb(255 190 53 / 6%) 52%, transparent 74%);
+}
+
+.heroCrown {
+  grid-area: crown;
+  align-self: end;
+  justify-self: center;
+  inline-size: min(22rem, 80%);
+  block-size: 8.2rem;
+  object-fit: contain;
+  object-position: center 45%;
+  filter: drop-shadow(0 10px 22px rgb(225 156 31 / 32%));
+}
+
+.heroCopy {
+  grid-area: copy;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+  padding: 1rem 1.25rem;
+}
+
+.heroKicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--qb-gold-bright, var(--gold));
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.heroKicker svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.hero h2 {
+  margin: 0;
+  color: #fffaf0;
+  font-size: clamp(1.3rem, 2.3vw, 1.95rem);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.hero p {
+  margin: 0;
+  color: #e5be65;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.hero a {
+  min-block-size: 2.5rem;
+  margin-block-start: 0.4rem;
+  padding-inline: 1.4rem;
+}
+
+@media (max-width: 40rem) {
+  .hero {
+    grid-template-areas: 'copy' 'crown';
+    grid-template-columns: 1fr;
+    min-block-size: 18rem;
+  }
+
+  .heroCrown {
+    grid-row: 2;
+    inline-size: 15rem;
+    block-size: 8rem;
+  }
+
+  .heroCopy {
+    justify-items: center;
+    padding: 1.1rem;
+    text-align: center;
+  }
+
+  .heroCopy a {
+    inline-size: 100%;
+    justify-content: center;
+  }
+}
+
 .searchPanel,
 .composer,
 .catalog,

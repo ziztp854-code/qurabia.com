@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Filter, Plus } from 'lucide-react';
+import { BookOpen, Filter, Plus } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/layout';
 import { Button, ButtonLink, Input, Select } from '@/components/ui';
@@ -228,6 +229,7 @@ export default async function QuestionsPage({
 
   return (
     <DashboardLayout
+      className="command-bank-layout"
       title="بنك الأسئلة المركزي"
       description="تصفح المجالات، اعرض الأسئلة كمنصة أو قائمة، ثم أضف إلى المسابقة أو عدّل."
       actions={
@@ -238,6 +240,27 @@ export default async function QuestionsPage({
       }
     >
       <QuestionBankShell className={pageStyles.page}>
+        <header className={pageStyles.hero}>
+          <Image
+            className={pageStyles.heroCrown}
+            src="/home/tahaddi-crown-transparent-1024x683.webp"
+            alt=""
+            width={460}
+            height={306}
+            priority
+          />
+          <div className={pageStyles.heroCopy}>
+            <span className={pageStyles.heroKicker}>
+              <BookOpen aria-hidden="true" /> بنك الأسئلة
+            </span>
+            <h2>اختر أسئلة مسابقتك من الخزانة المركزية</h2>
+            <p>تصفّح المجالات المعرفية، صفِّ حسب الصعوبة والنوع، ثم أضف إلى مسابقتك.</p>
+            <ButtonLink href="#question-editor" variant="gold">
+              <Plus aria-hidden="true" /> إضافة سؤال جديد
+            </ButtonLink>
+          </div>
+        </header>
+
         <QuestionBankStats
           categories={sortedCategories}
           totalQuestionsCount={totalCount}
