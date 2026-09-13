@@ -10,6 +10,7 @@ describe('selectCategoryBalancedQuestions', () => {
     const candidates = ['science', 'history', 'sport', 'language'].flatMap((categoryId, group) =>
       Array.from({ length: group === 0 ? 100 : 5 }, (_, index) => ({
         id: `${categoryId}-${index}`,
+        prompt: `${categoryId}-${index}`,
         categoryId,
       })),
     );
@@ -26,6 +27,7 @@ describe('selectCategoryBalancedQuestions', () => {
   it('covers 20 distinct categories when there are more than 20 and fills sparse pools', () => {
     const many = Array.from({ length: 25 }, (_, index) => ({
       id: `q${index}`,
+      prompt: `سؤال ${index}`,
       categoryId: `c${index}`,
     }));
     expect(selectCategoryBalancedQuestions(many, 'a', 20)).toHaveLength(20);
@@ -35,13 +37,44 @@ describe('selectCategoryBalancedQuestions', () => {
     expect(
       selectCategoryBalancedQuestions(
         [
-          { id: 'one', categoryId: null },
-          { id: 'two', categoryId: 'c' },
+          { id: 'one', prompt: 'الأول', categoryId: null },
+          { id: 'two', prompt: 'الثاني', categoryId: 'c' },
         ],
         'a',
         20,
       ),
     ).toHaveLength(2);
+  });
+
+  it('does not select repeated Arabic question text stored under different IDs', () => {
+    const selected = selectCategoryBalancedQuestions(
+      [
+        { id: 'one', prompt: 'ما عاصمة المملكة العربية السعودية؟', categoryId: 'geography' },
+        { id: 'duplicate', prompt: 'مَا عَاصِمَةُ المملكة العربية السعودية ؟', categoryId: 'general' },
+        { id: 'two', prompt: 'كم عدد أركان الإسلام؟', categoryId: 'religion' },
+      ],
+      'duplicates',
+      20,
+    );
+
+    expect(selected).toHaveLength(2);
+    expect(selected).toContain('two');
+    expect(selected.filter((id) => id === 'one' || id === 'duplicate')).toHaveLength(1);
+  });
+
+  it('keeps scarce categories represented while removing repeated text', () => {
+    const selected = selectCategoryBalancedQuestions(
+      [
+        { id: 'scarce', prompt: 'سؤال مشترك', categoryId: 'scarce' },
+        { id: 'duplicate', prompt: 'سؤال مشترك', categoryId: 'rich' },
+        { id: 'alternative', prompt: 'سؤال بديل', categoryId: 'rich' },
+      ],
+      'category-coverage',
+      2,
+    );
+
+    expect(selected).toContain('scarce');
+    expect(selected).toContain('alternative');
   });
 });
 
@@ -66,7 +99,11 @@ describe('selectRandomQuestionIds', () => {
 describe('selectRandomQuestionsByDifficulty', () => {
   it('returns unique questions with the requested difficulty distribution', () => {
     const candidates = (['EASY', 'MEDIUM', 'HARD'] as const).flatMap((difficulty) =>
-      Array.from({ length: 10 }, (_, index) => ({ id: `${difficulty}-${index}`, difficulty })),
+      Array.from({ length: 10 }, (_, index) => ({
+        id: `${difficulty}-${index}`,
+        prompt: `${difficulty}-${index}`,
+        difficulty,
+      })),
     );
 
     const selected = selectRandomQuestionsByDifficulty(
@@ -80,5 +117,36 @@ describe('selectRandomQuestionsByDifficulty', () => {
     expect(selected.filter((id) => id.startsWith('EASY-'))).toHaveLength(2);
     expect(selected.filter((id) => id.startsWith('MEDIUM-'))).toHaveLength(3);
     expect(selected.filter((id) => id.startsWith('HARD-'))).toHaveLength(4);
+  });
+
+  it('removes repeated text and already selected questions from a difficulty draw', () => {
+    const selected = selectRandomQuestionsByDifficulty(
+      [
+        { id: 'selected', prompt: 'السؤال السابق', difficulty: 'EASY' },
+        { id: 'same-as-selected', prompt: 'السُّؤال السّابق', difficulty: 'EASY' },
+        { id: 'new', prompt: 'سؤال جديد', difficulty: 'EASY' },
+      ],
+      { EASY: 3, MEDIUM: 0, HARD: 0 },
+      'exclude-existing',
+      ['selected'],
+    );
+
+    expect(selected).toEqual(['new']);
+  });
+
+  it('fills difficulty counts when a duplicate prompt has a valid alternative assignment', () => {
+    const selected = selectRandomQuestionsByDifficulty(
+      [
+        { id: 'easy-shared', prompt: 'مشترك', difficulty: 'EASY' },
+        { id: 'easy-only', prompt: 'خاص بالسهل', difficulty: 'EASY' },
+        { id: 'medium-shared', prompt: 'مشترك', difficulty: 'MEDIUM' },
+      ],
+      { EASY: 1, MEDIUM: 1, HARD: 0 },
+      'difficulty-matching',
+    );
+
+    expect(selected).toHaveLength(2);
+    expect(selected).toContain('easy-only');
+    expect(selected).toContain('medium-shared');
   });
 });

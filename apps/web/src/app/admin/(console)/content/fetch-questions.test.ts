@@ -28,7 +28,11 @@ function prismaStub(rows: Array<Record<string, unknown>>) {
       findMany: vi
         .fn()
         .mockResolvedValueOnce(
-          rows.map((row) => ({ id: row.id, categoryId: row.categoryId ?? null })),
+          rows.map((row) => ({
+            id: row.id,
+            prompt: row.prompt,
+            categoryId: row.categoryId ?? null,
+          })),
         )
         .mockResolvedValueOnce(rows.map((row) => ({ difficulty: 'EASY', ...row }))),
     },
@@ -51,7 +55,7 @@ describe('fetchBankQuestions', () => {
         difficulty,
         categoryId: `cat-${index}`,
         category: { name: `فئة ${index}` },
-        prompt: 'سؤال',
+        prompt: `سؤال ${index}`,
         timeLimit: 20,
         basePoints: 9999,
         version: 1,

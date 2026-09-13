@@ -74,6 +74,37 @@ describe('QuizBuilder', () => {
     expect(screen.getByRole('status')).toHaveTextContent('حُفظت المسودة محليًا على هذا الجهاز.');
   });
 
+  it('لا يضيف نص السؤال نفسه مرتين من سجلين مختلفين', async () => {
+    const user = userEvent.setup();
+    render(
+      <QuizBuilder
+        availableQuestions={[
+          {
+            id: 'first',
+            prompt: 'ما عاصمة السعودية؟',
+            category: 'جغرافيا',
+            duration: 20,
+            points: 1000,
+          },
+          {
+            id: 'duplicate',
+            prompt: 'مَا عَاصِمَةُ السُّعُودِيَّة ؟',
+            category: 'عام',
+            duration: 20,
+            points: 1000,
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'التالي: اختيار الأسئلة' }));
+    await user.click(screen.getAllByRole('button', { name: 'إضافة' })[0]!);
+    await user.click(screen.getByRole('button', { name: 'إضافة' }));
+
+    expect(screen.getByText(/الأسئلة المُجلَبة مضافة مسبقًا/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /إزالة السؤال/ })).toHaveLength(1);
+  });
+
   it('يبحث في الأسئلة المتاحة بالعنوان أو الفئة', async () => {
     const user = userEvent.setup();
     render(

@@ -43,12 +43,29 @@ describe('quiz-draft', () => {
     expect(parseQuizDraft(JSON.stringify(draft))?.gameMode).toBe('LADDER');
   });
 
+  it('removes repeated text while restoring an old local draft', () => {
+    const draft = createEmptyQuizDraft();
+    draft.questions = [
+      sample,
+      { ...sample, id: 'q2', prompt: 'مَا عَاصِمَةُ السُّعُودِيَّة ؟' },
+    ];
+
+    expect(parseQuizDraft(JSON.stringify(draft))?.questions).toEqual([sample]);
+  });
+
   it('adds a question once into localStorage draft', () => {
     localStorage.removeItem(QUIZ_DRAFT_STORAGE_KEY);
     writeQuizDraft(createEmptyQuizDraft());
 
     expect(addQuestionToQuizDraft(sample)).toEqual({ status: 'added', count: 1 });
     expect(addQuestionToQuizDraft(sample)).toEqual({ status: 'exists', count: 1 });
+    expect(
+      addQuestionToQuizDraft({
+        ...sample,
+        id: 'q2',
+        prompt: 'مَا عَاصِمَةُ السُّعُودِيَّة ؟',
+      }),
+    ).toEqual({ status: 'exists', count: 1 });
   });
 
   it('checks whether a bank question supports the selected game mode', () => {

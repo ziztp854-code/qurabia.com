@@ -34,6 +34,7 @@ import {
   type QuizDraftQuestion,
 } from '@/lib/quizzes/quiz-draft';
 import { playHrefForPack } from '@/lib/questions/feed/types';
+import { foldKeyword } from '@/lib/questions/keywords';
 import {
   QuizBuilderQuestionBank,
   type QuestionPageLoader,
@@ -148,8 +149,14 @@ export function QuizBuilder({
   };
 
   const addQuestions = (questions: AvailableBankQuestion[]) => {
+    const seenPrompts = new Set(draft.questions.map((question) => foldKeyword(question.prompt)));
     const fresh = questions
-      .filter((question) => !selectedIds.has(question.id))
+      .filter((question) => {
+        const prompt = foldKeyword(question.prompt);
+        if (selectedIds.has(question.id) || seenPrompts.has(prompt)) return false;
+        seenPrompts.add(prompt);
+        return true;
+      })
       .slice(0, Math.max(0, 100 - draft.questions.length))
       .map<QuizDraftQuestion>((question) => ({
         id: question.id,

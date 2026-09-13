@@ -36,6 +36,7 @@ import {
   selectCategoryBalancedQuestions,
   QUIZ_DRAW_POINTS,
 } from '@/lib/questions/random-selection';
+import { foldKeyword } from '@/lib/questions/keywords';
 
 export type QuizActionResult =
   | { status: 'success'; quizId: string; roomCode: string }
@@ -198,9 +199,10 @@ export async function pickRandomQuizBuilderQuestions(
   const filters = parsed.data;
   const prisma = getPrismaClient();
   const diverse = filters.preset === 'DIVERSE_20';
+  const canManage = canManageQuestions(user.role);
   const where = buildQuizBuilderQuestionWhere({
     userId: user.id,
-    canManage: canManageQuestions(user.role),
+    canManage,
     gameMode: filters.gameMode,
     query: diverse ? '' : filters.query,
     categoryId: diverse ? '' : filters.categoryId,
@@ -208,12 +210,37 @@ export async function pickRandomQuizBuilderQuestions(
 
   try {
     const candidates = await prisma.question.findMany({
-      where: { ...where, id: { notIn: filters.excludeIds ?? [] } },
-      select: { id: true, difficulty: true, categoryId: true },
+      where,
+      select: { id: true, prompt: true, difficulty: true, categoryId: true },
     });
+    const excludedCandidates = filters.excludeIds?.length
+      ? await prisma.question.findMany({
+          where: {
+            ...buildQuizBuilderQuestionWhere({
+              userId: user.id,
+              canManage,
+              gameMode: filters.gameMode,
+              query: '',
+              categoryId: '',
+            }),
+            id: { in: filters.excludeIds },
+          },
+          select: { id: true, prompt: true, difficulty: true, categoryId: true },
+        })
+      : [];
+    const selectionCandidates = [
+      ...new Map(
+        [...candidates, ...excludedCandidates].map((question) => [question.id, question]),
+      ).values(),
+    ];
     const selectedIds = diverse
-      ? selectCategoryBalancedQuestions(candidates, randomUUID(), 20)
-      : selectRandomQuestionsByDifficulty(candidates, filters.counts, randomUUID());
+      ? selectCategoryBalancedQuestions(selectionCandidates, randomUUID(), 20, filters.excludeIds)
+      : selectRandomQuestionsByDifficulty(
+          selectionCandidates,
+          filters.counts,
+          randomUUID(),
+          filters.excludeIds,
+        );
     const selected = await prisma.question.findMany({
       where: { ...where, id: { in: selectedIds } },
       select: {
@@ -326,7 +353,7 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
           categoryId: '',
         }),
       },
-      select: { id: true, version: true },
+      select: { id: true, prompt: true, version: true },
     });
 
     if (availableQuestions.length !== questionIds.length) {
@@ -336,6 +363,21 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
         message:
           'بعض الأسئلة المحددة غير متوافقة مع وضع اللعب، أو لم تعد متاحة بإجابات. راجع الأسئلة المشار إليها ثم أعد النشر.',
         unavailableQuestionIds: questionIds.filter((id) => !availableIds.has(id)),
+      };
+    }
+    const availableById = new Map(availableQuestions.map((question) => [question.id, question]));
+    const seenPrompts = new Set<string>();
+    const repeatedQuestionIds = questionIds.filter((id) => {
+      const prompt = foldKeyword(availableById.get(id)!.prompt);
+      if (seenPrompts.has(prompt)) return true;
+      seenPrompts.add(prompt);
+      return false;
+    });
+    if (repeatedQuestionIds.length > 0) {
+      return {
+        status: 'error',
+        message: 'تحتوي المسابقة على أسئلة مكررة بالنص. احذف النسخ المكررة ثم أعد النشر.',
+        unavailableQuestionIds: repeatedQuestionIds,
       };
     }
     const questionVersions = new Map(

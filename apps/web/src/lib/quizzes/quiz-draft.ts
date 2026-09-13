@@ -6,6 +6,7 @@ import {
   type QuizBuilderGameMode,
   type QuizBuilderQuestion,
 } from '@tahaddi/contracts';
+import { foldKeyword } from '@/lib/questions/keywords';
 
 export { QUIZ_BUILDER_GAME_MODES };
 export type { QuizBuilderGameMode };
@@ -66,6 +67,18 @@ export function createEmptyQuizDraft(): QuizDraft {
   };
 }
 
+function withoutRepeatedPrompts(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  const seen = new Set<string>();
+  return value.filter((question) => {
+    if (!question || typeof question !== 'object' || !('prompt' in question)) return true;
+    const prompt = foldKeyword(String(question.prompt));
+    if (seen.has(prompt)) return false;
+    seen.add(prompt);
+    return true;
+  });
+}
+
 export function parseQuizDraft(value: string): QuizDraft | null {
   try {
     const draft = JSON.parse(value) as Record<string, unknown>;
@@ -82,6 +95,7 @@ export function parseQuizDraft(value: string): QuizDraft | null {
       speedScoring: draft.speedScoring ?? true,
       visibility: draft.visibility ?? 'PRIVATE',
       gameMode: isQuizBuilderGameMode(draft.gameMode) ? draft.gameMode : 'QUIZ',
+      questions: withoutRepeatedPrompts(draft.questions),
     });
     return parsed.success ? parsed.data : null;
   } catch {
@@ -122,7 +136,12 @@ export function addQuestionToQuizDraft({
           'السؤال غير متوافق مع وضع المسابقة الحالي. غيّر الوضع في منشئ المسابقة أو اختر سؤالًا آخر.',
       };
     }
-    if (draft.questions.some((existing) => existing.id === question.id)) {
+    const prompt = foldKeyword(question.prompt);
+    if (
+      draft.questions.some(
+        (existing) => existing.id === question.id || foldKeyword(existing.prompt) === prompt,
+      )
+    ) {
       return { status: 'exists', count: draft.questions.length };
     }
     const next = quizBuilderDraftSchema.safeParse({

@@ -59,7 +59,7 @@ export async function fetchBankQuestions(input: {
 
     const candidates = await prisma.question.findMany({
       where: playableWhere,
-      select: { id: true, categoryId: true },
+      select: { id: true, prompt: true, categoryId: true },
     });
     if (candidates.length === 0) {
       return {

@@ -77,7 +77,7 @@ describe('createQuiz', () => {
       difficulty,
       categoryId: `cat-${index}`,
       category: { name: `فئة ${index}` },
-      prompt: 'سؤال',
+      prompt: `سؤال ${index}`,
       timeLimit: 20,
       basePoints: 9999,
       version: 1,
@@ -104,8 +104,8 @@ describe('createQuiz', () => {
     const where = findMany.mock.calls[0][0].where;
     expect(where).not.toHaveProperty('categoryId');
     expect(where).not.toHaveProperty('AND');
+    expect(where).not.toHaveProperty('id');
     expect(where).toMatchObject({
-      id: { notIn: ['already-added'] },
       gameTypes: { has: 'QUIZ' },
       options: { some: {} },
     });
@@ -142,24 +142,80 @@ describe('createQuiz', () => {
     );
   });
 
+  it('rejects repeated question text stored under different IDs before publishing', async () => {
+    const create = vi.fn();
+    const findMany = vi.fn().mockResolvedValue([
+      { id: 'first', prompt: 'ما عاصمة السعودية؟', version: 1 },
+      { id: 'duplicate', prompt: 'مَا عَاصِمَةُ السُّعُودِيَّة ؟', version: 1 },
+    ]);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany }, quiz: { create } });
+
+    const result = await createQuiz({
+      ...createEmptyQuizDraft(),
+      title: 'مسابقة بلا تكرار',
+      questions: [
+        { id: 'first', prompt: 'قديم', category: '', duration: 20, points: 1000 },
+        { id: 'duplicate', prompt: 'قديم', category: '', duration: 20, points: 1000 },
+      ],
+    });
+
+    expect(result).toMatchObject({
+      status: 'error',
+      unavailableQuestionIds: ['duplicate'],
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('excludes selected questions from random candidates and rechecks access when fetching them', async () => {
-    const findMany = vi.fn().mockResolvedValue([]);
+    const findMany = vi
+      .fn()
+      .mockResolvedValueOnce([
+        { id: 'same-text', prompt: 'سُؤال سابق', difficulty: 'EASY', categoryId: null },
+        { id: 'fresh', prompt: 'سؤال جديد', difficulty: 'EASY', categoryId: null },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'selected', prompt: 'سؤال سابق', difficulty: 'EASY', categoryId: null },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'fresh',
+          prompt: 'سؤال جديد',
+          status: 'PUBLISHED',
+          difficulty: 'EASY',
+          gameTypes: ['QUIZ'],
+          category: null,
+          timeLimit: 20,
+          basePoints: 500,
+          version: 1,
+        },
+      ]);
     mocks.getPrismaClient.mockReturnValue({ question: { findMany } });
-    await pickRandomQuizBuilderQuestions({
+    const result = await pickRandomQuizBuilderQuestions({
       query: '',
       categoryId: '',
       gameMode: 'QUIZ',
-      counts: { EASY: 1, MEDIUM: 0, HARD: 0 },
+      counts: { EASY: 3, MEDIUM: 0, HARD: 0 },
       excludeIds: ['selected'],
     });
+    expect(result).toMatchObject({ status: 'success', questions: [{ id: 'fresh' }] });
     expect(findMany).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ where: expect.objectContaining({ id: { notIn: ['selected'] } }) }),
+      expect.objectContaining({ where: expect.not.objectContaining({ id: expect.anything() }) }),
     );
     expect(findMany).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        where: expect.objectContaining({ options: { some: {} }, gameTypes: { has: 'QUIZ' } }),
+        where: expect.objectContaining({ id: { in: ['selected'] } }),
+      }),
+    );
+    expect(findMany).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { in: ['fresh'] },
+          options: { some: {} },
+          gameTypes: { has: 'QUIZ' },
+        }),
       }),
     );
   });
@@ -169,8 +225,8 @@ describe('createQuiz', () => {
     mocks.getPrismaClient.mockReturnValue({
       question: {
         findMany: vi.fn().mockResolvedValue([
-          { id: 'q1', version: 3 },
-          { id: 'q2', version: 5 },
+          { id: 'q1', prompt: 'السؤال الأول', version: 3 },
+          { id: 'q2', prompt: 'السؤال الثاني', version: 5 },
         ]),
       },
       quiz: { create },
