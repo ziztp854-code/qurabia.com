@@ -12,6 +12,7 @@
   box-shadow: var(--qb-shadow-sm, 0 8px 20px rgb(5 9 8 / 0.28));
   transition:
     transform var(--qb-dur-fast, 160ms) var(--qb-ease, ease),
+    box-shadow var(--qb-dur-fast, 160ms) var(--qb-ease, ease),
     border-color var(--qb-dur-fast, 160ms) var(--qb-ease, ease);
 }
 
@@ -211,9 +212,10 @@
   outline-offset: 2px;
 }
 
-.tile:hover {
-  transform: translateY(-1px);
+.tile[data-view='stage']:hover {
+  transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--tile-accent) 55%, var(--qb-border, var(--surface-stage-line)));
+  box-shadow: var(--qb-shadow-md, 0 14px 30px rgb(5 9 8 / 0.42));
 }
 
 .tile[data-view='list']:hover {
@@ -242,7 +244,8 @@
     transition: none;
   }
 
-  .tile:hover {
+  .tile:hover,
+  .tile[data-view='stage']:hover {
     transform: none;
   }
 }

@@ -295,12 +295,15 @@
 }
 
 .modeOption:has(input:checked) {
-  border-color: color-mix(in srgb, var(--gold) 55%, var(--border));
-  background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--gold) 62%, var(--border));
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 55%),
+    color-mix(in srgb, var(--gold) 8%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent);
 }
 
 .modeOption:has(input:checked)::before {
-  background: var(--gold);
+  background: linear-gradient(var(--gold), var(--primary));
 }
 
 .modeOption:has(input:focus-visible) {
@@ -382,6 +385,8 @@
   overflow: hidden;
   padding-inline-start: calc(var(--space-4) + 0.45rem);
   transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
     border-color 160ms ease,
     background-color 160ms ease;
 }
@@ -406,7 +411,9 @@
 }
 
 .bankItem:hover {
+  transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+  box-shadow: var(--shadow-sm);
 }
 
 .bankItem[data-added] {
@@ -431,19 +438,91 @@
     transition: none;
   }
 
-  .modeOption:hover {
+  .modeOption:hover,
+  .bankItem:hover {
     transform: none;
   }
 }
 
-.selectedItem > div:first-child,
-.bankItem > div:first-child {
+.bankItem > div:first-child,
+.selectedContent {
   min-inline-size: 0;
+}
+
+.selectedContent {
+  flex: 1;
+}
+
+.orderBadge {
+  flex: 0 0 auto;
+  align-self: start;
+  display: grid;
+  place-items: center;
+  inline-size: 2.1rem;
+  block-size: 2.1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--gold) 46%, var(--border));
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--gold) 18%, transparent), transparent 70%),
+    var(--surface-soft);
+  color: color-mix(in srgb, var(--gold) 38%, var(--foreground));
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.selectedItem {
+  position: relative;
+  overflow: hidden;
+  padding-inline-start: calc(var(--space-4) + 0.45rem);
+}
+
+.selectedItem::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.7rem;
+  inset-inline-start: 0;
+  inline-size: 0.28rem;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  pointer-events: none;
 }
 
 .selectedItem strong,
 .bankItem strong {
   overflow-wrap: anywhere;
+}
+
+.emptySelection {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-5);
+  border: 1px dashed color-mix(in srgb, var(--gold) 40%, var(--border));
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--gold) 7%, transparent), transparent 60%),
+    var(--surface-soft);
+  text-align: center;
+}
+
+.emptySelection svg {
+  inline-size: 1.8rem;
+  block-size: 1.8rem;
+  color: var(--gold);
+}
+
+.emptySelection strong {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.emptySelection p {
+  margin: 0;
+  max-inline-size: 34rem;
+  color: var(--muted-foreground);
+  line-height: 1.7;
 }
 
 .questionSettings,
@@ -481,10 +560,12 @@
 }
 
 .summaryGrid strong {
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+  color: color-mix(in srgb, var(--gold) 30%, var(--foreground));
+  letter-spacing: -0.01em;
 }
 
 .summaryGrid span {
@@ -494,13 +575,22 @@
 }
 
 .navigation {
-  position: static;
+  position: sticky;
+  inset-block-end: var(--space-4);
   z-index: var(--z-sticky);
   padding: var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--gold) 24%, var(--border));
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
   box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .navigation {
+    background: var(--card);
+  }
 }
 
 @media (max-width: 700px) {

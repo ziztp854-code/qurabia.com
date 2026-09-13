@@ -1,5 +1,5 @@
 import { formatNumber } from '@/lib/utils';
-import { LayoutGrid, List, Plus, Shuffle } from 'lucide-react';
+import { LayoutGrid, List, Plus, SearchX, Shuffle } from 'lucide-react';
 import Link from 'next/link';
 import { ButtonLink } from '@/components/ui';
 import { QuestionCatalogItem, type CatalogQuestion } from '@/components/questions/question-catalog-item';
@@ -81,8 +81,14 @@ export function QuestionCatalog({
 
       {groups.length === 0 ? (
         <div className={pageStyles.emptyState}>
+          <span className={pageStyles.emptyIcon} aria-hidden="true">
+            <SearchX />
+          </span>
           <h3>لا توجد أسئلة مطابقة</h3>
-          <p>غيّر المجال أو أضف سؤالًا جديدًا.</p>
+          <p>
+            لم نعثر على أسئلة ضمن هذا التصفية. جرّب توسيع المجال أو مسح عوامل التصفية، أو ابدأ
+            بإضافة سؤال جديد إلى البنك.
+          </p>
           <ButtonLink href={emptyComposerHref} variant="gold">
             <Plus aria-hidden="true" />
             إضافة سؤال جديد

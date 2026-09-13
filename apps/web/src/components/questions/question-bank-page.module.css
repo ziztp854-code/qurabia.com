@@ -441,28 +441,54 @@
 
 .emptyState {
   display: grid;
-  gap: 0.75rem;
-  justify-items: start;
-  padding: var(--space-8) var(--space-5);
+  gap: 0.85rem;
+  justify-items: center;
+  padding: var(--space-10) var(--space-5);
   border: 1px dashed color-mix(in srgb, var(--qb-gold, var(--gold)) 38%, var(--qb-border, var(--border)));
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--qb-emerald-deep) 35%, transparent), transparent 70%),
+    radial-gradient(140% 120% at 50% 0%, color-mix(in srgb, var(--qb-gold, var(--gold)) 8%, transparent), transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--qb-emerald-deep) 30%, transparent), transparent 70%),
     var(--qb-surface-2, var(--surface-soft));
+  text-align: center;
+}
+
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
+  margin-block-end: 0.15rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--qb-gold, var(--gold)) 42%, var(--qb-border, var(--border)));
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--qb-gold, var(--gold)) 20%, transparent), transparent 72%),
+    var(--qb-surface, var(--surface-stage));
+  color: var(--qb-gold, var(--gold));
+  box-shadow: inset 0 0 0 0.35rem color-mix(in srgb, var(--qb-gold, var(--gold)) 6%, transparent);
+}
+
+.emptyIcon svg {
+  inline-size: 1.7rem;
+  block-size: 1.7rem;
 }
 
 .emptyState h3 {
   margin: 0;
   color: var(--qb-ivory, var(--foreground));
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 800;
 }
 
 .emptyState p {
   margin: 0;
-  max-inline-size: 36rem;
+  max-inline-size: 34rem;
   color: var(--text-soft);
-  line-height: 1.65;
+  line-height: 1.7;
+}
+
+.emptyState a {
+  margin-block-start: 0.35rem;
 }
 
 .pager {

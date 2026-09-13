@@ -242,15 +242,20 @@ export function QuizBuilder({
 
   const selectedQuestions =
     draft.questions.length === 0 ? (
-      <p className="muted">لم تختر أسئلة بعد.</p>
+      <div className={styles.emptySelection}>
+        <Sparkles aria-hidden="true" />
+        <strong>لم تختر أسئلة بعد</strong>
+        <p>ابحث في البنك بالأسفل وأضف الأسئلة لبناء جولتك — يمكنك اختيار حتى 100 سؤال.</p>
+      </div>
     ) : (
       <ol className={styles.selectedList}>
         {draft.questions.map((question, index) => (
           <li key={question.id} className={styles.selectedItem}>
-            <div>
-              <strong>
-                {formatNumber(index + 1)}. {question.prompt}
-              </strong>
+            <span className={styles.orderBadge} aria-hidden="true">
+              {formatNumber(index + 1)}
+            </span>
+            <div className={styles.selectedContent}>
+              <strong>{question.prompt}</strong>
               <p className="muted">{question.category || 'عام'}</p>
               {unavailableIds.includes(question.id) ? (
                 <p className="text-danger">غير متاح لهذا الوضع؛ أزله واختر بديلًا من البنك.</p>
