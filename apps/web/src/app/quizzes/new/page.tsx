@@ -17,7 +17,7 @@ export default async function NewQuizPage() {
   });
 
   return (
-    <DashboardLayout title="منشئ المسابقة">
+    <DashboardLayout className="command-bank-layout" title="منشئ المسابقة">
       <QuizBuilder initialBank={initialBank} canAddQuestions={canManage} />
     </DashboardLayout>
   );
