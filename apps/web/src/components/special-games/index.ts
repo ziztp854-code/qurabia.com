@@ -6,3 +6,5 @@ export * from './use-chess-socket';
 export * from './category-board-room';
 export * from './millionaire-room';
 export * from './knowledge-tower-room';
+export * from './quote-master-room';
+export * from './quote-master-join';

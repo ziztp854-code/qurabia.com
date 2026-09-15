@@ -2,6 +2,7 @@ import type { SpecialGameMode, SpecialGameMeta } from './special-games';
 import { SPECIAL_GAME_META, SPECIAL_GAME_ORDER, UPCOMING_SPECIAL_GAMES } from './special-games';
 
 export type InstantGameMode =
+  | 'quote-master'
   | 'memory-flash'
   | 'word-code'
   | 'question-word'
@@ -28,6 +29,14 @@ export type InstantGameMeta = {
 };
 
 export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
+  'quote-master': {
+    mode: 'quote-master',
+    title: 'من القائل؟',
+    description: 'بيت شعر أو حكمة خالدة، وأربعة أسماء: اكتشف صاحب القول قبل نفاد الوقت.',
+    roundSeconds: 20,
+    minimumPlayers: 1,
+    contentLabel: '١٢ قولاً',
+  },
   'memory-flash': {
     mode: 'memory-flash',
     title: 'ومضة الذاكرة',
@@ -157,6 +166,7 @@ export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
 };
 
 export const INSTANT_GAME_ORDER: InstantGameMode[] = [
+  'quote-master',
   'knowledge-tower',
   'category-board',
   'millionaire',
@@ -231,6 +241,28 @@ export interface GameSearchSuggestion {
 }
 
 export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
+  {
+    id: 'quote-master',
+    mode: 'quote-master',
+    kind: 'room',
+    title: 'من القائل؟',
+    shortTitle: 'من القائل؟',
+    description:
+      'شاشة عرض فاخرة يقودها المضيف: بيت شعر أو حكمة خالدة وأربعة أسماء من عمالقة الأدب العربي. يدخل المتسابقون بمسح الباركود، وتظهر أسماؤهم في ردهة المضيف، ثم يتنافسون على أعلى نقاط.',
+    minimumPlayers: 2,
+    maximumPlayers: 40,
+    roundSeconds: 20,
+    contentLabel: '١٢ قولاً',
+    year: 2026,
+    difficulty: 4,
+    platforms: ['web', 'pwa', 'mobile'],
+    categories: ['ثقافة', 'ذكاء', 'اجتماعي'],
+    tags: ['شعر', 'حكمة', 'أدب', 'اقتباس', 'باركود', 'مضيف'],
+    accent: '#e8b64c',
+    href: '/games/quote-master',
+    requiresRealtime: true,
+    requiresAuth: false,
+  },
   {
     id: 'knowledge-tower',
     mode: 'knowledge-tower',

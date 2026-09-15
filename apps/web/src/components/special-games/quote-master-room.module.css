@@ -1,0 +1,585 @@
+.room {
+  position: relative;
+  padding-block: 1.75rem 3.5rem;
+  overflow: hidden;
+}
+
+/* خلفية سينمائية ذهبية داكنة توحي بمجلس/مكتبة — تعتمد صور الغلاف المرفقة */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(120% 90% at 50% -10%, color-mix(in srgb, var(--gold) 22%, transparent), transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 60%, #0b0a08), #070604);
+  pointer-events: none;
+}
+
+/* طبقة الصورة السينمائية خلف الواجهة الحيّة */
+.backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.42;
+  filter: blur(3px) brightness(0.7) saturate(1.05);
+}
+
+/* حجاب داكن يحافظ على وضوح النص فوق الصورة */
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% 0%, transparent 30%, color-mix(in srgb, #070604 78%, transparent) 100%),
+    linear-gradient(180deg, color-mix(in srgb, #070604 55%, transparent), color-mix(in srgb, #070604 82%, transparent));
+}
+
+.room[data-phase='lobby'] .backdrop::before,
+.room[data-phase='finished'] .backdrop::before {
+  background-image: url('/game-art/quote-master/cover.png');
+}
+
+.room[data-phase='question'] .backdrop::before,
+.room[data-phase='reveal'] .backdrop::before {
+  background-image: url('/game-art/quote-master/stage.png');
+  opacity: 0.5;
+}
+
+.shell {
+  position: relative;
+  z-index: 1;
+  width: min(1200px, calc(100% - 2rem));
+  margin-inline: auto;
+  display: grid;
+  gap: 1.1rem;
+}
+
+.back {
+  width: fit-content;
+}
+
+/* ─────────── الغلاف ─────────── */
+.cover {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.coverHead {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.emblem {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 1.4rem 2.6rem;
+  border-radius: 1.4rem;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%),
+    color-mix(in srgb, #0c0b09 88%, transparent);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.emblem h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 92%, white), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 30px color-mix(in srgb, var(--gold) 30%, transparent);
+}
+
+.emblem p {
+  margin: 0;
+  color: color-mix(in srgb, var(--gold) 78%, var(--foreground));
+  font-weight: 600;
+}
+
+.emblemIcon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: var(--gold-foreground);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 92%, white), var(--gold));
+  box-shadow: 0 0 26px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+.coverGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: stretch;
+}
+
+.rolesCard,
+.invitePanel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.4rem;
+  border-radius: 1.3rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  background:
+    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 45%),
+    color-mix(in srgb, #0d0c0a 92%, transparent);
+}
+
+.roleCards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.roleCard {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.4rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 32%, transparent);
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  color: color-mix(in srgb, var(--gold) 90%, var(--foreground));
+  font-weight: 700;
+}
+
+.rules {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  line-height: 1.7;
+}
+
+.invitePanel {
+  align-content: start;
+  justify-items: center;
+  text-align: center;
+}
+
+.inviteEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: color-mix(in srgb, var(--gold) 85%, var(--foreground));
+  font-weight: 700;
+}
+
+.qrFrame {
+  padding: 0.85rem;
+  border-radius: 1rem;
+  background: var(--qr-paper);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--gold) 18%, transparent);
+  line-height: 0;
+}
+
+.qrLoading {
+  width: 168px;
+  height: 168px;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--qr-ink) 12%, var(--qr-paper));
+}
+
+.inviteHint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--foreground) 66%, transparent);
+}
+
+.roomCodeBox {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.7rem;
+  border-radius: 0.8rem;
+  border: 1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.roomCodeBox span {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 64%, transparent);
+}
+
+.roomCodeBox strong {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+}
+
+/* ─────────── عرض السؤال ─────────── */
+.stage {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 200px;
+  grid-template-areas: 'timer center score' 'controls controls controls';
+  gap: 1rem;
+  align-items: start;
+}
+
+.centerColumn {
+  grid-area: center;
+  display: grid;
+  gap: 0.85rem;
+  justify-items: center;
+}
+
+.emblemBar {
+  display: grid;
+  place-items: center;
+}
+
+.emblemSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  background: color-mix(in srgb, #0c0b09 82%, transparent);
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.sideCard {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.1rem;
+  border-radius: 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 32%, transparent);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 55%),
+    color-mix(in srgb, #0d0c0a 92%, transparent);
+}
+
+.timerCard {
+  grid-area: timer;
+  justify-items: center;
+  text-align: center;
+}
+
+.sideLabel {
+  color: color-mix(in srgb, var(--foreground) 66%, transparent);
+  font-size: 0.85rem;
+}
+
+.sideCount {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.timerRing {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+}
+
+.timerRing svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.ringTrack {
+  fill: none;
+  stroke: color-mix(in srgb, var(--gold) 16%, transparent);
+  stroke-width: 8;
+}
+
+.ringFill {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.ringFill[data-ending] {
+  stroke: #f87171;
+}
+
+.timerValue {
+  display: grid;
+  justify-items: center;
+}
+
+.timerValue strong {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.timerValue small {
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  font-size: 0.75rem;
+}
+
+.quotePlaque {
+  position: relative;
+  margin: 0;
+  width: 100%;
+  padding: 1.5rem 2rem;
+  border-radius: 1.2rem;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background:
+    radial-gradient(circle at 96% 6%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 45%),
+    color-mix(in srgb, #0b0a08 90%, transparent);
+  box-shadow: inset 0 0 40px color-mix(in srgb, var(--gold) 8%, transparent);
+  display: grid;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.quoteMark {
+  color: color-mix(in srgb, var(--gold) 70%, transparent);
+  font-size: 2rem;
+  line-height: 0.6;
+  font-weight: 900;
+}
+
+.quoteLines {
+  display: grid;
+  gap: 0.3rem;
+  font-size: clamp(1.2rem, 2.8vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.9;
+  color: color-mix(in srgb, var(--gold) 30%, var(--foreground));
+}
+
+.quoteCategory {
+  color: color-mix(in srgb, var(--gold) 80%, var(--foreground));
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.options {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 10%, transparent), transparent),
+    color-mix(in srgb, #0c0b09 88%, transparent);
+  color: var(--foreground);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.option:not(:disabled):hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+.optionKey {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 90%, white), var(--gold));
+  color: var(--gold-foreground);
+  font-weight: 900;
+}
+
+.option[data-correct] {
+  border-color: #34d399;
+  box-shadow: 0 0 24px color-mix(in srgb, #34d399 40%, transparent);
+}
+
+.option[data-correct] .optionKey {
+  background: linear-gradient(160deg, #6ee7b7, #10b981);
+  color: #05261a;
+}
+
+.option[data-wrong] {
+  border-color: #f87171;
+  opacity: 0.85;
+}
+
+.revealNote {
+  margin: 0;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
+  text-align: center;
+  line-height: 1.7;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.dot[data-done] {
+  background: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.dot[data-active] {
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--gold);
+}
+
+.scoreCard {
+  grid-area: score;
+}
+
+.hearts {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  color: #f472b6;
+}
+
+.scoreStats {
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.scoreStats > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.scoreStats dt {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: var(--gold);
+}
+
+.scoreStats dd {
+  margin: 0;
+  display: grid;
+}
+
+.scoreStats dd strong {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--foreground);
+}
+
+.scoreStats dd span {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+}
+
+.scoreStats [data-combo] dd strong {
+  color: #fb923c;
+}
+
+.controls {
+  grid-area: controls;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* ─────────── الختام ─────────── */
+.finale {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2.5rem 1.5rem;
+  border-radius: 1.4rem;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 55%),
+    color-mix(in srgb, #0c0b09 92%, transparent);
+}
+
+.finale h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  color: var(--gold);
+}
+
+.finale p {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+}
+
+.finaleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+/* ─────────── الاستجابة ─────────── */
+@media (max-width: 900px) {
+  .coverGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'timer' 'center' 'score' 'controls';
+  }
+
+  .timerCard,
+  .scoreCard {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    text-align: start;
+    justify-items: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .options,
+  .roleCards {
+    grid-template-columns: 1fr;
+  }
+
+  .roleCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

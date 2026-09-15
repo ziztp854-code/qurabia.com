@@ -1,0 +1,144 @@
+.wrap {
+  position: relative;
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem 3.5rem;
+  overflow: hidden;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, color-mix(in srgb, var(--gold) 20%, transparent), transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 60%, #0b0a08), #070604);
+  pointer-events: none;
+}
+
+.backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/game-art/quote-master/lobby.png') center / cover no-repeat;
+  opacity: 0.35;
+  filter: blur(3px) brightness(0.65);
+}
+
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, #070604 60%, transparent), color-mix(in srgb, #070604 85%, transparent));
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  padding: 1.8rem;
+  border-radius: 1.4rem;
+  text-align: center;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 55%),
+    color-mix(in srgb, #0c0b09 92%, transparent);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+.card h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.emblem {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  color: var(--gold-foreground);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 92%, white), var(--gold));
+  box-shadow: 0 0 26px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+.sub {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
+.codeBox {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.7rem;
+  border-radius: 0.8rem;
+  border: 1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.codeBox span {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 64%, transparent);
+}
+
+.codeBox strong {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+}
+
+.card :global(.field),
+.card form {
+  width: 100%;
+  text-align: start;
+}
+
+.waiting {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 1.1rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+}
+
+.waiting strong {
+  color: var(--gold);
+  font-size: 1.1rem;
+}
+
+.waiting p {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+}
+
+.okIcon {
+  color: #34d399;
+}
+
+.spin {
+  animation: qm-spin 1s linear infinite;
+}
+
+.hostLink {
+  margin-top: 0.2rem;
+}
+
+@keyframes qm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

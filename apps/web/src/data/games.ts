@@ -19,6 +19,10 @@ export type PublicGame = {
 };
 
 const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
+  'quote-master': {
+    image: '/game-art/catalog-v2/quote-master.png',
+    imageAlt: 'بطاقات شعراء ذهبية تحت شعار «من القائل؟» في مجلس أدبي فاخر',
+  },
   'knowledge-tower': {
     image: '/game-art/catalog-v2/knowledge-tower.webp',
     imageAlt: 'برج ذهبي متدرج يصعد نحو قمة مضيئة في برج المعرفة',
