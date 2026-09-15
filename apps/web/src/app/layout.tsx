@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { PresenceBeacon } from '@/components/presence/presence-beacon';
 import { ThemeProvider } from '@/components/theme-provider';
+import { MotionProvider } from '@/components/motion/motion-provider';
 import { SpeedInsights } from '@/components/speed-insights';
 import { buildSiteVerificationMetadata } from '@/lib/metadata/discovery';
 import { SHARE_IMAGE, SHARE_IMAGE_URL, SITE_URL } from '@/lib/metadata/site';
@@ -153,8 +154,10 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
-          <PresenceBeacon />
-          {children}
+          <MotionProvider>
+            <PresenceBeacon />
+            {children}
+          </MotionProvider>
         </ThemeProvider>
         {process.env.VERCEL ? (
           <>

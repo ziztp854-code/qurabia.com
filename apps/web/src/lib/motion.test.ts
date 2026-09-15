@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { getGameMotionScene, getGameSceneMotion, motionDurations } from './motion';
+import {
+  getGameMotionScene,
+  getGameSceneMotion,
+  getRouteEntranceMotion,
+  motionDurations,
+} from './motion';
+
+describe('getRouteEntranceMotion', () => {
+  it('uses a short opacity-only entrance that cannot shift the page layout', () => {
+    const motion = getRouteEntranceMotion();
+
+    expect(motion).toEqual({
+      keyframes: [{ opacity: 0.01 }, { opacity: 1 }],
+      options: {
+        duration: motionDurations.normal * 1000,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      },
+    });
+  });
+
+  it('removes the route entrance when reduced motion is requested', () => {
+    expect(getRouteEntranceMotion(true)).toBeNull();
+  });
+});
 
 describe('getGameSceneMotion', () => {
   it('uses one short transform-and-opacity transition for game scene changes', () => {
