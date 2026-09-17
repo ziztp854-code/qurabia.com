@@ -3,27 +3,40 @@ import { getPrismaClient } from '@/lib/auth/prisma';
 import { requireAdminConsole } from '@/lib/auth/session';
 
 export async function POST(request: Request) {
-  // Verify admin
   await requireAdminConsole();
 
-  const { query } = await request.json();
-  if (!query || typeof query !== 'string' || query.trim() === '') {
-    return NextResponse.json({ error: 'Missing or empty "query" in request body.' }, { status: 400 });
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'بيانات الطلب غير صالحة.' }, { status: 400 });
+  }
+  const query = typeof payload === 'object' && payload !== null ? (payload as { query?: unknown }).query : undefined;
+  const normalizedQuery = typeof query === 'string' ? query.trim() : '';
+  if (!normalizedQuery) {
+    return NextResponse.json({ error: 'يجب إدخال عبارة بحث غير فارغة.' }, { status: 400 });
   }
 
   const prisma = getPrismaClient();
+  const archivedAt = new Date();
 
-  const result = await prisma.question.deleteMany({
+  const result = await prisma.question.updateMany({
     where: {
       prompt: {
-        contains: query,
+        contains: normalizedQuery,
         mode: 'insensitive',
       },
+      status: { not: 'ARCHIVED' },
+    },
+    data: {
+      status: 'ARCHIVED',
+      archivedAt,
+      lastEditedAt: archivedAt,
     },
   });
 
   return NextResponse.json({
-    message: `Deleted questions containing "${query}"`,
-    deletedCount: result.count,
+    message: 'تمت أرشفة الأسئلة المطابقة لعبارة البحث بنجاح.',
+    archivedCount: result.count,
   });
 }

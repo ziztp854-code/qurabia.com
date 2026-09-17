@@ -3,24 +3,24 @@ import { getPrismaClient } from '@/lib/auth/prisma';
 import { requireAdminConsole } from '@/lib/auth/session';
 
 export async function POST() {
-  // Ensure the caller is an admin
   await requireAdminConsole();
 
   const prisma = getPrismaClient();
+  const archivedAt = new Date();
+  const archiveData = {
+    status: 'ARCHIVED' as const,
+    archivedAt,
+    lastEditedAt: archivedAt,
+  };
 
-  // Delete "weird" questions (empty/whitespace prompt or archived)
-  const deleteWeird = await prisma.question.deleteMany({
+  const archiveWeird = await prisma.question.updateMany({
     where: {
-      OR: [
-        { prompt: '' },
-        { prompt: ' ' },
-        { status: 'ARCHIVED' },
-        { prompt: { contains: 'في أي عام ولد لاون التاسع', mode: 'insensitive' } },
-      ],
+      status: { not: 'ARCHIVED' },
+      OR: [{ prompt: '' }, { prompt: ' ' }, { prompt: { contains: 'في أي عام ولد لاون التاسع', mode: 'insensitive' } }],
     },
+    data: archiveData,
   });
 
-  // Delete questions whose source is not Arabic (no Arabic characters)
   const nonArabicQuestions = await prisma.question.findMany({
     where: {
       source: { not: null },
@@ -29,18 +29,21 @@ export async function POST() {
   });
 
   const arabicRegex = /[\u0600-\u06FF]/;
-  const idsToDelete = nonArabicQuestions
+  const idsToArchive = nonArabicQuestions
     .filter((q) => !arabicRegex.test(q.source!))
     .map((q) => q.id);
 
-  const deleteNonArabic = idsToDelete.length
-    ? await prisma.question.deleteMany({ where: { id: { in: idsToDelete } } })
+  const archiveNonArabic = idsToArchive.length
+    ? await prisma.question.updateMany({
+        where: { id: { in: idsToArchive }, status: { not: 'ARCHIVED' } },
+        data: archiveData,
+      })
     : { count: 0 };
 
-  const totalDeleted = deleteWeird.count + deleteNonArabic.count;
+  const archivedCount = archiveWeird.count + archiveNonArabic.count;
 
   return NextResponse.json({
-    message: 'تم حذف الأسئلة الغريبة بنجاح.',
-    deletedCount: totalDeleted,
+    message: 'تمت أرشفة الأسئلة المطابقة بنجاح.',
+    archivedCount,
   });
 }
