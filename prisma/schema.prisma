@@ -151,6 +151,7 @@ model User {
   profile            Profile?
   questions          Question[]
   quizzes            Quiz[]
+  liveParticipations LiveParticipant[]
   hostedLiveSessions LiveSession[] @relation("LiveSessionHost")
   hostedMafiaGames   MafiaGame[]   @relation("MafiaGameHost")
   auditActions       AuditLog[]    @relation("AuditActor")
@@ -314,6 +315,7 @@ model LiveSession {
   roomCode                String            @db.VarChar(8)
   status                  LiveSessionStatus @default(WAITING)
   currentQuestionPosition Int               @default(0)
+  questionRevealedAt      DateTime?
   questionStartedAt       DateTime?
   questionAdvanceAt       DateTime?
   startedAt               DateTime?
@@ -333,6 +335,7 @@ model LiveSession {
 model LiveParticipant {
   id                 String                      @id @default(cuid())
   sessionId          String
+  userId             String?
   displayName        String                      @db.VarChar(80)
   score              Int                         @default(0)
   correctCount       Int                         @default(0)
@@ -345,9 +348,12 @@ model LiveParticipant {
   lastUserAgent      String?                     @db.VarChar(512)
   lastDeviceLabel    String?                     @db.VarChar(120)
   session            LiveSession                 @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user               User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
   answers            LiveAnswer[]
   connections        LiveParticipantConnection[]
 
+  @@unique([sessionId, userId])
+  @@index([userId])
   @@unique([sessionId, displayName])
   @@index([sessionId, score])
 }

@@ -13205,3 +13205,113 @@ select:focus-visible {
     border-radius: 0.55rem;
   }
 }
+
+/* Host control deck: operational hierarchy for the host's first decision. */
+.host-stage {
+  gap: clamp(1rem, 2vw, 1.5rem);
+  max-inline-size: 92rem;
+  margin-inline: auto;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.host-main-header {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.host-main-header::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 12% 0;
+  block-size: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), var(--gold), transparent);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.host-main-header h1 {
+  margin-block: 0.5rem 0.35rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.03em;
+}
+
+.host-main-header .button {
+  min-block-size: 3rem;
+}
+
+.host-command-strip span {
+  gap: 0.45rem;
+}
+
+.host-command-strip svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  color: var(--gold);
+}
+
+.host-command-strip .is-live {
+  border-color: color-mix(in srgb, var(--success) 56%, var(--border));
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+.host-command-strip .is-live svg {
+  color: var(--success);
+}
+
+.host-stat {
+  border-block-start-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+
+.host-sidebar {
+  align-self: start;
+}
+
+.host-panel {
+  transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-normal) ease,
+    box-shadow var(--duration-normal) ease;
+}
+
+.host-panel:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 54%, var(--border));
+}
+
+@media (hover: hover) {
+  .host-panel:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.host-panel--cta {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 12%, transparent), transparent 58%),
+    var(--surface-raised);
+}
+
+.host-panel__description {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.host-quiz-row__content h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 64rem) {
+  .host-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 48rem) {
+  .host-command-strip span {
+    min-block-size: 2.5rem;
+  }
+}

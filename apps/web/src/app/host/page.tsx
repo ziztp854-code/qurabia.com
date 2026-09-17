@@ -1,4 +1,4 @@
-import { MonitorPlay, Radio, Users, Zap, Trophy } from 'lucide-react';
+import { Activity, MonitorPlay, Radio, Users, Zap, Trophy } from 'lucide-react';
 import { startLiveSession } from '@/app/live/actions';
 import { HostLayout } from '@/components/layout';
 import { LiveHostExperience } from '@/components/live';
@@ -97,9 +97,11 @@ export default async function Page({
     ? createHostLiveAccessToken(selectedSession.id, user.id)
     : '';
 
-  const liveSessionCount = selectedSession?._count.participants ?? 0;
+  const liveSessionCount =
+    selectedSession?._count.participants ??
+    sessions.reduce((total, session) => total + session._count.participants, 0);
   const quizCount = quizzes.length;
-  const activeSessionCount = sessions.length;
+  const activeSessionCount = sessions.filter((session) => session.status === 'ACTIVE').length;
   const broadcastHref = selectedSession ? `/display?sessionId=${selectedSession.id}` : '/display';
   const selectedQuestions =
     selectedSession?.quiz.questions.map((item) => ({
@@ -143,9 +145,18 @@ export default async function Page({
               <h1>لوحة المضيف</h1>
               <p>تحكم كامل بالجولة، ومراقبة مباشرة للاعبين والأجوبة.</p>
               <div className="host-command-strip" aria-label="حالة غرفة المضيف">
-                <span>اختر غرفة للتشغيل</span>
-                <span>{formatNumber(liveSessionCount)} لاعب</span>
-                <span>شاشة جاهزة</span>
+                <span className={activeSessionCount > 0 ? 'is-live' : undefined}>
+                  <Activity aria-hidden="true" />
+                  {activeSessionCount > 0 ? 'بث مباشر قيد التشغيل' : 'اختر مسابقة لبدء البث'}
+                </span>
+                <span>
+                  <Users aria-hidden="true" />
+                  {formatNumber(liveSessionCount)} لاعب
+                </span>
+                <span>
+                  <MonitorPlay aria-hidden="true" />
+                  شاشة العرض متاحة
+                </span>
               </div>
             </div>
             <div className="host-main-header__actions">
@@ -183,14 +194,14 @@ export default async function Page({
               <Users aria-hidden="true" />
               <div>
                 <strong>{formatNumber(liveSessionCount)}</strong>
-                <span>لاعب متصل</span>
+                <span>مشاركون في الغرف</span>
               </div>
             </div>
             <div className="host-stat">
               <Trophy aria-hidden="true" />
               <div>
                 <strong>{formatNumber(quizCount)}</strong>
-                <span>مسابقة جاهزة</span>
+                <span>مسابقة محفوظة</span>
               </div>
             </div>
             <div className="host-stat">
@@ -203,10 +214,43 @@ export default async function Page({
           </div>
 
           <div className="host-main-content">
-            <EmptyState
-              title="اختر مسابقة لتشغيلها"
-              description="المسابعات المحفوظة في حسابك تظهر أدناه ويمكن فتح غرفة مباشرة منها."
-            />
+            {sessions.length > 0 ? (
+              <section className="host-panel" aria-label="غرفك المباشرة">
+                <div className="host-panel__header">
+                  <span className="host-panel__title">
+                    <Radio aria-hidden="true" />
+                    غرفك المباشرة
+                  </span>
+                  <span
+                    className={`host-panel__badge${activeSessionCount > 0 ? ' host-panel__badge--live' : ''}`}
+                  >
+                    {activeSessionCount > 0
+                      ? `${formatNumber(activeSessionCount)} نشطة`
+                      : 'بانتظار الانضمام'}
+                  </span>
+                </div>
+                {sessions.map((session) => (
+                  <div className="host-quiz-row" key={session.id}>
+                    <div className="host-quiz-row__content">
+                      <h3>{session.quiz.title}</h3>
+                      <p>
+                        <bdi>{session.roomCode}</bdi> ·{' '}
+                        {session.status === 'WAITING' ? 'بانتظار اللاعبين' : 'المسابقة جارية'} ·{' '}
+                        {formatNumber(session._count.participants)} مشارك
+                      </p>
+                    </div>
+                    <ButtonLink href={`/host?sessionId=${session.id}`} variant="gold" size="sm">
+                      متابعة الغرفة
+                    </ButtonLink>
+                  </div>
+                ))}
+              </section>
+            ) : (
+              <EmptyState
+                title="اختر مسابقة لتشغيلها"
+                description="المسابقات المحفوظة في حسابك تظهر أدناه ويمكن فتح غرفة مباشرة منها."
+              />
+            )}
           </div>
         </div>
 
@@ -255,14 +299,7 @@ export default async function Page({
                 انضم بالرمز
               </span>
             </div>
-            <p
-              style={{
-                margin: 0,
-                color: 'var(--muted-foreground)',
-                fontSize: '0.88rem',
-                lineHeight: 1.6,
-              }}
-            >
+            <p className="host-panel__description">
               شارك رابط الجلسة مع اللاعبين. يدخلون بالاسم فقط، بلا حساب.
             </p>
             <ButtonLink href="/join" variant="outline" fullWidth>
