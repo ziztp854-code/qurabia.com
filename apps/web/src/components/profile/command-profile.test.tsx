@@ -8,6 +8,11 @@ const stats = [
   { label: 'المتابعون', value: '40', hint: 'في جلساتك', series: [2, 6, 9], tone: 'gold' as const },
 ];
 
+function originalImageSource(image: HTMLElement): string {
+  const renderedSource = image.getAttribute('src') ?? '';
+  return new URL(renderedSource, 'http://localhost').searchParams.get('url') ?? renderedSource;
+}
+
 describe('CommandProfile', () => {
   it('يعرض مشهد القيادة للمدير مع التاج والشارات والصلاحيات الفعلية', () => {
     render(
@@ -16,6 +21,7 @@ describe('CommandProfile', () => {
         email="owner@qurabia.com"
         role="OWNER"
         status="ACTIVE"
+        planCode="SULTAN"
         stats={stats}
         platformStats={[
           { label: 'حالة الإعلانات', value: '—', hint: 'لا توجد حملات إعلانية في المنصة' },
@@ -25,8 +31,8 @@ describe('CommandProfile', () => {
       />,
     );
 
-    expect(screen.getByRole('img', { name: /تاج تحدّي/ })).toBeInTheDocument();
-    expect(screen.getByText('تحدي')).toBeInTheDocument();
+    const rankArtwork = screen.getByRole('img', { name: 'بطاقة رتبة السلطان' });
+    expect(originalImageSource(rankArtwork)).toBe('/ranks/sultan.png');
     expect(screen.getByRole('heading', { name: /عبدالعزيز بن سلطان العتيبي/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /شارات القيادة/ })).toBeInTheDocument();
     expect(screen.getByText('مالك المنصة')).toBeInTheDocument();
@@ -59,7 +65,8 @@ describe('CommandProfile', () => {
     );
 
     expect(screen.getByText('لاعب تحدّي')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /تاج تحدّي/ })).toBeInTheDocument();
+    const rankArtwork = screen.getByRole('img', { name: 'بطاقة رتبة المشاهد' });
+    expect(originalImageSource(rankArtwork)).toBe('/ranks/spectator.png');
     expect(screen.queryByRole('link', { name: /إدارة المنصة/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /بنك الأسئلة/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /مسابقة جديدة/ })).toBeInTheDocument();

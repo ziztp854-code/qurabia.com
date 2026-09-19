@@ -320,6 +320,16 @@
     background-color 220ms ease;
 }
 
+.rankBadgeEmblem {
+  inline-size: 1.7rem;
+  block-size: 1.7rem;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--home-gold-bright) 60%, transparent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 45%);
+}
+
 .rankBadge > span {
   font-size: 1.05rem;
   line-height: 1;

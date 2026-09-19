@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { AdminVerifiedName, ButtonLink } from '@/components/ui';
 import {
   PERMISSION_LABELS,
@@ -31,9 +32,15 @@ import {
 import { type SparkTone, type SparkTrend } from '@/lib/profile/metrics';
 import { cn } from '@/lib/utils';
 import { planDefinition, type PlanCode } from '@tahaddi/domain';
-import { CommandCrown } from './command-crown';
 import { CommandSparkline } from './command-sparkline';
 import styles from './command-profile.module.css';
+
+const RANK_IMAGE: Record<PlanCode, string> = {
+  SPECTATOR: '/ranks/spectator.png',
+  KNIGHT: '/ranks/knight.png',
+  PRINCE: '/ranks/prince.png',
+  SULTAN: '/ranks/sultan.png',
+};
 
 export type CommandProfileStat = {
   label: string;
@@ -323,7 +330,25 @@ export function CommandProfile({
           </div>
         </div>
         <div className={styles.crownStage}>
-          <CommandCrown />
+          <Link
+            href="/orders"
+            className={styles.rankShowcase}
+            data-plan={planCode}
+            aria-label={`رتبتك ${planDefinition(planCode).name} — فتح قاعة الأوسمة`}
+          >
+            <Image
+              className={styles.rankShowcaseImage}
+              src={RANK_IMAGE[planCode]}
+              alt={`بطاقة رتبة ${planDefinition(planCode).name}`}
+              width={1024}
+              height={1536}
+              sizes="(max-width: 720px) 60vw, 20rem"
+              priority
+            />
+            <span className={styles.rankShowcaseCaption}>
+              رتبتك الحالية · {planDefinition(planCode).name}
+            </span>
+          </Link>
         </div>
       </header>
 

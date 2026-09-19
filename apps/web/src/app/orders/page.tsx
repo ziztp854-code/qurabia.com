@@ -1,6 +1,7 @@
 import { formatNumber } from '@/lib/utils';
 import type { Metadata } from 'next';
-import { Award, Building2, Crown, Gem, Sparkles, Stamp, Swords } from 'lucide-react';
+import Image from 'next/image';
+import { Crown, Sparkles, Stamp } from 'lucide-react';
 import { ButtonLink } from '@/components/ui';
 import { PageBackButton } from '@/components/layout';
 import {
@@ -19,12 +20,20 @@ import {
   type QuotaSnapshot,
 } from '@/lib/subscription/entitlements';
 import { LoyaltyClaimForm, RedeemStampForm } from './orders-actions';
+import { RankCrest } from '@/components/orders/rank-crest';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'قاعة الأوسمة | تحدّي',
   description: 'رُتب بلاط تحدّي وامتيازاتها: فعّل ختمك الذهبي وارفع مكانتك.',
   alternates: { canonical: '/orders' },
+};
+
+const RANK_IMAGE: Record<PlanCode, string> = {
+  SPECTATOR: '/ranks/spectator.png',
+  KNIGHT: '/ranks/knight.png',
+  PRINCE: '/ranks/prince.png',
+  SULTAN: '/ranks/sultan.png',
 };
 
 const QUOTA_METER_LABELS = {
@@ -121,7 +130,7 @@ export default async function OrdersPage({
 
       <section className={styles.currentRank} aria-label="رتبتك الحالية">
         <div className={styles.crestRing} data-plan={planCode}>
-          <span aria-hidden="true">{currentPlan.emblem}</span>
+          <RankCrest plan={planCode} />
         </div>
         <div className={styles.currentRankCopy}>
           <span>رتبتك الحالية</span>
@@ -163,7 +172,6 @@ export default async function OrdersPage({
         {PLAN_CODES.map((code) => {
           const definition = planDefinition(code);
           const isCurrent = code === planCode;
-          const tierNumber = PLAN_CODES.indexOf(code) + 1;
           return (
             <article
               key={code}
@@ -171,54 +179,27 @@ export default async function OrdersPage({
               data-plan={code}
               data-current={isCurrent}
             >
-              <div className={styles.tierTopline}>
-                <span className={styles.tierRank}>المقام {formatNumber(tierNumber)}</span>
+              <Image
+                className={styles.tierImage}
+                src={RANK_IMAGE[code]}
+                alt={`بطاقة رتبة ${definition.name}`}
+                width={1024}
+                height={1536}
+                sizes="(max-width: 520px) 90vw, (max-width: 860px) 45vw, 22vw"
+              />
+              <div className={styles.tierBadges} aria-hidden={!isCurrent}>
+                <span className={styles.tierPricePill}>
+                  {definition.monthlyPriceSar === 0
+                    ? 'مجانًا'
+                    : `${formatNumber(definition.monthlyPriceSar)} ر.س / شهر`}
+                </span>
                 {isCurrent && <span className={styles.tierStatus}>رتبتك</span>}
               </div>
-              <div className={styles.tierIdentity}>
-                <span className={styles.tierEmblem} aria-hidden="true">
-                  {definition.emblem}
-                </span>
-                <div>
-                  <h3>{definition.name}</h3>
-                  <p className={styles.tierTagline}>{definition.tagline}</p>
-                </div>
-              </div>
-              <p className={styles.tierPrice}>
-                {definition.monthlyPriceSar === 0
-                  ? 'مجانًا'
-                  : `${formatNumber(definition.monthlyPriceSar)} ر.س / شهر`}
+              <p className={styles.tierLimitsLine}>
+                {formatNumber(definition.limits.maxRoomPlayers)} لاعب ·{' '}
+                {formatNumber(definition.limits.maxLiveRoomsPerMonth)} غرفة ·{' '}
+                {formatNumber(definition.limits.aiQuestionsPerMonth)} توليد ذكي / شهر
               </p>
-              <ul className={styles.tierLimits} aria-label={`امتيازات رتبة ${definition.name}`}>
-                <li>
-                  <Swords aria-hidden="true" />
-                  {formatNumber(definition.limits.maxRoomPlayers)} لاعب في الغرفة
-                </li>
-                <li>
-                  <Building2 aria-hidden="true" />
-                  {formatNumber(definition.limits.maxLiveRoomsPerMonth)} غرفة مباشرة شهريًا
-                </li>
-                <li>
-                  <Award aria-hidden="true" />
-                  {formatNumber(definition.limits.maxQuestionsPerMonth)} سؤال في بنكك شهريًا
-                </li>
-                <li>
-                  <Gem aria-hidden="true" />
-                  {formatNumber(definition.limits.aiQuestionsPerMonth)} توليد بالذكاء شهريًا
-                </li>
-                {definition.limits.deepReports && <li>تقارير عميقة للجولات</li>}
-                {definition.limits.customRoomBranding && <li>علامة خاصة على غرفك</li>}
-                {definition.limits.earlyAccessGames && <li>ألعاب جديدة قبل الجميع</li>}
-              </ul>
-              <div className={styles.tierFooter}>
-                {isCurrent ? (
-                  <p className={styles.tierCurrent}>رتبتك الآن</p>
-                ) : (
-                  <p className={styles.tierHint}>
-                    تُفعَّل بختم {definition.name} — اطلبه من إدارة البلاط
-                  </p>
-                )}
-              </div>
             </article>
           );
         })}

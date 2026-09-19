@@ -18,6 +18,13 @@ const RANK_IMAGE: Record<PlanCode, string> = {
   SULTAN: '/ranks/sultan.png',
 };
 
+const RANK_EMBLEM: Record<PlanCode, string> = {
+  SPECTATOR: '/ranks/emblem-spectator.png',
+  KNIGHT: '/ranks/emblem-knight.png',
+  PRINCE: '/ranks/emblem-prince.png',
+  SULTAN: '/ranks/emblem-sultan.png',
+};
+
 const featuredGameIds = ['chess', 'baloot', 'millionaire', 'letter-challenge'] as const;
 const featuredGames = featuredGameIds.flatMap((id) => {
   const game = publicGames.find((item) => item.id === id);
@@ -54,7 +61,13 @@ export function PrestigeHome({
                   data-plan={rank.code}
                   aria-label={`رتبتك ${rank.name} — فتح قاعة الأوسمة`}
                 >
-                  <span aria-hidden="true">{rank.emblem}</span>
+                  <Image
+                    className={styles.rankBadgeEmblem}
+                    src={RANK_EMBLEM[rank.code as PlanCode]}
+                    alt={`شارة رتبة ${rank.name}`}
+                    width={256}
+                    height={256}
+                  />
                   <b>{rank.name}</b>
                 </Link>
               ) : null}

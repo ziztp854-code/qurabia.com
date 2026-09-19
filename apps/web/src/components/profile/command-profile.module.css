@@ -154,6 +154,49 @@
   min-block-size: 16rem;
 }
 
+.rankShowcase {
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+  transition:
+    transform 200ms ease,
+    filter 200ms ease;
+}
+
+.rankShowcase:hover,
+.rankShowcase:focus-visible {
+  transform: translateY(-3px);
+}
+
+.rankShowcase:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: 1rem;
+}
+
+.rankShowcaseImage {
+  inline-size: min(100%, 17rem);
+  block-size: auto;
+  border-radius: 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 45%);
+}
+
+.rankShowcaseCaption {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rankShowcase,
+  .rankShowcase:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
 .crownArt {
   inline-size: min(122%, 31rem);
   block-size: auto;

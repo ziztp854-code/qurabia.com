@@ -29,4 +29,20 @@ describe('PrestigeHome rank showcase', () => {
       expect(originalSource ?? renderedSource).toBe(source);
     }
   });
+
+  it('renders the signed-in player rank as its real emblem artwork', () => {
+    render(
+      <ThemeProvider>
+        <PrestigeHome
+          user={{ name: 'لاعب تحدّي', role: 'USER' }}
+          rank={{ code: 'PRINCE', name: 'الأمير', emblem: '♛' }}
+        />
+      </ThemeProvider>,
+    );
+
+    const emblem = screen.getByRole('img', { name: 'شارة رتبة الأمير' });
+    const renderedSource = emblem.getAttribute('src') ?? '';
+    const originalSource = new URL(renderedSource, 'http://localhost').searchParams.get('url');
+    expect(originalSource ?? renderedSource).toBe('/ranks/emblem-prince.png');
+  });
 });
