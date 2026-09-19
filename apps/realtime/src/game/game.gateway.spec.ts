@@ -67,6 +67,7 @@ describe('GameGateway', () => {
       subjectId: 'player-1',
       accessToken: token,
       role: 'player',
+      deviceId: '018f5e2a-7b66-7b2c-9a51-2397f59d67e1',
     });
 
     expect(gameService.validateIdentity).toHaveBeenCalled();
@@ -78,6 +79,8 @@ describe('GameGateway', () => {
         userAgent:
           'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36',
         deviceLabel: 'Chrome على Android (جوال)',
+        deviceHash:
+          '1dfb19f65447d3a15410c7cb318d10c937d51d12c013dec885e48e99f8decc50',
       },
     );
     expect(client.join).toHaveBeenCalledWith('live:session-1');

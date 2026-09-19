@@ -336,6 +336,7 @@ export class GameService {
                 lastIpAddress: connection.ipAddress,
                 lastUserAgent: connection.userAgent,
                 lastDeviceLabel: connection.deviceLabel,
+                lastDeviceHash: connection.deviceHash,
               }
             : {}),
         },
@@ -352,6 +353,7 @@ export class GameService {
             ipAddress: connection.ipAddress,
             userAgent: connection.userAgent,
             deviceLabel: connection.deviceLabel,
+            deviceHash: connection.deviceHash,
           },
         });
       }

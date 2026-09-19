@@ -110,6 +110,7 @@ export type ClientToServerEvents = {
     subjectId: string;
     accessToken: string;
     role: LiveRole;
+    deviceId?: string;
   }) => void;
   'question:start': (payload: { sessionId: string }) => void;
   'question:next': (payload: { sessionId: string }) => void;

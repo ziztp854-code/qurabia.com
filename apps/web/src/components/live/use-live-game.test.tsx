@@ -24,6 +24,7 @@ import { useLiveGame } from './use-live-game';
 describe('useLiveGame realtime connection', () => {
   beforeEach(() => {
     delete process.env.NEXT_PUBLIC_REALTIME_URL;
+    window.localStorage.setItem('tahaddi.device-id.v1', '018f5e2a-7b66-7b2c-9a51-2397f59d67e1');
     socketState.io.mockClear();
     socketState.socket.listeners.clear();
     socketState.socket.emit.mockClear();
@@ -70,6 +71,14 @@ describe('useLiveGame realtime connection', () => {
 
     socketState.socket.connected = true;
     act(() => socketState.socket.listeners.get('connect')?.());
+
+    expect(socketState.socket.emit).toHaveBeenCalledWith('game:join', {
+      sessionId: 'session-1',
+      subjectId: 'host-1',
+      accessToken: 'signed-token',
+      role: 'host',
+      deviceId: '018f5e2a-7b66-7b2c-9a51-2397f59d67e1',
+    });
     socketState.socket.emit.mockClear();
 
     act(() => result.current.revealQuestion('question-1'));

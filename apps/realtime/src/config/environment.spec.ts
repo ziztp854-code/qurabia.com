@@ -15,6 +15,24 @@ describe('validateEnvironment', () => {
     ).toBe('https://play.example.com,https://admin.example.com');
   });
 
+  it('accepts an optional dedicated device hash secret', () => {
+    expect(
+      validateEnvironment({
+        ...baseEnvironment,
+        LIVE_DEVICE_HASH_SECRET: 'device-hash-secret-with-32-characters',
+      }).LIVE_DEVICE_HASH_SECRET,
+    ).toBe('device-hash-secret-with-32-characters');
+  });
+
+  it('rejects a weak device hash secret when one is provided', () => {
+    expect(() =>
+      validateEnvironment({
+        ...baseEnvironment,
+        LIVE_DEVICE_HASH_SECRET: 'too-short',
+      }),
+    ).toThrow();
+  });
+
   it.each(['*', 'null', 'https://play.example.com/path'])(
     'rejects an unsafe WEB_ORIGIN value: %s',
     (WEB_ORIGIN) => {

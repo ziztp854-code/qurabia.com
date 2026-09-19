@@ -11,6 +11,7 @@ import {
   type ServerToClientEvents,
 } from '@tahaddi/contracts';
 import { io, type Socket } from 'socket.io-client';
+import { getOrCreateDeviceId } from '@/lib/device-identity';
 import { resolveRealtimeNamespaceUrl } from '../special-games/realtime-url';
 
 type LiveSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -42,6 +43,7 @@ export function useLiveGame(input: {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    const deviceId = getOrCreateDeviceId();
     const realtimeUrl = resolveRealtimeNamespaceUrl(
       process.env.NEXT_PUBLIC_REALTIME_URL,
       window.location.origin,
@@ -60,7 +62,7 @@ export function useLiveGame(input: {
       setConnected(true);
       setMessage('');
       bestRtt.current = Number.POSITIVE_INFINITY;
-      socket.emit('game:join', { sessionId, subjectId, accessToken, role });
+      socket.emit('game:join', { sessionId, subjectId, accessToken, role, deviceId });
       socket.emit('clock:ping', { clientSentAt: Date.now() });
     };
     const disconnected = () => {

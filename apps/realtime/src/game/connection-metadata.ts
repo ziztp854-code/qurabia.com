@@ -1,4 +1,5 @@
 import { isIP } from 'node:net';
+import { createHmac } from 'node:crypto';
 import type { Socket } from 'socket.io';
 
 export type LiveConnectionMetadata = {
@@ -6,7 +7,11 @@ export type LiveConnectionMetadata = {
   ipAddress: string | null;
   userAgent: string | null;
   deviceLabel: string;
+  deviceHash: string | null;
 };
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type SocketHandshake = Pick<Socket, 'id' | 'handshake'>;
 
@@ -67,6 +72,8 @@ export function describeDevice(userAgent: string | null) {
 
 export function getLiveConnectionMetadata(
   client: SocketHandshake,
+  deviceId?: string,
+  hashSecret?: string,
 ): LiveConnectionMetadata {
   const headers = client.handshake.headers;
   const ipAddress = normalizeIp(
@@ -76,11 +83,19 @@ export function getLiveConnectionMetadata(
       client.handshake.address,
   );
   const userAgent = sanitizeUserAgent(headers['user-agent']);
+  const normalizedDeviceId = deviceId?.trim().toLowerCase() ?? '';
+  const deviceHash =
+    hashSecret && UUID_PATTERN.test(normalizedDeviceId)
+      ? createHmac('sha256', hashSecret)
+          .update(normalizedDeviceId)
+          .digest('hex')
+      : null;
 
   return {
     socketId: client.id.slice(0, 64),
     ipAddress,
     userAgent,
     deviceLabel: describeDevice(userAgent),
+    deviceHash,
   };
 }

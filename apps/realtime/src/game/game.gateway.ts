@@ -67,6 +67,7 @@ export class GameGateway
       subjectId: string;
       accessToken: string;
       role: LiveRole;
+      deviceId?: string;
     },
   ) {
     if (
@@ -83,6 +84,8 @@ export class GameGateway
     }
 
     const secret = resolveTokenSecret(this.config);
+    const deviceHashSecret =
+      this.config.get<string>('LIVE_DEVICE_HASH_SECRET') ?? secret;
     const identity: LiveSocketIdentity = {
       sessionId: payload.sessionId,
       subjectId: payload.subjectId,
@@ -118,7 +121,7 @@ export class GameGateway
 
     const snapshot = await this.gameService.joined(
       identity,
-      getLiveConnectionMetadata(client),
+      getLiveConnectionMetadata(client, payload.deviceId, deviceHashSecret),
     );
     if (!snapshot) {
       client.emit('game:error', {

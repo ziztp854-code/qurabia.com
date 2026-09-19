@@ -30,16 +30,18 @@ describe('Vercel realtime deployment', () => {
     readFileSync(resolve(__dirname, '../../../package.json'), 'utf8'),
   ) as PackageJson;
 
-  it('routes the Vercel domain to the web app only; realtime runs on its own domain', () => {
+  it('routes realtime handshakes before the web catch-all on the shared domain', () => {
     expect(config.services?.realtime).toMatchObject({
       root: '.',
       entrypoint: 'apps/realtime/vercel-entry.cjs',
       framework: 'nestjs',
     });
-    const sources = (config.rewrites ?? []).map((rewrite) => rewrite.source);
-    expect(sources).toContain('/(.*)');
-    expect(sources.join(' ')).not.toContain('socket.io');
-    expect(sources.join(' ')).not.toContain('/realtime/');
+    expect(config.rewrites?.slice(0, 4)).toEqual([
+      { source: '/socket.io/(.*)', destination: { service: 'realtime' } },
+      { source: '/health', destination: { service: 'realtime' } },
+      { source: '/realtime/(.*)', destination: { service: 'realtime' } },
+      { source: '/(.*)', destination: { service: 'web' } },
+    ]);
   });
 
   it('keeps realtime runtime dependencies visible to the Vercel function packager', () => {

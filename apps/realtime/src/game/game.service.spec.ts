@@ -197,10 +197,15 @@ describe('GameService live safety', () => {
       ipAddress: '203.0.113.44',
       userAgent: 'Mozilla/5.0 Chrome/125.0',
       deviceLabel: 'Chrome على جهاز مكتبي',
+      deviceHash: 'device-hash-1',
     };
 
     await service.joined(identity, connection);
     await service.disconnected(identity, connection.socketId);
+
+    const [participantUpdate] = database.client.liveParticipant.updateMany.mock
+      .calls[0] as unknown as [{ data: { lastDeviceHash: string } }];
+    expect(participantUpdate.data.lastDeviceHash).toBe('device-hash-1');
 
     expect(
       database.client.liveParticipantConnection.upsert,
@@ -212,12 +217,14 @@ describe('GameService live safety', () => {
         ipAddress: '203.0.113.44',
         userAgent: 'Mozilla/5.0 Chrome/125.0',
         deviceLabel: 'Chrome على جهاز مكتبي',
+        deviceHash: 'device-hash-1',
       },
       update: {
         disconnectedAt: null,
         ipAddress: '203.0.113.44',
         userAgent: 'Mozilla/5.0 Chrome/125.0',
         deviceLabel: 'Chrome على جهاز مكتبي',
+        deviceHash: 'device-hash-1',
       },
     });
     expect(

@@ -347,6 +347,7 @@ model LiveParticipant {
   lastIpAddress      String?                     @db.VarChar(45)
   lastUserAgent      String?                     @db.VarChar(512)
   lastDeviceLabel    String?                     @db.VarChar(120)
+  lastDeviceHash     String?                     @db.Char(64)
   session            LiveSession                 @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user               User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
   answers            LiveAnswer[]
@@ -365,12 +366,14 @@ model LiveParticipantConnection {
   ipAddress      String?         @db.VarChar(45)
   userAgent      String?         @db.VarChar(512)
   deviceLabel    String?         @db.VarChar(120)
+  deviceHash     String?         @db.Char(64)
   connectedAt    DateTime        @default(now())
   disconnectedAt DateTime?
   participant    LiveParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@index([participantId, connectedAt])
   @@index([ipAddress])
+  @@index([deviceHash])
 }
 
 model LiveAnswer {

@@ -1,4 +1,26 @@
-# نشر خدمة الزمن الحقيقي على Render
+# نشر خدمة الزمن الحقيقي
+
+## Vercel Services (المسار الحالي)
+
+يُنشَر الويب وخدمة NestJS اللحظية من المشروع نفسه باستخدام Vercel Services.
+يجب ضبط **Framework Preset** للمشروع على **Services**. يوجّه `vercel.json`
+المسارات `/socket.io/*` و`/health` و`/realtime/*` إلى خدمة `realtime` قبل
+المسار العام الذي يذهب إلى خدمة `web`.
+
+- عند استخدام النطاق المشترك `https://qurabia.com` لا يلزم
+  `NEXT_PUBLIC_REALTIME_URL` في الإنتاج؛ يتصل العميل بالنطاق نفسه.
+- يجب توفير `DATABASE_URL` و`AUTH_SECRET` و`REDIS_URL` و`WEB_ORIGIN` لخدمة
+  `realtime`. اجعل `WEB_ORIGIN=https://qurabia.com`.
+- يمكن توفير `LIVE_DEVICE_HASH_SECRET` بقيمة عشوائية مستقلة لا تقل عن 32
+  محرفًا. عند غيابه يُستخدم `AUTH_SECRET` لتوقيع بصمة الجهاز، ولا يُحفظ معرّف
+  المتصفح الخام في قاعدة البيانات.
+- بعد النشر يجب أن يعيد `/health` استجابة 200، وأن يعيد طلب Socket.IO polling
+  على `/socket.io/?EIO=4&transport=polling` حزمة افتتاح تبدأ بالرمز `0`.
+
+تظل تعليمات Render أدناه مسارًا احتياطيًا فقط إذا تقرر فصل الخدمة اللحظية عن
+Vercel مستقبلًا.
+
+## Render (مسار احتياطي)
 
 ## بوابة Upstash
 
@@ -45,6 +67,7 @@
 | `NODE_VERSION` | مضبوط في Blueprint | القيمة الحرفية `24.14.1`؛ لا تُدخلها يدويًا |
 | `DATABASE_URL` | مطلوب | اتصال Supabase المباشر على 5432 مع `connection_limit=5`؛ لا تشغّل migration أثناء النشر |
 | `AUTH_SECRET` | مطلوب | مطابق حرفيًا لسر Auth.js في Vercel |
+| `LIVE_DEVICE_HASH_SECRET` | اختياري | سر HMAC مستقل لا يقل عن 32 محرفًا؛ عند غيابه يُستخدم `AUTH_SECRET` |
 | `REDIS_URL` | مطلوب | نفس نسخة Upstash المستخدمة في Vercel، بصيغة `rediss://` |
 | `WEB_ORIGIN` | مطلوب | `https://qurabia.com` بلا شرطة مائلة نهائية |
 | `SENTRY_DSN` | اختياري | يضاف فقط إذا كانت مراقبة Sentry مفعلة لهذه الخدمة |
@@ -61,7 +84,7 @@
 - دوال التطبيع تقبل الأرقام العربية في إدخال المستخدم، لكنها لا تغيّر القيمة
   المخزنة أو المقارنات الداخلية.
 
-## ربط Vercel والنطاق
+## ربط Vercel والنطاق عند استخدام Render
 
 1. في مشروع الويب على Vercel أضف `NEXT_PUBLIC_REALTIME_URL` إلى Production فقط،
    واجعله يشير إلى النطاق العام لخدمة الزمن الحقيقي.

@@ -22,6 +22,24 @@
   },
   "rewrites": [
     {
+      "source": "/socket.io/(.*)",
+      "destination": {
+        "service": "realtime"
+      }
+    },
+    {
+      "source": "/health",
+      "destination": {
+        "service": "realtime"
+      }
+    },
+    {
+      "source": "/realtime/(.*)",
+      "destination": {
+        "service": "realtime"
+      }
+    },
+    {
       "source": "/(.*)",
       "destination": {
         "service": "web"
