@@ -1,0 +1,280 @@
+/* ------------------------------------------------------------------ */
+/* Shared game-experience components: GameHowTo, Game3DCard,            */
+/* GameConnectionStatus, GameSoundToggle + per-game theme identities.   */
+/* Uses the platform design tokens from tokens.css.                     */
+/* ------------------------------------------------------------------ */
+
+/* Per-game visual identity via a --game-accent theme variable.
+   Applied by setting data-game on any wrapper (section, card…). */
+[data-game='mafia'] {
+  --game-accent: #c62828;
+  --game-accent-soft: rgb(198 40 40 / 0.14);
+  --game-accent-strong: var(--gold);
+}
+[data-game='parallel-world'] {
+  --game-accent: #7c4dff;
+  --game-accent-soft: rgb(124 77 255 / 0.14);
+  --game-accent-strong: #40c4ff;
+}
+[data-game='reverse-time'] {
+  --game-accent: #0288d1;
+  --game-accent-soft: rgb(2 136 209 / 0.14);
+  --game-accent-strong: #4dd0e1;
+}
+[data-game='infiltrator'] {
+  --game-accent: #ef5350;
+  --game-accent-soft: rgb(120 124 136 / 0.16);
+  --game-accent-strong: #42a5f5;
+}
+[data-game='memory-flash'] {
+  --game-accent: #2979ff;
+  --game-accent-soft: rgb(41 121 255 / 0.14);
+  --game-accent-strong: #b388ff;
+}
+[data-game='word-code'] {
+  --game-accent: var(--gold);
+  --game-accent-soft: rgb(255 179 0 / 0.12);
+  --game-accent-strong: #66bb6a;
+}
+[data-game='color-rush'] {
+  --game-accent: var(--accent);
+  --game-accent-soft: rgb(255 111 0 / 0.14);
+  --game-accent-strong: var(--primary);
+}
+[data-game='chess'] {
+  --game-accent: #8b5cf6;
+  --game-accent-soft: rgb(139 92 246 / 0.12);
+  --game-accent-strong: var(--gold);
+}
+
+/* ---------------------------- GameHowTo ---------------------------- */
+
+.game-how-to {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--game-accent, var(--primary));
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+}
+
+.game-how-to__title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--game-accent-strong, var(--primary));
+}
+
+.game-how-to__goal {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.game-how-to__goal svg {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+  color: var(--game-accent, var(--primary));
+}
+
+.game-how-to__goal p {
+  margin: 0.15rem 0 0;
+  color: var(--muted-foreground, inherit);
+}
+
+.game-how-to__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.game-how-to__label svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--game-accent, var(--primary));
+}
+
+.game-how-to__steps ol {
+  margin: 0.5rem 0 0;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.game-how-to__steps li::marker {
+  color: var(--game-accent, var(--primary));
+  font-weight: 700;
+}
+
+.game-how-to__example,
+.game-how-to__tip {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--game-accent-soft, var(--surface-raised));
+  font-size: 0.95rem;
+}
+
+.game-how-to__example svg,
+.game-how-to__tip svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.25rem;
+  color: var(--game-accent-strong, var(--primary));
+}
+
+/* ----------------------- GameConnectionStatus ---------------------- */
+
+.game-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--foreground);
+  background: var(--surface-glass);
+}
+
+.game-connection svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.game-connection[data-state='connected'] {
+  border-color: rgb(102 187 106 / 0.5);
+  color: var(--success);
+}
+
+.game-connection[data-state='connecting'] svg {
+  animation: game-connection-pulse 1.2s ease-in-out infinite;
+}
+
+.game-connection[data-state='failed'] {
+  border-color: rgb(239 83 80 / 0.5);
+  color: var(--danger);
+}
+
+@keyframes game-connection-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* --------------------------- Game3DCard ---------------------------- */
+
+.game-3d-card {
+  perspective: 1100px;
+  width: min(20rem, 100%);
+  margin-inline: auto;
+}
+
+.game-3d-card__inner {
+  position: relative;
+  width: 100%;
+  min-height: 16rem;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
+  cursor: pointer;
+  border-radius: var(--radius-xl);
+  outline-offset: 4px;
+}
+
+.game-3d-card__inner[data-flipped] {
+  transform: rotateY(180deg);
+  cursor: default;
+}
+
+.game-3d-card__face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-bright);
+  background: var(--surface-stage);
+  backface-visibility: hidden;
+}
+
+.game-3d-card__face--back {
+  transform: rotateY(180deg);
+  border-color: var(--game-accent, var(--primary));
+  box-shadow: 0 0 2.5rem var(--game-accent-soft, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-3d-card__inner {
+    transition: none;
+  }
+  .game-connection[data-state='connecting'] svg {
+    animation: none;
+  }
+}
+
+/* ------------------------- GameSoundToggle ------------------------- */
+
+.game-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface-glass);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.game-sound-toggle:hover,
+.game-sound-toggle:focus-visible {
+  border-color: var(--border-bright);
+  color: var(--primary);
+}
+
+.game-sound-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.game-sound-toggle[aria-pressed='true'] {
+  color: var(--muted-foreground, inherit);
+  opacity: 0.75;
+}
+
+/* Role reveal overlay using the shared 3D flip card. */
+.role-reveal .game-3d-card {
+  width: min(26rem, calc(100% - 2rem));
+}
+
+.role-reveal .game-3d-card__inner {
+  min-height: 20rem;
+}
+
+.role-reveal[data-role='infiltrator'] .game-3d-card__face--back {
+  border-color: var(--danger);
+  box-shadow: 0 0 2.5rem rgb(239 83 80 / 0.25);
+}
+
+.role-reveal[data-role='majority'] .game-3d-card__face--back {
+  border-color: var(--primary);
+  box-shadow: 0 0 2.5rem rgb(255 183 77 / 0.2);
+}

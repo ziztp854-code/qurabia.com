@@ -1,0 +1,430 @@
+.hub {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  padding-block: clamp(1.5rem, 4vw, 3rem);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(12rem, 0.7fr);
+  align-items: center;
+  gap: 1.25rem 1.5rem;
+  min-block-size: 14rem;
+  padding: clamp(1.35rem, 3vw, 2.5rem);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 14% 18%, var(--hero-warm-glow), transparent 50%), var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.heroCopy {
+  display: grid;
+  gap: 0.55rem;
+  min-inline-size: 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.eyebrow svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.hero h1,
+.sectionHead h2,
+.featuredCopy h3,
+.cardBody h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.hero h1 {
+  font-size: clamp(2.1rem, 5vw, 3.6rem);
+  line-height: 1.25;
+}
+
+.heroCopy p,
+.sectionHead p,
+.featuredCopy p,
+.cardBody p,
+.path span {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.heroCopy p {
+  max-inline-size: 36rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block-start: 0.35rem;
+}
+
+.heroCopy .guidance {
+  margin-block-start: 0.6rem;
+  font-size: 0.88rem;
+  font-weight: 400;
+}
+
+.heroArt {
+  min-block-size: 15rem;
+  align-self: stretch;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.heroArt img {
+  object-fit: cover;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block-end: 1px solid var(--border);
+}
+
+.stat {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.3rem 1rem 1.2rem;
+  min-inline-size: 0;
+}
+
+.stat span,
+.stat small {
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+
+.stat strong {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.paths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.path {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.path:hover,
+.path:focus-visible {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.path svg {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
+  color: var(--accent);
+}
+
+.path strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.path > span {
+  grid-column: 2 / -1;
+  font-size: 0.88rem;
+}
+
+.path:focus-visible,
+.card:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+.path em {
+  grid-column: 3;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--primary);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-block: 0.75rem 1.5rem;
+}
+
+.sectionHead {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sectionHead h2 {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(16rem, 0.95fr);
+  overflow: hidden;
+  border: 1px solid rgb(255 180 12 / 22%);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.featuredArt,
+.cardArt {
+  position: relative;
+  overflow: hidden;
+  background: #080c12;
+}
+
+.featuredArt {
+  min-block-size: 18rem;
+}
+
+.featuredArt img,
+.cardArt img {
+  object-fit: cover;
+}
+
+.featuredCopy,
+.cardBody {
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  padding: clamp(1.1rem, 2.5vw, 1.8rem);
+}
+
+.featuredCopy h3 {
+  font-size: clamp(1.45rem, 3vw, 2.1rem);
+}
+
+.latestChip,
+.metaChip {
+  justify-self: start;
+  display: inline-flex;
+  min-block-size: 1.9rem;
+  align-items: center;
+  padding-inline: 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.latestChip {
+  border: 1px solid rgb(255 180 12 / 32%);
+  background: rgb(255 184 61 / 10%);
+  color: #ffe1a3;
+}
+
+.metaChip {
+  border: 1px solid rgb(0 212 255 / 24%);
+  background: rgb(0 212 255 / 8%);
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.facts svg {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+  color: var(--accent);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.card {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.card:hover,
+.card:focus-visible {
+  border-color: rgb(0 212 255 / 32%);
+  transform: translateY(-2px);
+}
+
+.cardArt {
+  aspect-ratio: 16 / 10;
+}
+
+.cardBody h3 {
+  font-size: 1.12rem;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.owner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-inline-size: 0;
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.ownerRole,
+.ownerVerified {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 1.45rem;
+  padding-inline: 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ownerRole {
+  border: 1px solid rgb(255 180 12 / 36%);
+  background: rgb(255 184 61 / 12%);
+  color: #ffe1a3;
+}
+
+.ownerVerified {
+  border: 1px solid rgb(0 212 255 / 34%);
+  background: rgb(0 212 255 / 10%);
+  color: #9aecff;
+}
+
+.featuredOwner {
+  margin-block: 0.15rem 0.35rem;
+}
+
+.featuredOwner .owner {
+  font-size: 0.95rem;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .featured,
+  .paths,
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero,
+  .featured {
+    grid-template-columns: 1fr;
+  }
+
+  .heroArt {
+    min-block-size: 11rem;
+    max-block-size: 14rem;
+  }
+
+  .paths {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .paths,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat {
+    padding-inline: 0.35rem;
+  }
+
+  .stat span,
+  .stat small {
+    font-size: 0.75rem;
+  }
+
+  .heroActions > * {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path,
+  .card,
+  .hero,
+  .stat {
+    transform: none;
+    transition: none;
+  }
+}

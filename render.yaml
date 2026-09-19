@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: tahaddi-realtime
+    runtime: node
+    plan: starter
+    region: virginia
+    branch: main
+    autoDeployTrigger: commit
+    numInstances: 1
+    buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm --filter @tahaddi/contracts build && corepack pnpm --filter @tahaddi/database build && corepack pnpm --filter @tahaddi/domain build && corepack pnpm --filter @tahaddi/realtime build
+    startCommand: corepack pnpm --filter @tahaddi/realtime start:prod
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false

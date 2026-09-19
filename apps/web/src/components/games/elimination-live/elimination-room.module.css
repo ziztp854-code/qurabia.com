@@ -1,0 +1,1176 @@
+﻿/* ═══ حلقة الإقصاء — Premium Saudi Gaming UI ═══
+   توكينات موحدة على جذر الغرفة (rgb فقط — لا hex)
+   الألوان من المواصفة: خلفية 2 6 23 · بطاقات 8 13 20 / 14 18 35
+   ذهبي 212 175 55 · مضيء 242 193 78 · حبر 248 250 252 */
+
+.elrRoom {
+  /* Colors */
+  --elr-bg: rgb(2 6 23);
+  --elr-card: rgb(8 13 20);
+  --elr-card-2: rgb(14 18 35);
+  --elr-ink: rgb(248 250 252);
+  --elr-ink-soft: rgb(148 163 184);
+  --elr-gold: rgb(212 175 55);
+  --elr-gold-bright: rgb(242 193 78);
+  --elr-danger: rgb(239 68 68);
+  --elr-success: rgb(34 197 94);
+  --elr-orange: rgb(249 115 22);
+  --elr-violet: rgb(139 92 246);
+  /* Borders & glow */
+  --elr-border: rgb(212 175 55 / 0.16);
+  --elr-border-strong: rgb(212 175 55 / 0.45);
+  --elr-border-critical: rgb(239 68 68 / 0.55);
+  --elr-glow: 0 0 0 1px rgb(242 193 78 / 0.2), 0 16px 50px rgb(242 193 78 / 0.07);
+  --elr-shadow: 0 24px 60px rgb(0 0 0 / 0.55);
+  /* Radius */
+  --elr-radius-sm: 12px;
+  --elr-radius: 18px;
+  --elr-radius-lg: 24px;
+  /* Motion */
+  --elr-fast: 160ms;
+  --elr-normal: 220ms;
+  --elr-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  min-block-size: 100svh;
+  padding-block: clamp(16px, 3vh, 36px);
+  background: var(--elr-bg);
+  color: var(--elr-ink);
+  position: relative;
+  overflow-x: hidden;
+  display: grid;
+  align-content: start;
+}
+
+.elrBackdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(52rem 24rem at 50% -6%, rgb(242 193 78 / 0.09), transparent 62%),
+    radial-gradient(36rem 20rem at 88% 12%, rgb(139 92 246 / 0.05), transparent 60%),
+    radial-gradient(40rem 22rem at 6% 88%, rgb(212 175 55 / 0.05), transparent 62%),
+    linear-gradient(90deg, rgb(242 193 78 / 0.025) 1px, transparent 1px);
+  background-size: auto, auto, auto, 88px 100%;
+}
+
+.elrShell {
+  inline-size: min(100%, 78rem);
+  margin-inline: auto;
+  padding-inline: clamp(12px, 3vw, 28px);
+  display: grid;
+  gap: 18px;
+  z-index: 1;
+  align-content: start;
+}
+
+/* ═══ الترويسة ═══ */
+.elrHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, rgb(242 193 78 / 0.06), transparent 60%), rgb(8 13 20 / 0.85);
+  border: 1px solid var(--elr-border);
+  border-radius: var(--elr-radius-lg);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: var(--elr-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.elrHeader::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 10%;
+  block-size: 1px;
+  background: linear-gradient(90deg, transparent, var(--elr-gold-bright), transparent);
+  opacity: 0.75;
+}
+
+.elrHeaderBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.elrBrandmark {
+  flex: none;
+  inline-size: 44px;
+  block-size: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: rgb(2 6 23);
+  background: linear-gradient(135deg, var(--elr-gold-bright), var(--elr-gold) 55%, rgb(150 101 29));
+  box-shadow:
+    inset 0 1px 0 rgb(248 250 252 / 0.55),
+    3px 4px 0 rgb(92 62 0),
+    0 10px 26px rgb(212 175 55 / 0.28);
+}
+
+.elrHeaderText {
+  min-inline-size: 0;
+}
+
+.elrTitle {
+  margin: 0;
+  font-size: clamp(1.25rem, 3.4vw, 1.8rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(120deg, var(--elr-gold-bright) 20%, var(--elr-ink) 55%, var(--elr-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.elrSubtitle {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--elr-ink-soft);
+}
+
+.elrHeaderMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+
+.elrMetaPill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--elr-card-2);
+  border: 1px solid var(--elr-border);
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.elrMetaPill strong {
+  color: var(--elr-gold-bright);
+  font-size: 0.92rem;
+}
+
+.elrMetaLabel {
+  color: var(--elr-ink-soft);
+  font-weight: 700;
+}
+
+.elrMetaPill[data-difficulty='easy'] strong { color: var(--elr-success); }
+.elrMetaPill[data-difficulty='medium'] strong { color: var(--elr-gold-bright); }
+.elrMetaPill[data-difficulty='hard'] strong {
+  color: var(--elr-violet);
+}
+
+.elrHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.elrIconButton {
+  inline-size: 42px;
+  block-size: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--elr-radius-sm);
+  background: var(--elr-card-2);
+  border: 1px solid var(--elr-border);
+  color: var(--elr-ink-soft);
+  cursor: pointer;
+  transition:
+    color var(--elr-fast) var(--elr-ease),
+    border-color var(--elr-fast),
+    transform var(--elr-fast) var(--elr-ease);
+}
+
+.elrIconButton:hover {
+  color: var(--elr-gold-bright);
+  border-color: var(--elr-border-strong);
+  transform: translateY(-1px);
+}
+
+.elrIconButton:focus-visible {
+  outline: 2px solid var(--elr-gold-bright);
+  outline-offset: 2px;
+}
+
+/* ═══ سلّم الصعوبة ═══ */
+.elrLadder {
+  margin: 0;
+  padding: 12px 18px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgb(8 13 20 / 0.7);
+  border: 1px solid var(--elr-border);
+  border-radius: 999px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.elrLadder::-webkit-scrollbar { display: none; }
+
+.elrLadderStage {
+  flex: 1;
+  min-inline-size: max-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--elr-ink-soft);
+  transition: color var(--elr-normal) var(--elr-ease);
+}
+
+.elrLadderDot {
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 50%;
+  background: rgb(248 250 252 / 0.16);
+  flex: none;
+  transition:
+    background var(--elr-normal) var(--elr-ease),
+    box-shadow var(--elr-normal) var(--elr-ease),
+    transform var(--elr-normal) var(--elr-ease);
+}
+
+.elrLadderStage[data-state='done'] {
+  color: var(--elr-ink);
+}
+
+.elrLadderStage[data-state='done'] .elrLadderDot {
+  background: var(--elr-success);
+  box-shadow: 0 0 8px rgb(34 197 94 / 0.5);
+}
+
+.elrLadderStage[data-state='current'] {
+  color: var(--elr-gold-bright);
+  background: rgb(242 193 78 / 0.08);
+  border: 1px solid var(--elr-border-strong);
+}
+
+.elrLadderStage[data-state='current'] .elrLadderDot {
+  background: var(--elr-gold-bright);
+  box-shadow: 0 0 10px rgb(242 193 78 / 0.65);
+  transform: scale(1.2);
+}
+
+.elrLadderStage[data-state='current'][data-final] {
+  color: var(--elr-danger);
+  background: rgb(239 68 68 / 0.09);
+  border-color: var(--elr-border-critical);
+}
+
+.elrLadderStage[data-state='current'][data-final] .elrLadderDot {
+  background: var(--elr-danger);
+  box-shadow: 0 0 10px rgb(239 68 68 / 0.6);
+}
+
+/* ═══ لوحات عامة ═══ */
+.elrAlert {
+  border: 1px solid var(--elr-border-strong);
+  border-radius: var(--elr-radius);
+  background: rgb(242 193 78 / 0.07);
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.elrAlert p {
+  margin: 0;
+  color: var(--elr-ink-soft);
+}
+
+.elrKicker {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--elr-border-strong);
+  background: rgb(242 193 78 / 0.07);
+  color: var(--elr-gold-bright);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+/* ═══ الدخول ═══ */
+.elrJoinGrid {
+  display: grid;
+  gap: 18px;
+  align-items: stretch;
+}
+
+@media (min-width: 56rem) {
+  .elrJoinGrid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+.elrIntro {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: clamp(20px, 3vw, 32px);
+  background: linear-gradient(180deg, rgb(242 193 78 / 0.05), transparent 30%), var(--elr-card);
+  border: 1px solid var(--elr-border);
+  border-radius: var(--elr-radius-lg);
+  box-shadow: var(--elr-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.elrHeroTitle {
+  margin: 0;
+  font-size: clamp(1.7rem, 4.6vw, 2.7rem);
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.elrHeroTitle span {
+  background: linear-gradient(120deg, var(--elr-gold-bright), var(--elr-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.elrHeroText {
+  margin: 0;
+  color: var(--elr-ink-soft);
+  line-height: 1.9;
+  font-size: 0.95rem;
+}
+
+.elrRules {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.elrRules li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--elr-card-2);
+  border: 1px solid rgb(248 250 252 / 0.07);
+  border-radius: var(--elr-radius-sm);
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+
+.elrRules li::before {
+  content: '◆';
+  flex: none;
+  font-size: 0.6rem;
+  color: var(--elr-gold);
+  transform: translateY(-2px);
+}
+
+.elrEntryPanel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: clamp(20px, 3vw, 30px);
+  background: var(--elr-card);
+  border: 1px solid var(--elr-border);
+  border-radius: var(--elr-radius-lg);
+  box-shadow: var(--elr-shadow);
+}
+
+/* Keep the entry controls visually anchored to the live-stage hierarchy. */
+.elrEntryPanel :is(select, input, button):focus-visible {
+  outline: 2px solid var(--elr-gold-bright);
+  outline-offset: 3px;
+}
+
+.elrEntryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.elrEntryEyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--elr-ink-soft);
+}
+
+.elrEntryPanel h3 {
+  margin: 4px 0 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.elrHostLabel {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--elr-ink-soft);
+  font-weight: 600;
+}
+
+.elrFieldRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 12px;
+}
+
+.elrFieldLabel {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--elr-ink-soft);
+  margin-block-end: 6px;
+}
+
+.elrSelect {
+  inline-size: 100%;
+  min-block-size: 46px;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--elr-radius-sm);
+  border: 1px solid rgb(248 250 252 / 0.12);
+  background: var(--elr-card-2);
+  color: var(--elr-ink);
+  font: inherit;
+  font-weight: 700;
+}
+
+.elrSelect:focus-visible {
+  outline: 2px solid var(--elr-gold-bright);
+  outline-offset: 1px;
+}
+
+/* ═══ العد التنازلي ═══ */
+.elrCountdownWrap {
+  padding: clamp(40px, 10vh, 90px) 16px;
+  text-align: center;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.elrCountdownLabel {
+  margin: 0;
+  color: var(--elr-ink-soft);
+  font-weight: 800;
+}
+
+.elrCountdownNumber {
+  font-size: clamp(4.5rem, 16vw, 9rem);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--elr-gold-bright), var(--elr-gold) 70%, rgb(150 101 29));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 16px 40px rgb(242 193 78 / 0.3));
+}
+
+/* ═══ الانتظار ═══ */
+.elrWaitingStage {
+  display: grid;
+  gap: 16px;
+  padding: clamp(20px, 3vw, 32px);
+  background: var(--elr-card);
+  border: 1px solid var(--elr-border);
+  border-radius: var(--elr-radius-lg);
+  box-shadow: var(--elr-shadow);
+}
+
+.elrWaitingHead h2 {
+  margin: 0;
+  font-weight: 900;
+  font-size: 1.4rem;
+}
+
+.elrWaitingHead p {
+  margin: 4px 0 0;
+  color: var(--elr-ink-soft);
+}
+
+.elrRoomCodeBox {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  background: var(--elr-card-2);
+  border: 1px dashed var(--elr-border-strong);
+  border-radius: var(--elr-radius);
+}
+
+.elrRoomCodeLabel {
+  color: var(--elr-ink-soft);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.elrRoomCodeValue {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0.35em;
+  color: var(--elr-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.elrRosterMeta {
+  font-size: 0.85rem;
+  color: var(--elr-ink-soft);
+  font-weight: 700;
+}
+
+.elrRosterMeta strong {
+  color: var(--elr-gold-bright);
+}
+
+.elrRosterGrid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 8px;
+  max-block-size: 300px;
+  overflow-y: auto;
+}
+
+.elrRosterGrid li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  background: var(--elr-card-2);
+  border: 1px solid rgb(248 250 252 / 0.07);
+  border-radius: var(--elr-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.elrRosterGrid li[data-viewer] {
+  border-color: var(--elr-border-strong);
+  box-shadow: var(--elr-glow);
+}
+
+.elrRosterEmpty {
+  justify-self: start;
+  color: var(--elr-ink-soft);
+}
+
+.elrWaitingActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ═══ الشبكة الرئيسية: سؤال + لاعبون ═══ */
+.elrMainGrid {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .elrMainGrid {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+  }
+
+  .elrPlayersFab,
+  .elrMobileOnly {
+    display: none;
+  }
+}
+
+.elrBoardColumn {
+  display: grid;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+/* ═══ لوحة اللاعبين ═══ */
+.elrPlayersPanel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 18px;
+  background: rgb(8 13 20 / 0.9);
+  border: 1px solid var(--elr-border);
+  border-radius: var(--elr-radius-lg);
+  box-shadow: var(--elr-shadow);
+  position: sticky;
+  inset-block-start: 16px;
+  max-block-size: calc(100svh - 32px);
+  overflow-y: auto;
+}
+
+.elrPanelTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: var(--elr-gold-bright);
+}
+
+.elrPanelTitle strong {
+  margin-inline-start: auto;
+  font-size: 0.9rem;
+  color: var(--elr-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.elrPanelTitleOut {
+  color: var(--elr-danger);
+}
+
+.elrPlayerList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+
+.elrPlayerListOut {
+  opacity: 0.9;
+}
+
+.elrPlayerItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: var(--elr-card-2);
+  border: 1px solid rgb(248 250 252 / 0.07);
+  border-radius: var(--elr-radius-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
+  min-inline-size: 0;
+  transition:
+    border-color var(--elr-normal) var(--elr-ease),
+    background var(--elr-normal),
+    box-shadow var(--elr-normal);
+}
+
+.elrPlayerItem[data-viewer] {
+  border-color: var(--elr-border-strong);
+  box-shadow: var(--elr-glow);
+}
+
+.elrPlayerAvatar {
+  flex: none;
+  inline-size: 28px;
+  block-size: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: rgb(2 6 23);
+  background: linear-gradient(150deg, var(--elr-gold-bright), var(--elr-gold));
+  box-shadow: inset 0 1px 0 rgb(248 250 252 / 0.5);
+}
+
+.elrPlayerName {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* حالة المُقصى: أحمر واضح مع X */
+.elrPlayerOut {
+  border-color: rgb(239 68 68 / 0.4);
+  background: rgb(239 68 68 / 0.07);
+}
+
+.elrPlayerOut .elrPlayerAvatar {
+  background: var(--elr-card);
+  color: var(--elr-danger);
+  border: 1px solid rgb(239 68 68 / 0.5);
+}
+
+.elrPlayerOut .elrPlayerName {
+  color: rgb(252 165 165);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgb(239 68 68 / 0.7);
+}
+
+.elrStatePill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.elrStateActive {
+  color: var(--elr-gold-bright);
+  background: rgb(242 193 78 / 0.1);
+  border: 1px solid var(--elr-border-strong);
+}
+
+.elrStateAnswered {
+  color: var(--elr-success);
+  background: rgb(34 197 94 / 0.1);
+  border: 1px solid rgb(34 197 94 / 0.4);
+}
+
+.elrStateOut {
+  color: var(--elr-danger);
+  background: rgb(239 68 68 / 0.12);
+  border: 1px solid var(--elr-border-critical);
+}
+
+/* زر اللاعبين للهاتف */
+.elrPlayersFab {
+  position: fixed;
+  inset-block-end: calc(16px + env(safe-area-inset-bottom));
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 48px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: rgb(14 18 35 / 0.92);
+  border: 1px solid var(--elr-border-strong);
+  color: var(--elr-gold-bright);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--elr-shadow), var(--elr-glow);
+}
+
+.elrPlayersFab strong {
+  color: var(--elr-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.elrPlayersFab:focus-visible {
+  outline: 2px solid var(--elr-gold-bright);
+  outline-offset: 3px;
+}
+
+.elrSheetBody {
+  display: grid;
+  gap: 8px;
+  max-block-size: 50vh;
+  overflow-y: auto;
+}
+
+/* أزرار المضيف */
+.elrHostActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ═══ حسم الجولة ═══ */
+.elrVerdictStage {
+  display: grid;
+  gap: 18px;
+  padding: clamp(20px, 3vw, 32px);
+  background: var(--elr-card);
+  border: 1px solid var(--elr-border);
+  border-radius: var(--elr-radius-lg);
+  box-shadow: var(--elr-shadow);
+}
+
+/* لافتة الإقصاء الشخصية */
+.elrBlewBanner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: var(--elr-radius);
+  border: 1.5px solid var(--elr-border-critical);
+  background:
+    radial-gradient(20rem 8rem at 85% 0%, rgb(239 68 68 / 0.16), transparent 70%),
+    rgb(239 68 68 / 0.08);
+  animation: elrBlewIn 420ms var(--elr-ease);
+}
+
+.elrBlewBanner > svg {
+  flex: none;
+  inline-size: 52px;
+  block-size: 52px;
+  padding: 12px;
+  border-radius: 16px;
+  color: rgb(248 250 252);
+  background: var(--elr-danger);
+  box-shadow: 0 10px 26px rgb(239 68 68 / 0.4);
+}
+
+.elrBlewBanner strong {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: rgb(252 165 165);
+}
+
+.elrBlewBanner span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--elr-ink-soft);
+  font-weight: 600;
+}
+
+@keyframes elrBlewIn {
+  0% { opacity: 0; transform: translateY(12px) scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* إحصاءات الجولة */
+.elrVerdictStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 10px;
+}
+
+.elrStatChip {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 14px 12px;
+  border-radius: var(--elr-radius);
+  background: var(--elr-card-2);
+  border: 1px solid rgb(248 250 252 / 0.07);
+}
+
+.elrStatChip strong {
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.elrStatChip span {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--elr-ink-soft);
+}
+
+.elrStatSurvived strong {
+  color: var(--elr-success);
+}
+
+.elrStatOut strong {
+  color: var(--elr-danger);
+}
+
+.elrStatNext {
+  border-color: var(--elr-border-strong);
+  background: rgb(242 193 78 / 0.06);
+}
+
+.elrStatNext strong {
+  font-size: 1.1rem;
+  color: var(--elr-gold-bright);
+  align-self: center;
+}
+
+.elrVerdictBody {
+  display: grid;
+  gap: 12px;
+}
+
+.elrVerdictQuestion {
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.8;
+}
+
+.elrVerdictAnswer {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--elr-ink-soft);
+}
+
+.elrVerdictAnswer strong {
+  color: var(--elr-success);
+}
+
+.elrVerdictColumns {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 40rem) {
+  .elrVerdictColumns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ═══ التتويج السينمائي ═══ */
+.elrFinale {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  padding: clamp(32px, 7vw, 64px) clamp(18px, 4vw, 40px) clamp(24px, 4vw, 40px);
+  background: var(--elr-card);
+  border: 1px solid var(--elr-border-strong);
+  border-radius: var(--elr-radius-lg);
+  box-shadow: var(--elr-shadow);
+  overflow: hidden;
+}
+
+.elrFinaleGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(30rem 16rem at 50% 0%, rgb(242 193 78 / 0.22), transparent 68%),
+    radial-gradient(18rem 10rem at 50% 100%, rgb(212 175 55 / 0.12), transparent 70%);
+}
+
+.elrFinaleRays {
+  position: absolute;
+  inset-block-start: -40%;
+  inset-inline: 0;
+  block-size: 80%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 180deg at 50% 100%,
+    transparent 0deg,
+    rgb(242 193 78 / 0.07) 12deg,
+    transparent 24deg,
+    rgb(242 193 78 / 0.07) 36deg,
+    transparent 48deg,
+    rgb(242 193 78 / 0.07) 60deg,
+    transparent 72deg,
+    rgb(242 193 78 / 0.07) 84deg,
+    transparent 96deg,
+    rgb(242 193 78 / 0.07) 108deg,
+    transparent 120deg,
+    rgb(242 193 78 / 0.07) 132deg,
+    transparent 144deg,
+    rgb(242 193 78 / 0.07) 156deg,
+    transparent 168deg,
+    rgb(242 193 78 / 0.07) 180deg,
+    transparent 192deg,
+    rgb(242 193 78 / 0.07) 204deg,
+    transparent 216deg,
+    rgb(242 193 78 / 0.07) 228deg,
+    transparent 240deg,
+    rgb(242 193 78 / 0.07) 252deg,
+    transparent 264deg,
+    rgb(242 193 78 / 0.07) 276deg,
+    transparent 288deg,
+    rgb(242 193 78 / 0.07) 300deg,
+    transparent 312deg,
+    rgb(242 193 78 / 0.07) 324deg,
+    transparent 336deg,
+    rgb(242 193 78 / 0.07) 348deg,
+    transparent 360deg
+  );
+  opacity: 0.8;
+}
+
+.elrFinaleCrown {
+  position: relative;
+  inline-size: 72px;
+  block-size: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  color: rgb(2 6 23);
+  background: linear-gradient(140deg, var(--elr-gold-bright), var(--elr-gold) 60%, rgb(150 101 29));
+  box-shadow:
+    inset 0 1px 0 rgb(248 250 252 / 0.6),
+    0 18px 50px rgb(242 193 78 / 0.4),
+    0 0 0 1px rgb(242 193 78 / 0.4);
+}
+
+.elrFinaleEyebrow {
+  position: relative;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: var(--elr-ink-soft);
+}
+
+.elrFinaleChampion {
+  position: relative;
+  margin: 0;
+  font-size: clamp(1.9rem, 6.5vw, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  background: linear-gradient(160deg, var(--elr-gold-bright) 10%, var(--elr-ink) 50%, var(--elr-gold) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 12px 32px rgb(242 193 78 / 0.25));
+  overflow-wrap: anywhere;
+}
+
+.elrFinalePodium {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+}
+
+.elrPodiumTop {
+  inline-size: clamp(9rem, 24vw, 14rem);
+  block-size: 14px;
+  border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(180deg, var(--elr-gold-bright), var(--elr-gold));
+  box-shadow: 0 -6px 30px rgb(242 193 78 / 0.45);
+}
+
+.elrPodiumStep {
+  inline-size: clamp(11rem, 28vw, 17rem);
+  block-size: clamp(28px, 5vw, 44px);
+  border-radius: 10px 10px 6px 6px;
+  background: linear-gradient(180deg, rgb(14 18 35), rgb(8 13 20));
+  border: 1px solid var(--elr-border-strong);
+  border-block-end: 3px solid var(--elr-gold);
+}
+
+.elrFinaleStats {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.elrFinaleStat {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 12px 20px;
+  border-radius: var(--elr-radius);
+  background: rgb(14 18 35 / 0.9);
+  border: 1px solid var(--elr-border);
+}
+
+.elrFinaleStat strong {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--elr-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.elrFinaleStat span {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--elr-ink-soft);
+}
+
+.elrFinaleNote {
+  position: relative;
+  margin: 0;
+  color: var(--elr-ink-soft);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.elrFinaleActions {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-block-start: 8px;
+}
+
+/* ═══ الخطأ ═══ */
+.elrError {
+  border: 1px solid var(--elr-border-critical);
+  border-radius: var(--elr-radius);
+  background: rgb(239 68 68 / 0.08);
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.elrError p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.elrErrorActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ═══ استجابة الأجهزة ═══ */
+@media (max-width: 64rem) {
+  .elrHeader {
+    padding: 12px 14px;
+  }
+
+  .elrHeaderMeta {
+    order: 3;
+    margin-inline-start: 0;
+    inline-size: 100%;
+  }
+
+  .elrLadder {
+    border-radius: var(--elr-radius);
+  }
+}
+
+@media (max-width: 26rem) {
+  .elrSubtitle {
+    display: none;
+  }
+
+  .elrBrandmark {
+    inline-size: 38px;
+    block-size: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .elrRoom *,
+  .elrRoom *::before,
+  .elrRoom *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

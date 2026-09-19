@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "تحدّي",
+    "slug": "tahaddi-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "tahaddi",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "predictiveBackGestureEnabled": true
+    }
+  }
+}

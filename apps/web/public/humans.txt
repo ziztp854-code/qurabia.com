@@ -1,0 +1,13 @@
+/* TEAM */
+Creator: عبدالعزيز بن سلطان العتيبي
+Site: https://qurabia.com
+
+/* SITE */
+Standards: HTML5, CSS3, Arabic RTL, Schema.org JSON-LD
+Components: Next.js App Router, PostgreSQL, Socket.IO
+Software: تحدّي (Tahaddi / Qurabia)
+
+/* DISCOVERY */
+Sitemap: https://qurabia.com/sitemap.xml
+Robots: https://qurabia.com/robots.txt
+LLMs: https://qurabia.com/llms.txt

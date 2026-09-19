@@ -1,0 +1,327 @@
+/* Arabian Nights · Creative Redesign
+ * genre: opulent, warm, heritage-inspired · anchor hue: warm gold
+ * fingerprint: arabian nights with geometric patterns
+ */
+:root,
+:root[data-theme='dark'] {
+  --font-arabic: 'Cairo Variable', 'Segoe UI', Tahoma, sans-serif;
+  --font-alexandria: 'Alexandria Variable', var(--font-arabic);
+  --font-sans: var(--font-arabic);
+
+  /* Tahaddi official brand identity.
+   * --brand-ink lives only in the semantic contract block below (#050a0e)
+   * to keep a single definition — it used to be redefined with two values.
+   *
+   * Gold scale: every step is a value already shipped somewhere in the UI,
+   * collected here so components can pick a tone without inventing hexes.
+   * 100 lightest → 900 darkest; 500 is the canonical brand gold. */
+  --gold-100: #f3d58b;
+  --gold-200: #ffd66b;
+  --gold-300: #f5b82e;
+  --gold-400: #f2c14e;
+  --gold-500: #d4af37;
+  --gold-600: #b88742;
+  --gold-700: #96651d;
+  --gold-800: #8f6911;
+  --gold-900: #5c3e00;
+  --brand-navy: #111827;
+  --brand-gold: var(--gold-500);
+  --brand-cream: #f2e8d5;
+  --brand-ivory: #fefbf6;
+  --gold-gradient: linear-gradient(135deg, var(--gold-100), var(--gold-500), var(--gold-700));
+  --border-gold: rgb(212 175 55 / 0.38);
+
+  --background: #06020a;
+  --foreground: #fff8ed;
+  --surface: #10081a;
+  --surface-strong: #180e24;
+  --surface-soft: #0a0412;
+  --canvas: var(--background);
+  --card: rgb(16 8 26 / 0.94);
+  --card-foreground: #fff8ed;
+  --popover: rgb(10 4 18 / 0.98);
+  --popover-foreground: #fff8ed;
+  --primary: #ffb74d;
+  --primary-foreground: #1a0f00;
+  --secondary: rgb(255 183 77 / 0.09);
+  --secondary-foreground: #fff8ed;
+  --muted: rgb(255 183 77 / 0.06);
+  --muted-foreground: #a08070;
+  --text-soft: #c8a890;
+  --accent: #ff6f00;
+  /* Dark ink, not cream: white text on #ff6f00 failed WCAG at 2.64:1. */
+  --accent-foreground: #1a0f00;
+  --border: rgb(255 183 77 / 0.18);
+  --border-bright: rgb(255 183 77 / 0.42);
+  --input: rgb(10 4 18 / 0.96);
+  --ring: #ffb74d;
+  --success: #66bb6a;
+  --success-foreground: #0a140a;
+  --danger: #ef5350;
+  --danger-foreground: #fff8ed;
+  --link: #ffb74d;
+  --warning: #ffcc02;
+  --warning-foreground: #1a0f00;
+  --info: #ffab40;
+  --info-foreground: #1a0f00;
+  --admin-verified: #28aee4;
+  --admin-verified-highlight: #5ac8f2;
+  --technical-accent: #00cfef;
+  --technical-accent-foreground: #050a0e;
+  --gold: #ffb300;
+  --gold-foreground: #1a0f00;
+  --quiz-option-a: #ffb74d;
+  --quiz-option-b: #ff8a65;
+  --quiz-option-c: #ffd54f;
+  --quiz-option-d: #ef5350;
+  /* Deeper orange: #e65100 with cream ink measured 3.59:1; #c43c00 passes 4.98:1. */
+  --live-option-orange: #c43c00;
+  --live-option-green: #2e7d32;
+  --live-option-ink: #fff8ed;
+  --live-option-dim: rgb(255 248 237 / 0.48);
+
+  --surface-glass: rgb(6 2 10 / 0.74);
+  --surface-glass-strong: rgb(6 2 10 / 0.9);
+  --surface-stage: rgb(16 8 26 / 0.94);
+  --surface-stage-line: rgb(255 183 77 / 0.28);
+  --surface-stage-hotline: rgb(255 183 77 / 0.62);
+  --quantum-line: rgb(255 183 77 / 0.07);
+  --quantum-line-strong: rgb(255 255 255 / 0.05);
+  --quantum-lime: #ffd54f;
+  --quantum-shadow: rgb(0 0 0 / 0.54);
+  --border-glass: rgb(255 183 77 / 0.18);
+  --hero-warm-glow: rgb(255 143 0 / 0.13);
+  --hero-violet-glow: rgb(255 183 77 / 0.13);
+  --hero-panel-glow: rgb(255 171 64 / 0.18);
+  --hero-deep: #12081e;
+  --overlay: rgb(0 0 0 / 0.72);
+  --overlay-deep: rgb(0 0 0 / 0.82);
+  --overlay-dialog: rgb(0 0 0 / 0.76);
+  --mask-ink: #06020a;
+  --qr-paper: #fff8ed;
+  --qr-ink: #06020a;
+  --surface-raised: rgb(255 183 77 / 0.055);
+  --neutral-silver: #a08070;
+  --neutral-bronze: #ffb300;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 999px;
+  --shadow-sm: 0 12px 30px rgb(0 0 0 / 0.42);
+  --shadow-lg: 0 24px 60px rgb(0 0 0 / 0.54);
+  --shadow-hover: 0 30px 72px rgb(0 0 0 / 0.64);
+  --shadow-gold: 4px 5px 0 #5c3e00;
+  --shadow-cyan: 4px 5px 0 #00495a;
+  --container: 73.75rem;
+  --z-header: 40;
+  --z-popover: 60;
+  --z-dialog: 80;
+  --z-toast: 100;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-pulse: cubic-bezier(0.4, 0, 0.6, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 220ms;
+  --duration-reveal: 550ms;
+}
+
+:root[data-theme='light'] {
+  --background: #fefbf6;
+  --foreground: #111827;
+  --surface: #f8f1e5;
+  --surface-strong: #ffffff;
+  --surface-soft: #f2e8d5;
+  --canvas: var(--background);
+  --card: rgb(255 255 255 / 0.94);
+  --card-foreground: #111827;
+  --popover: rgb(255 255 255 / 0.98);
+  --popover-foreground: #111827;
+  --primary: #9a6a1e;
+  --primary-foreground: #ffffff;
+  --secondary: rgb(154 106 30 / 0.1);
+  --secondary-foreground: #111827;
+  --muted: rgb(154 106 30 / 0.07);
+  --muted-foreground: #6b6256;
+  --text-soft: #62594e;
+  --accent: #9a4f00;
+  --accent-foreground: #ffffff;
+  --border: rgb(154 106 30 / 0.2);
+  --border-bright: rgb(154 106 30 / 0.46);
+  --input: #ffffff;
+  --ring: #9a6a1e;
+  --success: #2e7d32;
+  --success-foreground: #ffffff;
+  --danger: #c62828;
+  --danger-foreground: #ffffff;
+  --link: #85550f;
+  --warning: #9a6700;
+  --warning-foreground: #ffffff;
+  --info: #9a4f00;
+  --info-foreground: #ffffff;
+  --surface-glass: rgb(255 255 255 / 0.76);
+  --surface-glass-strong: rgb(255 255 255 / 0.92);
+  --surface-stage: rgb(255 251 246 / 0.96);
+  --surface-stage-line: rgb(154 106 30 / 0.25);
+  --surface-stage-hotline: rgb(154 106 30 / 0.56);
+  --quantum-line: rgb(154 106 30 / 0.08);
+  --quantum-line-strong: rgb(17 24 39 / 0.06);
+  --quantum-lime: #9a6700;
+  --quantum-shadow: rgb(17 24 39 / 0.14);
+  --border-glass: rgb(154 106 30 / 0.2);
+  --hero-warm-glow: rgb(212 175 55 / 0.14);
+  --hero-violet-glow: rgb(154 106 30 / 0.1);
+  --hero-panel-glow: rgb(212 175 55 / 0.18);
+  --hero-deep: #f2e8d5;
+  --overlay: rgb(17 24 39 / 0.56);
+  --overlay-deep: rgb(17 24 39 / 0.7);
+  --overlay-dialog: rgb(17 24 39 / 0.62);
+  --mask-ink: #111827;
+  --qr-paper: #ffffff;
+  --qr-ink: #111827;
+  --surface-raised: rgb(154 106 30 / 0.06);
+  --neutral-silver: #6b6256;
+  --neutral-bronze: #9a6700;
+  /* Gold as text on ivory previously inherited #ffb300 (1.74:1); dark bronze passes. */
+  --gold: #8f6911;
+  --gold-foreground: #fefbf6;
+  /* Quiz option tiles: darker tints so the white letter badge keeps 4.5:1+. */
+  --quiz-option-a: #9a6a1e;
+  --quiz-option-b: #c2410c;
+  --quiz-option-c: #9a6700;
+  --quiz-option-d: #c62828;
+  --admin-verified: #0369a1;
+  --admin-verified-highlight: #0284c7;
+  --technical-accent: #007f99;
+  --technical-accent-foreground: #ffffff;
+  --shadow-sm: 0 12px 30px rgb(17 24 39 / 0.1);
+  --shadow-lg: 0 24px 60px rgb(17 24 39 / 0.14);
+  --shadow-hover: 0 30px 72px rgb(17 24 39 / 0.18);
+}
+
+/* Product-wide semantic contract. Legacy aliases above remain for component
+ * compatibility; new UI should consume these semantic names. */
+:root {
+  --brand-ink: #050a0e;
+  --brand-navy: #111827;
+  --brand-gold: #d4af37;
+  --brand-gold-bright: #f5b82e;
+  --brand-gold-light: #ffd66b;
+  --brand-cyan: var(--technical-accent);
+  /* Glassmorphism & Effects */
+  --glass-bg: rgba(16, 8, 26, 0.65);
+  --glass-border: rgba(255, 183, 77, 0.12);
+  --glass-blur: blur(20px) saturate(160%);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* Geometric Patterns (Arabian Nights) */
+  --pattern-geometric: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l15 30-15 30-15-30z' fill='%23ffb74d' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  --pattern-stars: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0l2 7 7 2-7 2-2 7-2-7-7-2 7-2z' fill='%2300d4ff' fill-opacity='0.02'/%3E%3C/svg%3E");
+
+  /* Ladder Team Specifics (Refined) */
+  --ladder-gold: #ffb300;
+  --ladder-cyan: #00d4ff;
+  --ladder-gold-glow: rgba(255, 179, 0, 0.4);
+  --ladder-cyan-glow: rgba(0, 212, 255, 0.4);
+  --ladder-gold-tint: rgba(255, 179, 0, 0.08);
+  --ladder-cyan-tint: rgba(0, 212, 255, 0.08);
+  --ladder-gold-edge: rgba(255, 179, 0, 0.25);
+  --ladder-cyan-edge: rgba(0, 212, 255, 0.25);
+
+  /* Single authority: --success/--danger are defined once per theme above.
+   * #16a34a/#dc2626 used to shadow them here but only applied to a bare :root
+   * before the theme script ran, i.e. never in a rendered frame. */
+  --text-on-media: #ffffff;
+  --text-on-gold: #050a0e;
+
+  /* Quiz verdicts and timer tones ride the semantic state colors so both
+   * themes stay consistent (dark keeps #66bb6a/#ef5350 exactly as before). */
+  --quiz-correct: var(--success);
+  --quiz-wrong: var(--danger);
+  --timer-safe: var(--success);
+  --timer-warning: var(--warning);
+  --timer-danger: var(--danger);
+
+  /* Rank identity colors (SPECTATOR/KNIGHT/PRINCE/SULTAN) — shared across rank UIs */
+  --rank-spectator: #94a3b8;
+  --rank-knight: #89a8c6;
+  --rank-prince: #3d9c72;
+  --rank-sultan: var(--brand-gold);
+
+  /* Compatibility aliases for the former styles/tahaddi-tokens.css, consumed
+   * by scrambled-words-room.module.css; values are preserved verbatim. */
+  --tahaddi-gold: #d4af37;
+  --tahaddi-gold-bright: #f2c14e;
+  --tahaddi-gold-soft: #e9c968;
+  --tahaddi-live: #00d9f5;
+  --tahaddi-success: #22c55e;
+  --tahaddi-danger: #ef4444;
+
+  /* «كلمات مفككة» live game — premium Saudi gaming surfaces */
+  --swl-bg: #020617;
+  --swl-card: #080d14;
+  --swl-card-raised: #0e1223;
+  --swl-text: #f8fafc;
+  --swl-warning: #fb923c;
+  --swl-medal-gold: linear-gradient(135deg, #f2c14e, #b88742);
+  --swl-medal-silver: linear-gradient(135deg, #e2e8f0, #94a3b8);
+  --swl-medal-bronze: linear-gradient(135deg, #d59d6a, #9a5b2d);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page-bg: var(--background);
+  --page-bg-secondary: var(--surface-soft);
+  --surface-1: var(--surface);
+  --surface-2: var(--surface-strong);
+  --surface-3: color-mix(in srgb, var(--surface-strong) 88%, white);
+  --surface-hover: color-mix(in srgb, var(--surface-strong) 92%, var(--primary));
+  --text-primary: var(--foreground);
+  --text-secondary: var(--text-soft);
+  --text-muted: var(--muted-foreground);
+  --text-disabled: #69717c;
+  --border-default: var(--border);
+  --border-strong: var(--border-bright);
+  --input-bg: var(--input);
+  --input-text: var(--foreground);
+  --input-placeholder: var(--muted-foreground);
+  --shadow-soft: rgb(0 0 0 / 30%);
+  --shadow-strong: rgb(0 0 0 / 55%);
+  --overlay-bg: var(--overlay);
+  --gold-text: var(--gold);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --page-bg: var(--background);
+  --page-bg-secondary: var(--surface-soft);
+  --surface-1: var(--surface);
+  --surface-2: var(--surface-strong);
+  --surface-3: color-mix(in srgb, var(--surface) 82%, var(--primary));
+  --surface-hover: color-mix(in srgb, var(--surface) 94%, var(--primary));
+  --text-primary: var(--foreground);
+  --text-secondary: var(--text-soft);
+  --text-muted: var(--muted-foreground);
+  --text-disabled: #9ca3af;
+  --border-default: var(--border);
+  --border-strong: var(--border-bright);
+  --input-bg: var(--input);
+  --input-text: var(--foreground);
+  --input-placeholder: var(--muted-foreground);
+  --shadow-soft: rgb(17 24 39 / 10%);
+  --shadow-strong: rgb(17 24 39 / 18%);
+  --overlay-bg: var(--overlay);
+  --gold-text: var(--gold);
+}

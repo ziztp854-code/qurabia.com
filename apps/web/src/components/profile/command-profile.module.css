@@ -1,0 +1,676 @@
+.stage {
+  display: grid;
+  gap: 1.35rem;
+  color: #f7f1e4;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.92fr) minmax(18rem, 1.15fr);
+  align-items: center;
+  gap: 1rem 1.5rem;
+  min-block-size: 18rem;
+  padding: clamp(1.25rem, 3vw, 2.1rem);
+  border: 1px solid rgb(212 175 55 / 38%);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(ellipse at 62% 42%, rgb(255 180 12 / 14%), transparent 46%),
+    linear-gradient(165deg, #16130e 0%, #0c0b09 58%, #090807 100%);
+  box-shadow:
+    0 18px 40px rgb(0 0 0 / 32%),
+    inset 0 1px 0 rgb(255 236 180 / 10%);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(255 180 12 / 8%), transparent 24%, transparent 78%, rgb(255 180 12 / 8%));
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.heroCopy {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-inline-size: 0;
+}
+
+.identityCopy {
+  display: grid;
+  gap: 0.35rem;
+  min-inline-size: 0;
+}
+
+.mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  inline-size: 4.75rem;
+  block-size: 4.75rem;
+  flex: none;
+  border: 2px solid rgb(243 213 139 / 78%);
+  border-radius: 999px;
+  background: linear-gradient(160deg, #f3d58b, var(--brand-gold) 55%, #8a5f14);
+  color: #1a1204;
+  font-size: 1.2rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 4px rgb(212 175 55 / 12%);
+}
+
+.mark img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.displayName {
+  margin: 0;
+  font-size: clamp(1.7rem, 3.4vw, 2.55rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff8ed;
+}
+
+.email {
+  margin: 0;
+  color: #b9a48c;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.roleChip,
+.statusChip,
+.verifiedChip,
+.courtRankChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-block-size: 2.2rem;
+  padding-inline: 0.8rem;
+  border-radius: 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.roleChip svg,
+.statusChip svg,
+.verifiedChip svg {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
+
+.roleChip {
+  border: 1px solid rgb(243 213 139 / 42%);
+  background: rgb(212 175 55 / 10%);
+  color: #ffe1a3;
+}
+
+.roleChipElevated {
+  border-color: rgb(243 213 139 / 58%);
+}
+
+.statusChip {
+  border: 1px solid rgb(46 157 90 / 38%);
+  background: rgb(46 157 90 / 12%);
+  color: #8ee0b0;
+}
+
+.verifiedChip {
+  border: 1px solid rgb(40 174 228 / 32%);
+  background: rgb(12 28 40 / 72%);
+  color: #d7ecf7;
+}
+
+.courtRankChip {
+  border: 1px solid color-mix(in srgb, var(--rank-tone, var(--brand-gold)) 52%, transparent);
+  background: color-mix(in srgb, var(--rank-tone, var(--brand-gold)) 12%, transparent);
+  color: color-mix(in srgb, var(--rank-tone, var(--brand-gold)) 80%, var(--foreground));
+}
+
+.courtRankChip[data-plan='SPECTATOR'] { --rank-tone: var(--rank-spectator); }
+.courtRankChip[data-plan='KNIGHT'] { --rank-tone: var(--rank-knight); }
+.courtRankChip[data-plan='PRINCE'] { --rank-tone: var(--rank-prince); }
+.courtRankChip[data-plan='SULTAN'] { --rank-tone: var(--rank-sultan); }
+
+.crownStage {
+  display: grid;
+  place-items: center;
+  min-block-size: 16rem;
+}
+
+.crownArt {
+  inline-size: min(122%, 31rem);
+  block-size: auto;
+  margin-block: -2rem;
+  filter: drop-shadow(0 0 22px rgb(212 175 55 / 28%));
+}
+
+.badgeRack {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.badgeRackHead {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.badgeRackHead h3,
+.permissions h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: #e8c56b;
+  font-size: 1.15rem;
+}
+
+.badgeRackHead h3 svg,
+.permissions h3 svg {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  color: #e8c56b;
+}
+
+.badgeRackHead p {
+  margin: 0;
+  color: #b9a48c;
+  font-weight: 600;
+}
+
+.badgeShowcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.9fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.badgeCol {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.badgeCard {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+  min-block-size: 5.7rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgb(212 175 55 / 22%);
+  border-radius: 1rem;
+  background: #101014;
+}
+
+.badgeFeatured {
+  min-block-size: 11.5rem;
+  padding: 0.75rem 1.1rem 1.1rem;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+  border-color: rgb(243 213 139 / 55%);
+  background:
+    radial-gradient(circle at 50% 18%, rgb(243 213 139 / 22%), transparent 46%),
+    linear-gradient(180deg, #1a160e, #0e0c09);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 28%);
+}
+
+.badgeGlyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  inline-size: 5rem;
+  block-size: 5rem;
+}
+
+.badgeFeatured .badgeGlyph {
+  inline-size: 9rem;
+  block-size: 9rem;
+}
+
+.badgeArt {
+  object-fit: cover;
+  mix-blend-mode: screen;
+  transform: scale(1.08);
+}
+
+.badgeGlyph svg {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
+}
+
+.badgeFeatured .badgeGlyph svg {
+  inline-size: 2rem;
+  block-size: 2rem;
+}
+
+.badgeCopy {
+  display: grid;
+  gap: 0.22rem;
+  min-inline-size: 0;
+}
+
+.badgeCopy strong {
+  font-size: 0.98rem;
+  line-height: 1.2;
+  color: #fff8ed;
+}
+
+.badgeCopy span {
+  color: #b9a48c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.tone_gold {
+  border-color: rgb(212 175 55 / 42%);
+}
+
+.tone_gold .badgeGlyph {
+  border-color: transparent;
+  background: transparent;
+  color: #1a1204;
+}
+
+.tone_sapphire {
+  border-color: rgb(40 174 228 / 38%);
+}
+
+.tone_sapphire .badgeGlyph {
+  border-color: transparent;
+  background: transparent;
+  color: #e8f7ff;
+}
+
+.tone_emerald {
+  border-color: rgb(46 157 90 / 42%);
+}
+
+.tone_emerald .badgeGlyph {
+  border-color: transparent;
+  background: transparent;
+  color: #ecfff4;
+}
+
+.tone_silver {
+  border-color: rgb(196 201 210 / 32%);
+}
+
+.tone_silver .badgeGlyph {
+  border-color: transparent;
+  background: transparent;
+  color: #1c222c;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.statsElevated {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat {
+  position: relative;
+  display: grid;
+  gap: 0.28rem;
+  min-block-size: 8.5rem;
+  padding: 1.05rem 1.1rem 0.85rem;
+  border: 1px solid rgb(212 175 55 / 28%);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent 42%),
+    #101014;
+}
+
+.statLabel,
+.stat small {
+  color: #b9a48c;
+  font-weight: 700;
+}
+
+.stat strong {
+  color: #e8c56b;
+  font-size: clamp(1.7rem, 3.6vw, 2.45rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statTrend {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-end: 0.75rem;
+}
+
+.trendUp,
+.trendDown {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.trendUp {
+  color: #3ccf7a;
+}
+
+.trendDown {
+  color: #ef5350;
+}
+
+.trendFlat {
+  color: #9a8f82;
+}
+
+.sparklineWrap,
+.sparkline {
+  inline-size: 100%;
+  block-size: 2.25rem;
+  margin-block-start: 0.35rem;
+}
+
+.sparklineWrap {
+  display: block;
+}
+
+.commands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.commandBtn {
+  min-block-size: 3.15rem;
+  justify-content: center;
+  border-color: rgb(212 175 55 / 42%);
+  background: linear-gradient(180deg, #17140f, #0c0b09);
+  color: #f3d58b;
+  box-shadow: inset 0 1px 0 rgb(255 236 180 / 8%);
+}
+
+.commandBtn:nth-child(2) {
+  background: linear-gradient(135deg, rgb(23 36 88 / 88%), #0c0b18);
+}
+
+.commandBtn:nth-child(3) {
+  background: linear-gradient(135deg, rgb(6 65 84 / 88%), #081014);
+}
+
+.commandBtn:nth-child(4) {
+  background: linear-gradient(135deg, rgb(39 25 92 / 88%), #0d0a18);
+}
+
+.commandBtn:hover:not(:disabled) {
+  border-color: rgb(243 213 139 / 62%);
+  color: #fff1c2;
+  transform: translateY(-1px);
+}
+
+.commandBtn:focus-visible {
+  outline: 3px solid #e8c56b;
+  outline-offset: 3px;
+}
+
+.permissions,
+.identity {
+  padding: 1.2rem 1.3rem;
+  border: 1px solid rgb(212 175 55 / 22%);
+  border-radius: 1rem;
+  background: #101014;
+}
+
+.permissions h3 {
+  margin-block-end: 1rem;
+}
+
+.permissions ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.permissions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-block-size: 2.85rem;
+  padding-inline: 0.85rem;
+  border: 1px solid rgb(212 175 55 / 16%);
+  border-radius: 0.8rem;
+  background: rgb(255 184 61 / 5%);
+}
+
+.permissionCopy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff8ed;
+  font-weight: 700;
+}
+
+.permissionCopy svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: #e8c56b;
+}
+
+.permissions em {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-block-size: 1.65rem;
+  padding-inline: 0.55rem;
+  border-radius: 999px;
+  background: rgb(46 157 90 / 16%);
+  color: #8ee0b0;
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.permissions em svg {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+}
+
+.identity {
+  display: grid;
+  gap: 0;
+}
+
+.identity > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-block-size: 3rem;
+  border-block-start: 1px solid rgb(255 255 255 / 8%);
+}
+
+.identity > div:first-child {
+  border-block-start: 0;
+}
+
+.identity dt {
+  color: #b9a48c;
+  font-weight: 700;
+}
+
+.identity dd {
+  margin: 0;
+  font-weight: 800;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #e8c56b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.eyebrow svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.strip {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid rgb(212 175 55 / 28%);
+  border-radius: 1.2rem;
+  background: linear-gradient(135deg, #14110c 0%, #0c0b09 100%);
+}
+
+.stripCopy {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.stripCopy strong {
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.1;
+}
+
+.stripRole {
+  color: #ffe1a3;
+  font-weight: 800;
+}
+
+.stripActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.stripActions a:focus-visible,
+.mark:focus-visible {
+  outline: 3px solid #e8c56b;
+  outline-offset: 3px;
+}
+
+@media (max-width: 1100px) {
+  .commands {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: start;
+  }
+
+  .heroCopy {
+    justify-self: stretch;
+  }
+
+  .crownStage {
+    min-block-size: 15rem;
+    order: -1;
+  }
+
+  .crownArt {
+    inline-size: min(100%, 27rem);
+  }
+
+  .badgeShowcase,
+  .stats,
+  .statsElevated,
+  .permissions ul {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .badgeFeatured {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero,
+  .strip,
+  .heroCopy {
+    display: grid;
+  }
+
+  .mark {
+    inline-size: 4.1rem;
+    block-size: 4.1rem;
+  }
+
+  .crownStage {
+    min-block-size: 12rem;
+  }
+
+  .crownArt {
+    inline-size: min(118%, 23rem);
+    margin-block: -1.5rem;
+  }
+
+  .stats,
+  .statsElevated,
+  .permissions ul,
+  .badgeShowcase,
+  .commands {
+    grid-template-columns: 1fr;
+  }
+
+  .identity > div {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-block: 0.75rem;
+  }
+
+  .commandBtn,
+  .permissions li,
+  .roleChip,
+  .statusChip,
+  .verifiedChip {
+    min-block-size: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero,
+  .strip,
+  .stat,
+  .badgeCard,
+  .commandBtn,
+  .crownArt {
+    transition: none;
+    animation: none;
+    filter: none;
+  }
+
+  .commandBtn:hover:not(:disabled) {
+    transform: none;
+  }
+}

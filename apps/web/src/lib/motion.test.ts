@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest';
+import { getGameMotionScene, getGameSceneMotion, motionDurations } from './motion';
+
+describe('getGameSceneMotion', () => {
+  it('uses one short transform-and-opacity transition for game scene changes', () => {
+    const motion = getGameSceneMotion('reveal');
+
+    expect(motion.initial).toEqual({ y: 10, scale: 1 });
+    expect(motion.animate).toEqual({ y: 0, scale: 1 });
+    expect(motion.transition.duration).toBe(motionDurations.normal);
+  });
+
+  it('removes scene motion when reduced motion is requested', () => {
+    const motion = getGameSceneMotion('finished', true);
+
+    expect(motion.initial).toBe(false);
+    expect(motion.transition.duration).toBe(0);
+  });
+});
+
+describe('getGameMotionScene', () => {
+  it('maps game and quiz status names to presentation-only scenes', () => {
+    expect(getGameMotionScene('parallel-answering')).toBe('question');
+    expect(getGameMotionScene('REVEAL'.toLowerCase())).toBe('reveal');
+    expect(getGameMotionScene('finished')).toBe('finished');
+    expect(getGameMotionScene('lobby')).toBe('intro');
+  });
+});

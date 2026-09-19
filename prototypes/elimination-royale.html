@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>تحدي — حلقة الإقصاء · نموذج تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════════════════════════════════════════
+   حلقة الإقصاء — Live Stage
+   الهوية: تحدي Prestige Live (tokens.css · الوضع الداكن)
+   الخلفية #06020a · الذهب للإجراء · السماوي محصور بالمباشر
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --background: #06020a;
+  --surface: #10081a;
+  --surface-strong: #180e24;
+  --surface-soft: #0a0412;
+  --foreground: #fff8ed;
+  --muted-foreground: #a08070;
+  --text-soft: #c8a890;
+
+  --gold-100: #f3d58b;
+  --gold-200: #ffd66b;
+  --gold-300: #f5b82e;
+  --gold-500: #d4af37;
+  --gold-700: #96651d;
+  --gold-900: #5c3e00;
+  --primary: #ffb74d;
+  --primary-ink: #1a0f00;
+  --gold-gradient: linear-gradient(135deg, var(--gold-100), var(--gold-500), var(--gold-700));
+
+  --cyan: #00cfef;
+  --cyan-ink: #001b20;
+  --danger: #ef5350;
+  --success: #66bb6a;
+
+  --border: rgb(255 183 77 / 0.18);
+  --border-bright: rgb(255 183 77 / 0.42);
+  --stage-line: rgb(255 183 77 / 0.28);
+  --stage-hotline: rgb(255 183 77 / 0.62);
+
+  --quiz-a: #ffb74d;
+  --quiz-b: #ff8a65;
+  --quiz-c: #ffd54f;
+  --quiz-d: #ef5350;
+
+  --shadow-lg: 0 24px 60px rgb(0 0 0 / 0.54);
+  --shadow-gold: 4px 5px 0 var(--gold-900);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur-normal: 220ms;
+  --dur-reveal: 550ms;
+
+  --fs-hero: clamp(1.9rem, 4.6vw, 3.4rem);
+  --fs-q: clamp(1.25rem, 3vw, 2.1rem);
+  --fs-num: clamp(2.6rem, 7vw, 5rem);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scrollbar-color: var(--gold-700) var(--surface-soft); }
+
+body {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  /* شقوق ضوئية ذهبية رفيعة — هندسة الاستوديو الليلي */
+  background-image:
+    radial-gradient(1200px 480px at 50% -10%, rgb(255 143 0 / 0.10), transparent 62%),
+    radial-gradient(900px 420px at 12% 108%, rgb(0 207 239 / 0.05), transparent 60%),
+    linear-gradient(90deg, rgb(255 183 77 / 0.045) 1px, transparent 1px);
+  background-size: auto, auto, 96px 100%;
+}
+
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+
+/* ── الشريط العلوي ─────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: var(--space-3, 12px);
+  padding: 10px clamp(12px, 3vw, 28px);
+  background: rgb(6 2 10 / 0.74);
+  backdrop-filter: blur(14px) saturate(150%);
+  border-block-end: 1px solid var(--border);
+}
+.brandmark {
+  inline-size: 34px; block-size: 34px; flex: none;
+  display: grid; place-items: center;
+  background: var(--gold-gradient);
+  border-radius: 9px;
+  box-shadow: 3px 3px 0 var(--gold-900);
+  font-weight: 900; color: var(--primary-ink); font-size: 15px;
+}
+.topbar .title { font-weight: 800; font-size: 15px; letter-spacing: 0.2px; }
+.topbar .title-sub { font-size: 11.5px; color: var(--muted-foreground); font-weight: 600; }
+
+.live-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px; border-radius: 999px;
+  background: rgb(0 207 239 / 0.09);
+  border: 1px solid rgb(0 207 239 / 0.45);
+  color: var(--cyan);
+  font-weight: 700; font-size: 12px;
+  margin-inline-start: auto;
+}
+.live-dot {
+  inline-size: 8px; block-size: 8px; border-radius: 50%;
+  background: var(--cyan);
+  animation: livePulse 1.6s var(--ease-pulse, cubic-bezier(0.4,0,0.6,1)) infinite;
+}
+@keyframes livePulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgb(0 207 239 / 0.5);} 50% { opacity: .55; box-shadow: 0 0 0 6px transparent; } }
+
+.round-meter {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12.5px; font-weight: 700; color: var(--text-soft);
+}
+.round-meter .pill {
+  padding: 5px 12px; border-radius: 999px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+}
+.round-meter .pill b { color: var(--primary); font-weight: 800; }
+.survivors-chip { color: var(--gold-100); }
+
+@media (max-width: 640px) {
+  .round-meter .pill.rounds { display: none; }
+}
+
+/* ── المسرح ────────────────────────────────────────────── */
+.stage {
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding: clamp(16px, 3.5vw, 40px) clamp(12px, 3vw, 28px) 96px;
+  min-height: calc(100dvh - 56px);
+  display: grid;
+}
+.screen { display: none; }
+.screen.is-active { display: block; animation: screenIn var(--dur-reveal) var(--ease-out); }
+@keyframes screenIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.6px;
+  color: var(--gold-100);
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--stage-hotline);
+  background: rgb(255 183 77 / 0.06);
+}
+.kicker::before { content: ''; inline-size: 6px; block-size: 6px; background: var(--primary); transform: rotate(45deg); }
+
+.hero-title {
+  font-size: var(--fs-hero);
+  font-weight: 900;
+  line-height: 1.18;
+  margin-block: 14px 8px;
+  letter-spacing: -0.5px;
+}
+.hero-title em { font-style: normal; color: var(--primary); }
+.lede { color: var(--text-soft); font-size: clamp(0.95rem, 2vw, 1.1rem); max-inline-size: 46ch; line-height: 1.9; }
+
+/* خط أفقي محفور — لغة الاستوديو */
+.rule-line {
+  block-size: 1px; border: 0; margin-block: 26px;
+  background: linear-gradient(90deg, transparent, var(--stage-hotline) 18%, var(--stage-hotline) 82%, transparent);
+}
+
+/* ── اللوبي ────────────────────────────────────────────── */
+.lobby-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(16px, 3vw, 32px);
+  align-items: start;
+}
+@media (max-width: 880px) { .lobby-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg, 0 24px 60px rgb(0 0 0 / .54));
+  padding: clamp(18px, 2.6vw, 30px);
+  position: relative;
+  overflow: hidden;
+}
+.panel::after {
+  content: ''; position: absolute; inset-block-start: 0; inset-inline: 0; block-size: 1px;
+  background: linear-gradient(90deg, transparent, var(--stage-hotline), transparent);
+}
+
+.rules-list { list-style: none; display: grid; gap: 12px; margin-block-start: 16px; }
+.rules-list li {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 13px 15px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 14.5px; line-height: 1.75;
+}
+.rules-list .idx {
+  flex: none;
+  inline-size: 28px; block-size: 28px;
+  display: grid; place-items: center;
+  background: rgb(255 183 77 / 0.12);
+  border: 1px solid var(--border-bright);
+  color: var(--primary);
+  font-weight: 800; font-size: 13px;
+  border-radius: 8px;
+  transform: rotate(45deg);
+  margin-block-start: 2px;
+}
+.rules-list .idx span { transform: rotate(-45deg); }
+
+.lobby-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block-start: 26px; }
+
+.btn {
+  appearance: none; cursor: pointer; border: 0;
+  font: inherit; font-weight: 800; font-size: 15px;
+  min-block-size: 48px; padding: 12px 26px;
+  border-radius: 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast), filter var(--dur-fast);
+}
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.btn-gold {
+  background: var(--gold-gradient);
+  color: var(--primary-ink);
+  box-shadow: var(--shadow-gold);
+}
+.btn-gold:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.btn-ghost {
+  background: transparent; color: var(--primary);
+  border: 1px solid var(--border-bright);
+}
+.btn-ghost:hover { background: rgb(255 183 77 / 0.07); transform: translateY(-2px); }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; box-shadow: none; transform: none !important; }
+
+/* شبكة اللاعبين الحية */
+.join-count {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-block-start: 4px;
+}
+.join-count .big { font-size: var(--fs-num); font-weight: 900; color: var(--primary); line-height: 1; }
+.join-count .cap { color: var(--muted-foreground); font-weight: 700; font-size: 14px; }
+
+.player-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 9px; margin-block-start: 18px; max-block-size: 320px; overflow-y: auto;
+  scrollbar-width: thin;
+}
+.player-chip {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12.5px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: chipIn 340ms var(--ease-out) both;
+}
+@keyframes chipIn { from { opacity: 0; transform: scale(0.8) translateY(6px);} to { opacity: 1; transform: none; } }
+.player-chip .dot {
+  flex: none; inline-size: 26px; block-size: 26px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: rgb(255 183 77 / 0.14);
+  color: var(--primary);
+  font-size: 11px; font-weight: 800;
+}
+.player-chip.is-new { border-color: var(--stage-hotline); }
+
+.room-code-box {
+  display: flex; align-items: center; gap: 14px;
+  margin-block-start: 20px; padding: 16px 18px;
+  background: var(--surface-soft);
+  border: 1px dashed var(--border-bright);
+  border-radius: 16px;
+}
+.room-code-box .code {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 900; letter-spacing: 0.35em;
+  color: var(--gold-100);
+  font-variant-numeric: tabular-nums;
+}
+.room-code-box .hint { font-size: 12px; color: var(--muted-foreground); font-weight: 600; line-height: 1.7; }
+
+/* ── مقدمة الجولة ──────────────────────────────────────── */
+.round-intro { text-align: center; padding-block: clamp(30px, 8vh, 90px); }
+.round-kicker-row { display: flex; justify-content: center; }
+.round-num {
+  font-size: clamp(4.5rem, 16vw, 11rem);
+  font-weight: 900; line-height: 0.95;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 14px 34px rgb(255 143 0 / 0.28));
+  font-variant-numeric: tabular-nums;
+}
+.round-label { font-size: clamp(1.15rem, 2.6vw, 1.7rem); font-weight: 800; margin-block-start: 6px; }
+.round-meta {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-block-start: 22px;
+}
+.stat-pill {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 10px 18px; border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13.5px; font-weight: 700; color: var(--text-soft);
+}
+.stat-pill b { color: var(--foreground); font-weight: 800; }
+.stat-pill .glyph { color: var(--primary); font-size: 15px; }
+
+/* ── شريط الناجين ──────────────────────────────────────── */
+.survivors-strip {
+  display: flex; align-items: center; gap: 12px;
+  margin-block: 22px;
+  padding: 11px 16px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.survivors-strip::-webkit-scrollbar { display: none; }
+.survivors-strip .s-label { flex: none; font-size: 12px; font-weight: 800; color: var(--muted-foreground); }
+.survivors-strip .s-avatars { display: flex; gap: -6px; }
+.mini-avatar {
+  flex: none;
+  inline-size: 30px; block-size: 30px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 800;
+  background: var(--surface-strong);
+  border: 1.5px solid var(--border-bright);
+  color: var(--gold-100);
+  margin-inline-start: -7px;
+  transition: all var(--dur-normal) var(--ease-out);
+}
+.mini-avatar.is-out {
+  background: transparent;
+  border-color: rgb(239 83 80 / 0.4);
+  color: rgb(239 83 80 / 0.75);
+  text-decoration: line-through;
+  transform: scale(0.82);
+}
+
+/* ── مسرح السؤال ───────────────────────────────────────── */
+.question-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  margin-block-end: 18px;
+}
+.timer-wrap { display: flex; align-items: center; gap: 10px; }
+.timer-ring { position: relative; inline-size: 64px; block-size: 64px; flex: none; }
+.timer-ring svg { transform: rotate(-90deg); display: block; }
+.timer-ring .track { stroke: rgb(255 183 77 / 0.14); }
+.timer-ring .arc {
+  stroke: var(--timer-color, var(--success));
+  stroke-linecap: round;
+  transition: stroke-dashoffset 950ms linear, stroke 400ms;
+}
+.timer-ring .val {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-weight: 900; font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.timer-state { font-size: 12.5px; font-weight: 700; color: var(--muted-foreground); }
+.timer-state b { color: var(--timer-color, var(--success)); font-size: 14px; }
+
+.question-card {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--primary);
+  border-radius: 20px;
+  padding: clamp(20px, 3vw, 34px);
+  box-shadow: var(--shadow-lg);
+}
+.question-text {
+  font-size: var(--fs-q);
+  font-weight: 800;
+  line-height: 1.65;
+  letter-spacing: -0.2px;
+}
+.question-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-block-start: 12px; }
+.meta-tag {
+  font-size: 11.5px; font-weight: 700;
+  padding: 4px 11px; border-radius: 999px;
+  background: rgb(255 183 77 / 0.08);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+}
+.meta-tag.diff-hard { color: #ff8a80; border-color: rgb(239 83 80 / 0.4); background: rgb(239 83 80 / 0.07); }
+.meta-tag.diff-easy { color: #a5d6a7; border-color: rgb(102 187 106 / 0.4); background: rgb(102 187 106 / 0.07); }
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin-block-start: 22px;
+}
+@media (max-width: 680px) { .options { grid-template-columns: 1fr; } }
+
+.option {
+  position: relative;
+  display: flex; align-items: center; gap: 15px;
+  min-block-size: 64px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--foreground);
+  font: inherit; font-size: clamp(0.95rem, 1.9vw, 1.1rem); font-weight: 700;
+  text-align: start;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast), background var(--dur-fast);
+}
+.option:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--border-bright); }
+.option:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.option .letter {
+  flex: none;
+  inline-size: 38px; block-size: 38px;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  font-size: 17px; font-weight: 900;
+  color: var(--primary-ink);
+  background: var(--opt-color, var(--quiz-a));
+}
+.option.is-picked { border-color: var(--opt-color, var(--quiz-a)); background: rgb(255 183 77 / 0.05); }
+.option.is-correct { border-color: var(--success); background: rgb(102 187 106 / 0.1); }
+.option.is-correct .letter { background: var(--success); color: #0a140a; }
+.option.is-wrong { border-color: var(--danger); background: rgb(239 83 80 / 0.08); opacity: 0.75; }
+.option.is-wrong .letter { background: var(--danger); color: #fff8ed; }
+.option.is-wrong { animation: shake 380ms var(--ease-out); }
+@keyframes shake { 0%,100% { transform: none; } 25% { transform: translateX(5px);} 50% { transform: translateX(-5px);} 75% { transform: translateX(3px);} }
+.option:disabled { cursor: default; }
+.option .mark { margin-inline-start: auto; font-size: 18px; }
+
+/* ── كشف الإقصاء ───────────────────────────────────────── */
+.verdict-panel {
+  margin-block-start: 26px;
+  border-radius: 24px;
+  border: 1px solid rgb(239 83 80 / 0.42);
+  background: linear-gradient(180deg, rgb(239 83 80 / 0.1), rgb(16 8 26 / 0.94) 70%);
+  padding: clamp(18px, 3vw, 30px);
+  overflow: hidden;
+}
+.verdict-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.verdict-title { font-size: clamp(1.3rem, 3.4vw, 2rem); font-weight: 900; color: #ff8a80; }
+.verdict-count { font-size: 15px; font-weight: 700; color: var(--text-soft); }
+.verdict-count b { color: var(--danger); }
+
+.blew-out {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-block: 18px;
+  max-block-size: 190px; overflow-y: auto; scrollbar-width: thin;
+  padding-inline: 2px;
+}
+.blew-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 13px; border-radius: 999px;
+  background: rgb(239 83 80 / 0.1);
+  border: 1px solid rgb(239 83 80 / 0.38);
+  font-size: 12.5px; font-weight: 700; color: #ffcdd2;
+  animation: blewIn 420ms var(--ease-out) both;
+}
+.blew-chip::before { content: '✕'; font-size: 11px; opacity: 0.8; }
+@keyframes blewIn { from { opacity: 0; transform: translateY(10px) scale(0.9);} to { opacity: 1; transform: none; } }
+
+.survived-line {
+  display: flex; align-items: center; gap: 12px;
+  margin-block-start: 16px;
+  font-size: 14px; font-weight: 700;
+}
+.survived-line .gold-count { color: var(--primary); font-size: 19px; font-weight: 900; }
+
+.next-row { display: flex; justify-content: center; margin-block-start: 26px; }
+
+/* ── المباراة النهائية ─────────────────────────────────── */
+.duel-wrap {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: stretch; gap: clamp(12px, 3vw, 26px);
+  margin-block-start: 30px;
+}
+@media (max-width: 720px) {
+  .duel-grid-m { grid-template-columns: 1fr; }
+  .duel-vs { writing-mode: initial; }
+}
+.duel-card {
+  position: relative;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-bright);
+  border-radius: 24px;
+  padding: clamp(18px, 3vw, 32px);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+.duel-card .avatar-xl {
+  inline-size: clamp(64px, 10vw, 92px); block-size: clamp(64px, 10vw, 92px);
+  margin-inline: auto;
+  border-radius: 26px;
+  display: grid; place-items: center;
+  font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900;
+  background: var(--gold-gradient);
+  color: var(--primary-ink);
+  box-shadow: var(--shadow-gold);
+}
+.duel-card .name { font-size: clamp(1.1rem, 2.6vw, 1.5rem); font-weight: 800; margin-block-start: 14px; }
+.duel-card .tagline { font-size: 12.5px; color: var(--muted-foreground); font-weight: 700; margin-block-start: 4px; }
+.duel-vs {
+  align-self: center;
+  display: grid; place-items: center;
+  inline-size: clamp(58px, 9vw, 84px); aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  border: 1px solid var(--stage-hotline);
+  font-weight: 900; font-size: clamp(1.1rem, 2.6vw, 1.7rem);
+  color: var(--primary);
+  position: relative;
+}
+.duel-vs::after {
+  content: ''; position: absolute; inset: -9px;
+  border-radius: 50%;
+  border: 1px dashed rgb(255 183 77 / 0.3);
+  animation: vsSpin 22s linear infinite;
+}
+@keyframes vsSpin { to { transform: rotate(360deg); } }
+
+/* ── التتويج ───────────────────────────────────────────── */
+.podium-scene { text-align: center; padding-block-start: clamp(10px, 4vh, 40px); position: relative; }
+.crown-glow {
+  position: absolute; inset-inline: 0; inset-block-start: -30px;
+  block-size: 340px; pointer-events: none;
+  background: radial-gradient(420px 220px at 50% 0%, rgb(255 179 0 / 0.2), transparent 70%);
+}
+.podium-row {
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: clamp(10px, 3vw, 26px);
+  margin-block-start: 44px;
+}
+.podium-slot { display: grid; gap: 12px; justify-items: center; }
+.podium-slot .avatar-p {
+  inline-size: clamp(56px, 9vw, 84px); aspect-ratio: 1;
+  border-radius: 22px;
+  display: grid; place-items: center;
+  font-size: clamp(1.3rem, 3vw, 2rem); font-weight: 900;
+  color: var(--primary-ink);
+  background: var(--gold-gradient);
+  box-shadow: var(--shadow-gold);
+}
+.podium-slot.s2 .avatar-p,
+.podium-slot.s3 .avatar-p { background: var(--surface-strong); color: var(--gold-100); border: 1px solid var(--border-bright); box-shadow: none; }
+.podium-slot .p-name { font-weight: 800; font-size: clamp(0.9rem, 2vw, 1.15rem); }
+.podium-base {
+  inline-size: clamp(90px, 14vw, 150px);
+  border-radius: 14px 14px 6px 6px;
+  border: 1px solid var(--border-bright);
+  border-block-end: 3px solid var(--gold-700);
+  display: grid; place-items: center;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-100);
+  background: linear-gradient(180deg, rgb(255 183 77 / 0.14), var(--surface-soft));
+}
+.s1 .podium-base { block-size: clamp(80px, 13vw, 130px); }
+.s2 .podium-base { block-size: clamp(58px, 9vw, 95px); }
+.s3 .podium-base { block-size: clamp(40px, 6.5vw, 66px); }
+.podium-slot.s1 { order: 2; }
+.podium-slot.s2 { order: 1; }
+.podium-slot.s3 { order: 3; }
+.champion-line { font-size: clamp(1.05rem, 2.4vw, 1.4rem); font-weight: 800; margin-block-start: 30px; }
+.champion-line em { font-style: normal; color: var(--primary); }
+
+.confetti { position: fixed; inset-block-start: -12px; width: 9px; height: 14px; z-index: 5; pointer-events: none; animation: confettiFall linear forwards; }
+@keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); opacity: 0.2; } }
+
+/* ── شريط الإخراج (المُخرج التجريبي) ───────────────────── */
+.demo-bar {
+  position: fixed; inset-block-end: 0; inset-inline: 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgb(6 2 10 / 0.86);
+  backdrop-filter: blur(14px);
+  border-block-start: 1px solid var(--border);
+  z-index: 30;
+}
+.demo-bar .d-label {
+  font-size: 11px; font-weight: 800; letter-spacing: 1px;
+  color: var(--muted-foreground);
+  padding-inline-end: 6px;
+}
+.demo-btn {
+  font: inherit; font-size: 12.5px; font-weight: 700;
+  padding: 8px 16px; border-radius: 999px;
+  background: var(--surface-strong); color: var(--text-soft);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.demo-btn:hover { color: var(--primary); border-color: var(--border-bright); transform: translateY(-1px); }
+.demo-btn.is-on { background: rgb(255 183 77 / 0.13); color: var(--primary); border-color: var(--border-bright); }
+.demo-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ── شاشة اللاعب الفردية ───────────────────────────────── */
+.player-status {
+  position: fixed; inset-block-start: 68px; inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+.status-chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 18px; border-radius: 999px;
+  font-size: 13px; font-weight: 800;
+  background: var(--surface-glass, rgb(6 2 10 / .74));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(102 187 106 / 0.5);
+  color: #a5d6a7;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--dur-normal) var(--ease-out);
+}
+.status-chip.is-out {
+  border-color: rgb(239 83 80 / 0.55);
+  color: #ff8a80;
+  background: rgb(239 83 80 / 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brandmark">ت</div>
+  <div>
+    <div class="title">حلقة الإقصاء</div>
+    <div class="title-sub">تحدي · جلسة مباشرة</div>
+  </div>
+  <div class="round-meter">
+    <span class="pill rounds">الجولة <b class="num" id="roundNow">1</b> / <span class="num" id="roundTotal">5</span></span>
+    <span class="pill survivors-chip"><b class="num" id="aliveNow">32</b> ناجٍ</span>
+  </div>
+  <span class="live-badge"><span class="live-dot"></span> مباشر</span>
+</header>
+
+<main class="stage">
+
+  <!-- ═══ 1 · اللوبي ═══ -->
+  <section class="screen is-active" id="scr-lobby" aria-label="غرفة الانتظار">
+    <div class="lobby-grid">
+      <div class="panel">
+        <span class="kicker">وضع جديد · جاهز للإطلاق</span>
+        <h1 class="hero-title">حلقة <em>الإقصاء</em></h1>
+        <p class="lede">
+          يبدأ الجميع معًا، ولا ينجو من كل جولة إلا من يجيب الصواب.
+          خمس جولات، أسئلة تتصاعد صعوبة، وناجٍ واحد فقط يرتفع إلى المنصة.
+        </p>
+        <hr class="rule-line" />
+        <ul class="rules-list">
+          <li><span class="idx"><span>١</span></span><span>سؤال واحد في كل جولة — كل من يخطئ <b>يُقصى فورًا</b> من الحلقة.</span></li>
+          <li><span class="idx"><span>٢</span></span><span>الأسئلة تبدأ سهلة وتتعقد مع كل جولة: <b>٣٢ ← ٢٤ ← ١٢ ← ٦ ← النهائي</b>.</span></span></li>
+          <li><span class="idx"><span>٣</span></span><span>لا نقاط تجميعية: النجاة وحدها هي المعيار، والأسرع إنقاذًا لنفسه عند التعادل.</span></span></li>
+          <li><span class="idx"><span>٤</span></span><span>اللاعبان الأخيران يواجهان بعضهما في <b>سؤال الحسم</b>.</span></span></li>
+        </ul>
+        <div class="lobby-actions">
+          <button class="btn btn-gold" id="startBtn">ابدأ الحلقة</button>
+          <button class="btn btn-ghost" id="spawnBtn">محاكاة انضمام لاعب</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="room-code-box">
+          <div class="code num">٤٨٢١</div>
+          <div class="hint">رمز الغرفة — شاركه لينضم الحاضرون</div>
+        </div>
+        <div class="join-count">
+          <span class="big num" id="joinCount">12</span>
+          <span class="cap">لاعبًا في الانتظار</span>
+        </div>
+        <div class="player-grid" id="playerGrid" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 2 · مقدمة الجولة ═══ -->
+  <section class="screen" id="scr-intro" aria-label="مقدمة الجولة">
+    <div class="round-intro">
+      <div class="round-kicker-row"><span class="kicker">الجولة القادمة</span></div>
+      <div class="round-num num" id="introRoundNum">1</div>
+      <div class="round-label" id="introLabel">يبدأ الجميع — ٣٢ لاعبًا</div>
+      <div class="round-meta">
+        <span class="stat-pill"><span class="glyph">◈</span> الصعوبة: <b id="introDiff">مبتدئ</b></span>
+        <span class="stat-pill"><span class="glyph">⏱</span> زمن الإجابة: <b class="num">20</b> ثانية</span>
+        <span class="stat-pill"><span class="glyph">✕</span> إقصاء فوري عند الخطأ</span>
+      </div>
+      <div class="lobby-actions" style="justify-content:center">
+        <button class="btn btn-gold" id="fireBtn">أطلق السؤال</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 3 · السؤال ═══ -->
+  <section class="screen" id="scr-question" aria-label="سؤال الجولة">
+    <div class="question-head">
+      <span class="kicker" id="qRoundTag">الجولة ١</span>
+      <div class="timer-wrap">
+        <div class="timer-state">النجاة محسومة خلال <b class="num" id="timerBig">20</b></div>
+        <div class="timer-ring" role="timer" aria-label="الوقت المتبقي">
+          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="track" cx="32" cy="32" r="27" fill="none" stroke-width="5"/>
+            <circle class="arc" id="timerArc" cx="32" cy="32" r="27" fill="none" stroke-width="5"
+                    stroke-dasharray="169.6" stroke-dashoffset="0"/>
+          </svg>
+          <span class="val num" id="timerVal">20</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="survivors-strip" id="survivorsStrip">
+      <span class="s-label" style="font-size:12px;font-weight:800;color:var(--muted-foreground)">الناجون</span>
+      <div class="s-avatars" id="survivorAvatars" style="display:flex"></div>
+      <span style="margin-inline-start:auto;font-size:12.5px;font-weight:800;color:var(--gold-100)"><span class="num" id="aliveQ">32</span> في الحلقة</span>
+    </div>
+
+    <article class="question-card">
+      <h2 class="question-text" id="qText"></h2>
+      <div class="question-meta">
+        <span class="meta-tag" id="qCat">سور القرآن</span>
+        <span class="meta-tag" id="qDiff">مبتدئ</span>
+        <span class="meta-tag">النجاة: إجابة صحيحة واحدة تكفي</span>
+      </div>
+      <div class="options" id="options" role="group" aria-label="خيارات الإجابة"></div>
+    </article>
+
+    <div class="player-status status-chip" id="myStatus" style="position:static;display:flex;margin-block-start:20px;width:fit-content">
+      <span class="live-dot" style="background:var(--success)"></span> أنت في الحلقة — اختر إجابتك
+    </div>
+  </section>
+
+  <!-- ═══ 4 · الحكم ═══ -->
+  <section class="screen" id="scr-verdict" aria-label="كشف الإقصاء">
+    <span class="kicker">حُسم الجولة</span>
+    <h2 class="hero-title" id="verdictHero" style="margin-block-start:16px">
+      <em id="verdictNum">24</em> لاعبًا نجوا — <span id="verdictOutNum" style="color:var(--danger)">8</span> بُريت من الحلقة
+    </h2>
+
+    <div class="verdict-panel">
+      <div class="verdict-head">
+        <span class="verdict-title">بريت من الحلقة</span>
+        <span class="verdict-count">خرجوا في هذه الجولة</span>
+      </div>
+      <div class="blew-out" id="blewOut"></div>
+      <div class="survived-line">
+        <span class="gold-count num" id="survivedNum">24</span>
+        <span>يتقدمون إلى الجولة التالية</span>
+      </div>
+    </div>
+
+    <div class="next-row">
+      <button class="btn btn-gold" id="nextRoundBtn">الجولة التالية</button>
+    </div>
+  </section>
+
+  <!-- ═══ 5 · المباراة النهائية ═══ -->
+  <section class="screen" id="scr-duel" aria-label="المباراة النهائية">
+    <div style="text-align:center">
+      <span class="kicker">سؤال الحسم</span>
+      <h2 class="hero-title">ناجٍ <em>واحد</em> فقط</h2>
+      <p class="lede" style="margin-inline:auto">لا أمان في الجولة الأخيرة: خطأ واحد يُنهي الحلم، وإجابة واحدة تتوج.</p>
+    </div>
+    <div class="duel-wrap duel-grid-m">
+      <div class="duel-card">
+        <div class="avatar-xl">أ</div>
+        <div class="name">أحمد الهاشمي</div>
+        <div class="tagline">نجا من 4 جولات متتالية</div>
+      </div>
+      <div class="duel-vs" aria-hidden="true">ضد</div>
+      <div class="duel-card">
+        <div class="avatar-xl">س</div>
+        <div class="name">سارة القحطاني</div>
+        <div class="tagline">الأسرع في الجولة الرابعة</div>
+      </div>
+    </div>
+    <div class="lobby-actions" style="justify-content:center;margin-block-start:30px">
+      <button class="btn btn-gold" onclick="go('podium')">أطلق سؤال الحسم</button>
+    </div>
+  </section>
+
+  <!-- ═══ 6 · التتويج ═══ -->
+  <section class="screen" id="scr-podium" aria-label="التتويج">
+    <div class="podium-scene" style="text-align:center">
+      <div class="crown-glow" aria-hidden="true"></div>
+      <span class="kicker">نهاية الحلقة</span>
+      <h2 class="hero-title">تُوِّج <em id="champName">سارة القحطاني</em></h2>
+      <p class="lede" style="margin-inline:auto">آخر ناجٍ من بين 32 لاعبًا — خمس جولات، إجابات بلا خطأ واحد.</p>
+
+      <div class="podium-row">
+        <div class="podium-slot s2">
+          <div class="avatar-p">أ</div>
+          <div class="p-name" style="font-weight:800;font-size:14px">أحمد الهاشمي</div>
+          <div class="podium-base num">2</div>
+        </div>
+        <div class="podium-slot s1">
+          <div class="avatar-p" style="font-size:clamp(1.6rem,4vw,2.4rem)">س</div>
+          <div class="p-name" style="font-weight:800;font-size:15px">سارة القحطاني</div>
+          <div class="podium-base num">1</div>
+        </div>
+        <div class="podium-slot s3">
+          <div class="avatar-p">م</div>
+          <div class="p-name" style="font-weight:800;font-size:14px">محمد العتيبي</div>
+          <div class="podium-base num">3</div>
+        </div>
+      </div>
+      <div class="champion-line">منصة الشرف تحتفظ باسمك في <em>لوحة أبطال تحدي</em></div>
+      <div class="lobby-actions" style="justify-content:center">
+        <button class="btn btn-ghost" onclick="go('lobby')">حلقة جديدة</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- المُخرج التجريبي -->
+<nav class="demo-bar" aria-label="التنقل بين مراحل النموذج">
+  <span class="d-label">المُخرج</span>
+  <button class="demo-btn is-on" data-scr="lobby">اللوبي</button>
+  <button class="demo-btn" data-scr="intro">مقدمة الجولة</button>
+  <button class="demo-btn" data-scr="question">السؤال</button>
+  <button class="demo-btn" data-scr="verdict">الحكم</button>
+  <button class="demo-btn" data-scr="duel">النهائي</button>
+  <button class="demo-btn" data-scr="podium">التتويج</button>
+</nav>
+
+<script>
+'use strict';
+
+/* ═══ الحالة ═══ */
+const NAMES = ['أحمد الهاشمي','سارة القحطاني','محمد العتيبي','نور الدين','فاطمة الزهراء','يوسف عبد الله','ليان مراد','عمر بن خالد','هند السالم','بلال ريان','مريم نصر','طارق العلي','آمنة حسن','خالد محمود','رنا إبراهيم','سلمان الفهد','دعاء كريم','زياد شريف','جنى عبدالرحمن','مصطفى نبيل','لينا حسين','عبد الله سامي','شهد ياسين','أنس مجدي','ريم باسم','حسن جواد','ملك عادل','حمزة يوسف','غادة أمين','إياد صابر','نورهان وليد','مازن قاسم'];
+
+let state = { round: 0, alive: [], players: [], eliminated: [] };
+
+/* ═══ أدوات ═══ */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+function go(name) {
+  $$('.screen').forEach(s => s.classList.remove('is-active'));
+  const el = document.getElementById('scr-' + name);
+  if (el) el.classList.add('is-active');
+  $$('.demo-btn').forEach(b => b.classList.toggle('is-on', b.dataset.scr === name));
+  if (name === 'podium') confetti();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateMeters() {
+  document.getElementById('roundNow').textContent = Math.min(qIndex + 1, 5);
+  document.getElementById('aliveNow').textContent = state.alive.length;
+}
+
+/* ═══ اللوبي: محاكاة الانضمام ═══ */
+const SEED_NAMES = NAMES.slice(0, 12);
+function renderPlayers() {
+  const grid = document.getElementById('playerGrid');
+  grid.innerHTML = '';
+  state.players.forEach((name, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'player-chip';
+    chip.innerHTML = `<span class="dot">${name[0]}</span>${name}`;
+    chip.style.animationDelay = Math.min(i * 40, 600) + 'ms';
+    grid.appendChild(chip);
+  });
+  document.getElementById('joinCount').textContent = state.players.length;
+}
+function spawnPlayer() {
+  const pool = NAMES.filter(n => !state.players.includes(n));
+  if (!pool.length) return;
+  state.players.push(pool[Math.floor(Math.random() * pool.length)]);
+  renderPlayers();
+}
+state.players = [...SEED_NAMES];
+
+/* ═══ بيانات الجولات ═══ */
+const ROUNDS = [
+  { count: 32, survivors: 24, diff: 'مبتدئ',  label: 'يبدأ الجميع',
+    q: { cat: 'سور القرآن', diffCls: 'diff-easy', diffLabel: 'مبتدئ',
+         text: 'كم عدد سور القرآن الكريم؟',
+         options: ['100 سورة', '114 سورة', '120 سورة', '99 سورة'], correct: 1 } },
+  { count: 24, survivors: 12, diff: 'معتدل', label: 'المتبقون يواصلون',
+    q: { cat: 'النزل', diffCls: 'diff-easy', diffLabel: 'معتدل',
+         text: 'أي سورة تُعرف بـ«قلب القرآن»؟',
+         options: ['يس', 'الرحمٰن', 'الواقعة', 'الملك'], correct: 0 } },
+  { count: 12, survivors: 6, diff: 'متوسط+', label: 'ثمانية فقط… ثم ستة',
+    q: { cat: 'التفسير', diffCls: 'diff-hard', diffLabel: 'متوسط+',
+         text: 'في أي سورة تذكر آية «وَمَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِّلْعَالَمِينَ»؟',
+         options: ['الأنبياء', 'القصص', 'الفرقان', 'الدخان'], correct: 0 } },
+  { count: 6, survivors: 2, diff: 'متقدّم', label: 'ستة يقاتلون على مقعدين',
+    q: { cat: 'أسباب النزول', diffCls: 'diff-hard', diffLabel: 'متقدّم',
+         text: 'أول سورة نزلت كاملة من سور القرآن؟',
+         options: ['الفاتحة', 'العلق', 'المدثر', 'القلم'], correct: 0 } },
+];
+
+state.alive = NAMES.slice(0, 32).map(n => n);
+let qIndex = 0;
+
+/* ═══ شريط الناجين ═══ */
+function renderSurvivors() {
+  const wrap = document.getElementById('survivorAvatars');
+  wrap.innerHTML = '';
+  state.alive.slice(0, 26).forEach(name => {
+    const av = document.createElement('span');
+    av.className = 'mini-avatar';
+    av.title = name;
+    av.textContent = name[0];
+    wrap.appendChild(av);
+  });
+  document.getElementById('aliveQ').textContent = state.alive.length;
+}
+
+/* ═══ المؤقت ═══ */
+const ARC = 169.6;
+let timerId = null;
+function startTimer(seconds) {
+  stopTimer();
+  const arc = document.getElementById('timerArc');
+  const val = document.getElementById('timerVal');
+  const big = document.getElementById('timerBig');
+  const ring = document.querySelector('.timer-ring');
+  let remaining = seconds;
+  const paint = () => {
+    val.textContent = remaining; big.textContent = remaining;
+    arc.style.strokeDashoffset = ARC * (1 - remaining / seconds);
+    const ratio = remaining / seconds;
+    const color = ratio > 0.5 ? 'var(--success)' : ratio > 0.25 ? 'var(--warning)' : 'var(--danger)';
+    arc.style.stroke = color; ring.style.setProperty('--timer-color', color);
+  };
+  paint();
+  timerId = setInterval(() => { remaining--; paint(); if (remaining <= 0) { stopTimer(); setTimeout(autoReveal, 700); } }, 950);
+}
+function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; }
+
+/* ═══ السؤال ═══ */
+function renderQuestion() {
+  const R = ROUNDS[qIndex];
+  document.getElementById('qRoundTag').textContent = `الجولة ${['١','٢','٣','٤','٥'][qIndex]}`;
+  document.getElementById('qText').textContent = R.q.text;
+  document.getElementById('qCat').textContent = R.q.cat;
+  const d = document.getElementById('qDiff');
+  d.textContent = R.q.diffLabel;
+  d.className = 'meta-tag ' + R.q.diffCls;
+  renderSurvivors();
+  const opts = document.getElementById('options');
+  opts.innerHTML = '';
+  const letters = ['أ','ب','ج','د'];
+  R.q.options.forEach((text, i) => {
+    const b = document.createElement('button');
+    b.className = 'option';
+    b.style.setProperty('--opt-color', `var(--quiz-${['a','b','c','d'][i]})`);
+    b.innerHTML = `<span class="letter num" aria-hidden="true">${letters[i]}</span><span>${text}</span>`;
+    b.addEventListener('click', () => answer(i, b));
+    opts.appendChild(b);
+  });
+  document.getElementById('myStatus').className = 'status-chip';
+  document.getElementById('myStatus').innerHTML = '<span class="live-dot" style="background:var(--success)"></span> أنت في الحلقة — اختر إجابتك';
+}
+
+let myAnswer = null;
+function answer(i, btn) {
+  if (myAnswer !== null) return;
+  myAnswer = i;
+  document.querySelectorAll('.option').forEach((o, j) => {
+    o.disabled = true;
+    if (j === ROUNDS[qIndex].q.correct) o.classList.add('is-correct');
+  });
+  const correct = i === ROUNDS[qIndex].q.correct;
+  if (!correct) { btn.classList.add('is-wrong'); btn.querySelector('.mark')?.remove(); btn.insertAdjacentHTML('beforeend', '<span class="mark" aria-hidden="true">✕</span>'); }
+  else btn.insertAdjacentHTML('beforeend', '<span class="mark" aria-hidden="true" style="color:var(--success)">✓</span>');
+  const st = document.getElementById('myStatus');
+  if (correct) { st.className = 'status-chip'; st.innerHTML = '<span class="live-dot" style="background:var(--success)"></span> نجوت — عدّ مع الجمهور'; }
+  else { st.className = 'status-chip is-out'; st.innerHTML = '<span aria-hidden="true">✕</span> أُقصيت — أنت الآن من الجمهور'; }
+  stopTimer();
+  setTimeout(() => reveal(), 1600);
+}
+function autoReveal() { document.querySelectorAll('.option').forEach((o, j) => { o.disabled = true; if (j === ROUNDS[qIndex].q.correct) o.classList.add('is-correct'); }); reveal(); }
+
+/* ═══ الحكم ═══ */
+function reveal() {
+  const R = ROUNDS[qIndex];
+  const survivors = Math.min(R.survivors, state.alive.length);
+  const blewCount = state.alive.length - survivors;
+  const blew = state.alive.slice(survivors);
+  state.eliminated.push(...blew);
+  state.alive = state.alive.slice(0, survivors);
+
+  document.getElementById('verdictNum').textContent = survivors;
+  document.getElementById('verdictOutNum').textContent = blewCount;
+  const box = document.getElementById('blewOut');
+  box.innerHTML = '';
+  blew.forEach((name, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'blew-chip';
+    chip.textContent = name;
+    chip.style.animationDelay = Math.min(i * 45, 800) + 'ms';
+    box.appendChild(chip);
+  });
+
+  const nextBtn = document.getElementById('nextRoundBtn');
+  if (survivors <= 2) { nextBtn.textContent = 'سؤال الحسم'; nextBtn.onclick = () => go('duel'); }
+  else { nextBtn.textContent = 'الجولة التالية'; nextBtn.onclick = nextRound; }
+  updateMeters();
+  go('verdict');
+}
+
+function showIntro() {
+  const R = ROUNDS[qIndex];
+  document.getElementById('introRoundNum').textContent = ['١','٢','٣','٤','٥'][qIndex];
+  document.getElementById('introDiff').textContent = R.diff;
+  document.getElementById('introLabel').textContent = R.label;
+  updateMeters();
+  go('intro');
+}
+
+function nextRound() {
+  qIndex++;
+  if (qIndex >= ROUNDS.length) { go('duel'); return; }
+  showIntro();
+}
+
+/* ═══ التتويج ═══ */
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#d4af37', '#ffd66b', '#f5b82e', '#00cfef', '#fff8ed'];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.insetInlineStart = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = 2.4 + Math.random() * 2 + 's';
+    c.style.animationDelay = Math.random() * 1.2 + 's';
+    c.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 6000);
+  }
+}
+
+/* ═══ ربط ═══ */
+$$('.demo-btn').forEach(b => b.addEventListener('click', () => {
+  const t = b.dataset.scr;
+  if (t === 'question') renderQuestion();
+  go(t);
+}));
+document.getElementById('startBtn').addEventListener('click', showIntro);
+document.getElementById('fireBtn').addEventListener('click', () => { renderQuestion(); go('question'); });
+document.getElementById('spawnBtn').addEventListener('click', spawnPlayer);
+renderPlayers();
+updateMeters();
+</script>
+</body>
+</html>

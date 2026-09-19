@@ -1,0 +1,182 @@
+.leaderboard-poster-page {
+  min-height: 100svh;
+  overflow: hidden;
+  background: #000;
+}
+
+.leaderboard-poster-frame {
+  position: relative;
+  width: min(100%, 96rem);
+  aspect-ratio: 3 / 2;
+  margin-inline: auto;
+}
+
+.leaderboard-poster {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.leaderboard-back-button {
+  position: absolute;
+  z-index: 2;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  min-width: 5.5rem;
+  min-height: 2.75rem;
+}
+
+.leaderboard-live-winner {
+  position: absolute;
+  width: 18%;
+  color: #fff;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.leaderboard-live-winner-1 {
+  top: 38.2%;
+  left: 30.3%;
+}
+
+.leaderboard-live-winner-2 {
+  top: 35.7%;
+  left: 50%;
+}
+
+.leaderboard-live-winner-3 {
+  top: 38.2%;
+  left: 69.6%;
+}
+
+.leaderboard-live-winner strong,
+.leaderboard-live-winner small,
+.leaderboard-live-winner span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-live-winner strong {
+  font-size: clamp(0.55rem, 2vw, 2rem);
+  line-height: 1.2;
+}
+
+.leaderboard-live-winner small {
+  margin-top: 0.45%;
+  color: #f7ca51;
+  font-size: clamp(0.38rem, 1vw, 1rem);
+}
+
+.leaderboard-live-winner span {
+  margin-top: 1.2%;
+  color: #ffe0a0;
+  font-size: clamp(0.5rem, 1.55vw, 1.55rem);
+  font-weight: 800;
+}
+
+.leaderboard-live-ranking {
+  position: absolute;
+  top: 60.7%;
+  right: 34.7%;
+  bottom: 6.2%;
+  left: 35.7%;
+  display: grid;
+  grid-template-rows: repeat(10, 1fr);
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  font-size: clamp(0.34rem, 1vw, 0.95rem);
+  list-style: none;
+  direction: ltr;
+}
+
+.leaderboard-live-ranking li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.leaderboard-live-ranking li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-live-ranking strong {
+  flex: none;
+  color: #ffd16a;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-live-error {
+  position: absolute;
+  top: 72%;
+  right: 39%;
+  left: 39%;
+  margin: 0;
+  color: #ffd16a;
+  font-size: clamp(0.42rem, 1.1vw, 1rem);
+  text-align: center;
+}
+
+@media (max-width: 40rem) {
+  .leaderboard-back-button {
+    top: max(0.75rem, env(safe-area-inset-top));
+    right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .leaderboard-poster-frame {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+  }
+
+  .leaderboard-live-winner {
+    width: 25%;
+  }
+
+  .leaderboard-live-winner-1 {
+    top: 35%;
+    left: 81.5%;
+  }
+
+  .leaderboard-live-winner-2 {
+    top: 30%;
+    left: 50%;
+  }
+
+  .leaderboard-live-winner-3 {
+    top: 35%;
+    left: 19.5%;
+  }
+
+  .leaderboard-live-winner strong {
+    font-size: clamp(0.7rem, 3.8vw, 1.1rem);
+  }
+
+  .leaderboard-live-winner small {
+    font-size: clamp(0.48rem, 2.2vw, 0.68rem);
+  }
+
+  .leaderboard-live-winner span {
+    font-size: clamp(0.64rem, 3vw, 0.9rem);
+  }
+
+  .leaderboard-live-ranking {
+    top: 54.5%;
+    right: 22.5%;
+    bottom: 10.1%;
+    left: 22.5%;
+    padding-inline: 12%;
+    font-size: clamp(0.48rem, 2.4vw, 0.72rem);
+  }
+
+  .leaderboard-live-error {
+    top: 69%;
+    right: 28%;
+    left: 28%;
+  }
+}

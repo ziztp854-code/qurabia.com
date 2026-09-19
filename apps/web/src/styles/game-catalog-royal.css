@@ -1,0 +1,233 @@
+/* ============================================================
+   تحدّي — طبقة «Royal Black & Gold» لكتالوج الألعاب (/games)
+   تُستورد في app/layout.tsx بعد game-catalog-refine.css.
+
+   الهدف: توحيد الكتالوج على هوية تحدّي الرسمية (أسود حبري + ذهبي
+   علامة) وإزالة الانحراف السماوي/الأزرق الذي تسلل عبر طبقة
+   cinematic (--gc-cyan، توهجات rgb(0 212 255)، أسطح مزرقة).
+
+   قواعد:
+   - لا قيم hex جديدة هنا (حراسة ميزانية hex في البناء).
+   - لا تغيير في أي مكوّن أو منطق؛ هذه طبقة عرض فقط.
+   - الثيم الفاتح لم يُمس؛ كان ذهبيًا على العاج أصلًا.
+   ============================================================ */
+
+/* ---- 1) المشهد: أسود حبري مع كواليع ذهبية ------------------- */
+.gc-wrapper:not(.gc-wrapper--embedded) {
+  --gc-cyan: var(--brand-gold);
+  --gc-line: rgb(212 175 55 / 0.14);
+  --gc-line-strong: rgb(212 175 55 / 0.32);
+  --gc-chip-active: rgb(212 175 55 / 0.14);
+  --gc-panel: rgb(8 5 12 / 0.86);
+  --gc-stage: var(--brand-ink);
+  background:
+    radial-gradient(120rem 60rem at 85% -10%, rgb(212 175 55 / 0.08), transparent 50%),
+    radial-gradient(90rem 50rem at 0% 110%, rgb(255 183 77 / 0.05), transparent 55%),
+    linear-gradient(180deg, var(--brand-ink) 0%, color-mix(in srgb, var(--brand-ink) 92%, var(--gold-500)) 45%, var(--brand-ink) 100%);
+}
+
+/* الشبكة الهندسية الخلفية: ذهبية خافتة بدل البيضاء */
+.gc-wrapper:not(.gc-wrapper--embedded)::before {
+  background:
+    linear-gradient(90deg, rgb(212 175 55 / 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(212 175 55 / 0.04) 1px, transparent 1px);
+}
+
+/* ---- 2) الهيرو: تاج ذهبي على الأسود ------------------------- */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-hero-title {
+  background: linear-gradient(180deg, var(--brand-cream) 0%, var(--gold-300) 55%, var(--gold-500) 100%);
+  background-clip: text;
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-hero-title::after {
+  background: linear-gradient(90deg, var(--gold-300), transparent);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-stat {
+  background:
+    linear-gradient(180deg, rgb(212 175 55 / 0.06), rgb(212 175 55 / 0.02)),
+    rgb(10 6 16 / 0.74);
+  border-color: rgb(212 175 55 / 0.16);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-stat strong {
+  color: var(--gold-200);
+}
+
+/* لوحة الفئات: أسود وذهب، بلا سماوي */
+.gc-hero-preview {
+  border-color: rgb(212 175 55 / 0.26);
+  background:
+    linear-gradient(150deg, rgb(212 175 55 / 0.14), transparent 36%),
+    var(--brand-ink);
+}
+
+.gc-hero-preview::before {
+  background:
+    linear-gradient(90deg, rgb(212 175 55 / 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(212 175 55 / 0.05) 1px, transparent 1px);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-panel {
+  border-color: rgb(212 175 55 / 0.22);
+  background: rgb(8 5 12 / 0.72);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile {
+  border-color: rgb(212 175 55 / 0.14);
+  background: linear-gradient(160deg, rgb(212 175 55 / 0.07), rgb(255 255 255 / 0.015));
+  color: var(--brand-cream);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile:hover,
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile:focus-visible {
+  border-color: rgb(212 175 55 / 0.55);
+  background: rgb(212 175 55 / 0.1);
+  color: var(--gold-200);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile:nth-child(2n) svg {
+  color: var(--gold-300);
+}
+
+/* حالة الاختيار: ذهبية بالكامل (تغطي المزيج السماوي في refine.css) */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile[aria-pressed='true'] {
+  border-color: rgb(212 175 55 / 0.6);
+  background:
+    linear-gradient(150deg, rgb(212 175 55 / 0.18), rgb(212 175 55 / 0.05)),
+    rgb(255 255 255 / 0.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 14px 34px rgb(212 175 55 / 0.12);
+  color: var(--gold-200);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile[aria-pressed='true']::after {
+  background: linear-gradient(90deg, transparent, rgb(212 175 55 / 0.76), transparent);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-category-tile[aria-pressed='true'] small {
+  color: rgb(243 213 139 / 0.85);
+}
+
+/* ---- 3) شريط الأدوات والبحث --------------------------------- */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-toolbar {
+  border-color: rgb(212 175 55 / 0.16);
+  background: rgb(8 5 12 / 0.8);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-search input {
+  border-color: rgb(212 175 55 / 0.18);
+  background: rgb(6 3 10 / 0.85);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) :where(.gc-filter-button, .gc-sort-select, .gc-view-toggle) {
+  border-color: rgb(212 175 55 / 0.2);
+  background: rgb(212 175 55 / 0.06);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-view-toggle button[aria-pressed='true'] {
+  background: rgb(212 175 55 / 0.18);
+  color: var(--gold-300);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-filter-button-badge {
+  background: var(--brand-ink);
+  color: var(--gold-200);
+}
+
+/* ---- 4) عناوين الأقسام: خط ذهبي فاصل ------------------------ */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-section-heading {
+  border-block-end-color: rgb(212 175 55 / 0.18);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-section-heading span {
+  border: 1px solid rgb(212 175 55 / 0.26);
+  background: rgb(212 175 55 / 0.1);
+  color: var(--gold-200);
+}
+
+/* ---- 5) البطاقات: أسود دافئ وحدود ذهبية --------------------- */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--game-accent) 16%, transparent), transparent 40%),
+    linear-gradient(180deg, rgb(212 175 55 / 0.045), rgb(212 175 55 / 0.012)),
+    rgb(9 6 14 / 0.94);
+  border-color: color-mix(in srgb, var(--game-accent) 22%, rgb(212 175 55 / 0.16));
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 0.44),
+    inset 0 1px 0 rgb(212 175 55 / 0.08);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card::before {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--game-accent) 60%, var(--gold-300)), transparent);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card:hover {
+  box-shadow:
+    0 34px 88px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(212 175 55 / 0.32);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card:focus-within {
+  box-shadow:
+    0 30px 78px rgb(0 0 0 / 0.44),
+    0 0 0 1px rgb(212 175 55 / 0.42);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-foot {
+  border-block-start-color: rgb(212 175 55 / 0.12);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-meta-chip {
+  border-color: rgb(212 175 55 / 0.14);
+  background: rgb(212 175 55 / 0.05);
+  color: rgb(242 232 213 / 0.78);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-year {
+  color: rgb(200 168 144 / 0.85);
+}
+
+/* شارة «فورية»: عاج دافئ بدل السماوي — الجماعية تبقى ذهبية */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-kind[data-kind='instant'] {
+  background: rgb(255 248 237 / 0.1);
+  color: var(--brand-cream);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-kind[data-kind='upcoming'] {
+  background: rgb(255 183 77 / 0.1);
+  color: var(--gold-300);
+}
+
+/* غلاف اللعبة الافتراضي: ذهبي بدل السماوي (ألوان الألعاب
+ * الفردية data-visual تبقى كما هي — هوية فنية لكل لعبة) */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-visual {
+  --visual-b: var(--gold-500);
+  --visual-c: var(--gold-300);
+}
+
+/* لوحة الفلاتر الجانبية */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-filters-panel {
+  border-inline-start-color: rgb(212 175 55 / 0.2);
+  background:
+    linear-gradient(145deg, rgb(212 175 55 / 0.07), transparent 36%),
+    rgb(8 5 12 / 0.97);
+}
+
+/* رسالة «لا توجد نتائج» */
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-empty {
+  border-color: rgb(212 175 55 / 0.22);
+  background: rgb(212 175 55 / 0.04);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-load-more button {
+  border-color: rgb(212 175 55 / 0.24);
+  background: rgb(212 175 55 / 0.06);
+  color: var(--gold-200);
+}
+
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-load-more button:hover {
+  border-color: rgb(212 175 55 / 0.45);
+  background: rgb(212 175 55 / 0.1);
+}

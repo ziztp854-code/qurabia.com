@@ -1,0 +1,195 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-block-size: calc(100svh - 5rem);
+  padding: clamp(var(--space-8), 8vw, var(--space-20)) var(--space-4);
+  overflow: clip;
+  background:
+    radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--gold-text) 14%, transparent), transparent 30rem),
+    radial-gradient(circle at 12% 76%, color-mix(in srgb, var(--technical-accent) 8%, transparent), transparent 28rem),
+    var(--pattern-geometric),
+    var(--page-bg);
+  color: var(--text-primary);
+}
+
+.dedication {
+  position: relative;
+  display: grid;
+  grid-template-areas: 'copy visual';
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.88fr);
+  gap: clamp(var(--space-8), 5vw, var(--space-16));
+  align-items: center;
+  inline-size: min(100%, 72rem);
+  padding: clamp(var(--space-6), 5vw, var(--space-12));
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-2) 96%, transparent), var(--surface-1)),
+    var(--surface-1);
+  box-shadow: var(--shadow-lg);
+}
+
+.dedication::before {
+  position: absolute;
+  inset-block: var(--space-6);
+  inset-inline-start: 0;
+  inline-size: 3px;
+  border-radius: var(--radius-full);
+  background: var(--gold-gradient);
+  content: '';
+}
+
+.dedicationCopy {
+  grid-area: copy;
+  min-inline-size: 0;
+}
+
+.sectionLabel {
+  --text-secondary: var(--gold-text);
+
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  margin: 0 0 var(--space-3);
+  color: var(--gold-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.sectionLabel::after {
+  inline-size: clamp(2.5rem, 7vw, 5rem);
+  block-size: 1px;
+  background: linear-gradient(to left, var(--brand-gold), transparent);
+  content: '';
+}
+
+.dedication h1 {
+  --internal-ivory: var(--gold-text);
+  --text-primary: var(--gold-text);
+
+  margin: 0;
+  color: var(--gold-text);
+  font-size: clamp(4rem, 10vw, 7.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.intro {
+  --text-secondary: var(--text-primary);
+
+  margin-block-start: var(--space-6);
+  color: var(--text-primary);
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.85;
+}
+
+.intro p,
+.message p {
+  margin: 0;
+}
+
+.message {
+  --text-secondary: var(--text-muted);
+
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  margin-block-start: var(--space-8);
+  padding-block: var(--space-6);
+  padding-inline-start: var(--space-6);
+  border-block: 1px solid var(--border-default);
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.message::before {
+  position: absolute;
+  inset-block-start: calc(var(--space-6) + 0.55rem);
+  inset-inline-start: 0;
+  inline-size: var(--space-2);
+  block-size: var(--space-2);
+  background: var(--brand-gold);
+  content: '';
+  transform: rotate(45deg);
+}
+
+.message h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.dedicationVisual {
+  position: relative;
+  grid-area: visual;
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-1) 90%, var(--gold-text));
+  box-shadow: var(--shadow-sm);
+}
+
+.dedicationVisual::before {
+  position: absolute;
+  inset: var(--space-2);
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 35%, transparent);
+  border-radius: calc(var(--radius-lg) - var(--space-1));
+  content: '';
+  transform: translate(-0.75rem, 0.75rem);
+}
+
+.dedicationMark {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 1200 / 630;
+  border-radius: calc(var(--radius-lg) - var(--space-2));
+  object-fit: cover;
+}
+
+@media (max-width: 52rem) {
+  .page {
+    min-block-size: auto;
+    padding-inline: var(--space-3);
+  }
+
+  .dedication {
+    grid-template-areas:
+      'copy'
+      'visual';
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-8);
+    padding: clamp(var(--space-5), 6vw, var(--space-8));
+  }
+
+  .dedication h1 {
+    font-size: clamp(4rem, 22vw, 6.5rem);
+  }
+
+  .message {
+    margin-block-start: var(--space-6);
+  }
+}
+
+@media (max-width: 26rem) {
+  .page {
+    padding-inline: var(--space-2);
+  }
+
+  .dedication {
+    border-radius: var(--radius-lg);
+  }
+
+  .intro {
+    font-size: 1rem;
+  }
+
+  .message {
+    padding-inline-start: var(--space-5);
+    font-size: 0.95rem;
+  }
+}

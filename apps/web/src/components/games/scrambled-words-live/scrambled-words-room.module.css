@@ -1,0 +1,1316 @@
+/* «كلمات مفككة» — Premium Saudi Gaming UI (تحدّي identity)
+   Tokens: apps/web/tokens.css → --swl-*, --tahaddi-* */
+
+.swlRoom {
+  min-block-size: 100svh;
+  display: grid;
+  place-items: center;
+  padding-block: var(--space-6);
+  background:
+    var(--pattern-geometric),
+    radial-gradient(circle at 15% 10%, rgb(212 175 55 / 0.09), transparent 26rem),
+    radial-gradient(circle at 85% 90%, rgb(212 175 55 / 0.07), transparent 24rem),
+    var(--swl-bg);
+  position: relative;
+  overflow-x: hidden;
+  color: var(--swl-text);
+}
+
+.swlShell {
+  inline-size: min(100%, var(--container));
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+  display: grid;
+  gap: var(--space-6);
+  z-index: 1;
+}
+
+@media (min-width: 48rem) {
+  .swlShell {
+    padding-inline: var(--space-6);
+    gap: var(--space-8);
+  }
+}
+
+.swlBack {
+  justify-self: start;
+}
+
+/* ---------- Surfaces ---------- */
+
+.swlIntro,
+.swlEntryPanel,
+.swlWaitingStage,
+.swlHostStage,
+.swlRail,
+.swlFinale,
+.swlCountdownWrap,
+.swlBetweenStage {
+  border: 1px solid rgb(212 175 55 / 0.16);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--swl-card-raised), var(--swl-card));
+  box-shadow: var(--shadow-lg);
+}
+
+.swlAlert {
+  border: 1px solid color-mix(in srgb, var(--tahaddi-gold) 40%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--tahaddi-gold) 8%, var(--swl-card));
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.swlAlert p {
+  margin: 0;
+  color: var(--swl-text);
+}
+
+/* ---------- Join / intro ---------- */
+
+.swlIntro {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  position: relative;
+  overflow: hidden;
+}
+
+.swlIntro::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  background: var(--gold-gradient);
+  opacity: 0.8;
+}
+
+.swlKicker {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  inline-size: max-content;
+  gap: var(--space-2);
+  padding: 0.48rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--tahaddi-gold) 38%, transparent);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--tahaddi-gold) 10%, transparent);
+  color: var(--tahaddi-gold-bright);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.swlIntro h1 {
+  margin: 0;
+  font-family: var(--font-alexandria);
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
+  line-height: 1;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.swlIntro p {
+  max-inline-size: 52ch;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+  margin: 0;
+}
+
+.swlRules {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+}
+
+.swlRules li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  font-size: 0.95rem;
+}
+
+.swlRules li::before {
+  content: '';
+  inline-size: 0.45rem;
+  block-size: 0.45rem;
+  border-radius: 50%;
+  background: var(--tahaddi-gold);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tahaddi-gold) 60%, transparent);
+  flex-shrink: 0;
+  translate: 0 -0.1rem;
+}
+
+.swlEntryPanel {
+  padding: var(--space-6);
+  display: grid;
+  gap: var(--space-5);
+}
+
+.swlEntryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.swlEntryEyebrow {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tahaddi-gold-bright);
+  letter-spacing: 0.04em;
+  margin-block-end: 0.3rem;
+}
+
+.swlEntryPanel h2 {
+  margin: 0;
+  font-family: var(--font-alexandria);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+}
+
+.swlHostLabel {
+  margin: 0.4rem 0 0;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+  font-size: 0.9rem;
+}
+
+.swlFieldRow {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  align-items: end;
+}
+
+.swlFieldLabel {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+  margin-block-end: 0.45rem;
+}
+
+.swlSelect {
+  inline-size: 100%;
+  block-size: 2.9rem;
+  padding-inline: 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgb(212 175 55 / 0.22);
+  background: var(--swl-card);
+  color: var(--swl-text);
+  font: inherit;
+}
+
+.swlRoom :is(.swlSelect, .swlToggle, .swlToolButton):focus-visible {
+  outline: 2px solid var(--tahaddi-live);
+  outline-offset: 3px;
+}
+
+.swlToggle {
+  inline-size: 100%;
+  block-size: 2.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgb(212 175 55 / 0.22);
+  background: var(--swl-card);
+  color: var(--swl-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+.swlToggle.is-on {
+  border-color: color-mix(in srgb, var(--tahaddi-success) 55%, transparent);
+  background: color-mix(in srgb, var(--tahaddi-success) 14%, var(--swl-card));
+  color: var(--tahaddi-success);
+}
+
+/* ---------- Waiting ---------- */
+
+.swlRoomCode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  font-size: 1rem;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+}
+
+.swlRoomCode strong {
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  letter-spacing: 0.35em;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 28px color-mix(in srgb, var(--tahaddi-gold) 35%, transparent);
+}
+
+.swlWaitingStage,
+.swlCountdownWrap {
+  padding: var(--space-8) var(--space-6);
+  display: grid;
+  gap: var(--space-5);
+  justify-items: center;
+  text-align: center;
+}
+
+.swlWaitingHead h2 {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-alexandria);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.swlWaitingHead p {
+  margin: 0;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+}
+
+.swlRoster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.swlRoster li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgb(212 175 55 / 0.22);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.9rem 0.3rem 0.4rem;
+  font-size: 0.9rem;
+  background: var(--swl-card-raised);
+  animation: swl-pop var(--duration-normal) var(--ease-out) both;
+}
+
+.swlRoster li[data-viewer] {
+  border-color: color-mix(in srgb, var(--tahaddi-live) 45%, transparent);
+}
+
+.swlWaitingActions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- Countdown ---------- */
+
+.swlCountdownLabel {
+  margin: 0;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+  font-size: 1.1rem;
+}
+
+.swlCountdownNumber {
+  font-family: var(--font-alexandria);
+  font-size: clamp(4rem, 16vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--tahaddi-gold) 45%, transparent));
+  animation: swl-beat 0.9s var(--ease-pulse) infinite;
+}
+
+/* ---------- Play layout ---------- */
+
+.swlPlayArea {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.swlPlayGrid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .swlPlayGrid {
+    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .swlRail {
+    position: sticky;
+    inset-block-start: var(--space-6);
+  }
+}
+
+/* ---------- Board header ---------- */
+
+.swlBoard {
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  border: 1px solid rgb(212 175 55 / 0.16);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--swl-card-raised), var(--swl-card));
+  box-shadow: var(--shadow-lg);
+}
+
+.swlBoardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.swlBoardTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.swlWordmark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 0.55rem;
+  background: var(--gold-gradient);
+  color: var(--text-on-gold);
+  font-family: var(--font-alexandria);
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--tahaddi-gold) 30%, transparent);
+}
+
+.swlGameName {
+  font-family: var(--font-alexandria);
+  font-weight: 800;
+  font-size: 1.05rem;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.swlBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(212 175 55 / 0.28);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--tahaddi-gold-soft);
+  background: color-mix(in srgb, var(--tahaddi-gold) 8%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.swlHeaderTools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.swlToolButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.swlToolButton {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.4rem;
+  block-size: 2.4rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgb(212 175 55 / 0.22);
+  background: var(--swl-card);
+  color: var(--swl-text);
+  cursor: pointer;
+  list-style: none;
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.swlToolButton:hover {
+  border-color: color-mix(in srgb, var(--tahaddi-gold) 55%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tahaddi-gold) 25%, transparent);
+}
+
+.swlToolMenu {
+  position: relative;
+}
+
+.swlToolMenu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.swlToolMenuPanel {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + 0.5rem);
+  z-index: 20;
+  min-inline-size: 12rem;
+  display: grid;
+  padding: 0.4rem;
+  border: 1px solid rgb(212 175 55 / 0.28);
+  border-radius: var(--radius-md);
+  background: var(--swl-card-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+.swlToolMenuPanel button {
+  border: 0;
+  background: transparent;
+  color: var(--swl-text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: start;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.swlToolMenuPanel button:hover {
+  background: color-mix(in srgb, var(--tahaddi-gold) 12%, transparent);
+}
+
+/* ---------- Timer ring ---------- */
+
+.swlTimerRing {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 4rem;
+  block-size: 4rem;
+}
+
+.swlTimerRing svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  rotate: -90deg;
+}
+
+.swlTimerTrack {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.08);
+  stroke-width: 4;
+}
+
+.swlTimerArc {
+  fill: none;
+  stroke: var(--tahaddi-gold);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke var(--duration-normal) ease;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--tahaddi-gold) 55%, transparent));
+}
+
+.swlTimerRing[data-state='warn'] .swlTimerArc {
+  stroke: var(--swl-warning);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--swl-warning) 55%, transparent));
+}
+
+.swlTimerRing[data-state='danger'] .swlTimerArc {
+  stroke: var(--tahaddi-danger);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tahaddi-danger) 60%, transparent));
+}
+
+.swlTimerRing[data-state='danger'] {
+  animation: swl-beat 1s var(--ease-pulse) infinite;
+}
+
+.swlTimerLabel {
+  font-family: var(--font-alexandria);
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--swl-text);
+}
+
+.swlTimerRing[data-state='warn'] .swlTimerLabel {
+  color: var(--swl-warning);
+}
+
+.swlTimerRing[data-state='danger'] .swlTimerLabel {
+  color: var(--tahaddi-danger);
+}
+
+/* ---------- Progress dots ---------- */
+
+.swlProgressDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.swlProgressDots i {
+  inline-size: 0.65rem;
+  block-size: 0.65rem;
+  border-radius: 50%;
+  border: 1px solid rgb(212 175 55 / 0.4);
+  background: transparent;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.swlProgressDots i[data-done] {
+  background: var(--tahaddi-success);
+  border-color: var(--tahaddi-success);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tahaddi-success) 55%, transparent);
+}
+
+.swlProgressDots b {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: var(--tahaddi-gold-soft);
+  margin-inline-start: 0.35rem;
+}
+
+/* ---------- Hero image ---------- */
+
+.swlHero {
+  margin: 0;
+  position: relative;
+  padding: 0.4rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgb(212 175 55 / 0.35);
+  background: linear-gradient(180deg, rgb(212 175 55 / 0.1), transparent 40%), var(--swl-card);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.03),
+    0 18px 44px rgb(0 0 0 / 0.5),
+    0 0 32px color-mix(in srgb, var(--tahaddi-gold) 12%, transparent);
+}
+
+.swlHero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(242 193 78 / 0.06), transparent 30%);
+}
+
+.swlHeroImage {
+  display: block;
+  inline-size: 100%;
+  max-block-size: 42svh;
+  object-fit: contain;
+  border-radius: calc(var(--radius-lg) - 0.25rem);
+  background: var(--swl-card-raised);
+  animation: swl-reveal 0.5s var(--ease-out) both;
+}
+
+.swlHeroEmpty {
+  display: grid;
+  place-items: center;
+  min-block-size: 10rem;
+  color: color-mix(in srgb, var(--swl-text) 60%, transparent);
+}
+
+.swlHeroCaption {
+  padding: 0.5rem 0 0.2rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--tahaddi-gold-soft);
+  letter-spacing: 0.02em;
+}
+
+.swlHint {
+  margin: 0;
+  color: color-mix(in srgb, var(--swl-text) 72%, transparent);
+}
+
+/* ---------- Word slots ---------- */
+
+.swlSlots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.swlSolvedChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-full);
+  border: 1px solid color-mix(in srgb, var(--tahaddi-success) 55%, transparent);
+  background: color-mix(in srgb, var(--tahaddi-success) 14%, var(--swl-card-raised));
+  color: var(--tahaddi-success);
+  font-weight: 700;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--tahaddi-success) 22%, transparent);
+  animation: swl-pop 0.35s var(--ease-out) both;
+}
+
+.swlSlotChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-full);
+  border: 1px dashed rgb(212 175 55 / 0.35);
+  background: var(--swl-card);
+  color: color-mix(in srgb, var(--swl-text) 45%, transparent);
+  letter-spacing: 0.12em;
+  min-inline-size: 3.2rem;
+  justify-content: center;
+}
+
+/* ---------- Attempt area ---------- */
+
+.swlAttempt {
+  min-block-size: 4rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid rgb(212 175 55 / 0.3);
+  border-radius: var(--radius-md);
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 10px, rgb(212 175 55 / 0.03) 10px 20px),
+    var(--swl-card);
+  padding: 0.7rem 1rem;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.swlAttemptRejected {
+  border-color: color-mix(in srgb, var(--tahaddi-danger) 60%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--tahaddi-danger) 25%, transparent);
+  animation: swl-shake 0.4s ease-in-out;
+}
+
+@keyframes swl-shake {
+  0%, 100% { translate: 0; }
+  25% { translate: 0.35rem 0; }
+  50% { translate: -0.4rem 0; }
+  75% { translate: 0.2rem 0; }
+}
+
+.swlAttemptHint {
+  color: color-mix(in srgb, var(--swl-text) 50%, transparent);
+  font-size: 0.9rem;
+}
+
+.swlAttemptPiece {
+  border: 1px solid rgb(212 175 55 / 0.55);
+  border-radius: var(--radius-md);
+  background: var(--gold-gradient);
+  color: var(--text-on-gold);
+  font-weight: 800;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  animation: swl-pop 0.25s var(--ease-out) both;
+  transition: translate var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.swlAttemptPiece:hover {
+  translate: 0 -2px;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.4);
+}
+
+/* ---------- Fragment pool ---------- */
+
+.swlPool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.swlFragment {
+  min-inline-size: 3.4rem;
+  min-block-size: 3.4rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgb(212 175 55 / 0.4);
+  background: linear-gradient(180deg, var(--swl-card-raised), var(--swl-card));
+  color: var(--swl-text);
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.35);
+  transition:
+    translate 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+  animation: swl-fragment-in 0.4s var(--ease-out) both;
+}
+
+.swlFragment:hover:not(:disabled) {
+  translate: 0 -3px;
+  border-color: color-mix(in srgb, var(--tahaddi-gold-bright) 70%, transparent);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.45), 0 0 14px color-mix(in srgb, var(--tahaddi-gold) 30%, transparent);
+}
+
+.swlFragment:active:not(:disabled) {
+  scale: 0.94;
+}
+
+.swlFragmentUsed {
+  opacity: 0.22;
+  cursor: default;
+  filter: grayscale(0.8);
+  scale: 0.92;
+  box-shadow: none;
+}
+
+@keyframes swl-fragment-in {
+  from {
+    opacity: 0;
+    translate: 0 0.6rem;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.swlBoardActions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+/* ---------- Fastest mode ---------- */
+
+.swlFastest {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1.2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--tahaddi-gold-bright) 45%, transparent);
+  background: linear-gradient(90deg, rgb(212 175 55 / 0.12), rgb(242 193 78 / 0.05), rgb(212 175 55 / 0.12));
+  color: var(--swl-text);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--tahaddi-gold) 18%, transparent);
+}
+
+.swlFastest b {
+  font-family: var(--font-alexandria);
+  color: var(--tahaddi-gold-bright);
+  font-weight: 800;
+}
+
+.swlFastest span {
+  color: color-mix(in srgb, var(--swl-text) 75%, transparent);
+  font-size: 0.9rem;
+}
+
+/* ---------- Leaderboard rail ---------- */
+
+.swlRail {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.swlRailTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--tahaddi-gold-soft);
+}
+
+.swlRailList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.swlRailRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgb(212 175 55 / 0.14);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.65rem;
+  background: var(--swl-card);
+  min-inline-size: 0;
+}
+
+.swlRailRow[data-viewer] {
+  border-color: color-mix(in srgb, var(--tahaddi-live) 45%, transparent);
+  background: color-mix(in srgb, var(--tahaddi-live) 6%, var(--swl-card));
+}
+
+.swlRailRow[data-finished] {
+  border-color: color-mix(in srgb, var(--tahaddi-success) 45%, transparent);
+}
+
+.swlRankMedal {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.7rem;
+  block-size: 1.7rem;
+  border-radius: 50%;
+  border: 1px solid rgb(212 175 55 / 0.3);
+  color: color-mix(in srgb, var(--swl-text) 70%, transparent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.swlRankMedal[data-rank='1'] {
+  border: 0;
+  background: var(--swl-medal-gold);
+  color: var(--text-on-gold);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tahaddi-gold) 45%, transparent);
+}
+
+.swlRankMedal[data-rank='2'] {
+  border: 0;
+  background: var(--swl-medal-silver);
+  color: var(--text-on-gold);
+}
+
+.swlRankMedal[data-rank='3'] {
+  border: 0;
+  background: var(--swl-medal-bronze);
+  color: var(--text-on-gold);
+}
+
+.swlAvatar {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: hsl(var(--avatar-hue, 43) 40% 20%);
+  border: 1px solid hsl(var(--avatar-hue, 43) 50% 45% / 0.55);
+  color: var(--swl-text);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.swlRailMeta {
+  display: grid;
+  min-inline-size: 0;
+  flex: 1;
+  line-height: 1.25;
+}
+
+.swlRailName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.swlRailWords {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--swl-text) 60%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.swlRailScore {
+  color: var(--tahaddi-gold-bright);
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+}
+
+.swlRailDone {
+  color: var(--tahaddi-success);
+  flex-shrink: 0;
+}
+
+/* ---------- Host stage ---------- */
+
+.swlHostStage {
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.swlProgress {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.swlProgress li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgb(212 175 55 / 0.14);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.7rem;
+  background: var(--swl-card);
+}
+
+.swlProgress li > span:nth-of-type(1) {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swlProgress li strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--tahaddi-gold-bright);
+}
+
+.swlProgress li[data-finished] {
+  border-color: color-mix(in srgb, var(--tahaddi-success) 50%, transparent);
+}
+
+.swlHostActions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ---------- Between rounds ---------- */
+
+.swlBetweenStage {
+  padding: var(--space-8) var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  text-align: center;
+}
+
+.swlBetweenTitle {
+  margin: 0;
+  font-family: var(--font-alexandria);
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  font-weight: 800;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.swlBetweenWords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.swlPodium {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: var(--space-3);
+  inline-size: min(100%, 30rem);
+}
+
+.swlPodiumStep {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.9rem 0.6rem 0.7rem;
+  border: 1px solid rgb(212 175 55 / 0.25);
+  border-radius: var(--radius-md);
+  background: var(--swl-card);
+  position: relative;
+}
+
+.swlPodiumStep[data-place='1'] {
+  order: 2;
+  padding-block-start: 1.6rem;
+  border-color: color-mix(in srgb, var(--tahaddi-gold) 55%, transparent);
+  background: linear-gradient(180deg, rgb(212 175 55 / 0.14), var(--swl-card));
+  box-shadow: 0 0 26px color-mix(in srgb, var(--tahaddi-gold) 22%, transparent);
+}
+
+.swlPodiumStep[data-place='2'] {
+  order: 1;
+}
+
+.swlPodiumStep[data-place='3'] {
+  order: 3;
+}
+
+.swlPodiumCrown {
+  color: var(--tahaddi-gold-bright);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tahaddi-gold) 60%, transparent));
+}
+
+.swlPodiumName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-inline-size: 100%;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.swlPodiumScore {
+  color: var(--tahaddi-success);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.swlPodiumPlace {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.8rem;
+  block-size: 1.8rem;
+  border-radius: 50% 50% 0 0;
+  background: rgb(212 175 55 / 0.16);
+  border: 1px solid rgb(212 175 55 / 0.3);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.swlPodiumPlace[data-place='1'] {
+  background: var(--gold-gradient);
+  color: var(--text-on-gold);
+}
+
+.swlBetweenRound {
+  color: var(--tahaddi-live);
+  font-variant-numeric: tabular-nums;
+}
+
+.swlScoreList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  inline-size: min(100%, 26rem);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.swlScoreList li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.8rem;
+  background: var(--swl-card);
+}
+
+.swlScoreList li[data-viewer] {
+  border-color: color-mix(in srgb, var(--tahaddi-live) 45%, transparent);
+}
+
+.swlPlayerName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+}
+
+.swlScoreList strong {
+  color: var(--tahaddi-gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.swlRoundNote {
+  margin: 0;
+  color: color-mix(in srgb, var(--swl-text) 65%, transparent);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---------- Finale ---------- */
+
+.swlFinale {
+  padding: var(--space-8) var(--space-6);
+  display: grid;
+  gap: var(--space-5);
+  justify-items: center;
+  text-align: center;
+}
+
+.swlWinner {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--tahaddi-gold) 55%, transparent);
+  background:
+    radial-gradient(circle at 50% 0%, rgb(212 175 55 / 0.18), transparent 70%),
+    var(--swl-card);
+  box-shadow: 0 0 44px color-mix(in srgb, var(--tahaddi-gold) 20%, transparent);
+  animation: swl-crown 0.7s var(--ease-out) both;
+}
+
+.swlWinnerLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--tahaddi-gold-soft);
+}
+
+.swlWinnerName {
+  font-family: var(--font-alexandria);
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 800;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.swlWinnerScore {
+  font-variant-numeric: tabular-nums;
+  color: var(--swl-text);
+}
+
+.swlWinnerTime {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: var(--tahaddi-live);
+}
+
+.swlFinaleTrophy {
+  color: var(--tahaddi-gold-bright);
+  inline-size: 2.6rem;
+  block-size: 2.6rem;
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--tahaddi-gold) 55%, transparent));
+}
+
+.swlFinaleTitle {
+  margin: 0;
+  font-family: var(--font-alexandria);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.swlFinaleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  inline-size: min(100%, 26rem);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.swlFinaleList li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid rgb(212 175 55 / 0.14);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 1rem;
+  background: var(--swl-card);
+}
+
+.swlFinaleList li[data-viewer] {
+  border-color: color-mix(in srgb, var(--tahaddi-live) 45%, transparent);
+}
+
+.swlFinaleList strong {
+  flex: 1;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swlFinaleActions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* ---------- Errors ---------- */
+
+.swlError {
+  border: 1px solid color-mix(in srgb, var(--tahaddi-danger) 45%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--tahaddi-danger) 8%, var(--swl-card));
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.swlError p {
+  margin: 0;
+  color: var(--swl-text);
+}
+
+.swlErrorActions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ---------- Keyframes ---------- */
+
+@keyframes swl-pop {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+  70% {
+    scale: 1.08;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes swl-reveal {
+  from {
+    opacity: 0;
+    translate: 0 0.6rem;
+    scale: 0.985;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes swl-beat {
+  0%, 100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.05;
+  }
+}
+
+@keyframes swl-crown {
+  0% {
+    opacity: 0;
+    scale: 0.85;
+  }
+  60% {
+    scale: 1.03;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swlRoom *,
+  .swlRoom *::before,
+  .swlRoom *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

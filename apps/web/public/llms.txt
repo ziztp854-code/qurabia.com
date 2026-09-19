@@ -1,0 +1,66 @@
+# تحدّي / Qurabia / Tahaddi
+
+> منصة عربية أولًا (RTL) للمسابقات والألعاب الجماعية المباشرة. الشعار: «نافس، أجب، وتصدّر.»
+> تتيح للمضيف إنشاء مسابقة أو غرفة لعب، مشاركة رمز قصير، وانضمام اللاعبين من الهاتف دون تسجيل.
+
+## ما الذي يقدّمه الموقع؟
+
+- مسابقات مباشرة مع بنك أسئلة ومنشئ مسابقات
+- كتالوج ألعاب عربية فورية وجماعية (شطرنج، بلوت، مليون، قاتل، وغيرها)
+- شاشة عرض سينمائية للجمهور ولوحة شرف للاعبين
+- واجهة عربية RTL مع دعم الوضع الداكن
+
+## الصفحات العامة (آمنة للفهرسة)
+
+- الصفحة الرئيسية: https://qurabia.com/
+- كتالوج الألعاب: https://qurabia.com/games/
+- المسابقات العامة: https://qurabia.com/quizzes/
+- لوحة الشرف: https://qurabia.com/leaderboard/
+- الانضمام برمز غرفة: https://qurabia.com/join/
+- شاشة العرض: https://qurabia.com/display/
+- التواصل والدعم: https://qurabia.com/contact/
+- سياسة الخصوصية: https://qurabia.com/privacy/
+- شروط الاستخدام: https://qurabia.com/terms/
+
+## ألعاب بارزة
+
+- شطرنج أونلاين: https://qurabia.com/games/chess/
+- البلوت (4 لاعبين): https://qurabia.com/games/baloot/
+- من سيربح المليون: https://qurabia.com/games/millionaire/
+- تحدي الحروف: https://qurabia.com/games/letter-challenge/
+- برج المعرفة: https://qurabia.com/games/knowledge-tower/
+- لوحة الفئات: https://qurabia.com/games/category-board/
+- السلم (فريقان): https://qurabia.com/games/ladder/
+- القاتل (Mafia): https://qurabia.com/mafia/
+- العالم الموازي: https://qurabia.com/games/parallel-world/
+- الزمن المقلوب: https://qurabia.com/games/reverse-time/
+- الدخيل: https://qurabia.com/games/infiltrator/
+- كلمة وسؤال: https://qurabia.com/games/question-word/
+- ومضة الذاكرة: https://qurabia.com/games/memory-flash/
+- شفرة الحروف: https://qurabia.com/games/word-code/
+- خدعة الألوان: https://qurabia.com/games/color-rush/
+
+## كلمات بحث مفيدة
+
+مسابقات عربية، ألعاب جماعية، Kahoot عربي، مسابقة مباشرة، شطرنج أونلاين، بلوت أونلاين، لعبة قاتل، من سيربح المليون عربي، تحدّي، Qurabia
+
+## لا تُفهرس (خاصة أو مؤقتة)
+
+- لوحات الإدارة: /admin/
+- الحسابات والمصادقة: /auth/، /profile/، /dashboard/
+- بنك الأسئلة الخاص: /questions/
+- جلسات مباشرة مؤقتة: /live/، /host/، /broadcast/
+- روابط غرف ديناميكية: /join/[رمز]، /mafia/[gameId]/play/
+
+## ملفات الاكتشاف
+
+- Sitemap: https://qurabia.com/sitemap.xml
+- Robots: https://qurabia.com/robots.txt
+- Web manifest: https://qurabia.com/manifest.webmanifest
+- هذا الملف: https://qurabia.com/llms.txt
+
+## اللغة والجمهور
+
+- اللغة الأساسية: العربية (ar-SA)
+- الاتجاه: RTL
+- الجمهور: لاعبين عرب، مضيفين، معلمين، ومنظمي فعاليات

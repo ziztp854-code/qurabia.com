@@ -1,0 +1,182 @@
+# GitLab CI for the Tahaddi monorepo.
+# Mirrors .github/workflows/nextjs.yml but splits the work into parallel jobs,
+# publishes JUnit/coverage reports to the merge request widget and adds GitLab
+# security scanning (SAST, Secret Detection, Dependency Scanning).
+
+stages:
+  - validate
+  - quality
+  - test
+  - build
+  - deploy
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == 'web'
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+
+variables:
+  PNPM_VERSION: 11.9.0
+  # Database and cache services (see the `services` blocks below).
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: tahaddi
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tahaddi?schema=public
+  DIRECT_URL: postgresql://postgres:postgres@postgres:5432/tahaddi?schema=public
+  REDIS_URL: redis://redis:6379
+
+.node:
+  image: node:24
+  interruptible: true
+  before_script:
+    - npm install --global pnpm@${PNPM_VERSION}
+    - pnpm config set store-dir "$CI_PROJECT_DIR/.pnpm-store"
+    - pnpm install --frozen-lockfile
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store
+
+.with-services:
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+    - name: redis:7.4-alpine
+      alias: redis
+
+prisma:validate:
+  extends: .node
+  stage: validate
+  script:
+    - pnpm db:validate
+
+lint:
+  extends: .node
+  stage: quality
+  script:
+    - pnpm lint
+
+typecheck:
+  extends: .node
+  stage: quality
+  script:
+    - pnpm typecheck
+
+format:check:
+  extends: .node
+  stage: quality
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - |
+      if [ -n "${CI_MERGE_REQUEST_DIFF_BASE_SHA:-}" ]; then
+        base="$CI_MERGE_REQUEST_DIFF_BASE_SHA"
+      elif [ -n "${CI_COMMIT_BEFORE_SHA:-}" ] && [ "$CI_COMMIT_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+        base="$CI_COMMIT_BEFORE_SHA"
+      else
+        base="$(git rev-parse HEAD~1)"
+      fi
+      git diff --name-only --diff-filter=ACMR -z "$base" HEAD > changed-files.nul
+      if [ ! -s changed-files.nul ]; then
+        echo "No changed files to check."
+        exit 0
+      fi
+      xargs -0 pnpm exec prettier --check --ignore-unknown < changed-files.nul
+
+# Same checks as `pnpm test`, but web and realtime run directly so they can
+# emit JUnit (vitest) and Cobertura coverage (jest) for the MR widget.
+test:unit:
+  extends:
+    - .node
+    - .with-services
+  stage: test
+  script:
+    - pnpm test:blender
+    - node scripts/check-public-supabase-exposure.mjs --env-only
+    - node scripts/check-no-ladder-prisma-models.mjs
+    - pnpm turbo run build --filter='./packages/*'
+    - pnpm turbo run test --filter='!@tahaddi/web' --filter='!@tahaddi/realtime'
+    - pnpm --filter @tahaddi/realtime exec jest --ci --coverage --coverageReporters=text-summary --coverageReporters=cobertura
+    - pnpm --filter @tahaddi/web exec vitest run --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml
+  coverage: '/Lines\s*:\s*(\d+\.?\d*)%/'
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - apps/realtime/coverage
+      - apps/web/reports
+    reports:
+      junit: apps/web/reports/vitest-junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: apps/realtime/coverage/cobertura-coverage.xml
+
+test:e2e:
+  extends:
+    - .node
+    - .with-services
+  stage: test
+  variables:
+    # CI-only auth values used by Playwright. Never expose them to other jobs.
+    AUTH_SECRET: ci-only-playwright-secret
+    AUTH_URL: http://127.0.0.1:3000
+    NEXTAUTH_URL: http://127.0.0.1:3000
+    AUTH_TRUST_HOST: 'true'
+    RUN_AUTH_E2E: 'true'
+    NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:3001
+    NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+    PLAYWRIGHT_JUNIT_OUTPUT_NAME: reports/playwright-junit.xml
+  script:
+    - pnpm turbo run build --filter='./packages/*'
+    - pnpm db:migrate:deploy
+    - pnpm db:seed
+    - pnpm --filter @tahaddi/web build
+    - pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
+    - pnpm --filter @tahaddi/web exec playwright test --reporter=list,junit
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - apps/web/reports
+      - apps/web/playwright-report
+      - apps/web/test-results
+    reports:
+      junit: apps/web/reports/playwright-junit.xml
+
+build:
+  extends: .node
+  stage: build
+  script:
+    - pnpm build
+
+# Reviewed, auditable path for production schema changes. Requires the
+# PRODUCTION_DATABASE_URL (and optionally PRODUCTION_DIRECT_URL) CI variables,
+# protected and masked. Calls prisma directly so an unreachable database fails
+# loudly instead of being skipped by scripts/db-migrate-deploy.mjs.
+db:migrate:production:
+  extends: .node
+  stage: deploy
+  interruptible: false
+  environment:
+    name: production
+    action: prepare
+  variables:
+    DATABASE_URL: $PRODUCTION_DATABASE_URL
+    DIRECT_URL: $PRODUCTION_DIRECT_URL
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
+  script:
+    - test -n "$PRODUCTION_DATABASE_URL" || { echo 'PRODUCTION_DATABASE_URL is not set'; exit 1; }
+    - pnpm exec prisma migrate status || true
+    - pnpm exec prisma migrate deploy
+    - pnpm exec prisma migrate status

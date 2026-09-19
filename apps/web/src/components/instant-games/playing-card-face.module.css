@@ -1,0 +1,60 @@
+.faceHost {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.face {
+  --card-ink: #16181d;
+  --card-paper: #fdfaf2;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  direction: ltr;
+  unicode-bidi: isolate;
+  /* fill is inherited, so every glyph picks up the suit colour unless it opts out. */
+  fill: var(--card-ink);
+}
+
+.face[data-red] {
+  --card-ink: #c8102e;
+}
+
+.paper {
+  fill: var(--card-paper);
+}
+
+/* A slab serif reads as printed card stock rather than UI text.
+ * Fix #18: extended the fallback chain to include Windows-native serifs
+ * (Cambria, Constantia) and Times New Roman, so the typography degrades
+ * gracefully when Iowan/Palatino are unavailable. */
+.index {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua',
+    Cambria, Constantia, Georgia, 'Times New Roman', serif;
+  /* Fix #6: 62px was ≈25% of the 250px card width — far larger than real
+   * playing cards. 38px (≈15%) keeps the index legible and clean. */
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.courtPanel {
+  fill: color-mix(in srgb, var(--card-ink) 8%, transparent);
+  stroke: color-mix(in srgb, var(--card-ink) 55%, transparent);
+  stroke-width: 3;
+}
+
+.courtInk {
+  fill: var(--card-ink);
+}
+
+.courtHighlight {
+  fill: var(--card-paper);
+}
+
+.courtDivider {
+  stroke: color-mix(in srgb, var(--card-ink) 55%, transparent);
+  stroke-width: 3;
+}

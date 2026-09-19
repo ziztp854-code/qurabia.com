@@ -1,0 +1,1189 @@
+/* ============================================================
+   تحدّي — طبقة العرض الملكية الموحدة
+   live-crowning.css
+
+   آخر طبقة في الشلال (تُستورد بعد live-stage-system.css) ومصدر
+   الحقيقة الوحيد لهوية البث: Premium Arabic Game Show UI 2026.
+
+   الألوان المعتمدة (لا تُشتق ألوان خارج هذه المنظومة):
+     خلفية #020617 · بطاقة #080D14 · بطاقة مرتفعة #0E1223
+     ذهبي var(--brand-gold) · ذهبي بارز #F2C14E · نص #F8FAFC
+     أخضر للصحيح والاتصال · أحمر للخاطئ والخروج فقط
+   حدود ذهبية رفيعة، توهّج خفيف، ظلال ناعمة. بلا تدرجات قوية،
+   بلا زجاج خلف النص، وبلا أي لون يزاحم القراءة.
+
+   الأقسام:
+   ١  رموز الهوية
+   ٢  المؤقّت الدائري
+   ٣  رقائق السؤال + شرح الكشف
+   ٤  بطاقات الهوية الموحدة (المسرح، الخيارات، لوحات المضيف)
+   ٥  شاشة المتسابق (هيمنة السؤال 9:16 + شريط نقاطي + نتيجة)
+   ٦  لوحة المضيف (هيمنة السؤال الوسطى + اتساق الأجهزة)
+   ٧  صح / خطأ
+   ٨  مشهد التتويج
+   ٩  الحركة المخفّضة والاحتياطات
+   ============================================================ */
+
+/* ============================================================
+   ١ — رموز الهوية
+   ============================================================ */
+
+.royal-live {
+  /* هوية 2026 المعتمدة — تتجاوز قيم royal الأقدم داخل النطاق */
+  --royal-black: #020617;
+  --royal-gold: var(--brand-gold);
+  --royal-gold-bright: #f2c14e;
+  --identity-card: #080d14;
+  --identity-card-raised: #0e1223;
+  --identity-line: rgb(212 175 55 / 0.32);
+  --identity-text: #f8fafc;
+  --ok: #22c55e;
+  --bad: #ef4444;
+}
+
+/* ============================================================
+   ٢ — المؤقّت الدائري
+   حلقة ذهبية تتناقص مع الزمن (conic-gradient بقيمة
+   --timer-progress الصادرة من الخادم)، تحذير كهرماني وحرج أحمر.
+   ============================================================ */
+
+.royal-timer {
+  --timer-size: 10rem;
+  --timer-tone: var(--royal-gold-bright);
+  --timer-aura: rgb(212 175 55 / 0.28);
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.1rem;
+  width: var(--timer-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: var(--timer-tone);
+  background:
+    radial-gradient(circle, #060b12 0 61%, transparent 62%),
+    conic-gradient(
+      from 0deg,
+      var(--timer-tone) calc(var(--timer-progress, 1) * 1turn),
+      rgb(212 175 55 / 0.16) 0
+    );
+  box-shadow:
+    0 0 0 1px rgb(212 175 55 / 0.28),
+    0 0.9rem 2.2rem rgb(0 0 0 / 0.48),
+    0 0 1.4rem var(--timer-aura);
+}
+
+.royal-timer::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border: 1px solid rgb(212 175 55 / 0.26);
+  border-radius: 50%;
+  box-shadow: inset 0 0 1.1rem rgb(0 0 0 / 0.5);
+}
+
+.royal-timer-aura {
+  position: absolute;
+  z-index: -1;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--timer-aura), transparent 68%);
+  filter: blur(9px);
+}
+
+.royal-timer strong {
+  color: var(--timer-tone);
+  font-size: calc(var(--timer-size) * 0.34);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.royal-timer-unit {
+  color: var(--royal-muted);
+  font-size: calc(var(--timer-size) * 0.11);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.royal-timer.is-warning {
+  --timer-tone: #ffb020;
+  --timer-aura: rgb(255 176 32 / 0.3);
+}
+
+.royal-timer.is-critical {
+  --timer-tone: #ff4d4d;
+  --timer-aura: rgb(255 77 77 / 0.34);
+  box-shadow:
+    0 0 0 1px rgb(255 77 77 / 0.4),
+    0 0.9rem 2.2rem rgb(0 0 0 / 0.48),
+    0 0 1.8rem rgb(255 77 77 / 0.28);
+}
+
+.royal-question-stage--display .royal-timer {
+  --timer-size: clamp(4.8rem, 8vw, 7rem);
+}
+
+.royal-question-stage--player .royal-timer {
+  --timer-size: clamp(6.2rem, 22vw, 8.5rem);
+}
+
+.royal-host-dashboard .royal-question-stage--host .royal-timer {
+  --timer-size: 5.2rem;
+}
+
+@media (max-width: 52rem) {
+  .royal-question-stage--display .royal-timer {
+    --timer-size: 3.6rem;
+  }
+  .royal-timer-unit {
+    display: none;
+  }
+}
+
+/* ============================================================
+   ٣ — رقائق السؤال + شرح ما بعد الكشف
+   ============================================================ */
+
+.royal-question-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.royal-question-chip {
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--identity-line);
+  border-radius: 999px;
+  color: var(--royal-gold-bright);
+  background: rgb(212 175 55 / 0.07);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.royal-question-chip.is-points {
+  border-color: rgb(242 193 78 / 0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+.royal-question-stage--display .royal-question-chips {
+  justify-content: end;
+}
+
+/* شرح التوضيح بعد كشف الإجابة */
+.royal-reveal-explanation {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.85rem 1.05rem;
+  border: 1px solid var(--identity-line);
+  border-radius: 0.9rem;
+  background: var(--identity-card);
+  text-align: start;
+}
+
+.royal-reveal-explanation-icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 2rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgb(242 193 78 / 0.42);
+  border-radius: 50%;
+  color: var(--royal-gold-bright);
+  background: rgb(212 175 55 / 0.1);
+}
+
+.royal-reveal-explanation-icon svg {
+  width: 1.05rem;
+}
+
+.royal-reveal-explanation strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--royal-gold-bright);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
+.royal-reveal-explanation p {
+  margin: 0;
+  color: var(--identity-text);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+
+.royal-question-stage--player .royal-reveal-explanation {
+  order: 5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .royal-reveal-explanation {
+    animation: royal-stage-rise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.35s both;
+  }
+}
+
+/* ============================================================
+   ٤ — بطاقات الهوية الموحدة
+   حد ذهبي رفيع + توهّج خفيف + ظل ناعم. بلا زجاج ولا blur
+   خلف النص ولا تدرجات قوية.
+   ============================================================ */
+
+.royal-live {
+  background: #020617;
+  color: var(--identity-text);
+}
+
+/* بطاقة السؤال — أعلى مستوى ارتفاع في الهوية */
+.royal-question-stage .royal-question-card {
+  border: 1px solid rgb(212 175 55 / 0.42);
+  border-radius: 1.25rem;
+  background: var(--identity-card-raised);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 1rem 2.4rem rgb(0 0 0 / 0.42),
+    0 0 1rem rgb(212 175 55 / 0.07);
+}
+
+/* نص السؤال: أبيض صريح عالي الوضوح */
+.royal-question-stage .royal-question-copy h2 {
+  color: var(--identity-text);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* الخيارات — بطاقة موحدة */
+.royal-question-stage .royal-answer-option,
+.royal-question-stage .royal-answer-placeholder {
+  border: 1px solid var(--identity-line);
+  border-radius: 0.95rem;
+  background: var(--identity-card);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.035),
+    0 0.7rem 1.6rem rgb(0 0 0 / 0.35);
+}
+
+.royal-question-stage .royal-answer-option:hover:not(:disabled) {
+  border-color: var(--royal-gold-bright);
+  background: var(--identity-card-raised);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 0.9rem 1.8rem rgb(0 0 0 / 0.4),
+    0 0 1rem rgb(212 175 55 / 0.14);
+}
+
+/* حرف الخيار: ذهبي موحّد (الصحيح/الخاطئ يحملان اللون الدلالي) */
+.royal-question-stage .royal-answer-option .royal-answer-number {
+  border-color: color-mix(in srgb, var(--option-tone, var(--royal-gold)) 55%, transparent);
+  color: var(--option-tone, var(--royal-gold-bright));
+  background: color-mix(in srgb, var(--option-tone, var(--royal-gold)) 12%, transparent);
+  box-shadow: 0 0 0.7rem color-mix(in srgb, var(--option-tone, var(--royal-gold)) 20%, transparent);
+}
+
+/* درجة المردود عند الكشف */
+.royal-question-stage .royal-answer-option.is-correct {
+  border-color: rgb(34 197 94 / 0.55);
+  background: rgb(34 197 94 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(34 197 94 / 0.2),
+    0 0 1.4rem rgb(34 197 94 / 0.16);
+}
+
+.royal-question-stage .royal-answer-option.is-correct .royal-answer-number {
+  --option-tone: var(--ok);
+}
+
+.royal-question-stage .royal-answer-option.is-wrong .royal-answer-number,
+.royal-question-stage .royal-answer-option.is-revealed-incorrect .royal-answer-number {
+  --option-tone: var(--bad);
+}
+
+.royal-question-stage .royal-answer-option.is-selected {
+  border-color: var(--royal-gold-bright);
+  background: var(--identity-card-raised);
+  box-shadow:
+    inset 0 0 0 1px rgb(242 193 78 / 0.35),
+    0 0 1.1rem rgb(212 175 55 / 0.16);
+}
+
+/* لوحات المضيف والمتسابق — البطاقة الواحدة */
+.royal-host-dashboard .royal-host-session-header,
+.royal-host-dashboard .royal-host-ranking,
+.royal-host-dashboard .royal-host-live-insights,
+.royal-host-dashboard .royal-host-round-stats,
+.royal-host-dashboard .royal-host-podium,
+.royal-host-dashboard .royal-host-alerts,
+.royal-host-dashboard .royal-host-question-actions,
+.royal-host-dashboard .royal-host-utility-toolbar,
+.royal-player-experience .royal-player-header,
+.royal-player-experience .royal-player-connection,
+.royal-player-experience .royal-player-audience,
+.royal-player-experience .royal-player-status,
+.royal-player-experience .royal-player-waiting {
+  border: 1px solid var(--identity-line);
+  border-radius: 1rem;
+  background: var(--identity-card);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 0.8rem 1.8rem rgb(0 0 0 / 0.38);
+}
+
+.royal-host-dashboard .royal-host-question-stage-shell {
+  border: 1px solid rgb(212 175 55 / 0.4);
+  border-radius: 1.3rem;
+  background: var(--identity-card-raised);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.045),
+    0 1rem 2.2rem rgb(0 0 0 / 0.4),
+    0 0 1.2rem rgb(212 175 55 / 0.06);
+}
+
+/* عناوين اللوحات: ذهبي مضيء صريح */
+.royal-host-dashboard .royal-host-panel-heading h2 {
+  color: var(--royal-gold-bright);
+}
+
+.royal-host-dashboard .royal-host-panel-heading span {
+  color: var(--royal-muted);
+}
+
+/* شعار المتسابق: ذهبي صريح */
+.royal-player-experience .royal-player-brand strong {
+  color: var(--royal-gold-bright);
+}
+
+/* ---- عناصر الهوية على شاشات البث ---- */
+
+/* رقائق الفئة والنقاط: ذهبية موحدة */
+.royal-question-chip {
+  border-color: var(--identity-line);
+  color: var(--royal-gold-bright);
+  background: rgb(212 175 55 / 0.07);
+}
+
+.royal-question-chip.is-points {
+  color: var(--royal-gold-bright);
+}
+
+/* شريط حالة المضيف: أخضر للاتصال الحي فقط */
+.royal-host-kicker-status {
+  border-color: rgb(34 197 94 / 0.38);
+  background: rgb(34 197 94 / 0.07);
+}
+
+.royal-host-kicker-status strong {
+  color: var(--ok);
+}
+
+.royal-host-kicker-status[data-phase='REVEAL'] {
+  border-color: rgb(34 197 94 / 0.46);
+  background: rgb(34 197 94 / 0.09);
+}
+
+.royal-host-kicker-status[data-phase='REVEAL'] strong {
+  color: var(--ok);
+}
+
+/* شريط تقدم الإجابات: ذهبي */
+.royal-host-dashboard .royal-host-answer-progress > span i {
+  background: linear-gradient(90deg, var(--royal-gold), var(--royal-gold-bright));
+  box-shadow: 0 0 0.5rem rgb(212 175 55 / 0.3);
+}
+
+/* شرح الكشف: بطاقة الهوية */
+.royal-reveal-explanation {
+  border-color: var(--identity-line);
+  background: var(--identity-card);
+}
+
+/* ============================================================
+   ٥ — شاشة المتسابق: السؤال المسيطر
+   الهاتف 9:16: مؤقت ورقم سؤال أعلى، بطاقة سؤال ضخمة، إجابات
+   كبيرة، وشريط نقاط/ترتيب أسفل. لا عناصر تشتيت.
+   ============================================================ */
+
+.royal-player-experience {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 32rem);
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding:
+    max(0.9rem, env(safe-area-inset-top))
+    1rem
+    max(1.2rem, env(safe-area-inset-bottom));
+  overflow-x: clip;
+  background:
+    radial-gradient(52% 34% at 50% -6%, rgb(212 175 55 / 0.07), transparent 70%),
+    #020617;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .royal-player-experience::before {
+    animation: none;
+  }
+}
+
+/* ترويسة مضغوطة: شعار صغير فقط */
+.royal-player-experience .royal-player-brand svg {
+  width: 1.9rem;
+}
+
+.royal-player-experience .royal-player-brand strong {
+  font-size: 1.5rem;
+}
+
+.royal-player-experience .royal-player-brand span {
+  display: none;
+}
+
+.royal-player-experience .royal-player-header {
+  min-height: 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.9rem;
+}
+
+.royal-player-experience .royal-player-header > * {
+  font-size: 0.78rem;
+}
+
+/* هيمنة السؤال: المرحلة تأخذ الارتفاع المتاح كاملاً */
+.royal-question-stage--player {
+  min-height: min(62dvh, 46rem);
+  justify-content: flex-start;
+}
+
+.royal-question-stage--player .royal-question-card {
+  min-height: clamp(9.5rem, 24vh, 15rem);
+  display: grid;
+  place-content: center;
+  padding: clamp(1.1rem, 4vw, 1.8rem);
+}
+
+.royal-question-stage--player .royal-question-copy h2 {
+  font-size: clamp(1.45rem, 5.6vw, 2.1rem);
+  line-height: 1.5;
+}
+
+.royal-question-stage--player .royal-answer-option {
+  min-height: 4.3rem;
+}
+
+/* المؤقت الدائري واضح أعلى الإجابات */
+.royal-question-stage--player .royal-timer {
+  --timer-size: clamp(5.6rem, 17vw, 7.5rem);
+  margin: 0.4rem auto;
+}
+
+/* شريط تقدم الجولة */
+.royal-player-progress {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.royal-player-progress-track {
+  position: relative;
+  display: block;
+  flex: 1;
+  height: 0.4rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(212 175 55 / 0.16);
+}
+
+.royal-player-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8b6914, var(--royal-gold-bright));
+  box-shadow: 0 0 0.5rem rgb(212 175 55 / 0.35);
+  transition: width 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.royal-player-progress b {
+  color: var(--royal-gold-bright);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+/* شريط نقاط المتسابق وترتيبه — المنطقة السفلية الوحيدة */
+.royal-player-mystats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.85rem;
+  border: 1px solid var(--identity-line);
+  border-radius: 0.95rem;
+  background: var(--identity-card);
+  overflow: hidden;
+  text-align: center;
+}
+
+.royal-player-mystats > div {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.65rem 0.5rem;
+}
+
+.royal-player-mystats > div + div {
+  border-inline-start: 1px solid rgb(212 175 55 / 0.2);
+}
+
+.royal-player-mystats dt {
+  color: var(--royal-muted);
+  font-size: 0.72rem;
+}
+
+.royal-player-mystats dd {
+  margin: 0;
+  color: var(--royal-gold-bright);
+  font-size: 1.2rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+/* بطاقة النتيجة بعد الكشف */
+.royal-player-result {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 1.5rem 1.2rem 1.3rem;
+  overflow: hidden;
+  border: 1px solid var(--identity-line);
+  border-radius: 1.25rem;
+  background: var(--identity-card-raised);
+  box-shadow: 0 1.2rem 2.6rem rgb(0 0 0 / 0.42);
+  text-align: center;
+}
+
+.royal-player-result::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.18rem;
+  background: var(--result-tone, var(--royal-gold-bright));
+  opacity: 0.85;
+}
+
+.royal-player-result.is-correct {
+  --result-tone: var(--ok);
+  border-color: rgb(34 197 94 / 0.5);
+}
+
+.royal-player-result.is-incorrect {
+  --result-tone: var(--bad);
+  border-color: rgb(239 68 68 / 0.4);
+}
+
+.royal-player-result-emblem {
+  display: grid;
+  width: 4.2rem;
+  aspect-ratio: 1;
+  place-items: center;
+  margin-bottom: 0.35rem;
+  border: 2px solid var(--result-tone);
+  border-radius: 50%;
+  color: var(--result-tone);
+  background: color-mix(in srgb, var(--result-tone) 12%, transparent);
+  box-shadow: 0 0 1.4rem color-mix(in srgb, var(--result-tone) 28%, transparent);
+}
+
+.royal-player-result-emblem svg {
+  width: 2.2rem;
+  height: 2.2rem;
+  stroke-width: 2.4;
+}
+
+.royal-player-result h2 {
+  margin: 0;
+  color: var(--result-tone, var(--royal-gold-bright));
+  font-size: 1.5rem;
+}
+
+.royal-player-result > p {
+  margin: 0;
+  color: var(--royal-muted);
+}
+
+.royal-player-result-points {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.35rem 1rem;
+  border: 1px solid rgb(212 175 55 / 0.4);
+  border-radius: 999px;
+  background: rgb(212 175 55 / 0.08);
+}
+
+.royal-player-result-points b {
+  color: var(--royal-gold-bright);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.royal-player-result-points span {
+  color: var(--royal-muted);
+  font-size: 0.78rem;
+}
+
+.royal-player-result-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  margin: 0.5rem 0 0;
+  border: 1px solid rgb(212 175 55 / 0.2);
+  border-radius: 0.85rem;
+  overflow: hidden;
+}
+
+.royal-player-result-stats > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem 0.5rem;
+  background: rgb(255 255 255 / 0.025);
+}
+
+.royal-player-result-stats > div + div {
+  border-inline-start: 1px solid rgb(212 175 55 / 0.2);
+}
+
+.royal-player-result-stats dt {
+  color: var(--royal-muted);
+  font-size: 0.72rem;
+}
+
+.royal-player-result-stats dd {
+  margin: 0;
+  color: var(--royal-gold-bright);
+  font-size: 1.25rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.royal-player-experience .royal-player-result {
+  backdrop-filter: none;
+}
+
+/* تأكيد تسجيل الإجابة */
+.royal-answer-confirmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: fit-content;
+  margin: 0.85rem auto 0;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid rgb(34 197 94 / 0.5);
+  border-radius: 999px;
+  color: var(--ok);
+  background: rgb(34 197 94 / 0.08);
+  font-size: 0.85rem;
+  box-shadow: 0 0 1rem rgb(34 197 94 / 0.1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .royal-player-result {
+    animation: royal-stage-rise 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  .royal-player-result-emblem {
+    animation: royal-emblem-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both;
+  }
+
+  @keyframes royal-emblem-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.55);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+/* ============================================================
+   ٦ — لوحة المضيف
+   السؤال يهيمن على المنطقة الوسطى؛ اللوحتان الجانبيتان أضيق؛
+   الصف السفلي كامل. لا بيانات مكررة.
+   ============================================================ */
+
+/* اللوحات الست: حشوة موحدة */
+.royal-host-dashboard .royal-host-ranking,
+.royal-host-dashboard .royal-host-live-insights,
+.royal-host-dashboard .royal-host-round-stats,
+.royal-host-dashboard .royal-host-podium,
+.royal-host-dashboard .royal-host-alerts {
+  padding: 1rem 1.05rem;
+  border-radius: 1.1rem;
+}
+
+/* السؤال يملأ مساحته: لا قصّ داخل الغلاف */
+.royal-host-dashboard .royal-host-question-stage-shell {
+  overflow: visible;
+  background: var(--identity-card-raised);
+}
+
+.royal-host-dashboard .royal-host-question-workspace {
+  overflow: auto;
+  padding: 0.35rem;
+}
+
+/* سطح المكتب: السؤال يهيمن على القلب والجانبيتان مختصرتان */
+@media (min-width: 74rem) {
+  .royal-host-dashboard.royal-live {
+    height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .royal-host-dashboard-grid {
+    height: 100%;
+    grid-template-columns: minmax(9rem, 0.6fr) minmax(24rem, 3fr) minmax(9rem, 0.7fr);
+    grid-template-rows: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+}
+
+/* تابلت: السؤال يتصدر ثم شبكة ثنائية */
+@media (max-width: 74rem) {
+  .royal-host-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    grid-template-areas:
+      'question question'
+      'ranking answers'
+      'podium alerts'
+      'round-stats round-stats';
+  }
+}
+
+/* الجوال: عمود واحد متناسق */
+@media (max-width: 40rem) {
+  .royal-host-dashboard .royal-host-ranking,
+  .royal-host-dashboard .royal-host-live-insights,
+  .royal-host-dashboard .royal-host-round-stats,
+  .royal-host-dashboard .royal-host-podium,
+  .royal-host-dashboard .royal-host-alerts {
+    padding: 0.85rem;
+  }
+
+  .royal-host-dashboard .royal-host-round-stats dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .royal-host-dashboard .royal-host-podium ol {
+    min-height: 6.4rem;
+  }
+}
+
+/* شاشات العرض الكبيرة: تضخيم للقراءة عن بعد */
+@media (min-width: 120rem) {
+  .royal-host-dashboard .royal-host-ranking,
+  .royal-host-dashboard .royal-host-live-insights,
+  .royal-host-dashboard .royal-host-round-stats,
+  .royal-host-dashboard .royal-host-podium,
+  .royal-host-dashboard .royal-host-alerts {
+    padding: 1.3rem 1.4rem;
+  }
+
+  .royal-host-dashboard .royal-host-panel-heading h2 {
+    font-size: 1.2rem;
+  }
+
+  .royal-host-dashboard .royal-host-ranking li strong,
+  .royal-host-dashboard .royal-host-ranking li b {
+    font-size: 0.9rem;
+  }
+}
+
+/* عنوان اللوحة: ذهبي صريح */
+.royal-host-dashboard .royal-host-panel-heading h2 {
+  color: var(--royal-gold-bright);
+}
+
+.royal-host-dashboard .royal-host-panel-heading span {
+  color: var(--royal-muted);
+}
+
+/* شريط الحالة المباشر */
+.royal-host-dashboard .royal-host-question-kicker {
+  align-items: center;
+}
+
+.royal-host-kicker-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid rgb(34 197 94 / 0.38);
+  border-radius: 999px;
+  background: rgb(34 197 94 / 0.07);
+}
+
+.royal-host-kicker-status[data-phase='REVEAL'] {
+  border-color: rgb(34 197 94 / 0.46);
+  background: rgb(34 197 94 / 0.09);
+}
+
+.royal-host-kicker-status strong {
+  color: var(--ok);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.royal-host-live-dot {
+  position: relative;
+  width: 0.5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .royal-host-live-dot::after {
+    content: '';
+    position: absolute;
+    inset: -0.28rem;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    opacity: 0;
+    animation: royal-live-ring 1.6s ease-out infinite;
+  }
+
+  @keyframes royal-live-ring {
+    0% {
+      opacity: 0.85;
+      transform: scale(0.5);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(1.5);
+    }
+  }
+}
+
+.royal-host-kicker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.royal-host-kicker-chips span {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgb(212 175 55 / 0.3);
+  border-radius: 999px;
+  color: var(--royal-gold-bright);
+  background: rgb(212 175 55 / 0.06);
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* شريط الإجابات + النسبة */
+.royal-host-dashboard .royal-host-answer-progress {
+  grid-template-columns: auto minmax(8rem, 1fr) auto;
+}
+
+.royal-host-dashboard .royal-host-answer-progress > b {
+  color: var(--royal-gold-bright);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* إحصائيات الجولة: بطاقات داخلية موحدة */
+.royal-host-dashboard .royal-host-round-stats dl {
+  gap: 0.5rem;
+}
+
+.royal-host-dashboard .royal-host-round-stats dl > div {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgb(212 175 55 / 0.16);
+  border-radius: 0.7rem;
+  background: rgb(255 255 255 / 0.025);
+}
+
+.royal-host-dashboard .royal-host-round-stats dt {
+  font-size: 0.7rem;
+}
+
+.royal-host-dashboard .royal-host-round-stats dd {
+  font-size: 1.2rem;
+  font-weight: 850;
+}
+
+/* المنصة المباشرة: بطاقة موحدة */
+.royal-host-dashboard .royal-host-podium {
+  align-self: stretch;
+  background: var(--identity-card);
+}
+
+/* لحظة الترتيب: توسيط عمودي */
+.royal-host-dashboard .royal-host-finish-card {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.4rem;
+  min-height: 16rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.royal-host-dashboard .royal-host-finish-card h2 {
+  margin: 0;
+  color: var(--royal-gold-bright);
+  font-size: clamp(1.6rem, 2.6vw, 2.6rem);
+}
+
+/* السؤال خلال الكشف يأخذ الصف كاملاً */
+.royal-host-dashboard .royal-question-stage--host[data-phase='REVEAL'] {
+  grid-template-areas:
+    'question'
+    'media'
+    'answers';
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ============================================================
+   ٧ — صح / خطأ: زرّان كبيران أخضر وأحمر
+   لا أزرق ولا بنفسجي في هذه الحالة.
+   ============================================================ */
+
+.royal-question-stage .royal-question-grid.is-binary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.7rem, 1.6vw, 1.1rem);
+}
+
+.royal-question-stage .royal-question-grid.is-binary .royal-answer-option {
+  min-height: clamp(4.6rem, 9vh, 6.5rem);
+}
+
+.royal-question-stage .royal-question-grid.is-binary .royal-option-1 {
+  --option-tone: var(--ok);
+  border-color: rgb(34 197 94 / 0.55);
+  background: rgb(34 197 94 / 0.08);
+}
+
+.royal-question-stage .royal-question-grid.is-binary .royal-option-2 {
+  --option-tone: var(--bad);
+  border-color: rgb(239 68 68 / 0.5);
+  background: rgb(239 68 68 / 0.07);
+}
+
+.royal-question-stage .royal-question-grid.is-binary .royal-option-1 .royal-answer-number {
+  border-color: rgb(34 197 94 / 0.55);
+  color: var(--ok);
+  background: rgb(34 197 94 / 0.12);
+}
+
+.royal-question-stage .royal-question-grid.is-binary .royal-option-2 .royal-answer-number {
+  --option-tone: var(--bad);
+}
+
+/* ============================================================
+   ٧-ب — قاعة الانتظار: رمز الغرفة البطل
+   ============================================================ */
+
+.royal-lobby-screen .royal-lobby-access {
+  border-color: rgb(212 175 55 / 0.5);
+  background: var(--identity-card-raised);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 0 1.6rem rgb(212 175 55 / 0.08),
+    0 1rem 2.2rem rgb(0 0 0 / 0.4);
+}
+
+.royal-lobby-screen .royal-lobby-rules {
+  opacity: 0.88;
+}
+
+.royal-lobby-screen .royal-lobby-rules h2 {
+  font-size: 1rem;
+}
+
+/* ============================================================
+   التتويج: منصة ثلاثية بسيطة على أرضية موحدة
+   ============================================================ */
+
+.royal-finale-screen {
+  background:
+    radial-gradient(44% 38% at 50% -8%, rgb(212 175 55 / 0.1), transparent 70%),
+    radial-gradient(36% 30% at 50% 106%, rgb(212 175 55 / 0.08), transparent 72%),
+    #020617;
+}
+
+.royal-finale-ceremony {
+  position: relative;
+  isolation: isolate;
+}
+
+.royal-finale-ceremony .royal-ceremony-moment {
+  position: relative;
+  isolation: isolate;
+}
+
+/* أشعة خفيفة ذهبية فقط — لا بنفسجي */
+.royal-finale-ceremony .royal-ceremony-moment::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 10%,
+    rgb(212 175 55 / 0.06) 13%,
+    transparent 17% 47%,
+    rgb(242 193 78 / 0.08) 50%,
+    transparent 54% 82%,
+    rgb(212 175 55 / 0.05) 87%,
+    transparent 91%
+  );
+}
+
+.royal-finale-ceremony .royal-ceremony-moment::after {
+  background: radial-gradient(ellipse at 50% 100%, rgb(212 175 55 / 0.14), transparent 66%);
+}
+
+/* عنوان الإعلان: ذهبي متدرّج خفيف مقروء */
+.royal-finale-ceremony .royal-ceremony-moment > h1,
+.royal-finale-screen.is-final .royal-finale-heading h1 {
+  background: linear-gradient(180deg, #fefce8 10%, var(--royal-gold-bright) 85%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: none;
+}
+
+/* بطاقة الكشف */
+.royal-reveal-player {
+  border: 1px solid color-mix(in srgb, var(--podium-tone, var(--royal-gold)) 42%, transparent);
+  border-radius: 1.4rem;
+  background: var(--identity-card-raised);
+  box-shadow:
+    0 1.4rem 2.8rem rgb(0 0 0 / 0.48),
+    0 0 1.8rem color-mix(in srgb, var(--podium-tone, var(--royal-gold)) 18%, transparent);
+}
+
+.royal-reveal-player > strong {
+  text-shadow: 0 0 1.2rem rgb(212 175 55 / 0.2);
+}
+
+/* قواعد المنصة */
+.royal-finale-screen .royal-podium-place::after {
+  border: 1px solid color-mix(in srgb, var(--podium-tone, var(--royal-gold)) 46%, transparent);
+  border-bottom: 0;
+  background:
+    linear-gradient(180deg, rgb(212 175 55 / 0.08), transparent 32%),
+    linear-gradient(180deg, #0e1223, #070b12);
+  backdrop-filter: none;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--podium-tone, var(--royal-gold)) 52%, transparent),
+    0 1.2rem 2rem rgb(0 0 0 / 0.45);
+}
+
+/* بطاقة الفائز */
+.royal-winner-thanks {
+  border-color: rgb(212 175 55 / 0.5);
+  background: var(--identity-card-raised);
+  box-shadow:
+    0 0 1.8rem rgb(212 175 55 / 0.1),
+    0 1rem 2.2rem rgb(0 0 0 / 0.4);
+}
+
+.royal-winner-thanks strong {
+  text-shadow: none;
+}
+
+.royal-winner-thanks strong {
+  text-shadow: none;
+}
+
+/* ============================================================
+   ٩ — الحركة المخفّضة والاحتياطات
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .royal-timer,
+  .royal-player-result,
+  .royal-player-result-emblem,
+  .royal-reveal-player,
+  .royal-reveal-explanation,
+  .royal-finale-screen.is-final::before,
+  .royal-finale-screen.is-final::after,
+  .royal-finale-screen.is-final .royal-podium-place,
+  .royal-finale-screen.is-final .royal-podium-place::after,
+  .royal-finale-ceremony .royal-ceremony-moment::before,
+  .royal-finale-screen.is-final::before,
+  .royal-finale-screen.is-final::after {
+    animation: none;
+  }
+}
+
+/* ---- أثناء السؤال: الترويسة تختصر لشعار + اسم + اتصال ---- */
+.royal-player-experience[data-phase='QUESTION'] .royal-player-audience,
+.royal-player-experience[data-phase='QUESTION'] .royal-player-help,
+.royal-player-experience[data-phase='QUESTION'] .royal-player-identity span {
+  display: none;
+}
+
+.royal-player-experience[data-phase='QUESTION'] .royal-player-header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.royal-player-experience[data-phase='QUESTION'] .royal-player-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  grid-column: auto;
+}
+
+.royal-player-experience[data-phase='QUESTION'] .royal-player-brand svg {
+  width: 1.5rem;
+}
+
+.royal-player-experience[data-phase='QUESTION'] .royal-player-brand strong {
+  font-size: 1.15rem;
+}
+
+.royal-player-experience[data-phase='QUESTION'] .royal-player-identity {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.royal-player-experience[data-phase='QUESTION'] .royal-player-identity strong {
+  overflow: hidden;
+  max-width: 9rem;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- سؤال المضيف: خط أضخم للقراءة من مسافة ---- */
+.royal-host-dashboard .royal-question-stage--host .royal-question-copy h2 {
+  max-width: none;
+  font-size: clamp(1.5rem, 2.2vw, 2.4rem);
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.royal-host-dashboard .royal-question-stage--host .royal-question-card {
+  min-height: clamp(7.5rem, 16vh, 12rem);
+  display: grid;
+  place-content: center;
+}

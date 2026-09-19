@@ -1,0 +1,203 @@
+[
+  {
+    "file": "out/beach.webp",
+    "words": [
+      "بحر",
+      "امواج",
+      "شاطئ",
+      "رمال",
+      "شمس"
+    ],
+    "category": "شاطئ"
+  },
+  {
+    "file": "out/city-night.webp",
+    "words": [
+      "مدينة",
+      "ابراج",
+      "انوار",
+      "ليل"
+    ],
+    "category": "ليل المدينة"
+  },
+  {
+    "file": "out/desert.webp",
+    "words": [
+      "صحراء",
+      "كثبان",
+      "شمس",
+      "رمال"
+    ],
+    "category": "صحراء"
+  },
+  {
+    "file": "out/mosque.webp",
+    "words": [
+      "مسجد",
+      "قبة",
+      "مئذنة",
+      "هلال"
+    ],
+    "category": "مسجد"
+  },
+  {
+    "file": "out/coffee.webp",
+    "words": [
+      "فنجان",
+      "بخار",
+      "ضيافة",
+      "قهوة"
+    ],
+    "category": "قهوة"
+  },
+  {
+    "file": "out/rain.webp",
+    "words": [
+      "مطر",
+      "سحاب",
+      "مظلة",
+      "قطرات"
+    ],
+    "category": "مطر"
+  },
+  {
+    "file": "out/mountains.webp",
+    "words": [
+      "جبال",
+      "قمة",
+      "ثلوج",
+      "وادي"
+    ],
+    "category": "جبال"
+  },
+  {
+    "file": "out/moon-stars.webp",
+    "words": [
+      "قمر",
+      "نجوم",
+      "سماء",
+      "ليل"
+    ],
+    "category": "قمر ونجوم"
+  },
+  {
+    "file": "out/market.webp",
+    "words": [
+      "سوق",
+      "فانوس",
+      "خيام",
+      "زحام"
+    ],
+    "category": "سوق"
+  },
+  {
+    "file": "out/palm.webp",
+    "words": [
+      "نخلة",
+      "تمر",
+      "سعف",
+      "واحة"
+    ],
+    "category": "نخلة"
+  },
+  {
+    "file": "out/sailboat.webp",
+    "words": [
+      "قارب",
+      "شراع",
+      "بحر",
+      "ريح"
+    ],
+    "category": "قارب"
+  },
+  {
+    "file": "out/clock.webp",
+    "words": [
+      "ساعة",
+      "عقارب",
+      "وقت",
+      "دقائق"
+    ],
+    "category": "ساعة"
+  },
+  {
+    "file": "out/library.webp",
+    "words": [
+      "مكتبة",
+      "كتب",
+      "رفوف",
+      "قراءة"
+    ],
+    "category": "مكتبة"
+  },
+  {
+    "file": "out/campfire.webp",
+    "words": [
+      "نار",
+      "خيمة",
+      "مخيم",
+      "لهب"
+    ],
+    "category": "مخيم"
+  },
+  {
+    "file": "out/balloon.webp",
+    "words": [
+      "منطاد",
+      "سماء",
+      "ريح",
+      "سلة"
+    ],
+    "category": "منطاد"
+  },
+  {
+    "file": "out/rose.webp",
+    "words": [
+      "وردة",
+      "بتلات",
+      "عطر",
+      "ازهار"
+    ],
+    "category": "وردة"
+  },
+  {
+    "file": "out/football.webp",
+    "words": [
+      "كرة",
+      "ملعب",
+      "مرمى",
+      "مباراة"
+    ],
+    "category": "كرة قدم"
+  },
+  {
+    "file": "out/tea.webp",
+    "words": [
+      "براد",
+      "شاي",
+      "كاسات",
+      "نعناع"
+    ],
+    "category": "شاي"
+  },
+  {
+    "file": "out/lantern.webp",
+    "words": [
+      "فانوس",
+      "رمضان",
+      "ضوء",
+      "هلال"
+    ],
+    "category": "فانوس"
+  },
+  {
+    "file": "out/compass.webp",
+    "words": [
+      "بوصلة",
+      "خريطة",
+      "سفر",
+      "اتجاه"
+    ],
+    "category": "بوصلة"
+  }
+]

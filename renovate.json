@@ -1,0 +1,48 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "rangeStrategy": "bump",
+  "toolSettings": {
+    "nodeMaxMemory": 1536
+  },
+  "postUpdateOptions": ["pnpmDedupe"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "packageRules": [
+    {
+      "description": "Batch non-major updates into one weekly MR.",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "groupName": "non-major dependencies",
+      "schedule": ["before 5am on monday"]
+    },
+    {
+      "matchPackageNames": ["next", "react", "react-dom", "eslint-config-next"],
+      "groupName": "next"
+    },
+    {
+      "matchPackageNames": ["prisma", "@prisma/client", "@prisma/adapter-pg"],
+      "groupName": "prisma"
+    },
+    {
+      "matchPackageNames": ["@nestjs/**"],
+      "groupName": "nestjs"
+    },
+    {
+      "matchPackageNames": ["@sentry/**"],
+      "groupName": "sentry"
+    },
+    {
+      "description": "Auth.js v5 migration is tracked as a dedicated change.",
+      "matchPackageNames": ["next-auth"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
+}

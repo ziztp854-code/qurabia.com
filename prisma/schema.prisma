@@ -1,0 +1,654 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../packages/database/src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  CONTENT_EDITOR
+  MODERATOR
+  ADMIN
+  OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+  DELETED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum QuestionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionGame {
+  QUIZ
+  CATEGORY_BOARD
+  LETTER_CHALLENGE
+  MILLIONAIRE
+  LADDER
+  QUESTION_WORD
+}
+
+enum ScrambledWordsPuzzleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuizStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum SubscriptionSource {
+  STAMP
+  ACHIEVEMENT
+  ADMIN
+}
+
+enum SubscriptionStampStatus {
+  UNUSED
+  REDEEMED
+  REVOKED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum LiveSessionStatus {
+  WAITING
+  ACTIVE
+  FINISHED
+}
+
+enum LiveParticipantStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+enum MafiaGameStatus {
+  LOBBY
+  NIGHT
+  DAY
+  VOTING
+  FINISHED
+}
+
+enum MafiaRole {
+  KILLER
+  DETECTIVE
+  DOCTOR
+  GUARD
+  WITNESS
+  CITIZEN
+}
+
+enum MafiaPlayerStatus {
+  ALIVE
+  ELIMINATED
+}
+
+enum MafiaWinner {
+  CITIZENS
+  KILLERS
+}
+
+enum MafiaMessageChannel {
+  PUBLIC
+  KILLERS
+  GHOSTS
+  SYSTEM
+}
+
+enum MafiaActionType {
+  KILL
+  INVESTIGATE
+  HEAL
+  PROTECT
+}
+
+model User {
+  id                 String        @id @default(cuid())
+  name               String?       @db.VarChar(120)
+  email              String?       @unique @db.VarChar(320)
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String?
+  role               UserRole      @default(USER)
+  status             UserStatus    @default(ACTIVE)
+  tokenVersion       Int           @default(0)
+  lastLoginAt        DateTime?
+  suspendedAt        DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  accounts           Account[]
+  sessions           Session[]
+  profile            Profile?
+  questions          Question[]
+  quizzes            Quiz[]
+  hostedLiveSessions LiveSession[] @relation("LiveSessionHost")
+  hostedMafiaGames   MafiaGame[]   @relation("MafiaGameHost")
+  auditActions       AuditLog[]    @relation("AuditActor")
+  auditTargets       AuditLog[]    @relation("AuditTarget")
+  subscriptions      UserSubscription[]
+  usageCounters      UsageCounter[]
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String?
+  actorRole    UserRole
+  action       String   @db.VarChar(120)
+  resourceType String   @db.VarChar(80)
+  resourceId   String?  @db.VarChar(191)
+  targetUserId String?
+  result       String   @db.VarChar(32)
+  reasonCode   String?  @db.VarChar(80)
+  requestId    String?  @db.VarChar(191)
+  before       Json?
+  after        Json?
+  createdAt    DateTime @default(now())
+  actor        User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetUser   User?    @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([resourceType, resourceId])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique @db.VarChar(120)
+  slug        String?    @unique @db.VarChar(120)
+  description String?    @db.VarChar(500)
+  icon        String?    @db.VarChar(40)
+  position    Int        @default(0)
+  isActive    Boolean    @default(true)
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Category[] @relation("CategoryTree")
+  questions   Question[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([parentId, position])
+  @@index([isActive])
+}
+
+model Question {
+  id             String             @id @default(cuid())
+  ownerId        String
+  type           QuestionType       @default(MULTIPLE_CHOICE)
+  status         QuestionStatus     @default(DRAFT)
+  difficulty     QuestionDifficulty @default(MEDIUM)
+  prompt         String             @db.VarChar(1000)
+  imageUrl       String?            @db.VarChar(1000)
+  explanation    String?            @db.VarChar(2000)
+  expectedAnswer String?            @db.VarChar(200)
+  keywords       String[]           @default([])
+  categoryId     String?
+  gameTypes      QuestionGame[]     @default([QUIZ])
+  source         String?            @db.VarChar(500)
+  timeLimit      Int                @default(20)
+  basePoints     Int                @default(1000)
+  version        Int                @default(1)
+  archivedAt     DateTime?
+  lastEditedAt   DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  owner          User               @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  category       Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  options        QuestionOption[]
+  tags           QuestionTag[]
+  quizzes        QuizQuestion[]
+  liveAnswers    LiveAnswer[]
+
+  @@index([ownerId, status])
+  @@index([ownerId, updatedAt])
+  @@index([categoryId, status, difficulty])
+  @@index([gameTypes], type: Gin)
+  @@index([keywords], type: Gin)
+  @@index([timeLimit])
+  @@index([lastEditedAt])
+}
+
+model Quiz {
+  id              String         @id @default(cuid())
+  title           String         @db.VarChar(160)
+  description     String?        @db.VarChar(1000)
+  roundName       String?        @db.VarChar(160)
+  presentationMode String         @default("SEQUENTIAL") @db.VarChar(16)
+  ownerId         String
+  roomCode        String         @unique @db.VarChar(8)
+  isPublic        Boolean        @default(false)
+  status          QuizStatus     @default(DRAFT)
+  gameMode        QuestionGame   @default(QUIZ)
+  maxPlayers      Int            @default(50)
+  autoLockAnswers Boolean        @default(true)
+  autoAdvance     Boolean        @default(false)
+  speedScoring    Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  owner           User           @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  questions       QuizQuestion[]
+  liveSessions    LiveSession[]
+
+  @@index([ownerId, status])
+  @@index([isPublic, status])
+  @@index([createdAt])
+  @@index([gameMode, status])
+}
+
+model QuizQuestion {
+  quizId     String
+  questionId String
+  position   Int
+  durationOverride Int?
+  pointsOverride   Int?
+  questionVersion  Int
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@id([quizId, questionId])
+  @@unique([quizId, position])
+  @@index([questionId])
+}
+
+model QuestionOption {
+  id          String       @id @default(cuid())
+  questionId  String
+  position    Int
+  text        String       @db.VarChar(500)
+  isCorrect   Boolean      @default(false)
+  question    Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  liveAnswers LiveAnswer[]
+
+  @@unique([questionId, position])
+}
+
+model QuestionTag {
+  id         String   @id @default(cuid())
+  questionId String
+  tag        String   @db.VarChar(60)
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, tag])
+  @@index([tag])
+}
+
+model LiveSession {
+  id                      String            @id @default(cuid())
+  quizId                  String
+  hostId                  String
+  roomCode                String            @db.VarChar(8)
+  status                  LiveSessionStatus @default(WAITING)
+  currentQuestionPosition Int               @default(0)
+  questionStartedAt       DateTime?
+  questionAdvanceAt       DateTime?
+  startedAt               DateTime?
+  endedAt                 DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  quiz                    Quiz              @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  host                    User              @relation("LiveSessionHost", fields: [hostId], references: [id], onDelete: Restrict)
+  participants            LiveParticipant[]
+  answers                 LiveAnswer[]
+
+  @@index([quizId, status])
+  @@index([hostId, createdAt])
+  @@index([roomCode, status])
+}
+
+model LiveParticipant {
+  id                 String                      @id @default(cuid())
+  sessionId          String
+  displayName        String                      @db.VarChar(80)
+  score              Int                         @default(0)
+  correctCount       Int                         @default(0)
+  status             LiveParticipantStatus       @default(CONNECTED)
+  joinedAt           DateTime                    @default(now())
+  lastSeenAt         DateTime                    @default(now())
+  lastConnectedAt    DateTime?
+  lastDisconnectedAt DateTime?
+  lastIpAddress      String?                     @db.VarChar(45)
+  lastUserAgent      String?                     @db.VarChar(512)
+  lastDeviceLabel    String?                     @db.VarChar(120)
+  session            LiveSession                 @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  answers            LiveAnswer[]
+  connections        LiveParticipantConnection[]
+
+  @@unique([sessionId, displayName])
+  @@index([sessionId, score])
+}
+
+model LiveParticipantConnection {
+  id             String          @id @default(cuid())
+  participantId  String
+  socketId       String          @unique @db.VarChar(64)
+  ipAddress      String?         @db.VarChar(45)
+  userAgent      String?         @db.VarChar(512)
+  deviceLabel    String?         @db.VarChar(120)
+  connectedAt    DateTime        @default(now())
+  disconnectedAt DateTime?
+  participant    LiveParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([participantId, connectedAt])
+  @@index([ipAddress])
+}
+
+model LiveAnswer {
+  id            String          @id @default(cuid())
+  sessionId     String
+  participantId String
+  questionId    String
+  optionId      String
+  isCorrect     Boolean
+  earnedPoints  Int             @default(0)
+  receivedAt    DateTime        @default(now())
+  session       LiveSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant   LiveParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  question      Question        @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  option        QuestionOption  @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([participantId, questionId])
+  @@index([sessionId, receivedAt])
+  @@index([questionId])
+  @@index([optionId])
+}
+
+model MafiaGame {
+  id                  String                @id @default(cuid())
+  hostId              String
+  roomCode            String                @unique @db.VarChar(8)
+  modeId              String                @default("CLASSIC")
+  status              MafiaGameStatus       @default(LOBBY)
+  winner              MafiaWinner?
+  currentRound        Int                   @default(0)
+  maxPlayers          Int                   @default(20)
+  killerCount         Int                   @default(1)
+  autoMode            Boolean               @default(true)
+  daySeconds          Int                   @default(90)
+  nightSeconds        Int                   @default(45)
+  votingSeconds       Int                   @default(45)
+  chatEnabled         Boolean               @default(true)
+  slowModeSeconds     Int                   @default(2)
+  phaseEndsAt         DateTime?
+  startedAt           DateTime?
+  endedAt             DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  host                User                  @relation("MafiaGameHost", fields: [hostId], references: [id], onDelete: Restrict)
+  participants        MafiaParticipant[]
+  messages            MafiaMessage[]
+  actions             MafiaAction[]
+  votes               MafiaVote[]
+
+  @@index([hostId, createdAt])
+  @@index([roomCode, status])
+}
+
+model MafiaParticipant {
+  id            String            @id @default(cuid())
+  accessToken   String            @unique @db.VarChar(64)
+  gameId        String
+  displayName   String            @db.VarChar(80)
+  role          MafiaRole?
+  status        MafiaPlayerStatus @default(ALIVE)
+  isMuted       Boolean           @default(false)
+  privateNote   String?           @db.VarChar(500)
+  joinedAt      DateTime          @default(now())
+  lastSeenAt    DateTime          @default(now())
+  lastMessageAt DateTime?
+  eliminatedAt  DateTime?
+  game          MafiaGame         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  messages      MafiaMessage[]
+  actions       MafiaAction[]     @relation("MafiaActionActor")
+  targetedBy    MafiaAction[]     @relation("MafiaActionTarget")
+  votesCast     MafiaVote[]       @relation("MafiaVoteVoter")
+  votesReceived MafiaVote[]       @relation("MafiaVoteTarget")
+
+  @@unique([gameId, displayName])
+  @@index([gameId, status])
+  @@index([gameId, role])
+}
+
+model MafiaMessage {
+  id            String               @id @default(cuid())
+  gameId        String
+  participantId String?
+  channel       MafiaMessageChannel  @default(PUBLIC)
+  body          String               @db.VarChar(280)
+  createdAt     DateTime             @default(now())
+  game          MafiaGame            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  participant   MafiaParticipant?    @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([gameId, channel, createdAt])
+}
+
+model MafiaAction {
+  id             String           @id @default(cuid())
+  gameId         String
+  round          Int
+  actorId        String
+  targetId       String
+  type           MafiaActionType
+  resultIsKiller Boolean?
+  createdAt      DateTime         @default(now())
+  game           MafiaGame        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  actor          MafiaParticipant @relation("MafiaActionActor", fields: [actorId], references: [id], onDelete: Cascade)
+  target         MafiaParticipant @relation("MafiaActionTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, round, type, actorId])
+  @@index([gameId, round, type])
+  @@index([targetId])
+}
+
+model MafiaVote {
+  id        String           @id @default(cuid())
+  gameId    String
+  round     Int
+  voterId   String
+  targetId  String
+  createdAt DateTime         @default(now())
+  game      MafiaGame        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  voter     MafiaParticipant @relation("MafiaVoteVoter", fields: [voterId], references: [id], onDelete: Cascade)
+  target    MafiaParticipant @relation("MafiaVoteTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, round, voterId])
+  @@index([gameId, round, targetId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String  @db.VarChar(64)
+  provider          String  @db.VarChar(64)
+  providerAccountId String  @db.VarChar(191)
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String   @db.VarChar(320)
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@index([expires])
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  displayName String   @db.VarChar(120)
+  bio         String?  @db.VarChar(500)
+  locale      String   @default("ar") @db.VarChar(12)
+  timezone    String   @default("Asia/Riyadh") @db.VarChar(64)
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([displayName])
+}
+
+model SubscriptionStamp {
+  id          String                  @id @default(cuid())
+  code        String                  @unique @db.VarChar(24)
+  planCode    String                  @db.VarChar(16)
+  planVersion Int
+  durationDays Int
+  status      SubscriptionStampStatus @default(UNUSED)
+  note        String?                 @db.VarChar(200)
+  issuedBy    String
+  issuedAt    DateTime                @default(now())
+  redeemedBy  String?
+  redeemedAt  DateTime?
+  revokedAt   DateTime?
+  subscription UserSubscription?       @relation("StampSubscription")
+
+  @@index([status, planCode])
+}
+
+model UserSubscription {
+  id          String             @id @default(cuid())
+  userId      String
+  planCode    String             @db.VarChar(16)
+  planVersion Int
+  status      SubscriptionStatus @default(ACTIVE)
+  source      SubscriptionSource @default(STAMP)
+  stampId     String?            @unique
+  startedAt   DateTime           @default(now())
+  expiresAt   DateTime
+  cancelledAt DateTime?
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stamp       SubscriptionStamp? @relation("StampSubscription", fields: [stampId], references: [id])
+
+  @@index([userId, status, expiresAt])
+}
+
+model UsageCounter {
+  id          String   @id @default(cuid())
+  userId      String
+  key         String   @db.VarChar(40)
+  periodStart DateTime @db.Date
+  count       Int      @default(0)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key, periodStart])
+}
+
+model ScrambledWordsPuzzle {
+  id        String                     @id @default(cuid())
+  imageUrl  String                     @db.VarChar(500)
+  words     String[]
+  category  String?                    @db.VarChar(80)
+  status    ScrambledWordsPuzzleStatus @default(PUBLISHED)
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model LadderRoom {
+  id              String    @id @default(cuid())
+  roomCode        String    @unique @db.VarChar(8)
+  hostId          String
+  status          String    @default("waiting") // waiting, active, finished
+  currentRound    Int       @default(0)
+  totalRounds     Int       @default(10)
+  rightScore      Int       @default(0)
+  leftScore       Int       @default(0)
+  rightPosition   Int       @default(0)
+  leftPosition    Int       @default(0)
+  winningPosition Int       @default(10)
+  currentQuestionId String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  questions       LadderQuestion[] @relation("LadderRoomQuestions")
+  teams           LadderTeam[] @relation("LadderRoomTeams")
+
+  @@index([roomCode, status])
+}
+
+model LadderQuestion {
+  id            String    @id @default(cuid())
+  roomId        String
+  questionText  String    @db.VarChar(500)
+  options       Json
+  correctOptionId String
+  timeLimit     Int       @default(15)
+  roundNumber   Int
+  createdAt     DateTime  @default(now())
+  room          LadderRoom @relation("LadderRoomQuestions", fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+}
+
+model LadderTeam {
+  id          String   @id @default(cuid())
+  roomId      String
+  team        String
+  playerName  String   @db.VarChar(80)
+  isHost      Boolean  @default(false)
+  joinedAt    DateTime @default(now())
+  room        LadderRoom @relation("LadderRoomTeams", fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, team, playerName])
+  @@index([roomId])
+}

@@ -1,0 +1,74 @@
+.workshop {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.main,
+.rail,
+.footer,
+.saveBar {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.rail,
+.footer,
+.main {
+  padding: var(--space-5);
+  border: 1px solid var(--qb-border, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--qb-surface-2, var(--surface-soft));
+  box-shadow: var(--qb-shadow-sm, none);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--qb-gold, var(--gold));
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.saveBar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  padding: var(--space-4);
+  border: 1px solid var(--qb-border, var(--border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--qb-bg, var(--qb-surface)) 88%, transparent);
+}
+
+@media (min-width: 64rem) {
+  .workshop {
+    grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.9fr);
+    align-items: start;
+  }
+
+  .main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .rail {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .footer,
+  .saveBar {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saveBar {
+    position: static;
+  }
+}

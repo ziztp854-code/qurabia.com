@@ -1,0 +1,97 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: #070a0f;
+  color: #f5f0e6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 15%, rgb(0 212 255 / 12%), transparent 36rem),
+    #070a0f;
+}
+
+main {
+  width: min(34rem, calc(100% - 2rem));
+  padding: 3rem 2rem;
+  text-align: center;
+  border: 1px solid rgb(255 176 0 / 35%);
+  border-radius: 1.5rem;
+  background: rgb(13 18 27 / 92%);
+  box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 45%);
+}
+
+.mark {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffb000;
+  border-radius: 1.25rem;
+  color: #ffb000;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #00d4ff;
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0.75rem 0;
+  font-size: clamp(1.65rem, 4vw, 2.4rem);
+}
+
+#status {
+  min-height: 3rem;
+  margin: 0 auto 1.5rem;
+  color: #b8c1cc;
+  line-height: 1.75;
+}
+
+button {
+  min-width: 10rem;
+  min-height: 3rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: #ffb000;
+  color: #070a0f;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 3px solid #00d4ff;
+  outline-offset: 4px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  main {
+    animation: appear 240ms ease-out;
+  }
+
+  @keyframes appear {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+}
+

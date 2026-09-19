@@ -1,0 +1,22 @@
+{
+  "name": "@tahaddi/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/client.js",
+  "types": "dist/client.d.ts",
+  "scripts": {
+    "clean:generated": "node clean-generated.cjs",
+    "generate": "pnpm run clean:generated && prisma generate --config ../../prisma.config.ts",
+    "build": "pnpm run generate && tsc -p tsconfig.json",
+    "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
+    "test": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
+}

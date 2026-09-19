@@ -1,0 +1,160 @@
+.viewer {
+  inline-size: min(100%, 70rem);
+  margin-inline: auto;
+}
+
+.compact {
+  inline-size: 100%;
+  margin-block: var(--space-3);
+}
+
+.compact .stage {
+  block-size: clamp(17rem, 30vw, 23rem);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.stage {
+  position: relative;
+  block-size: clamp(22rem, 68vh, 44rem);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 42%, transparent);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--brand-gold) 12%, transparent), transparent 42%),
+    var(--background);
+  box-shadow: var(--shadow-lg);
+  touch-action: none;
+}
+
+.stage:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 4px;
+}
+
+.stage canvas {
+  cursor: grab;
+}
+
+.stage:active canvas {
+  cursor: grabbing;
+}
+
+.loading,
+.error,
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  color: var(--foreground);
+  text-align: center;
+  background: color-mix(in srgb, var(--background) 84%, transparent);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+
+.controls button,
+.error button {
+  min-block-size: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 40%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  background: var(--surface-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.controls button:hover {
+  border-color: var(--brand-gold);
+  transform: translateY(-2px);
+}
+
+.controls button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.meta {
+  margin-block: var(--space-4) 0;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.page {
+  min-block-size: 100vh;
+  padding: clamp(5rem, 9vw, 8rem) var(--space-4) var(--space-12);
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.intro {
+  inline-size: min(100%, 52rem);
+  margin: 0 auto var(--space-8);
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--brand-gold);
+  font-weight: 800;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 7vw, 5rem);
+  line-height: 1.4;
+}
+
+.intro p:last-child {
+  margin-block: var(--space-4) 0;
+  color: var(--muted-foreground);
+}
+
+.back {
+  display: inline-flex;
+  min-block-size: 44px;
+  align-items: center;
+  margin-block-end: var(--space-6);
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+@media (max-width: 48rem) {
+  .stage {
+    block-size: min(68svh, 34rem);
+  }
+
+  .compact .stage {
+    block-size: min(58svh, 20rem);
+  }
+
+  .controls button {
+    flex: 1 1 calc(50% - var(--space-3));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controls button {
+    transition: none;
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "services": {
+    "web": {
+      "root": "apps/web",
+      "framework": "nextjs",
+      "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+      "buildCommand": "cd ../.. && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && (test \"$SKIP_DB_MIGRATE\" = \"1\" && echo 'Skipping db:migrate:deploy (SKIP_DB_MIGRATE=1)' || pnpm db:migrate:deploy) && pnpm --filter @tahaddi/domain build && pnpm --filter @tahaddi/web build"
+    },
+    "realtime": {
+      "root": ".",
+      "entrypoint": "apps/realtime/vercel-entry.cjs",
+      "framework": "nestjs",
+      "installCommand": "pnpm install --frozen-lockfile",
+      "buildCommand": "pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && pnpm --filter @tahaddi/domain build && pnpm --filter @tahaddi/realtime build"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web"
+      }
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Resource-Policy", "value": "same-origin" },
+        { "key": "X-DNS-Prefetch-Control", "value": "off" },
+        { "key": "X-Permitted-Cross-Domain-Policies", "value": "none" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://qurabia.com wss://qurabia.com https://*.qurabia.com wss://*.qurabia.com https://vercel.live; worker-src 'self' blob:; frame-src 'self' https://vercel.live https://*.vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }]
+    }
+  ]
+}

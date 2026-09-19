@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["prisma/schema.prisma", "prisma/migrations/**"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "@tahaddi/database#typecheck": {
+      "dependsOn": ["@tahaddi/database#build"]
+    },
+    "@tahaddi/web#typecheck": {
+      "dependsOn": ["^build", "@tahaddi/database#typecheck"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    }
+  }
+}

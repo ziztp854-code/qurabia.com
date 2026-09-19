@@ -1,0 +1,11 @@
+{
+  "sources": [
+    {
+      "path": "data/questions.jsonl",
+      "format": "jsonl",
+      "name": "اسم المصدر المفتوح",
+      "license": "CC BY 4.0",
+      "category": "ثقافة عامة"
+    }
+  ]
+}
