@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   ANSWER_ACCEPT_GRACE_MS,
   QUESTION_START_LEAD_MS,
@@ -18,6 +18,7 @@ import type {
 import type { Server } from 'socket.io';
 import { DatabaseService } from './database.service.js';
 import { calculateQuestionScore, canTransition } from './game-engine.js';
+import { GameStartPushService } from './game-start-push.service.js';
 import { RedisService } from './redis.service.js';
 import type {
   LiveConnectionMetadata,
@@ -49,6 +50,7 @@ type SessionParticipantRecord = {
   correctCount: number;
   status: string;
   joinedAt: Date;
+  user: { status: string } | null;
 };
 type SessionAnswerRecord = {
   participantId: string;
@@ -60,7 +62,7 @@ type SessionAnswerRecord = {
 };
 type TransactionClient = Pick<
   DatabaseService['client'],
-  'liveAnswer' | 'liveParticipant'
+  'liveAnswer' | 'liveParticipant' | 'liveSession'
 >;
 
 const LEADERBOARD_DURATION_MS = 2_500;
@@ -86,6 +88,10 @@ function isUniqueConstraintError(error: unknown) {
   );
 }
 
+function safeErrorKind(error: unknown) {
+  return error instanceof Error ? error.name : 'UnknownError';
+}
+
 function mediaFromUrl(imageUrl: string | null) {
   if (!imageUrl) return [];
   const isVideo = /\.(mp4|webm|ogg)(?:\?.*)?$/i.test(imageUrl);
@@ -96,6 +102,7 @@ function mediaFromUrl(imageUrl: string | null) {
 
 @Injectable()
 export class GameService {
+  private readonly logger = new Logger(GameService.name);
   private io!: IoServer;
   private readonly revealTimers = new Map<string, NodeJS.Timeout>();
   private readonly leaderboardTimers = new Map<string, NodeJS.Timeout>();
@@ -103,6 +110,7 @@ export class GameService {
   constructor(
     private readonly redis: RedisService,
     private readonly database: DatabaseService,
+    private readonly gameStartPush: GameStartPushService,
   ) {}
 
   setServer(io: IoServer) {
@@ -119,10 +127,12 @@ export class GameService {
         status: true,
         currentQuestionPosition: true,
         questionStartedAt: true,
+        questionRevealedAt: true,
         endedAt: true,
         quiz: {
           select: {
             autoAdvance: true,
+            speedScoring: true,
             questions: {
               orderBy: { position: 'asc' },
               select: {
@@ -161,6 +171,7 @@ export class GameService {
             correctCount: true,
             status: true,
             joinedAt: true,
+            user: { select: { status: true } },
           },
         },
         answers: {
@@ -171,6 +182,29 @@ export class GameService {
             isCorrect: true,
             earnedPoints: true,
             receivedAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * حِمل خفيف للمسار الساخن بعد كل إجابة: يجلب فقط المشاركين وإجابات الجلسة
+   * لبناء الإحصاءات والتحقق من إجابة الجميع، دون شجرة الكويز والأسئلة والخيارات.
+   */
+  private loadAnswerContext(sessionId: string) {
+    return this.database.client.liveSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        participants: {
+          select: { id: true, status: true, joinedAt: true },
+        },
+        answers: {
+          select: {
+            participantId: true,
+            questionId: true,
+            optionId: true,
+            isCorrect: true,
           },
         },
       },
@@ -238,17 +272,19 @@ export class GameService {
         ? 'FINISHED'
         : session.status === 'WAITING' || !startedAt
           ? 'LOBBY'
-          : 'QUESTION';
-    // Only rebuild when the database is telling us the session is back at
-    // LOBBY (e.g. it was reset to WAITING) but Redis still holds a stale
-    // running phase. Otherwise, trust the in-flight state: snapshot phase
-    // transitions (REVEAL/LEADERBOARD) and the final FINISHED state live in
-    // Redis until the host starts a new run, and discarding them would tear
-    // down timers and player leaderboards for reconnecting sockets.
+          : session.questionRevealedAt
+            ? 'REVEAL'
+            : 'QUESTION';
+    // Persisted resets, finishes and reveals override stale active cache state.
+    // Keep the in-flight leaderboard phase and its deadline for reconnects.
     if (stored && stored.phase === dbPhase) return stored;
     if (stored && dbPhase === 'LOBBY' && stored.phase !== 'LOBBY') {
       await this.redis.deleteGameState(session.id);
-    } else if (stored) {
+    } else if (
+      stored &&
+      dbPhase !== 'FINISHED' &&
+      !(dbPhase === 'REVEAL' && stored.phase === 'QUESTION')
+    ) {
       return stored;
     }
     if (dbPhase === 'FINISHED') {
@@ -282,7 +318,7 @@ export class GameService {
       session,
       session.currentQuestionPosition,
     );
-    const phase: GamePhase = 'QUESTION';
+    const phase = dbPhase;
     const state: LiveGameState = {
       sessionId: session.id,
       roomCode: session.roomCode,
@@ -305,17 +341,27 @@ export class GameService {
       where: { id: identity.sessionId },
       select: {
         hostId: true,
+        host: { select: { status: true, tokenVersion: true } },
         participants: {
           where: { id: identity.subjectId },
-          select: { id: true },
+          select: { id: true, user: { select: { status: true } } },
           take: 1,
         },
       },
     });
     if (!session) return false;
-    if (identity.role === 'host') return session.hostId === identity.subjectId;
+    if (identity.role === 'host') {
+      return (
+        session.hostId === identity.subjectId &&
+        session.host.status === 'ACTIVE' &&
+        (identity.subjectVersion === undefined ||
+          identity.subjectVersion === session.host.tokenVersion)
+      );
+    }
     return session.participants.some(
-      (participant: { id: string }) => participant.id === identity.subjectId,
+      (participant) =>
+        participant.id === identity.subjectId &&
+        (!participant.user || participant.user.status === 'ACTIVE'),
     );
   }
 
@@ -380,14 +426,6 @@ export class GameService {
   async disconnected(identity: LiveSocketIdentity, socketId?: string) {
     if (identity.role !== 'player') return;
     const disconnectedAt = new Date();
-    await this.database.client.liveParticipant.updateMany({
-      where: { id: identity.subjectId, sessionId: identity.sessionId },
-      data: {
-        status: 'DISCONNECTED',
-        lastSeenAt: disconnectedAt,
-        lastDisconnectedAt: disconnectedAt,
-      },
-    });
     if (socketId) {
       await this.database.client.liveParticipantConnection.updateMany({
         where: {
@@ -397,7 +435,23 @@ export class GameService {
         },
         data: { disconnectedAt },
       });
+      const activeConnections =
+        await this.database.client.liveParticipantConnection.count({
+          where: {
+            participantId: identity.subjectId,
+            disconnectedAt: null,
+          },
+        });
+      if (activeConnections > 0) return;
     }
+    await this.database.client.liveParticipant.updateMany({
+      where: { id: identity.subjectId, sessionId: identity.sessionId },
+      data: {
+        status: 'DISCONNECTED',
+        lastSeenAt: disconnectedAt,
+        lastDisconnectedAt: disconnectedAt,
+      },
+    });
     const count = await this.database.client.liveParticipant.count({
       where: { sessionId: identity.sessionId, status: 'CONNECTED' },
     });
@@ -499,6 +553,8 @@ export class GameService {
       )
         return false;
       const state = await this.ensureState(session);
+      const shouldNotifyGameStart =
+        state.phase === 'LOBBY' && session.status === 'WAITING';
       const targetPosition =
         state.phase === 'LOBBY'
           ? session.currentQuestionPosition
@@ -535,6 +591,7 @@ export class GameService {
                 : undefined,
             currentQuestionPosition: targetPosition,
             questionStartedAt: new Date(questionStartedAt),
+            questionRevealedAt: null,
             questionAdvanceAt: null,
           },
         }),
@@ -546,6 +603,17 @@ export class GameService {
       const payload = this.toQuestionPayload(freshSession, nextState, question);
       this.io.to(gameRoom(sessionId)).emit('question:started', payload);
       this.scheduleReveal(sessionId, question.id, questionEndsAt);
+      if (shouldNotifyGameStart) {
+        void this.gameStartPush
+          .notifyGameStarted({ sessionId, roomCode: session.roomCode })
+          .catch((error: unknown) => {
+            this.logger.warn({
+              event: 'game_start_push_dispatch_failed',
+              sessionId,
+              errorKind: safeErrorKind(error),
+            });
+          });
+      }
       return true;
     } finally {
       await this.redis.releaseTransition(sessionId);
@@ -594,18 +662,38 @@ export class GameService {
     const participant = session.participants.find(
       (item: SessionParticipantRecord) => item.id === identity.subjectId,
     );
-    if (!participant) return rejected('INVALID_PLAYER');
-    const earnedPoints = calculateQuestionScore({
-      correct: option.isCorrect,
-      basePoints: question.basePoints,
-      questionStartedAt: state.questionStartedAt ?? receivedAt,
-      questionEndsAt: state.questionEndsAt,
-      receivedAt,
-    });
+    if (
+      !participant ||
+      (participant.user && participant.user.status !== 'ACTIVE')
+    )
+      return rejected('INVALID_PLAYER');
+    const earnedPoints = session.quiz.speedScoring
+      ? calculateQuestionScore({
+          correct: option.isCorrect,
+          basePoints: question.basePoints,
+          questionStartedAt: state.questionStartedAt ?? receivedAt,
+          questionEndsAt: state.questionEndsAt,
+          receivedAt,
+        })
+      : option.isCorrect
+        ? question.basePoints
+        : 0;
 
     try {
-      await this.database.client.$transaction(
+      const accepted = await this.database.client.$transaction(
         async (transaction: TransactionClient) => {
+          // Hold the session row until points commit so finishing cannot publish stale scores.
+          const active = await transaction.liveSession.updateMany({
+            where: {
+              id: session.id,
+              status: 'ACTIVE',
+              currentQuestionPosition: session.currentQuestionPosition,
+              questionStartedAt: session.questionStartedAt,
+              questionRevealedAt: null,
+            },
+            data: { questionStartedAt: session.questionStartedAt },
+          });
+          if (active.count !== 1) return false;
           await transaction.liveAnswer.create({
             data: {
               sessionId: session.id,
@@ -625,8 +713,10 @@ export class GameService {
               correctCount: option.isCorrect ? { increment: 1 } : undefined,
             },
           });
+          return true;
         },
       );
+      if (!accepted) return rejected('QUESTION_NOT_ACTIVE');
     } catch (error) {
       if (isUniqueConstraintError(error)) return rejected('DUPLICATE_ANSWER');
       throw error;
@@ -636,25 +726,31 @@ export class GameService {
       questionId: question.id,
       receivedAt,
     });
-    const freshSession = await this.loadSession(session.id);
-    if (!freshSession) return true;
-    const stats = this.buildStats(freshSession, question);
+    // Re-read only the answer/participant slice instead of the full quiz tree:
+    // stats and the all-answered check never need the questions or options.
+    const context = await this.loadAnswerContext(session.id);
+    if (!context) return true;
+    const stats = this.buildStats(
+      context.answers,
+      context.participants.length,
+      question,
+    );
     this.io.to(gameRoom(session.id)).emit('question:stats', stats);
 
-    const eligible = freshSession.participants.filter(
-      (item: SessionParticipantRecord) =>
+    const eligible = context.participants.filter(
+      (item) =>
         item.status === 'CONNECTED' &&
         (!state.questionStartedAt ||
           item.joinedAt.getTime() <= state.questionStartedAt),
     );
     const answered = new Set(
-      freshSession.answers
-        .filter((item: SessionAnswerRecord) => item.questionId === question.id)
-        .map((item: SessionAnswerRecord) => item.participantId),
+      context.answers
+        .filter((item) => item.questionId === question.id)
+        .map((item) => item.participantId),
     );
     if (
       eligible.length > 0 &&
-      eligible.every((item: SessionParticipantRecord) => answered.has(item.id))
+      eligible.every((item) => answered.has(item.id))
     ) {
       await this.revealQuestion(session.id, question.id);
     }
@@ -662,11 +758,15 @@ export class GameService {
   }
 
   private buildStats(
-    session: NonNullable<SessionRecord>,
+    sessionAnswers: readonly Pick<
+      SessionAnswerRecord,
+      'optionId' | 'questionId'
+    >[],
+    participantCount: number,
     question: QuestionRecord,
   ): QuestionStatsPayload {
-    const answers = session.answers.filter(
-      (item: SessionAnswerRecord) => item.questionId === question.id,
+    const answers = sessionAnswers.filter(
+      (item) => item.questionId === question.id,
     );
     const counts = new Map<string, number>();
     for (const answer of answers) {
@@ -675,7 +775,7 @@ export class GameService {
     return {
       questionId: question.id,
       answeredCount: answers.length,
-      participantCount: session.participants.length,
+      participantCount,
       options: question.options.map((option: QuestionOptionRecord) => {
         const count = counts.get(option.id) ?? 0;
         return {
@@ -716,9 +816,28 @@ export class GameService {
           (option: QuestionOptionRecord) => option.isCorrect,
         )?.id ?? '',
       explanation: question.explanation,
-      stats: this.buildStats(session, question),
+      stats: this.buildStats(
+        session.answers,
+        session.participants.length,
+        question,
+      ),
       playerResult,
     };
+  }
+
+  private async persistQuestionReveal(session: NonNullable<SessionRecord>) {
+    // The same row is held by answer transactions, so reveal waits for their scores.
+    const revealed = await this.database.client.liveSession.updateMany({
+      where: {
+        id: session.id,
+        status: 'ACTIVE',
+        currentQuestionPosition: session.currentQuestionPosition,
+        questionStartedAt: session.questionStartedAt,
+        questionRevealedAt: null,
+      },
+      data: { questionRevealedAt: new Date() },
+    });
+    return revealed.count === 1;
   }
 
   async revealQuestion(sessionId: string, questionId: string) {
@@ -736,11 +855,14 @@ export class GameService {
         state.phase !== 'QUESTION' ||
         !question ||
         question.id !== questionId ||
+        !state.questionStartedAt ||
+        Date.now() < state.questionStartedAt ||
         !canTransition(state.phase, 'REVEAL')
       ) {
         return false;
       }
 
+      if (!(await this.persistQuestionReveal(session))) return false;
       state.phase = 'REVEAL';
       state.transitionDueAt = null;
       await this.redis.saveGameState(state);
@@ -843,6 +965,7 @@ export class GameService {
       );
       if (!question) return false;
 
+      if (!(await this.persistQuestionReveal(session))) return false;
       state.phase = 'REVEAL';
       state.transitionDueAt = null;
       await this.redis.saveGameState(state);
@@ -888,43 +1011,41 @@ export class GameService {
   }
 
   async finishGame(sessionId: string, hostId: string, internal = false) {
-    if (!internal) {
-      const session = await this.database.client.liveSession.findUnique({
-        where: { id: sessionId },
-        select: { hostId: true },
-      });
+    if (!internal && !(await this.redis.acquireTransition(sessionId)))
+      return false;
+    try {
+      const session = await this.loadSession(sessionId);
       if (!session || session.hostId !== hostId) return false;
+      const state = await this.ensureState(session);
+      if (session.status !== 'FINISHED') {
+        await this.database.client.liveSession.updateMany({
+          where: { id: sessionId, status: { not: 'FINISHED' } },
+          data: {
+            status: 'FINISHED',
+            endedAt: new Date(),
+            questionAdvanceAt: null,
+          },
+        });
+      }
+      await this.redis.saveGameState({
+        ...state,
+        phase: 'FINISHED',
+        questionEndsAt: null,
+        transitionDueAt: null,
+      });
+      this.clearRevealTimer(sessionId);
+      const leaderboardTimer = this.leaderboardTimers.get(sessionId);
+      if (leaderboardTimer) clearTimeout(leaderboardTimer);
+      this.leaderboardTimers.delete(sessionId);
+      const freshSession = await this.loadSession(sessionId);
+      const leaderboard = freshSession ? this.toLeaderboard(freshSession) : [];
+      this.io
+        .to(gameRoom(sessionId))
+        .emit('game:finished', { leaderboard, sessionId });
+      return true;
+    } finally {
+      if (!internal) await this.redis.releaseTransition(sessionId);
     }
-    const session = await this.loadSession(sessionId);
-    if (!session) return false;
-    const state = await this.ensureState(session);
-    state.phase = 'FINISHED';
-    state.questionEndsAt = null;
-    state.transitionDueAt = null;
-    await Promise.all([
-      this.database.client.liveSession.update({
-        where: { id: sessionId },
-        data: {
-          status: 'FINISHED',
-          endedAt: new Date(),
-          questionAdvanceAt: null,
-        },
-      }),
-      this.redis.saveGameState(state),
-    ]);
-    this.clearRevealTimer(sessionId);
-    const leaderboardTimer = this.leaderboardTimers.get(sessionId);
-    if (leaderboardTimer) clearTimeout(leaderboardTimer);
-    this.leaderboardTimers.delete(sessionId);
-    const freshSession = await this.loadSession(sessionId);
-    const leaderboard = freshSession ? this.toLeaderboard(freshSession) : [];
-    this.io
-      .to(gameRoom(sessionId))
-      .emit('game:finished', { leaderboard: [], sessionId });
-    this.io
-      .to(hostRoom(sessionId))
-      .emit('game:finished', { leaderboard, sessionId });
-    return true;
   }
 
   private scheduleReveal(

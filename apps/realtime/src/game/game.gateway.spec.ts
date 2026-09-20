@@ -9,6 +9,7 @@ function createClient() {
     emit: jest.fn(),
     join: jest.fn().mockResolvedValue(undefined),
     leave: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn(),
     handshake: {
       address: '10.0.0.5',
       headers: {
@@ -111,6 +112,32 @@ describe('GameGateway', () => {
     );
   });
 
+  it('reports the current host presence to a joining player', async () => {
+    const { gateway } = setup();
+    const client = createClient();
+    gateway.server = {
+      in: jest
+        .fn()
+        .mockReturnValue({ fetchSockets: jest.fn().mockResolvedValue([]) }),
+    } as never;
+    const token = createLiveAccessToken(secret, {
+      sessionId: 'session-1',
+      subjectId: 'player-1',
+      role: 'player',
+    });
+
+    await gateway.handleGameJoin(client as never, {
+      sessionId: 'session-1',
+      subjectId: 'player-1',
+      accessToken: token,
+      role: 'player',
+    });
+
+    expect(client.emit).toHaveBeenCalledWith('game:host_status', {
+      connected: false,
+    });
+  });
+
   it('rejects a forged join token', async () => {
     const { gateway, gameService } = setup();
     const client = createClient();
@@ -125,6 +152,43 @@ describe('GameGateway', () => {
       'game:error',
       expect.objectContaining({ code: 'JOIN_DENIED' }),
     );
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('rejects an expired join token', async () => {
+    const { gateway, gameService } = setup();
+    const client = createClient();
+    const token = createLiveAccessToken(
+      secret,
+      { sessionId: 'session-1', subjectId: 'player-1', role: 'player' },
+      { expiresAt: Date.now() - 1 },
+    );
+
+    await gateway.handleGameJoin(client as never, {
+      sessionId: 'session-1',
+      subjectId: 'player-1',
+      accessToken: token,
+      role: 'player',
+    });
+
+    expect(gameService.validateIdentity).not.toHaveBeenCalled();
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('disconnects a socket that never presents a join ticket', () => {
+    jest.useFakeTimers();
+    const { gateway } = setup();
+    const client = createClient();
+
+    gateway.handleConnection(client as never);
+    jest.advanceTimersByTime(10_000);
+
+    expect(client.emit).toHaveBeenCalledWith(
+      'game:error',
+      expect.objectContaining({ code: 'JOIN_TIMEOUT' }),
+    );
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+    jest.useRealTimers();
   });
 
   it('prevents a player from starting a host-only question', async () => {

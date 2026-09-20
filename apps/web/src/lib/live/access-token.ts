@@ -1,4 +1,8 @@
-import { createLiveAccessToken, verifyLiveAccessToken } from '@tahaddi/contracts';
+import {
+  createLiveAccessCredential,
+  createLiveAccessToken,
+  verifyLiveAccessToken,
+} from '@tahaddi/contracts';
 
 function getLiveAccessSecret() {
   const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
@@ -8,16 +12,45 @@ function getLiveAccessSecret() {
   return secret;
 }
 
-export function createHostLiveAccessToken(sessionId: string, hostId: string) {
+export function createHostLiveAccessToken(
+  sessionId: string,
+  hostId: string,
+  subjectVersion?: number,
+) {
   return createLiveAccessToken(getLiveAccessSecret(), {
     sessionId,
     subjectId: hostId,
     role: 'host',
+    subjectVersion,
   });
+}
+
+export function createHostLiveAccessCredential(
+  sessionId: string,
+  hostId: string,
+  subjectVersion: number,
+) {
+  return {
+    ...createLiveAccessCredential(getLiveAccessSecret(), {
+      sessionId,
+      subjectId: hostId,
+      role: 'host',
+      subjectVersion,
+    }),
+    subjectVersion,
+  };
 }
 
 export function createPlayerLiveAccessToken(sessionId: string, participantId: string) {
   return createLiveAccessToken(getLiveAccessSecret(), {
+    sessionId,
+    subjectId: participantId,
+    role: 'player',
+  });
+}
+
+export function createPlayerLiveAccessCredential(sessionId: string, participantId: string) {
+  return createLiveAccessCredential(getLiveAccessSecret(), {
     sessionId,
     subjectId: participantId,
     role: 'player',

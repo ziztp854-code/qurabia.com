@@ -5,12 +5,62 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "tahaddi",
-    "userInterfaceStyle": "dark",
+    "icon": "./assets/app-icon.png",
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#06020A",
+          "image": "./assets/app-icon.png",
+          "imageWidth": 184,
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FFB74D",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": false
+        }
+      ]
+    ],
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.qurabia.tahaddi",
+      "userInterfaceStyle": "dark",
+      "supportsTablet": false,
+      "associatedDomains": ["applinks:qurabia.com"],
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
-      "predictiveBackGestureEnabled": true
+      "package": "com.qurabia.tahaddi",
+      "predictiveBackGestureEnabled": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#06020A"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "qurabia.com",
+              "pathPrefix": "/join"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     }
   }
 }

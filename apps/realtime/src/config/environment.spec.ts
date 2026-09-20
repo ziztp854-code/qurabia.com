@@ -41,4 +41,13 @@ describe('validateEnvironment', () => {
       ).toThrow();
     },
   );
+
+  it('preserves the optional Expo access token for authenticated push requests', () => {
+    expect(
+      validateEnvironment({
+        ...baseEnvironment,
+        EXPO_ACCESS_TOKEN: 'expo-access-token',
+      }).EXPO_ACCESS_TOKEN,
+    ).toBe('expo-access-token');
+  });
 });

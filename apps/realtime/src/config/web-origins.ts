@@ -1,3 +1,10 @@
+import {
+  isLiveConnectionTicket,
+  LIVE_TICKET_HEADERS,
+  verifyLiveAccessToken,
+  type LiveConnectionTicket,
+} from '@tahaddi/contracts';
+
 const LOCAL_WEB_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3100',
@@ -84,6 +91,45 @@ function firstHeader(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+type WebSocketHeaders = Record<string, string | string[] | undefined>;
+
+function numericHeader(value: string | undefined) {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+export function readNativeLiveTicket(
+  headers: WebSocketHeaders,
+  secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? '',
+): LiveConnectionTicket | null {
+  const role = firstHeader(headers[LIVE_TICKET_HEADERS.role]);
+  const expiresAt = numericHeader(
+    firstHeader(headers[LIVE_TICKET_HEADERS.expiresAt]),
+  );
+  const subjectVersionValue = firstHeader(
+    headers[LIVE_TICKET_HEADERS.subjectVersion],
+  );
+  const subjectVersion = subjectVersionValue
+    ? numericHeader(subjectVersionValue)
+    : undefined;
+  const ticket = {
+    sessionId: firstHeader(headers[LIVE_TICKET_HEADERS.sessionId]) ?? '',
+    subjectId: firstHeader(headers[LIVE_TICKET_HEADERS.subjectId]) ?? '',
+    role,
+    accessToken: firstHeader(headers[LIVE_TICKET_HEADERS.accessToken]) ?? '',
+    expiresAt,
+    ...(subjectVersion === undefined ? {} : { subjectVersion }),
+  };
+  if (!isLiveConnectionTicket(ticket)) return null;
+  return verifyLiveAccessToken(secret, {
+    ...ticket,
+    token: ticket.accessToken,
+  })
+    ? ticket
+    : null;
+}
+
 /**
  * The realtime service is served from the same deployment as the web app, so a
  * handshake whose origin matches the requested host is same-origin traffic.
@@ -102,14 +148,16 @@ export function isSameOriginWebSocketRequest(
 
 export function allowWebSocketRequest(
   request: {
-    headers: { origin?: string | string[]; host?: string | string[] };
+    headers: WebSocketHeaders;
   },
   callback: (error: string | null | undefined, success: boolean) => void,
 ) {
   const origin = firstHeader(request.headers.origin);
   callback(
     null,
-    isAllowedWebSocketOrigin(origin) ||
-      isSameOriginWebSocketRequest(origin, request.headers.host),
+    origin === undefined
+      ? readNativeLiveTicket(request.headers) !== null
+      : isAllowedWebSocketOrigin(origin) ||
+          isSameOriginWebSocketRequest(origin, request.headers.host),
   );
 }

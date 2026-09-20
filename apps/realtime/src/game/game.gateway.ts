@@ -1,6 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
@@ -36,12 +37,19 @@ type GameServer = Server<ClientToServerEvents, ServerToClientEvents>;
   namespace: '/',
 })
 export class GameGateway
-  implements OnGatewayInit<GameServer>, OnGatewayDisconnect<GameSocket>
+  implements
+    OnGatewayInit<GameServer>,
+    OnGatewayConnection<GameSocket>,
+    OnGatewayDisconnect<GameSocket>
 {
   @WebSocketServer()
   server!: GameServer;
 
   private readonly identities = new Map<string, LiveSocketIdentity>();
+  private readonly joinDeadlines = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
 
   constructor(
     private readonly gameService: GameService,
@@ -52,10 +60,35 @@ export class GameGateway
     this.gameService.setServer(server);
   }
 
+  handleConnection(client: GameSocket) {
+    const deadline = setTimeout(() => {
+      this.joinDeadlines.delete(client.id);
+      if (this.identities.has(client.id)) return;
+      client.emit('game:error', {
+        code: 'JOIN_TIMEOUT',
+        message: 'انتهت مهلة التحقق من اتصال الجلسة.',
+      });
+      client.disconnect(true);
+    }, 10_000);
+    deadline.unref?.();
+    this.joinDeadlines.set(client.id, deadline);
+  }
+
   async handleDisconnect(client: GameSocket) {
+    this.clearJoinDeadline(client.id);
     const identity = this.identities.get(client.id);
     this.identities.delete(client.id);
-    if (identity) await this.gameService.disconnected(identity, client.id);
+    if (!identity) return;
+    await this.gameService.disconnected(identity, client.id);
+    if (
+      identity.role === 'host' &&
+      this.server &&
+      !(await this.isHostConnected(identity.sessionId))
+    ) {
+      this.server
+        .to(gameRoom(identity.sessionId))
+        .emit('game:host_status', { connected: false });
+    }
   }
 
   @SubscribeMessage('game:join')
@@ -68,6 +101,8 @@ export class GameGateway
       accessToken: string;
       role: LiveRole;
       deviceId?: string;
+      expiresAt?: number;
+      subjectVersion?: number;
     },
   ) {
     if (
@@ -80,6 +115,7 @@ export class GameGateway
         code: 'INVALID_JOIN',
         message: 'بيانات الانضمام إلى الجلسة غير مكتملة.',
       });
+      client.disconnect(true);
       return;
     }
 
@@ -90,16 +126,21 @@ export class GameGateway
       sessionId: payload.sessionId,
       subjectId: payload.subjectId,
       role: payload.role,
+      ...(payload.subjectVersion === undefined
+        ? {}
+        : { subjectVersion: payload.subjectVersion }),
     };
     const validToken = verifyLiveAccessToken(secret, {
       ...identity,
       token: payload.accessToken,
+      expiresAt: payload.expiresAt,
     });
     if (!validToken || !(await this.gameService.validateIdentity(identity))) {
       client.emit('game:error', {
         code: 'JOIN_DENIED',
         message: 'تعذّر التحقق من هوية الجلسة. افتح رابط الغرفة من جديد.',
       });
+      client.disconnect(true);
       return;
     }
 
@@ -112,6 +153,7 @@ export class GameGateway
       );
     }
     this.identities.set(client.id, identity);
+    this.clearJoinDeadline(client.id);
     await client.join(gameRoom(identity.sessionId));
     if (identity.role === 'host') {
       await client.join(hostRoom(identity.sessionId));
@@ -131,6 +173,15 @@ export class GameGateway
       return;
     }
     client.emit('game:snapshot', snapshot);
+    if (identity.role === 'host') {
+      this.server
+        ?.to(gameRoom(identity.sessionId))
+        .emit('game:host_status', { connected: true });
+    } else {
+      client.emit('game:host_status', {
+        connected: await this.isHostConnected(identity.sessionId),
+      });
+    }
   }
 
   @SubscribeMessage('question:start')
@@ -242,5 +293,17 @@ export class GameGateway
       return null;
     }
     return identity;
+  }
+
+  private async isHostConnected(sessionId: string) {
+    if (!this.server) return false;
+    const sockets = await this.server.in(hostRoom(sessionId)).fetchSockets();
+    return sockets.length > 0;
+  }
+
+  private clearJoinDeadline(clientId: string) {
+    const deadline = this.joinDeadlines.get(clientId);
+    if (deadline) clearTimeout(deadline);
+    this.joinDeadlines.delete(clientId);
   }
 }

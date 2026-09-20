@@ -5,6 +5,25 @@ import {
   isAllowedWebSocketOrigin,
   isSameOriginWebSocketRequest,
 } from './web-origins.js';
+import { createLiveAccessToken } from '@tahaddi/contracts';
+
+const liveSecret = 'test-live-handshake-secret';
+
+function nativeHeaders(overrides: Record<string, string> = {}) {
+  const expiresAt = Date.now() + 60_000;
+  return {
+    'x-tahaddi-live-session-id': 'session-1',
+    'x-tahaddi-live-subject-id': 'player-1',
+    'x-tahaddi-live-role': 'player',
+    'x-tahaddi-live-expires-at': String(expiresAt),
+    'x-tahaddi-live-token': createLiveAccessToken(
+      liveSecret,
+      { sessionId: 'session-1', subjectId: 'player-1', role: 'player' },
+      { expiresAt },
+    ),
+    ...overrides,
+  };
+}
 
 describe('getAllowedWebOrigins', () => {
   const originalEnvironment = process.env;
@@ -17,6 +36,7 @@ describe('getAllowedWebOrigins', () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
     delete process.env.VERCEL_URL;
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    process.env.AUTH_SECRET = liveSecret;
   });
 
   afterAll(() => {
@@ -87,6 +107,47 @@ describe('getAllowedWebOrigins', () => {
     expect(isAllowedWebSocketOrigin('*')).toBe(false);
     expect(isAllowedWebSocketOrigin('null')).toBe(false);
     expect(isAllowedWebSocketOrigin(undefined)).toBe(false);
+  });
+
+  it('allows only a signed originless native handshake while rejecting missing credentials', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.WEB_ORIGIN = 'https://play.example.com';
+    const native = jest.fn();
+    const missingCredentials = jest.fn();
+
+    allowWebSocketRequest({ headers: nativeHeaders() }, native);
+    allowWebSocketRequest({ headers: {} }, missingCredentials);
+
+    expect(native).toHaveBeenCalledWith(null, true);
+    expect(missingCredentials).toHaveBeenCalledWith(null, false);
+  });
+
+  it('rejects a forged or expired originless native handshake', () => {
+    const forged = jest.fn();
+    const expired = jest.fn();
+    const expiresAt = Date.now() - 1;
+
+    allowWebSocketRequest(
+      { headers: nativeHeaders({ 'x-tahaddi-live-token': 'forged' }) },
+      forged,
+    );
+    allowWebSocketRequest(
+      {
+        headers: {
+          ...nativeHeaders(),
+          'x-tahaddi-live-expires-at': String(expiresAt),
+          'x-tahaddi-live-token': createLiveAccessToken(
+            liveSecret,
+            { sessionId: 'session-1', subjectId: 'player-1', role: 'player' },
+            { expiresAt },
+          ),
+        },
+      },
+      expired,
+    );
+
+    expect(forged).toHaveBeenCalledWith(null, false);
+    expect(expired).toHaveBeenCalledWith(null, false);
   });
 
   it('applies the same origin decision to CORS and the Socket.IO handshake', () => {

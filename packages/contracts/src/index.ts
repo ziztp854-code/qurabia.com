@@ -132,9 +132,13 @@ export type ServerToClientEvents = {
   'game:finished': (payload: { leaderboard: PlayerInfo[]; sessionId: string }) => void;
   'game:player_joined': (payload: { player: PlayerInfo; participantCount: number }) => void;
   'game:player_left': (payload: { playerId: string; participantCount: number }) => void;
+  'game:host_status': (payload: { connected: boolean }) => void;
   'clock:pong': (payload: { clientSentAt: number; serverTime: number }) => void;
   'game:error': (payload: { code: string; message: string }) => void;
 };
+
+export { isLiveConnectionTicket, LIVE_TICKET_HEADERS } from './live';
+export type { LiveConnectionTicket } from './live';
 
 export * from './live-access-token';
 export * from './live-timing';

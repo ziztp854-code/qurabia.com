@@ -17,6 +17,7 @@ const environmentSchema = z.object({
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(16),
   LIVE_DEVICE_HASH_SECRET: z.string().min(32).optional(),
+  EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

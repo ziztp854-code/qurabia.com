@@ -158,6 +158,7 @@ model User {
   auditTargets       AuditLog[]    @relation("AuditTarget")
   subscriptions      UserSubscription[]
   usageCounters      UsageCounter[]
+  mobilePushDevices  MobilePushDevice[]
 
   @@index([role])
   @@index([status])
@@ -359,6 +360,28 @@ model LiveParticipant {
   @@index([sessionId, score])
 }
 
+model MobilePushDevice {
+  id                     String   @id @default(cuid())
+  userId                 String
+  expoPushToken          String   @unique @db.VarChar(255)
+  installationId         String?  @unique @db.VarChar(64)
+  installationSecretHash String?  @db.VarChar(64)
+  registrationRevision   String?  @db.VarChar(64)
+  platform               String   @db.VarChar(16)
+  deviceName             String?  @db.VarChar(120)
+  deviceModel            String?  @db.VarChar(120)
+  osVersion              String?  @db.VarChar(64)
+  appVersion             String?  @db.VarChar(32)
+  enabled                Boolean  @default(true)
+  lastSeenAt             DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enabled])
+  @@index([lastSeenAt])
+}
+
 model LiveParticipantConnection {
   id             String          @id @default(cuid())
   participantId  String
@@ -518,15 +541,18 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String   @id @default(cuid())
+  sessionToken         String   @unique
+  userId               String
+  mobileInstallationId String?  @db.VarChar(64)
+  mobileInstallationSecretHash String? @db.VarChar(64)
+  expires              DateTime
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([mobileInstallationId])
   @@index([expires])
 }
 

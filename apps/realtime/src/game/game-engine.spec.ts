@@ -46,7 +46,7 @@ describe('live game engine', () => {
     ).toBe(0);
   });
 
-  it('accepts answers inside the broadcast lead window at full speed', () => {
+  it('rejects every answer received before the server-authored start time', () => {
     const score = calculateQuestionScore({
       correct: true,
       basePoints: 1_000,
@@ -54,6 +54,6 @@ describe('live game engine', () => {
       questionEndsAt: 20_000,
       receivedAt: 9_800,
     });
-    expect(score).toBe(1_000);
+    expect(score).toBe(0);
   });
 });

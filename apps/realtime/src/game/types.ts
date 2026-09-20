@@ -17,6 +17,7 @@ export type LiveSocketIdentity = {
   sessionId: string;
   subjectId: string;
   role: 'host' | 'player';
+  subjectVersion?: number;
 };
 
 export type { LiveConnectionMetadata } from './connection-metadata.js';

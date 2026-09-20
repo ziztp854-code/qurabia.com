@@ -12,6 +12,34 @@ const LADDER_ROOM_LOCK_MILLISECONDS = 10_000;
 const TRANSITION_LOCK_SECONDS = 8;
 const SPECIAL_ROOM_LOCK_MILLISECONDS = 10_000;
 const RATE_LIMIT_WINDOW_MILLISECONDS = 60_000;
+const GAME_START_PUSH_JOB_TTL_MS = 24 * 60 * 60 * 1_000;
+const GAME_START_PUSH_QUEUE_KEY = 'live:push:game-start:due';
+const GAME_START_PUSH_JOB_PREFIX = 'live:push:game-start:job:';
+
+type GameStartPushJobBase = {
+  id: string;
+  sessionId: string;
+  roomCode: string;
+  attempt: number;
+  createdAt: number;
+  expiresAt: number;
+  dueAt: number;
+};
+
+export type GameStartPushDispatchJob = GameStartPushJobBase & {
+  kind: 'dispatch';
+  tokens?: string[];
+  disableTokens?: string[];
+};
+
+export type GameStartPushReceiptJob = GameStartPushJobBase & {
+  kind: 'receipt';
+  ticketId: string;
+  token: string;
+};
+
+export type GameStartPushJob =
+  GameStartPushDispatchJob | GameStartPushReceiptJob;
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -82,6 +110,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return `live:${sessionId}:transition`;
   }
 
+  private gameStartPushJobId(kind: 'dispatch' | 'receipt', source: string) {
+    const sourceHash = createHash('sha256').update(source).digest('hex');
+    return `${kind}:${sourceHash}`;
+  }
+
+  private gameStartPushJobKey(id: string) {
+    return `${GAME_START_PUSH_JOB_PREFIX}${id}`;
+  }
+
   async consumeRateLimit(
     key: string,
     limit: number,
@@ -147,6 +184,193 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async releaseTransition(sessionId: string) {
     await this.client.del(this.transitionKey(sessionId));
+  }
+
+  async enqueueGameStartPushDispatch(
+    sessionId: string,
+    roomCode: string,
+    now = Date.now(),
+  ) {
+    const job: GameStartPushDispatchJob = {
+      id: this.gameStartPushJobId('dispatch', sessionId),
+      kind: 'dispatch',
+      sessionId,
+      roomCode,
+      attempt: 0,
+      createdAt: now,
+      expiresAt: now + GAME_START_PUSH_JOB_TTL_MS,
+      dueAt: now,
+    };
+    return this.enqueueGameStartPushJob(job);
+  }
+
+  async enqueueGameStartPushReceipts(
+    entries: Array<{
+      ticketId: string;
+      token: string;
+      sessionId: string;
+      roomCode: string;
+      createdAt: number;
+      expiresAt: number;
+    }>,
+    dueAt: number,
+  ) {
+    const jobs: GameStartPushReceiptJob[] = entries.map((entry) => ({
+      id: this.gameStartPushJobId('receipt', entry.ticketId),
+      kind: 'receipt',
+      ...entry,
+      attempt: 0,
+      dueAt,
+    }));
+    const results = await Promise.all(
+      jobs.map((job) => this.enqueueGameStartPushJob(job)),
+    );
+    return results.filter(Boolean).length;
+  }
+
+  private async enqueueGameStartPushJob(job: GameStartPushJob) {
+    const ttlSeconds = Math.max(
+      1,
+      Math.min(24 * 60 * 60, Math.ceil((job.expiresAt - Date.now()) / 1_000)),
+    );
+    const result = await this.client.eval(
+      `
+        if redis.call("EXISTS", KEYS[1]) == 1 then return 0 end
+        redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2])
+        redis.call("ZADD", KEYS[2], ARGV[3], ARGV[4])
+        return 1
+      `,
+      2,
+      this.gameStartPushJobKey(job.id),
+      GAME_START_PUSH_QUEUE_KEY,
+      JSON.stringify(job),
+      ttlSeconds,
+      job.dueAt,
+      job.id,
+    );
+    return Number(result) === 1;
+  }
+
+  async claimDueGameStartPushJobs(
+    now: number,
+    limit: number,
+    leaseUntil: number,
+  ): Promise<GameStartPushJob[]> {
+    const payloads = (await this.client.eval(
+      `
+        local ids = redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", ARGV[1], "LIMIT", 0, ARGV[2])
+        local jobs = {}
+        for _, id in ipairs(ids) do
+          local payload = redis.call("GET", ARGV[4] .. id)
+          if payload then
+            redis.call("ZADD", KEYS[1], ARGV[3], id)
+            table.insert(jobs, payload)
+          else
+            redis.call("ZREM", KEYS[1], id)
+          end
+        end
+        return jobs
+      `,
+      1,
+      GAME_START_PUSH_QUEUE_KEY,
+      now,
+      Math.max(1, Math.min(limit, 1_000)),
+      leaseUntil,
+      GAME_START_PUSH_JOB_PREFIX,
+    )) as string[];
+    return payloads.flatMap((payload) => {
+      try {
+        return [JSON.parse(payload) as GameStartPushJob];
+      } catch {
+        return [];
+      }
+    });
+  }
+
+  async requeueGameStartPushJob(job: GameStartPushJob, dueAt: number) {
+    if (job.expiresAt <= Date.now()) {
+      await this.completeGameStartPushJob(job.id, false);
+      return false;
+    }
+    const nextJob = { ...job, dueAt };
+    const ttlSeconds = Math.max(
+      1,
+      Math.min(24 * 60 * 60, Math.ceil((job.expiresAt - Date.now()) / 1_000)),
+    );
+    await this.client.eval(
+      `
+        redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2])
+        redis.call("ZADD", KEYS[2], ARGV[3], ARGV[4])
+        return 1
+      `,
+      2,
+      this.gameStartPushJobKey(job.id),
+      GAME_START_PUSH_QUEUE_KEY,
+      JSON.stringify(nextJob),
+      ttlSeconds,
+      dueAt,
+      job.id,
+    );
+    return true;
+  }
+
+  async renewGameStartPushJobLease(
+    id: string,
+    expectedLeaseUntil: number,
+    leaseUntil: number,
+  ) {
+    const result = await this.client.eval(
+      `
+        if redis.call("EXISTS", KEYS[1]) == 0 then return 0 end
+        local currentLease = redis.call("ZSCORE", KEYS[2], ARGV[3])
+        if currentLease == false or tonumber(currentLease) ~= tonumber(ARGV[1]) then return 0 end
+        redis.call("ZADD", KEYS[2], "XX", ARGV[2], ARGV[3])
+        return 1
+      `,
+      2,
+      this.gameStartPushJobKey(id),
+      GAME_START_PUSH_QUEUE_KEY,
+      expectedLeaseUntil,
+      leaseUntil,
+      id,
+    );
+    return Number(result) === 1;
+  }
+
+  async completeGameStartPushJob(
+    id: string,
+    retainDedupe: boolean,
+    expiresAt?: number,
+  ) {
+    const jobKey = this.gameStartPushJobKey(id);
+    if (retainDedupe) {
+      await this.client.eval(
+        `
+          redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2])
+          redis.call("ZREM", KEYS[2], ARGV[3])
+          return 1
+        `,
+        2,
+        jobKey,
+        GAME_START_PUSH_QUEUE_KEY,
+        JSON.stringify({ kind: 'completed' }),
+        Math.max(
+          1,
+          Math.min(
+            24 * 60 * 60,
+            Math.ceil(
+              ((expiresAt ?? Date.now() + GAME_START_PUSH_JOB_TTL_MS) -
+                Date.now()) /
+                1_000,
+            ),
+          ),
+        ),
+        id,
+      );
+      return;
+    }
+    await this.client.del(jobKey);
+    await this.client.zrem(GAME_START_PUSH_QUEUE_KEY, id);
   }
 
   async deleteGameState(sessionId: string) {

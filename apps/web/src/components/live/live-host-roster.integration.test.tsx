@@ -74,7 +74,9 @@ describe('live host roster', () => {
         socketState.listeners.get(event)?.(payload);
       }),
     };
-    const service = new GameService(redis as never, database as never);
+    const service = new GameService(redis as never, database as never, {
+      notifyGameStarted: vi.fn(),
+    } as never);
     service.setServer(server as never);
 
     render(
