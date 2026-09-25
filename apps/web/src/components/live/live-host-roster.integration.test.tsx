@@ -109,7 +109,7 @@ describe('live host roster', () => {
       role: 'host',
     });
     act(() => socketState.listeners.get('game:snapshot')?.(hostSnapshot));
-    expect(screen.getByText('ينقص 2 متسابقين متصلين لبدء الجولة')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'المتسابقون في الجولة (0)' })).toBeVisible();
 
     session = makeSession([
       {
@@ -129,6 +129,6 @@ describe('live host roster', () => {
       });
     });
 
-    expect(screen.getByText('ينقص 1 متسابقين متصلين لبدء الجولة')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'المتسابقون في الجولة (1)' })).toBeVisible();
   });
 });
