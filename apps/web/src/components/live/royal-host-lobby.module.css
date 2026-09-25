@@ -805,7 +805,7 @@
   color: var(--royal-muted);
 }
 
-@media (max-width: 74rem) {
+@media (max-width: 82rem) {
   :global(.royal-host-dashboard.royal-live).dashboard {
     grid-template-columns: 10rem minmax(0, 1fr) 17rem;
   }
