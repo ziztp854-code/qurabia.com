@@ -3,7 +3,7 @@ import { ReadexPro_600SemiBold } from '@expo-google-fonts/readex-pro/600SemiBold
 import { ReadexPro_700Bold } from '@expo-google-fonts/readex-pro/700Bold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { useRef, useState } from 'react';
+import { type ComponentRef, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -24,7 +24,7 @@ import { theme } from './src/theme';
 const INVALID_CODE_MESSAGE = 'أدخل رمزًا صحيحًا من ٦ إلى ٨ أحرف أو أرقام.';
 
 function JoinScreen() {
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [opening, setOpening] = useState(false);
