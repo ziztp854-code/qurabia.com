@@ -56,4 +56,25 @@ describe('host dashboard', () => {
     expect(screen.getByText('بث مباشر قيد التشغيل')).toBeVisible();
     expect(screen.getByText('1 نشطة')).toBeVisible();
   });
+
+  it('passes the quiz capacity to the live host lobby', async () => {
+    mocks.selected.mockResolvedValue({
+      id: 'session-1',
+      roomCode: 'ABC123',
+      _count: { participants: 2 },
+      quiz: {
+        title: 'مسابقة المعرفة',
+        maxPlayers: 12,
+        autoAdvance: false,
+        _count: { questions: 0 },
+        questions: [],
+      },
+    });
+
+    render(await Page({ searchParams: Promise.resolve({ sessionId: 'session-1' }) }));
+
+    expect(mocks.host).toHaveBeenCalledWith(
+      expect.objectContaining({ maxPlayers: 12, totalQuestions: 0 }),
+    );
+  });
 });

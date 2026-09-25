@@ -1,12 +1,13 @@
-import { Activity, MonitorPlay, Radio, Users, Zap, Trophy } from 'lucide-react';
+import { ArrowUpLeft, Activity, CirclePlay, MonitorPlay, Plus, Radio, Users, Zap, Trophy } from 'lucide-react';
 import { startLiveSession } from '@/app/live/actions';
 import { HostLayout } from '@/components/layout';
 import { LiveHostExperience } from '@/components/live';
-import { Button, ButtonLink, EmptyState } from '@/components/ui';
+import { Button, ButtonLink } from '@/components/ui';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { requireActiveUser } from '@/lib/auth/session';
 import { createHostLiveAccessToken } from '@/lib/live/access-token';
 import { formatNumber } from '@/lib/utils';
+import styles from './host-dashboard.module.css';
 
 export default async function Page({
   searchParams,
@@ -31,6 +32,7 @@ export default async function Page({
                 quiz: {
                   select: {
                     title: true,
+                    maxPlayers: true,
                     autoAdvance: true,
                     _count: { select: { questions: true } },
                     questions: {
@@ -101,6 +103,7 @@ export default async function Page({
     selectedSession?._count.participants ??
     sessions.reduce((total, session) => total + session._count.participants, 0);
   const quizCount = quizzes.length;
+  const hasReadyQuiz = quizzes.some((quiz) => quiz._count.questions > 0);
   const activeSessionCount = sessions.filter((session) => session.status === 'ACTIVE').length;
   const broadcastHref = selectedSession ? `/display?sessionId=${selectedSession.id}` : '/display';
   const selectedQuestions =
@@ -125,6 +128,7 @@ export default async function Page({
           initialAutoAdvance={selectedSession.quiz.autoAdvance}
           quizTitle={selectedSession.quiz.title}
           minimumPlayers={1}
+          maxPlayers={selectedSession.quiz.maxPlayers}
           totalQuestions={totalQuestionCount}
           questions={selectedQuestions}
         />
@@ -134,179 +138,154 @@ export default async function Page({
 
   return (
     <HostLayout players={liveSessionCount}>
-      <div className="host-stage royal-host-hub royal-live">
-        <div className="host-main">
-          <header className="host-main-header">
-            <div>
-              <span className="eyebrow royal-live-kicker">
-                <Radio />
-                02 · تشغيل مباشر
-              </span>
-              <h1>لوحة المضيف</h1>
-              <p>تحكم كامل بالجولة، ومراقبة مباشرة للاعبين والأجوبة.</p>
-              <div className="host-command-strip" aria-label="حالة غرفة المضيف">
-                <span className={activeSessionCount > 0 ? 'is-live' : undefined}>
-                  <Activity aria-hidden="true" />
-                  {activeSessionCount > 0 ? 'بث مباشر قيد التشغيل' : 'اختر مسابقة لبدء البث'}
-                </span>
-                <span>
-                  <Users aria-hidden="true" />
-                  {formatNumber(liveSessionCount)} لاعب
-                </span>
-                <span>
-                  <MonitorPlay aria-hidden="true" />
-                  شاشة العرض متاحة
-                </span>
-              </div>
-            </div>
-            <div className="host-main-header__actions">
+      <div className={styles.dashboard}>
+        <header className={styles.hero}>
+          <div className={styles.heroCopy}>
+            <span className={styles.eyebrow}><Radio aria-hidden="true" /> مركز البث المباشر</span>
+            <h1>لوحة المضيف</h1>
+            <p>ابدأ مسابقة، تابع الغرف المفتوحة، وجهّز شاشة العرض من مكان واحد.</p>
+            <div className={styles.heroActions}>
+              <ButtonLink href={hasReadyQuiz ? '#quizzes' : quizCount > 0 ? '/quizzes' : '/quizzes/new'} variant="gold">
+                <CirclePlay aria-hidden="true" />
+                {hasReadyQuiz ? 'ابدأ مسابقة' : quizCount > 0 ? 'جهّز مسابقة' : 'أنشئ أول مسابقة'}
+              </ButtonLink>
               <ButtonLink href={broadcastHref} variant="outline">
-                <MonitorPlay aria-hidden="true" />
-                شاشة العرض
+                <MonitorPlay aria-hidden="true" /> شاشة العرض
               </ButtonLink>
-              <ButtonLink href="/quizzes/new" variant="gold">
-                <Trophy aria-hidden="true" />
-                مسابقة جديدة
-              </ButtonLink>
-            </div>
-          </header>
-
-          {liveError && (
-            <div className="host-alert host-alert--danger" role="alert">
-              <Zap aria-hidden="true" />
-              <div>
-                <strong>تعذّر تشغيل المسابقة</strong>
-                <span>
-                  {liveError === 'gameMode'
-                    ? 'البث الكلاسيكي يقبل حزم المسابقة العادية فقط. شغّل أوضاع السلم والمليون ولوحة الفئات من صفحاتها.'
-                    : liveError === 'quota'
-                      ? 'تعذّر التحقق من حصة الغرف المباشرة. أعد المحاولة بعد قليل، وإن تكرر الأمر راجع قاعة الأوسمة أو الدعم.'
-                      : liveError === 'quizOptions'
-                        ? 'تحتوي هذه المسابقة على أسئلة بلا خيارات إجابة، وأُرسلت للإصلاح تلقائيًا. أعد المحاولة بعد لحظات.'
-                        : 'تأكد بأنها تحتوي على سؤال واحد على الأقل، وأن وضعها هو المسابقة الكلاسيكية.'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="host-stats">
-            <div className="host-stat">
-              <Users aria-hidden="true" />
-              <div>
-                <strong>{formatNumber(liveSessionCount)}</strong>
-                <span>مشاركون في الغرف</span>
-              </div>
-            </div>
-            <div className="host-stat">
-              <Trophy aria-hidden="true" />
-              <div>
-                <strong>{formatNumber(quizCount)}</strong>
-                <span>مسابقة محفوظة</span>
-              </div>
-            </div>
-            <div className="host-stat">
-              <Zap aria-hidden="true" />
-              <div>
-                <strong>{formatNumber(activeSessionCount)}</strong>
-                <span>جلسة نشطة</span>
-              </div>
             </div>
           </div>
+          <div className={styles.heroStatus} aria-label="ملخص البث">
+            <div className={styles.statusTop}>
+              <span className={styles.statusLabel}>الغرف المعروضة</span>
+              <span className={styles.liveMarker}><Activity aria-hidden="true" /> {activeSessionCount > 0 ? 'بث مباشر قيد التشغيل' : 'جاهز للبث'}</span>
+            </div>
+            <strong>{formatNumber(liveSessionCount)}</strong>
+            <span className={styles.statusCaption}>مشاركون في الغرف</span>
+            <div className={styles.statusBottom}>
+              <span><Users aria-hidden="true" /> {formatNumber(activeSessionCount)} نشطة</span>
+              <span><Trophy aria-hidden="true" /> {formatNumber(quizCount)} مسابقة معروضة</span>
+            </div>
+          </div>
+        </header>
 
-          <div className="host-main-content">
-            {sessions.length > 0 ? (
-              <section className="host-panel" aria-label="غرفك المباشرة">
-                <div className="host-panel__header">
-                  <span className="host-panel__title">
-                    <Radio aria-hidden="true" />
-                    غرفك المباشرة
-                  </span>
-                  <span
-                    className={`host-panel__badge${activeSessionCount > 0 ? ' host-panel__badge--live' : ''}`}
-                  >
-                    {activeSessionCount > 0
-                      ? `${formatNumber(activeSessionCount)} نشطة`
-                      : 'بانتظار الانضمام'}
-                  </span>
+        {liveError && (
+          <div className={styles.alert} role="alert">
+            <Zap aria-hidden="true" />
+            <div>
+              <strong>تعذّر تشغيل المسابقة</strong>
+              <p>
+                {liveError === 'gameMode'
+                  ? 'البث الكلاسيكي يقبل حزم المسابقة العادية فقط. شغّل أوضاع السلم والمليون ولوحة الفئات من صفحاتها.'
+                  : liveError === 'quota'
+                    ? 'تعذّر التحقق من حصة الغرف المباشرة. أعد المحاولة بعد قليل، وإن تكرر الأمر راجع قاعة الأوسمة أو الدعم.'
+                    : liveError === 'quizOptions'
+                      ? 'تحتوي هذه المسابقة على أسئلة بلا خيارات إجابة، وأُرسلت للإصلاح تلقائيًا. أعد المحاولة بعد لحظات.'
+                      : 'تأكد بأنها تحتوي على سؤال واحد على الأقل، وأن وضعها هو المسابقة الكلاسيكية.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className={styles.workspace}>
+          <div className={styles.main}>
+            <section className={styles.section} aria-labelledby="host-rooms-title">
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span className={styles.sectionKicker}>01 / الغرف</span>
+                  <h2 id="host-rooms-title">أحدث غرفك المباشرة</h2>
                 </div>
-                {sessions.map((session) => (
-                  <div className="host-quiz-row" key={session.id}>
-                    <div className="host-quiz-row__content">
-                      <h3>{session.quiz.title}</h3>
-                      <p>
-                        <bdi>{session.roomCode}</bdi> ·{' '}
-                        {session.status === 'WAITING' ? 'بانتظار اللاعبين' : 'المسابقة جارية'} ·{' '}
-                        {formatNumber(session._count.participants)} مشارك
-                      </p>
-                    </div>
-                    <ButtonLink href={`/host?sessionId=${session.id}`} variant="gold" size="sm">
-                      متابعة الغرفة
-                    </ButtonLink>
-                  </div>
-                ))}
-              </section>
-            ) : (
-              <EmptyState
-                title="اختر مسابقة لتشغيلها"
-                description="المسابقات المحفوظة في حسابك تظهر أدناه ويمكن فتح غرفة مباشرة منها."
-              />
-            )}
+                <span className={styles.countBadge}>{formatNumber(sessions.length)} غرف معروضة</span>
+              </div>
+              {sessions.length > 0 ? (
+                <div className={styles.roomList}>
+                  {sessions.map((session) => (
+                    <article className={styles.roomRow} key={session.id}>
+                      <div className={styles.roomDetail}>
+                        <span className={styles.roomState} data-active={session.status === 'ACTIVE'}>
+                          <span className={styles.stateDot} aria-hidden="true" />
+                          {session.status === 'WAITING' ? 'بانتظار اللاعبين' : 'المسابقة جارية'}
+                        </span>
+                        <h3>{session.quiz.title}</h3>
+                        <p>رمز الغرفة <bdi className={styles.roomCode}>{session.roomCode}</bdi><span aria-hidden="true"> · </span>{formatNumber(session._count.participants)} مشارك</p>
+                      </div>
+                      <ButtonLink href={`/host?sessionId=${session.id}`} variant="gold" size="sm" className={styles.rowAction}>
+                        متابعة الغرفة <ArrowUpLeft aria-hidden="true" />
+                      </ButtonLink>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <span className={styles.emptyIcon}><Radio aria-hidden="true" /></span>
+                  <h3>لا توجد غرف مفتوحة الآن</h3>
+                  <p>اختر مسابقة من القائمة لفتح غرفة جديدة واستقبال اللاعبين.</p>
+                  <ButtonLink href={quizCount > 0 ? '#quizzes' : '/quizzes/new'} variant="outline">
+                    {quizCount > 0 ? 'تصفح مسابقاتك' : 'أنشئ مسابقة'}
+                  </ButtonLink>
+                </div>
+              )}
+            </section>
+
+            <section className={styles.section} id="quizzes" aria-labelledby="host-quizzes-title">
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span className={styles.sectionKicker}>02 / التشغيل</span>
+                  <h2 id="host-quizzes-title">اختر مسابقة لتشغيلها</h2>
+                </div>
+                <ButtonLink href="/quizzes/new" variant="outline" size="sm">
+                  <Plus aria-hidden="true" /> مسابقة جديدة
+                </ButtonLink>
+              </div>
+              {quizzes.length > 0 ? (
+                <div className={styles.quizList}>
+                  {quizzes.map((quiz, index) => (
+                    <article key={quiz.id} className={styles.quizRow}>
+                      <span className={styles.quizIndex} aria-hidden="true">{formatNumber(index + 1).padStart(2, '0')}</span>
+                      <div className={styles.quizDetail}>
+                        <h3>{quiz.title}</h3>
+                        <p>{formatNumber(quiz._count.questions)} سؤال <span aria-hidden="true">·</span> {quiz.status === 'ACTIVE' ? 'منشورة' : 'مسودة'}{quiz._count.questions === 0 ? ' · أضف أسئلة قبل التشغيل' : ''}</p>
+                      </div>
+                      {quiz._count.questions > 0 ? (
+                        <form action={startLiveSession} className={styles.quizAction}>
+                          <input type="hidden" name="quizId" value={quiz.id} />
+                          <Button type="submit" variant="gold" size="sm">
+                            <CirclePlay aria-hidden="true" /> تشغيل
+                          </Button>
+                        </form>
+                      ) : (
+                        <ButtonLink href="/quizzes" variant="outline" size="sm" className={styles.quizAction}>
+                          إدارة
+                        </ButtonLink>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <span className={styles.emptyIcon}><Trophy aria-hidden="true" /></span>
+                  <h3>ابدأ بأول مسابقة</h3>
+                  <p>أنشئ مسابقة وأضف أسئلتها، ثم عد إلى هنا لفتح غرفة مباشرة.</p>
+                  <ButtonLink href="/quizzes/new" variant="gold"><Plus aria-hidden="true" /> إنشاء مسابقة</ButtonLink>
+                </div>
+              )}
+            </section>
           </div>
+
+          <aside className={styles.aside} aria-label="أدوات المضيف">
+            <section className={styles.helpCard} aria-labelledby="host-join-title">
+              <span className={styles.helpIcon}><Users aria-hidden="true" /></span>
+              <h2 id="host-join-title">دعوة اللاعبين</h2>
+              <p>بعد فتح الغرفة، شارك رمزها أو رابطها. يدخل اللاعبون بالاسم دون حساب.</p>
+              <ButtonLink href="/join" variant="outline" fullWidth>فتح صفحة الانضمام <ArrowUpLeft aria-hidden="true" /></ButtonLink>
+            </section>
+            <section className={styles.helpCard} aria-labelledby="host-display-title">
+              <span className={styles.helpIcon}><MonitorPlay aria-hidden="true" /></span>
+              <h2 id="host-display-title">شاشة الجمهور</h2>
+              <p>اعرض الجولة على شاشة منفصلة ليشاهد الجميع الأسئلة والنتائج.</p>
+              <ButtonLink href={broadcastHref} variant="outline" fullWidth>فتح شاشة العرض <ArrowUpLeft aria-hidden="true" /></ButtonLink>
+            </section>
+          </aside>
         </div>
-
-        <aside className="host-sidebar">
-          <div className="host-panel">
-            <div className="host-panel__header">
-              <span className="host-panel__title">
-                <Trophy aria-hidden="true" />
-                مسابقاتك
-              </span>
-              <span className="host-panel__badge">{formatNumber(quizCount)}</span>
-            </div>
-            <div className="host-quiz-grid">
-              {quizzes.map((quiz) => (
-                <div key={quiz.id} className="host-quiz-row">
-                  <span className="host-quiz-row__number" dir="ltr">
-                    {quiz.roomCode?.slice(0, 2) ?? '--'}
-                  </span>
-                  <div className="host-quiz-row__content">
-                    <h4>{quiz.title}</h4>
-                    <p>
-                      {formatNumber(quiz._count.questions)} سؤال ·{' '}
-                      {quiz.status === 'ACTIVE' ? 'منشورة' : 'مسودة'}
-                    </p>
-                  </div>
-                  <form action={startLiveSession} className="host-quiz-row__actions">
-                    <input type="hidden" name="quizId" value={quiz.id} />
-                    <Button
-                      type="submit"
-                      variant="gold"
-                      size="sm"
-                      disabled={quiz._count.questions === 0}
-                    >
-                      تشغيل
-                    </Button>
-                  </form>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="host-panel host-panel--cta">
-            <div className="host-panel__header">
-              <span className="host-panel__title">
-                <Users aria-hidden="true" />
-                انضم بالرمز
-              </span>
-            </div>
-            <p className="host-panel__description">
-              شارك رابط الجلسة مع اللاعبين. يدخلون بالاسم فقط، بلا حساب.
-            </p>
-            <ButtonLink href="/join" variant="outline" fullWidth>
-              فتح صفحة الانضمام
-            </ButtonLink>
-          </div>
-        </aside>
       </div>
     </HostLayout>
   );

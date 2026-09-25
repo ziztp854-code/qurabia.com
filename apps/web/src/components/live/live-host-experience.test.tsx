@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LiveHostExperience } from './live-host-experience';
 
 const nextQuestion = vi.fn();
+const revealQuestion = vi.fn();
 const mockGame = vi.hoisted(() => ({
+  connected: true,
+  busy: false,
+  message: '',
   hasSnapshot: true,
   phase: 'REVEAL',
   participantCount: 4,
@@ -25,37 +29,41 @@ const mockGame = vi.hoisted(() => ({
 
 vi.mock('./use-live-game', () => ({
   useLiveGame: () => ({
-    snapshot: mockGame.hasSnapshot ? {
-      sessionId: 'session-1',
-      roomCode: 'ABC123',
-      phase: mockGame.phase,
-      serverTime: Date.now(),
-      question: {
-        questionId: 'question-1',
-        prompt: 'ما الإجابة؟',
-        options: [
-          { id: 'option-1', text: 'الأولى', position: 0 },
-          { id: 'option-2', text: 'الثانية', position: 1 },
-        ],
-        media: [],
-        questionStartedAt: Date.now() - 5_000,
-        questionEndsAt: Date.now(),
-        questionNumber: 1,
-        totalQuestions: 2,
-      },
-      reveal: null,
-      leaderboard: mockGame.leaderboard,
-      participantCount: mockGame.participantCount,
-      playerAnswer: null,
-      playerResult: null,
-    } : null,
+    snapshot: mockGame.hasSnapshot
+      ? {
+          sessionId: 'session-1',
+          roomCode: 'ABC123',
+          phase: mockGame.phase,
+          serverTime: Date.now(),
+          question: {
+            questionId: 'question-1',
+            prompt: 'ما الإجابة؟',
+            options: [
+              { id: 'option-1', text: 'الأولى', position: 0 },
+              { id: 'option-2', text: 'الثانية', position: 1 },
+            ],
+            media: [],
+            questionStartedAt: Date.now() - 5_000,
+            questionEndsAt: Date.now(),
+            questionNumber: 1,
+            totalQuestions: 2,
+          },
+          reveal: null,
+          leaderboard: mockGame.leaderboard,
+          participantCount: mockGame.participantCount,
+          playerAnswer: null,
+          playerResult: null,
+        }
+      : null,
     stats: mockGame.stats,
     clockOffset: 0,
-    connected: true,
-    message: '',
-    busy: false,
+    connected: mockGame.connected,
+    message: mockGame.message,
+    busy: mockGame.busy,
     startQuestion: vi.fn(),
     nextQuestion,
+    revealQuestion,
+    skipQuestion: vi.fn(),
     finishGame: vi.fn(),
     submitAnswer: vi.fn(),
   }),
@@ -64,6 +72,11 @@ vi.mock('./use-live-game', () => ({
 describe('LiveHostExperience auto advance', () => {
   beforeEach(() => {
     nextQuestion.mockClear();
+    revealQuestion.mockClear();
+    mockGame.connected = true;
+    mockGame.busy = false;
+    mockGame.message = '';
+    mockGame.participantCount = 4;
     mockGame.hasSnapshot = true;
     mockGame.phase = 'REVEAL';
     vi.useFakeTimers();
@@ -71,6 +84,105 @@ describe('LiveHostExperience auto advance', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('waits for the minimum players before enabling start', () => {
+    mockGame.phase = 'LOBBY';
+    mockGame.participantCount = 1;
+    render(
+      <LiveHostExperience
+        sessionId="session-1"
+        hostId="host-1"
+        accessToken="token"
+        roomCode="ABC123"
+        joinUrl="https://example.test/join/ABC123"
+        initialAutoAdvance={false}
+        minimumPlayers={2}
+        totalQuestions={2}
+      />,
+    );
+    const startButton = screen.getByRole('button', { name: 'بدء السؤال الأول' });
+    expect(startButton).toBeDisabled();
+    expect(startButton).toHaveAccessibleDescription('ينقص متسابق واحد لبدء الجولة');
+  });
+
+  it('explains why a room without questions cannot start', () => {
+    mockGame.phase = 'LOBBY';
+    render(
+      <LiveHostExperience
+        sessionId="session-1"
+        hostId="host-1"
+        accessToken="token"
+        roomCode="ABC123"
+        joinUrl="https://example.test/join/ABC123"
+        initialAutoAdvance={false}
+        minimumPlayers={1}
+        totalQuestions={0}
+      />,
+    );
+
+    const startButton = screen.getByRole('button', { name: 'بدء السؤال الأول' });
+    expect(startButton).toBeDisabled();
+    expect(startButton).toHaveAccessibleDescription('لا يمكن البدء قبل إضافة سؤال واحد على الأقل');
+    expect(screen.getByText('لا يمكن البدء قبل إضافة سؤال واحد على الأقل')).toBeVisible();
+  });
+
+  it('disables commands offline and resumes automatic advance after reconnecting', () => {
+    mockGame.connected = false;
+    const props = {
+      sessionId: 'session-1',
+      hostId: 'host-1',
+      accessToken: 'token',
+      roomCode: 'ABC123',
+      joinUrl: 'https://example.test/join/ABC123',
+      initialAutoAdvance: true,
+    };
+    const { rerender } = render(<LiveHostExperience {...props} />);
+    expect(screen.getByRole('button', { name: 'السؤال التالي' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'تخطي السؤال' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'إنهاء الجولة' })).toBeDisabled();
+    act(() => vi.advanceTimersByTime(2_000));
+    expect(nextQuestion).not.toHaveBeenCalled();
+    mockGame.connected = true;
+    rerender(<LiveHostExperience {...props} />);
+    act(() => vi.advanceTimersByTime(2_000));
+    expect(nextQuestion).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for an in-flight command before automatically advancing', () => {
+    mockGame.busy = true;
+    const props = {
+      sessionId: 'session-1',
+      hostId: 'host-1',
+      accessToken: 'token',
+      roomCode: 'ABC123',
+      joinUrl: 'https://example.test/join/ABC123',
+      initialAutoAdvance: true,
+    };
+    const { rerender } = render(<LiveHostExperience {...props} />);
+    act(() => vi.advanceTimersByTime(2_000));
+    expect(nextQuestion).not.toHaveBeenCalled();
+    mockGame.busy = false;
+    rerender(<LiveHostExperience {...props} />);
+    act(() => vi.advanceTimersByTime(2_000));
+    expect(nextQuestion).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows the host to close answers using the existing reveal command', () => {
+    mockGame.phase = 'QUESTION';
+    render(
+      <LiveHostExperience
+        sessionId="session-1"
+        hostId="host-1"
+        accessToken="token"
+        roomCode="ABC123"
+        joinUrl="https://example.test/join/ABC123"
+        initialAutoAdvance={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'إظهار الإجابة' }));
+    expect(revealQuestion).toHaveBeenCalledWith('question-1');
+    expect(screen.queryByRole('button', { name: 'إضافة وقت' })).not.toBeInTheDocument();
   });
 
   it('lets the host disable or enable the automatic next question request', () => {
@@ -196,12 +308,78 @@ describe('LiveHostExperience auto advance', () => {
       />,
     );
 
-    expect(
-      screen.getByRole('img', { name: 'رمز QR للانضمام إلى الغرفة ABC123' }),
-    ).toBeVisible();
+    expect(screen.getByRole('img', { name: 'رمز QR للانضمام إلى الغرفة ABC123' })).toBeVisible();
     expect(screen.getByText('https://example.test/join/ABC123')).toBeVisible();
-    expect(screen.getAllByText('ضمن الجولة')).toHaveLength(3);
-    expect(screen.queryByText('متصل')).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'المتسابقون في الجولة' })).toBeVisible();
+    expect(screen.getByText('الغرفة متصلة')).toBeVisible();
+  });
+
+  it('keeps every contestant visible when fewer players are currently connected', () => {
+    mockGame.phase = 'LOBBY';
+    mockGame.participantCount = 1;
+    render(
+      <LiveHostExperience
+        sessionId="session-1"
+        hostId="host-1"
+        accessToken="token"
+        roomCode="ABC123"
+        joinUrl="https://example.test/join/ABC123"
+        initialAutoAdvance={false}
+        minimumPlayers={2}
+        totalQuestions={2}
+      />,
+    );
+
+    const roster = screen.getByRole('region', { name: 'المتسابقون في الجولة' });
+    expect(within(roster).getByText('سارة')).toBeVisible();
+    expect(within(roster).getByText('محمد')).toBeVisible();
+    expect(within(roster).getByText('نورة')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'بدء السؤال الأول' })).toBeDisabled();
+  });
+
+  it('presents the royal host lobby as the reference control dashboard', () => {
+    mockGame.phase = 'LOBBY';
+    render(
+      <LiveHostExperience
+        sessionId="session-1"
+        hostId="host-1"
+        accessToken="token"
+        roomCode="ABC123"
+        joinUrl="https://example.test/join/ABC123"
+        initialAutoAdvance={false}
+        minimumPlayers={1}
+        maxPlayers={12}
+        quizTitle="مسابقة الثقافة العامة"
+        totalQuestions={2}
+      />,
+    );
+
+    expect(screen.getByRole('navigation', { name: 'التنقل في لوحة المضيف' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'مسابقة الثقافة العامة' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'جاهزية الجولة' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'المتسابقون في الجولة' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'ملخص الغرفة' })).toBeVisible();
+    expect(screen.getByRole('complementary', { name: 'تنبيهات النظام' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'بدء السؤال الأول' })).toBeEnabled();
+  });
+
+  it('shows command feedback inside the redesigned lobby', () => {
+    mockGame.phase = 'LOBBY';
+    mockGame.message = 'تعذر بدء الجولة، حاول مرة أخرى';
+    render(
+      <LiveHostExperience
+        sessionId="session-1"
+        hostId="host-1"
+        accessToken="token"
+        roomCode="ABC123"
+        joinUrl="https://example.test/join/ABC123"
+        initialAutoAdvance={false}
+        minimumPlayers={1}
+        totalQuestions={2}
+      />,
+    );
+
+    expect(screen.getByText('تعذر بدء الجولة، حاول مرة أخرى')).toHaveAttribute('role', 'status');
   });
 
   it('renders one central surface and only mounts the QR invitation in the lobby', () => {
@@ -234,10 +412,10 @@ describe('LiveHostExperience auto advance', () => {
       />,
     );
     expect(screen.getByLabelText('دعوة اللاعبين')).toBeVisible();
-    expect(screen.getByLabelText('السؤال الحالي')).toContainElement(
+    expect(screen.getByLabelText('لوبي الجولة')).toContainElement(
       screen.getByLabelText('دعوة اللاعبين'),
     );
-    expect(screen.getByLabelText('قائمة انتظار المتسابقين')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'جاهزية الجولة' })).toBeVisible();
 
     mockGame.phase = 'QUESTION';
     rerender(
@@ -251,7 +429,7 @@ describe('LiveHostExperience auto advance', () => {
       />,
     );
     expect(screen.queryByLabelText('دعوة اللاعبين')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('قائمة انتظار المتسابقين')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'جاهزية الجولة' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'ما الإجابة؟' })).toBeVisible();
   });
 

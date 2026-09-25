@@ -5995,6 +5995,13 @@ tr:last-child td {
   align-items: center;
   gap: 0.4rem;
 }
+.host-layout > header .logo > .brand-logo {
+  inline-size: auto;
+  block-size: auto;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
 .host-stage {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22rem;

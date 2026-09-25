@@ -4,10 +4,10 @@ import { formatNumber } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import {
   BarChart3,
-  Clock3,
   Crown,
   Eye,
   ExternalLink,
+  Flame,
   ListChecks,
   ListRestart,
   LogOut,
@@ -27,6 +27,7 @@ import { Button, ButtonLink } from '@/components/ui';
 import { RoomCode } from '@/components/quiz';
 import { LiveFinaleExperience } from './live-finale-experience';
 import { LiveQuestionStage } from './live-question-stage';
+import { RoyalHostLobby } from './royal-host-lobby';
 import { useLiveGame } from './use-live-game';
 
 export type HostQuestion = {
@@ -54,6 +55,7 @@ export function LiveHostExperience({
   joinUrl,
   initialAutoAdvance,
   minimumPlayers = 2,
+  maxPlayers,
   quizTitle = 'الجولة المباشرة',
   totalQuestions = 0,
   questions = [],
@@ -65,6 +67,7 @@ export function LiveHostExperience({
   joinUrl: string;
   initialAutoAdvance: boolean;
   minimumPlayers?: number;
+  maxPlayers?: number;
   quizTitle?: string;
   totalQuestions?: number;
   questions?: HostQuestion[];
@@ -108,6 +111,7 @@ export function LiveHostExperience({
 
   const snapshot = game.snapshot;
   const phase = snapshot?.phase;
+  const commandsDisabled = game.busy || !game.connected;
   const isConnecting = !snapshot;
   const isLobby = phase === 'LOBBY';
   const showInsights = insightsOpen && phase !== 'FINISHED' && phase !== 'LEADERBOARD';
@@ -121,7 +125,8 @@ export function LiveHostExperience({
   const hostQuestion = questions.find((item) => item.question.id === questionId);
   const hostCorrectOptionId = hostQuestion?.question.options.find((option) => option.isCorrect)?.id;
   const currentQuestionNumber = snapshot?.question?.questionNumber ?? null;
-  const currentTotalQuestions = snapshot?.question?.totalQuestions ?? totalQuestions;
+  const currentTotalQuestions =
+    phase === 'LOBBY' ? totalQuestions : (snapshot?.question?.totalQuestions ?? totalQuestions);
   const phaseLabel =
     phase === 'QUESTION'
       ? 'السؤال مباشر'
@@ -164,6 +169,7 @@ export function LiveHostExperience({
   useEffect(() => {
     if (
       !autoAdvance ||
+      commandsDisabled ||
       phase !== 'REVEAL' ||
       !questionId ||
       autoAdvancedQuestion.current === questionId
@@ -175,7 +181,7 @@ export function LiveHostExperience({
       nextQuestion();
     }, 2_000);
     return () => window.clearTimeout(timer);
-  }, [autoAdvance, nextQuestion, phase, questionId]);
+  }, [autoAdvance, commandsDisabled, nextQuestion, phase, questionId]);
 
   useEffect(() => {
     if (!questionsOpen) return;
@@ -188,6 +194,44 @@ export function LiveHostExperience({
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
   }, [questionsOpen]);
+
+  if (isLobby) {
+    return (
+      <RoyalHostLobby
+        sessionId={sessionId}
+        roomCode={roomCode}
+        joinUrl={joinUrl}
+        quizTitle={quizTitle}
+        connected={game.connected}
+        busy={game.busy}
+        message={game.message}
+        participantCount={participantCount}
+        players={rankedPlayers}
+        minimumPlayers={minimumPlayers}
+        maxPlayers={maxPlayers}
+        totalQuestions={totalQuestions}
+        alerts={hostAlerts}
+        soundEnabled={soundEnabled}
+        settingsOpen={settingsOpen}
+        autoAdvance={autoAdvance}
+        questions={questions}
+        questionId={questionId}
+        questionsOpen={questionsOpen}
+        questionToggleRef={questionToggleRef}
+        questionNavigatorRef={questionNavigatorRef}
+        onStart={game.startQuestion}
+        onFinish={game.finishGame}
+        onToggleSound={() => setSoundEnabled((value) => !value)}
+        onToggleSettings={() => setSettingsOpen((value) => !value)}
+        onToggleAutoAdvance={() => setAutoAdvance((value) => !value)}
+        onToggleQuestions={() => setQuestionsOpen((value) => !value)}
+        onCloseQuestions={() => {
+          setQuestionsOpen(false);
+          questionToggleRef.current?.focus();
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -263,6 +307,16 @@ export function LiveHostExperience({
           {game.message}
         </p>
       )}
+      {!game.connected && snapshot && (
+        <p className="royal-host-status-message" role="status">
+          انقطع الاتصال. تُعرض آخر حالة محفوظة، وستتاح أدوات الجولة بعد استعادة الاتصال.
+        </p>
+      )}
+      {game.busy && (
+        <p className="royal-host-status-message" role="status">
+          جارٍ تنفيذ الإجراء…
+        </p>
+      )}
 
       <div className="royal-host-dashboard-grid">
         <aside className="royal-host-ranking" aria-label="ترتيب المتسابقين المباشر">
@@ -276,6 +330,16 @@ export function LiveHostExperience({
                 <li key={player.id}>
                   <span>{formatNumber(player.rank)}</span>
                   <strong>{player.name}</strong>
+                  {player.streak >= 2 && (
+                    <span
+                      className="royal-host-streak"
+                      title={`سلسلة ${formatNumber(player.streak)} إجابات صحيحة متتالية`}
+                      aria-label={`سلسلة ${formatNumber(player.streak)} إجابات صحيحة متتالية`}
+                    >
+                      <Flame aria-hidden="true" />
+                      {formatNumber(player.streak)}
+                    </span>
+                  )}
                   <b>{formatNumber(player.score)}</b>
                 </li>
               ))}
@@ -314,7 +378,23 @@ export function LiveHostExperience({
                   <h2>شارك الرمز، ثم ابدأ السؤال الأول</h2>
                   <p>سيصل السؤال إلى جميع الأجهزة بتوقيت واحد صادر من الخادم.</p>
                 </div>
-                <Button type="button" size="lg" onClick={game.startQuestion} disabled={game.busy}>
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={game.startQuestion}
+                  disabled={
+                    commandsDisabled ||
+                    participantCount < minimumPlayers ||
+                    currentTotalQuestions === 0
+                  }
+                  title={
+                    currentTotalQuestions === 0
+                      ? 'أضف سؤالًا واحدًا على الأقل قبل بدء المسابقة'
+                      : participantCount < minimumPlayers
+                        ? `يلزم ${formatNumber(minimumPlayers)} متسابق على الأقل`
+                        : undefined
+                  }
+                >
                   بدء السؤال الأول
                 </Button>
               </div>
@@ -322,9 +402,11 @@ export function LiveHostExperience({
                 <div>
                   <strong>قائمة الانتظار</strong>
                   <span>
-                    {participantCount >= minimumPlayers
-                      ? 'يمكن بدء الجولة الآن'
-                      : `ينقص ${formatNumber(Math.max(0, minimumPlayers - participantCount))} متسابقين متصلين لبدء الجولة`}
+                    {currentTotalQuestions === 0
+                      ? 'لا يمكن البدء قبل إضافة سؤال واحد على الأقل'
+                      : participantCount >= minimumPlayers
+                        ? `يمكن بدء الجولة الآن · ${formatNumber(participantCount)}${maxPlayers ? ` / ${formatNumber(maxPlayers)}` : ''} متسابق`
+                        : `ينقص ${formatNumber(Math.max(0, minimumPlayers - participantCount))} متسابقين متصلين لبدء الجولة`}
                   </span>
                 </div>
                 {rankedPlayers.length ? (
@@ -405,16 +487,19 @@ export function LiveHostExperience({
                   variant="gold"
                   className="royal-host-tool-primary"
                   onClick={game.nextQuestion}
-                  disabled={game.busy || snapshot.phase !== 'REVEAL'}
+                  disabled={commandsDisabled || snapshot.phase !== 'REVEAL'}
                 >
                   <SkipForward />
-                  السؤال التالي
+                  {currentQuestionNumber === currentTotalQuestions
+                    ? 'عرض النتيجة النهائية'
+                    : 'السؤال التالي'}
                 </Button>
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled
-                  title="يُكشف الحل تلقائيًا عند انتهاء الوقت أو اكتمال الإجابات"
+                  onClick={() => questionId && game.revealQuestion(questionId)}
+                  disabled={commandsDisabled || snapshot.phase !== 'QUESTION'}
+                  title="إغلاق استقبال الإجابات وكشف الحل لجميع المتسابقين"
                 >
                   <Eye />
                   إظهار الإجابة
@@ -422,17 +507,8 @@ export function LiveHostExperience({
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled
-                  title="إضافة الوقت غير مدعومة في منطق الجولة الحالي"
-                >
-                  <Clock3 />
-                  إضافة وقت
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
                   onClick={game.skipQuestion}
-                  disabled={game.busy || !snapshot.question}
+                  disabled={commandsDisabled || snapshot.phase !== 'QUESTION'}
                   title="يكشف الإجابة فورًا وينتقل للسؤال التالي"
                 >
                   <ListRestart />
@@ -516,7 +592,7 @@ export function LiveHostExperience({
                 variant="destructive"
                 className="royal-host-tool-danger"
                 onClick={game.finishGame}
-                disabled={game.busy}
+                disabled={commandsDisabled}
               >
                 <Square />
                 إنهاء الجولة

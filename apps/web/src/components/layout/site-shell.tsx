@@ -11,9 +11,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Play,
-  Radio,
   UserCircle2,
-  Volume2,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -491,11 +489,9 @@ export function DashboardLayout({
 export function HostLayout({
   children,
   players = 0,
-  connected = true,
 }: {
   children: ReactNode;
   players?: number;
-  connected?: boolean;
 }) {
   return (
     <div className="host-layout">
@@ -503,14 +499,7 @@ export function HostLayout({
         <Logo />
         <div>
           <PageBackButton className="host-back-button" />
-          <span className={connected ? 'online' : 'offline'}>
-            <Radio />
-            {connected ? 'متصل' : 'غير متصل'}
-          </span>
-          <span>{players} لاعبًا</span>
-          <Button variant="ghost" size="icon" aria-label="كتم الصوت">
-            <Volume2 />
-          </Button>
+          <span>{players} مشارك في غرفك</span>
           <ButtonLink href="/profile" variant="ghost" size="icon" aria-label="الحساب">
             <UserCircle2 />
           </ButtonLink>
