@@ -22,6 +22,8 @@ jobs:
       AUTH_SECRET: ci-only-playwright-secret
       AUTH_URL: http://127.0.0.1:3000
       NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:3001
       RUN_AUTH_E2E: 'true'
     services:
       postgres:
