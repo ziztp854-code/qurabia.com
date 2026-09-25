@@ -1,0 +1,70 @@
+.assistant {
+  display: grid;
+  gap: var(--space-5);
+  margin-block-end: var(--space-6);
+  min-inline-size: 0;
+  border-inline-start: 3px solid var(--gold);
+}
+
+.heading {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.heading h2,
+.heading p,
+.message p,
+.error p {
+  margin: 0;
+}
+
+.messages {
+  display: grid;
+  gap: var(--space-3);
+  max-block-size: 24rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.message {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.message[data-role='assistant'] {
+  border-inline-start: 3px solid var(--gold);
+}
+
+.message strong {
+  display: block;
+  margin-block-end: var(--space-2);
+}
+
+.message p {
+  white-space: pre-wrap;
+}
+
+.form,
+.error {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.actions > * {
+  min-block-size: 44px;
+  max-inline-size: 100%;
+  white-space: normal;
+}
+
+.error {
+  color: var(--danger);
+}

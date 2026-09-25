@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SiteLayout } from '@/components/layout';
 import { ButtonLink, Card } from '@/components/ui';
+import { SupportAssistant } from '@/components/support/support-assistant';
 
 export const metadata: Metadata = {
   title: 'تواصل معنا | تحدّي',
@@ -20,6 +21,7 @@ export default function ContactPage() {
               <p>إن كان طلبك متعلقًا بحساب أو غرفة، أرسل التفاصيل الأساسية فقط وتجنب إرسال كلمات مرور أو مفاتيح سرية.</p>
             </div>
           </div>
+          {process.env.LOBBY_ASSISTANT_PROVIDER === 'openclaw' && <SupportAssistant />}
           <div className="card-grid two">
             <Card>
               <h2>دعم المسابقات</h2>
