@@ -86,12 +86,12 @@ jobs:
       - name: Seed Playwright test data
         run: pnpm db:seed
 
+      - name: Build web app
+        run: pnpm build
+
       - name: Install Playwright Chromium
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
 
       - name: Playwright end-to-end tests
         working-directory: apps/web
         run: pnpm test:e2e
-
-      - name: Build web app
-        run: pnpm build
