@@ -33,7 +33,7 @@ import type {
 import {
   selectRandomQuestionIds,
   selectRandomQuestionsByDifficulty,
-  selectCategoryBalancedQuestions,
+  selectCategoryAndDifficultyBalancedQuestions,
   QUIZ_DRAW_POINTS,
 } from '@/lib/questions/random-selection';
 import { foldKeyword } from '@/lib/questions/keywords';
@@ -45,6 +45,7 @@ export type QuizActionResult =
 export type CreateQuizInput = QuizBuilderInput;
 
 const QUIZ_BUILDER_PAGE_SIZE = 40;
+const DIVERSE_20_COUNTS = { EASY: 7, MEDIUM: 7, HARD: 6 } as const;
 
 function buildQuizBuilderQuestionWhere({
   userId,
@@ -200,13 +201,16 @@ export async function pickRandomQuizBuilderQuestions(
   const prisma = getPrismaClient();
   const diverse = filters.preset === 'DIVERSE_20';
   const canManage = canManageQuestions(user.role);
-  const where = buildQuizBuilderQuestionWhere({
-    userId: user.id,
-    canManage,
-    gameMode: filters.gameMode,
-    query: diverse ? '' : filters.query,
-    categoryId: diverse ? '' : filters.categoryId,
-  });
+  const where: Prisma.QuestionWhereInput = {
+    ...buildQuizBuilderQuestionWhere({
+      userId: user.id,
+      canManage,
+      gameMode: filters.gameMode,
+      query: diverse ? '' : filters.query,
+      categoryId: diverse ? '' : filters.categoryId,
+    }),
+    ...(diverse ? { status: 'PUBLISHED' as const } : {}),
+  };
 
   try {
     const candidates = await prisma.question.findMany({
@@ -223,6 +227,7 @@ export async function pickRandomQuizBuilderQuestions(
               query: '',
               categoryId: '',
             }),
+            ...(diverse ? { status: 'PUBLISHED' as const } : {}),
             id: { in: filters.excludeIds },
           },
           select: { id: true, prompt: true, difficulty: true, categoryId: true },
@@ -234,7 +239,12 @@ export async function pickRandomQuizBuilderQuestions(
       ).values(),
     ];
     const selectedIds = diverse
-      ? selectCategoryBalancedQuestions(selectionCandidates, randomUUID(), 20, filters.excludeIds)
+      ? selectCategoryAndDifficultyBalancedQuestions(
+          selectionCandidates,
+          DIVERSE_20_COUNTS,
+          randomUUID(),
+          filters.excludeIds,
+        )
       : selectRandomQuestionsByDifficulty(
           selectionCandidates,
           filters.counts,

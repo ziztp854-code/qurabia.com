@@ -106,9 +106,49 @@ describe('createQuiz', () => {
     expect(where).not.toHaveProperty('AND');
     expect(where).not.toHaveProperty('id');
     expect(where).toMatchObject({
+      status: 'PUBLISHED',
       gameTypes: { has: 'QUIZ' },
       options: { some: {} },
     });
+  });
+
+  it('keeps the preset at seven easy, seven medium, and six hard published questions', async () => {
+    const rows = (['EASY', 'MEDIUM', 'HARD'] as const).flatMap((difficulty) =>
+      ['science', 'history', 'sport', 'language'].flatMap((categoryId) =>
+        Array.from({ length: 10 }, (_, index) => ({
+          id: `${difficulty}-${categoryId}-${index}`,
+          prompt: `${difficulty}-${categoryId}-${index}`,
+          difficulty,
+          categoryId,
+          category: { name: categoryId },
+          timeLimit: 20,
+          basePoints: 500,
+          version: 1,
+          gameTypes: ['QUIZ'],
+          status: 'PUBLISHED',
+        })),
+      ),
+    );
+    const findMany = vi.fn().mockResolvedValue(rows);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany } });
+
+    const result = await pickRandomQuizBuilderQuestions({
+      preset: 'DIVERSE_20',
+      query: '',
+      categoryId: '',
+      gameMode: 'QUIZ',
+      counts: { EASY: 1, MEDIUM: 0, HARD: 0 },
+    });
+
+    expect(result.status).toBe('success');
+    if (result.status !== 'success') return;
+    expect(result.questions).toHaveLength(20);
+    expect(result.questions.filter((question) => question.difficulty === 'EASY')).toHaveLength(7);
+    expect(result.questions.filter((question) => question.difficulty === 'MEDIUM')).toHaveLength(7);
+    expect(result.questions.filter((question) => question.difficulty === 'HARD')).toHaveLength(6);
+    for (const category of ['science', 'history', 'sport', 'language']) {
+      expect(result.questions.filter((question) => question.category === category)).toHaveLength(5);
+    }
   });
 
   it('identifies only rejected selections and does not create a partial quiz', async () => {

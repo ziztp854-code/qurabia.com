@@ -3,7 +3,63 @@ import {
   selectRandomQuestionIds,
   selectRandomQuestionsByDifficulty,
   selectCategoryBalancedQuestions,
+  selectCategoryAndDifficultyBalancedQuestions,
 } from './random-selection';
+
+describe('selectCategoryAndDifficultyBalancedQuestions', () => {
+  it('fills the requested difficulty quotas while spreading questions across categories', () => {
+    const candidates = (['EASY', 'MEDIUM', 'HARD'] as const).flatMap((difficulty) =>
+      ['science', 'history', 'sport', 'language'].flatMap((categoryId) =>
+        Array.from({ length: 10 }, (_, index) => ({
+          id: `${difficulty}-${categoryId}-${index}`,
+          prompt: `${difficulty}-${categoryId}-${index}`,
+          categoryId,
+          difficulty,
+        })),
+      ),
+    );
+    const original = JSON.stringify(candidates);
+    const selected = selectCategoryAndDifficultyBalancedQuestions(
+      candidates,
+      { EASY: 7, MEDIUM: 7, HARD: 6 },
+      'balanced-draw',
+    );
+
+    expect(selected).toHaveLength(20);
+    expect(new Set(selected).size).toBe(20);
+    expect(selected.filter((id) => id.startsWith('EASY-'))).toHaveLength(7);
+    expect(selected.filter((id) => id.startsWith('MEDIUM-'))).toHaveLength(7);
+    expect(selected.filter((id) => id.startsWith('HARD-'))).toHaveLength(6);
+    for (const category of ['science', 'history', 'sport', 'language']) {
+      expect(selected.filter((id) => id.includes(`-${category}-`))).toHaveLength(5);
+    }
+    expect(selectCategoryAndDifficultyBalancedQuestions(
+      candidates,
+      { EASY: 7, MEDIUM: 7, HARD: 6 },
+      'balanced-draw',
+    )).toEqual(selected);
+    expect(JSON.stringify(candidates)).toBe(original);
+  });
+
+  it('avoids excluded and repeated question text without replacing missing difficulty quotas', () => {
+    const candidates = [
+      { id: 'used', prompt: 'السؤال السابق', categoryId: 'a', difficulty: 'EASY' as const },
+      { id: 'duplicate', prompt: 'السُّؤال السابق', categoryId: 'b', difficulty: 'EASY' as const },
+      { id: 'fresh', prompt: 'سؤال جديد', categoryId: 'b', difficulty: 'EASY' as const },
+      { id: 'medium', prompt: 'سؤال متوسط', categoryId: 'a', difficulty: 'MEDIUM' as const },
+    ];
+    const selected = selectCategoryAndDifficultyBalancedQuestions(
+      candidates,
+      { EASY: 2, MEDIUM: 1, HARD: 1 },
+      'excluded-draw',
+      ['used'],
+    );
+
+    expect(selected).toEqual(expect.arrayContaining(['fresh', 'medium']));
+    expect(selected).toHaveLength(2);
+    expect(selected).not.toContain('duplicate');
+  });
+});
 
 describe('selectCategoryBalancedQuestions', () => {
   it('balances an unequal bank across every category without duplicates or mutation', () => {

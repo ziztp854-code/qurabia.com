@@ -154,3 +154,69 @@ export function selectRandomQuestionsByDifficulty(
     return id ? [id] : [];
   });
 }
+
+/** Keeps exact difficulty quotas, then spreads the selected questions across available categories. */
+export function selectCategoryAndDifficultyBalancedQuestions(
+  candidates: readonly {
+    id: string;
+    prompt: string;
+    categoryId: string | null;
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  }[],
+  counts: Readonly<Record<'EASY' | 'MEDIUM' | 'HARD', number>>,
+  seed: string,
+  excludeIds: readonly string[] = [],
+): string[] {
+  const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const excluded = new Set(excludeIds);
+  const excludedPrompts = new Set(
+    candidates
+      .filter((candidate) => excluded.has(candidate.id))
+      .map((candidate) => foldKeyword(candidate.prompt) || candidate.id),
+  );
+  const candidateOrder = selectRandomQuestionIds(
+    [...byId.keys()],
+    `${seed}:category-candidates`,
+    byId.size,
+  );
+  let selected = selectRandomQuestionsByDifficulty(candidates, counts, seed, excludeIds);
+
+  for (let pass = 0; pass < selected.length; pass += 1) {
+    const selectedSet = new Set(selected);
+    const categoryCounts = new Map<string, number>();
+    for (const id of selected) {
+      const category = byId.get(id)!.categoryId ?? '';
+      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+    }
+
+    let best: { from: string; to: string; improvement: number } | null = null;
+    for (const from of selected) {
+      const current = byId.get(from)!;
+      const currentCategory = current.categoryId ?? '';
+      const usedPrompts = new Set(
+        selected
+          .filter((id) => id !== from)
+          .map((id) => foldKeyword(byId.get(id)!.prompt) || id),
+      );
+      for (const to of candidateOrder) {
+        if (excluded.has(to) || selectedSet.has(to)) continue;
+        const candidate = byId.get(to)!;
+        if (candidate.difficulty !== current.difficulty) continue;
+        const candidateCategory = candidate.categoryId ?? '';
+        const improvement =
+          (categoryCounts.get(currentCategory) ?? 0) -
+          (categoryCounts.get(candidateCategory) ?? 0) -
+          1;
+        if (improvement <= (best?.improvement ?? 0)) continue;
+        const prompt = foldKeyword(candidate.prompt) || to;
+        if (excludedPrompts.has(prompt) || usedPrompts.has(prompt)) continue;
+        best = { from, to, improvement };
+      }
+    }
+    if (!best) break;
+    const { from, to } = best;
+    selected = selected.map((id) => (id === from ? to : id));
+  }
+
+  return selected;
+}

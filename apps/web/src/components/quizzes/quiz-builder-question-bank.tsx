@@ -156,7 +156,11 @@ export function QuizBuilderQuestionBank({
           return;
         }
         onAddMany(result.questions);
-        setRandomNotice(`سُحب ${formatNumber(result.questions.length)} سؤالًا من كامل النتائج.`);
+        setRandomNotice(
+          diverse && result.questions.length < 20
+            ? `أُضيف ${formatNumber(result.questions.length)} سؤالًا. لم تتوفر أسئلة منشورة كافية لتحقيق توزيع 7 سهلة و7 متوسطة و6 صعبة.`
+            : `سُحب ${formatNumber(result.questions.length)} سؤالًا من كامل النتائج.`,
+        );
       })
       .catch(() => setRandomNotice('تعذّر سحب الأسئلة. أعد المحاولة.'))
       .finally(() => setLoading(false));
@@ -272,8 +276,8 @@ export function QuizBuilderQuestionBank({
             </Button>
           </div>
           <p className="muted">
-            جلب 20 سؤالًا يوزّع الأسئلة على جميع الفئات المتاحة لوضع اللعب، بصرف النظر عن فلاتر
-            البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
+            جلب 20 سؤالًا منشورًا يوزّعها بين الفئات مع 7 سهلة و7 متوسطة و6 صعبة عند توفرها،
+            بصرف النظر عن فلاتر البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
           </p>
           {randomNotice ? (
             <p className="muted" role="status">

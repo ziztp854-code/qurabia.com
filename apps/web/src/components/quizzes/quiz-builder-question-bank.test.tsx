@@ -59,6 +59,24 @@ describe('QuizBuilderQuestionBank', () => {
     expect(pickRandomQuestions).not.toHaveBeenCalled();
     expect(screen.getByText(/قلّل أعداد السحب/)).toBeInTheDocument();
   });
+  it('warns the host when the published bank cannot fill the 20-question mix', async () => {
+    const user = userEvent.setup();
+    const picked = [{ id: 'one', prompt: 'سؤال متاح', category: 'علوم', duration: 20, points: 500 }];
+    render(
+      <QuizBuilderQuestionBank
+        initialBank={{ status: 'success', categories: [], questions: [], page: 1, pageCount: 1, total: 0 }}
+        gameMode="QUIZ"
+        selectedIds={new Set()}
+        canAddQuestions={false}
+        pickRandomQuestions={vi.fn().mockResolvedValue({ status: 'success', questions: picked })}
+        onAdd={vi.fn()}
+        onAddMany={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'جلب 20 سؤالًا' }));
+    expect(await screen.findByRole('status', { name: '' })).toHaveTextContent(/لم تتوفر أسئلة منشورة كافية/);
+  });
   it('lets users cancel a selected question directly from the bank', async () => {
     const user = userEvent.setup();
     const onRemove = vi.fn();
