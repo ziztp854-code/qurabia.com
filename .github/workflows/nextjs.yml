@@ -78,6 +78,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test deployment migration connection
+        run: node --test scripts/deploy-migrations.test.mjs
+
       - name: Apply migrations to the test database
         run: pnpm db:migrate:deploy
 

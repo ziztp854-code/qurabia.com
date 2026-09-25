@@ -10,7 +10,7 @@
       "root": "apps/web",
       "framework": "nextjs",
       "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-      "buildCommand": "cd ../.. && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && (test \"$SKIP_DB_MIGRATE\" = \"1\" && echo 'Skipping db:migrate:deploy (SKIP_DB_MIGRATE=1)' || pnpm db:migrate:deploy) && pnpm --filter @tahaddi/domain build && pnpm --filter @tahaddi/web build"
+      "buildCommand": "cd ../.. && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && pnpm --filter @tahaddi/domain build && pnpm --filter @tahaddi/web build"
     },
     "realtime": {
       "root": ".",

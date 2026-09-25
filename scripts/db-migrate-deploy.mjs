@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 /**
  * Wrapper حول `prisma migrate deploy` يجعله آمناً في البيئة المحلية
- * وفي Vercel.
+ * وفي CI.
  *
- * السبب الجذري: pre-push hook يشغّل `turbo build` لكل الحزم، و
- * `vercel.json` buildCommand يضمّ `db:migrate:deploy` لتطبيق الـ migrations
- * قبل بناء `apps/web`. لكن محلياً قد لا تتوفر قاعدة بيانات قابلة للوصول
+ * السبب الجذري: pre-push hook يشغّل `turbo build` لكل الحزم، وCI يشغّل
+ * `db:migrate:deploy` على قاعدة الاختبار. لكن محلياً قد لا تتوفر قاعدة بيانات قابلة للوصول
  * (مثلاً: Docker ليس مشغّلاً، أو الـ URL يشير إلى `localhost` بدون خدمة).
  * بدلاً من إيقاف الـ hook بصمت أو كسره، نُجرب اختبار اتصال TCP بسيط
  * ونُعلم المستخدم بحالة التخطّي.
@@ -18,8 +17,7 @@
  *  - Vercel preview/development     → تخطّي الهجرة ما لم يُضبط RUN_DB_MIGRATE=1،
  *                                     حتى لا تلمس بنية preview قاعدة الإنتاج.
  *
- * المسار الموصى به للإنتاج هو مهمة GitLab CI اليدوية `db:migrate:production`
- * (راجع `.gitlab-ci.yml`)، مع ضبط SKIP_DB_MIGRATE=1 في Vercel بعد اعتمادها.
+ * ترحيلات الإنتاج تُشغّل في Render قبل نشر خدمة الزمن الحقيقي.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -31,7 +29,7 @@ const vercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
 function logSkip(reason) {
   console.warn(
     `[db:migrate:deploy] تخطّي تنفيذ الـ migration: ${reason}.\n` +
-      'تُطبّق الهجرات في بناء Vercel الإنتاجي أو عبر مهمة db:migrate:production في GitLab CI.',
+      'تُطبّق ترحيلات الإنتاج في Render قبل نشر خدمة الزمن الحقيقي.',
   );
   process.exit(0);
 }

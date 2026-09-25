@@ -40,7 +40,7 @@ describe('GameGateway', () => {
       validateIdentity: jest.fn().mockResolvedValue(true),
       joined: jest.fn().mockResolvedValue(snapshot),
       disconnected: jest.fn(),
-      startQuestion: jest.fn(),
+      startQuestion: jest.fn().mockResolvedValue(true),
       revealQuestion: jest.fn(),
       next: jest.fn(),
       submitAnswer: jest.fn(),
@@ -152,6 +152,62 @@ describe('GameGateway', () => {
     expect(client.emit).toHaveBeenCalledWith(
       'game:error',
       expect.objectContaining({ code: 'HOST_ONLY' }),
+    );
+  });
+
+  it('tells the host when a question cannot start', async () => {
+    const { gateway, gameService } = setup();
+    const client = createClient();
+    const token = createLiveAccessToken(secret, {
+      sessionId: 'session-1',
+      subjectId: 'host-1',
+      role: 'host',
+    });
+    await gateway.handleGameJoin(client as never, {
+      sessionId: 'session-1',
+      subjectId: 'host-1',
+      accessToken: token,
+      role: 'host',
+    });
+    client.emit.mockClear();
+    gameService.startQuestion.mockResolvedValue(false);
+
+    await gateway.handleQuestionStart(client as never, {
+      sessionId: 'session-1',
+    });
+
+    expect(client.emit).toHaveBeenCalledWith(
+      'game:error',
+      expect.objectContaining({ code: 'START_REJECTED' }),
+    );
+  });
+
+  it('tells the host when starting a question fails unexpectedly', async () => {
+    const { gateway, gameService } = setup();
+    const client = createClient();
+    const token = createLiveAccessToken(secret, {
+      sessionId: 'session-1',
+      subjectId: 'host-1',
+      role: 'host',
+    });
+    await gateway.handleGameJoin(client as never, {
+      sessionId: 'session-1',
+      subjectId: 'host-1',
+      accessToken: token,
+      role: 'host',
+    });
+    client.emit.mockClear();
+    gameService.startQuestion.mockRejectedValue(
+      new Error('database unavailable'),
+    );
+
+    await gateway.handleQuestionStart(client as never, {
+      sessionId: 'session-1',
+    });
+
+    expect(client.emit).toHaveBeenCalledWith(
+      'game:error',
+      expect.objectContaining({ code: 'START_FAILED' }),
     );
   });
 

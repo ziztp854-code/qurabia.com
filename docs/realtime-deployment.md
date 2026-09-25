@@ -1,26 +1,25 @@
 # نشر خدمة الزمن الحقيقي
 
-## Vercel Services (المسار الحالي)
+## مسار الإنتاج عبر GitHub
 
-يُنشَر الويب وخدمة NestJS اللحظية من المشروع نفسه باستخدام Vercel Services.
-يجب ضبط **Framework Preset** للمشروع على **Services**. يوجّه `vercel.json`
-المسارات `/socket.io/*` و`/health` و`/realtime/*` إلى خدمة `realtime` قبل
-المسار العام الذي يذهب إلى خدمة `web`.
+فرع `main` في `ziztp854-code/qurabia.com` هو مصدر نشر الموقع على Vercel
+وخدمة NestJS اللحظية على Render. يستخدم الموقع `realtime.qurabia.com` للاتصال
+بخدمة اللعب. يُنفّذ Render ترحيلات Prisma عبر أمر ما قبل النشر المبيّن في `render.yaml`
+قبل تشغيل الإصدار الجديد. عند فشل الترحيل لا ينتقل الإصدار الجديد إلى التشغيل.
+بناء Vercel لا يشغّل ترحيلات قاعدة الإنتاج.
 
-- عند استخدام النطاق المشترك `https://qurabia.com` لا يلزم
-  `NEXT_PUBLIC_REALTIME_URL` في الإنتاج؛ يتصل العميل بالنطاق نفسه.
+- اضبط `NEXT_PUBLIC_REALTIME_URL=https://realtime.qurabia.com` في بيئة Production
+  على Vercel، ثم أعد بناء الموقع. يلتقط العميل قيمة هذا المتغير وقت البناء.
 - يجب توفير `DATABASE_URL` و`AUTH_SECRET` و`REDIS_URL` و`WEB_ORIGIN` لخدمة
   `realtime`. اجعل `WEB_ORIGIN=https://qurabia.com`.
 - يمكن توفير `LIVE_DEVICE_HASH_SECRET` بقيمة عشوائية مستقلة لا تقل عن 32
   محرفًا. عند غيابه يُستخدم `AUTH_SECRET` لتوقيع بصمة الجهاز، ولا يُحفظ معرّف
   المتصفح الخام في قاعدة البيانات.
-- بعد النشر يجب أن يعيد `/health` استجابة 200، وأن يعيد طلب Socket.IO polling
-  على `/socket.io/?EIO=4&transport=polling` حزمة افتتاح تبدأ بالرمز `0`.
+- بعد النشر تحقّق من `https://realtime.qurabia.com/health` (استجابة 200)
+  و`https://realtime.qurabia.com/socket.io/?EIO=4&transport=polling`
+  (حزمة افتتاح تبدأ بالرمز `0`).
 
-تظل تعليمات Render أدناه مسارًا احتياطيًا فقط إذا تقرر فصل الخدمة اللحظية عن
-Vercel مستقبلًا.
-
-## Render (مسار احتياطي)
+## Render
 
 ## بوابة Upstash
 
@@ -36,36 +35,36 @@ Vercel مستقبلًا.
 يجب أن يبقى `REDIS_URL` واحدًا في البيئتين حتى لا تتفرع عدادات الحضور والغرف.
 لا تستخدم Render Key Value بديلًا، ولا تفعّل IP allowlist لأن Vercel وRender لا
 يقدمان عنوان خروج ثابتًا في هذا الإعداد.
-`main` = الإنتاج للويب فقط؛ `apps/realtime` يُنشر يدويًّا على Render ويجب نشره
-قبل الويب عند أي تغيير في الخادم.
+قبل دمج تغيير يتطلب ترحيل قاعدة البيانات، تحقّق من أن الترحيل إضافي ومتوافق مع
+نسخة الويب القائمة، لأن Vercel وRender قد يبدآن البناء في الوقت نفسه.
 
 ## إنشاء الخدمة
 
-1. من Render اختر **New > Blueprint** واربط مستودع GitLab `challenge`؛ إنشاء
-   Web Service يدويًا يتجاهل `render.yaml` ولا يُستخدم في هذا النشر.
-2. بعد دمج التغيير المعتمد إلى `main`، اختر فرع `main` ثم زامن Blueprint يدويًا؛
-   تغيير `branch:` في `render.yaml` وحده لا يؤثر قبل الدمج والمزامنة. لا تزامن الآن.
-3. راجع أن المنطقة Virginia، والخطة Starter، وعدد النسخ نسخة واحدة، وأن النشر
-   التلقائي معطّل. يستخدم الملف الحقل الحالي `autoDeployTrigger: off` بدل الحقل
-   القديم `autoDeploy: false`.
-4. يعمل البناء والتشغيل من جذر المستودع بالأوامر الموجودة في `render.yaml`.
-5. لا تضبط `NODE_ENV` في لوحة Render؛ Render يضبط بيئة التشغيل، بينما ضبطه
+1. اربط خدمة `tahaddi-realtime` الحالية بمستودع GitHub
+   `ziztp854-code/qurabia.com` وفرع `main`، وافصل Blueprint القديم المرتبط
+   بمستودع GitLab قبل تغيير مصدر الخدمة. لا تنشئ خدمة ثانية لنفس النطاق.
+2. راجع أن المنطقة Virginia، والخطة Starter، وعدد النسخ نسخة واحدة، وأن النشر
+   التلقائي مفعّل عند وصول commit جديد إلى `main`.
+3. يعمل البناء والتشغيل من جذر المستودع بالأوامر المبيّنة في `render.yaml`.
+4. لا تضبط `NODE_ENV` في لوحة Render؛ Render يضبط بيئة التشغيل، بينما ضبطه
    يدويًا قد يمنع تثبيت devDependencies اللازمة للبناء.
-6. يثبّت Blueprint إصدار Node على `24.14.1` ويشغّل `corepack pnpm` مباشرةً؛
+5. ثبّت إصدار Node على `24.14.1` وشغّل `corepack pnpm` مباشرةً؛
    يقرأ Corepack الحقل `packageManager: pnpm@11.9.0` من `package.json` بلا محاولة
    استبدال `/usr/bin/pnpm` المحمي في بيئة Render.
    أبقِ Node على 22 أو 24 ما دام البناء يعتمد على Corepack؛ عند الانتقال إلى
    Node 25 أو أحدث ثبّت Corepack أو `pnpm@11.9.0` صراحةً لأن Corepack لم يعد
    موزعًا مع Node.
-7. أدخل المتغيرات المطلوبة يدويًا. اترك قيمها خارج Git وسجلات التشغيل.
-8. تأكد أن Health Check Path هو `/health` ثم ابدأ النشر.
+6. أدخل المتغيرات المطلوبة يدويًا. اترك قيمها خارج Git وسجلات التشغيل.
+7. تأكد أن Health Check Path هو `/health` وأن أمر ما قبل النشر هو
+   `node scripts/deploy-migrations.mjs`.
 
 ## متغيرات Render
 
 | الاسم | الحالة المطلوبة | الملاحظة |
 | --- | --- | --- |
-| `NODE_VERSION` | مضبوط في Blueprint | القيمة الحرفية `24.14.1`؛ لا تُدخلها يدويًا |
-| `DATABASE_URL` | مطلوب | اتصال Supabase المباشر على 5432 مع `connection_limit=5`؛ لا تشغّل migration أثناء النشر |
+| `NODE_VERSION` | مطلوب | القيمة الحرفية `24.14.1` في إعدادات الخدمة الحالية |
+| `DATABASE_URL` | مطلوب | اتصال الإنتاج بقاعدة Supabase؛ يستخدم سكربت الترحيل منفذ الجلسة 5432 بدل منفذ المعاملات 6543 عند الحاجة |
+| `DIRECT_URL` | اختياري | اتصال مباشر مخصص للترحيلات؛ له الأولوية عند ضبطه |
 | `AUTH_SECRET` | مطلوب | مطابق حرفيًا لسر Auth.js في Vercel |
 | `LIVE_DEVICE_HASH_SECRET` | اختياري | سر HMAC مستقل لا يقل عن 32 محرفًا؛ عند غيابه يُستخدم `AUTH_SECRET` |
 | `REDIS_URL` | مطلوب | نفس نسخة Upstash المستخدمة في Vercel، بصيغة `rediss://` |

@@ -4,7 +4,12 @@ import { defineConfig } from 'prisma/config';
 
 config({ path: '.env', quiet: true });
 config({ path: '.env.local', override: true, quiet: true });
-if (!existsSync('.env') && !existsSync('.env.local')) {
+if (
+  !existsSync('.env') &&
+  !existsSync('.env.local') &&
+  !process.env.DATABASE_URL &&
+  !process.env.DIRECT_URL
+) {
   config({ path: '.env.example', quiet: true });
 }
 

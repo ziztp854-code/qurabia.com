@@ -74,6 +74,7 @@ describe('GameService live safety', () => {
         questionEndsAt: session.questionStartedAt.getTime() + 20_000,
       }),
       saveGameState: jest.fn(),
+      deleteGameState: jest.fn(),
       acquireTransition: jest.fn().mockResolvedValue(true),
       releaseTransition: jest.fn(),
     };
@@ -163,6 +164,84 @@ describe('GameService live safety', () => {
     ]);
     expect(JSON.stringify(snapshot)).not.toContain('isCorrect');
     expect(snapshot?.leaderboard).toEqual([]);
+  });
+
+  it('restores an active question when Redis still contains the lobby', async () => {
+    const { service, redis } = setup();
+    redis.loadGameState.mockResolvedValue({
+      sessionId: 'session-1',
+      roomCode: 'ABC123',
+      phase: 'LOBBY',
+      currentQuestionPosition: 0,
+      questionStartedAt: null,
+      questionEndsAt: null,
+      transitionDueAt: null,
+    });
+
+    const snapshot = await service.getSnapshot({
+      sessionId: 'session-1',
+      subjectId: 'player-1',
+      role: 'player',
+    });
+
+    expect(snapshot?.phase).toBe('QUESTION');
+    expect(snapshot?.question?.questionId).toBe('question-1');
+  });
+
+  it('keeps a started question when a join read the previous waiting state', async () => {
+    const activeSession = makeSession();
+    const waitingSession = {
+      ...activeSession,
+      status: 'WAITING',
+      questionStartedAt: null,
+    };
+    const { service, redis, database } = setup(activeSession);
+    database.client.liveSession.findUnique
+      .mockResolvedValueOnce(waitingSession)
+      .mockResolvedValue(activeSession);
+
+    const snapshot = await service.getSnapshot({
+      sessionId: activeSession.id,
+      subjectId: 'player-1',
+      role: 'player',
+    });
+
+    expect(snapshot?.phase).toBe('QUESTION');
+    expect(snapshot?.question?.questionId).toBe('question-1');
+    expect(redis.deleteGameState).not.toHaveBeenCalled();
+  });
+
+  it('persists the first question before publishing it in Redis', async () => {
+    const session = makeSession();
+    session.status = 'WAITING';
+    const { service, redis, database } = setup(session);
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'LOBBY',
+      currentQuestionPosition: 0,
+      questionStartedAt: null,
+      questionEndsAt: null,
+      transitionDueAt: null,
+    });
+    let finishUpdate!: () => void;
+    database.client.liveSession.update.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishUpdate = () => resolve({});
+        }),
+    );
+
+    const starting = service.startQuestion(session.id, session.hostId);
+    for (let tick = 0; tick < 10 && !finishUpdate; tick += 1)
+      await Promise.resolve();
+    expect(finishUpdate).toBeDefined();
+    expect(redis.saveGameState).not.toHaveBeenCalled();
+    finishUpdate();
+    await expect(starting).resolves.toBe(true);
+    expect(redis.saveGameState).toHaveBeenCalledWith(
+      expect.objectContaining({ phase: 'QUESTION' }),
+    );
   });
 
   it('notifies the host roster when a player joins without exposing the player leaderboard', async () => {
