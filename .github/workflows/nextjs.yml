@@ -53,7 +53,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 11.9.0
           run_install: false
 
       - name: Set up Node.js
@@ -78,11 +77,20 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test deployment migration connection
+        run: node --test scripts/deploy-migrations.test.mjs
+
       - name: Apply migrations to the test database
         run: pnpm db:migrate:deploy
 
       - name: Seed Playwright test data
         run: pnpm db:seed
+
+      - name: Build web app
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:3001
 
       - name: Install Playwright Chromium
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
@@ -90,6 +98,3 @@ jobs:
       - name: Playwright end-to-end tests
         working-directory: apps/web
         run: pnpm test:e2e
-
-      - name: Build web app
-        run: pnpm build

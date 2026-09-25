@@ -230,7 +230,9 @@ export class GameService {
     };
   }
 
-  private async ensureState(session: NonNullable<SessionRecord>) {
+  private async ensureState(
+    session: NonNullable<SessionRecord>,
+  ): Promise<LiveGameState> {
     const stored = await this.redis.loadGameState(session.id);
     const startedAt = session.questionStartedAt?.getTime() ?? null;
     const dbPhase: GamePhase =
@@ -239,16 +241,21 @@ export class GameService {
         : session.status === 'WAITING' || !startedAt
           ? 'LOBBY'
           : 'QUESTION';
-    // Only rebuild when the database is telling us the session is back at
-    // LOBBY (e.g. it was reset to WAITING) but Redis still holds a stale
-    // running phase. Otherwise, trust the in-flight state: snapshot phase
-    // transitions (REVEAL/LEADERBOARD) and the final FINISHED state live in
-    // Redis until the host starts a new run, and discarding them would tear
-    // down timers and player leaderboards for reconnecting sockets.
+    // A stale lobby must not erase a question that was just started.
     if (stored && stored.phase === dbPhase) return stored;
     if (stored && dbPhase === 'LOBBY' && stored.phase !== 'LOBBY') {
+      const refreshed = await this.loadSession(session.id);
+      if (
+        refreshed &&
+        (refreshed.status === 'FINISHED' || refreshed.questionStartedAt)
+      ) {
+        return this.ensureState(refreshed);
+      }
       await this.redis.deleteGameState(session.id);
-    } else if (stored) {
+    } else if (
+      stored &&
+      !(dbPhase === 'QUESTION' && stored.phase === 'LOBBY')
+    ) {
       return stored;
     }
     if (dbPhase === 'FINISHED') {
@@ -413,6 +420,10 @@ export class GameService {
     let session = await this.loadSession(identity.sessionId);
     if (!session) return null;
     let state = await this.ensureState(session);
+    if (session.status === 'WAITING' && state.phase !== 'LOBBY') {
+      session = await this.loadSession(identity.sessionId);
+      if (!session) return null;
+    }
     const question = this.currentQuestion(
       session,
       state.currentQuestionPosition,
@@ -524,22 +535,20 @@ export class GameService {
         questionEndsAt,
         transitionDueAt: null,
       };
-      await Promise.all([
-        this.database.client.liveSession.update({
-          where: { id: sessionId },
-          data: {
-            status: 'ACTIVE',
-            startedAt:
-              session.status === 'WAITING'
-                ? new Date(questionStartedAt)
-                : undefined,
-            currentQuestionPosition: targetPosition,
-            questionStartedAt: new Date(questionStartedAt),
-            questionAdvanceAt: null,
-          },
-        }),
-        this.redis.saveGameState(nextState),
-      ]);
+      await this.database.client.liveSession.update({
+        where: { id: sessionId },
+        data: {
+          status: 'ACTIVE',
+          startedAt:
+            session.status === 'WAITING'
+              ? new Date(questionStartedAt)
+              : undefined,
+          currentQuestionPosition: targetPosition,
+          questionStartedAt: new Date(questionStartedAt),
+          questionAdvanceAt: null,
+        },
+      });
+      await this.redis.saveGameState(nextState);
 
       const freshSession = await this.loadSession(sessionId);
       if (!freshSession) return false;

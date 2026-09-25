@@ -7,6 +7,8 @@ import {
   type ClientToServerEvents,
   type GameSnapshot,
   type LiveRole,
+  type QuestionPayload,
+  type QuestionRevealPayload,
   type QuestionStatsPayload,
   type ServerToClientEvents,
 } from '@tahaddi/contracts';
@@ -34,6 +36,11 @@ export function useLiveGame(input: {
 }) {
   const { sessionId, subjectId, accessToken, role } = input;
   const socketRef = useRef<LiveSocket | null>(null);
+  const activeQuestionId = useRef<string | null>(null);
+  const latestStartedQuestion = useRef<QuestionPayload | null>(null);
+  const latestReveal = useRef<QuestionRevealPayload | null>(null);
+  const pending = useRef(false);
+  const pendingTimer = useRef<number | undefined>(undefined);
   const bestRtt = useRef(Number.POSITIVE_INFINITY);
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
   const [stats, setStats] = useState<QuestionStatsPayload | null>(null);
@@ -41,6 +48,33 @@ export function useLiveGame(input: {
   const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState('جارٍ الاتصال بالغرفة…');
   const [busy, setBusy] = useState(false);
+
+  const settlePending = useCallback(() => {
+    window.clearTimeout(pendingTimer.current);
+    pendingTimer.current = undefined;
+    pending.current = false;
+    setBusy(false);
+  }, []);
+
+  const beginPending = useCallback(() => {
+    if (pending.current || !socketRef.current?.connected) return false;
+    pending.current = true;
+    setBusy(true);
+    pendingTimer.current = window.setTimeout(() => {
+      settlePending();
+      setMessage('جارٍ التحقق من حالة الغرفة…');
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('game:join', {
+          sessionId,
+          subjectId,
+          accessToken,
+          role,
+          deviceId: getOrCreateDeviceId(),
+        });
+      }
+    }, 5_000);
+    return true;
+  }, [accessToken, role, sessionId, subjectId, settlePending]);
 
   useEffect(() => {
     const deviceId = getOrCreateDeviceId();
@@ -59,6 +93,8 @@ export function useLiveGame(input: {
     socketRef.current = socket;
 
     const join = () => {
+      latestStartedQuestion.current = null;
+      latestReveal.current = null;
       setConnected(true);
       setMessage('');
       bestRtt.current = Number.POSITIVE_INFINITY;
@@ -66,6 +102,7 @@ export function useLiveGame(input: {
       socket.emit('clock:ping', { clientSentAt: Date.now() });
     };
     const disconnected = () => {
+      settlePending();
       setConnected(false);
       setMessage('انقطع الاتصال؛ نحاول استعادة الجلسة…');
     };
@@ -90,12 +127,46 @@ export function useLiveGame(input: {
       }
     });
     socket.on('game:snapshot', (next) => {
-      setSnapshot(next);
-      setStats(next.reveal?.stats ?? null);
-      setBusy(false);
+      const started = latestStartedQuestion.current;
+      const restored =
+        started &&
+        next.phase !== 'FINISHED' &&
+        started.questionStartedAt > (next.question?.questionStartedAt ?? 0)
+          ? {
+              ...next,
+              phase:
+                latestReveal.current?.questionId === started.questionId
+                  ? ('REVEAL' as const)
+                  : ('QUESTION' as const),
+              question: started,
+              reveal:
+                latestReveal.current?.questionId === started.questionId
+                  ? latestReveal.current
+                  : null,
+              playerAnswer: null,
+              playerResult:
+                latestReveal.current?.questionId === started.questionId
+                  ? (latestReveal.current.playerResult ?? null)
+                  : null,
+            }
+          : next;
+      activeQuestionId.current =
+        restored.phase === 'FINISHED' ? null : (restored.question?.questionId ?? null);
+      setSnapshot((current) =>
+        restored !== next &&
+        current &&
+        current.question?.questionId === restored.question?.questionId
+          ? { ...restored, playerAnswer: current.playerAnswer }
+          : restored,
+      );
+      setStats(restored.reveal?.stats ?? null);
+      settlePending();
       setMessage('');
     });
     socket.on('question:started', (question) => {
+      latestStartedQuestion.current = question;
+      latestReveal.current = null;
+      activeQuestionId.current = question.questionId;
       setSnapshot((current) =>
         current
           ? {
@@ -109,10 +180,11 @@ export function useLiveGame(input: {
           : current,
       );
       setStats(null);
-      setBusy(false);
+      settlePending();
       setMessage('');
     });
     socket.on('answer:accepted', ({ questionId, receivedAt }) => {
+      if (questionId !== activeQuestionId.current) return;
       setSnapshot((current) =>
         current?.question?.questionId === questionId
           ? {
@@ -124,18 +196,25 @@ export function useLiveGame(input: {
             }
           : current,
       );
-      setBusy(false);
+      settlePending();
       setMessage('تم استلام إجابتك.');
     });
-    socket.on('answer:rejected', ({ reason }) => {
+    socket.on('answer:rejected', ({ questionId, reason }) => {
+      if (questionId !== activeQuestionId.current) return;
       if (reason !== 'DUPLICATE_ANSWER') {
         setSnapshot((current) => (current ? { ...current, playerAnswer: null } : current));
+      } else {
+        socket.emit('game:join', { sessionId, subjectId, accessToken, role, deviceId });
       }
-      setBusy(false);
+      settlePending();
       setMessage(rejectionMessages[reason]);
     });
-    socket.on('question:stats', setStats);
+    socket.on('question:stats', (next) => {
+      if (next.questionId === activeQuestionId.current) setStats(next);
+    });
     socket.on('question:revealed', (reveal) => {
+      if (reveal.questionId !== activeQuestionId.current) return;
+      latestReveal.current = reveal;
       setSnapshot((current) =>
         current
           ? {
@@ -147,23 +226,29 @@ export function useLiveGame(input: {
           : current,
       );
       setStats(reveal.stats);
-      setBusy(false);
+      settlePending();
     });
     socket.on('leaderboard:shown', ({ leaderboard }) => {
+      latestStartedQuestion.current = null;
+      latestReveal.current = null;
       setSnapshot((current) =>
         current ? { ...current, phase: 'LEADERBOARD', leaderboard } : current,
       );
-      setBusy(false);
+      settlePending();
     });
     socket.on('game:finished', ({ leaderboard }) => {
+      latestStartedQuestion.current = null;
+      latestReveal.current = null;
+      activeQuestionId.current = null;
       setSnapshot((current) =>
         current ? { ...current, phase: 'FINISHED', leaderboard } : current,
       );
-      setBusy(false);
+      settlePending();
     });
     socket.on('game:player_joined', ({ player, participantCount }) => {
       setSnapshot((current) => {
         if (!current) return current;
+        if (current.phase === 'FINISHED') return { ...current, participantCount };
         const existing = current.leaderboard.filter((item) => item.id !== player.id);
         return {
           ...current,
@@ -179,13 +264,17 @@ export function useLiveGame(input: {
               ...current,
               participantCount,
               leaderboard:
-                role === 'host' ? current.leaderboard.filter((item) => item.id !== playerId) : [],
+                current.phase === 'FINISHED'
+                  ? current.leaderboard
+                  : role === 'host'
+                    ? current.leaderboard.filter((item) => item.id !== playerId)
+                    : [],
             }
           : current,
       );
     });
     socket.on('game:error', ({ message: errorMessage }) => {
-      setBusy(false);
+      settlePending();
       setMessage(errorMessage);
     });
 
@@ -194,31 +283,35 @@ export function useLiveGame(input: {
     }, 10_000);
 
     return () => {
+      window.clearTimeout(pendingTimer.current);
+      pending.current = false;
       window.clearInterval(clockTimer);
       socket.removeAllListeners();
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [accessToken, role, sessionId, subjectId]);
+  }, [accessToken, role, sessionId, subjectId, settlePending]);
 
   const command = useCallback(
     (event: 'question:start' | 'question:next' | 'question:skip' | 'game:finish') => {
-      if (!connected || busy) return;
-      setBusy(true);
-      if (!socketRef.current?.connected) {
-        setBusy(false);
-        return;
-      }
-      socketRef.current.emit(event, { sessionId });
-      window.setTimeout(() => setBusy(false), 3_000);
+      if (!connected || busy || !beginPending()) return;
+      socketRef.current?.emit(event, { sessionId });
     },
-    [busy, connected, sessionId],
+    [busy, connected, sessionId, beginPending],
   );
 
   const submitAnswer = useCallback(
     (questionId: string, optionId: string) => {
-      if (!connected || busy || snapshot?.playerAnswer) return;
-      setBusy(true);
+      if (
+        !connected ||
+        busy ||
+        !socketRef.current?.connected ||
+        snapshot?.playerAnswer ||
+        snapshot?.phase !== 'QUESTION' ||
+        snapshot.question?.questionId !== questionId
+      )
+        return;
+      if (!beginPending()) return;
       setSnapshot((current) =>
         current
           ? {
@@ -227,26 +320,21 @@ export function useLiveGame(input: {
             }
           : current,
       );
-      if (!socketRef.current?.connected) {
-        setBusy(false);
-        return;
-      }
       socketRef.current.emit('answer:submit', {
         sessionId,
         questionId,
         optionId,
       });
     },
-    [busy, connected, sessionId, snapshot?.playerAnswer],
+    [busy, connected, sessionId, snapshot, beginPending],
   );
   const revealQuestion = useCallback(
     (questionId: string) => {
       if (!connected || busy || !questionId || !socketRef.current?.connected) return;
-      setBusy(true);
+      if (!beginPending()) return;
       socketRef.current.emit('question:reveal', { sessionId, questionId });
-      window.setTimeout(() => setBusy(false), 3_000);
     },
-    [busy, connected, sessionId],
+    [busy, connected, sessionId, beginPending],
   );
   const startQuestion = useCallback(() => command('question:start'), [command]);
   const nextQuestion = useCallback(() => command('question:next'), [command]);

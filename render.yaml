@@ -8,6 +8,7 @@ services:
     autoDeployTrigger: commit
     numInstances: 1
     buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm --filter @tahaddi/contracts build && corepack pnpm --filter @tahaddi/database build && corepack pnpm --filter @tahaddi/domain build && corepack pnpm --filter @tahaddi/realtime build
+    preDeployCommand: node scripts/deploy-migrations.mjs
     startCommand: corepack pnpm --filter @tahaddi/realtime start:prod
     healthCheckPath: /health
     maxShutdownDelaySeconds: 30

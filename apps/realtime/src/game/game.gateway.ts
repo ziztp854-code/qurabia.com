@@ -8,6 +8,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 import { verifyLiveAccessToken } from '@tahaddi/contracts';
 import type {
   ClientToServerEvents,
@@ -38,6 +39,8 @@ type GameServer = Server<ClientToServerEvents, ServerToClientEvents>;
 export class GameGateway
   implements OnGatewayInit<GameServer>, OnGatewayDisconnect<GameSocket>
 {
+  private readonly logger = new Logger(GameGateway.name);
+
   @WebSocketServer()
   server!: GameServer;
 
@@ -140,10 +143,28 @@ export class GameGateway
   ) {
     const identity = this.requireHost(client, payload?.sessionId);
     if (!identity) return;
-    await this.gameService.startQuestion(
-      identity.sessionId,
-      identity.subjectId,
-    );
+    try {
+      const started = await this.gameService.startQuestion(
+        identity.sessionId,
+        identity.subjectId,
+      );
+      if (!started) {
+        client.emit('game:error', {
+          code: 'START_REJECTED',
+          message: 'تعذّر بدء السؤال. حدّث الغرفة وحاول مرة أخرى.',
+        });
+      }
+    } catch (error) {
+      this.logger.error({
+        event: 'question_start_failed',
+        sessionId: identity.sessionId,
+        errorKind: error instanceof Error ? error.name : 'UnknownError',
+      });
+      client.emit('game:error', {
+        code: 'START_FAILED',
+        message: 'تعذّر بدء السؤال. حدّث الغرفة وحاول مرة أخرى.',
+      });
+    }
   }
 
   @SubscribeMessage('question:next')
