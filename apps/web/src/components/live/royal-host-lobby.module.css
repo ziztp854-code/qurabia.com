@@ -810,7 +810,7 @@
     grid-template-columns: 10rem minmax(0, 1fr) 17rem;
   }
   .inviteStage {
-    grid-template-columns: 13rem minmax(22rem, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
   .pennant {
     display: none;
