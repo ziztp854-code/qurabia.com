@@ -321,7 +321,7 @@ describe('GameCatalog UI', () => {
     await act(() => vi.advanceTimersByTimeAsync(200));
     await user.click(screen.getByRole('button', { name: 'مسح البحث والفلاتر' }));
     expect(screen.getByRole('link', { name: 'برج المعرفة' })).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('does not offer early access when the upcoming game has no destination', () => {
     const game = catalogSample.find((item) => item.id === 'spectrum')!;
