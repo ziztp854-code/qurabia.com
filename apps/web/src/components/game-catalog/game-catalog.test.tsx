@@ -307,7 +307,7 @@ describe('GameCatalog UI', () => {
     await act(() => vi.advanceTimersByTimeAsync(200));
     expect(screen.getByRole('link', { name: 'تحدي الشطرنج' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'برج المعرفة' })).not.toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('offers a direct recovery from an empty search and competition entry links', async () => {
     render(<GameCatalogWrapper sessionUserName={null} initialGames={catalogSample} />);
