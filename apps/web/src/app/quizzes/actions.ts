@@ -19,6 +19,7 @@ import {
   isManagerRole,
 } from '@/lib/auth/authorization';
 import { requireActiveUser } from '@/lib/auth/session';
+import { checkRateLimit } from '@/lib/auth/rate-limit';
 import {
   generateUniqueActivityRoomCode,
   isRoomCode,
@@ -37,6 +38,7 @@ import {
   QUIZ_DRAW_POINTS,
 } from '@/lib/questions/random-selection';
 import { foldKeyword } from '@/lib/questions/keywords';
+import { selectOpenClawQuizQuestionIds } from '@/lib/ai/quiz-question-selector';
 
 export type QuizActionResult =
   | { status: 'success'; quizId: string; roomCode: string }
@@ -282,6 +284,102 @@ export async function pickRandomQuizBuilderQuestions(
     };
   } catch {
     return { status: 'error', message: 'تعذّر السحب العشوائي الآن.' };
+  }
+}
+
+export async function pickOpenClawQuizBuilderQuestions(
+  input: QuizBuilderRandomSelectionInput,
+): Promise<QuizBuilderRandomSelectionResult> {
+  const parsed = quizBuilderRandomSelectionSchema.safeParse(input);
+  if (!parsed.success || parsed.data.preset !== 'DIVERSE_20') {
+    return { status: 'error', message: 'إعدادات اختيار المساعد غير صالحة.' };
+  }
+  if (!hasDatabaseUrl()) {
+    return { status: 'error', message: 'بنك الأسئلة غير متاح الآن.' };
+  }
+
+  const user = await requireActiveUser('/quizzes/new');
+  const filters = parsed.data;
+  const seed = randomUUID();
+  const where: Prisma.QuestionWhereInput = {
+    ...buildQuizBuilderQuestionWhere({
+      userId: user.id,
+      canManage: canManageQuestions(user.role),
+      gameMode: filters.gameMode,
+      query: '',
+      categoryId: '',
+    }),
+    status: 'PUBLISHED',
+  };
+
+  let aiAllowed = false;
+  try {
+    aiAllowed =
+      (await checkRateLimit(`ai-quiz-user:${user.id}`, 6, 15 * 60 * 1000)) &&
+      (await checkRateLimit('ai-quiz-global:daily', 1500, 24 * 60 * 60 * 1000));
+  } catch {
+    // A missing or unavailable limiter must never turn into an unmetered AI request.
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    const candidates = await prisma.question.findMany({
+      where,
+      select: { id: true, prompt: true, difficulty: true, categoryId: true },
+    });
+    const excluded = filters.excludeIds?.length
+      ? await prisma.question.findMany({
+          where: { ...where, id: { in: filters.excludeIds } },
+          select: { id: true, prompt: true, difficulty: true, categoryId: true },
+        })
+      : [];
+    const selectionCandidates = [
+      ...new Map([...candidates, ...excluded].map((question) => [question.id, question])).values(),
+    ];
+    const fallback = () => ({
+      ids: selectCategoryAndDifficultyBalancedQuestions(
+        selectionCandidates,
+        DIVERSE_20_COUNTS,
+        seed,
+        filters.excludeIds,
+      ),
+      source: 'fallback' as const,
+    });
+    const selection = aiAllowed
+      ? await selectOpenClawQuizQuestionIds(
+          selectionCandidates,
+          DIVERSE_20_COUNTS,
+          seed,
+          filters.excludeIds,
+        ).catch(fallback)
+      : fallback();
+    const selected = await prisma.question.findMany({
+      where: { ...where, id: { in: selection.ids } },
+      select: {
+        id: true,
+        prompt: true,
+        status: true,
+        difficulty: true,
+        gameTypes: true,
+        category: { select: { name: true } },
+        timeLimit: true,
+        basePoints: true,
+        version: true,
+      },
+    });
+    const byId = new Map(selected.map((question) => [question.id, question]));
+    return {
+      status: 'success',
+      selectionSource: selection.source,
+      questions: selection.ids.flatMap((id) => {
+        const question = byId.get(id);
+        return question
+          ? [{ ...mapBuilderQuestion(question), points: QUIZ_DRAW_POINTS[question.difficulty] }]
+          : [];
+      }),
+    };
+  } catch {
+    return { status: 'error', message: 'تعذّر اختيار الأسئلة الآن. أعد المحاولة.' };
   }
 }
 

@@ -39,6 +39,7 @@ export function QuizBuilderQuestionBank({
   canAddQuestions,
   loadQuestionPage,
   pickRandomQuestions,
+  pickAiQuestions,
   onAdd,
   onAddMany,
   onRemove,
@@ -49,6 +50,7 @@ export function QuizBuilderQuestionBank({
   canAddQuestions: boolean;
   loadQuestionPage?: QuestionPageLoader;
   pickRandomQuestions?: RandomQuestionLoader;
+  pickAiQuestions?: RandomQuestionLoader;
   onAdd: (question: AvailableBankQuestion) => void;
   onAddMany: (questions: AvailableBankQuestion[]) => void;
   onRemove?: (id: string) => void;
@@ -63,6 +65,7 @@ export function QuizBuilderQuestionBank({
   const [loading, setLoading] = useState(Boolean(loadQuestionPage));
   const [randomCounts, setRandomCounts] = useState({ EASY: 2, MEDIUM: 2, HARD: 2 });
   const [randomNotice, setRandomNotice] = useState('');
+  const [activePick, setActivePick] = useState<'random' | 'assistant' | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -133,18 +136,24 @@ export function QuizBuilderQuestionBank({
 
   const resetPage = () => setPage(1);
 
-  const runPick = (counts: { EASY: number; MEDIUM: number; HARD: number }, diverse = false) => {
-    if (!pickRandomQuestions) return;
+  const runPick = (
+    counts: { EASY: number; MEDIUM: number; HARD: number },
+    diverse = false,
+    useAssistant = false,
+  ) => {
+    const loader = useAssistant ? pickAiQuestions : pickRandomQuestions;
+    if (!loader || activePick) return;
     const remaining = Math.max(0, 100 - selectedIds.size);
     if (Object.values(counts).reduce((sum, count) => sum + count, 0) > remaining) {
       setRandomNotice(`يمكن إضافة ${formatNumber(remaining)} سؤالًا فقط. قلّل أعداد السحب.`);
       return;
     }
     setLoading(true);
+    setActivePick(useAssistant ? 'assistant' : 'random');
     setRandomNotice('');
-    void pickRandomQuestions({
-      query: debouncedQuery,
-      categoryId,
+    void loader({
+      query: useAssistant ? '' : debouncedQuery,
+      categoryId: useAssistant ? '' : categoryId,
       gameMode,
       counts,
       excludeIds: [...selectedIds],
@@ -156,14 +165,36 @@ export function QuizBuilderQuestionBank({
           return;
         }
         onAddMany(result.questions);
+        if (useAssistant) {
+          const count = formatNumber(result.questions.length);
+          const shortfall =
+            result.questions.length < 20
+              ? ' لم تتوفر أسئلة منشورة كافية لتحقيق توزيع 7 سهلة و7 متوسطة و6 صعبة.'
+              : '';
+          setRandomNotice(
+            result.selectionSource === 'openclaw'
+              ? `اختار المساعد ${count} سؤالًا من الأسئلة المنشورة. راجع الأسئلة قبل النشر.${shortfall}`
+              : `استُخدم الاختيار العادي بدل اختيار المساعد، وأُضيف ${count} سؤالًا. راجع الأسئلة قبل النشر.${shortfall}`,
+          );
+          return;
+        }
         setRandomNotice(
           diverse && result.questions.length < 20
             ? `أُضيف ${formatNumber(result.questions.length)} سؤالًا. لم تتوفر أسئلة منشورة كافية لتحقيق توزيع 7 سهلة و7 متوسطة و6 صعبة.`
             : `سُحب ${formatNumber(result.questions.length)} سؤالًا من كامل النتائج.`,
         );
       })
-      .catch(() => setRandomNotice('تعذّر سحب الأسئلة. أعد المحاولة.'))
-      .finally(() => setLoading(false));
+      .catch(() =>
+        setRandomNotice(
+          useAssistant
+            ? 'تعذّر اختيار الأسئلة بالمساعد. أعد المحاولة.'
+            : 'تعذّر سحب الأسئلة. أعد المحاولة.',
+        ),
+      )
+      .finally(() => {
+        setLoading(false);
+        setActivePick(null);
+      });
   };
 
   return (
@@ -230,55 +261,75 @@ export function QuizBuilderQuestionBank({
         </label>
       </div>
 
-      {pickRandomQuestions ? (
+      {pickRandomQuestions || pickAiQuestions ? (
         <fieldset className={styles.randomPicker}>
-          <legend>سحب عشوائي بتوزيع الصعوبة</legend>
+          <legend>اختيار الأسئلة بتوزيع الصعوبة</legend>
           <div className={styles.filters}>
-            {(['EASY', 'MEDIUM', 'HARD'] as const).map((level) => (
-              <NumberInput
-                key={level}
-                label={`عدد ${difficultyLabel[level]}`}
-                min="0"
-                max="100"
-                value={randomCounts[level]}
-                onChange={(event) =>
-                  setRandomCounts((current) => ({
-                    ...current,
-                    [level]: Math.min(100, Math.max(0, Number(event.target.value) || 0)),
-                  }))
+            {pickRandomQuestions
+              ? (['EASY', 'MEDIUM', 'HARD'] as const).map((level) => (
+                  <NumberInput
+                    key={level}
+                    label={`عدد ${difficultyLabel[level]}`}
+                    min="0"
+                    max="100"
+                    value={randomCounts[level]}
+                    onChange={(event) =>
+                      setRandomCounts((current) => ({
+                        ...current,
+                        [level]: Math.min(100, Math.max(0, Number(event.target.value) || 0)),
+                      }))
+                    }
+                  />
+                ))
+              : null}
+            {pickRandomQuestions ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading || activePick !== null}
+                onClick={() => runPick({ EASY: 7, MEDIUM: 7, HARD: 6 }, true)}
+              >
+                جلب 20 سؤالًا
+              </Button>
+            ) : null}
+            {pickRandomQuestions ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={
+                  loading ||
+                  activePick !== null ||
+                  Object.values(randomCounts).every((count) => count === 0)
                 }
-              />
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              disabled={loading}
-              onClick={() =>
-                runPick(
-                  {
-                    EASY: 7,
-                    MEDIUM: 7,
-                    HARD: 6,
-                  },
-                  true,
-                )
-              }
-            >
-              جلب 20 سؤالًا
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={loading || Object.values(randomCounts).every((count) => count === 0)}
-              onClick={() => runPick(randomCounts)}
-            >
-              سحب وإضافة
-            </Button>
+                onClick={() => runPick(randomCounts)}
+              >
+                سحب وإضافة
+              </Button>
+            ) : null}
+            {pickAiQuestions ? (
+              <Button
+                type="button"
+                variant="gold"
+                disabled={loading || activePick !== null}
+                loading={activePick === 'assistant'}
+                onClick={() => runPick({ EASY: 7, MEDIUM: 7, HARD: 6 }, true, true)}
+              >
+                اختيار بالمساعد
+              </Button>
+            ) : null}
           </div>
-          <p className="muted">
-            جلب 20 سؤالًا منشورًا يوزّعها بين الفئات مع 7 سهلة و7 متوسطة و6 صعبة عند توفرها،
-            بصرف النظر عن فلاتر البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
-          </p>
+          {pickRandomQuestions ? (
+            <p className="muted">
+              جلب 20 سؤالًا منشورًا يوزّعها بين الفئات مع 7 سهلة و7 متوسطة و6 صعبة عند توفرها،
+              بصرف النظر عن فلاتر البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
+            </p>
+          ) : null}
+          {pickAiQuestions ? (
+            <p className="muted">
+              يختار المساعد من الأسئلة المنشورة فقط، ويوزّع 20 سؤالًا بين المستويات والفئات عند
+              توفرها. راجع اختياره قبل النشر. إذا تعذّر الاتصال به، يستخدم الموقع الاختيار العادي.
+            </p>
+          ) : null}
           {randomNotice ? (
             <p className="muted" role="status">
               {randomNotice}

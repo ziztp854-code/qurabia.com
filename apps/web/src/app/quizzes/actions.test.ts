@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   getPrismaClient: vi.fn(),
   revalidatePath: vi.fn(),
   generateUniqueActivityRoomCode: vi.fn(),
+  checkRateLimit: vi.fn(),
+  selectOpenClawQuizQuestionIds: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/session', () => ({ requireActiveUser: mocks.requireActiveUser }));
@@ -19,8 +21,17 @@ vi.mock('@/lib/quiz/room-code', () => ({
   isRoomCode: vi.fn(() => true),
   normalizeRoomCode: vi.fn((value: string) => value),
 }));
+vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: mocks.checkRateLimit }));
+vi.mock('@/lib/ai/quiz-question-selector', () => ({
+  selectOpenClawQuizQuestionIds: mocks.selectOpenClawQuizQuestionIds,
+}));
 
-import { createQuiz, listQuizBuilderQuestions, pickRandomQuizBuilderQuestions } from './actions';
+import {
+  createQuiz,
+  listQuizBuilderQuestions,
+  pickOpenClawQuizBuilderQuestions,
+  pickRandomQuizBuilderQuestions,
+} from './actions';
 import { createEmptyQuizDraft } from '@/lib/quizzes/quiz-draft';
 
 describe('listQuizBuilderQuestions', () => {
@@ -60,6 +71,98 @@ describe('listQuizBuilderQuestions', () => {
         }),
       }),
     );
+  });
+});
+
+describe('pickOpenClawQuizBuilderQuestions', () => {
+  const input = {
+    preset: 'DIVERSE_20' as const,
+    query: '',
+    categoryId: '',
+    gameMode: 'QUIZ' as const,
+    counts: { EASY: 7, MEDIUM: 7, HARD: 6 },
+  };
+  const candidate = {
+    id: 'published-1',
+    prompt: 'سؤال منشور',
+    difficulty: 'EASY' as const,
+    categoryId: 'science',
+  };
+  const selected = {
+    ...candidate,
+    status: 'PUBLISHED',
+    gameTypes: ['QUIZ'],
+    category: { name: 'علوم' },
+    timeLimit: 20,
+    basePoints: 900,
+    version: 1,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.hasDatabaseUrl.mockReturnValue(true);
+    mocks.requireActiveUser.mockResolvedValue({ id: 'host-1', role: 'USER' });
+    mocks.checkRateLimit.mockResolvedValue(true);
+  });
+
+  it('sends published question metadata to the helper and rechecks chosen IDs', async () => {
+    const findMany = vi.fn().mockResolvedValueOnce([candidate]).mockResolvedValueOnce([selected]);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany } });
+    mocks.selectOpenClawQuizQuestionIds.mockResolvedValue({
+      ids: ['published-1'],
+      source: 'openclaw',
+    });
+
+    const result = await pickOpenClawQuizBuilderQuestions(input);
+
+    expect(result).toMatchObject({
+      status: 'success',
+      selectionSource: 'openclaw',
+      questions: [{ id: 'published-1', points: 500 }],
+    });
+    expect(mocks.checkRateLimit).toHaveBeenCalledTimes(2);
+    expect(mocks.selectOpenClawQuizQuestionIds).toHaveBeenCalledWith(
+      [candidate],
+      { EASY: 7, MEDIUM: 7, HARD: 6 },
+      expect.any(String),
+      undefined,
+    );
+    expect(findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'PUBLISHED', gameTypes: { has: 'QUIZ' } }),
+        select: { id: true, prompt: true, difficulty: true, categoryId: true },
+      }),
+    );
+    expect(findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'PUBLISHED', id: { in: ['published-1'] } }),
+      }),
+    );
+  });
+
+  it('uses the balanced local draw when the AI rate limit is unavailable', async () => {
+    const findMany = vi.fn().mockResolvedValueOnce([candidate]).mockResolvedValueOnce([selected]);
+    mocks.getPrismaClient.mockReturnValue({ question: { findMany } });
+    mocks.checkRateLimit.mockRejectedValue(new Error('Rate limit offline'));
+
+    const result = await pickOpenClawQuizBuilderQuestions(input);
+
+    expect(result).toMatchObject({
+      status: 'success',
+      selectionSource: 'fallback',
+      questions: [{ id: 'published-1' }],
+    });
+    expect(mocks.selectOpenClawQuizQuestionIds).not.toHaveBeenCalled();
+  });
+
+  it('rejects requests without the fixed 20-question preset', async () => {
+    const result = await pickOpenClawQuizBuilderQuestions({ ...input, preset: undefined });
+
+    expect(result.status).toBe('error');
+    expect(mocks.requireActiveUser).not.toHaveBeenCalled();
+    expect(mocks.selectOpenClawQuizQuestionIds).not.toHaveBeenCalled();
   });
 });
 

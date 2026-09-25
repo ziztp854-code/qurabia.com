@@ -43,7 +43,12 @@ export type QuizBuilderQuestionPage =
     }
   | { status: 'error'; message: string };
 export type QuizBuilderRandomSelectionResult =
-  { status: 'success'; questions: AvailableBankQuestion[] } | { status: 'error'; message: string };
+  | {
+      status: 'success';
+      questions: AvailableBankQuestion[];
+      selectionSource?: 'openclaw' | 'fallback';
+    }
+  | { status: 'error'; message: string };
 
 export type QuizDraft = QuizBuilderDraft;
 

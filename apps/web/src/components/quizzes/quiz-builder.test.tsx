@@ -8,6 +8,7 @@ import { createEmptyQuizDraft, QUIZ_DRAFT_STORAGE_KEY } from '@/lib/quizzes/quiz
 vi.mock('@/app/quizzes/actions', () => ({
   createQuiz: vi.fn(),
   listQuizBuilderQuestions: vi.fn(),
+  pickOpenClawQuizBuilderQuestions: vi.fn(),
   pickRandomQuizBuilderQuestions: vi.fn(),
 }));
 

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   createQuiz,
   listQuizBuilderQuestions,
+  pickOpenClawQuizBuilderQuestions,
   pickRandomQuizBuilderQuestions,
 } from '@/app/quizzes/actions';
 import {
@@ -133,6 +134,7 @@ export function QuizBuilder({
   const effectiveRandomPicker = initialBank
     ? (pickRandomQuestions ?? pickRandomQuizBuilderQuestions)
     : pickRandomQuestions;
+  const effectiveAiPicker = initialBank ? pickOpenClawQuizBuilderQuestions : undefined;
   const selectedIds = useMemo(
     () => new Set(draft.questions.map((question) => question.id)),
     [draft.questions],
@@ -468,6 +470,7 @@ export function QuizBuilder({
               canAddQuestions={canAddQuestions}
               loadQuestionPage={effectiveLoader}
               pickRandomQuestions={effectiveRandomPicker}
+              pickAiQuestions={effectiveAiPicker}
               onAdd={(question) => addQuestions([question])}
               onAddMany={addQuestions}
               onRemove={(id) =>
