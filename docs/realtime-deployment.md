@@ -49,10 +49,10 @@
 4. لا تضبط `NODE_ENV` في لوحة Render؛ Render يضبط بيئة التشغيل، بينما ضبطه
    يدويًا قد يمنع تثبيت devDependencies اللازمة للبناء.
 5. ثبّت إصدار Node على `24.14.1` وشغّل `corepack pnpm` مباشرةً؛
-   يقرأ Corepack الحقل `packageManager: pnpm@11.9.0` من `package.json` بلا محاولة
+   يقرأ Corepack الحقل `packageManager: pnpm@11.26.0` من `package.json` بلا محاولة
    استبدال `/usr/bin/pnpm` المحمي في بيئة Render.
    أبقِ Node على 22 أو 24 ما دام البناء يعتمد على Corepack؛ عند الانتقال إلى
-   Node 25 أو أحدث ثبّت Corepack أو `pnpm@11.9.0` صراحةً لأن Corepack لم يعد
+   Node 25 أو أحدث ثبّت Corepack أو `pnpm@11.26.0` صراحةً لأن Corepack لم يعد
    موزعًا مع Node.
 6. أدخل المتغيرات المطلوبة يدويًا. اترك قيمها خارج Git وسجلات التشغيل.
 7. تأكد أن Health Check Path هو `/health` وأن أمر ما قبل النشر هو
