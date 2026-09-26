@@ -18,4 +18,12 @@ describe('SignInForm Google button', () => {
     render(<SignInForm googleEnabled />);
     expect(screen.getByRole('button', { name: 'دخول المضيف عبر Google' })).toBeEnabled();
   });
+
+  it('shows only password login on the stamp holder entry', () => {
+    render(<SignInForm showGoogle={false} defaultNext="/orders" />);
+    expect(
+      screen.queryByRole('button', { name: 'دخول المضيف عبر Google' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'دخول بالبريد' })).toBeEnabled();
+  });
 });

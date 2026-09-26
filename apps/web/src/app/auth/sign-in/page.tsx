@@ -16,6 +16,7 @@ export default function SignInPage() {
           <span>
             لا تملك حسابًا؟ <Link href="/auth/sign-up">إنشاء حساب</Link>
           </span>
+          <Link href="/auth/stamp">دخول صاحب الختم</Link>
         </>
       }
     >

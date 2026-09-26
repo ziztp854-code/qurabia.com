@@ -8,9 +8,12 @@ export default function SignUpPage() {
       title="إنشاء حساب"
       description="جهّز هويتك في تحدّي لتستضيف مسابقاتك وتتابع نتائجك."
       footer={
-        <span>
-          لديك حساب؟ <Link href="/auth/sign-in">تسجيل الدخول</Link>
-        </span>
+        <>
+          <span>
+            لديك حساب؟ <Link href="/auth/sign-in">تسجيل الدخول</Link>
+          </span>
+          <Link href="/auth/stamp/sign-up">لديك ختم؟ سجّل به</Link>
+        </>
       }
     >
       <SignUpForm />

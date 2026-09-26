@@ -12,9 +12,11 @@ const genericMessage = 'تعذّر تسجيل الدخول. تحقق من الب
 
 export function SignInForm({
   googleEnabled = false,
+  showGoogle = true,
   defaultNext = '/dashboard',
 }: {
   googleEnabled?: boolean;
+  showGoogle?: boolean;
   defaultNext?: string;
 }) {
   const router = useRouter();
@@ -64,17 +66,19 @@ export function SignInForm({
   return (
     <form className="auth-form" onSubmit={onSubmit}>
       {error && <Alert variant="danger">{error}</Alert>}
-      <Button
-        type="button"
-        variant="outline"
-        fullWidth
-        disabled={!googleEnabled || pending}
-        onClick={() => signIn('google', { callbackUrl: next })}
-      >
-        <KeyRound />
-        دخول المضيف عبر Google
-      </Button>
-      {!googleEnabled && (
+      {showGoogle && (
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          disabled={!googleEnabled || pending}
+          onClick={() => signIn('google', { callbackUrl: next })}
+        >
+          <KeyRound />
+          دخول المضيف عبر Google
+        </Button>
+      )}
+      {showGoogle && !googleEnabled && (
         <p className="field-message">
           لم يتم إعداد Google OAuth بعد. يمكن للمضيف استخدام البريد وكلمة المرور مؤقتًا.
         </p>
