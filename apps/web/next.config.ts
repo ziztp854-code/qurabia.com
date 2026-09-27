@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { NextConfig } from 'next';
@@ -31,6 +32,7 @@ if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
 
 const isProduction = process.env.NODE_ENV === 'production';
 const onVercel = Boolean(process.env.VERCEL);
+const sentrySourceMapsToken = process.env.SENTRY_SOURCE_MAPS_AUTH_TOKEN?.trim();
 
 function toOrigin(value: string | undefined): string | null {
   const trimmed = value?.trim();
@@ -65,6 +67,7 @@ function buildContentSecurityPolicy(): string {
   for (const origin of [
     toOrigin(process.env.NEXT_PUBLIC_REALTIME_URL),
     toOrigin(process.env.NEXT_PUBLIC_SITE_URL),
+    toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN),
   ]) {
     if (!origin) continue;
     connectSources.add(origin);
@@ -170,4 +173,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withWorkflow(nextConfig);
+const workflowConfig = withWorkflow(nextConfig);
+
+export default sentrySourceMapsToken
+  ? withSentryConfig(workflowConfig, {
+      org: 'qurabia',
+      project: 'javascript-nextjs',
+      authToken: sentrySourceMapsToken,
+      silent: !process.env.CI,
+      webpack: {
+        treeshake: { removeDebugLogging: true },
+      },
+    })
+  : workflowConfig;
