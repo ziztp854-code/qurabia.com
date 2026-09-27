@@ -9,8 +9,7 @@ type AdminErrorProps = {
 
 export default function AdminError({ error, reset }: AdminErrorProps) {
   useEffect(() => {
-    // Log the full error to the browser console so the operator can copy it.
-    console.error('[admin/console] page error', error);
+    console.error('[admin/console] page error', error.digest ?? 'no-digest');
   }, [error]);
 
   return (
@@ -30,22 +29,23 @@ export default function AdminError({ error, reset }: AdminErrorProps) {
     >
       <h1 style={{ color: '#d4af37', margin: '0 0 0.75rem' }}>تعذّر تحميل الصفحة الإدارية</h1>
       <p style={{ margin: '0 0 0.5rem', lineHeight: 1.6 }}>
-        حدث خطأ أثناء تنفيذ الاستعلام على الخادم. انسخ التفاصيل أدناه وألصقها لفريق الدعم:
+        حدث خطأ أثناء تحميل البيانات. أعد المحاولة، وشارك رقم المرجع مع الدعم إذا استمر الخطأ.
       </p>
-      <pre
-        style={{
-          padding: '0.85rem',
-          background: 'rgba(0,0,0,0.4)',
-          borderRadius: '8px',
-          overflow: 'auto',
-          fontSize: '0.85rem',
-          direction: 'ltr',
-          textAlign: 'left',
-        }}
-      >
-        {error.message}
-        {error.digest ? `\nDigest: ${error.digest}` : ''}
-      </pre>
+      {error.digest ? (
+        <code
+          style={{
+            padding: '0.85rem',
+            background: 'rgba(0,0,0,0.4)',
+            borderRadius: '8px',
+            overflow: 'auto',
+            fontSize: '0.85rem',
+            direction: 'ltr',
+            textAlign: 'left',
+          }}
+        >
+          {error.digest}
+        </code>
+      ) : null}
       <button
         type="button"
         onClick={reset}

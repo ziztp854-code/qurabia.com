@@ -1,0 +1,458 @@
+.dashboard {
+  display: grid;
+  gap: var(--space-6);
+  min-inline-size: 0;
+}
+
+.heading,
+.panelHeading,
+.headingActions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.heading h1 {
+  margin: 0.1rem 0;
+  font-size: clamp(2rem, 3vw, 3.2rem);
+  line-height: 1.2;
+}
+
+.heading p,
+.sourceNote,
+.errorsPanel p,
+.empty {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.kicker,
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--technical-accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.kicker svg,
+.eyebrow svg,
+.refresh svg,
+.textLink svg,
+.reportLink svg,
+.roomPlayers svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.headingActions {
+  align-items: center;
+}
+
+.updated {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.updated time {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.refresh,
+.reportLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.refresh:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.refresh:hover:not(:disabled),
+.reportLink:hover,
+.textLink:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.refresh:focus-visible,
+.reportLink:focus-visible,
+.textLink:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 1fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.mainColumn,
+.sideColumn {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-4);
+}
+
+.audiencePanel,
+.roomsPanel,
+.healthPanel,
+.errorsPanel,
+.summary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.audiencePanel,
+.roomsPanel,
+.healthPanel,
+.errorsPanel {
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.audiencePanel {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--border-gold);
+  background: linear-gradient(135deg, var(--surface-stage), var(--card));
+}
+
+.audiencePanel::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 0;
+  inline-size: 4px;
+  background: var(--gold-gradient);
+}
+
+.panelHeading {
+  align-items: center;
+}
+
+.panelHeading h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.2rem;
+}
+
+.livePill,
+.unavailablePill,
+.goodState,
+.badState,
+.roomState {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.livePill,
+.unavailablePill {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.livePill,
+.goodState {
+  color: var(--success);
+}
+
+.unavailablePill,
+.badState {
+  color: var(--warning);
+}
+
+.audienceNumber {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding-block: var(--space-8);
+}
+
+.audienceNumber strong {
+  color: var(--primary);
+  font-size: clamp(4.5rem, 8vw, 7rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.audienceNumber span {
+  color: var(--text-soft);
+}
+
+.metricRow,
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.metricRow {
+  padding-block: var(--space-4);
+  border-block-start: 1px solid var(--border);
+}
+
+.metricRow > div,
+.summary {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.metricRow strong,
+.summary strong {
+  font-size: clamp(1.3rem, 2vw, 1.9rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.metricRow span,
+.summary span,
+.summary small {
+  color: var(--text-soft);
+  font-size: 0.76rem;
+}
+
+.sourceNote {
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+.summary {
+  padding: var(--space-4);
+}
+
+.summary strong {
+  color: var(--primary);
+}
+
+.summary small {
+  line-height: 1.5;
+}
+
+.roomList,
+.healthList {
+  display: grid;
+  margin-block: var(--space-4);
+}
+
+.room {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-block-size: 4rem;
+  border-block-start: 1px solid var(--border);
+}
+
+.roomIdentity {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.roomIdentity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roomIdentity small {
+  justify-self: start;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.roomState {
+  color: var(--technical-accent);
+}
+
+.roomPlayers {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.empty {
+  padding-block: var(--space-6);
+}
+
+.healthItem {
+  display: grid;
+  grid-template-columns: 1.2rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+
+.healthItem > svg {
+  inline-size: 1.2rem;
+  color: var(--technical-accent);
+}
+
+.healthItem > div {
+  display: grid;
+}
+
+.healthItem small {
+  color: var(--text-soft);
+}
+
+.healthItem > span {
+  grid-column: 2;
+}
+
+.errorsPanel p {
+  margin-block-start: var(--space-4);
+  font-size: 0.84rem;
+  line-height: 1.75;
+}
+
+.issueList {
+  display: grid;
+  gap: 0;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issueList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+
+.issueList li > div {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-1);
+}
+
+.issueList small {
+  justify-self: start;
+  color: var(--technical-accent);
+  font-size: 0.72rem;
+}
+
+.issueList strong {
+  overflow: hidden;
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issueList a {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+}
+
+.issueList a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.issueList a svg {
+  inline-size: 1rem;
+}
+
+.reportLink {
+  justify-self: stretch;
+}
+
+@media (max-width: 1100px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+  .sideColumn {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .summaryGrid {
+    grid-column: 1 / -1;
+  }
+  .reportLink {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 650px) {
+  .heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .headingActions {
+    inline-size: 100%;
+  }
+  .sideColumn {
+    grid-template-columns: 1fr;
+  }
+  .summaryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .room {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .roomPlayers {
+    grid-column: 1 / -1;
+    padding-block-end: var(--space-2);
+  }
+}
+
+@media (max-width: 420px) {
+  .summaryGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .summary:last-child {
+    grid-column: 1 / -1;
+  }
+  .metricRow {
+    grid-template-columns: 1fr 1fr;
+  }
+  .audienceNumber {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+}

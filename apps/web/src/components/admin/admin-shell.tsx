@@ -1,4 +1,17 @@
-import { Activity, BarChart3, FileQuestion, Gauge, Network, Radar, Radio, ShieldCheck, Stamp, Users, Layers } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  FileQuestion,
+  Gauge,
+  Network,
+  Radar,
+  Radio,
+  ShieldCheck,
+  Stamp,
+  Users,
+  Layers,
+  MonitorDot,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DashboardLayout } from '@/components/layout';
@@ -19,6 +32,7 @@ const navigation: readonly {
   managersOnly?: boolean;
 }[] = [
   { href: '/admin', label: 'النظرة العامة', icon: Gauge },
+  { href: '/admin/monitor', label: 'مراقبة الموقع', icon: MonitorDot, managersOnly: true },
   { href: '/admin/audience', label: 'رادار الجمهور', icon: Radar, managersOnly: true },
   { href: '/admin/permissions', label: 'الصلاحيات', icon: ShieldCheck },
   { href: '/admin/stamps', label: 'أختام الأوسمة', icon: Stamp, permission: 'MANAGE_USERS' },
