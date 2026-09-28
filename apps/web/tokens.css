@@ -325,3 +325,35 @@
   --overlay-bg: var(--overlay);
   --gold-text: var(--gold);
 }
+
+/* Illustrated Kingdoms atlas pigments, separate from interface theme colors. */
+:root {
+  --kingdoms-terrain-meadow: #abb97a;
+  --kingdoms-terrain-earth: #87975e;
+  --kingdoms-terrain-forest: #547344;
+  --kingdoms-terrain-water: #4a9aab;
+  --kingdoms-terrain-stone: #b6aa88;
+  --kingdoms-terrain-shadow: #29382b;
+  --kingdoms-terrain-trunk: #63513a;
+  --kingdoms-terrain-tree: #2f5e43;
+  --kingdoms-terrain-tree-light: #54794e;
+  --kingdoms-terrain-meadow-patch: #d1cd8f;
+  --kingdoms-terrain-grass: #566b3e;
+  --kingdoms-terrain-contour: #d4d49f;
+  --kingdoms-terrain-mountain-shade: #746f5e;
+  --kingdoms-terrain-mountain-light: #d2c6a5;
+  --kingdoms-terrain-snow: #e5e1c8;
+  --kingdoms-terrain-river-bank: #d5ca95;
+  --kingdoms-terrain-river-shine: #99c7c1;
+  --kingdoms-terrain-castle-ground: #ccb783;
+  --kingdoms-terrain-castle-wall: #e1cf9f;
+  --kingdoms-terrain-castle-outline: #857350;
+  --kingdoms-terrain-castle-shade: #bda876;
+  --kingdoms-terrain-roof: #51667a;
+  --kingdoms-terrain-gate: #665238;
+  --kingdoms-terrain-other-banner: #ad5650;
+  --kingdoms-terrain-own-banner: #f0c64d;
+  --kingdoms-terrain-claim-banner: #855f3d;
+  --kingdoms-terrain-outside: #1b2926;
+  --kingdoms-terrain-selection: #ffe18a;
+}

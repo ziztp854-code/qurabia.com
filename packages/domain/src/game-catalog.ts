@@ -195,7 +195,7 @@ export type GameCategory =
 
 export interface EnhancedGameMeta {
   id: string;
-  mode: SpecialGameMode | InstantGameMode;
+  mode: SpecialGameMode | InstantGameMode | 'kingdoms';
   kind: GameKind;
   title: string;
   shortTitle: string;
@@ -241,6 +241,27 @@ export interface GameSearchSuggestion {
 }
 
 export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
+  {
+    id: 'kingdoms',
+    mode: 'kingdoms',
+    kind: 'room',
+    title: 'تحدي الممالك',
+    shortTitle: 'الممالك',
+    description: 'ابنِ قريتك، درّب جيشك، وتعاون مع تحالفك في عالم مستمر تتنافس فيه الممالك على عرش تحدي.',
+    minimumPlayers: 1,
+    maximumPlayers: 1000,
+    roundSeconds: 0,
+    contentLabel: 'عالم استراتيجي مستمر',
+    year: 2026,
+    difficulty: 4,
+    platforms: ['web', 'pwa', 'mobile'],
+    categories: ['استراتيجية', 'اجتماعي'],
+    tags: ['ممالك', 'بناء', 'جيوش', 'تحالفات', 'مواسم'],
+    accent: 'var(--gold)',
+    href: '/games/kingdoms',
+    requiresRealtime: false,
+    requiresAuth: true,
+  },
   {
     id: 'quote-master',
     mode: 'quote-master',

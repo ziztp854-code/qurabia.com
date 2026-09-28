@@ -1,0 +1,94 @@
+name: Kingdoms PostgreSQL integration
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/src/lib/kingdoms/**'
+      - 'apps/web/src/components/kingdoms/**'
+      - 'apps/web/src/app/games/kingdoms/**'
+      - 'apps/web/src/app/admin/(console)/kingdoms/**'
+      - 'apps/web/public/game-art/kingdoms/**'
+      - 'apps/web/package.json'
+      - 'apps/web/e2e/kingdoms*.spec.ts'
+      - 'apps/web/playwright.kingdoms*.config.ts'
+      - 'apps/web/src/app/api/**/kingdoms/**'
+      - 'apps/realtime/src/kingdoms/**'
+      - 'packages/database/**'
+      - 'prisma/**'
+      - 'prisma.config.ts'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/kingdoms.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/src/lib/kingdoms/**'
+      - 'apps/web/src/components/kingdoms/**'
+      - 'apps/web/src/app/games/kingdoms/**'
+      - 'apps/web/src/app/admin/(console)/kingdoms/**'
+      - 'apps/web/public/game-art/kingdoms/**'
+      - 'apps/web/package.json'
+      - 'apps/web/e2e/kingdoms*.spec.ts'
+      - 'apps/web/playwright.kingdoms*.config.ts'
+      - 'apps/web/src/app/api/**/kingdoms/**'
+      - 'apps/realtime/src/kingdoms/**'
+      - 'packages/database/**'
+      - 'prisma/**'
+      - 'prisma.config.ts'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/kingdoms.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-concurrency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+      KINGDOMS_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+      AUTH_SECRET: ci-only-kingdoms-integration-secret
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kingdoms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d kingdoms_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.26.0
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared libraries and generate Prisma client
+        run: pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build
+      - name: Migrate isolated test database
+        run: pnpm exec prisma migrate deploy
+      - name: Test Kingdoms logic and real concurrent transactions with coverage
+        run: pnpm --filter @tahaddi/web test src/lib/kingdoms src/app/api/kingdoms src/app/api/admin/kingdoms --coverage --coverage.include='src/lib/kingdoms/**' --coverage.exclude='**/*.test.ts' --coverage.thresholds.statements=80 --coverage.thresholds.branches=80 --coverage.thresholds.functions=80 --coverage.thresholds.lines=80
+      - name: Install test browser
+        run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
+      - name: Build web application
+        run: pnpm --filter @tahaddi/web build
+      - name: Verify anonymous boundaries on desktop and mobile
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms.config.ts
+      - name: Verify authenticated gameplay on isolated PostgreSQL
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms-authenticated.config.ts
