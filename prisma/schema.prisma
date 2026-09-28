@@ -158,6 +158,7 @@ model User {
   auditTargets       AuditLog[]    @relation("AuditTarget")
   subscriptions      UserSubscription[]
   usageCounters      UsageCounter[]
+  kingdomCommands    KingdomCommand[]
 
   @@index([role])
   @@index([status])
@@ -660,4 +661,33 @@ model LadderTeam {
 
   @@unique([roomId, team, playerName])
   @@index([roomId])
+}
+
+// A world is the transactional aggregate. Different worlds progress independently.
+model KingdomWorld {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(80)
+  state       Json
+  revision    Int      @default(0)
+  paused      Boolean  @default(false)
+  nextEventAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  commands    KingdomCommand[]
+
+  @@index([nextEventAt])
+}
+
+model KingdomCommand {
+  worldId     String
+  actorId     String
+  key         String   @db.VarChar(80)
+  fingerprint String   @db.VarChar(64)
+  revision    Int
+  createdAt   DateTime @default(now())
+  world       KingdomWorld @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  actor       User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@id([worldId, actorId, key])
+  @@index([actorId, createdAt])
 }

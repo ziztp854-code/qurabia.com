@@ -24,6 +24,7 @@ const navigation: readonly {
   { href: '/admin/stamps', label: 'أختام الأوسمة', icon: Stamp, permission: 'MANAGE_USERS' },
   { href: '/admin/content', label: 'المحتوى', icon: FileQuestion, permission: 'MANAGE_CONTENT' },
   { href: '/admin/rooms', label: 'الغرف المباشرة', icon: Radio, permission: 'MANAGE_ROOMS' },
+  { href: '/admin/kingdoms', label: 'تحدي الممالك', icon: ShieldCheck, managersOnly: true },
   { href: '/questions', label: 'بنك الأسئلة', icon: Layers },
   { href: '/admin/users', label: 'المستخدمون', icon: Users, permission: 'MANAGE_USERS' },
   { href: '/admin/reports', label: 'التقارير', icon: BarChart3, permission: 'VIEW_REPORTS' },

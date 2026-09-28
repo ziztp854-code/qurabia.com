@@ -16,4 +16,13 @@ describe('public games source', () => {
       href: '',
     });
   });
+
+  it('يربط تحدي الممالك بمساره المحمي المستقل', () => {
+    expect(publicGames.find((game) => game.id === 'kingdoms')).toMatchObject({
+      status: 'live',
+      href: '/games/kingdoms',
+      mode: 'kingdoms',
+      category: 'استراتيجية',
+    });
+  });
 });

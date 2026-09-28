@@ -19,6 +19,10 @@ export type PublicGame = {
 };
 
 const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
+  kingdoms: {
+    image: '/game-art/catalog-v2/kingdoms.svg',
+    imageAlt: 'قلعة ذهبية أصلية على خريطة أراض تصل بين قرى تحدي الممالك',
+  },
   'quote-master': {
     image: '/game-art/catalog-v2/quote-master.png',
     imageAlt: 'بطاقات شعراء ذهبية تحت شعار «من القائل؟» في مجلس أدبي فاخر',
