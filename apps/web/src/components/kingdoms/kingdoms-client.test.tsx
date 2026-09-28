@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { KingdomsClient } from './kingdoms-client';
 import type { WorldView } from './shared';
@@ -110,11 +110,15 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
     render(<KingdomsClient />);
-    fireEvent.click(await screen.findByRole('button', { name: 'خريطة العالم' }));
-    fireEvent.click(screen.getByRole('button', { name: 'أرض خالية، X 0، Y 0' }));
-    fireEvent.change(screen.getByLabelText('نوع الحملة'), { target: { value: 'occupy' } });
-    fireEvent.change(screen.getByLabelText(/حارس .*متاح/), { target: { value: '5' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'أرسل الحملة' }).closest('form')!);
+    const navigation = await screen.findByLabelText('إدارة المملكة');
+    fireEvent.click(within(navigation).getByRole('button', { name: 'خريطة العالم' }));
+    const map = screen.getByLabelText('خريطة الأراضي');
+    fireEvent.click(within(map).getByLabelText('أرض خالية، X 0، Y 0'));
+    const mission = screen.getByLabelText('نوع الحملة');
+    const form = mission.closest('form')!;
+    fireEvent.change(mission, { target: { value: 'occupy' } });
+    fireEvent.change(within(form).getByLabelText(/حارس .*متاح/), { target: { value: '5' } });
+    fireEvent.submit(form);
     await waitFor(() =>
       expect(vi.mocked(fetch).mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true),
     );
