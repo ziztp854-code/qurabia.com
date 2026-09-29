@@ -3,20 +3,27 @@
 import { Hammer, Shield, Swords } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Input } from '@/components/ui';
+import { buildingPercent, buildingStage, supremeStage } from '@/lib/kingdoms/stages';
 import { resourceKeys, unitKeys, type Building, type Resources } from '@/lib/kingdoms/types';
 import { CommandForm, ResourceText, date, labels, number, value, type GameProps } from './shared';
 import styles from './kingdoms.module.css';
+import { StageLadder } from './stage-ladder';
 import { VillageMap } from './village-map';
 
 export function VillagePanel({ view, village, busy, send }: GameProps) {
   const [selected, setSelected] = useState<Building>('hall');
   return (
     <div className={styles.villageLayout}>
-      <VillageMap view={view} village={village} selected={selected} onSelect={setSelected} />
+      <div className={styles.villageColumn}>
+        <StageLadder view={view} village={village} />
+        <VillageMap view={view} village={village} selected={selected} onSelect={setSelected} />
+      </div>
       <aside className={styles.buildingRail} aria-label="إدارة مباني القرية">
         {[selected].map((key) => {
           const building = view.config.buildings[key];
           const level = village.buildings[key];
+          const stage = buildingStage(level, building.maxLevel);
+          const percent = buildingPercent(level, building.maxLevel);
           const cost = Object.fromEntries(
             Object.entries(building.cost).map(([resource, amount]) => [
               resource,
@@ -28,7 +35,33 @@ export function VillagePanel({ view, village, busy, send }: GameProps) {
               <p className={styles.eyebrow}>المبنى المختار</p>
               <div className={styles.row}>
                 <h3>{building.name}</h3>
-                <span>مستوى {number(level)}</span>
+                <span>
+                  مستوى {number(level)} من {number(building.maxLevel)}
+                </span>
+              </div>
+              <div className={styles.buildingStage} data-stage={stage?.key ?? 'unbuilt'}>
+                <div className={styles.row}>
+                  <strong>{stage ? stage.name : 'لم يُبنَ بعد'}</strong>
+                  <span className={styles.cost}>{number(percent)}٪ من الحد الأعلى</span>
+                </div>
+                <span
+                  role="progressbar"
+                  aria-label={`تقدم ${building.name} نحو ${supremeStage.name}`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={percent}
+                  aria-valuetext={`${number(percent)}٪ من الحد الأعلى للمبنى`}
+                  className={styles.stageTrack}
+                >
+                  <span style={{ width: `${percent}%` }} />
+                </span>
+                <p className={styles.cost}>
+                  {stage?.key === supremeStage.key
+                    ? `المبنى في ${supremeStage.name}. ${supremeStage.tagline}`
+                    : `المرحلة العليا للمبنى تبدأ عند ${number(
+                        Math.round(supremeStage.fraction * building.maxLevel),
+                      )} مستوى.`}
+                </p>
               </div>
               <ul className={styles.buildingCosts} aria-label="تكلفة التطوير">
                 {resourceKeys.map((resource) => (

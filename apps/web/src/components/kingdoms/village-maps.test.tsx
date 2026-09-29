@@ -64,6 +64,25 @@ describe('village maps', () => {
     expect(screen.getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
   });
 
+  it('links the village map and the building rail to the stage ladder', () => {
+    const view = fixture();
+    const village = {
+      ...view.villages[0],
+      buildings: { ...view.villages[0].buildings, hall: 20 },
+    };
+    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
+    const ladder = screen.getByRole('region', { name: 'سلّم مراحل القرية' });
+    expect(within(ladder).getAllByRole('listitem')).toHaveLength(5);
+    const map = screen.getByRole('region', { name: 'خريطة القرية' });
+    expect(
+      within(map).getByRole('button', { name: /دار الحكم.*المرحلة العليا.*الحد الأعلى/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'تقدم دار الحكم نحو المرحلة العليا' }),
+    ).toHaveAttribute('aria-valuenow', '100');
+    expect(screen.getByText(/المبنى في المرحلة العليا/)).toBeInTheDocument();
+  });
+
   it('finds a distant real village and uses its coordinates as the army destination', () => {
     const original = fixture();
     const view = {

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {
   Castle,
   Coins,
+  Crown,
   Flag,
   Hammer,
   Mountain,
@@ -16,9 +17,11 @@ import {
   Wheat,
 } from 'lucide-react';
 import { Select } from '@/components/ui';
+import { buildingStage, maxLevelLabel, supremeStage } from '@/lib/kingdoms/stages';
 import { buildingKeys, type Building } from '@/lib/kingdoms/types';
 import { number, type GameProps } from './shared';
 import styles from './kingdoms.module.css';
+import { BuildingActivity } from './building-activity';
 
 const plots = {
   hall: { x: 50, y: 34, Icon: Castle },
@@ -73,13 +76,24 @@ export function VillageMap({
           {buildingKeys.map((building) => {
             const plot = plots[building];
             const level = village.buildings[building];
+            const maxLevel = view.config.buildings[building].maxLevel;
             const name = view.config.buildings[building].name;
+            const stage = buildingStage(level, maxLevel);
+            const topStage = stage?.key === supremeStage.key;
             const constructing = village.build?.building === building;
             const state = constructing
               ? 'قيد التطوير'
               : level > 0
-                ? `المستوى ${number(level)}`
+                ? `المستوى ${number(level)} من ${number(maxLevel)}`
                 : 'لم يُبنَ';
+            const ariaLabel = [
+              name,
+              state,
+              topStage && stage ? stage.name : null,
+              level >= maxLevel ? maxLevelLabel : null,
+            ]
+              .filter(Boolean)
+              .join('، ');
             return (
               <button
                 type="button"
@@ -88,17 +102,39 @@ export function VillageMap({
                 style={{ left: `${plot.x}%`, top: `${plot.y}%` }}
                 data-built={level > 0}
                 data-constructing={constructing}
+                data-stage={stage?.key ?? 'unbuilt'}
                 aria-pressed={selected === building}
-                aria-label={`${name}، ${state}`}
+                aria-label={ariaLabel}
                 onClick={() => onSelect(building)}
               >
                 <span className={styles.plotLabel}>
                   <plot.Icon size={16} aria-hidden="true" />
                   <span>{name}</span>
+                  {topStage && <Crown size={14} aria-hidden="true" />}
                   {constructing && <Hammer size={14} aria-hidden="true" />}
                 </span>
-                <span className={styles.plotLevel}>{level > 0 ? number(level) : 'لم يُبنَ'}</span>
+                <span className={styles.plotLevel} data-stage={stage?.key ?? 'unbuilt'}>
+                  {level > 0 ? number(level) : 'لم يُبنَ'}
+                </span>
               </button>
+            );
+          })}
+          {buildingKeys.map((building) => {
+            const level = village.buildings[building];
+            const maxLevel = view.config.buildings[building].maxLevel;
+            const stage = buildingStage(level, maxLevel);
+            return (
+              <BuildingActivity
+                key={`${view.worldId}:${village.id}:${building}`}
+                name={view.config.buildings[building].name}
+                level={level}
+                stageName={stage?.key === supremeStage.key ? stage.name : undefined}
+                atMaxLevel={level >= maxLevel}
+                build={village.build?.building === building ? village.build : undefined}
+                serverNow={view.serverNow}
+                x={plots[building].x}
+                y={plots[building].y}
+              />
             );
           })}
         </div>

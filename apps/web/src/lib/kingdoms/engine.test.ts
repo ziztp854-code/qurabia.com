@@ -51,6 +51,33 @@ describe('Kingdoms authoritative simulation', () => {
       820 + 80 / 60 + 108,
     );
   });
+  it('persists authoritative construction start and preserves it until completion', () => {
+    const world = found();
+    const id = Object.keys(world.villages)[0];
+    const now = start + 12000;
+    const built = executeCommand(
+      world,
+      'alice',
+      { type: 'build', villageId: id, building: 'lumber' },
+      now,
+    );
+    const endsAt = now + defaultKingdomsConfig.buildings.lumber.seconds * 1000;
+    expect(built.villages[id].build).toEqual({
+      building: 'lumber',
+      level: 1,
+      startedAt: now,
+      endsAt,
+    });
+    const restored = JSON.parse(JSON.stringify(built));
+    const during = advanceWorld(restored, endsAt - 1);
+    expect(projectWorld(during, 'alice', endsAt - 1).villages[0].build).toEqual(
+      built.villages[id].build,
+    );
+    expect(during.villages[id].buildings.lumber).toBe(0);
+    expect(advanceWorld(during, endsAt).villages[id].build).toBeUndefined();
+    expect(advanceWorld(during, endsAt).villages[id].buildings.lumber).toBe(1);
+    expect(world.villages[id].build).toBeUndefined();
+  });
   it('rejects unowned villages and insufficient funds', () => {
     const w = found(),
       id = Object.keys(w.villages)[0];

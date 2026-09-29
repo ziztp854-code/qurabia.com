@@ -131,6 +131,7 @@ function build(
   v.build = {
     building: c.building,
     level: level + 1,
+    startedAt: at,
     endsAt: deadline(at, spec.seconds * factor * 1000),
   };
 }

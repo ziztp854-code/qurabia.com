@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BookOpen,
+  Castle,
   CircleHelp,
   Gamepad2,
   Home,
@@ -14,6 +15,7 @@ import {
 export const publicNavigation = [
   { label: 'الرئيسية', href: '/', icon: Home },
   { label: 'الألعاب', href: '/games', icon: Gamepad2 },
+  { label: 'القرية', href: '/games/kingdoms', icon: Castle },
   { label: 'المسابقات', href: '/quizzes', icon: Trophy },
   { label: 'لوحة الشرف', href: '/leaderboard', icon: BarChart3 },
   { label: 'الدعم', href: '/contact', icon: CircleHelp },
@@ -25,6 +27,7 @@ export const primaryNavigation = [
   { label: 'المسابقات', href: '/quizzes', icon: Trophy },
   { label: 'شاشة العرض', href: '/display', icon: MonitorPlay },
   { label: 'الألعاب', href: '/games', icon: Gamepad2 },
+  { label: 'القرية', href: '/games/kingdoms', icon: Castle },
   { label: 'من هو القاتل؟', href: '/mafia', icon: Skull },
   { label: 'لوحة التحكم', href: '/dashboard', icon: LayoutDashboard },
   { label: 'بنك الأسئلة', href: '/questions', icon: BookOpen },

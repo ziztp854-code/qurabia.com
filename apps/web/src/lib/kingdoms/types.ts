@@ -69,7 +69,7 @@ export type Village = {
   buildings: Record<Building, number>;
   troops: Troops;
   reinforcements: Record<string, Troops>;
-  build?: { building: Building; level: number; endsAt: number };
+  build?: { building: Building; level: number; startedAt?: number; endsAt: number };
   training?: { unit: Unit; count: number; endsAt: number };
 };
 export type KingdomPlayer = {

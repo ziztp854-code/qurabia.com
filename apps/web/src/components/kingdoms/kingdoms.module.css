@@ -365,6 +365,39 @@
 .buildingPlot[data-constructing='true'] .plotLabel {
   border-width: 2px;
 }
+.buildingPlot[data-stage='supreme'] .plotLabel {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 32%, transparent);
+}
+.plotLevel[data-stage='supreme'] {
+  background: var(--gold-gradient);
+  color: var(--gold-foreground);
+  border-color: var(--gold);
+}
+.buildingStage {
+  display: grid;
+  gap: 0.4rem;
+}
+.buildingStage .row {
+  padding-block: 0;
+  border: 0;
+}
+.buildingStage[data-stage='supreme'] strong {
+  color: var(--gold);
+}
+.stageTrack {
+  display: block;
+  block-size: 5px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+.stageTrack > span {
+  display: block;
+  block-size: 100%;
+  background: var(--gold-gradient);
+  transition: inline-size 0.6s ease-out;
+}
 .buildingPlot:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 4px;
@@ -531,6 +564,12 @@
   background: var(--gold);
 }
 .gameLayout > section {
+  min-inline-size: 0;
+}
+.villageColumn {
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
   min-inline-size: 0;
 }
 .villageLayout {
