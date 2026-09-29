@@ -20,8 +20,14 @@ function maxAffordable(have: Resources, cost: Resources) {
   return limits.length ? Math.max(0, Math.min(...limits)) : Infinity;
 }
 
-export function VillagePanel({ view, village, busy, send }: GameProps) {
-  const [selected, setSelected] = useState<Building>('hall');
+export function VillagePanel({
+  view,
+  village,
+  busy,
+  send,
+  initialBuilding = 'hall',
+}: GameProps & { initialBuilding?: Building }) {
+  const [selected, setSelected] = useState<Building>(initialBuilding);
   const totalTroops = unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0);
   return (
     <div className={styles.village}>

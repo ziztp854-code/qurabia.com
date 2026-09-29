@@ -90,26 +90,6 @@
   background: color-mix(in srgb, var(--background) 88%, transparent);
   color: var(--foreground);
 }
-.visualReference {
-  overflow: hidden;
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-}
-.visualReference a {
-  display: block;
-}
-.visualReference img {
-  display: block;
-  inline-size: 100%;
-  block-size: auto;
-}
-.visualReference p {
-  margin: 0;
-  padding: 0.65rem 0.9rem;
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-}
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -376,26 +356,6 @@
   }
   .heroContent {
     padding: 1rem;
-  }
-  .visualReference {
-    overflow: hidden;
-    border: 1px solid var(--border-gold);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-  }
-  .visualReference a {
-    display: block;
-  }
-  .visualReference img {
-    display: block;
-    inline-size: 100%;
-    block-size: auto;
-  }
-  .visualReference p {
-    margin: 0;
-    padding: 0.65rem 0.9rem;
-    color: var(--muted-foreground);
-    font-size: 0.8rem;
   }
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));

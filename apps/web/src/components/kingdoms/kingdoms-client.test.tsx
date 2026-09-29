@@ -112,18 +112,27 @@ describe('Kingdoms player interface', () => {
     render(<KingdomsClient />);
     expect(await screen.findByRole('heading', { name: 'مملكة النور' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'ملخص المملكة' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'عرض مشهد المملكة بالحجم الكامل' })).toHaveAttribute(
-      'href',
-      '/game-art/kingdoms/kingdom-dashboard-scene.png',
-    );
-    expect(
-      screen
-        .getByRole('img', { name: 'مدينة المملكة بأسوارها وقصرها وأسواقها وحقولها' })
-        .getAttribute('src'),
-    ).toContain('kingdom-dashboard-scene.webp');
+    const scene = screen.getByRole('region', { name: 'مشهد المملكة ثلاثي الأبعاد' });
+    expect(within(scene).getByRole('button', { name: /دار الحكم.*المستوى/ })).toBeInTheDocument();
+    expect(within(scene).getByRole('button', { name: /حطّاب المملكة.*لم يُبنَ/ })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'خريطة المملكة' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'إدارة القرية' }));
     expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
+  });
+
+  it('opens the selected scene building in the village management panel', async () => {
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      response(String(url).endsWith('/worlds') ? summary : projection(true)),
+    );
+    render(<KingdomsClient />);
+    const scene = await screen.findByRole('region', { name: 'مشهد المملكة ثلاثي الأبعاد' });
+    fireEvent.click(within(scene).getByRole('button', { name: /حطّاب المملكة.*لم يُبنَ/ }));
+    expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'حطّاب المملكة' })).toBeInTheDocument();
+    const navigation = screen.getByLabelText('إدارة المملكة');
+    fireEvent.click(within(navigation).getByRole('button', { name: 'لوحة المملكة' }));
+    fireEvent.click(within(navigation).getByRole('button', { name: 'القرية' }));
+    expect(screen.getByRole('heading', { name: 'دار الحكم' })).toBeInTheDocument();
   });
 
   it('carries the selected overview tile into the world map', async () => {
