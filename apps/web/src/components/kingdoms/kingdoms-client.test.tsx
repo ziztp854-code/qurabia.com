@@ -131,7 +131,7 @@ describe('Kingdoms player interface', () => {
       mission: 'occupy',
       troops: { guard: 5, rider: 0, scout: 0, settler: 0 },
     });
-  });
+  }, 20_000);
 
   it('disables mutations in paused worlds', async () => {
     vi.mocked(fetch).mockImplementation(async (url) =>

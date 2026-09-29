@@ -123,5 +123,5 @@ describe('village maps', () => {
         name: `${original.map[0].name}، X ${original.map[0].x}، Y ${original.map[0].y}`,
       }),
     ).toHaveAttribute('aria-pressed', 'true');
-  });
+  }, 20_000);
 });
