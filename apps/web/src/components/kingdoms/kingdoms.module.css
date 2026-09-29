@@ -269,6 +269,110 @@
     scroll-behavior: auto !important;
   }
 }
+.villageMapSection {
+  overflow: hidden;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.villageMapHeader,
+.villageMapFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+.villageMapHeader h2 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+.villageMapHeader p {
+  margin-block: 0.25rem;
+}
+.villageCoordinates {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.villageViewport {
+  overflow-x: auto;
+  max-inline-size: 100%;
+  direction: ltr;
+}
+.villageScene {
+  position: relative;
+  min-inline-size: 760px;
+  aspect-ratio: 3 / 2;
+  isolation: isolate;
+}
+.villageArtwork {
+  object-fit: cover;
+  z-index: -2;
+}
+.villageShade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, transparent 75%, var(--background));
+  opacity: 0.7;
+  pointer-events: none;
+}
+.buildingPlot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  direction: rtl;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  cursor: pointer;
+  display: grid;
+  justify-items: center;
+  filter: drop-shadow(0 3px 5px var(--background));
+}
+.plotLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.plotLevel {
+  min-inline-size: 1.6rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border-gold);
+  border-block-start: 0;
+  border-radius: 0 0 6px 6px;
+  color: var(--gold);
+  background: var(--background);
+  font-size: 0.75rem;
+}
+.buildingPlot[data-built='false'] .plotLabel {
+  border-style: dashed;
+}
+.buildingPlot[aria-pressed='true'] .plotLabel {
+  background: var(--gold);
+  color: var(--background);
+  border-color: var(--gold);
+}
+.buildingPlot[data-constructing='true'] .plotLabel {
+  border-width: 2px;
+}
+.buildingPlot:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
+.villageMapFooter > :last-child {
+  min-inline-size: 220px;
+}
 .villageDirectory {
   margin-block-start: 1.5rem;
   border-block-start: 1px solid var(--border);
@@ -312,8 +416,28 @@
 
 /* Compact HUD and scene/rail composition derived from the OpenDesign artifact. */
 .playing {
+  --background: var(--kingdoms-ui-background);
+  --surface: var(--kingdoms-ui-surface);
+  --surface-strong: var(--kingdoms-ui-surface-strong);
+  --surface-soft: var(--kingdoms-ui-surface-soft);
+  --foreground: var(--kingdoms-ui-foreground);
+  --muted-foreground: var(--kingdoms-ui-muted);
+  --gold: var(--kingdoms-ui-gold);
+  --gold-foreground: var(--kingdoms-ui-background);
+  --primary: var(--kingdoms-ui-gold);
+  --primary-foreground: var(--kingdoms-ui-background);
+  --success: var(--kingdoms-ui-success);
+  --success-foreground: var(--kingdoms-ui-background);
+  --danger: var(--kingdoms-ui-danger);
+  --danger-foreground: var(--kingdoms-ui-background);
+  --border: var(--kingdoms-ui-border);
+  --border-gold: var(--kingdoms-ui-border-gold);
+  --border-bright: var(--kingdoms-ui-border-gold);
   max-inline-size: 1680px;
   padding: clamp(0.65rem, 1.5vw, 1.25rem);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--background);
 }
 .playing .hud {
   display: grid;
@@ -429,6 +553,124 @@
 .gameLayout > section {
   min-inline-size: 0;
 }
+.villageLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 0.8rem;
+  align-items: start;
+}
+.buildingRail {
+  display: grid;
+  gap: 0.8rem;
+}
+.buildingDetails {
+  padding: 1rem;
+}
+.buildingDetails .row {
+  padding-block: 0 0.6rem;
+}
+.buildingDetails h3 {
+  margin: 0;
+}
+.buildingDetails > button {
+  inline-size: 100%;
+}
+.buildingCosts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+.buildingCosts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  background: var(--surface-strong);
+}
+.buildingCosts bdi {
+  color: var(--gold);
+}
+.queueBoard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.queueItem {
+  display: flex;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-block-end: 1px solid var(--border);
+}
+.queueItem:last-child {
+  border: 0;
+}
+.queueItem > svg {
+  color: var(--gold);
+  flex: 0 0 auto;
+}
+.queueItem h3 {
+  font-size: 0.9rem;
+  margin: 0;
+}
+.queueItem p,
+.queueItem time {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+  line-height: 1.8;
+}
+.queueItem p {
+  margin-block: 0.25rem;
+}
+.villageMapSection {
+  position: relative;
+}
+.villageMapHeader {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0.75rem;
+  inset-inline: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  background: color-mix(in srgb, var(--background) 90%, transparent);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  gap: 0.25rem;
+  pointer-events: none;
+}
+.villageMapHeader h2 {
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+}
+.villageMapHeader .eyebrow,
+.villageMapHeader .cost {
+  display: none;
+}
+.villageCoordinates {
+  font-size: 0.75rem;
+}
+.villageMapFooter {
+  padding: 0.65rem 0.8rem;
+  gap: 0.5rem;
+}
+.villageMapFooter p {
+  margin: 0;
+  font-size: 0.75rem;
+}
+.villageMapFooter > :last-child {
+  min-inline-size: 180px;
+}
+.villageScene {
+  min-inline-size: 640px;
+}
+.plotLabel {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.5rem;
+}
 .mapLegend {
   display: flex;
   flex-wrap: wrap;
@@ -469,6 +711,14 @@
 }
 .selectedTile h3 {
   margin: 0;
+}
+@media (max-width: 1150px) {
+  .villageLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .buildingRail {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 700px) {
   .playing .hud {
@@ -555,6 +805,139 @@
     block-size: 15px;
     flex: 0 0 auto;
   }
+  .buildingRail {
+    grid-template-columns: 1fr;
+  }
+  .villageMapHeader {
+    inset-inline: 0.5rem;
+    inset-block-start: 0.5rem;
+    padding: 0.5rem;
+  }
+  .villageMapHeader h2 {
+    font-size: 0.95rem;
+  }
+}
+
+/* Village, building, and army refinements. */
+.villageScene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    transparent 55%,
+    color-mix(in srgb, var(--background) 45%, transparent)
+  );
+}
+.buildingPlot {
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
+}
+.buildingPlot:hover {
+  transform: translate(-50%, -54%);
+  filter: drop-shadow(0 6px 10px var(--background));
+}
+.buildingPlot[data-group='economy'] .plotLabel {
+  border-inline-start: 4px solid var(--success, var(--gold));
+}
+.buildingPlot[data-group='military'] .plotLabel {
+  border-inline-start: 4px solid var(--danger);
+}
+.buildingPlot[data-group='civic'] .plotLabel {
+  border-inline-start: 4px solid var(--gold);
+}
+.buildingPlot[data-constructing='true'] .plotLabel {
+  animation: plotPulse 1.8s ease-in-out infinite;
+}
+@keyframes plotPulse {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 35%, transparent);
+  }
+}
+.plotPips {
+  display: flex;
+  gap: 3px;
+  margin-block-start: 3px;
+}
+.plotPips i {
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 1px var(--background);
+}
+.mapKey {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.72rem;
+}
+.mapKey span {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+.mapKey [data-group='economy'] {
+  border-color: var(--success, var(--gold));
+}
+.mapKey [data-group='military'] {
+  border-color: var(--danger);
+}
+.mapKey [data-group='civic'] {
+  border-color: var(--gold);
+}
+.levelBadge {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border-gold);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.buildingCosts li[data-short='true'] {
+  border-color: var(--danger);
+}
+.buildingCosts li[data-short='true'] bdi {
+  color: var(--danger);
+}
+.shortage {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+.unitCard {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  border-block-start: 3px solid var(--border-gold);
+}
+.unitStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.unitStats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  font-size: 0.8rem;
+}
+.unitStats b {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.unitCard p {
+  margin: 0;
 }
 
 /* HUD capacity meters and panel polish. */
@@ -598,12 +981,231 @@
   border-color: var(--border-gold);
   transform: translateX(-2px);
 }
-@media (prefers-reduced-motion: reduce) {
-  .gameLayout > section {
-    animation: none;
+.villageMapSection {
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--background) 60%, transparent);
+}
+
+/* Kingdom command deck: the player's first view follows the approved reference. */
+.playing .hud {
+  grid-template-columns: 205px minmax(0, 1fr);
+  gap: 0.65rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.playing .hero {
+  min-block-size: 96px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--surface-strong), var(--surface));
+}
+.playing .hero h1 {
+  font-size: 1.2rem;
+  color: var(--gold);
+  white-space: normal;
+}
+.playing .crest {
+  inline-size: 48px;
+  block-size: 58px;
+  border-color: var(--gold);
+  background: var(--background);
+}
+.playing .resources {
+  gap: 0.55rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.playing .resource {
+  min-inline-size: 0;
+  min-block-size: 96px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+  align-content: center;
+  gap: 0.1rem 0.55rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--surface-strong), var(--surface));
+}
+.playing .resource:last-child {
+  border: 1px solid var(--border);
+}
+.playing .resource svg {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  inline-size: 28px;
+  block-size: 28px;
+}
+.playing .resource span {
+  grid-column: 2;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+.playing .resource strong {
+  grid-column: 2;
+  font-size: clamp(0.9rem, 1.35vw, 1.25rem);
+  line-height: 1.2;
+}
+.playing .resource .capacity {
+  inset-inline: 0.8rem;
+  inset-block-end: 0.5rem;
+  block-size: 4px;
+}
+.playing .resource[data-full='true'] {
+  border-color: var(--danger);
+}
+.playing .toolbar {
+  margin-block: 0.7rem;
+}
+.gameLayout {
+  direction: ltr;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.gameLayout .nav {
+  direction: rtl;
+  align-content: start;
+  gap: 0.25rem;
+  position: sticky;
+  inset-block-start: 1rem;
+  padding: 0.55rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.gameLayout .nav button {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: 0.7rem;
+  min-block-size: 54px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  text-align: start;
+}
+.gameLayout .nav button svg {
+  flex: 0 0 auto;
+  color: var(--gold);
+}
+.gameLayout .nav button[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--background);
+}
+.gameLayout .nav button[aria-pressed='true'] svg {
+  color: var(--background);
+}
+.gameLayout > section {
+  direction: rtl;
+}
+@media (max-width: 1050px) {
+  .playing .hud {
+    grid-template-columns: 1fr;
   }
-  .capacity i,
+  .playing .resources {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .gameLayout {
+    grid-template-columns: 140px minmax(0, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .playing .hero {
+    min-block-size: 64px;
+  }
+  .playing .resources {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border: 0;
+    padding: 0;
+  }
+  .playing .resource {
+    min-block-size: 80px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 0.5rem;
+  }
+  .playing .resource svg,
+  .playing .resource span,
+  .playing .resource strong {
+    grid-column: 1;
+  }
+  .playing .resource svg {
+    grid-row: auto;
+    inline-size: 21px;
+    block-size: 21px;
+  }
+  .playing .resource span {
+    font-size: 0.68rem;
+  }
+  .playing .resource strong {
+    font-size: 0.88rem;
+  }
+  .gameLayout {
+    direction: rtl;
+    grid-template-columns: 1fr;
+  }
+  .gameLayout .nav {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    gap: 0.3rem;
+    padding: 0.35rem;
+    scrollbar-width: thin;
+  }
   .gameLayout .nav button {
-    transition: none;
+    flex: 0 0 auto;
+    min-block-size: 44px;
+    padding: 0.35rem 0.55rem;
+    white-space: nowrap;
   }
+}
+
+/* HUD capacity meters and panel polish. */
+.resource {
+  position: relative;
+}
+.capacity {
+  position: absolute;
+  inset-inline: 0.65rem;
+  inset-block-end: 2px;
+  block-size: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.capacity i {
+  display: block;
+  block-size: 100%;
+  background: var(--gold);
+  transition: inline-size 0.4s ease;
+}
+.resource[data-full='true'] .capacity i {
+  background: var(--danger);
+}
+.gameLayout > section {
+  animation: panelIn 0.25s ease both;
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.gameLayout .nav button {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.gameLayout .nav button:hover:not([aria-pressed='true']) {
+  border-color: var(--border-gold);
+  transform: translateX(-2px);
+}
+.villageMapSection {
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--background) 60%, transparent);
 }

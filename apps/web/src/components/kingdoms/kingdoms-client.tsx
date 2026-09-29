@@ -15,18 +15,20 @@ import {
   Pickaxe,
   Wheat,
   Coins,
+  House,
 } from 'lucide-react';
 import { Button, ButtonLink, Input, Select } from '@/components/ui';
-import { resourceKeys } from '@/lib/kingdoms/types';
 import { CommandForm, Empty, date, labels, number } from './shared';
 import { useKingdoms } from './use-kingdoms';
 import { VillagePanel, ArmyPanel } from './village-panel';
-import { MapPanel } from './map-panel';
+import { MapPanel, type MapSelection } from './map-panel';
 import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
+import { KingdomOverview } from './kingdom-overview';
 import styles from './kingdoms.module.css';
 
 const tabs = {
+  overview: 'لوحة المملكة',
   village: 'القرية',
   army: 'الجيش',
   map: 'خريطة العالم',
@@ -36,6 +38,7 @@ const tabs = {
   throne: 'العرش والمتصدرون',
 } as const;
 const tabIcons = {
+  overview: House,
   village: Castle,
   army: Swords,
   map: Map,
@@ -45,15 +48,27 @@ const tabIcons = {
   throne: Crown,
 };
 const resourceIcons = { wood: Trees, stone: Mountain, iron: Pickaxe, food: Wheat, gold: Coins };
+const resourceOrder = ['iron', 'food', 'stone', 'wood', 'gold'] as const;
+type ScopedMapSelection = MapSelection & { worldId: string; villageId: string };
 
 export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
   const game = useKingdoms();
-  const [tab, setTab] = useState<keyof typeof tabs>('village');
+  const [tab, setTab] = useState<keyof typeof tabs>('overview');
   const [villageId, setVillageId] = useState('');
+  const [mapSelection, setMapSelection] = useState<ScopedMapSelection | null>(null);
   const { view, busy, loading, send } = game;
   const village = view?.villages.find((item) => item.id === villageId) ?? view?.villages[0];
   const locked = busy || !!view?.paused || view?.season.status === 'ended';
   const props = view && village ? { view, village, busy: locked, send } : null;
+  const navigate = (nextTab: keyof typeof tabs) => {
+    if (nextTab === 'map') setMapSelection(null);
+    setTab(nextTab);
+  };
+  const openMap = (selection: MapSelection) => {
+    if (!view || !village) return;
+    setMapSelection({ ...selection, worldId: view.worldId, villageId: village.id });
+    setTab('map');
+  };
   return (
     <div className={`${styles.shell} ${view?.player ? styles.playing : ''}`} dir="rtl">
       <div className={styles.hud}>
@@ -73,7 +88,7 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
         </header>
         {village && (
           <section aria-label="موارد القرية" className={styles.resources}>
-            {resourceKeys.map((resource) => {
+            {resourceOrder.map((resource) => {
               const Icon = resourceIcons[resource];
               const cap =
                 view!.config.storageBase +
@@ -227,7 +242,7 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                       <button
                         key={key}
                         aria-pressed={tab === key}
-                        onClick={() => setTab(key as keyof typeof tabs)}
+                        onClick={() => navigate(key as keyof typeof tabs)}
                       >
                         <Icon size={20} aria-hidden="true" />
                         <span>{label}</span>
@@ -236,9 +251,29 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                   })}
                 </nav>
                 <section aria-label={tabs[tab]}>
+                  {tab === 'overview' && (
+                    <KingdomOverview
+                      key={village.id}
+                      view={view}
+                      village={village}
+                      onNavigate={navigate}
+                      onOpenMap={openMap}
+                    />
+                  )}
                   {tab === 'village' && <VillagePanel {...props} />}
                   {tab === 'army' && <ArmyPanel {...props} />}
-                  {tab === 'map' && <MapPanel key={village.id} {...props} />}
+                  {tab === 'map' && (
+                    <MapPanel
+                      key={`${view.worldId}:${village.id}`}
+                      {...props}
+                      initialSelection={
+                        mapSelection?.worldId === view.worldId &&
+                        mapSelection?.villageId === village.id
+                          ? mapSelection
+                          : null
+                      }
+                    />
+                  )}
                   {tab === 'market' && <MarketPanel {...props} />}
                   {tab === 'alliances' && <AlliancePanel {...props} />}
                   {tab === 'reports' && <ReportsPanel {...props} />}
