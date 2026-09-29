@@ -7,15 +7,19 @@ import type { WorldView } from './shared';
 
 const now = 1800000000000;
 
-function fixture(): WorldView {
+function fixture(troops?: Village['troops']): WorldView {
   const world = executeCommand(
     createWorld(now),
     'player-1',
     { type: 'found', name: 'مملكتي' },
     now,
   );
+  const village = Object.values(world.villages)[0];
+  const snapshot = troops
+    ? { ...world, villages: { ...world.villages, [village.id]: { ...village, troops } } }
+    : world;
   return {
-    ...projectWorld(world, 'player-1', now),
+    ...projectWorld(snapshot, 'player-1', now),
     worldId: 'world-1',
     worldName: 'عالم الاختبار',
     paused: false,
@@ -63,13 +67,40 @@ describe('village hero', () => {
     );
   });
 
-  it('reports food production stopping when upkeep eats the harvest', () => {
-    const view = fixture();
-    const hungry = {
-      ...view.villages[0],
-      troops: { guard: 1000, rider: 0, scout: 0, settler: 0 },
+  it('charges food upkeep for troops stationed in another player village', () => {
+    const world = executeCommand(
+      executeCommand(createWorld(now), 'player-1', { type: 'found', name: 'مملكتي' }, now),
+      'player-2',
+      { type: 'found', name: 'مملكة الحليف' },
+      now,
+    );
+    const source = Object.values(world.villages).find((village) => village.ownerId === 'player-1')!;
+    const host = Object.values(world.villages).find((village) => village.ownerId === 'player-2')!;
+    const stationed = {
+      ...world,
+      villages: {
+        ...world.villages,
+        [host.id]: {
+          ...host,
+          reinforcements: { [source.id]: { guard: 10, rider: 0, scout: 0, settler: 0 } },
+        },
+      },
     };
-    render(<VillageHero view={view} village={hungry} />);
+    const view: WorldView = {
+      ...projectWorld(stationed, 'player-1', now),
+      worldId: 'world-1',
+      worldName: 'عالم الاختبار',
+      paused: false,
+      revision: 0,
+    };
+    render(<VillageHero view={view} village={view.villages[0]} />);
+    const hero = screen.getByRole('region', { name: 'بطاقة القرية' });
+    expect(within(hero).getByText('+٩٠ في الساعة')).toBeVisible();
+  });
+
+  it('reports food production stopping when upkeep eats the harvest', () => {
+    const view = fixture({ guard: 1000, rider: 0, scout: 0, settler: 0 });
+    render(<VillageHero view={view} village={view.villages[0]} />);
     const hero = screen.getByRole('region', { name: 'بطاقة القرية' });
     expect(within(hero).getAllByText('لا إنتاج الآن')).toHaveLength(1);
   });

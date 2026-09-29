@@ -155,6 +155,7 @@ export type KingdomsView = {
   season: KingdomsWorld['season'];
   player: KingdomPlayer | null;
   villages: Village[];
+  productionRates: Record<string, Resources>;
   map: {
     id: string;
     ownerId: string;

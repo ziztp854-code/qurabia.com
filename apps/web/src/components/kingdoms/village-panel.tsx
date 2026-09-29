@@ -16,8 +16,8 @@ import styles from './village.module.css';
 function maxAffordable(have: Resources, cost: Resources) {
   const limits = resourceKeys
     .filter((resource) => cost[resource] > 0)
-    .map((resource) => Math.floor(have[resource] / cost[resource]));
-  return limits.length ? Math.max(0, Math.min(...limits)) : 0;
+    .map((resource) => Math.floor(Math.floor(have[resource]) / cost[resource]));
+  return limits.length ? Math.max(0, Math.min(...limits)) : Infinity;
 }
 
 export function VillagePanel({ view, village, busy, send }: GameProps) {
@@ -222,6 +222,7 @@ export function VillagePanel({ view, village, busy, send }: GameProps) {
         <div className={styles.units}>
           {unitKeys.map((key) => {
             const unit = view.config.units[key];
+            const affordable = maxAffordable(village.resources, unit.cost);
             return (
               <article className={`${styles.card} ${styles.unitCard}`} key={key}>
                 <div className={styles.cardHead}>
@@ -256,7 +257,8 @@ export function VillagePanel({ view, village, busy, send }: GameProps) {
                 </p>
                 <p className={styles.cardMeta}>
                   <span>
-                    الحد الأقصى بمواردك الآن: {number(maxAffordable(village.resources, unit.cost))}
+                    الحد الأقصى بمواردك الآن:{' '}
+                    {Number.isFinite(affordable) ? number(affordable) : 'غير محدود بالموارد'}
                   </span>
                 </p>
                 <CommandForm

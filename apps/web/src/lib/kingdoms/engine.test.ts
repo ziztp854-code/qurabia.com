@@ -25,6 +25,14 @@ describe('Kingdoms authoritative simulation', () => {
     expect(view.leaderboard.find((p) => p.id === 'alice')?.villages).toBe(1);
     expect(view.leaderboard.find((p) => p.id === 'bob')?.villages).toBe(2);
   });
+  it('projects production rates only for villages owned by the viewer', () => {
+    const world = executeCommand(found(), 'bob', { type: 'found', name: 'مملكة الظل' }, start);
+    const ownVillage = Object.values(world.villages).find((village) => village.ownerId === 'alice')!;
+    expect(projectWorld(world, 'alice', start).productionRates).toEqual({
+      [ownVillage.id]: { wood: 80, stone: 65, iron: 55, food: 100, gold: 5 },
+    });
+    expect(projectWorld(world, 'spectator', start).productionRates).toEqual({});
+  });
   it('accrues offline resources without changing input or double credit', () => {
     const w = found(),
       id = Object.keys(w.villages)[0];

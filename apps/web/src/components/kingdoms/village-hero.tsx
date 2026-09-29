@@ -1,15 +1,9 @@
 'use client';
 
 import { Castle, Coins, Crown, Mountain, Pickaxe, Shield, Trees, Wheat } from 'lucide-react';
-import { productionRate, storageCapacity } from '@/lib/kingdoms/simulation';
+import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { supremeStage, villageProgress } from '@/lib/kingdoms/stages';
-import {
-  buildingKeys,
-  resourceKeys,
-  unitKeys,
-  type Resource,
-  type Troops,
-} from '@/lib/kingdoms/types';
+import { buildingKeys, resourceKeys, type Resource } from '@/lib/kingdoms/types';
 import { date, labels, number, type GameProps } from './shared';
 import styles from './village.module.css';
 
@@ -21,16 +15,6 @@ const resourceIcons: Record<Resource, typeof Trees> = {
   gold: Coins,
 };
 
-/** الجيش الخارج من القرية: نفس ما يحتسبه الخادم في الإعاشة، مقروءًا من الحركات الحقيقية. */
-function awayTroops(view: GameProps['view'], villageId: string): Troops {
-  const troops: Troops = { guard: 0, rider: 0, scout: 0, settler: 0 };
-  for (const movement of view.movements) {
-    if (movement.sourceId !== villageId) continue;
-    for (const key of unitKeys) troops[key] += movement.troops[key];
-  }
-  return troops;
-}
-
 /**
  * بطاقة القرية: هوية القرية وموقفها وقياساتها. كل رقم هنا مشتق من لقطة الخادم،
  * والإنتاج والسعة من قاعدتي المحرك نفسهما لا من تقدير في المتصفح.
@@ -39,7 +23,7 @@ export function VillageHero({ view, village }: Pick<GameProps, 'view' | 'village
   const progress = villageProgress(village, view.config);
   const built = buildingKeys.filter((key) => village.buildings[key] > 0).length;
   const capacity = storageCapacity(view.config, village);
-  const rate = productionRate(view.config, village, awayTroops(view, village.id));
+  const rate = view.productionRates[village.id];
   const protectedUntil = view.player?.protectionUntil ?? 0;
   const constructing = village.build ? view.config.buildings[village.build.building].name : null;
   const goal = progress.next

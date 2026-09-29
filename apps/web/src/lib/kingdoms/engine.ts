@@ -8,9 +8,11 @@ import {
   deadline,
   deployedTroops,
   earliestDeadline,
+  emptyTroops,
   makeVillage,
   nextId,
   report,
+  production,
   returnMovement,
   scaleResources,
   spend,
@@ -574,6 +576,8 @@ export function executeCommand(
 export function projectWorld(state: KingdomsWorld, actorId: string, now: number): KingdomsView {
   const w = advanceWorld(state, now);
   const villages = Object.values(w.villages);
+  const ownVillages = villages.filter((v) => v.ownerId === actorId);
+  const away = deployedTroops(w);
   const villageCounts = new Map<string, number>();
   for (const village of villages) {
     villageCounts.set(village.ownerId, (villageCounts.get(village.ownerId) ?? 0) + 1);
@@ -583,7 +587,10 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
     config: w.config,
     season: w.season,
     player: w.players[actorId] ?? null,
-    villages: villages.filter((v) => v.ownerId === actorId),
+    villages: ownVillages,
+    productionRates: Object.fromEntries(
+      ownVillages.map((v) => [v.id, production(w, v, away.get(v.id) ?? emptyTroops())]),
+    ),
     map: villages.map((v) => ({
       id: v.id,
       ownerId: v.ownerId,
