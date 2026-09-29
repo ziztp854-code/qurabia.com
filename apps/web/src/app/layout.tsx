@@ -81,6 +81,12 @@ export const metadata: Metadata = {
   title: siteTitle,
   description: siteDescription,
   applicationName: APP_CONFIG.name,
+  appleWebApp: {
+    capable: true,
+    title: APP_CONFIG.name,
+    statusBarStyle: 'default',
+  },
+  icons: { apple: '/icon.png' },
   ...(siteVerification ? { verification: siteVerification } : {}),
   keywords: [
     'مسابقات عربية',

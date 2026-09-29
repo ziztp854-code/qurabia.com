@@ -1,0 +1,77 @@
+.install {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2) var(--space-3);
+  margin-block: var(--space-3);
+}
+
+.trigger {
+  min-block-size: 44px;
+  color: var(--home-gold-bright, var(--primary));
+  border: 1px solid var(--home-border, var(--border));
+  border-radius: var(--radius-full);
+}
+
+.caption {
+  color: var(--home-muted, var(--muted-foreground));
+  font-size: 0.8125rem;
+}
+
+.dialog {
+  inline-size: min(32rem, calc(100vw - 2rem));
+  max-block-size: calc(100dvh - 2rem);
+  overflow-y: auto;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.platform {
+  padding-block: var(--space-3);
+}
+
+.platform + .platform {
+  border-block-start: 1px solid var(--border);
+}
+
+.platform h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.platform h3 svg {
+  color: var(--primary);
+}
+
+.platform ol {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-6);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.85;
+}
+
+.platform li svg {
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--primary);
+}
+
+.connection,
+.notice {
+  margin-block: var(--space-3);
+  font-size: 0.875rem;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+}
+
+.notice {
+  color: var(--warning);
+}
