@@ -39,7 +39,7 @@ export function kingdomWorkerEndpoint(
     )
       return null;
     if (production && url.protocol !== 'https:') return null;
-    return new URL('/api/internal/kingdoms/tick', url).toString();
+    return new URL('/api/internal/kingdoms/tick/', url).toString();
   } catch {
     return null;
   }

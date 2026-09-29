@@ -29,8 +29,8 @@ describe('Kingdoms persisted event worker', () => {
   });
 
   it('only permits exact HTTP origins without credentials, paths or redirects', () => {
-    expect(kingdomWorkerEndpoint('https://example.com')).toBe(
-      'https://example.com/api/internal/kingdoms/tick',
+    expect(kingdomWorkerEndpoint('https://example.com', true)).toBe(
+      'https://example.com/api/internal/kingdoms/tick/',
     );
     for (const invalid of [
       'file:///tmp',
@@ -63,7 +63,7 @@ describe('Kingdoms persisted event worker', () => {
     const worker = makeWorker();
     await worker.tick();
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:3000/api/internal/kingdoms/tick',
+      'http://localhost:3000/api/internal/kingdoms/tick/',
       expect.objectContaining({
         method: 'POST',
         redirect: 'error',
