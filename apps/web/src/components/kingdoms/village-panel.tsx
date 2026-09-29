@@ -13,6 +13,13 @@ import { VillageMap, plots } from './village-map';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
 
+function maxAffordable(have: Resources, cost: Resources) {
+  const limits = resourceKeys
+    .filter((resource) => cost[resource] > 0)
+    .map((resource) => Math.floor(have[resource] / cost[resource]));
+  return limits.length ? Math.max(0, Math.min(...limits)) : 0;
+}
+
 export function VillagePanel({ view, village, busy, send }: GameProps) {
   const [selected, setSelected] = useState<Building>('hall');
   const totalTroops = unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0);
@@ -245,6 +252,11 @@ export function VillagePanel({ view, village, busy, send }: GameProps) {
                 <p className={styles.cardMeta}>
                   <span>
                     <ResourceText resources={unit.cost} />
+                  </span>
+                </p>
+                <p className={styles.cardMeta}>
+                  <span>
+                    الحد الأقصى بمواردك الآن: {number(maxAffordable(village.resources, unit.cost))}
                   </span>
                 </p>
                 <CommandForm

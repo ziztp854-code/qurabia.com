@@ -75,11 +75,18 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
           <section aria-label="موارد القرية" className={styles.resources}>
             {resourceKeys.map((resource) => {
               const Icon = resourceIcons[resource];
+              const cap =
+                view!.config.storageBase +
+                village.buildings.warehouse * view!.config.storagePerLevel;
+              const fill = Math.min(100, (village.resources[resource] / cap) * 100);
               return (
-                <div key={resource} className={styles.resource}>
+                <div key={resource} className={styles.resource} data-full={fill >= 95}>
                   <Icon size={20} aria-hidden="true" />
                   <span>{labels[resource]}</span>
                   <strong>{number(village.resources[resource])}</strong>
+                  <em className={styles.capacity} aria-hidden="true" title={`السعة ${number(cap)}`}>
+                    <i style={{ inlineSize: `${fill}%` }} />
+                  </em>
                 </div>
               );
             })}

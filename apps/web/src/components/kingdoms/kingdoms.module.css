@@ -556,3 +556,54 @@
     flex: 0 0 auto;
   }
 }
+
+/* HUD capacity meters and panel polish. */
+.resource {
+  position: relative;
+}
+.capacity {
+  position: absolute;
+  inset-inline: 0.65rem;
+  inset-block-end: 2px;
+  block-size: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.capacity i {
+  display: block;
+  block-size: 100%;
+  background: var(--gold);
+  transition: inline-size 0.4s ease;
+}
+.resource[data-full='true'] .capacity i {
+  background: var(--danger);
+}
+.gameLayout > section {
+  animation: panelIn 0.25s ease both;
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.gameLayout .nav button {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.gameLayout .nav button:hover:not([aria-pressed='true']) {
+  border-color: var(--border-gold);
+  transform: translateX(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gameLayout > section {
+    animation: none;
+  }
+  .capacity i,
+  .gameLayout .nav button {
+    transition: none;
+  }
+}

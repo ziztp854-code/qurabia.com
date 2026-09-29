@@ -270,7 +270,12 @@ export function WorldMap({
                       className={styles.outside}
                     />
                   ) : village ? (
-                    <Fortress x={x} y={y - 4} own={village.ownerId === playerId} />
+                    <>
+                      {village.ownerId === playerId && (
+                        <ellipse cx={x} cy={y + 12} rx="44" ry="26" className={styles.ownRing} />
+                      )}
+                      <Fortress x={x} y={y - 4} own={village.ownerId === playerId} />
+                    </>
                   ) : owner ? (
                     <g transform={`translate(${x} ${y})`}>
                       <ellipse cy="12" rx="19" ry="7" className={styles.shadow} />
@@ -319,6 +324,20 @@ export function WorldMap({
           </div>
         </div>
       </div>
+      <p className={styles.legend} aria-hidden="true">
+        <span data-own="true">
+          <i />
+          قريتك
+        </span>
+        <span>
+          <i />
+          قرية أخرى
+        </span>
+        <span data-kind="claim">
+          <i />
+          أرض محتلة
+        </span>
+      </p>
       <p className={styles.hint}>اختر موضعًا لعرضه، وحرّك العالم بالأسهم أو الأزرار.</p>
     </section>
   );
