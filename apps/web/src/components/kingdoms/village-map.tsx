@@ -19,11 +19,11 @@ import {
 import { Select } from '@/components/ui';
 import { buildingStage, maxLevelLabel, supremeStage } from '@/lib/kingdoms/stages';
 import { buildingKeys, type Building } from '@/lib/kingdoms/types';
-import { number, type GameProps } from './shared';
-import styles from './kingdoms.module.css';
 import { BuildingActivity } from './building-activity';
+import { number, type GameProps } from './shared';
+import styles from './village.module.css';
 
-const plots = {
+export const plots = {
   hall: { x: 50, y: 34, Icon: Castle },
   lumber: { x: 61, y: 19, Icon: Trees },
   quarry: { x: 15, y: 35, Icon: Mountain },
@@ -46,114 +46,154 @@ export function VillageMap({
   selected: Building;
   onSelect: (building: Building) => void;
 }) {
+  const built = buildingKeys.filter((key) => village.buildings[key] > 0).length;
+  const constructing = village.build ? view.config.buildings[village.build.building].name : null;
   return (
-    <section className={styles.villageMapSection} aria-label="خريطة القرية">
-      <header className={styles.villageMapHeader}>
+    <section className={styles.map} aria-label="خريطة القرية">
+      <header className={styles.mapHead}>
         <div>
-          <p className={styles.eyebrow}>في قلب مملكتك</p>
-          <h2>{village.name}</h2>
-          <p className={styles.cost}>اختر مبنى للاطلاع على مستواه وتطويره.</p>
+          <h3>مخطط القرية</h3>
+          <p className={styles.mapSummary}>
+            {number(built)} من {number(buildingKeys.length)} مبنى قائم · اختر مبنى لتطويره
+          </p>
         </div>
-        <span className={styles.villageCoordinates} dir="ltr">
-          X {village.x} / Y {village.y}
-        </span>
+        {constructing && (
+          <span className={styles.tag} data-tone="live">
+            قيد التطوير: {constructing}
+          </span>
+        )}
       </header>
-      <div
-        className={styles.villageViewport}
-        tabIndex={0}
-        aria-label="مخطط مباني القرية، قابل للتمرير أفقيًا"
-      >
-        <div className={styles.villageScene}>
-          <Image
-            src="/game-art/kingdoms/village-oasis.webp"
-            alt=""
-            fill
-            sizes="(max-width: 700px) 760px, 1200px"
-            className={styles.villageArtwork}
-            priority
-          />
-          <div className={styles.villageShade} aria-hidden="true" />
-          {buildingKeys.map((building) => {
-            const plot = plots[building];
-            const level = village.buildings[building];
-            const maxLevel = view.config.buildings[building].maxLevel;
-            const name = view.config.buildings[building].name;
-            const stage = buildingStage(level, maxLevel);
-            const topStage = stage?.key === supremeStage.key;
-            const constructing = village.build?.building === building;
-            const state = constructing
-              ? 'قيد التطوير'
-              : level > 0
-                ? `المستوى ${number(level)} من ${number(maxLevel)}`
-                : 'لم يُبنَ';
-            const ariaLabel = [
-              name,
-              state,
-              topStage && stage ? stage.name : null,
-              level >= maxLevel ? maxLevelLabel : null,
-            ]
-              .filter(Boolean)
-              .join('، ');
-            return (
-              <button
-                type="button"
-                key={building}
-                className={styles.buildingPlot}
-                style={{ left: `${plot.x}%`, top: `${plot.y}%` }}
-                data-built={level > 0}
-                data-constructing={constructing}
-                data-stage={stage?.key ?? 'unbuilt'}
-                aria-pressed={selected === building}
-                aria-label={ariaLabel}
-                onClick={() => onSelect(building)}
-              >
-                <span className={styles.plotLabel}>
-                  <plot.Icon size={16} aria-hidden="true" />
-                  <span>{name}</span>
-                  {topStage && <Crown size={14} aria-hidden="true" />}
-                  {constructing && <Hammer size={14} aria-hidden="true" />}
-                </span>
-                <span className={styles.plotLevel} data-stage={stage?.key ?? 'unbuilt'}>
-                  {level > 0 ? number(level) : 'لم يُبنَ'}
-                </span>
-              </button>
-            );
-          })}
-          {buildingKeys.map((building) => {
-            const level = village.buildings[building];
-            const maxLevel = view.config.buildings[building].maxLevel;
-            const stage = buildingStage(level, maxLevel);
-            return (
-              <BuildingActivity
-                key={`${view.worldId}:${village.id}:${building}`}
-                name={view.config.buildings[building].name}
-                level={level}
-                stageName={stage?.key === supremeStage.key ? stage.name : undefined}
-                atMaxLevel={level >= maxLevel}
-                build={village.build?.building === building ? village.build : undefined}
-                serverNow={view.serverNow}
-                x={plots[building].x}
-                y={plots[building].y}
-              />
-            );
-          })}
+      <div className={styles.mapFrame}>
+        <div
+          className={styles.mapViewport}
+          tabIndex={0}
+          aria-label="مخطط مباني القرية، قابل للتمرير أفقيًا"
+        >
+          <div className={styles.scene}>
+            <Image
+              src="/game-art/kingdoms/village-oasis.webp"
+              alt=""
+              fill
+              sizes="(max-width: 700px) 760px, 1200px"
+              className={styles.art}
+              priority
+            />
+            <span className={styles.veil} aria-hidden="true" />
+            <span className={styles.ground} aria-hidden="true" />
+            <span className={styles.survey} aria-hidden="true" />
+            <span className={styles.plateFrame} aria-hidden="true" />
+            {buildingKeys.map((building) => {
+              const plot = plots[building];
+              const level = village.buildings[building];
+              const maxLevel = view.config.buildings[building].maxLevel;
+              const name = view.config.buildings[building].name;
+              const stage = buildingStage(level, maxLevel);
+              const topStage = stage?.key === supremeStage.key;
+              const busy = village.build?.building === building;
+              const percent = level > 0 ? Math.min(100, Math.round((level / maxLevel) * 100)) : 0;
+              const state = busy
+                ? 'قيد التطوير'
+                : level > 0
+                  ? `المستوى ${number(level)} من ${number(maxLevel)}`
+                  : 'لم يُبنَ';
+              const ariaLabel = [
+                name,
+                state,
+                topStage && stage ? stage.name : null,
+                level >= maxLevel ? maxLevelLabel : null,
+              ]
+                .filter(Boolean)
+                .join('، ');
+              return (
+                <button
+                  type="button"
+                  key={building}
+                  className={styles.plot}
+                  style={{ left: `${plot.x}%`, top: `${plot.y}%` }}
+                  data-built={level > 0}
+                  data-constructing={busy}
+                  data-stage={stage?.key ?? 'unbuilt'}
+                  aria-pressed={selected === building}
+                  aria-label={ariaLabel}
+                  onClick={() => onSelect(building)}
+                >
+                  <span className={styles.medallion}>
+                    <plot.Icon size={18} aria-hidden="true" />
+                  </span>
+                  <span className={styles.plate}>
+                    <span className={styles.plateName}>
+                      {name}
+                      {topStage && <Crown size={13} aria-hidden="true" />}
+                      {busy && <Hammer size={13} aria-hidden="true" />}
+                    </span>
+                    <span className={styles.plateMeta}>
+                      <span className={styles.plotLevel}>
+                        {level > 0 ? `${number(level)}/${number(maxLevel)}` : 'لم يُبنَ'}
+                      </span>
+                      {percent > 0 && (
+                        <span className={`${styles.bar} ${styles.plotBar}`} aria-hidden="true">
+                          <span style={{ width: `${percent}%` }} />
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+            {buildingKeys.map((building) => {
+              const level = village.buildings[building];
+              const maxLevel = view.config.buildings[building].maxLevel;
+              const stage = buildingStage(level, maxLevel);
+              return (
+                <BuildingActivity
+                  key={`${view.worldId}:${village.id}:${building}`}
+                  name={view.config.buildings[building].name}
+                  level={level}
+                  stageName={stage?.key === supremeStage.key ? stage.name : undefined}
+                  atMaxLevel={level >= maxLevel}
+                  build={village.build?.building === building ? village.build : undefined}
+                  serverNow={view.serverNow}
+                  x={plots[building].x}
+                  y={plots[building].y}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
-      <div className={styles.villageMapFooter}>
-        <p className={styles.cost}>
-          على الجوال، اسحب المشهد لرؤية بقية المباني أو اختر من القائمة.
-        </p>
-        <Select
-          label="اختر مبنى من الخريطة"
-          value={selected}
-          onChange={(event) => onSelect(event.target.value as Building)}
-        >
-          {buildingKeys.map((building) => (
-            <option value={building} key={building}>
-              {view.config.buildings[building].name} · {number(village.buildings[building])}
-            </option>
-          ))}
-        </Select>
+      <ul className={styles.legend} aria-label="دلالات أرض القرية">
+        <li>
+          <span className={styles.legendMark} data-state="built" aria-hidden="true" />
+          مبني
+        </li>
+        <li>
+          <span className={styles.legendMark} data-state="building" aria-hidden="true" />
+          قيد التطوير
+        </li>
+        <li>
+          <span className={styles.legendMark} data-state="empty" aria-hidden="true" />
+          أرض شاغرة
+        </li>
+        <li>
+          <span className={styles.legendMark} data-state="supreme" aria-hidden="true" />
+          {supremeStage.name}
+        </li>
+      </ul>
+      <div className={styles.mapFooter}>
+        <p>اسحب المشهد أفقيًا على الجوال، أو اختر مبنى من القائمة.</p>
+        <div className={styles.mapSelect}>
+          <Select
+            label="اختر مبنى من الخريطة"
+            value={selected}
+            onChange={(event) => onSelect(event.target.value as Building)}
+          >
+            {buildingKeys.map((building) => (
+              <option value={building} key={building}>
+                {view.config.buildings[building].name} · {number(village.buildings[building])}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
     </section>
   );

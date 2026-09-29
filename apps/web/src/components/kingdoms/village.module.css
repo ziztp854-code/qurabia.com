@@ -1,0 +1,732 @@
+/* القرية — أسطح «تحدي الممالك»
+   لغة واحدة: إطار ذهبي رفيع، أسطح صلبة داكنة، أرقام جدولية ذات حضور مادي،
+   وحركة تفسّر الحالة (البناء، الاختيار، بلوغ المرحلة العليا) لا الزخرفة.
+   كل الألوان والمسافات من apps/web/tokens.css. */
+.village {
+  display: grid;
+  gap: clamp(0.85rem, 1.6vw, 1.25rem);
+  min-inline-size: 0;
+}
+
+/* ── إطار مشترك: شقّ ضوئي علوي + علامات زوايا ───────────────────────── */
+.hero,
+.card,
+.map,
+.queue {
+  position: relative;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  min-inline-size: 0;
+}
+.hero::before,
+.card::before,
+.map::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 12%;
+  block-size: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ── بطاقة القرية (الواجهة العليا) ───────────────────────────────────── */
+.hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: clamp(0.75rem, 1.6vw, 1.35rem);
+  padding: clamp(0.9rem, 2vw, 1.4rem);
+  background:
+    radial-gradient(
+      120% 140% at 88% -20%,
+      color-mix(in srgb, var(--gold) 12%, transparent),
+      transparent 62%
+    ),
+    var(--surface);
+}
+.crest {
+  display: grid;
+  place-items: center;
+  inline-size: clamp(3rem, 6vw, 3.9rem);
+  block-size: clamp(3rem, 6vw, 3.9rem);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface-strong));
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+.identity {
+  display: grid;
+  gap: 0.3rem;
+  min-inline-size: 0;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.name {
+  margin: 0;
+  font-size: clamp(1.35rem, 3.2vw, 2.05rem);
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+.coords {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block-start: 0.35rem;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.tag[data-tone='gold'] {
+  border-color: var(--border-gold);
+  background: color-mix(in srgb, var(--gold) 14%, var(--surface-strong));
+  color: var(--gold);
+}
+.tag[data-tone='safe'] {
+  border-color: color-mix(in srgb, var(--success) 55%, transparent);
+  color: var(--success);
+}
+.tag[data-tone='live'] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.tag[data-tone='live']::before {
+  content: '';
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  animation: villagePulse 1.6s ease-in-out infinite;
+}
+
+/* ── لوحة القياس: صف أرقام بفواصل شعرية ─────────────────────────────── */
+.measures {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 158px), 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--border);
+  overflow: hidden;
+}
+.measure {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface-strong);
+  min-inline-size: 0;
+}
+.measure dt {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.measure dd {
+  margin: 0;
+}
+.measureValue {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 1.32rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.measureValue small {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.measureNote {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+/* ── الخشب/الحجر/الحديد/الغذاء/الذهب: شريط موارد مع معدل الإنتاج ────── */
+.stock {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  gap: 0.5rem;
+}
+.stockCell {
+  display: grid;
+  gap: 0.32rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  min-inline-size: 0;
+}
+.stockHead {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.stockHead svg {
+  color: var(--gold);
+}
+.stockValue {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.stockRate {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+/* ── شريط تقدم وحيد الشكل يستخدم في كل القرية ───────────────────────── */
+.bar {
+  display: block;
+  block-size: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  block-size: 100%;
+  background: var(--gold-gradient);
+  transition: inline-size 0.6s ease-out;
+}
+.barWide {
+  block-size: 6px;
+}
+@keyframes villagePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+
+/* ── شبكة العمل: مشهد القرية + عمود الإدارة ─────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(272px, 26vw, 336px);
+  gap: 0.85rem;
+  align-items: start;
+}
+.column,
+.rail {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+  min-inline-size: 0;
+}
+
+/* ── خريطة القرية: لوحة مسح فوق الرسم + مؤشرات المباني ─────────────── */
+.map {
+  overflow: hidden;
+  padding: 0;
+}
+.mapFrame {
+  position: relative;
+}
+.mapViewport {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+  direction: ltr;
+  max-inline-size: 100%;
+}
+.scene {
+  position: relative;
+  isolation: isolate;
+  min-inline-size: 660px;
+  aspect-ratio: 3 / 2;
+}
+.art {
+  object-fit: cover;
+  z-index: -3;
+}
+.veil {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: radial-gradient(
+    125% 95% at 50% 4%,
+    transparent 38%,
+    color-mix(in srgb, var(--background) 82%, transparent)
+  );
+  pointer-events: none;
+}
+.ground {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 34%;
+  z-index: -1;
+  background: linear-gradient(180deg, transparent, var(--background));
+  opacity: 0.85;
+  pointer-events: none;
+}
+.survey {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.42;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--gold) 11%, transparent) 0 1px,
+      transparent 1px 68px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--gold) 11%, transparent) 0 1px,
+      transparent 1px 68px
+    );
+}
+.plateFrame {
+  position: absolute;
+  inset: 0.6rem;
+  z-index: 1;
+  border: 1px dashed color-mix(in srgb, var(--gold) 26%, transparent);
+  border-radius: var(--radius-md);
+  pointer-events: none;
+}
+.plot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  direction: rtl;
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  min-block-size: 44px;
+  padding: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--background) 88%, transparent));
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
+}
+.plot:hover {
+  transform: translate(-50%, calc(-50% - 2px));
+}
+.plot:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+}
+.medallion {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 2.4rem;
+  block-size: 2.4rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--surface-strong) 86%, transparent);
+  color: var(--foreground);
+}
+.plot[data-built='false'] .medallion {
+  border-style: dashed;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--background) 74%, transparent);
+}
+.plot[data-constructing='true'] .medallion {
+  border-color: var(--gold);
+}
+.plot[aria-pressed='true'] .medallion {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 28%, transparent);
+}
+.plot[data-stage='supreme'] .medallion {
+  border-color: var(--gold);
+  background: var(--gold-gradient);
+  color: var(--gold-foreground);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--gold) 44%, transparent);
+}
+.plate {
+  display: grid;
+  gap: 0.24rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.plateName {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-weight: 700;
+}
+.plateMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+.plotLevel {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.plotBar {
+  inline-size: 100%;
+  min-inline-size: 3.4rem;
+}
+.plot[aria-pressed='true'] .plate {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 20%, var(--background));
+}
+
+/* ── وسيلة إيضاح أرض القرية ─────────────────────────────────────────── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.95rem;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  list-style: none;
+  border-block-start: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+}
+.legendMark {
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--surface-strong) 86%, transparent);
+}
+.legendMark[data-state='built'] {
+  background: color-mix(in srgb, var(--foreground) 52%, transparent);
+}
+.legendMark[data-state='building'] {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 32%, transparent);
+}
+.legendMark[data-state='empty'] {
+  border-style: dashed;
+}
+.legendMark[data-state='supreme'] {
+  border-color: var(--gold);
+  background: var(--gold-gradient);
+}
+.mapFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  border-block-start: 1px solid var(--border);
+}
+.mapFooter p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+.mapSelect {
+  min-inline-size: min(100%, 240px);
+}
+.mapHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.8rem;
+  padding: 0.85rem 0.9rem;
+  border-block-end: 1px solid var(--border);
+}
+.mapHead h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+.mapSummary {
+  margin: 0.2rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+/* ── بطاقات الإدارة ─────────────────────────────────────────────────── */
+.card {
+  display: grid;
+  gap: 0.65rem;
+  padding: clamp(0.85rem, 1.6vw, 1.1rem);
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.cardHead svg {
+  color: var(--gold);
+  flex: 0 0 auto;
+}
+.cardTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+.cardEyebrow {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.6rem;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+.ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.ribbon[data-tone='gold'] {
+  border-color: var(--gold);
+  background: var(--gold-gradient);
+  color: var(--gold-foreground);
+}
+.costs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.costCell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  font-size: 0.76rem;
+}
+.costCell svg {
+  color: var(--muted-foreground);
+  flex: 0 0 auto;
+}
+.costCell bdi {
+  margin-inline-start: auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.costCell[data-afford='true'] bdi {
+  color: var(--gold);
+}
+.costCell[data-afford='false'] {
+  border-color: color-mix(in srgb, var(--danger) 48%, transparent);
+}
+.costCell[data-afford='false'] bdi {
+  color: var(--danger);
+}
+.cta {
+  inline-size: 100%;
+}
+
+/* ── لوحة التنفيذ: قائمة البناء وقائمة التدريب ──────────────────────── */
+.queue {
+  display: grid;
+}
+.queueItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.85rem;
+}
+.queueItem + .queueItem {
+  border-block-start: 1px solid var(--border);
+}
+.queueIcon {
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface-strong));
+  color: var(--gold);
+}
+.queueBody {
+  display: grid;
+  gap: 0.3rem;
+  min-inline-size: 0;
+}
+.queueBody h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.queueBody p,
+.queueBody time {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+.queueBody time {
+  font-variant-numeric: tabular-nums;
+}
+.queueEmpty {
+  margin: 0;
+  padding: 0.85rem;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+/* ── وحدات القرية والقوائم القصيرة ──────────────────────────────────── */
+.units {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 236px), 1fr));
+  gap: 0.7rem;
+}
+.unitCard {
+  display: grid;
+  gap: 0.55rem;
+}
+.unitStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.unitStat {
+  padding: 0.18rem 0.48rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+.unitStat b {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.listRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  font-size: 0.78rem;
+}
+.listEmpty {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 0.5rem;
+}
+
+/* ── استجابة وحركة مخففة ───────────────────────────────────────────── */
+@media (max-width: 1020px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crest {
+    inline-size: 2.7rem;
+    block-size: 2.7rem;
+  }
+  .scene {
+    min-inline-size: 600px;
+  }
+  .measures {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plot,
+  .bar > span {
+    transition: none;
+  }
+  .plot:hover {
+    transform: translate(-50%, -50%);
+  }
+  .tag[data-tone='live']::before {
+    animation: none;
+  }
+}

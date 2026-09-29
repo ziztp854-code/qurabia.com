@@ -3,6 +3,7 @@ import {
   buildingKeys,
   resourceKeys,
   unitKeys,
+  type KingdomsConfig,
   type KingdomsWorld,
   type Movement,
   type Resources,
@@ -16,6 +17,7 @@ export function assertRule(ok: unknown, message: string): asserts ok {
   if (!ok) throw new Error(message);
 }
 export const total = (r: Resources | Troops) => Object.values(r).reduce((a, b) => a + b, 0);
+
 export const nonAggression = (w: KingdomsWorld, a?: string, b?: string) =>
   Boolean(
     a &&
@@ -34,8 +36,11 @@ export function deadline(at: number, duration: number) {
 }
 export const scaleResources = (r: Resources, factor: number): Resources =>
   Object.fromEntries(resourceKeys.map((k) => [k, Math.ceil(r[k] * factor)])) as Resources;
-export const capacity = (w: KingdomsWorld, v: Village) =>
-  w.config.storageBase + v.buildings.warehouse * w.config.storagePerLevel;
+export const capacity = (w: KingdomsWorld, v: Village) => storageCapacity(w.config, v);
+
+/** سعة التخزين في القرية. قاعدة واحدة يستخدمها المحرك والعرض معًا. */
+export const storageCapacity = (config: KingdomsConfig, village: Pick<Village, 'buildings'>) =>
+  config.storageBase + village.buildings.warehouse * config.storagePerLevel;
 export function spend(v: Village, c: Resources) {
   assertRule(
     resourceKeys.every((k) => Number.isFinite(c[k]) && c[k] >= 0 && v.resources[k] >= c[k]),
@@ -108,24 +113,36 @@ export function production(
   v: Village,
   away = deployedTroops(w).get(v.id) ?? emptyTroops(),
 ): Resources {
+  return productionRate(w.config, v, away);
+}
+
+/**
+ * معدل الإنتاج في الساعة. قاعدة واحدة يستخدمها المحرك والعرض معًا، فتعرض الواجهة
+ * الرقم نفسه الذي يحتسبه الخادم بلا نسخة ثانية من المعادلة.
+ */
+export function productionRate(
+  config: KingdomsConfig,
+  village: Village,
+  away: Troops = emptyTroops(),
+): Resources {
   const levels = {
-    wood: v.buildings.lumber,
-    stone: v.buildings.quarry,
-    iron: v.buildings.mine,
-    food: v.buildings.farm,
-    gold: v.buildings.treasury,
+    wood: village.buildings.lumber,
+    stone: village.buildings.quarry,
+    iron: village.buildings.mine,
+    food: village.buildings.farm,
+    gold: village.buildings.treasury,
   };
-  const troops = unitKeys.reduce(
-    (sum, k) => sum + (v.troops[k] + away[k]) * w.config.units[k].upkeep,
+  const upkeep = unitKeys.reduce(
+    (sum, key) => sum + (village.troops[key] + away[key]) * config.units[key].upkeep,
     0,
   );
   return Object.fromEntries(
-    resourceKeys.map((k) => [
-      k,
+    resourceKeys.map((key) => [
+      key,
       Math.max(
         0,
-        w.config.baseProduction[k] * (1 + levels[k] * w.config.productionPerLevel) -
-          (k === 'food' ? troops : 0),
+        config.baseProduction[key] * (1 + levels[key] * config.productionPerLevel) -
+          (key === 'food' ? upkeep : 0),
       ),
     ]),
   ) as Resources;
