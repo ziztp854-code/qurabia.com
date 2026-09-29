@@ -20,7 +20,7 @@
 }
 
 .dialog {
-  inline-size: min(32rem, calc(100vw - 2rem));
+  inline-size: min(32rem, 100%);
   max-block-size: calc(100dvh - 2rem);
   overflow-y: auto;
   color: var(--foreground);
