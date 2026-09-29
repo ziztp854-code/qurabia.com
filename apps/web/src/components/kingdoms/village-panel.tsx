@@ -1,15 +1,15 @@
 'use client';
 
-import { Hammer, Shield, Swords, type LucideIcon } from 'lucide-react';
+import { Hammer, Shield, Swords } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Input } from '@/components/ui';
-import { buildingPercent, buildingStage, supremeStage } from '@/lib/kingdoms/stages';
 import { resourceKeys, unitKeys, type Building, type Resources } from '@/lib/kingdoms/types';
-import { CommandForm, ResourceText, date, labels, number, value, type GameProps } from './shared';
+import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
 import { StageLadder } from './stage-ladder';
 import { UnitIcon } from './unit-icon';
 import { VillageHero } from './village-hero';
-import { VillageMap, plots } from './village-map';
+import { BuildingCard } from './building-card';
+import { VillageMap } from './village-map';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
 
@@ -32,105 +32,14 @@ export function VillagePanel({ view, village, busy, send }: GameProps) {
           <VillageMap view={view} village={village} selected={selected} onSelect={setSelected} />
         </div>
         <aside className={styles.rail} aria-label="إدارة مباني القرية">
-          {[selected].map((key) => {
-            const building = view.config.buildings[key];
-            const level = village.buildings[key];
-            const stage = buildingStage(level, building.maxLevel);
-            const percent = buildingPercent(level, building.maxLevel);
-            const PlotIcon: LucideIcon = plots[key].Icon;
-            const topStage = stage?.key === supremeStage.key;
-            const cost = Object.fromEntries(
-              Object.entries(building.cost).map(([resource, amount]) => [
-                resource,
-                Math.ceil(amount * building.growth ** level),
-              ]),
-            ) as Resources;
-            const missing = resourceKeys.filter(
-              (resource) => village.resources[resource] < cost[resource],
-            );
-            return (
-              <article className={styles.card} key={key}>
-                <p className={styles.cardEyebrow}>المبنى المختار</p>
-                <div className={styles.cardHead}>
-                  <span className={styles.medallion} aria-hidden="true">
-                    <PlotIcon size={18} />
-                  </span>
-                  <div>
-                    <h3 className={styles.cardTitle}>{building.name}</h3>
-                    <p className={styles.cardMeta}>
-                      <span>
-                        مستوى {number(level)} من {number(building.maxLevel)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <div className={styles.cardMeta}>
-                  <span className={styles.ribbon} data-tone={topStage ? 'gold' : undefined}>
-                    {stage ? stage.name : 'لم يُبنَ بعد'}
-                  </span>
-                  <span>{number(percent)}٪ من الحد الأعلى</span>
-                </div>
-                <span
-                  role="progressbar"
-                  aria-label={`تقدم ${building.name} نحو ${supremeStage.name}`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={percent}
-                  aria-valuetext={`${number(percent)}٪ من الحد الأعلى للمبنى`}
-                  className={styles.bar}
-                >
-                  <span style={{ width: `${percent}%` }} />
-                </span>
-                <ul className={styles.costs} aria-label="تكلفة التطوير">
-                  {resourceKeys.map((resource) => (
-                    <li
-                      key={resource}
-                      className={styles.costCell}
-                      data-afford={village.resources[resource] >= cost[resource]}
-                    >
-                      <span>{labels[resource]}</span>
-                      <bdi>{number(cost[resource])}</bdi>
-                    </li>
-                  ))}
-                </ul>
-                <p className={styles.cardMeta}>
-                  <span>
-                    مدة التطوير الأساسية:{' '}
-                    {number(Math.ceil(building.seconds * building.growth ** level))} ثانية
-                  </span>
-                </p>
-                <p className={styles.cardMeta}>
-                  <span>
-                    {topStage
-                      ? `المبنى في ${supremeStage.name}.`
-                      : `المرحلة العليا للمبنى تبدأ عند ${number(
-                          Math.round(supremeStage.fraction * building.maxLevel),
-                        )} مستوى.`}
-                  </span>
-                </p>
-                {missing.length > 0 && (
-                  <p className={styles.cardMeta} role="note">
-                    <span>
-                      ينقصك:{' '}
-                      {missing
-                        .map(
-                          (resource) =>
-                            `${labels[resource]} ${number(cost[resource] - village.resources[resource])}`,
-                        )
-                        .join(' · ')}
-                    </span>
-                  </p>
-                )}
-                <Button
-                  className={styles.cta}
-                  disabled={busy || !!village.build || level >= building.maxLevel}
-                  onClick={() => void send({ type: 'build', villageId: village.id, building: key })}
-                >
-                  {level >= building.maxLevel ? 'بلغ الحد الأعلى' : 'طوّر المبنى'}
-                </Button>
-              </article>
-            );
-          })}
+          <BuildingCard
+            key={selected}
+            building={selected}
+            view={view}
+            village={village}
+            busy={busy}
+            send={send}
+          />
           <section className={`${styles.card} ${styles.queue}`} aria-label="قوائم التنفيذ">
             <p className={styles.cardEyebrow}>لوحة التنفيذ</p>
             <div className={styles.queueItem}>
@@ -165,6 +74,15 @@ export function VillagePanel({ view, village, busy, send }: GameProps) {
                         <time dateTime={new Date(current.endsAt).toISOString()}>
                           يكتمل {date(current.endsAt)}
                         </time>
+                        {selected !== current.building && (
+                          <button
+                            type="button"
+                            className={styles.linkButton}
+                            onClick={() => setSelected(current.building)}
+                          >
+                            حدّده في المشهد
+                          </button>
+                        )}
                         {progress !== null && (
                           <span
                             role="progressbar"

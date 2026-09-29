@@ -1,41 +1,64 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  Castle,
-  Coins,
-  Crown,
-  Flag,
-  Hammer,
-  Mountain,
-  Pickaxe,
-  Shield,
-  Store,
-  Swords,
-  Trees,
-  Warehouse,
-  Wheat,
-} from 'lucide-react';
+import { Crown, Eye, EyeOff, Hammer } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Select } from '@/components/ui';
 import { buildingStage, maxLevelLabel, supremeStage } from '@/lib/kingdoms/stages';
 import { buildingKeys, type Building } from '@/lib/kingdoms/types';
 import { BuildingActivity } from './building-activity';
+import { ArtCrop } from './building-portrait';
 import { number, type GameProps } from './shared';
+import {
+  boundsOf,
+  clipPolygon,
+  hitBox,
+  pathOf,
+  plotCenter,
+  plotState,
+  relativeBox,
+  sceneBox,
+  villageArt,
+  villagePlots,
+  type PlotState,
+} from './village-layout';
 import styles from './village.module.css';
 
-export const plots = {
-  hall: { x: 50, y: 34, Icon: Castle },
-  lumber: { x: 61, y: 19, Icon: Trees },
-  quarry: { x: 15, y: 35, Icon: Mountain },
-  mine: { x: 26, y: 21, Icon: Pickaxe },
-  farm: { x: 83, y: 34, Icon: Wheat },
-  treasury: { x: 24, y: 66, Icon: Coins },
-  warehouse: { x: 71, y: 48, Icon: Warehouse },
-  barracks: { x: 29, y: 50, Icon: Swords },
-  wall: { x: 49, y: 82, Icon: Shield },
-  market: { x: 80, y: 67, Icon: Store },
-  embassy: { x: 52, y: 62, Icon: Flag },
-} satisfies Record<Building, { x: number; y: number; Icon: typeof Castle }>;
+/** أيقونة كل مبنى وموضع مركزه في المشهد بالنسبة المئوية. */
+export const plots = Object.fromEntries(
+  buildingKeys.map((key) => [key, { ...plotCenter(key), Icon: villagePlots[key].Icon }]),
+) as Record<Building, { x: number; y: number; Icon: (typeof villagePlots)[Building]['Icon'] }>;
+
+function stateText(state: PlotState) {
+  if (state.constructing) {
+    return state.level > 0
+      ? `قيد التطوير من المستوى ${number(state.level)} إلى ${number(state.targetLevel ?? state.level + 1)}`
+      : 'قيد التطوير، يُبنى المستوى الأول';
+  }
+  return state.level > 0
+    ? `المستوى ${number(state.level)} من ${number(state.maxLevel)}`
+    : 'لم يُبنَ، أرض شاغرة';
+}
+
+function LevelRing({ percent, Icon }: { percent: number; Icon: PlotIcon }) {
+  return (
+    <span className={styles.ring}>
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <circle className={styles.ringTrack} cx="18" cy="18" r="15.5" pathLength={100} />
+        <circle
+          className={styles.ringFill}
+          cx="18"
+          cy="18"
+          r="15.5"
+          pathLength={100}
+          strokeDasharray={`${percent} 100`}
+        />
+      </svg>
+      <Icon size={14} aria-hidden="true" />
+    </span>
+  );
+}
+type PlotIcon = (typeof villagePlots)[Building]['Icon'];
 
 export function VillageMap({
   view,
@@ -46,61 +69,103 @@ export function VillageMap({
   selected: Building;
   onSelect: (building: Building) => void;
 }) {
+  const [labelsShown, setLabelsShown] = useState(true);
+  const viewport = useRef<HTMLDivElement>(null);
   const built = buildingKeys.filter((key) => village.buildings[key] > 0).length;
   const constructing = village.build ? view.config.buildings[village.build.building].name : null;
+  const selectedOutline = villagePlots[selected].outline;
+
+  useEffect(() => {
+    const frame = viewport.current;
+    if (!frame || frame.scrollWidth <= frame.clientWidth + 1) return;
+    const center = (plotCenter(selected).x / 100) * frame.scrollWidth;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    frame.scrollTo?.({
+      left: Math.max(0, center - frame.clientWidth / 2),
+      behavior: reduce ? 'auto' : 'smooth',
+    });
+  }, [selected]);
+
   return (
     <section className={styles.map} aria-label="خريطة القرية">
       <header className={styles.mapHead}>
         <div>
-          <h3>مخطط القرية</h3>
+          <h3>واحة القرية</h3>
           <p className={styles.mapSummary}>
             {number(built)} من {number(buildingKeys.length)} مبنى قائم · اختر مبنى لتطويره
           </p>
         </div>
-        {constructing && (
-          <span className={styles.tag} data-tone="live">
-            قيد التطوير: {constructing}
-          </span>
-        )}
+        <div className={styles.mapTools}>
+          {constructing && (
+            <span className={styles.tag} data-tone="live">
+              قيد التطوير: {constructing}
+            </span>
+          )}
+          <button
+            type="button"
+            className={styles.toolButton}
+            aria-pressed={!labelsShown}
+            onClick={() => setLabelsShown((shown) => !shown)}
+          >
+            {labelsShown ? (
+              <EyeOff size={16} aria-hidden="true" />
+            ) : (
+              <Eye size={16} aria-hidden="true" />
+            )}
+            {labelsShown ? 'أخفِ اللافتات' : 'أظهر اللافتات'}
+          </button>
+        </div>
       </header>
       <div className={styles.mapFrame}>
         <div
+          ref={viewport}
           className={styles.mapViewport}
           tabIndex={0}
-          aria-label="مخطط مباني القرية، قابل للتمرير أفقيًا"
+          aria-label="مشهد مباني القرية، قابل للتمرير أفقيًا"
         >
-          <div className={styles.scene}>
+          <div className={styles.scene} data-labels={labelsShown ? 'shown' : 'hidden'}>
             <Image
-              src="/game-art/kingdoms/village-oasis.webp"
+              src={villageArt.src}
               alt=""
               fill
-              sizes="(max-width: 700px) 760px, 1200px"
+              sizes={villageArt.sizes}
               className={styles.art}
               priority
             />
             <span className={styles.veil} aria-hidden="true" />
-            <span className={styles.ground} aria-hidden="true" />
-            <span className={styles.survey} aria-hidden="true" />
-            <span className={styles.plateFrame} aria-hidden="true" />
+            <svg
+              className={styles.spotlight}
+              viewBox={`0 0 ${villageArt.width} ${villageArt.height}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <mask id={`village-spot-${village.id}`}>
+                  <rect width={villageArt.width} height={villageArt.height} fill="white" />
+                  <path d={pathOf(selectedOutline)} fill="black" />
+                </mask>
+              </defs>
+              <rect
+                width={villageArt.width}
+                height={villageArt.height}
+                mask={`url(#village-spot-${village.id})`}
+              />
+            </svg>
             {buildingKeys.map((building) => {
-              const plot = plots[building];
-              const level = village.buildings[building];
-              const maxLevel = view.config.buildings[building].maxLevel;
-              const name = view.config.buildings[building].name;
-              const stage = buildingStage(level, maxLevel);
+              const spec = view.config.buildings[building];
+              const state = plotState(building, village, spec.maxLevel);
+              const stage = buildingStage(state.level, state.maxLevel);
               const topStage = stage?.key === supremeStage.key;
-              const busy = village.build?.building === building;
-              const percent = level > 0 ? Math.min(100, Math.round((level / maxLevel) * 100)) : 0;
-              const state = busy
-                ? 'قيد التطوير'
-                : level > 0
-                  ? `المستوى ${number(level)} من ${number(maxLevel)}`
-                  : 'لم يُبنَ';
+              const hit = hitBox(building);
+              const outline = villagePlots[building].outline;
+              const shape = boundsOf(outline);
+              const Icon = villagePlots[building].Icon;
+              const isSelected = selected === building;
               const ariaLabel = [
-                name,
-                state,
+                spec.name,
+                stateText(state),
                 topStage && stage ? stage.name : null,
-                level >= maxLevel ? maxLevelLabel : null,
+                state.maxed ? maxLevelLabel : null,
               ]
                 .filter(Boolean)
                 .join('، ');
@@ -109,33 +174,57 @@ export function VillageMap({
                   type="button"
                   key={building}
                   className={styles.plot}
-                  style={{ left: `${plot.x}%`, top: `${plot.y}%` }}
-                  data-built={level > 0}
-                  data-constructing={busy}
+                  style={sceneBox(hit)}
+                  data-building={building}
+                  data-visual={state.visual}
+                  data-built={state.level > 0}
+                  data-constructing={state.constructing}
+                  data-maxed={state.maxed}
                   data-stage={stage?.key ?? 'unbuilt'}
-                  aria-pressed={selected === building}
+                  aria-pressed={isSelected}
                   aria-label={ariaLabel}
                   onClick={() => onSelect(building)}
                 >
-                  <span className={styles.medallion}>
-                    <plot.Icon size={18} aria-hidden="true" />
-                  </span>
-                  <span className={styles.plate}>
-                    <span className={styles.plateName}>
-                      {name}
-                      {topStage && <Crown size={13} aria-hidden="true" />}
-                      {busy && <Hammer size={13} aria-hidden="true" />}
-                    </span>
-                    <span className={styles.plateMeta}>
-                      <span className={styles.plotLevel}>
-                        {level > 0 ? `${number(level)}/${number(maxLevel)}` : 'لم يُبنَ'}
+                  <span
+                    className={styles.lotArea}
+                    style={relativeBox(shape, hit)}
+                    aria-hidden="true"
+                  >
+                    {state.visual !== 'prosperity' && (
+                      <span
+                        className={styles.lot}
+                        style={{ clipPath: clipPolygon(outline, shape) }}
+                      >
+                        <ArtCrop frame={shape} />
                       </span>
-                      {percent > 0 && (
-                        <span className={`${styles.bar} ${styles.plotBar}`} aria-hidden="true">
-                          <span style={{ width: `${percent}%` }} />
-                        </span>
+                    )}
+                    <svg
+                      className={styles.outline}
+                      viewBox={`${shape.x} ${shape.y} ${shape.w} ${shape.h}`}
+                      preserveAspectRatio="none"
+                    >
+                      <path className={styles.outlineGlow} d={pathOf(outline)} />
+                      <path className={styles.outlineLine} d={pathOf(outline)} />
+                    </svg>
+                  </span>
+                  <span className={styles.chip}>
+                    <LevelRing percent={state.percent} Icon={Icon} />
+                    <span className={styles.chipName}>{spec.name}</span>
+                    <span className={styles.chipLevel}>
+                      {state.constructing ? (
+                        <>
+                          <Hammer size={12} aria-hidden="true" />
+                          {number(state.targetLevel ?? state.level + 1)}
+                        </>
+                      ) : state.level > 0 ? (
+                        number(state.level)
+                      ) : (
+                        'شاغرة'
                       )}
                     </span>
+                    {state.maxed ? (
+                      <Crown className={styles.chipCrown} size={13} aria-hidden="true" />
+                    ) : null}
                   </span>
                 </button>
               );
@@ -144,6 +233,7 @@ export function VillageMap({
               const level = village.buildings[building];
               const maxLevel = view.config.buildings[building].maxLevel;
               const stage = buildingStage(level, maxLevel);
+              const center = plotCenter(building);
               return (
                 <BuildingActivity
                   key={`${view.worldId}:${village.id}:${building}`}
@@ -153,34 +243,38 @@ export function VillageMap({
                   atMaxLevel={level >= maxLevel}
                   build={village.build?.building === building ? village.build : undefined}
                   serverNow={view.serverNow}
-                  x={plots[building].x}
-                  y={plots[building].y}
+                  x={center.x}
+                  y={center.y}
                 />
               );
             })}
           </div>
         </div>
       </div>
-      <ul className={styles.legend} aria-label="دلالات أرض القرية">
+      <ul className={styles.legend} aria-label="دلالات مشهد القرية">
         <li>
-          <span className={styles.legendMark} data-state="built" aria-hidden="true" />
-          مبني
+          <span className={styles.legendMark} data-state="vacant" aria-hidden="true" />
+          أرض شاغرة باهتة
+        </li>
+        <li>
+          <span className={styles.legendMark} data-state="growth" aria-hidden="true" />
+          اللون يكتمل مع المراحل
         </li>
         <li>
           <span className={styles.legendMark} data-state="building" aria-hidden="true" />
-          قيد التطوير
-        </li>
-        <li>
-          <span className={styles.legendMark} data-state="empty" aria-hidden="true" />
-          أرض شاغرة
+          قيد البناء
         </li>
         <li>
           <span className={styles.legendMark} data-state="supreme" aria-hidden="true" />
           {supremeStage.name}
         </li>
+        <li>
+          <Crown size={13} className={styles.legendCrown} aria-hidden="true" />
+          {maxLevelLabel}
+        </li>
       </ul>
       <div className={styles.mapFooter}>
-        <p>اسحب المشهد أفقيًا على الجوال، أو اختر مبنى من القائمة.</p>
+        <p>اسحب المشهد أفقيًا على الجوال، واضغط مبنى لاختياره، أو تنقّل بمفتاح Tab أو القائمة.</p>
         <div className={styles.mapSelect}>
           <Select
             label="اختر مبنى من الخريطة"
@@ -189,7 +283,10 @@ export function VillageMap({
           >
             {buildingKeys.map((building) => (
               <option value={building} key={building}>
-                {view.config.buildings[building].name} · {number(village.buildings[building])}
+                {view.config.buildings[building].name} ·{' '}
+                {village.buildings[building] > 0
+                  ? `المستوى ${number(village.buildings[building])}`
+                  : 'شاغرة'}
               </option>
             ))}
           </Select>
