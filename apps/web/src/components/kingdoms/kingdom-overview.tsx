@@ -14,9 +14,10 @@ import {
   Swords,
   Users,
 } from 'lucide-react';
-import { unitKeys } from '@/lib/kingdoms/types';
+import { unitKeys, type Building } from '@/lib/kingdoms/types';
 import { date, number, type GameProps } from './shared';
 import { WorldMap } from './world-map';
+import { KingdomScene } from './kingdom-scene';
 import type { MapSelection } from './map-panel';
 import styles from './kingdom-overview.module.css';
 
@@ -27,9 +28,11 @@ export function KingdomOverview({
   village,
   onNavigate,
   onOpenMap,
+  onSelectBuilding,
 }: Pick<GameProps, 'view' | 'village'> & {
   onNavigate: (tab: OverviewTab) => void;
   onOpenMap: (selection: MapSelection) => void;
+  onSelectBuilding: (building: Building) => void;
 }) {
   const [center, setCenter] = useState({ x: village.x, y: village.y });
   const [target, setTarget] = useState({ x: village.x, y: village.y });
@@ -134,23 +137,7 @@ export function KingdomOverview({
         </div>
       </section>
 
-      <section className={styles.visualReference} aria-label="مشهد المملكة">
-        <a
-          href="/game-art/kingdoms/kingdom-dashboard-scene.png"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="عرض مشهد المملكة بالحجم الكامل"
-        >
-          <Image
-            src="/game-art/kingdoms/kingdom-dashboard-scene.webp"
-            alt="مدينة المملكة بأسوارها وقصرها وأسواقها وحقولها"
-            width={1672}
-            height={941}
-            sizes="(max-width: 700px) 100vw, 1200px"
-          />
-        </a>
-        <p>مشهد تصوّري للمملكة؛ الأرقام في الصورة توضيحية. اضغط لعرضها كاملة.</p>
-      </section>
+      <KingdomScene view={view} village={village} onSelectBuilding={onSelectBuilding} />
       <section className={styles.stats} aria-label="ملخص المملكة">
         <article className={styles.stat}>
           <Castle aria-hidden="true" />

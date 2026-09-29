@@ -25,6 +25,7 @@ import { MapPanel, type MapSelection } from './map-panel';
 import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
+import type { Building } from '@/lib/kingdoms/types';
 import styles from './kingdoms.module.css';
 
 const tabs = {
@@ -50,24 +51,32 @@ const tabIcons = {
 const resourceIcons = { wood: Trees, stone: Mountain, iron: Pickaxe, food: Wheat, gold: Coins };
 const resourceOrder = ['iron', 'food', 'stone', 'wood', 'gold'] as const;
 type ScopedMapSelection = MapSelection & { worldId: string; villageId: string };
+type ScopedBuildingSelection = { worldId: string; villageId: string; building: Building };
 
 export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
   const game = useKingdoms();
   const [tab, setTab] = useState<keyof typeof tabs>('overview');
   const [villageId, setVillageId] = useState('');
   const [mapSelection, setMapSelection] = useState<ScopedMapSelection | null>(null);
+  const [buildingSelection, setBuildingSelection] = useState<ScopedBuildingSelection | null>(null);
   const { view, busy, loading, send } = game;
   const village = view?.villages.find((item) => item.id === villageId) ?? view?.villages[0];
   const locked = busy || !!view?.paused || view?.season.status === 'ended';
   const props = view && village ? { view, village, busy: locked, send } : null;
   const navigate = (nextTab: keyof typeof tabs) => {
     if (nextTab === 'map') setMapSelection(null);
+    if (nextTab === 'village') setBuildingSelection(null);
     setTab(nextTab);
   };
   const openMap = (selection: MapSelection) => {
     if (!view || !village) return;
     setMapSelection({ ...selection, worldId: view.worldId, villageId: village.id });
     setTab('map');
+  };
+  const openBuilding = (building: Building) => {
+    if (!view || !village) return;
+    setBuildingSelection({ worldId: view.worldId, villageId: village.id, building });
+    setTab('village');
   };
   return (
     <div className={`${styles.shell} ${view?.player ? styles.playing : ''}`} dir="rtl">
@@ -258,9 +267,21 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                       village={village}
                       onNavigate={navigate}
                       onOpenMap={openMap}
+                      onSelectBuilding={openBuilding}
                     />
                   )}
-                  {tab === 'village' && <VillagePanel {...props} />}
+                  {tab === 'village' && (
+                    <VillagePanel
+                      key={`${view.worldId}:${village.id}`}
+                      {...props}
+                      initialBuilding={
+                        buildingSelection?.worldId === view.worldId &&
+                        buildingSelection?.villageId === village.id
+                          ? buildingSelection.building
+                          : 'hall'
+                      }
+                    />
+                  )}
                   {tab === 'army' && <ArmyPanel {...props} />}
                   {tab === 'map' && (
                     <MapPanel
