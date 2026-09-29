@@ -1,15 +1,32 @@
 .world {
   /* Illustration pigments belong to the map artwork; interface chrome uses Tahaddi tokens. */
-  --terrain-meadow: var(--kingdoms-terrain-meadow);
-  --terrain-earth: var(--kingdoms-terrain-earth);
-  --terrain-forest: var(--kingdoms-terrain-forest);
-  --terrain-water: var(--kingdoms-terrain-water);
-  --terrain-stone: var(--kingdoms-terrain-stone);
+  --map-plain: var(--kingdoms-terrain-meadow);
+  --map-steppe: color-mix(
+    in srgb,
+    var(--kingdoms-terrain-meadow-patch) 62%,
+    var(--kingdoms-terrain-stone)
+  );
+  --map-forest: var(--kingdoms-terrain-forest);
+  --map-hills: color-mix(in srgb, var(--kingdoms-terrain-earth) 58%, var(--kingdoms-terrain-stone));
+  --map-mountain: color-mix(
+    in srgb,
+    var(--kingdoms-terrain-stone) 68%,
+    var(--kingdoms-terrain-mountain-shade)
+  );
+  --map-water: var(--kingdoms-terrain-water);
+  --map-ink: var(--kingdoms-terrain-shadow);
+  --map-own: var(--kingdoms-terrain-own-banner);
+  --map-other: var(--kingdoms-terrain-other-banner);
+  --map-claim: var(--kingdoms-terrain-claim-banner);
+  --map-focus: var(--kingdoms-terrain-selection);
+  --map-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--surface);
 }
+
+/* ---------- Chrome ---------- */
 .controls {
   display: flex;
   justify-content: space-between;
@@ -18,6 +35,7 @@
   flex-wrap: wrap;
   padding: 0.6rem;
   font-size: 0.75rem;
+  border-block-end: 1px solid var(--border);
 }
 .navigation {
   display: flex;
@@ -34,33 +52,93 @@
   background: var(--surface-strong);
   color: var(--foreground);
   cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.navigation button:hover:not(:disabled) {
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
 }
 .navigation button:disabled {
   opacity: 0.4;
   cursor: default;
 }
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+.readout bdi {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.zoomLevel {
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  color: var(--gold);
+}
+.zoomLevel bdi {
+  color: inherit;
+}
+
+/* ---------- Stage ---------- */
+.stage {
+  position: relative;
+  background: color-mix(in srgb, var(--map-plain) 45%, var(--map-ink));
+}
+.stage::after {
+  /* Parchment vignette and gold hairline frame; purely decorative. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent),
+    inset 0 0 70px color-mix(in srgb, var(--map-ink) 55%, transparent);
+}
 .viewport {
   overflow: auto;
-  max-block-size: 650px;
   direction: ltr;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .scene {
   position: relative;
-  inline-size: 100%;
+  margin-inline: auto;
+  inline-size: max(min(100%, 720px), calc(var(--span) * 48px));
+  aspect-ratio: 1;
+  overflow: hidden;
   isolation: isolate;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.scene:active {
+  cursor: grabbing;
+}
+.pan {
+  position: absolute;
+  inset: 0;
+  transition: transform 240ms var(--map-ease);
+  will-change: transform;
 }
 .artwork {
   position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
+  overflow: visible;
 }
 .hitLayer {
   position: absolute;
   inset: 0;
   display: grid;
 }
+
+/* ---------- Cells ---------- */
 .tile {
   background: transparent;
   border: 0;
@@ -71,15 +149,19 @@
   cursor: pointer;
   color: var(--foreground);
   font: inherit;
+  transition: background-color 140ms ease;
 }
 .tile:disabled {
   cursor: default;
+  pointer-events: none;
 }
 .tile:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  background: color-mix(in srgb, var(--map-focus) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--map-focus) 55%, transparent);
 }
 .tile:focus-visible,
 .navigation button:focus-visible,
+.beacon:focus-visible,
 .viewport:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: -3px;
@@ -87,70 +169,231 @@
 .coordinate {
   display: none;
   position: absolute;
-  inset-block-start: 2px;
+  inset-block-start: 3px;
   inset-inline: 0;
+  z-index: 2;
   margin: auto;
   inline-size: max-content;
-  font-size: 0.62rem;
-  padding: 0.15rem 0.3rem;
-  background: var(--background);
-  border-radius: 3px;
+  gap: 0.3rem;
+  align-items: center;
+  font-size: 0.6rem;
+  line-height: 1.3;
+  padding: 0.12rem 0.35rem;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+  direction: rtl;
+  pointer-events: none;
+}
+.coordinate span {
+  color: var(--muted-foreground);
 }
 .tile:hover .coordinate,
 .tile:focus-visible .coordinate,
 .tile[aria-pressed='true'] .coordinate {
-  display: block;
+  display: inline-flex;
+}
+.tile[aria-pressed='true'] .coordinate {
+  border-color: var(--map-focus);
 }
 .villageName {
   position: absolute;
-  inset-block-end: 0;
+  inset-block-end: 1px;
   inset-inline: 0;
+  z-index: 1;
   margin-inline: auto;
-  max-inline-size: 105%;
+  max-inline-size: 112%;
   inline-size: max-content;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.6rem;
-  padding: 0.2rem 0.35rem;
+  font-weight: 600;
+  padding: 0.14rem 0.4rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--background);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--background) 90%, transparent);
   direction: rtl;
+  pointer-events: none;
 }
 .tile[data-own='true'] .villageName {
   color: var(--gold);
   border-color: var(--gold);
+  font-weight: 700;
 }
-.hint {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  line-height: 1.8;
-  padding: 0.7rem;
-  margin: 0;
+/* Dense zoom levels keep only the player's own and the active plates to avoid clutter. */
+.scene[data-dense='true']
+  .tile:not([data-own='true']):not([aria-pressed='true']):not(:hover):not(:focus-visible)
+  .villageName {
+  display: none;
 }
-.shadow {
-  fill: var(--kingdoms-terrain-shadow);
-  opacity: 0.2;
+.rulers span {
+  position: absolute;
+  translate: -50% 0;
+  padding: 0.05rem 0.2rem;
+  font-size: 0.55rem;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background: color-mix(in srgb, var(--map-ink) 55%, transparent);
+  border-radius: 0 0 3px 3px;
+  pointer-events: none;
 }
-.trunk {
+.rulers span[data-axis='y'] {
+  translate: 0 -50%;
+  border-radius: 0 3px 3px 0;
+}
+.routeLabel {
+  position: absolute;
+  translate: -50% -50%;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--background);
+  background: var(--map-focus);
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--map-ink) 60%, transparent);
+  white-space: nowrap;
+  direction: rtl;
+  pointer-events: none;
+}
+
+/* ---------- Overlays ---------- */
+.beacon {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  translate: -50% -50%;
+  border: 2px solid var(--map-other);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--background) 86%, transparent);
+  color: var(--map-focus);
+  cursor: pointer;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--map-ink) 70%, transparent);
+}
+.beacon[data-kind='home'] {
+  border-color: var(--map-own);
+  color: var(--map-own);
+}
+.compass {
+  position: absolute;
+  inset-block-start: 0.6rem;
+  right: 0.6rem;
+  inline-size: 46px;
+  block-size: 46px;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--map-ink) 70%, transparent));
+}
+.compassRing {
+  fill: color-mix(in srgb, var(--background) 70%, transparent);
+  stroke: var(--gold);
+  stroke-width: 1.2;
+}
+.compassNeedle {
+  fill: color-mix(in srgb, var(--foreground) 55%, transparent);
+}
+.compassNorth {
+  fill: var(--gold);
+}
+.compassText {
+  fill: var(--foreground);
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: var(--background);
+  stroke-width: 2px;
+}
+.overview {
+  position: absolute;
+  inset-block-end: 0.6rem;
+  left: 0.6rem;
+  z-index: 3;
+  inline-size: 112px;
+  block-size: 112px;
+  padding: 3px;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  cursor: pointer;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--map-ink) 60%, transparent);
+  opacity: 0.92;
+}
+.overview svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.overviewFrame {
+  fill: color-mix(in srgb, var(--map-focus) 18%, transparent);
+  stroke: var(--map-focus);
+}
+.forestMini {
+  fill: var(--map-forest);
+}
+.steppeMini {
+  fill: var(--map-steppe);
+}
+.hillsMini {
+  fill: var(--map-hills);
+}
+.mountainMini {
+  fill: var(--map-mountain);
+}
+.riverMini {
   fill: none;
-  stroke: var(--kingdoms-terrain-trunk);
-  stroke-width: 4;
+  stroke: var(--map-water);
 }
-.tree {
-  fill: var(--kingdoms-terrain-tree);
+.ownDot {
+  fill: var(--map-own);
+  stroke: var(--map-ink);
+  stroke-width: 0.3;
 }
-.treeLight {
-  fill: var(--kingdoms-terrain-tree-light);
+.otherDot {
+  fill: var(--map-other);
 }
-.forestFloor {
-  fill: var(--terrain-forest);
-  opacity: 0.13;
+
+/* ---------- Terrain artwork ---------- */
+.ground {
+  fill: var(--map-plain);
 }
-.meadowPatch {
-  fill: var(--kingdoms-terrain-meadow-patch);
-  opacity: 0.11;
+.forestCore {
+  stop-color: var(--map-forest);
+  stop-opacity: 0.75;
+}
+.forestEdge {
+  stop-color: var(--map-forest);
+  stop-opacity: 0;
+}
+.steppeCore {
+  stop-color: var(--map-steppe);
+  stop-opacity: 0.85;
+}
+.steppeEdge {
+  stop-color: var(--map-steppe);
+  stop-opacity: 0;
+}
+.hillsCore {
+  stop-color: var(--map-hills);
+  stop-opacity: 0.8;
+}
+.hillsEdge {
+  stop-color: var(--map-hills);
+  stop-opacity: 0;
+}
+.mountainCore {
+  stop-color: var(--map-mountain);
+  stop-opacity: 0.95;
+}
+.mountainEdge {
+  stop-color: var(--map-mountain);
+  stop-opacity: 0;
 }
 .grassMark {
   fill: none;
@@ -158,14 +401,53 @@
   stroke-width: 0.8;
   opacity: 0.3;
 }
-.contour {
+.contourFaint,
+.contour,
+.contourIndex {
   fill: none;
-  stroke: var(--kingdoms-terrain-contour);
-  stroke-width: 2;
+  stroke: var(--kingdoms-terrain-mountain-shade);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.contourFaint {
+  stroke-width: 1;
+  opacity: 0.3;
+  stroke-dasharray: 3 4;
+}
+.contour {
+  stroke-width: 1.3;
+  opacity: 0.45;
+}
+.contourIndex {
+  stroke-width: 2.2;
   opacity: 0.6;
 }
+.grid {
+  fill: none;
+  stroke: var(--map-ink);
+  stroke-width: 1;
+  opacity: 0.14;
+}
+.shadow {
+  fill: var(--map-ink);
+  opacity: 0.22;
+}
+.trunk {
+  fill: none;
+  stroke: var(--kingdoms-terrain-trunk);
+  stroke-width: 3.5;
+}
+.tree {
+  fill: var(--kingdoms-terrain-tree);
+}
+.treeLight {
+  fill: var(--kingdoms-terrain-tree-light);
+}
+.treeShade {
+  fill: color-mix(in srgb, var(--kingdoms-terrain-tree) 72%, var(--map-ink));
+}
 .mountain {
-  fill: var(--terrain-stone);
+  fill: var(--kingdoms-terrain-stone);
 }
 .mountainShade {
   fill: var(--kingdoms-terrain-mountain-shade);
@@ -176,26 +458,111 @@
 .snow {
   fill: var(--kingdoms-terrain-snow);
 }
+.hill {
+  fill: color-mix(in srgb, var(--map-hills) 80%, var(--kingdoms-terrain-mountain-light));
+}
+.hillShade {
+  fill: color-mix(in srgb, var(--map-hills) 70%, var(--map-ink));
+  opacity: 0.55;
+}
+.tuft {
+  fill: none;
+  stroke: var(--kingdoms-terrain-grass);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+.rock {
+  fill: var(--kingdoms-terrain-mountain-shade);
+  stroke: var(--map-ink);
+  stroke-width: 0.8;
+  stroke-opacity: 0.4;
+}
+.field {
+  fill: var(--kingdoms-terrain-meadow-patch);
+  opacity: 0.85;
+}
+.furrow {
+  fill: none;
+  stroke: var(--kingdoms-terrain-earth);
+  stroke-width: 1.4;
+}
 .riverBank {
   fill: none;
   stroke: var(--kingdoms-terrain-river-bank);
-  stroke-width: 34;
+  stroke-width: 36;
   stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
 }
 .river {
   fill: none;
-  stroke: var(--terrain-water);
+  stroke: var(--map-water);
   stroke-width: 24;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .riverShine {
   fill: none;
   stroke: var(--kingdoms-terrain-river-shine);
-  stroke-width: 4;
-  opacity: 0.7;
+  stroke-width: 3;
+  stroke-dasharray: 18 26;
+  opacity: 0.75;
 }
+.outside {
+  fill: var(--kingdoms-terrain-outside);
+  opacity: 0.82;
+}
+.worldEdge {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 3;
+  stroke-dasharray: 12 6;
+  opacity: 0.8;
+}
+
+/* ---------- Ownership ---------- */
+.claim[data-side='own'] {
+  --claim: var(--map-own);
+}
+.claim[data-side='other'] {
+  --claim: var(--map-claim);
+}
+.claimTint {
+  fill: var(--claim);
+  opacity: 0.16;
+}
+.claimHatch {
+  opacity: 0.55;
+}
+.hatch {
+  stroke: var(--map-ink);
+  stroke-width: 1.2;
+  opacity: 0.35;
+}
+.claimBorder {
+  fill: none;
+  stroke: var(--claim);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+.claimMarker[data-side='own'] .claimFlag {
+  fill: var(--map-own);
+}
+.claimFlag {
+  fill: var(--map-claim);
+  stroke: var(--map-ink);
+  stroke-width: 0.8;
+}
+
+/* ---------- Settlements ---------- */
 .castleGround {
   fill: var(--kingdoms-terrain-castle-ground);
+}
+.ownGround {
+  fill: color-mix(in srgb, var(--kingdoms-terrain-castle-ground) 80%, var(--map-own));
+  stroke: var(--map-own);
+  stroke-width: 1.5;
 }
 .castleWall {
   fill: var(--kingdoms-terrain-castle-wall);
@@ -208,6 +575,11 @@
 .roof {
   fill: var(--kingdoms-terrain-roof);
 }
+.dome {
+  fill: var(--map-own);
+  stroke: var(--kingdoms-terrain-castle-outline);
+  stroke-width: 1.2;
+}
 .gate {
   fill: var(--kingdoms-terrain-gate);
 }
@@ -216,55 +588,82 @@
   stroke: var(--kingdoms-terrain-gate);
   stroke-width: 2.5;
 }
-.flag {
-  fill: var(--kingdoms-terrain-other-banner);
+.ownFlag {
+  fill: var(--map-own);
+  stroke: var(--kingdoms-terrain-castle-outline);
+  stroke-width: 0.8;
 }
-.fortress[data-own='true'] .flag {
-  fill: var(--kingdoms-terrain-own-banner);
+.otherFlag {
+  fill: var(--map-other);
 }
-.claimFlag {
-  fill: var(--kingdoms-terrain-claim-banner);
+.ownRing {
+  fill: color-mix(in srgb, var(--map-own) 16%, transparent);
+  stroke: var(--map-own);
+  stroke-width: 3;
+  opacity: 0.9;
 }
-.outside {
-  fill: var(--kingdoms-terrain-outside);
-  opacity: 0.75;
+
+/* ---------- Destination & route ---------- */
+.selectionHalo {
+  fill: color-mix(in srgb, var(--map-focus) 22%, transparent);
 }
 .selection {
   fill: none;
-  stroke: var(--kingdoms-terrain-selection);
+  stroke: var(--map-focus);
   stroke-width: 3;
   stroke-dasharray: 5 3;
+  animation: selectionDash 1.2s linear infinite;
 }
-@media (max-width: 700px) {
-  .viewport {
-    max-block-size: 520px;
-  }
-  .controls {
-    gap: 0.25rem;
-  }
-  .controls > bdi {
-    order: 3;
-    inline-size: 100%;
-    text-align: center;
-  }
+.bracket {
+  fill: none;
+  stroke: var(--map-focus);
+  stroke-width: 4;
+  stroke-linecap: square;
+  filter: drop-shadow(0 1px 0 var(--map-ink));
+}
+.routeCasing {
+  fill: none;
+  stroke: var(--map-ink);
+  stroke-width: 7;
+  stroke-linecap: round;
+  opacity: 0.45;
 }
 .route {
   fill: none;
-  stroke: var(--kingdoms-terrain-selection);
-  stroke-width: 2;
-  stroke-dasharray: 6 5;
-  pointer-events: none;
+  stroke: var(--map-focus);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 10 8;
+  animation: routeFlow 1.4s linear infinite;
+}
+.arrowHead {
+  fill: var(--map-focus);
+}
+@keyframes selectionDash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+@keyframes routeFlow {
+  to {
+    stroke-dashoffset: -36;
+  }
 }
 
+/* ---------- Legend ---------- */
 .legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0.5rem 0.7rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0.7rem;
   font-size: 0.72rem;
   color: var(--muted-foreground);
   border-block-start: 1px solid var(--border);
+}
+.legend p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  margin: 0;
 }
 .legend span {
   display: inline-flex;
@@ -272,34 +671,89 @@
   gap: 0.35rem;
 }
 .legend i {
-  inline-size: 10px;
-  block-size: 10px;
+  inline-size: 12px;
+  block-size: 12px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+.legend [data-key='own'] i {
+  background: var(--map-own);
   border-radius: 50%;
-  background: var(--kingdoms-terrain-other-banner);
 }
-.legend [data-own='true'] i {
-  background: var(--kingdoms-terrain-own-banner);
+.legend [data-key='other'] i {
+  background: var(--map-other);
+  border-radius: 50%;
 }
-.legend [data-kind='claim'] i {
-  background: var(--kingdoms-terrain-claim-banner);
+.legend [data-key='claim-own'] i {
+  background: color-mix(in srgb, var(--map-own) 35%, transparent);
+  border: 2px solid var(--map-own);
 }
-.ownRing {
-  fill: none;
-  stroke: var(--kingdoms-terrain-own-banner);
-  stroke-width: 3;
-  opacity: 0.85;
-  pointer-events: none;
+.legend [data-key='claim'] i {
+  background: color-mix(in srgb, var(--map-claim) 35%, transparent);
+  border: 2px solid var(--map-claim);
 }
-.selection {
-  animation: selectionDash 1.2s linear infinite;
+.legend [data-key='route'] i {
+  block-size: 0;
+  inline-size: 18px;
+  border: 0;
+  border-block-start: 3px dashed var(--map-focus);
+  border-radius: 0;
 }
-@keyframes selectionDash {
-  to {
-    stroke-dashoffset: -16;
+.legend [data-terrain='plain'] i {
+  background: var(--map-plain);
+}
+.legend [data-terrain='steppe'] i {
+  background: var(--map-steppe);
+}
+.legend [data-terrain='forest'] i {
+  background: var(--map-forest);
+}
+.legend [data-terrain='hills'] i {
+  background: var(--map-hills);
+}
+.legend [data-terrain='mountain'] i {
+  background: var(--map-mountain);
+}
+.legend [data-terrain='river'] i {
+  background: var(--map-water);
+}
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  line-height: 1.8;
+  padding: 0.7rem;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .controls {
+    gap: 0.25rem;
+  }
+  .readout {
+    order: 3;
+    inline-size: 100%;
+    justify-content: center;
+  }
+  .overview {
+    display: none;
+  }
+  .compass {
+    inline-size: 38px;
+    block-size: 38px;
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .selection {
+  .pan,
+  .tile,
+  .navigation button {
+    transition: none;
+  }
+  .navigation button:hover:not(:disabled) {
+    transform: none;
+  }
+  .selection,
+  .route {
     animation: none;
   }
 }
