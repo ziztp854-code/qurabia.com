@@ -328,6 +328,18 @@
 
 /* Illustrated Kingdoms atlas pigments, separate from interface theme colors. */
 :root {
+  /* Approved Kingdoms command-deck reference, scoped to the playing surface. */
+  --kingdoms-ui-background: #061018;
+  --kingdoms-ui-surface: #091a26;
+  --kingdoms-ui-surface-strong: #102638;
+  --kingdoms-ui-surface-soft: #07151f;
+  --kingdoms-ui-foreground: #fff8e9;
+  --kingdoms-ui-muted: #c4b9a1;
+  --kingdoms-ui-gold: #f5c66a;
+  --kingdoms-ui-success: #66bb6a;
+  --kingdoms-ui-danger: #ef5350;
+  --kingdoms-ui-border: #315166;
+  --kingdoms-ui-border-gold: #a97d3c;
   --kingdoms-terrain-meadow: #abb97a;
   --kingdoms-terrain-earth: #87975e;
   --kingdoms-terrain-forest: #547344;

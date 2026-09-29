@@ -140,6 +140,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
   };
   const initial = await read();
   expect(initial.villages).toHaveLength(1);
+  await page.getByRole('button', { name: 'القرية', exact: true }).click();
   const villageMap = page.getByRole('region', { name: 'خريطة القرية' });
   await expect(villageMap).toBeVisible();
   await expect

@@ -19,10 +19,20 @@ const missionLabels = {
   return: 'عودة',
 };
 type March = Extract<KingdomsCommand, { type: 'march' }>;
+export type MapSelection = {
+  center: { x: number; y: number };
+  target: { x: number; y: number };
+};
 
-export function MapPanel({ view, village, busy, send }: GameProps) {
-  const [center, setCenter] = useState({ x: village.x, y: village.y });
-  const [target, setTarget] = useState({ x: village.x, y: village.y });
+export function MapPanel({
+  view,
+  village,
+  busy,
+  send,
+  initialSelection,
+}: GameProps & { initialSelection?: MapSelection | null }) {
+  const [center, setCenter] = useState(initialSelection?.center ?? { x: village.x, y: village.y });
+  const [target, setTarget] = useState(initialSelection?.target ?? { x: village.x, y: village.y });
   const [query, setQuery] = useState('');
   const villages = view.map
     .filter((item) => `${item.name} ${item.kingdomName}`.includes(query.trim()))
