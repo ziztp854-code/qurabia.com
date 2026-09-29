@@ -45,7 +45,7 @@ describe('village maps', () => {
     const map = screen.getByRole('region', { name: 'خريطة القرية' });
     expect(within(map).getByRole('button', { name: /دار الحكم.*المستوى ١/ })).toBeInTheDocument();
     fireEvent.click(within(map).getByRole('button', { name: /الثكنة.*لم يُبنَ/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'طوّر المبنى' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ابنِ المبنى' }));
     expect(send).toHaveBeenCalledWith({
       type: 'build',
       villageId: view.villages[0].id,
@@ -61,7 +61,7 @@ describe('village maps', () => {
     };
     render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
     fireEvent.click(screen.getByRole('button', { name: /مزارع الغذاء.*قيد التطوير/ }));
-    expect(screen.getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'ابنِ المبنى' })).toBeDisabled();
   });
 
   it('links the village map and the building rail to the stage ladder', () => {
