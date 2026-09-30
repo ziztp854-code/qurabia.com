@@ -147,6 +147,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
     .poll(() =>
       villageMap
         .locator('img')
+        .first()
         .evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
     )
     .toBe(true);
@@ -156,10 +157,8 @@ test('administrator opens a world; a signed-in player builds and trains with per
     path: testInfo.outputPath('kingdoms-authenticated-village.png'),
     fullPage: true,
   });
-  const barracks = page
-    .locator('article')
-    .filter({ has: page.getByRole('heading', { name: 'الثكنة', exact: true }) });
-  await barracks.getByRole('button', { name: 'طوّر المبنى' }).click();
+  const barracks = page.getByRole('article', { name: 'المبنى المختار: الثكنة' });
+  await barracks.getByRole('button', { name: 'ابنِ المبنى', exact: true }).click();
   await expect.poll(async () => (await read()).villages[0].buildings.barracks).toBe(1);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
@@ -181,8 +180,8 @@ test('administrator opens a world; a signed-in player builds and trains with per
   expect(rejected.status()).toBe(403);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
-  await page.getByRole('button', { name: 'خريطة العالم' }).click();
-  await expect(page.getByRole('heading', { name: 'أطلس الممالك' })).toBeVisible();
+  await page.getByRole('button', { name: 'خريطة العالم', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'خريطة العالم', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'تكبير الخريطة', exact: true }).click();
   await page.getByRole('button', { name: 'تحريك الخريطة شرقًا', exact: true }).click();
   await page.getByRole('button', { name: 'تصغير الخريطة', exact: true }).click();
