@@ -18,6 +18,26 @@ export type Building = (typeof buildingKeys)[number];
 export const unitKeys = ['guard', 'rider', 'scout', 'settler'] as const;
 export type Unit = (typeof unitKeys)[number];
 export type Troops = Record<Unit, number>;
+export const commanderSpecializations = ['cavalry', 'infantry', 'archery', 'siege', 'defense', 'supply'] as const;
+export type CommanderSpecialization = (typeof commanderSpecializations)[number];
+export type Commander = {
+  id: string; playerId: string; name: string; level: number; experience: number;
+  specialization: CommanderSpecialization;
+  attack: number; defense: number; mobility: number; siege: number; logistics: number;
+  status: 'available' | 'assigned' | 'marching' | 'deployed';
+  villageId?: string; homeVillageId?: string; cooldownUntil?: number;
+};
+export type CommanderView = Commander & { rankKey: string; nextLevelExperience: number | null };
+export type CommanderConfig = {
+  maxPerPlayer: number; maxLevel: number; recruitmentCost: Resources; maxBonus: number;
+  xpBase: number; xpGrowth: number; statBase: number; statPerLevel: number;
+  ranks: { minLevel: number; key: string }[];
+  specializations: Record<CommanderSpecialization, { key: string }>;
+  battleXp: number; victoryXp: number; casualtyXp: number; minCasualties: number;
+  pairCooldownSeconds: number; xpWindowSeconds: number; xpWindowCap: number;
+  recoverySeconds: number; questXp: number;
+};
+export type CommanderAward = { eventId: string; playerId: string; opponentId: string; at: number; xp: number };
 export type Mission =
   'attack' | 'raid' | 'scout' | 'reinforce' | 'settle' | 'occupy' | 'gather' | 'return';
 export type ResourceSiteKind = 'wood' | 'iron' | 'food';
@@ -32,6 +52,7 @@ export type ResourceSiteView = {
   regenerationPerHour: number;
 };
 export type KingdomsConfig = {
+  commanders?: CommanderConfig;
   worldRadius: number;
   seasonSeconds: number;
   protectionSeconds: number;
@@ -97,6 +118,8 @@ export type AllianceEventView = {
   contributors: { id: string; name: string; points: number }[];
 };
 export type Village = {
+  commanderId?: string;
+  reinforcementCommanders?: Record<string, string>;
   id: string;
   ownerId: string;
   name: string;
@@ -129,6 +152,7 @@ export type KingdomPlayer = {
   throne: number;
 };
 export type Movement = {
+  commanderId?: string;
   gather?: { siteId: string; resource: ResourceSiteKind };
   id: string;
   ownerId: string;
@@ -175,6 +199,8 @@ export type Offer = {
   createdAt: number;
 };
 export type KingdomsWorld = {
+  commanders?: Record<string, Commander>;
+  commanderAwards?: CommanderAward[];
   resourceSiteStocks?: Record<string, { available: number; updatedAt: number }>;
   version: 1;
   nextId: number;
@@ -197,6 +223,7 @@ export type KingdomsWorld = {
   };
 };
 export type KingdomsView = {
+  commanders?: CommanderView[];
   resourceSites?: ResourceSiteView[];
   allianceEvent?: AllianceEventView | null;
   serverNow: number;

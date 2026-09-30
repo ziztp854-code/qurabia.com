@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import { resolveRealtimeNamespaceUrl } from '@/components/special-games/realtime-url';
 import type { KingdomsCommand } from '@/lib/kingdoms/commands';
 import type { WorldView } from './shared';
+import { commanderText } from './commander-ui';
 
 export type WorldSummary = {
   id: string;
@@ -18,6 +19,12 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) {
     const message = typeof payload?.error === 'string' ? payload.error : payload?.error?.message;
+    if (typeof message === 'string' && message.startsWith('commander.error.')) {
+      const translated = commanderText(message);
+      throw new Error(
+        translated === message ? commanderText('commander.error.unavailable') : translated,
+      );
+    }
     throw new Error(message || 'تعذر الاتصال بالعالم. تحقق من الاتصال ثم أعد المحاولة.');
   }
   return payload.data as T;

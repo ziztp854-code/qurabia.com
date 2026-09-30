@@ -6,6 +6,8 @@ import {
   resourceSiteSupply,
 } from './resource-sites';
 import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config';
+import { addCommanderExperience, availableCommander, commanderConfig, createCommander, normalizeCommanders, projectCommanders, setCommander } from './commanders';
+import { commanderTravelFactor } from './commander-movement';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
   advanceDraft,
@@ -60,6 +62,8 @@ export function createWorld(
     alliances: {},
     offers: [],
     territories: {},
+    commanders: {},
+    commanderAwards: [],
     season: {
       number: 1,
       startsAt: now,
@@ -71,6 +75,7 @@ export function createWorld(
 export function advanceWorld(state: KingdomsWorld, now: number): KingdomsWorld {
   assertRule(Number.isSafeInteger(now) && now >= 0 && now <= 8e12, 'وقت غير صالح');
   const w = clone(state);
+  normalizeCommanders(w);
   advanceDraft(w, Math.max(now, w.updatedAt));
   return w;
 }
@@ -204,13 +209,18 @@ function march(
     'بلغت الحد الأعلى للحركات',
   );
   const target = Object.values(w.villages).find((t) => t.x === c.targetX && t.y === c.targetY);
+  const commander = c.commanderId ? availableCommander(w, actor, c.commanderId, at) : undefined;
+  if (commander) {
+    assertRule(commander.status !== 'assigned' || commander.villageId === v.id, 'commander.error.wrongOrigin');
+    if (c.mission === 'reinforce') assertRule(!target?.reinforcementCommanders?.[v.id] && !w.movements.some((m) => m.commanderId && m.sourceId === v.id && m.mission === 'reinforce' && m.targetX === c.targetX && m.targetY === c.targetY), 'commander.error.garrisonOccupied');
+  }
   const site = resourceSiteAt(w.config.worldRadius, c.targetX, c.targetY);
   if (c.mission === 'gather') {
     assertRule(
       site && !target && !w.territories[`${c.targetX},${c.targetY}`],
       'اختر موقع موارد متاحًا',
     );
-    const preview = gatherPreview(w.config, v, { x: c.targetX, y: c.targetY }, c.troops);
+    const preview = gatherPreview(w.config, v, { x: c.targetX, y: c.targetY }, c.troops, commander);
     assertRule(preview.carry > 0, 'تحتاج قوات لها سعة حمل لجمع الموارد');
     assertRule(
       Math.floor(resourceSiteSupply(w, c.targetX, c.targetY, at)) > 0,
@@ -273,14 +283,19 @@ function march(
   const travelMs = Math.max(
     1000,
     Math.ceil(
-      (Math.hypot(c.targetX - v.x, c.targetY - v.y) * w.config.secondsPerTile * 1000) / speed,
+      (Math.hypot(c.targetX - v.x, c.targetY - v.y) * w.config.secondsPerTile * 1000) / (speed * commanderTravelFactor(w.config, commander)),
     ),
   );
   deadline(at, travelMs);
   v.troops = Object.fromEntries(
     unitKeys.map((k) => [k, v.troops[k] - c.troops[k]]),
   ) as Village['troops'];
+  if (commander) {
+    if (v.commanderId === commander.id) delete v.commanderId;
+    setCommander(w, { ...commander, status: 'marching', villageId: v.id, homeVillageId: v.id });
+  }
   w.movements.push({
+    ...(commander ? { commanderId: commander.id } : {}),
     ...(c.mission === 'gather' && site
       ? { gather: { siteId: site.id, resource: site.resource } }
       : {}),
@@ -496,6 +511,10 @@ function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { ty
   p.achievements = [...new Set([...p.achievements, c.mission])];
   p.score += w.config.questScore;
   credit(w, villages[0], w.config.questReward);
+  if (c.mission === 'commander') {
+    const commanderId = villages.find((v) => v.commanderId && total(v.troops) >= 10)?.commanderId;
+    if (commanderId && w.commanders?.[commanderId]?.playerId === actor) addCommanderExperience(w, commanderId, commanderConfig(w).questXp);
+  }
 }
 function claimAllianceEvent(
   w: KingdomsWorld,
@@ -533,13 +552,15 @@ function recall(
     host = w.villages[c.hostVillageId],
     troops = host?.reinforcements[home.id];
   assertRule(troops && total(troops) > 0, 'لا توجد تعزيزات قابلة للاستدعاء');
+  const recalledCommanderId = host.reinforcementCommanders?.[home.id];
+  const recalledCommander = recalledCommanderId ? w.commanders?.[recalledCommanderId] : undefined;
   const speed = Math.min(
     ...unitKeys.filter((k) => troops[k] > 0).map((k) => w.config.units[k].speed),
   );
   const travelMs = Math.max(
     1000,
     Math.ceil(
-      (Math.hypot(home.x - host.x, home.y - host.y) * w.config.secondsPerTile * 1000) / speed,
+      (Math.hypot(home.x - host.x, home.y - host.y) * w.config.secondsPerTile * 1000) / (speed * commanderTravelFactor(w.config, recalledCommander)),
     ),
   );
   deadline(at, travelMs);
@@ -557,10 +578,17 @@ function recall(
       departedAt: at,
       arrivesAt: at + travelMs,
       loot: resources(),
+      ...(host.reinforcementCommanders?.[home.id] ? { commanderId: host.reinforcementCommanders[home.id] } : {}),
     },
     at,
   );
   delete host.reinforcements[home.id];
+  const commanderId = host.reinforcementCommanders?.[home.id];
+  if (commanderId) {
+    const commander = w.commanders?.[commanderId];
+    if (commander) setCommander(w, { ...commander, status: 'marching' });
+    delete host.reinforcementCommanders![home.id];
+  }
 }
 export function executeCommand(
   state: KingdomsWorld,
@@ -583,6 +611,32 @@ export function executeCommand(
     }
     assertRule(w.players[actorId], 'أنشئ مملكتك أولاً');
     switch (c.type) {
+      case 'commanderRecruit': {
+        const village = own(w, actorId, c.villageId);
+        const config = commanderConfig(w);
+        assertRule(Object.values(w.commanders ?? {}).filter((commander) => commander.playerId === actorId).length < config.maxPerPlayer, 'commander.error.limit');
+        spend(village, config.recruitmentCost);
+        const id = nextId(w, 'c');
+        setCommander(w, createCommander(w, id, actorId, c.name, c.specialization));
+        break;
+      }
+      case 'commanderAssign': {
+        const village = own(w, actorId, c.villageId);
+        const commander = availableCommander(w, actorId, c.commanderId, at);
+        assertRule(!village.commanderId || village.commanderId === commander.id, 'commander.error.villageOccupied');
+        for (const home of Object.values(w.villages)) if (home.commanderId === commander.id) delete home.commanderId;
+        village.commanderId = commander.id;
+        setCommander(w, { ...commander, villageId: village.id, homeVillageId: village.id, status: 'assigned' });
+        break;
+      }
+      case 'commanderUnassign': {
+        const commander = availableCommander(w, actorId, c.commanderId, at);
+        for (const village of Object.values(w.villages)) if (village.commanderId === commander.id) delete village.commanderId;
+        const { villageId: _village, homeVillageId: _home, ...rest } = commander;
+        void _village; void _home;
+        setCommander(w, { ...rest, status: 'available' });
+        break;
+      }
       case 'build':
         build(w, actorId, c, at);
         break;
@@ -655,6 +709,7 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
     villageCounts.set(village.ownerId, (villageCounts.get(village.ownerId) ?? 0) + 1);
   }
   return {
+    commanders: projectCommanders(w, actorId),
     serverNow: now,
     resourceSites: projectResourceSites(w, actorId, Math.max(now, w.updatedAt)),
     allianceEvent: projectAllianceEvent(w, actorId, Math.max(now, w.updatedAt)),

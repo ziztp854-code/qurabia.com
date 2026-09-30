@@ -7,6 +7,7 @@ import {
   resourceSiteSupply,
 } from './resource-sites';
 import { resources } from './config';
+import { awardBattleExperience, commanderCombatPower, releaseCommander, setCommander } from './commanders';
 import {
   buildingKeys,
   resourceKeys,
@@ -167,7 +168,10 @@ function accrue(w: KingdomsWorld, to: number) {
 }
 export function returnMovement(w: KingdomsWorld, m: Movement, at: number) {
   const home = w.villages[m.sourceId];
-  if (!home || !total(m.troops)) return;
+  if (!home || !total(m.troops)) {
+    releaseCommander(w, m.commanderId, at, true);
+    return;
+  }
   w.movements.push({
     ...m,
     id: nextId(w, 'm'),
@@ -184,6 +188,7 @@ const survivors = (t: Troops, loss: number): Troops =>
   ) as Troops;
 function combat(w: KingdomsWorld, m: Movement, v: Village, at: number) {
   const before = { ...v.troops };
+  const reinforcementsBefore = v.reinforcements;
   const owners = Object.entries(v.reinforcements)
     .filter(([, troops]) => total(troops) > 0)
     .map(([id]) => w.villages[id]?.ownerId)
@@ -192,9 +197,16 @@ function combat(w: KingdomsWorld, m: Movement, v: Village, at: number) {
     (acc, t) => Object.fromEntries(unitKeys.map((k) => [k, acc[k] + t[k]])) as Troops,
     before,
   );
-  const attack = unitKeys.reduce((s, k) => s + m.troops[k] * w.config.units[k].attack, 0);
+  const attackerCommander = m.commanderId ? w.commanders?.[m.commanderId] : undefined;
+  const defenseCommander = v.commanderId ? w.commanders?.[v.commanderId] : undefined;
+  const attack = commanderCombatPower(w, m.troops, 'attack', attackerCommander?.playerId === m.ownerId ? attackerCommander : undefined);
+  const reinforcementPower = Object.entries(v.reinforcements).reduce((sum, [sourceId, troops]) => {
+    const id = v.reinforcementCommanders?.[sourceId];
+    const commander = id ? w.commanders?.[id] : undefined;
+    return sum + commanderCombatPower(w, troops, 'defense', commander?.playerId === w.villages[sourceId]?.ownerId ? commander : undefined);
+  }, 0);
   const defense =
-    unitKeys.reduce((s, k) => s + defenders[k] * w.config.units[k].defense, 0) *
+    (commanderCombatPower(w, before, 'defense', defenseCommander?.playerId === v.ownerId ? defenseCommander : undefined) + reinforcementPower) *
     (1 + v.buildings.wall * w.config.wallDefensePerLevel);
   const won = attack > defense;
   const attackLoss =
@@ -219,6 +231,29 @@ function combat(w: KingdomsWorld, m: Movement, v: Village, at: number) {
     (acc, t) => Object.fromEntries(unitKeys.map((k) => [k, acc[k] + t[k]])) as Troops,
     { ...v.troops },
   );
+  const defenderCommanders = [
+    ...(v.commanderId ? [{ commanderId: v.commanderId, casualties: total(before) - total(v.troops) }] : []),
+    ...Object.entries(v.reinforcementCommanders ?? {}).map(([sourceId, commanderId]) => ({
+      commanderId,
+      casualties: total(reinforcementsBefore[sourceId] ?? emptyTroops()) - total(v.reinforcements[sourceId] ?? emptyTroops()),
+    })),
+  ];
+  const enemyDefenderLoss = total(before) - total(v.troops) + Object.entries(reinforcementsBefore)
+    .filter(([sourceId]) => w.villages[sourceId]?.ownerId !== m.ownerId)
+    .reduce((sum, [sourceId, troops]) => sum + total(troops) - total(v.reinforcements[sourceId] ?? emptyTroops()), 0);
+  awardBattleExperience(w, m.id, at, m.ownerId, v.ownerId, m.commanderId, defenderCommanders,
+    total(m.troops) - total(remaining), enemyDefenderLoss, won);
+  // A defeated contingent releases its commander with recovery, without resurrecting units.
+  if (v.commanderId && total(v.troops) === 0) {
+    releaseCommander(w, v.commanderId, at, true);
+    delete v.commanderId;
+  }
+  for (const [sourceId, commanderId] of Object.entries(v.reinforcementCommanders ?? {})) {
+    if (!v.reinforcements[sourceId]) {
+      releaseCommander(w, commanderId, at, true);
+      delete v.reinforcementCommanders![sourceId];
+    }
+  }
   const carry = unitKeys.reduce((s, k) => s + remaining[k] * w.config.units[k].carry, 0);
   const available = total(v.resources);
   const loot = Object.fromEntries(
@@ -252,6 +287,7 @@ function combat(w: KingdomsWorld, m: Movement, v: Village, at: number) {
 function arrive(w: KingdomsWorld, m: Movement, at: number) {
   const target = Object.values(w.villages).find((v) => v.x === m.targetX && v.y === m.targetY);
   if (m.mission === 'return') {
+    releaseCommander(w, m.commanderId, at);
     const home = w.villages[m.sourceId];
     if (home?.ownerId === m.ownerId) {
       const before = m.gather ? home.resources[m.gather.resource] : 0;
@@ -325,6 +361,7 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
       const v = makeVillage(w, m.ownerId, `قرية ${count + 1}`, m.targetX, m.targetY, at, false);
       v.troops = { ...m.troops, settler: m.troops.settler - 1 };
       w.villages[v.id] = v;
+      releaseCommander(w, m.commanderId, at);
       w.players[m.ownerId].achievements = [
         ...new Set([...w.players[m.ownerId].achievements, 'founder']),
       ];
@@ -356,6 +393,13 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
       target.reinforcements[m.sourceId] = Object.fromEntries(
         unitKeys.map((k) => [k, old[k] + m.troops[k]]),
       ) as Troops;
+      if (m.commanderId) {
+        const commander = w.commanders?.[m.commanderId];
+        if (commander && commander.playerId === m.ownerId) {
+          target.reinforcementCommanders = { ...target.reinforcementCommanders, [m.sourceId]: commander.id };
+          setCommander(w, { ...commander, status: 'deployed', villageId: target.id, homeVillageId: m.sourceId });
+        }
+      }
       report(w, at, [m.ownerId, target.ownerId], 'وصول تعزيزات', 'وصل الجيش للدفاع عن القرية');
       return;
     }

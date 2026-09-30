@@ -84,17 +84,20 @@ export function CommandForm({
   onSubmit,
   busy,
   label,
+  submitDisabled = false,
 }: {
   children: ReactNode;
   onSubmit: (data: FormData) => void;
   busy: boolean;
   label: string;
+  submitDisabled?: boolean;
 }) {
   return (
     <form
       className={styles.stack}
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (busy || submitDisabled) return;
         onSubmit(new FormData(event.currentTarget));
       }}
     >
@@ -104,7 +107,7 @@ export function CommandForm({
         style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
       >
         {children}
-        <Button type="submit" loading={busy}>
+        <Button type="submit" loading={busy} disabled={submitDisabled}>
           {label}
         </Button>
       </fieldset>

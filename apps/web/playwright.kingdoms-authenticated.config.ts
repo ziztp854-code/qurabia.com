@@ -21,7 +21,9 @@ export default defineConfig({
   testMatch: 'kingdoms-authenticated.spec.ts',
   fullyParallel: false,
   workers: 1,
-  timeout: 90000,
+  // The authenticated journey also recruits, assigns and returns a commander
+  // using the real server clock; allow its round trip after the existing UI checks.
+  timeout: 150000,
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   outputDir: './test-results/kingdoms-authenticated',
   webServer: {

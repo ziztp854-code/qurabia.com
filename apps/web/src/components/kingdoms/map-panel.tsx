@@ -10,6 +10,8 @@ import styles from './kingdoms.module.css';
 import { WorldMap } from './world-map';
 import { GatheringPanel, ResourceSiteDirectory } from './resource-site-panel';
 import mapStyles from './world-map.module.css';
+import { canSelectCommander, CommanderSelect } from './commander-select';
+import { commanderText } from './commander-ui';
 
 const missionLabels = {
   attack: 'هجوم',
@@ -38,6 +40,13 @@ export function MapPanel({
   const [target, setTarget] = useState(initialSelection?.target ?? { x: village.x, y: village.y });
   const [query, setQuery] = useState('');
   const [gatherFocus, setGatherFocus] = useState(false);
+  const [commanderId, setCommanderId] = useState('');
+  const commanderAvailable =
+    !commanderId ||
+    (view.commanders ?? []).some(
+      (commander) =>
+        commander.id === commanderId && canSelectCommander(commander, village.id, view.serverNow),
+    );
   const resourceSites = view.resourceSites ?? [];
   const villages = view.map
     .filter((item) => `${item.name} ${item.kingdomName}`.includes(query.trim()))
@@ -203,17 +212,23 @@ export function MapPanel({
               <p className={styles.muted}>
                 المسافة: {Math.hypot(target.x - village.x, target.y - village.y).toFixed(2)} خانة.
                 وقت الوصول يتحدد حسب أبطأ وحدة. التوسع يتطلب مستوطنًا وموارد التأسيس.
+                {commanderId && commanderAvailable && (
+                  <> {commanderText('commander.arrivalHint')}</>
+                )}
               </p>
               <CommandForm
                 busy={busy}
+                submitDisabled={!commanderAvailable}
                 label="أرسل الحملة"
                 onSubmit={(data) =>
+                  commanderAvailable &&
                   void send({
                     type: 'march',
                     villageId: village.id,
                     targetX: target.x,
                     targetY: target.y,
                     mission: String(data.get('mission')) as March['mission'],
+                    ...(commanderId ? { commanderId } : {}),
                     troops: {
                       guard: value(data, 'guard'),
                       rider: value(data, 'rider'),
@@ -232,6 +247,13 @@ export function MapPanel({
                       </option>
                     ))}
                 </Select>
+                <CommanderSelect
+                  view={view}
+                  villageId={village.id}
+                  value={commanderId}
+                  onChange={setCommanderId}
+                  disabled={busy}
+                />
                 <div className={styles.coordinates}>
                   {unitKeys.map((unit) => (
                     <Input
@@ -277,6 +299,17 @@ export function MapPanel({
                           (key) => `${number(movement.troops[key])} ${view.config.units[key].name}`,
                         )
                         .join(' · ')}
+                      {movement.commanderId && (
+                        <>
+                          {' · '}
+                          {commanderText('commander.select')}:{' '}
+                          <bdi>
+                            {view.commanders?.find(
+                              (commander) => commander.id === movement.commanderId,
+                            )?.name ?? '—'}
+                          </bdi>
+                        </>
+                      )}
                     </small>
                   </span>
                   <time dateTime={new Date(movement.arrivesAt).toISOString()}>

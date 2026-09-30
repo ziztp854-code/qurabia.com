@@ -276,7 +276,7 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                       }
                     />
                   )}
-                  {tab === 'army' && <ArmyPanel {...props} />}
+                  {tab === 'army' && <ArmyPanel key={`${view.worldId}:${village.id}`} {...props} />}
                   {tab === 'map' && (
                     <MapPanel
                       key={`${view.worldId}:${village.id}`}

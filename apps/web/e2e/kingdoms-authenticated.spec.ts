@@ -80,6 +80,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await signIn(admin, adminEmail);
   const config = {
     ...defaultKingdomsConfig,
+    secondsPerTile: 3,
     baseProduction: resources(),
     buildings: Object.fromEntries(
       Object.entries(defaultKingdomsConfig.buildings).map(([key, value]) => [
@@ -173,6 +174,24 @@ test('administrator opens a world; a signed-in player builds and trains with per
       config.buildings.barracks.cost.wood -
       config.units.guard.cost.wood * 2,
   );
+  const commanders = page.getByRole('region', { name: 'الأمراء والقادة', exact: true });
+  await expect(commanders).toBeVisible();
+  await commanders.getByLabel('اسم القائد').fill('بيبرس الرحلة');
+  await commanders.getByLabel('تخصص القائد').selectOption('infantry');
+  await commanders.getByRole('button', { name: 'وظّف القائد', exact: true }).click();
+  await expect.poll(async () => (await read()).commanders?.length).toBe(1);
+  const commanderId = (await read()).commanders![0].id;
+  await expect(
+    commanders.getByRole('heading', { name: 'بيبرس الرحلة', exact: true }),
+  ).toBeVisible();
+  await commanders.getByRole('button', { name: 'عيّن للدفاع هنا', exact: true }).click();
+  await expect.poll(async () => (await read()).villages[0].commanderId).toBe(commanderId);
+  await commanders.getByRole('button', { name: 'أخلِ التعيين', exact: true }).click();
+  await expect.poll(async () => (await read()).commanders![0].status).toBe('available');
+  await page.reload();
+  await page.getByLabel('العالم والموسم').selectOption(worldId);
+  await page.getByRole('button', { name: 'الجيش', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'بيبرس الرحلة', exact: true })).toBeVisible();
   const rejected = await page.request.post('/api/admin/kingdoms', {
     headers: { Origin: baseURL! },
     data: { action: 'pause', worldId, idempotencyKey: randomUUID(), paused: true },
@@ -182,6 +201,8 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await page.getByLabel('العالم والموسم').selectOption(worldId);
   await page.getByRole('button', { name: 'خريطة العالم', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'خريطة العالم', exact: true })).toBeVisible();
+  await page.getByLabel('قائد الحملة').selectOption(commanderId);
+  await expect(page.getByLabel('قائد الحملة')).toHaveValue(commanderId);
   await page.getByRole('button', { name: 'تكبير الخريطة', exact: true }).click();
   await page.getByRole('button', { name: 'تحريك الخريطة شرقًا', exact: true }).click();
   await page.getByRole('button', { name: 'تصغير الخريطة', exact: true }).click();
@@ -209,5 +230,35 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await page.screenshot({
     path: testInfo.outputPath('kingdoms-authenticated-map.png'),
     fullPage: true,
+  });
+  await page.getByRole('button', { name: /^غابة الخشب،.*X 2، Y 2$/ }).click();
+  const gathering = page.getByRole('region', { name: 'جمع الموارد', exact: true });
+  await gathering.getByLabel('قائد الحملة').selectOption(commanderId);
+  await gathering.getByLabel(/^حارس \(/).fill('1');
+  await gathering.getByRole('button', { name: 'أرسل الجيش لجمع الموارد', exact: true }).click();
+  await expect
+    .poll(async () =>
+      (await read()).movements.some((movement) => movement.commanderId === commanderId),
+    )
+    .toBe(true);
+  await expect.poll(async () => (await read()).commanders![0].status).toBe('marching');
+  await expect(
+    gathering.getByLabel('قائد الحملة').getByRole('option', { name: /بيبرس الرحلة/ }),
+  ).toHaveCount(0);
+  await expect
+    .poll(async () => (await read()).commanders![0].status, { timeout: 40000 })
+    .toBe('available');
+  expect((await read()).villages[0].troops.guard).toBe(2);
+  await page.getByRole('button', { name: 'الجيش', exact: true }).click();
+  // The existing client refreshes every 15 seconds when realtime is unavailable.
+  // Verify the displayed state catches up with the authoritative return as well.
+  await expect(commanders.getByText('متاح', { exact: true })).toBeVisible({ timeout: 20000 });
+  await expect(
+    commanders.getByRole('button', { name: 'عيّن للدفاع هنا', exact: true }),
+  ).toBeEnabled();
+  await commanders.getByRole('heading', { name: 'الأمراء والقادة', exact: true }).click();
+  await page.getByRole('region', { name: 'الأمراء والقادة', exact: true }).screenshot({
+    path: testInfo.outputPath('kingdoms-commanders.png'),
+    style: '.site-header { visibility: hidden !important; }',
   });
 });

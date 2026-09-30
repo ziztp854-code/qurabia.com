@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { commanderConfigSchema, defaultCommanderConfig } from './commander-config';
 import { buildingKeys, resourceKeys, unitKeys, type KingdomsConfig, type Resources } from './types';
 export const resources = (wood = 0, stone = 0, iron = 0, food = 0, gold = 0): Resources => ({
   wood,
@@ -16,6 +17,7 @@ const building = (name: string, c: Resources, seconds: number) => ({
   maxLevel: 20,
 });
 export const defaultKingdomsConfig: KingdomsConfig = {
+  commanders: defaultCommanderConfig,
   worldRadius: 200,
   seasonSeconds: 60 * 86400,
   protectionSeconds: 3 * 86400,
@@ -103,6 +105,7 @@ export const resourcesSchema = z
   .strict();
 export const kingdomsConfigSchema = z
   .object({
+    commanders: commanderConfigSchema,
     worldRadius: z.number().int().min(5).max(1000),
     seasonSeconds: positive.max(365 * 86400),
     protectionSeconds: positive.max(365 * 86400),

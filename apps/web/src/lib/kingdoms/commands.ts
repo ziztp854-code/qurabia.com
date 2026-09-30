@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { buildingKeys, unitKeys } from './types';
+import { buildingKeys, unitKeys, commanderSpecializations } from './types';
 import { resourcesSchema } from './config';
 const id = z
   .string()
@@ -18,6 +18,9 @@ const troops = z
   })
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('commanderRecruit'), villageId, name, specialization: z.enum(commanderSpecializations) }).strict(),
+  z.object({ type: z.literal('commanderAssign'), villageId, commanderId: id }).strict(),
+  z.object({ type: z.literal('commanderUnassign'), commanderId: id }).strict(),
   z.object({ type: z.literal('found'), name }).strict(),
   z
     .object({
@@ -46,6 +49,7 @@ export const kingdomsCommandSchema = z.discriminatedUnion('type', [
       targetY: z.number().int().min(-1000).max(1000),
       mission: z.enum(['attack', 'raid', 'scout', 'reinforce', 'settle', 'occupy', 'gather']),
       troops,
+      commanderId: id.optional(),
     })
     .strict(),
   z.object({ type: z.literal('recall'), villageId, hostVillageId: id }).strict(),

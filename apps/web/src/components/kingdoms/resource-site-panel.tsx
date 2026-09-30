@@ -13,6 +13,8 @@ import {
 import { ResourceIcon } from './resource-icon';
 import { date, number, type GameProps } from './shared';
 import styles from './resource-site-panel.module.css';
+import { canSelectCommander, CommanderSelect } from './commander-select';
+import { commanderText } from './commander-ui';
 
 export const siteResourceLabels: Record<ResourceSiteKind, string> = {
   wood: 'خشب',
@@ -112,10 +114,18 @@ export function GatheringPanel({
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const [troops, setTroops] = useState<Troops>({ guard: 0, rider: 0, scout: 0, settler: 0 });
+  const [commanderId, setCommanderId] = useState('');
+  const selectedCommander = view.commanders?.find((commander) => commander.id === commanderId);
+  const commanderAvailable =
+    !commanderId ||
+    (view.commanders ?? []).some(
+      (commander) =>
+        commander.id === commanderId && canSelectCommander(commander, village.id, view.serverNow),
+    );
   useEffect(() => {
     if (focusOnMount) heading.current?.focus();
   }, [focusOnMount]);
-  const preview = gatherPreview(view.config, village, site, troops);
+  const preview = gatherPreview(view.config, village, site, troops, selectedCommander);
   const amount = Math.min(preview.carry, site.available);
   const label = siteResourceLabels[site.resource];
   const availableTroops = unitKeys.every(
@@ -128,13 +138,15 @@ export function GatheringPanel({
       ? 'انتهى الموسم.'
       : site.available <= 0
         ? 'الموقع ناضب الآن. اختر موقعًا آخر أو انتظر تجدّد موارده.'
-        : !availableTroops
-          ? 'اختر عددًا من القوات المتاحة في قريتك.'
-          : preview.carry <= 0
-            ? 'اختر قوات تستطيع حمل الموارد؛ الحراس والفرسان يحملونها حسب قدراتهم.'
-            : view.serverNow + preview.roundTripMs >= view.season.endsAt
-              ? 'لن يعود الجيش قبل نهاية الموسم. اختر موقعًا أقرب أو قوات أسرع.'
-              : null;
+        : !commanderAvailable
+          ? commanderText('commander.selectionExpired')
+          : !availableTroops
+            ? 'اختر عددًا من القوات المتاحة في قريتك.'
+            : preview.carry <= 0
+              ? 'اختر قوات تستطيع حمل الموارد؛ الحراس والفرسان يحملونها حسب قدراتهم.'
+              : view.serverNow + preview.roundTripMs >= view.season.endsAt
+                ? 'لن يعود الجيش قبل نهاية الموسم. اختر موقعًا أقرب أو قوات أسرع.'
+                : null;
   const overflow =
     village.resources[site.resource] + amount > storageCapacity(view.config, village);
   const disabled = busy || reason !== null;
@@ -177,10 +189,18 @@ export function GatheringPanel({
               targetX: site.x,
               targetY: site.y,
               mission: 'gather',
+              ...(commanderId ? { commanderId } : {}),
               troops,
             });
         }}
       >
+        <CommanderSelect
+          view={view}
+          villageId={village.id}
+          value={commanderId}
+          onChange={setCommanderId}
+          disabled={busy}
+        />
         <fieldset disabled={busy} className={styles.troops}>
           <legend>القوات المرسلة</legend>
           {unitKeys.map((unit) => (

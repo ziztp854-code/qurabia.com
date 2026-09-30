@@ -149,6 +149,35 @@ describe('Kingdoms authenticated commands', () => {
     expect((await POST(request(valid))).status).toBe(401);
     expect(dependencies.command).not.toHaveBeenCalled();
   });
+  it('recruits a commander using the session actor and rejects client-generated experience or combat stats', async () => {
+    dependencies.command.mockImplementation(async (_world, _identity, _key, input) => {
+      kingdomsCommandSchema.parse(input);
+      return { commanders: [] };
+    });
+    const command = {
+      type: 'commanderRecruit',
+      villageId: 'v1',
+      name: 'بيبرس',
+      specialization: 'cavalry',
+    };
+    expect((await POST(request({ ...valid, command }))).status).toBe(200);
+    expect(dependencies.command).toHaveBeenCalledWith(
+      'world1',
+      expect.objectContaining({ id: 'alice', tokenVersion: 2 }),
+      valid.idempotencyKey,
+      command,
+    );
+    for (const extra of [
+      { playerId: 'victim' },
+      { experience: 10000 },
+      { attack: 999 },
+      { level: 50 },
+    ]) {
+      expect((await POST(request({ ...valid, command: { ...command, ...extra } }))).status).toBe(
+        400,
+      );
+    }
+  });
   it('rate limits before processing commands', async () => {
     dependencies.limit.mockResolvedValue(false);
     expect((await POST(request(valid))).status).toBe(429);

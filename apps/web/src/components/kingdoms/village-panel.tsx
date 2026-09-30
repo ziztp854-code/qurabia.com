@@ -10,6 +10,7 @@ import { UnitIcon } from './unit-icon';
 import { VillageHero } from './village-hero';
 import { BuildingCard } from './building-card';
 import { VillageMap } from './village-map';
+import { CommanderPanel } from './commander-panel';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
 
@@ -295,6 +296,7 @@ export function VillagePanel({
 export function ArmyPanel({ view, village, busy, send }: GameProps) {
   return (
     <div className={kingdomsStyles.stack}>
+      <CommanderPanel view={view} village={village} busy={busy} send={send} />
       <div className={kingdomsStyles.notice}>
         <Shield aria-hidden="true" size={18} /> تحتاج إلى ثكنة لتدريب الجنود، ويحتاج المستوطن إلى
         دار حكم مستوى {number(view.config.settlerHallLevel)}.{' '}

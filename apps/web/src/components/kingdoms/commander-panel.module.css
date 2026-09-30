@@ -1,0 +1,113 @@
+.panel {
+  padding: clamp(1rem, 2vw, 1.5rem);
+  min-inline-size: 0;
+  border: 1px solid var(--kingdoms-ui-panel-border);
+  border-radius: var(--radius-lg);
+  background: var(--kingdoms-ui-panel-surface);
+  color: var(--kingdoms-ui-panel-foreground);
+}
+.panel h2,
+.panel h3,
+.panel p {
+  margin-block: 0 0.75rem;
+}
+.panel p {
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.recruit {
+  margin-block: 1.25rem;
+}
+.fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+.fields button {
+  justify-self: start;
+  min-block-size: 44px;
+}
+.hint {
+  color: var(--kingdoms-ui-panel-muted);
+  font-size: 0.875rem;
+}
+.roster {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.commander {
+  min-inline-size: 0;
+  padding: 1rem;
+  border: 1px solid var(--kingdoms-ui-panel-border);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-panel-strong);
+}
+.identity {
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+}
+.identity svg {
+  flex-shrink: 0;
+  color: var(--kingdoms-ui-panel-gold);
+}
+.identity h3 {
+  overflow-wrap: anywhere;
+}
+.identity p {
+  color: var(--kingdoms-ui-panel-muted);
+}
+.status {
+  color: var(--kingdoms-ui-panel-gold);
+  font-weight: 700;
+}
+.progress {
+  display: grid;
+  gap: 0.4rem;
+  font-variant-numeric: tabular-nums;
+  margin-block: 1rem;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding-block: 0.75rem;
+  margin: 0;
+  border-block: 1px solid var(--kingdoms-ui-panel-border);
+}
+.stats dt {
+  color: var(--kingdoms-ui-panel-muted);
+  font-size: 0.875rem;
+}
+.stats dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-block-start: 1rem;
+}
+.actions button {
+  min-block-size: 44px;
+}
+.panel :is(button, input, select):focus-visible {
+  outline: 2px solid var(--kingdoms-ui-panel-gold);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fields button {
+    justify-self: stretch;
+  }
+}

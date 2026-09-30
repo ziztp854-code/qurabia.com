@@ -105,6 +105,146 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     return { row, state: row.state as unknown as KingdomsWorld };
   }
 
+  async function commanderFixture(count = 1) {
+    const fixtureData = await fixture(count);
+    const state: KingdomsWorld = {
+      ...fixtureData.state,
+      villages: Object.fromEntries(
+        Object.entries(fixtureData.state.villages).map(([id, village]) => [
+          id,
+          {
+            ...village,
+            resources: resources(1000, 1000, 1000, 1000, 1000),
+            troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+          },
+        ]),
+      ),
+    };
+    await db.kingdomWorld.update({
+      where: { id: fixtureData.worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue,
+      },
+    });
+    return { ...fixtureData, state };
+  }
+
+  it('charges once and creates one commander for concurrent identical recruitment requests', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await commanderFixture();
+    const villageId = Object.keys(state.villages)[0];
+    const idempotencyKey = key();
+    const command = {
+      type: 'commanderRecruit',
+      villageId,
+      name: 'قائد الاختبار',
+      specialization: 'infantry',
+    };
+    await Promise.all([
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
+    ]);
+    const { row, state: saved } = await stateOf(worldId);
+    expect(row.revision).toBe(1);
+    expect(Object.values(saved.commanders ?? {})).toHaveLength(1);
+    expect(Object.values(saved.commanders ?? {})[0]).toMatchObject({
+      playerId: actor.id,
+      level: 1,
+      experience: 0,
+    });
+    expect(saved.villages[villageId].resources.gold).toBe(950);
+    expect(saved.villages[villageId].resources.wood).toBe(900);
+  });
+
+  it('reserves a commander for one army when two different march requests race', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await commanderFixture();
+    const villageId = Object.keys(state.villages)[0];
+    await repository.commandKingdomWorld(
+      worldId,
+      actor,
+      key(),
+      {
+        type: 'commanderRecruit',
+        villageId,
+        name: 'قائد الاختبار',
+        specialization: 'infantry',
+      },
+      db,
+    );
+    const commanderId = Object.keys((await stateOf(worldId)).state.commanders ?? {})[0];
+    const command = {
+      type: 'march',
+      villageId,
+      commanderId,
+      mission: 'gather',
+      targetX: 2,
+      targetY: 2,
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+    };
+    const results = await Promise.allSettled([
+      repository.commandKingdomWorld(worldId, actor, key(), command, db),
+      repository.commandKingdomWorld(worldId, actor, key(), command, db),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const saved = (await stateOf(worldId)).state;
+    expect(saved.movements).toHaveLength(1);
+    expect(saved.movements[0]).toMatchObject({ commanderId, ownerId: actor.id });
+    expect(saved.commanders?.[commanderId].status).toBe('marching');
+    expect(saved.villages[villageId].troops.guard).toBe(7);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(2);
+  });
+
+  it('rejects another player assigning a commander and does not leak the commander in their view', async () => {
+    const {
+      worldId,
+      identities: [owner, attacker],
+      state,
+    } = await commanderFixture(2);
+    const villageFor = (id: string) =>
+      Object.values(state.villages).find((v) => v.ownerId === id)!.id;
+    await repository.commandKingdomWorld(
+      worldId,
+      owner,
+      key(),
+      {
+        type: 'commanderRecruit',
+        villageId: villageFor(owner.id),
+        name: 'قائد الاختبار',
+        specialization: 'defense',
+      },
+      db,
+    );
+    const commanderId = Object.keys((await stateOf(worldId)).state.commanders ?? {})[0];
+    const before = await stateOf(worldId);
+    await expect(
+      repository.commandKingdomWorld(
+        worldId,
+        attacker,
+        key(),
+        {
+          type: 'commanderAssign',
+          villageId: villageFor(attacker.id),
+          commanderId,
+        },
+        db,
+      ),
+    ).rejects.toThrow();
+    const after = await stateOf(worldId);
+    expect(after.state).toEqual(before.state);
+    expect(after.row.revision).toBe(before.row.revision);
+    const view = await repository.readKingdomWorld(worldId, attacker, false, db);
+    if (!('commanders' in view)) throw new Error('Expected commander player view');
+    expect(view.commanders).toEqual([]);
+    expect(view).not.toHaveProperty('commanderAwards');
+  });
+
   it.each(['identical', 'different'] as const)(
     'credits one alliance event reward under simultaneous %s request keys',
     async (keyMode) => {

@@ -1,0 +1,171 @@
+export type CommanderLocale = 'ar' | 'en';
+
+const ar = {
+  'commander.title': 'الأمراء والقادة',
+  'commander.error.notOwned': 'هذا القائد غير تابع لمملكتك. حدّث العالم واختر أحد قادتك.',
+  'commander.error.unavailable': 'القائد غير متاح الآن. انتظر عودته أو تعافيه ثم أعد المحاولة.',
+  'commander.error.limit': 'بلغت الحد الأقصى للأمراء في مملكتك.',
+  'commander.error.villageOccupied': 'للقرية قائد دفاع بالفعل. أخلِ تعيينه أولًا.',
+  'commander.error.garrisonOccupied':
+    'لديك قائد مع تعزيزات في هذه القرية. استدعِ التعزيزات قبل إرسال قائد آخر.',
+  'commander.error.wrongOrigin': 'القائد يدافع عن قرية أخرى. أخلِ تعيينه قبل إرساله من هذه القرية.',
+  'commander.intro': 'عيّن أميرًا لحماية قريتك أو لقيادة حملة. تبقى قوة جيشك هي الأساس.',
+  'commander.empty': 'لا أمراء في مملكتك بعد. وظّف قائدًا ثم عيّنه للدفاع أو أرسله مع جيشك.',
+  'commander.unavailable':
+    'إدارة الأمراء غير متاحة في هذا العالم الآن. حدّث العالم للمحاولة مجددًا.',
+  'commander.name': 'اسم القائد',
+  'commander.specialization': 'تخصص القائد',
+  'commander.recruit': 'وظّف القائد',
+  'commander.recruitmentCost': 'كلفة التوظيف',
+  'commander.resource.wood': 'خشب',
+  'commander.resource.stone': 'حجر',
+  'commander.resource.iron': 'حديد',
+  'commander.resource.food': 'غذاء',
+  'commander.resource.gold': 'ذهب',
+  'commander.limit': 'بلغت الحد الأقصى للأمراء في مملكتك.',
+  'commander.insufficient': 'موارد القرية لا تكفي لتوظيف قائد.',
+  'commander.invalidName': 'اكتب اسمًا من حرفين إلى ٤٠ حرفًا.',
+  'commander.pending': 'جارٍ تنفيذ الأمر…',
+  'commander.assign': 'عيّن للدفاع هنا',
+  'commander.unassign': 'أخلِ التعيين',
+  'commander.defenseTaken': 'للقرية قائد دفاع بالفعل. أخلِ تعيينه قبل تعيين قائد آخر.',
+  'commander.select': 'قائد الحملة',
+  'commander.none': 'بدون قائد',
+  'commander.selectHint': 'يُحجز القائد حتى عودة الجيش؛ لا يمكنه قيادة حملتين في الوقت نفسه.',
+  'commander.arrivalHint': 'تؤثر قدرة حركة القائد المختار في وقت الوصول.',
+  'commander.selectionExpired':
+    'القائد المختار لم يعد متاحًا. اختر قائدًا آخر أو أرسل الجيش بدونه.',
+  'commander.level': 'المستوى',
+  'commander.experience': 'الخبرة',
+  'commander.nextLevel': 'خبرة المستوى التالي',
+  'commander.maxLevel': 'بلغ أعلى مستوى',
+  'commander.attack': 'الهجوم',
+  'commander.defense': 'الدفاع',
+  'commander.mobility': 'الحركة',
+  'commander.siege': 'الحصار',
+  'commander.logistics': 'الإمداد',
+  'commander.futureStats': 'قدرات الرماة والحصار والإمداد محفوظة للمراحل القادمة.',
+  'commander.atVillage': 'القرية',
+  'commander.destination': 'الوجهة',
+  'commander.homeVillage': 'قرية الانطلاق',
+  'commander.recovering': 'يتعافى حتى',
+  'commander.status.available': 'متاح',
+  'commander.status.assigned': 'يدافع عن قرية',
+  'commander.status.marching': 'في حملة',
+  'commander.status.deployed': 'مع تعزيزات متمركزة',
+  'commander.rank.mamluk': 'مملوك',
+  'commander.rank.amirTen': 'أمير عشرة',
+  'commander.rank.tablkhana': 'أمير طبلخاناه',
+  'commander.rank.amirHundred': 'أمير مائة',
+  'commander.rank.atabek': 'أتابك العساكر',
+  'commander.specialization.cavalry': 'قائد فرسان',
+  'commander.specialization.infantry': 'قائد مشاة',
+  'commander.specialization.archery': 'قائد رماة',
+  'commander.specialization.siege': 'قائد حصار',
+  'commander.specialization.defense': 'قائد دفاع',
+  'commander.specialization.supply': 'قائد إمداد',
+  'commander.mission.attack': 'هجوم',
+  'commander.mission.raid': 'غارة',
+  'commander.mission.scout': 'استطلاع',
+  'commander.mission.reinforce': 'تعزيز',
+  'commander.mission.settle': 'تأسيس قرية',
+  'commander.mission.occupy': 'احتلال أرض',
+  'commander.mission.gather': 'جمع الموارد',
+  'commander.mission.return': 'عودة',
+} as const;
+
+type CommanderTextKey = keyof typeof ar;
+const en: Record<CommanderTextKey, string> = {
+  'commander.title': 'Amirs and commanders',
+  'commander.error.notOwned':
+    'This commander does not belong to your kingdom. Refresh the world and choose one of your commanders.',
+  'commander.error.unavailable':
+    'This commander is unavailable. Wait for their return or recovery, then try again.',
+  'commander.error.limit': 'Your kingdom has reached its commander limit.',
+  'commander.error.villageOccupied':
+    'This village already has a defense commander. Remove that assignment first.',
+  'commander.error.garrisonOccupied':
+    'You already have a commander with reinforcements at this village. Recall those reinforcements before sending another commander.',
+  'commander.error.wrongOrigin':
+    'This commander is defending another village. Remove their assignment before sending them from this village.',
+  'commander.intro':
+    'Assign an amir to defend your village or lead a mission. Your army remains the main source of strength.',
+  'commander.empty':
+    'Your kingdom has no amirs yet. Recruit a commander, then assign village defense or an army mission.',
+  'commander.unavailable':
+    'Commander management is unavailable in this world. Refresh the world to try again.',
+  'commander.name': 'Commander name',
+  'commander.specialization': 'Commander specialization',
+  'commander.recruit': 'Recruit commander',
+  'commander.recruitmentCost': 'Recruitment cost',
+  'commander.resource.wood': 'Wood',
+  'commander.resource.stone': 'Stone',
+  'commander.resource.iron': 'Iron',
+  'commander.resource.food': 'Food',
+  'commander.resource.gold': 'Gold',
+  'commander.limit': 'Your kingdom has reached its commander limit.',
+  'commander.insufficient': 'This village needs more resources to recruit a commander.',
+  'commander.invalidName': 'Enter a name between 2 and 40 characters.',
+  'commander.pending': 'Processing command…',
+  'commander.assign': 'Assign defense here',
+  'commander.unassign': 'Remove assignment',
+  'commander.defenseTaken':
+    'This village already has a defense commander. Remove that assignment first.',
+  'commander.select': 'Army commander',
+  'commander.none': 'No commander',
+  'commander.selectHint':
+    'The commander stays with this army until it returns and cannot lead two missions at once.',
+  'commander.arrivalHint': 'The selected commander’s mobility affects the arrival time.',
+  'commander.selectionExpired':
+    'The selected commander is no longer available. Select another commander or send this army without one.',
+  'commander.level': 'Level',
+  'commander.experience': 'Experience',
+  'commander.nextLevel': 'Next level experience',
+  'commander.maxLevel': 'Maximum level reached',
+  'commander.attack': 'Attack',
+  'commander.defense': 'Defense',
+  'commander.mobility': 'Mobility',
+  'commander.siege': 'Siege',
+  'commander.logistics': 'Logistics',
+  'commander.futureStats':
+    'Archery, siege and supply capabilities are reserved for upcoming phases.',
+  'commander.atVillage': 'Village',
+  'commander.destination': 'Destination',
+  'commander.homeVillage': 'Origin village',
+  'commander.recovering': 'Recovering until',
+  'commander.status.available': 'Available',
+  'commander.status.assigned': 'Defending a village',
+  'commander.status.marching': 'On a mission',
+  'commander.status.deployed': 'Stationed with reinforcements',
+  'commander.rank.mamluk': 'Mamluk',
+  'commander.rank.amirTen': 'Amir of ten',
+  'commander.rank.tablkhana': 'Amir of tablkhana',
+  'commander.rank.amirHundred': 'Amir of one hundred',
+  'commander.rank.atabek': 'Atabeg of the armies',
+  'commander.specialization.cavalry': 'Cavalry commander',
+  'commander.specialization.infantry': 'Infantry commander',
+  'commander.specialization.archery': 'Archery commander',
+  'commander.specialization.siege': 'Siege commander',
+  'commander.specialization.defense': 'Defense commander',
+  'commander.specialization.supply': 'Supply commander',
+  'commander.mission.attack': 'Attack',
+  'commander.mission.raid': 'Raid',
+  'commander.mission.scout': 'Scout',
+  'commander.mission.reinforce': 'Reinforce',
+  'commander.mission.settle': 'Found a village',
+  'commander.mission.occupy': 'Occupy territory',
+  'commander.mission.gather': 'Gather resources',
+  'commander.mission.return': 'Return',
+};
+
+export function commanderText(key: string, locale: CommanderLocale = 'ar'): string {
+  const dictionary = locale === 'en' ? en : ar;
+  return Object.hasOwn(dictionary, key) ? dictionary[key as CommanderTextKey] : key;
+}
+export const commanderNumber = (value: number, locale: CommanderLocale = 'ar') =>
+  value.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US', { maximumFractionDigits: 0 });
+export const commanderDate = (value: number, locale: CommanderLocale = 'ar') =>
+  new Date(value).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });

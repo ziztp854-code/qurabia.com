@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
-import type { ResourceSiteView } from '@/lib/kingdoms/types';
+import type { CommanderView, ResourceSiteView } from '@/lib/kingdoms/types';
 import { MapPanel } from './map-panel';
 import { GatheringPanel, ResourceSiteDirectory } from './resource-site-panel';
 import type { GameProps, WorldView } from './shared';
@@ -62,6 +62,53 @@ function fixture(): GameProps {
 afterEach(cleanup);
 
 describe('resource gathering interface', () => {
+  it('previews the commander-adjusted arrival and permits a trip that now fits before season end', () => {
+    const props = fixture();
+    const commander: CommanderView = {
+      id: 'amir-travel',
+      playerId: 'alice',
+      name: 'بيبرس',
+      level: 50,
+      experience: 5000,
+      specialization: 'cavalry',
+      attack: 50,
+      defense: 50,
+      mobility: 50,
+      siege: 50,
+      logistics: 50,
+      status: 'available',
+      rankKey: 'commander.rank.atabek',
+      nextLevelExperience: null,
+    };
+    const view = {
+      ...props.view,
+      commanders: [commander],
+      config: {
+        ...props.view.config,
+        secondsPerTile: 100,
+        units: {
+          ...props.view.config.units,
+          guard: { ...props.view.config.units.guard, speed: 1 },
+        },
+      },
+      season: { ...props.view.season, endsAt: now + 350000 },
+    };
+    render(<GatheringPanel {...props} view={view} site={{ ...sites[0], x: 2, y: 0 }} />);
+    fireEvent.change(screen.getByLabelText(/حارس .*متاح/), { target: { value: '1' } });
+    expect(screen.getByRole('button', { name: 'أرسل الجيش لجمع الموارد' })).toBeDisabled();
+    fireEvent.change(screen.getByRole('combobox', { name: 'قائد الحملة' }), {
+      target: { value: commander.id },
+    });
+    expect(screen.getByRole('button', { name: 'أرسل الجيش لجمع الموارد' })).toBeEnabled();
+    const arrival = screen.getByText(/الوصول المتوقع:/).querySelector('time');
+    const returning = screen.getByText(/العودة المتوقعة:/).querySelector('time');
+    expect(arrival).toHaveAttribute('dateTime', new Date(now + 173914).toISOString());
+    expect(returning).toHaveAttribute('dateTime', new Date(now + 347828).toISOString());
+    fireEvent.click(screen.getByRole('button', { name: 'أرسل الجيش لجمع الموارد' }));
+    expect(props.send).toHaveBeenCalledWith(
+      expect.objectContaining({ commanderId: commander.id, mission: 'gather' }),
+    );
+  });
   it('explains an out-of-season extreme journey without rendering invalid forecast dates', () => {
     const props = fixture();
     render(

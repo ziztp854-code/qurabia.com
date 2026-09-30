@@ -1,3 +1,4 @@
+import { commanderTravelFactor } from './commander-movement';
 import {
   unitKeys,
   type KingdomsConfig,
@@ -75,6 +76,7 @@ export function gatherPreview(
   origin: { x: number; y: number },
   target: { x: number; y: number },
   troops: Troops,
+  commander?: { mobility: number },
 ) {
   const units = unitKeys.filter((key) => troops[key] > 0);
   const carry = units.reduce((sum, key) => sum + troops[key] * config.units[key].carry, 0);
@@ -83,7 +85,7 @@ export function gatherPreview(
   const travelMs = Math.max(
     1000,
     Math.ceil(
-      (Math.hypot(target.x - origin.x, target.y - origin.y) * config.secondsPerTile * 1000) / speed,
+      (Math.hypot(target.x - origin.x, target.y - origin.y) * config.secondsPerTile * 1000) / (speed * commanderTravelFactor(config, commander)),
     ),
   );
   return { carry, travelMs, roundTripMs: travelMs * 2 };
