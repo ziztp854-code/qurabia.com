@@ -1,3 +1,10 @@
+import { creditAllianceEvent, projectAllianceEvent, stampAllianceEvent } from './alliance-events';
+import {
+  gatherPreview,
+  projectResourceSites,
+  resourceSiteAt,
+  resourceSiteSupply,
+} from './resource-sites';
 import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
@@ -5,6 +12,7 @@ import {
   nonAggression,
   assertRule,
   credit,
+  capacity,
   deadline,
   deployedTroops,
   earliestDeadline,
@@ -83,14 +91,22 @@ function found(w: KingdomsWorld, actor: string, name: string, at: number) {
   for (let radius = 1; radius <= w.config.worldRadius && !point; radius++) {
     for (let x = -radius; x <= radius && !point; x++)
       for (const y of [-radius, radius]) {
-        if (!occupied.has(`${x},${y}`) && !w.territories[`${x},${y}`]) {
+        if (
+          !occupied.has(`${x},${y}`) &&
+          !w.territories[`${x},${y}`] &&
+          !resourceSiteAt(w.config.worldRadius, x, y)
+        ) {
           point = { x, y };
           break;
         }
       }
     for (let y = -radius + 1; y < radius && !point; y++)
       for (const x of [-radius, radius]) {
-        if (!occupied.has(`${x},${y}`) && !w.territories[`${x},${y}`]) {
+        if (
+          !occupied.has(`${x},${y}`) &&
+          !w.territories[`${x},${y}`] &&
+          !resourceSiteAt(w.config.worldRadius, x, y)
+        ) {
           point = { x, y };
           break;
         }
@@ -131,6 +147,7 @@ function build(
   const factor = spec.growth ** level;
   spend(v, scaleResources(spec.cost, factor));
   v.build = {
+    allianceEvent: stampAllianceEvent(w, actor, at),
     building: c.building,
     level: level + 1,
     startedAt: at,
@@ -155,6 +172,7 @@ function train(
   assertRule(total(v.troops) + (away ? total(away) : 0) + c.count <= 1e6, 'بلغ الجيش الحد الأعلى');
   spend(v, scaleResources(spec.cost, c.count));
   v.training = {
+    allianceEvent: stampAllianceEvent(w, actor, at),
     unit: c.unit,
     count: c.count,
     endsAt: deadline(
@@ -186,6 +204,23 @@ function march(
     'بلغت الحد الأعلى للحركات',
   );
   const target = Object.values(w.villages).find((t) => t.x === c.targetX && t.y === c.targetY);
+  const site = resourceSiteAt(w.config.worldRadius, c.targetX, c.targetY);
+  if (c.mission === 'gather') {
+    assertRule(
+      site && !target && !w.territories[`${c.targetX},${c.targetY}`],
+      'اختر موقع موارد متاحًا',
+    );
+    const preview = gatherPreview(w.config, v, { x: c.targetX, y: c.targetY }, c.troops);
+    assertRule(preview.carry > 0, 'تحتاج قوات لها سعة حمل لجمع الموارد');
+    assertRule(
+      Math.floor(resourceSiteSupply(w, c.targetX, c.targetY, at)) > 0,
+      'الموقع مستنزف؛ انتظر تجدّد موارده',
+    );
+    assertRule(
+      deadline(at, preview.roundTripMs) < w.season.endsAt,
+      'لا يكفي وقت الموسم لذهاب الحملة وعودتها',
+    );
+  }
   const hostile = ['attack', 'raid', 'scout'].includes(c.mission);
   if (hostile) {
     assertRule(target && target.ownerId !== actor, 'اختر قرية خصم');
@@ -205,6 +240,7 @@ function march(
       'التعزيز لقرى المملكة أو التحالف',
     );
   if (c.mission === 'settle' || c.mission === 'occupy') {
+    assertRule(!site, 'هذا موقع موارد؛ لا يمكن تأسيس قرية أو احتلاله');
     assertRule(!target, 'الأرض مشغولة');
     const key = `${c.targetX},${c.targetY}`;
     assertRule(!w.territories[key] || w.territories[key] === actor, 'الأرض تابعة لمملكة أخرى');
@@ -245,6 +281,9 @@ function march(
     unitKeys.map((k) => [k, v.troops[k] - c.troops[k]]),
   ) as Village['troops'];
   w.movements.push({
+    ...(c.mission === 'gather' && site
+      ? { gather: { siteId: site.id, resource: site.resource } }
+      : {}),
     id: nextId(w, 'm'),
     ownerId: actor,
     sourceId: v.id,
@@ -297,6 +336,10 @@ function trade(
   w.offers = w.offers.filter((t) => t.id !== o.id);
   for (const id of [actor, o.ownerId])
     w.players[id].achievements = [...new Set([...w.players[id].achievements, 'merchant'])];
+  if (total(o.give) >= 100 && total(o.want) >= 100) {
+    creditAllianceEvent(w, actor, 'trade', 5, at, undefined, o.ownerId);
+    creditAllianceEvent(w, o.ownerId, 'trade', 5, at, undefined, actor);
+  }
   report(w, at, [actor, o.ownerId], 'تم التبادل', 'أتم السوق تبادل الموارد المحجوزة');
 }
 function alliance(
@@ -454,6 +497,32 @@ function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { ty
   p.score += w.config.questScore;
   credit(w, villages[0], w.config.questReward);
 }
+function claimAllianceEvent(
+  w: KingdomsWorld,
+  actor: string,
+  c: Extract<KingdomsCommand, { type: 'allianceEventClaim' }>,
+  at: number,
+) {
+  const village = own(w, actor, c.villageId);
+  const event = projectAllianceEvent(w, actor, at);
+  assertRule(event && event.eventKey === c.eventKey, 'انتهت الفعالية أو تغير موعدها؛ حدّث الصفحة');
+  assertRule(event.canClaim, 'المكافأة غير متاحة؛ أكمل مساهمتك وهدف التحالف أو تحقق من عضويتك');
+  assertRule(
+    resourceKeys.every((key) => village.resources[key] + event.reward[key] <= capacity(w, village)),
+    'لا توجد سعة كافية في المخزن لاستلام المكافأة كاملة',
+  );
+  w.players[actor].allianceEvent = { ...w.players[actor].allianceEvent!, claimed: true };
+  credit(w, village, event.reward);
+  const names = { wood: 'خشب', stone: 'حجر', iron: 'حديد', food: 'غذاء', gold: 'ذهب' };
+  const receipt = resourceKeys.map((key) => `${event.reward[key]} ${names[key]}`).join('، ');
+  report(
+    w,
+    at,
+    [actor],
+    'مكافأة فعالية التحالف',
+    `${event.title}: استلمت ${receipt} في ${village.name}`,
+  );
+}
 function recall(
   w: KingdomsWorld,
   actor: string,
@@ -541,6 +610,9 @@ export function executeCommand(
       case 'diplomacy':
         alliance(w, actorId, c, at);
         break;
+      case 'allianceEventClaim':
+        claimAllianceEvent(w, actorId, c, at);
+        break;
       case 'claim':
         claim(w, actorId, c);
         break;
@@ -584,6 +656,8 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
   }
   return {
     serverNow: now,
+    resourceSites: projectResourceSites(w, actorId, Math.max(now, w.updatedAt)),
+    allianceEvent: projectAllianceEvent(w, actorId, Math.max(now, w.updatedAt)),
     config: w.config,
     season: w.season,
     player: w.players[actorId] ?? null,

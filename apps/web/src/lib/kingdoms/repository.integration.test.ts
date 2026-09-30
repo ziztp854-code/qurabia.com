@@ -105,6 +105,175 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     return { row, state: row.state as unknown as KingdomsWorld };
   }
 
+  it.each(['identical', 'different'] as const)(
+    'credits one alliance event reward under simultaneous %s request keys',
+    async (keyMode) => {
+      const {
+        worldId,
+        identities: [actor, teammate],
+        state,
+      } = await fixture(2);
+      const allianceId = 'test_alliance';
+      const eventKey = 's1-w0';
+      const prepared: KingdomsWorld = {
+        ...state,
+        alliances: {
+          [allianceId]: {
+            id: allianceId,
+            name: 'عهد الاختبار',
+            members: { [actor.id]: 'leader', [teammate.id]: 'member' },
+            diplomacy: {},
+          },
+        },
+        players: Object.fromEntries(
+          Object.entries(state.players).map(([id, player]) => [
+            id,
+            {
+              ...player,
+              allianceId,
+              allianceEvent: {
+                eventKey,
+                allianceId,
+                points: id === actor.id ? 20 : 10,
+                claimed: false,
+                tradedWith: [],
+              },
+            },
+          ]),
+        ),
+      };
+      await db.kingdomWorld.update({
+        where: { id: worldId },
+        data: { state: JSON.parse(JSON.stringify(prepared)) as Prisma.InputJsonValue },
+      });
+      const villageId = Object.values(state.villages).find((v) => v.ownerId === actor.id)!.id;
+      const firstKey = key();
+      const command = { type: 'allianceEventClaim', villageId, eventKey };
+      const results = await Promise.allSettled([
+        repository.commandKingdomWorld(worldId, actor, firstKey, command, db),
+        repository.commandKingdomWorld(
+          worldId,
+          actor,
+          keyMode === 'identical' ? firstKey : key(),
+          command,
+          db,
+        ),
+      ]);
+      expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(
+        keyMode === 'identical' ? 2 : 1,
+      );
+      const view = await repository.readKingdomWorld(worldId, actor, false, db);
+      if (!('allianceEvent' in view)) throw new Error('Expected a player world view');
+      expect(view.revision).toBe(1);
+      expect(view.allianceEvent?.claimed).toBe(true);
+      expect(view.allianceEvent?.canClaim).toBe(false);
+      expect(view.villages.find((v) => v.id === villageId)?.resources).toEqual(
+        resources(200, 200, 200, 200, 125),
+      );
+      expect(view.player?.score).toBe(0);
+    },
+  );
+
+  it('reserves one gathering army under simultaneous identical request keys', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await fixture();
+    const villageId = Object.keys(state.villages)[0];
+    const prepared = {
+      ...state,
+      villages: {
+        ...state.villages,
+        [villageId]: {
+          ...state.villages[villageId],
+          troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+        },
+      },
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(prepared)) as Prisma.InputJsonValue,
+      },
+    });
+    const idempotencyKey = key();
+    const command = {
+      type: 'march',
+      villageId,
+      targetX: 2,
+      targetY: 2,
+      mission: 'gather',
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+    };
+    await Promise.all([
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
+    ]);
+    const { row, state: saved } = await stateOf(worldId);
+    expect(row.revision).toBe(1);
+    expect(saved.movements).toHaveLength(1);
+    expect(saved.movements[0]).toMatchObject({ ownerId: actor.id, mission: 'gather' });
+    expect(saved.villages[villageId].troops.guard).toBe(7);
+    expect(saved.villages[villageId].resources.wood).toBe(100);
+  });
+
+  it('two simultaneous workers share one finite deposit without double collection', async () => {
+    const { worldId, identities, state } = await fixture(2);
+    const [{ now }] = await db.$queryRaw<{ now: Date }[]>`SELECT clock_timestamp() AS now`;
+    const arrivesAt = now.getTime() - 1_000;
+    const prepared: KingdomsWorld = {
+      ...state,
+      updatedAt: arrivesAt - 1_000,
+      season: { ...state.season, startsAt: arrivesAt - 60_000 },
+      villages: Object.fromEntries(
+        Object.entries(state.villages).map(([id, village]) => [
+          id,
+          {
+            ...village,
+            updatedAt: arrivesAt - 1_000,
+            troops: { guard: 0, rider: 0, scout: 0, settler: 0 },
+          },
+        ]),
+      ),
+      movements: identities.map((actor, index) => ({
+        id: `gather_${index}`,
+        ownerId: actor.id,
+        sourceId: Object.values(state.villages).find((v) => v.ownerId === actor.id)!.id,
+        targetX: 2,
+        targetY: 2,
+        mission: 'gather',
+        troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+        departedAt: arrivesAt - 60_000,
+        arrivesAt,
+        travelMs: 60_000,
+        loot: resources(),
+        gather: { siteId: 'site_2_2', resource: 'wood' },
+      })),
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(prepared)) as Prisma.InputJsonValue,
+        nextEventAt: new Date(arrivesAt),
+      },
+    });
+    const results = await Promise.all([
+      repository.tickKingdomWorlds(db),
+      repository.tickKingdomWorlds(db),
+    ]);
+    expect(
+      results.flatMap((result) => result.worlds).filter((world) => world.id === worldId),
+    ).toHaveLength(1);
+    const { row, state: saved } = await stateOf(worldId);
+    expect(row.revision).toBe(1);
+    expect(saved.movements).toHaveLength(2);
+    expect(saved.movements.every((m) => m.mission === 'return')).toBe(true);
+    expect(saved.movements.reduce((sum, m) => sum + m.loot.wood, 0)).toBe(600);
+    expect(saved.movements.map((m) => m.loot.wood).sort((a, b) => a - b)).toEqual([200, 400]);
+    expect(Object.values(saved.villages).every((v) => v.resources.wood === 100)).toBe(true);
+  });
+
   it('applies simultaneous identical idempotency keys exactly once', async () => {
     const {
       worldId,

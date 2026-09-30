@@ -1,19 +1,12 @@
 'use client';
 
-import { Castle, Coins, Crown, Mountain, Pickaxe, Shield, Trees, Wheat } from 'lucide-react';
+import { Castle, Crown, Shield } from 'lucide-react';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { supremeStage, villageProgress } from '@/lib/kingdoms/stages';
-import { buildingKeys, resourceKeys, type Resource } from '@/lib/kingdoms/types';
+import { buildingKeys, resourceKeys } from '@/lib/kingdoms/types';
 import { date, labels, number, type GameProps } from './shared';
+import { ResourceIcon } from './resource-icon';
 import styles from './village.module.css';
-
-const resourceIcons: Record<Resource, typeof Trees> = {
-  wood: Trees,
-  stone: Mountain,
-  iron: Pickaxe,
-  food: Wheat,
-  gold: Coins,
-};
 
 /**
  * بطاقة القرية: هوية القرية وموقفها وقياساتها. كل رقم هنا مشتق من لقطة الخادم،
@@ -111,13 +104,12 @@ export function VillageHero({ view, village }: Pick<GameProps, 'view' | 'village
       </dl>
       <ul className={styles.stock}>
         {resourceKeys.map((key) => {
-          const Icon = resourceIcons[key];
           const fill =
             capacity > 0 ? Math.min(100, Math.round((village.resources[key] / capacity) * 100)) : 0;
           return (
             <li key={key} className={styles.stockCell}>
               <span className={styles.stockHead}>
-                <Icon size={14} aria-hidden="true" />
+                <ResourceIcon resource={key} size={24} />
                 {labels[key]}
               </span>
               <span className={styles.stockValue}>{number(village.resources[key])}</span>

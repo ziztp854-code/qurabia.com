@@ -17,7 +17,7 @@
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-lg);
+  box-shadow: none;
   min-inline-size: 0;
 }
 .hero::before,
@@ -28,24 +28,29 @@
   inset-block-start: 0;
   inset-inline: 12%;
   block-size: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  opacity: 0.55;
+  background: var(--border-gold);
+  opacity: 0.2;
   pointer-events: none;
 }
 
 /* ── بطاقة القرية (الواجهة العليا) ───────────────────────────────────── */
 .hero {
+  --surface: var(--kingdoms-ui-panel-surface);
+  --surface-strong: var(--kingdoms-ui-panel-strong);
+  --foreground: var(--kingdoms-ui-panel-foreground);
+  --muted-foreground: var(--kingdoms-ui-panel-muted);
+  --border: var(--kingdoms-ui-panel-border);
+  --border-gold: var(--kingdoms-ui-panel-border);
+  --gold: var(--kingdoms-ui-panel-gold);
+  --success: var(--kingdoms-ui-panel-success);
+  --danger: var(--kingdoms-ui-panel-danger);
+  --gold-gradient: var(--gold);
+  color: var(--foreground);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: clamp(0.75rem, 1.6vw, 1.35rem);
   padding: clamp(0.9rem, 2vw, 1.4rem);
-  background:
-    radial-gradient(
-      120% 140% at 88% -20%,
-      color-mix(in srgb, var(--gold) 12%, transparent),
-      transparent 62%
-    ),
-    var(--surface);
+  background: var(--surface);
 }
 .crest {
   display: grid;
@@ -261,7 +266,21 @@
   min-inline-size: 0;
 }
 
-/* ── خريطة القرية: لوحة مسح فوق الرسم + مؤشرات المباني ─────────────── */
+/* ── مشهد القرية: رسم الواحة + طبقة حالة الخادم على محيط كل مبنى ─────
+   الرسم يبقى التضاريس والمعالم. فوق كل مبنى مرسوم طبقة مقصوصة على محيطه:
+   الأرض الشاغرة باهتة ومخططة، ويكتمل اللون مع المراحل، والمرحلة العليا تُذهَّب.
+   ألوان المشهد ثابتة عبر الوضعين لأنها فوق رسم واحد. */
+.village {
+  --lot-vacant: grayscale(1) sepia(0.9) saturate(0.75) contrast(0.5) brightness(0.74);
+  --lot-founding: saturate(0.62) sepia(0.18) brightness(0.9);
+  --lot-renaissance: saturate(0.85) brightness(0.97);
+  --lot-supreme: saturate(1.25) brightness(1.1) contrast(1.04);
+  --lot-hatch: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold-100) 16%, transparent) 0 1.5px,
+    transparent 1.5px 9px
+  );
+}
 .map {
   overflow: hidden;
   padding: 0;
@@ -271,15 +290,21 @@
 }
 .mapViewport {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scrollbar-gutter: stable;
   direction: ltr;
   max-inline-size: 100%;
 }
+.mapViewport:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
 .scene {
   position: relative;
   isolation: isolate;
-  min-inline-size: 660px;
+  min-inline-size: 700px;
   aspect-ratio: 3 / 2;
+  background: var(--mask-ink);
 }
 .art {
   object-fit: cover;
@@ -289,140 +314,319 @@
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: radial-gradient(
-    125% 95% at 50% 4%,
-    transparent 38%,
-    color-mix(in srgb, var(--background) 82%, transparent)
-  );
+  background:
+    radial-gradient(
+      130% 110% at 50% 45%,
+      transparent 52%,
+      color-mix(in srgb, var(--mask-ink) 58%, transparent)
+    ),
+    linear-gradient(180deg, color-mix(in srgb, var(--mask-ink) 30%, transparent), transparent 18%);
   pointer-events: none;
 }
-.ground {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  block-size: 34%;
-  z-index: -1;
-  background: linear-gradient(180deg, transparent, var(--background));
-  opacity: 0.85;
-  pointer-events: none;
-}
-.survey {
+.spotlight {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  opacity: 0.42;
-  pointer-events: none;
-  background-image:
-    repeating-linear-gradient(
-      to right,
-      color-mix(in srgb, var(--gold) 11%, transparent) 0 1px,
-      transparent 1px 68px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--gold) 11%, transparent) 0 1px,
-      transparent 1px 68px
-    );
-}
-.plateFrame {
-  position: absolute;
-  inset: 0.6rem;
-  z-index: 1;
-  border: 1px dashed color-mix(in srgb, var(--gold) 26%, transparent);
-  border-radius: var(--radius-md);
+  z-index: 2;
+  inline-size: 100%;
+  block-size: 100%;
   pointer-events: none;
 }
+.spotlight rect {
+  fill: var(--mask-ink);
+  opacity: 0.26;
+  transition: opacity var(--duration-normal) var(--ease-standard);
+}
+
+/* زر المبنى: مساحة اللمس فوق المبنى المرسوم نفسه، بلا تحويل حتى تبقى الطبقة مطابقة للرسم. */
 .plot {
   position: absolute;
-  transform: translate(-50%, -50%);
-  direction: rtl;
-  display: grid;
-  justify-items: center;
-  gap: 0.28rem;
+  display: block;
+  min-inline-size: 44px;
   min-block-size: 44px;
-  padding: 0.25rem;
+  padding: 0;
   border: 0;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: var(--foreground);
+  color: var(--brand-ivory);
   font: inherit;
   cursor: pointer;
-  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--background) 88%, transparent));
-  transition:
-    transform 0.18s ease,
-    filter 0.18s ease;
-}
-.plot:hover {
-  transform: translate(-50%, calc(-50% - 2px));
+  -webkit-tap-highlight-color: transparent;
 }
 .plot:focus-visible {
-  outline: 3px solid var(--gold);
-  outline-offset: 3px;
-  border-radius: var(--radius-md);
+  outline: none;
 }
-.medallion {
+.plot[aria-pressed='true'] .chip {
+  z-index: 6;
+}
+.plot[data-constructing='true'] .chip {
+  visibility: hidden;
+}
+.lotArea {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+.lot {
+  position: absolute;
+  inset: 0;
+}
+.lot {
+  overflow: hidden;
+}
+.lot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.artCrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  aspect-ratio: 3 / 2;
+}
+.artCrop img {
+  object-fit: cover;
+}
+.plot[data-visual='vacant'] .lot img,
+.portrait[data-visual='vacant'] img {
+  filter: var(--lot-vacant);
+}
+.plot[data-visual='founding'] .lot img,
+.portrait[data-visual='founding'] img {
+  filter: var(--lot-founding);
+}
+.plot[data-visual='renaissance'] .lot img,
+.portrait[data-visual='renaissance'] img {
+  filter: var(--lot-renaissance);
+}
+.plot[data-visual='supreme'] .lot img,
+.portrait[data-visual='supreme'] img {
+  filter: var(--lot-supreme);
+}
+.plot[data-visual='vacant'] .lot::after {
+  background: var(--lot-hatch), color-mix(in srgb, var(--brand-cream) 14%, transparent);
+}
+.plot[data-visual='supreme'] .lot::after {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--gold-200) 18%, transparent),
+    transparent
+  );
+}
+.outline {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+.outline path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  transition:
+    opacity var(--duration-fast) ease,
+    stroke var(--duration-fast) ease;
+}
+.outlineLine {
+  stroke: var(--brand-cream);
+  stroke-width: 1.5;
+  opacity: 0;
+}
+.outlineGlow {
+  stroke: var(--gold-300);
+  stroke-width: 9;
+  opacity: 0;
+}
+.plot[data-visual='vacant'] .outlineLine {
+  stroke-dasharray: 6 5;
+  opacity: 0.7;
+}
+.plot[data-visual='supreme'] .outlineLine {
+  stroke: var(--gold-300);
+  opacity: 0.85;
+}
+.plot[data-constructing='true'] .outlineLine {
+  stroke: var(--gold-200);
+  stroke-width: 2;
+  stroke-dasharray: 10 6;
+  opacity: 1;
+  animation: villageMarch 1.2s linear infinite;
+}
+.plot:hover .outlineLine,
+.plot:focus-visible .outlineLine {
+  opacity: 1;
+}
+.plot:focus-visible .outlineLine {
+  stroke: var(--gold-200);
+  stroke-width: 3;
+}
+.plot[aria-pressed='true'] .outlineLine {
+  stroke: var(--gold-200);
+  stroke-width: 2.5;
+  opacity: 1;
+}
+.plot[aria-pressed='true'] .outlineGlow {
+  opacity: 0.34;
+}
+@keyframes villageMarch {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+/* لافتة المبنى: شريحة صغيرة على الأرض تحت المبنى، لا تغطي الرسم. */
+.chip {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: 100%;
+  left: 50%;
+  direction: rtl;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.14rem 0.14rem 0.14rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 46%, transparent);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--mask-ink) 80%, transparent);
+  color: var(--brand-ivory);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--mask-ink) 60%, transparent);
+  transform: translate(-50%, -62%);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+.plot:hover .chip {
+  transform: translate(-50%, calc(-62% - 2px));
+}
+.plot:focus-visible .chip {
+  outline: 3px solid var(--gold-200);
+  outline-offset: 2px;
+}
+.chipName {
+  overflow: hidden;
+  max-inline-size: 7.5rem;
+  text-overflow: ellipsis;
+}
+.chipLevel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-inline-size: 1.4rem;
+  justify-content: center;
+  padding: 0.18rem 0.35rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--brand-gold) 22%, transparent);
+  color: var(--gold-100);
+  font-variant-numeric: tabular-nums;
+}
+.chipCrown {
+  color: var(--gold-200);
+  margin-inline-end: 0.2rem;
+}
+.ring {
   position: relative;
   display: grid;
   place-items: center;
-  inline-size: 2.4rem;
-  block-size: 2.4rem;
-  border: 1px solid var(--border-gold);
+  flex: 0 0 auto;
+  inline-size: 1.6rem;
+  block-size: 1.6rem;
   border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--surface-strong) 86%, transparent);
-  color: var(--foreground);
+  background: color-mix(in srgb, var(--mask-ink) 70%, transparent);
+  color: var(--gold-100);
 }
-.plot[data-built='false'] .medallion {
+.ring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+.ringTrack {
+  stroke: color-mix(in srgb, var(--brand-cream) 22%, transparent);
+}
+.ringFill {
+  stroke: var(--gold-300);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s var(--ease-out);
+}
+.plot[data-visual='vacant'] .chip {
   border-style: dashed;
-  color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--background) 74%, transparent);
+  border-color: color-mix(in srgb, var(--brand-cream) 42%, transparent);
+  color: color-mix(in srgb, var(--brand-ivory) 78%, transparent);
 }
-.plot[data-constructing='true'] .medallion {
-  border-color: var(--gold);
+.plot[data-visual='vacant'] .chipLevel {
+  background: transparent;
+  color: color-mix(in srgb, var(--brand-cream) 80%, transparent);
+  font-weight: 600;
 }
-.plot[aria-pressed='true'] .medallion {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 28%, transparent);
+.plot[data-visual='vacant'] .ring {
+  color: color-mix(in srgb, var(--brand-cream) 70%, transparent);
 }
-.plot[data-stage='supreme'] .medallion {
-  border-color: var(--gold);
+.plot[data-visual='supreme'] .chip {
+  border-color: var(--gold-300);
+}
+.plot[data-maxed='true'] .chipLevel,
+.plot[data-visual='supreme'] .chipLevel {
   background: var(--gold-gradient);
   color: var(--gold-foreground);
-  box-shadow: 0 0 20px color-mix(in srgb, var(--gold) 44%, transparent);
 }
-.plate {
-  display: grid;
-  gap: 0.24rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--background) 88%, transparent);
-  font-size: 0.74rem;
-  white-space: nowrap;
+.plot[data-constructing='true'] .chip {
+  border-style: solid;
+  border-color: var(--gold-200);
 }
-.plateName {
-  display: flex;
-  align-items: center;
-  gap: 0.28rem;
-  font-weight: 700;
+.plot[data-constructing='true'] .chipLevel {
+  background: var(--gold-200);
+  color: var(--mask-ink);
 }
-.plateMeta {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--muted-foreground);
-  font-size: 0.68rem;
+.plot[aria-pressed='true'] .chip {
+  border-color: var(--gold-200);
+  background: color-mix(in srgb, var(--gold-900) 82%, var(--mask-ink));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--gold-300) 30%, transparent),
+    0 8px 18px color-mix(in srgb, var(--mask-ink) 70%, transparent);
 }
-.plotLevel {
-  color: var(--gold);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
+.scene[data-labels='hidden']
+  .plot:not([aria-pressed='true']):not([data-constructing='true']):not(:hover):not(:focus-visible)
+  .chip {
+  opacity: 0;
 }
-.plotBar {
+
+/* لقطة المبنى في لوحة الإدارة: الرسم نفسه بحالة الخادم نفسها. */
+.portrait {
+  position: relative;
+  display: block;
+  overflow: hidden;
   inline-size: 100%;
-  min-inline-size: 3.4rem;
+  max-block-size: 11.5rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--mask-ink);
+  direction: ltr;
 }
-.plot[aria-pressed='true'] .plate {
-  border-color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 20%, var(--background));
+.portraitHatch {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.portrait[data-visual='vacant'] .portraitHatch {
+  background: var(--lot-hatch);
+}
+.portrait[data-constructing='true'] .portraitHatch {
+  border: 2px dashed var(--gold-200);
+  border-radius: inherit;
+}
+.portrait[data-maxed='true'],
+.portrait[data-visual='supreme'] {
+  border-color: var(--gold-300);
 }
 
 /* ── وسيلة إيضاح أرض القرية ─────────────────────────────────────────── */
@@ -444,25 +648,64 @@
   font-size: 0.74rem;
 }
 .legendMark {
-  inline-size: 0.85rem;
-  block-size: 0.85rem;
+  inline-size: 1.1rem;
+  block-size: 0.8rem;
   border: 1px solid var(--border-gold);
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--surface-strong) 86%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
 }
-.legendMark[data-state='built'] {
-  background: color-mix(in srgb, var(--foreground) 52%, transparent);
+.legendMark[data-state='vacant'] {
+  border-style: dashed;
+  background: var(--lot-hatch), color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+}
+.legendMark[data-state='growth'] {
+  background: linear-gradient(90deg, var(--muted-foreground), var(--success), var(--gold));
 }
 .legendMark[data-state='building'] {
-  border-color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 32%, transparent);
-}
-.legendMark[data-state='empty'] {
-  border-style: dashed;
+  border: 2px dashed var(--gold);
+  background: transparent;
 }
 .legendMark[data-state='supreme'] {
   border-color: var(--gold);
   background: var(--gold-gradient);
+}
+.legendCrown {
+  color: var(--gold);
+}
+.mapTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-block-size: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+.toolButton:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+.toolButton:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.toolButton svg {
+  color: var(--gold);
 }
 .mapFooter {
   display: flex;
@@ -560,25 +803,27 @@
   list-style: none;
 }
 .costCell {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.5rem;
+  gap: 0.2rem 0.4rem;
+  padding: 0.45rem 0.55rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-strong);
   font-size: 0.76rem;
+  min-inline-size: 0;
 }
 .costCell svg {
   color: var(--muted-foreground);
   flex: 0 0 auto;
 }
 .costCell bdi {
-  margin-inline-start: auto;
-  font-weight: 700;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-.costCell[data-afford='true'] bdi {
+.costCell[data-afford='true'] bdi,
+.costCell[data-afford='true'] svg {
   color: var(--gold);
 }
 .costCell[data-afford='false'] {
@@ -586,6 +831,165 @@
 }
 .costCell[data-afford='false'] bdi {
   color: var(--danger);
+}
+.costHave {
+  grid-column: 1 / -1;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+.costBar {
+  grid-column: 1 / -1;
+  display: block;
+  block-size: 3px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+.costBar > span {
+  display: block;
+  block-size: 100%;
+  background: var(--gold);
+}
+.costCell[data-afford='false'] .costBar > span {
+  background: var(--danger);
+}
+.medallion {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  inline-size: 2.4rem;
+  block-size: 2.4rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface-strong));
+  color: var(--gold);
+}
+.buildingCard[data-visual='vacant'] .medallion {
+  border-style: dashed;
+  background: var(--surface-strong);
+  color: var(--muted-foreground);
+}
+.buildingCard[data-visual='supreme'] .medallion {
+  border-color: var(--gold);
+  background: var(--gold-gradient);
+  color: var(--gold-foreground);
+}
+.effect {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+}
+.effect dt {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.effect dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.effect dd svg {
+  color: var(--muted-foreground);
+}
+.effectNext {
+  color: var(--gold);
+}
+.effect .effectNote {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+.subTitle {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.82rem;
+}
+.duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--foreground);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.duration svg {
+  color: var(--gold);
+}
+.stageShift {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--border-gold);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.shortfall,
+.blocker {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  line-height: 1.7;
+}
+.shortfall {
+  color: var(--danger);
+}
+.feedback {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.7;
+}
+.feedback:empty {
+  display: none;
+}
+.feedback[data-tone='wait'] {
+  color: var(--muted-foreground);
+}
+.feedback[data-tone='ok'] {
+  color: var(--success);
+}
+.feedback[data-tone='fail'] {
+  color: var(--danger);
+}
+.srOnly {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.linkButton {
+  justify-self: start;
+  min-block-size: 44px;
+  padding: 0 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.linkButton:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 .cta {
   inline-size: 100%;
@@ -711,20 +1115,27 @@
     inline-size: 2.7rem;
     block-size: 2.7rem;
   }
-  .scene {
-    min-inline-size: 600px;
-  }
   .measures {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr));
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .plot,
+  .chip,
+  .outline path,
+  .ringFill,
+  .spotlight rect,
+  .toolButton,
   .bar > span {
     transition: none;
   }
-  .plot:hover {
-    transform: translate(-50%, -50%);
+  .plot:hover .chip {
+    transform: translate(-50%, -62%);
+  }
+  .toolButton:hover {
+    transform: none;
+  }
+  .plot[data-constructing='true'] .outlineLine {
+    animation: none;
   }
   .tag[data-tone='live']::before {
     animation: none;

@@ -1,0 +1,390 @@
+.overview {
+  display: grid;
+  gap: 0.75rem;
+  min-inline-size: 0;
+}
+.hero,
+.stat,
+.mapCard,
+.infoCard {
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.hero {
+  position: relative;
+  display: flex;
+  align-items: end;
+  min-block-size: clamp(260px, 28vw, 420px);
+  isolation: isolate;
+}
+.heroImage {
+  object-fit: cover;
+  object-position: center 49%;
+  z-index: -2;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 10%,
+      color-mix(in srgb, var(--background) 90%, transparent) 100%
+    ),
+    linear-gradient(0deg, color-mix(in srgb, var(--background) 78%, transparent), transparent 72%);
+}
+.heroContent {
+  padding: clamp(1rem, 3vw, 2.5rem);
+  max-inline-size: 680px;
+  color: var(--foreground);
+  text-shadow: 0 2px 10px var(--background);
+}
+.kicker {
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+.heroContent h2 {
+  font-size: clamp(1.9rem, 3.4vw, 3.6rem);
+  line-height: 1.2;
+  margin: 0;
+}
+.heroContent > p:not(.kicker) {
+  font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+  line-height: 1.8;
+  margin-block: 0.8rem 1.25rem;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.goldButton,
+.outlineButton,
+.mapFooter button,
+.cardHeading button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-block-size: 44px;
+  padding-inline: 1.1rem;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.goldButton {
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--background);
+  text-shadow: none;
+}
+.outlineButton {
+  border: 1px solid var(--border-gold);
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  color: var(--foreground);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+.stat {
+  min-inline-size: 0;
+  min-block-size: 125px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 0.1rem 0.6rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(140deg, var(--surface-strong), var(--surface));
+}
+.stat > svg {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  color: var(--gold);
+  inline-size: clamp(24px, 3vw, 38px);
+  block-size: auto;
+}
+.stat span {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+.stat strong {
+  font-size: clamp(1.4rem, 2vw, 2.2rem);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.stat small {
+  font-size: 0.72rem;
+  color: var(--gold);
+}
+.mapCard {
+  min-inline-size: 0;
+}
+.mapToolbar,
+.mapFooter,
+.cardHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+.mapToolbar {
+  padding: 0.75rem 1rem;
+  border-block-end: 1px solid var(--border-gold);
+  background: var(--surface-strong);
+}
+.mapToolbar h2,
+.cardHeading h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.mapSearch label {
+  display: block;
+  margin-block-end: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.mapSearch > div {
+  display: flex;
+  gap: 0.3rem;
+}
+.mapSearch input {
+  min-inline-size: 0;
+  inline-size: clamp(140px, 18vw, 240px);
+  min-block-size: 44px;
+  padding-inline: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+.mapSearch button {
+  min-block-size: 44px;
+  padding-inline: 0.7rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--gold);
+  font: inherit;
+  cursor: pointer;
+}
+.mapSearch button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.mapFeedback {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  color: var(--danger);
+}
+.mapCard > section {
+  border: 0;
+  border-radius: 0;
+}
+.mapCard > section > div:nth-child(2) {
+  max-block-size: 490px;
+}
+.mapFooter {
+  padding: 0.45rem 1rem;
+  border-block-start: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+.mapFooter button,
+.cardHeading button {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--border-gold);
+  font-size: 0.78rem;
+}
+.lowerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+.infoCard {
+  min-inline-size: 0;
+  padding: 0.75rem;
+}
+.cardHeading {
+  margin-block-end: 0.5rem;
+}
+.cardHeading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cardHeading h2 svg {
+  color: var(--gold);
+}
+.cardHeading button {
+  min-block-size: 44px;
+  padding-inline: 0.6rem;
+}
+.taskList {
+  display: grid;
+}
+.taskList button,
+.events li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.6rem;
+  border: 0;
+  border-block-end: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: start;
+}
+.taskList button {
+  cursor: pointer;
+  min-block-size: 44px;
+}
+.taskList button:last-child,
+.events li:last-child {
+  border-block-end: 0;
+}
+.taskCheck {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  inline-size: 20px;
+  block-size: 20px;
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
+}
+.taskCheck[data-done='true'] {
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--background);
+}
+.taskStatus {
+  margin-inline-start: auto;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.events li svg {
+  flex: 0 0 auto;
+  color: var(--gold);
+}
+.events li span {
+  flex: 1;
+  min-inline-size: 0;
+}
+.events time {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+.empty {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.allianceContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-block-size: 155px;
+}
+.allianceCrest {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  inline-size: 90px;
+  block-size: 110px;
+  border: 2px solid var(--gold);
+  border-radius: 9px 9px 40px 40px;
+  background: var(--background);
+  color: var(--gold);
+}
+.allianceContent strong {
+  font-size: 1.1rem;
+}
+.allianceContent p {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+.allianceContent .goldButton {
+  min-block-size: 44px;
+  font-size: 0.8rem;
+}
+.overview button:hover:not(:disabled) {
+  border-color: var(--gold);
+  filter: brightness(1.12);
+}
+.overview button:focus-visible,
+.overview input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+@media (max-width: 1050px) {
+  .lowerGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .infoCard:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 700px) {
+  .hero {
+    min-block-size: 340px;
+  }
+  .hero::after {
+    background: linear-gradient(
+      0deg,
+      var(--background),
+      color-mix(in srgb, var(--background) 10%, transparent) 100%
+    );
+  }
+  .heroContent {
+    padding: 1rem;
+  }
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stat {
+    min-block-size: 105px;
+    padding: 0.7rem;
+  }
+  .mapToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .mapSearch input {
+    inline-size: 100%;
+  }
+  .mapSearch > div input {
+    flex: 1;
+  }
+  .lowerGrid {
+    grid-template-columns: 1fr;
+  }
+  .infoCard:last-child {
+    grid-column: auto;
+  }
+  .events li {
+    flex-wrap: wrap;
+  }
+  .events time {
+    inline-size: 100%;
+    padding-inline-start: 1.5rem;
+  }
+}

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PrestigeStage } from '@/components/home/prestige-stage';
 import { RoomCodeShortcut } from '@/components/home/room-code-shortcut';
+import { InstallAppButton } from '@/components/pwa/install-app-button';
 import { SiteLayout, type HeaderUser } from '@/components/layout';
 import { ButtonLink } from '@/components/ui';
 import { publicNavigation } from '@/config/navigation';
@@ -81,6 +82,7 @@ export function PrestigeHome({
                   <QrCode aria-hidden="true" />
                 </ButtonLink>
               </div>
+              <InstallAppButton />
               <RoomCodeShortcut />
             </div>
 

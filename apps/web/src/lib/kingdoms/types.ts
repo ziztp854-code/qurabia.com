@@ -18,7 +18,19 @@ export type Building = (typeof buildingKeys)[number];
 export const unitKeys = ['guard', 'rider', 'scout', 'settler'] as const;
 export type Unit = (typeof unitKeys)[number];
 export type Troops = Record<Unit, number>;
-export type Mission = 'attack' | 'raid' | 'scout' | 'reinforce' | 'settle' | 'occupy' | 'return';
+export type Mission =
+  'attack' | 'raid' | 'scout' | 'reinforce' | 'settle' | 'occupy' | 'gather' | 'return';
+export type ResourceSiteKind = 'wood' | 'iron' | 'food';
+export type ResourceSiteView = {
+  id: string;
+  x: number;
+  y: number;
+  resource: ResourceSiteKind;
+  name: string;
+  available: number;
+  capacity: number;
+  regenerationPerHour: number;
+};
 export type KingdomsConfig = {
   worldRadius: number;
   seasonSeconds: number;
@@ -58,6 +70,32 @@ export type KingdomsConfig = {
     }
   >;
 };
+export type AllianceEventTheme = 'build' | 'train' | 'trade';
+export type AllianceEventStamp = { eventKey: string; allianceId: string };
+export type AllianceEventRecord = AllianceEventStamp & {
+  points: number;
+  claimed: boolean;
+  tradedWith: string[];
+};
+export type AllianceEventView = {
+  eventKey: string;
+  week: number;
+  theme: AllianceEventTheme;
+  title: string;
+  description: string;
+  startsAt: number;
+  endsAt: number;
+  target: number;
+  memberCap: number;
+  allianceId?: string;
+  points: number;
+  ownPoints: number;
+  claimed: boolean;
+  lockedToOtherAlliance: boolean;
+  canClaim: boolean;
+  reward: Resources;
+  contributors: { id: string; name: string; points: number }[];
+};
 export type Village = {
   id: string;
   ownerId: string;
@@ -69,8 +107,14 @@ export type Village = {
   buildings: Record<Building, number>;
   troops: Troops;
   reinforcements: Record<string, Troops>;
-  build?: { building: Building; level: number; startedAt?: number; endsAt: number };
-  training?: { unit: Unit; count: number; endsAt: number };
+  build?: {
+    building: Building;
+    level: number;
+    startedAt?: number;
+    endsAt: number;
+    allianceEvent?: AllianceEventStamp;
+  };
+  training?: { unit: Unit; count: number; endsAt: number; allianceEvent?: AllianceEventStamp };
 };
 export type KingdomPlayer = {
   id: string;
@@ -78,12 +122,14 @@ export type KingdomPlayer = {
   joinedAt: number;
   protectionUntil: number;
   allianceId?: string;
+  allianceEvent?: AllianceEventRecord;
   claims: string[];
   achievements: string[];
   score: number;
   throne: number;
 };
 export type Movement = {
+  gather?: { siteId: string; resource: ResourceSiteKind };
   id: string;
   ownerId: string;
   sourceId: string;
@@ -129,6 +175,7 @@ export type Offer = {
   createdAt: number;
 };
 export type KingdomsWorld = {
+  resourceSiteStocks?: Record<string, { available: number; updatedAt: number }>;
   version: 1;
   nextId: number;
   updatedAt: number;
@@ -150,6 +197,8 @@ export type KingdomsWorld = {
   };
 };
 export type KingdomsView = {
+  resourceSites?: ResourceSiteView[];
+  allianceEvent?: AllianceEventView | null;
   serverNow: number;
   config: KingdomsConfig;
   season: KingdomsWorld['season'];
