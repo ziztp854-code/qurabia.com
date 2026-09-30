@@ -4,12 +4,32 @@
     "slug": "tahaddi-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "tahaddi",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#070A0F",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#070A0F"
+    },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.qurabia.tahaddi",
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "ar",
+        "CFBundleLocalizations": ["ar"]
+      }
     },
     "android": {
+      "package": "com.qurabia.tahaddi",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#070A0F"
+      },
       "predictiveBackGestureEnabled": true
     }
   }

@@ -7,6 +7,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "build:ios": "npx eas-cli@latest build --platform ios --profile production",
+    "submit:ios": "npx eas-cli@latest submit --platform ios --profile production",
     "typecheck": "tsc --noEmit",
     "test": "pnpm --filter @tahaddi/domain build && tsx --test src/join-flow.test.ts"
   },
