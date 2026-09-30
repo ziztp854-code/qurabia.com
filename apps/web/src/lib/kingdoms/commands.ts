@@ -19,6 +19,11 @@ const troops = z
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('found'), name }).strict(),
+  z.object({
+    type: z.literal('allianceEventClaim'),
+    villageId,
+    eventKey: z.string().max(60).regex(/^s[1-9]\d*-w\d+$/),
+  }).strict(),
   z.object({ type: z.literal('build'), villageId, building: z.enum(buildingKeys) }).strict(),
   z
     .object({

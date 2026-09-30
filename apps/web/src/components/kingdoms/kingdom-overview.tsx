@@ -294,12 +294,22 @@ export function KingdomOverview({
                     ? `${number(Object.keys(suggestedAlliance.members).length)} أعضاء · يمكنك طلب الانضمام`
                     : 'لا تحالفات في هذا العالم بعد'}
               </p>
+              {view.allianceEvent && (
+                <p>
+                  {view.allianceEvent.title} · {number(view.allianceEvent.points)} من{' '}
+                  {number(view.allianceEvent.target)} نقطة
+                </p>
+              )}
               <button
                 type="button"
                 className={styles.goldButton}
                 onClick={() => onNavigate('alliances')}
               >
-                {alliance ? 'إدارة التحالف' : 'استعرض التحالفات'}
+                {view.allianceEvent
+                  ? 'افتح الميثاق الأسبوعي'
+                  : alliance
+                    ? 'إدارة التحالف'
+                    : 'استعرض التحالفات'}
               </button>
             </div>
           </div>

@@ -449,6 +449,26 @@
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-md);
 }
+/* Matte controls keep the village palette independent of the site gold glow. */
+.playing :global(button.button.button-primary),
+.playing :global(button.button.button-gold) {
+  background: var(--gold);
+  color: var(--background);
+  border-color: var(--border-gold);
+  box-shadow: none;
+}
+.playing :global(button.button.button-primary:hover:not(:disabled)),
+.playing :global(button.button.button-gold:hover:not(:disabled)) {
+  background: color-mix(in srgb, var(--gold) 90%, var(--foreground));
+  color: var(--background);
+  box-shadow: none;
+}
+.playing :global(button.button.button-outline),
+.playing :global(button.button.button-secondary) {
+  background: var(--surface-strong);
+  border-color: var(--border);
+  box-shadow: none;
+}
 .playing .hero {
   padding: 0;
   gap: 0.65rem;
@@ -1020,6 +1040,13 @@
 .playing .resource {
   min-inline-size: 0;
   min-block-size: 96px;
+  --surface: var(--kingdoms-ui-panel-surface);
+  --surface-strong: var(--kingdoms-ui-panel-strong);
+  --foreground: var(--kingdoms-ui-panel-foreground);
+  --muted-foreground: var(--kingdoms-ui-panel-muted);
+  --border: var(--kingdoms-ui-panel-border);
+  --gold: var(--kingdoms-ui-panel-gold);
+  --danger: var(--kingdoms-ui-panel-danger);
   grid-template-columns: 30px minmax(0, 1fr);
   grid-template-rows: auto auto 1fr;
   align-content: center;
@@ -1027,7 +1054,8 @@
   padding: 0.8rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(145deg, var(--surface-strong), var(--surface));
+  background: var(--surface);
+  color: var(--foreground);
 }
 .playing .resource:last-child {
   border: 1px solid var(--border);

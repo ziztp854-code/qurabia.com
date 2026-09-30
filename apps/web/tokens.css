@@ -329,17 +329,25 @@
 /* Illustrated Kingdoms atlas pigments, separate from interface theme colors. */
 :root {
   /* Approved Kingdoms command-deck reference, scoped to the playing surface. */
-  --kingdoms-ui-background: #061018;
-  --kingdoms-ui-surface: #091a26;
-  --kingdoms-ui-surface-strong: #102638;
-  --kingdoms-ui-surface-soft: #07151f;
-  --kingdoms-ui-foreground: #fff8e9;
-  --kingdoms-ui-muted: #c4b9a1;
-  --kingdoms-ui-gold: #f5c66a;
-  --kingdoms-ui-success: #66bb6a;
-  --kingdoms-ui-danger: #ef5350;
-  --kingdoms-ui-border: #315166;
-  --kingdoms-ui-border-gold: #a97d3c;
+  --kingdoms-ui-background: #10232c;
+  --kingdoms-ui-surface: #18333b;
+  --kingdoms-ui-surface-strong: #24454b;
+  --kingdoms-ui-surface-soft: #142b32;
+  --kingdoms-ui-foreground: #d8ded9;
+  --kingdoms-ui-muted: #b4bdb6;
+  --kingdoms-ui-gold: #c9aa76;
+  --kingdoms-ui-success: #a3bda6;
+  --kingdoms-ui-danger: #d6a092;
+  --kingdoms-ui-border: #597376;
+  --kingdoms-ui-border-gold: #7d7158;
+  --kingdoms-ui-panel-surface: #203139;
+  --kingdoms-ui-panel-strong: #263941;
+  --kingdoms-ui-panel-foreground: var(--kingdoms-ui-foreground);
+  --kingdoms-ui-panel-muted: #b7beb7;
+  --kingdoms-ui-panel-border: #5d7375;
+  --kingdoms-ui-panel-gold: var(--kingdoms-ui-gold);
+  --kingdoms-ui-panel-success: var(--kingdoms-ui-success);
+  --kingdoms-ui-panel-danger: var(--kingdoms-ui-danger);
   --kingdoms-terrain-meadow: #abb97a;
   --kingdoms-terrain-earth: #87975e;
   --kingdoms-terrain-forest: #547344;

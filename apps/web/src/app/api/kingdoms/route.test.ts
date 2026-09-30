@@ -25,6 +25,7 @@ vi.mock('@/lib/kingdoms/repository', () => ({
   readKingdomWorld: dependencies.read,
 }));
 import { GET, POST } from './route';
+import { kingdomsCommandSchema } from '@/lib/kingdoms/commands';
 
 const request = (body: unknown) =>
   new Request('https://qurabia.com/api/kingdoms', {
@@ -63,6 +64,35 @@ describe('Kingdoms authenticated commands', () => {
   it('rejects client-supplied actor identity and extra envelope fields', async () => {
     expect((await POST(request({ ...valid, actorId: 'victim' }))).status).toBe(400);
     expect(dependencies.command).not.toHaveBeenCalled();
+  });
+  it('binds an alliance event reward claim to the authenticated player', async () => {
+    dependencies.command.mockImplementation(async (_world, _identity, _key, input) => {
+      kingdomsCommandSchema.parse(input);
+      return { player: { name: 'مملكة النور' } };
+    });
+    const command = { type: 'allianceEventClaim', villageId: 'v1', eventKey: 's1-w0' };
+    const response = await POST(request({ ...valid, command }));
+    expect(response.status).toBe(200);
+    expect(dependencies.command).toHaveBeenCalledWith(
+      'world1',
+      expect.objectContaining({ id: 'alice', tokenVersion: 2 }),
+      valid.idempotencyKey,
+      command,
+    );
+  });
+  it('returns validation errors for forged event fields rejected by the command boundary', async () => {
+    dependencies.command.mockImplementation(async (_world, _identity, _key, input) => {
+      kingdomsCommandSchema.parse(input);
+      return {};
+    });
+    for (const extra of [{ points: 30 }, { reward: 1000 }, { allianceId: 'other' }]) {
+      const response = await POST(request({
+        ...valid,
+        command: { type: 'allianceEventClaim', villageId: 'v1', eventKey: 's1-w0', ...extra },
+      }));
+      expect(response.status).toBe(400);
+    }
+    expect(dependencies.command).toHaveBeenCalledTimes(3);
   });
   it('rejects suspended users and revoked tokens before any game mutation', async () => {
     dependencies.user.mockResolvedValue({ id: 'alice', status: 'SUSPENDED', tokenVersion: 2 });

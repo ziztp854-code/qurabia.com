@@ -1,3 +1,4 @@
+import { creditAllianceEvent } from './alliance-events';
 import { resources } from './config';
 import {
   buildingKeys,
@@ -362,11 +363,17 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
     accrue(w, next);
     for (const v of Object.values(w.villages)) {
       if (v.build && v.build.endsAt === next) {
+        if (v.build.allianceEvent) {
+          creditAllianceEvent(w, v.ownerId, 'build', 5, next, v.build.allianceEvent);
+        }
         v.buildings = { ...v.buildings, [v.build.building]: v.build.level };
         delete v.build;
         report(w, next, [v.ownerId], 'اكتمل البناء', `اكتمل تطوير مبنى في ${v.name}`);
       }
       if (v.training && v.training.endsAt === next) {
+        if (v.training.allianceEvent) {
+          creditAllianceEvent(w, v.ownerId, 'train', v.training.count, next, v.training.allianceEvent);
+        }
         v.troops = { ...v.troops, [v.training.unit]: v.troops[v.training.unit] + v.training.count };
         delete v.training;
         report(w, next, [v.ownerId], 'اكتمل التدريب', `انضمت قوات جديدة في ${v.name}`);

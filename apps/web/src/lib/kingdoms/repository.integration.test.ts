@@ -105,6 +105,62 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     return { row, state: row.state as unknown as KingdomsWorld };
   }
 
+  it.each(['identical', 'different'] as const)(
+    'credits one alliance event reward under simultaneous %s request keys',
+    async (keyMode) => {
+      const { worldId, identities: [actor, teammate], state } = await fixture(2);
+      const allianceId = 'test_alliance';
+      const eventKey = 's1-w0';
+      const prepared: KingdomsWorld = {
+        ...state,
+        alliances: {
+          [allianceId]: {
+            id: allianceId,
+            name: 'عهد الاختبار',
+            members: { [actor.id]: 'leader', [teammate.id]: 'member' },
+            diplomacy: {},
+          },
+        },
+        players: Object.fromEntries(Object.entries(state.players).map(([id, player]) => [
+          id,
+          {
+            ...player,
+            allianceId,
+            allianceEvent: {
+              eventKey, allianceId, points: id === actor.id ? 20 : 10,
+              claimed: false, tradedWith: [],
+            },
+          },
+        ])),
+      };
+      await db.kingdomWorld.update({
+        where: { id: worldId },
+        data: { state: JSON.parse(JSON.stringify(prepared)) as Prisma.InputJsonValue },
+      });
+      const villageId = Object.values(state.villages).find((v) => v.ownerId === actor.id)!.id;
+      const firstKey = key();
+      const command = { type: 'allianceEventClaim', villageId, eventKey };
+      const results = await Promise.allSettled([
+        repository.commandKingdomWorld(worldId, actor, firstKey, command, db),
+        repository.commandKingdomWorld(
+          worldId, actor, keyMode === 'identical' ? firstKey : key(), command, db,
+        ),
+      ]);
+      expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(
+        keyMode === 'identical' ? 2 : 1,
+      );
+      const view = await repository.readKingdomWorld(worldId, actor, false, db);
+      if (!('allianceEvent' in view)) throw new Error('Expected a player world view');
+      expect(view.revision).toBe(1);
+      expect(view.allianceEvent?.claimed).toBe(true);
+      expect(view.allianceEvent?.canClaim).toBe(false);
+      expect(view.villages.find((v) => v.id === villageId)?.resources).toEqual(
+        resources(200, 200, 200, 200, 125),
+      );
+      expect(view.player?.score).toBe(0);
+    },
+  );
+
   it('applies simultaneous identical idempotency keys exactly once', async () => {
     const {
       worldId,

@@ -1,0 +1,159 @@
+.covenant {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.44fr);
+  margin-block-end: var(--space-6);
+  border: 1px solid var(--border-gold);
+  border-inline-start: 4px solid var(--gold);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--foreground);
+  overflow: hidden;
+}
+.main {
+  padding: clamp(var(--space-4), 3vw, var(--space-8));
+  min-inline-size: 0;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--gold);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+}
+.main h2 {
+  margin-block: var(--space-4) var(--space-2);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: 1.5;
+}
+.description {
+  margin-block: 0 var(--space-3);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.deadline,
+.detail {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  line-height: 1.8;
+  margin-block: var(--space-2);
+  overflow-wrap: anywhere;
+}
+.progressHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-block: var(--space-5) var(--space-2);
+}
+.progressHead strong {
+  color: var(--gold);
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+.progressHead strong span {
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.progress {
+  display: block;
+  inline-size: 100%;
+  block-size: 10px;
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  overflow: hidden;
+}
+.progress::-webkit-progress-bar {
+  background: var(--surface-strong);
+  border-radius: var(--radius-full);
+}
+.progress::-webkit-progress-value {
+  background: var(--gold);
+  border-radius: var(--radius-full);
+}
+.progress::-moz-progress-bar {
+  background: var(--gold);
+  border-radius: var(--radius-full);
+}
+.contributors {
+  margin-block-start: var(--space-5);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--border);
+}
+.contributors h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+}
+.contributors ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.contributors li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+}
+.contributors li span {
+  overflow-wrap: anywhere;
+  min-inline-size: 0;
+}
+.contributors li strong {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+.reward {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: clamp(var(--space-4), 3vw, var(--space-6));
+  border-inline-start: 1px solid var(--border);
+  background: var(--surface-strong);
+  min-inline-size: 0;
+}
+.rewardLabel {
+  color: var(--gold);
+  font-weight: 700;
+  margin: 0;
+}
+.reward > span {
+  line-height: 2.2;
+}
+.destination {
+  font-size: 0.875rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.reward button {
+  min-block-size: 44px;
+  inline-size: 100%;
+  white-space: normal;
+}
+.reward button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+@media (max-width: 720px) {
+  .covenant {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reward {
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--border);
+  }
+}
