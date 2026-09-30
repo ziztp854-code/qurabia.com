@@ -112,7 +112,7 @@ describe('Kingdoms player interface', () => {
     render(<KingdomsClient />);
     expect(await screen.findByRole('heading', { name: 'مملكة النور' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'ملخص المملكة' })).toBeInTheDocument();
-    const scene = screen.getByRole('region', { name: 'مشهد المملكة ثلاثي الأبعاد' });
+    const scene = screen.getByRole('region', { name: 'خريطة القرية' });
     expect(within(scene).getByRole('button', { name: /دار الحكم.*المستوى/ })).toBeInTheDocument();
     expect(within(scene).getByRole('button', { name: /حطّاب المملكة.*لم يُبنَ/ })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'خريطة المملكة' })).toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
     render(<KingdomsClient />);
-    const scene = await screen.findByRole('region', { name: 'مشهد المملكة ثلاثي الأبعاد' });
+    const scene = await screen.findByRole('region', { name: 'خريطة القرية' });
     fireEvent.click(within(scene).getByRole('button', { name: /حطّاب المملكة.*لم يُبنَ/ }));
     expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'حطّاب المملكة' })).toBeInTheDocument();

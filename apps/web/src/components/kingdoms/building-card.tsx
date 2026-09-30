@@ -9,7 +9,8 @@ import { resourceKeys, type Building } from '@/lib/kingdoms/types';
 import { BuildingPortrait } from './building-portrait';
 import { date, labels, number, type GameProps } from './shared';
 import { buildingEffect, duration, upgradeCost, upgradeSeconds } from './village-effects';
-import { plotState, resourceIcons, villagePlots } from './village-layout';
+import { plotState, villagePlots } from './village-layout';
+import { ResourceIcon } from './resource-icon';
 import styles from './village.module.css';
 
 type Request = { building: Building; level: number };
@@ -145,14 +146,13 @@ export function BuildingCard({
             {resourceKeys
               .filter((resource) => cost[resource] > 0)
               .map((resource) => {
-                const ResourceIcon = resourceIcons[resource];
                 const have = Math.floor(village.resources[resource]);
                 const enough = have >= cost[resource];
                 const fill =
                   cost[resource] > 0 ? Math.min(100, (have / cost[resource]) * 100) : 100;
                 return (
                   <li key={resource} className={styles.costCell} data-afford={enough}>
-                    <ResourceIcon size={14} aria-hidden="true" />
+                    <ResourceIcon resource={resource} size={24} />
                     <span>{labels[resource]}</span>
                     <bdi>{number(cost[resource])}</bdi>
                     <span className={styles.costHave}>

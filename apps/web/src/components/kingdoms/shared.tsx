@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode, FormEvent } from 'react';
+import { Fragment, type ReactNode, type FormEvent } from 'react';
 import { Button, Input } from '@/components/ui';
 import {
   resourceKeys,
@@ -9,6 +9,8 @@ import {
   type Village,
 } from '@/lib/kingdoms/types';
 import type { KingdomsCommand } from '@/lib/kingdoms/commands';
+import { ResourceIcon } from './resource-icon';
+import resourceStyles from './resource-icon.module.css';
 import styles from './kingdoms.module.css';
 
 export type WorldView = KingdomsView & {
@@ -37,12 +39,20 @@ export const amounts = (form: FormData, prefix: string): Resources => ({
 });
 
 export function ResourceText({ resources }: { resources: Resources }) {
+  const visible = resourceKeys.filter((key) => resources[key] > 0);
   return (
     <span className={styles.cost}>
-      {resourceKeys
-        .filter((key) => resources[key] > 0)
-        .map((key) => `${number(resources[key])} ${labels[key]}`)
-        .join(' · ') || 'لا موارد'}
+      {visible.length
+        ? visible.map((key, index) => (
+            <Fragment key={key}>
+              {index > 0 && ' · '}
+              <span className={resourceStyles.costItem}>
+                <ResourceIcon resource={key} size={24} />
+                {`${number(resources[key])} ${labels[key]}`}
+              </span>
+            </Fragment>
+          ))
+        : 'لا موارد'}
     </span>
   );
 }

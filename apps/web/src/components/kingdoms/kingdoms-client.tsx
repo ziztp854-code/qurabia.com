@@ -10,11 +10,6 @@ import {
   Store,
   Flag,
   ScrollText,
-  Trees,
-  Mountain,
-  Pickaxe,
-  Wheat,
-  Coins,
   House,
 } from 'lucide-react';
 import { Button, ButtonLink, Input, Select } from '@/components/ui';
@@ -25,6 +20,7 @@ import { MapPanel, type MapSelection } from './map-panel';
 import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
+import { ResourceIcon } from './resource-icon';
 import type { Building } from '@/lib/kingdoms/types';
 import styles from './kingdoms.module.css';
 
@@ -48,7 +44,6 @@ const tabIcons = {
   reports: ScrollText,
   throne: Crown,
 };
-const resourceIcons = { wood: Trees, stone: Mountain, iron: Pickaxe, food: Wheat, gold: Coins };
 const resourceOrder = ['iron', 'food', 'stone', 'wood', 'gold'] as const;
 type ScopedMapSelection = MapSelection & { worldId: string; villageId: string };
 type ScopedBuildingSelection = { worldId: string; villageId: string; building: Building };
@@ -98,14 +93,13 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
         {village && (
           <section aria-label="موارد القرية" className={styles.resources}>
             {resourceOrder.map((resource) => {
-              const Icon = resourceIcons[resource];
               const cap =
                 view!.config.storageBase +
                 village.buildings.warehouse * view!.config.storagePerLevel;
               const fill = Math.min(100, (village.resources[resource] / cap) * 100);
               return (
                 <div key={resource} className={styles.resource} data-full={fill >= 95}>
-                  <Icon size={20} aria-hidden="true" />
+                  <ResourceIcon resource={resource} hud />
                   <span>{labels[resource]}</span>
                   <strong>{number(village.resources[resource])}</strong>
                   <em className={styles.capacity} aria-hidden="true" title={`السعة ${number(cap)}`}>

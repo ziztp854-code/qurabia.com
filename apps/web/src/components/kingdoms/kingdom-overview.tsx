@@ -17,7 +17,8 @@ import {
 import { unitKeys, type Building } from '@/lib/kingdoms/types';
 import { date, number, type GameProps } from './shared';
 import { WorldMap } from './world-map';
-import { KingdomScene } from './kingdom-scene';
+import { VillageMap } from './village-map';
+import { villageArt } from './village-layout';
 import type { MapSelection } from './map-panel';
 import styles from './kingdom-overview.module.css';
 
@@ -105,7 +106,7 @@ export function KingdomOverview({
     <div className={styles.overview}>
       <section className={styles.hero} aria-labelledby="kingdom-overview-title">
         <Image
-          src="/game-art/kingdoms/village-oasis.webp"
+          src={villageArt.src}
           alt=""
           fill
           priority
@@ -137,7 +138,7 @@ export function KingdomOverview({
         </div>
       </section>
 
-      <KingdomScene view={view} village={village} onSelectBuilding={onSelectBuilding} />
+      <VillageMap view={view} village={village} selected="hall" onSelect={onSelectBuilding} />
       <section className={styles.stats} aria-label="ملخص المملكة">
         <article className={styles.stat}>
           <Castle aria-hidden="true" />

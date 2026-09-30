@@ -25,7 +25,7 @@ export const resourceIcons: Record<Resource, LucideIcon> = {
 
 /** أبعاد رسم الواحة الأصلي؛ كل الإحداثيات أدناه بكسلات هذا الرسم فتبقى ثابتة في RTL وأي عرض. */
 export const villageArt = {
-  src: '/game-art/kingdoms/village-oasis.webp',
+  src: '/game-art/kingdoms/village-realistic.webp',
   width: 1536,
   height: 1024,
   sizes: '(max-width: 700px) 760px, 1200px',
