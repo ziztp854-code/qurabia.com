@@ -119,6 +119,9 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
         </p>
       )}
       <div className={styles.toolbar}>
+        <ButtonLink href="/games/kingdoms/world-map" variant="outline">
+          الخريطة الجغرافية
+        </ButtonLink>
         <Select
           label="العالم والموسم"
           value={game.worldId}

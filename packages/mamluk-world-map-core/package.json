@@ -1,0 +1,33 @@
+{
+  "name": "@mamluk/world-map-core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "lint": "prettier --check src test *.json *.ts *.md",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "polygon-clipping": "0.15.7"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
+    "prettier": "^3.9.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

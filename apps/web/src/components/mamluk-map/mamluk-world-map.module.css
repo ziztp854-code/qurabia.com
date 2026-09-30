@@ -1,0 +1,412 @@
+.root {
+  /* Keep the atlas's charcoal identity local to this surface. */
+  --map-background: var(--brand-ink);
+  --map-surface: color-mix(in srgb, var(--brand-ink) 90%, var(--gold-900));
+  --map-raised: color-mix(in srgb, var(--brand-ink) 90%, var(--gold-100));
+  --map-text: var(--brand-cream);
+  --map-muted: color-mix(in srgb, var(--brand-cream) 80%, var(--gold-600));
+  --map-gold: var(--gold-100);
+  --map-bronze: var(--gold-600);
+  --map-border: var(--gold-600);
+  --map-success: var(--success);
+  --map-danger: var(--danger);
+  --map-city: var(--gold-100);
+  --map-territory: var(--gold-600);
+  --map-sultanate-border: var(--gold-700);
+  background: var(--map-background);
+  color: var(--map-text);
+  border: 1px solid var(--map-border);
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  font-family: var(--font-sans);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-block-end: 1px solid var(--map-border);
+}
+.referenceNotice {
+  margin: 0;
+  padding: 12px 24px;
+  color: var(--map-muted);
+  background: var(--map-surface);
+  border-block-end: 1px solid var(--map-border);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.heading > svg {
+  color: var(--map-gold);
+}
+.heading h1 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.4;
+}
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--map-bronze);
+  font-size: 12px;
+  font-weight: 700;
+}
+.worldSelect {
+  display: grid;
+  gap: 4px;
+  color: var(--map-muted);
+  font-size: 13px;
+}
+.worldSelect select {
+  min-block-size: 44px;
+  max-inline-size: 240px;
+  background: var(--map-surface);
+  color: var(--map-text);
+  border: 1px solid var(--map-border);
+  border-radius: 8px;
+  padding-inline: 12px;
+  font: inherit;
+}
+.workspace {
+  block-size: 630px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  direction: ltr;
+  min-block-size: 630px;
+}
+.mapFrame {
+  position: relative;
+  min-inline-size: 0;
+  background: var(--map-background);
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+  direction: ltr;
+}
+.toolbar {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 16px;
+  inset-inline-start: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  direction: rtl;
+}
+.control,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  border: 1px solid var(--map-border);
+  border-radius: 8px;
+  background: var(--map-surface);
+  color: var(--map-text);
+  font: inherit;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+.control[aria-pressed='true'] {
+  background: var(--map-gold);
+  color: var(--map-background);
+  border-color: var(--map-gold);
+}
+.control:hover,
+.iconButton:hover {
+  border-color: var(--map-gold);
+}
+.control:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.control:focus-visible,
+.iconButton:focus-visible,
+.worldSelect select:focus-visible,
+.visibleLocations button:focus-visible {
+  outline: 3px solid var(--map-gold);
+  outline-offset: 3px;
+}
+.navigation {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 78px;
+  inset-inline-start: 16px;
+  display: grid;
+  gap: 8px;
+}
+.status {
+  position: absolute;
+  z-index: 2;
+  inset-block-end: 46px;
+  inset-inline-start: 16px;
+  max-inline-size: calc(100% - 32px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--map-border);
+  background: var(--map-surface);
+  border-radius: 8px;
+  direction: rtl;
+  font-size: 13px;
+}
+.status > svg {
+  color: var(--map-success);
+  flex-shrink: 0;
+}
+.error {
+  color: var(--map-text);
+}
+.legend {
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-block-start: 1px solid var(--map-border);
+  font-size: 12px;
+  color: var(--map-muted);
+}
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend svg {
+  color: var(--map-bronze);
+}
+.panel {
+  min-block-size: 0;
+  direction: rtl;
+  padding: 24px;
+  background: var(--map-surface);
+  border-inline-start: 1px solid var(--map-border);
+  overflow-y: auto;
+  max-block-size: 100%;
+}
+.panelHandle {
+  display: none;
+}
+.sheetToggle {
+  display: none;
+}
+.selectionHeader {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.selectionHeader > svg {
+  color: var(--map-gold);
+  flex-shrink: 0;
+}
+.selectionHeader h2 {
+  font-size: 22px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.selectionHeader .iconButton {
+  margin-inline-start: auto;
+  padding: 8px;
+}
+.details {
+  margin: 24px 0 16px;
+}
+.details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 12px;
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 40%, transparent);
+}
+.details dt {
+  color: var(--map-muted);
+  font-size: 14px;
+}
+.details dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.coordinates {
+  display: grid;
+  gap: 6px;
+  color: var(--map-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.coordinates bdi {
+  color: var(--map-text);
+  font-size: 14px;
+}
+.emptySelection {
+  padding-block: 8px 20px;
+}
+.emptySelection svg {
+  color: var(--map-bronze);
+}
+.emptySelection h2 {
+  font-size: 21px;
+  line-height: 1.5;
+  margin: 12px 0 8px;
+}
+.emptySelection p,
+.panelNote,
+.visibleLocations p {
+  color: var(--map-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.visibleLocations {
+  margin-block-start: 28px;
+}
+.visibleLocations h3 {
+  font-size: 13px;
+  color: var(--map-gold);
+  margin: 0 0 12px;
+}
+.visibleLocations ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  max-block-size: 230px;
+  overflow-y: auto;
+}
+.visibleLocations button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  inline-size: 100%;
+  min-block-size: 44px;
+  text-align: start;
+  padding: 10px 8px;
+  background: transparent;
+  border: 0;
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 32%, transparent);
+  color: var(--map-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.visibleLocations button[aria-pressed='true'] {
+  color: var(--map-gold);
+}
+.visibleLocations button span {
+  overflow-wrap: anywhere;
+}
+.panelNote {
+  margin-block-start: 24px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--map-border);
+}
+.help {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .header {
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+  .worldSelect {
+    inline-size: 100%;
+  }
+  .worldSelect select {
+    max-inline-size: none;
+    inline-size: 100%;
+  }
+  .workspace {
+    position: relative;
+    display: block;
+    block-size: 74dvh;
+    min-block-size: 500px;
+  }
+  .mapFrame {
+    block-size: 100%;
+    min-block-size: 0;
+  }
+  .toolbar {
+    inset-block-start: 12px;
+    inset-inline-start: 12px;
+    gap: 6px;
+  }
+  .control {
+    font-size: 13px;
+    padding-inline: 10px;
+  }
+  .navigation {
+    inset-inline-start: 12px;
+    inset-block-start: 72px;
+  }
+  .panel {
+    position: absolute;
+    z-index: 6;
+    inset-inline: 0;
+    inset-block-end: 0;
+    max-block-size: 42dvh;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--map-border);
+    border-start-start-radius: 18px;
+    border-start-end-radius: 18px;
+    padding: 10px 20px max(12px, env(safe-area-inset-bottom));
+  }
+  .panelHandle {
+    display: block;
+    inline-size: 44px;
+    block-size: 4px;
+    margin: 0 auto 4px;
+    background: var(--map-bronze);
+    border-radius: 4px;
+  }
+  .sheetToggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--map-gold);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .sheetToggle:focus-visible {
+    outline: 2px solid var(--map-gold);
+    outline-offset: 2px;
+  }
+  .panel[data-expanded='false'] .panelContent {
+    display: none;
+  }
+  .status {
+    inset-block-end: 100px;
+  }
+  .mapFrame :global(.maplibregl-ctrl-bottom-right) {
+    inset-block-end: 76px;
+  }
+  .visibleLocations {
+    margin-block-start: 20px;
+  }
+  .legend {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root *,
+  .root *::before,
+  .root *::after {
+    scroll-behavior: auto;
+    transition: none;
+    animation: none;
+  }
+}

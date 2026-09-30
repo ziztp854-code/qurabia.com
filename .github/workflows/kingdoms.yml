@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - 'apps/web/src/lib/kingdoms/**'
+      - 'apps/web/src/lib/mamluk-map/**'
+      - 'apps/web/src/components/mamluk-map/**'
+      - 'packages/mamluk-world-map-core/**'
+      - 'packages/mamluk-maplibre-adapter/**'
+      - 'scripts/prepare-maplibre-workers.mjs'
       - 'apps/web/src/components/kingdoms/**'
       - 'apps/web/src/app/games/kingdoms/**'
       - 'apps/web/src/app/admin/(console)/kingdoms/**'
@@ -22,6 +27,11 @@ on:
     branches: [main]
     paths:
       - 'apps/web/src/lib/kingdoms/**'
+      - 'apps/web/src/lib/mamluk-map/**'
+      - 'apps/web/src/components/mamluk-map/**'
+      - 'packages/mamluk-world-map-core/**'
+      - 'packages/mamluk-maplibre-adapter/**'
+      - 'scripts/prepare-maplibre-workers.mjs'
       - 'apps/web/src/components/kingdoms/**'
       - 'apps/web/src/app/games/kingdoms/**'
       - 'apps/web/src/app/admin/(console)/kingdoms/**'
@@ -79,11 +89,13 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Build shared libraries and generate Prisma client
-        run: pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build
+        run: pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build
       - name: Migrate isolated test database
         run: pnpm exec prisma migrate deploy
       - name: Test Kingdoms logic and real concurrent transactions with coverage
-        run: pnpm --filter @tahaddi/web test src/lib/kingdoms src/app/api/kingdoms src/app/api/admin/kingdoms --coverage --coverage.include='src/lib/kingdoms/**' --coverage.exclude='**/*.test.ts' --coverage.thresholds.statements=80 --coverage.thresholds.branches=80 --coverage.thresholds.functions=80 --coverage.thresholds.lines=80
+        run: NEXTAUTH_URL= AUTH_URL= NEXT_PUBLIC_SITE_URL= pnpm --filter @tahaddi/web test src/lib/kingdoms src/lib/mamluk-map src/components/mamluk-map src/app/games/kingdoms/world-map src/app/api/kingdoms src/app/api/admin/kingdoms --coverage --coverage.include='src/lib/kingdoms/**' --coverage.exclude='**/*.test.ts' --coverage.thresholds.statements=80 --coverage.thresholds.branches=80 --coverage.thresholds.functions=80 --coverage.thresholds.lines=80
+      - name: Test geographic domain and MapLibre adapter
+        run: pnpm --filter @mamluk/world-map-core test && pnpm --filter @mamluk/maplibre-adapter test
       - name: Install test browser
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
       - name: Build web application

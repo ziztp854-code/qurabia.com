@@ -75,3 +75,5 @@ Desktop.ini
 .deploy-id
 $DAGGER_RUNTIME
 /_mamluk/
+apps/web/.next-mamluk/
+apps/web/public/maplibre/

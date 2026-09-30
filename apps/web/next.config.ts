@@ -26,12 +26,16 @@ function loadEnvFile(filePath: string) {
   }
 }
 
-if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
+if (
+  process.env.VERCEL !== '1' &&
+  process.env.NODE_ENV !== 'production' &&
+  process.env.MAMLUK_LOCAL_BUILD !== '1'
+) {
   loadEnvFile(path.resolve(process.cwd(), '../../.env'));
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
-const onVercel = Boolean(process.env.VERCEL);
+const onVercel = process.env.VERCEL === '1';
 const sentrySourceMapsToken = process.env.SENTRY_SOURCE_MAPS_AUTH_TOKEN?.trim();
 
 function toOrigin(value: string | undefined): string | null {
@@ -63,7 +67,7 @@ function toWebSocketOrigin(origin: string): string {
  *  - `worker-src blob:` is required by the three.js loader workers.
  */
 function buildContentSecurityPolicy(): string {
-  const connectSources = new Set(["'self'"]);
+  const connectSources = new Set(["'self'", 'https://tiles.openfreemap.org']);
   for (const origin of [
     toOrigin(process.env.NEXT_PUBLIC_REALTIME_URL),
     toOrigin(process.env.NEXT_PUBLIC_SITE_URL),
@@ -126,6 +130,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  ...(process.env.MAMLUK_LOCAL_BUILD === '1' ? { distDir: '.next-mamluk' } : {}),
+  serverExternalPackages: ['@mamluk/world-map-core', 'polygon-clipping'],
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   trailingSlash: true,
   experimental: {

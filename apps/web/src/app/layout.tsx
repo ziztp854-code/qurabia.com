@@ -165,7 +165,7 @@ export default function RootLayout({
             {children}
           </MotionProvider>
         </ThemeProvider>
-        {process.env.VERCEL ? (
+        {process.env.VERCEL === '1' ? (
           <>
             <SpeedInsights />
             <Analytics />

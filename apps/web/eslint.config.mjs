@@ -9,6 +9,9 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     '.next/**',
+    '.next-mamluk/**',
+    'public/maplibre/**',
+    'coverage/**',
     'out/**',
     'build/**',
     'public/3d/draco/**',

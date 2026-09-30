@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
 
 const mocks = vi.hoisted(() => ({
@@ -28,16 +28,17 @@ function request(body: unknown, origin = 'http://localhost') {
 }
 
 describe('presence heartbeat route', () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
+    vi.stubEnv('NEXTAUTH_URL', '');
+    vi.stubEnv('AUTH_URL', '');
     vi.clearAllMocks();
     mocks.checkRateLimit.mockResolvedValue(true);
     mocks.recordPresenceHeartbeat.mockResolvedValue(undefined);
   });
 
   it('records a valid visitor heartbeat', async () => {
-    const response = await POST(
-      request({ visitorId: '8f14e45f-ea44-4a2d-9c1a-0b3c2d1e0f9a' }),
-    );
+    const response = await POST(request({ visitorId: '8f14e45f-ea44-4a2d-9c1a-0b3c2d1e0f9a' }));
 
     expect(response.status).toBe(200);
     expect(mocks.recordPresenceHeartbeat).toHaveBeenCalledWith(
@@ -52,5 +53,29 @@ describe('presence heartbeat route', () => {
 
     expect(response.status).toBe(403);
     expect(mocks.recordPresenceHeartbeat).not.toHaveBeenCalled();
+  });
+
+  it('accepts the configured public origin behind an internal upstream', async () => {
+    vi.stubEnv('NEXTAUTH_URL', 'http://127.0.0.1:3000');
+    expect(
+      (
+        await POST(
+          request({ visitorId: '8f14e45f-ea44-4a2d-9c1a-0b3c2d1e0f9a' }, 'http://127.0.0.1:3000'),
+        )
+      ).status,
+    ).toBe(200);
+  });
+
+  it('retains same-origin access through a deployed project alias', async () => {
+    vi.stubEnv('NEXTAUTH_URL', 'https://qurabia.com');
+    const alias = 'https://tahaddi-platform-realtime.vercel.app';
+    const response = await POST(
+      new Request(`${alias}/api/presence/heartbeat`, {
+        method: 'POST',
+        headers: { origin: alias, 'content-type': 'application/json' },
+        body: JSON.stringify({ visitorId: '8f14e45f-ea44-4a2d-9c1a-0b3c2d1e0f9a' }),
+      }),
+    );
+    expect(response.status).toBe(200);
   });
 });

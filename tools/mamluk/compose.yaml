@@ -1,0 +1,21 @@
+name: mamluk-tahaddi-phase1
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: kingdoms_test_mamluk
+      POSTGRES_USER: mamluk_local
+      POSTGRES_PASSWORD: ${MAMLUK_DB_PASSWORD:?Generate a local runtime password first}
+    ports:
+      - "127.0.0.1:55437:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mamluk_local -d kingdoms_test_mamluk"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  database:

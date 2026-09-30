@@ -1,0 +1,37 @@
+{
+  "name": "@mamluk/maplibre-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./example": {
+      "types": "./dist/browser-example.d.ts",
+      "default": "./dist/browser-example.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "lint": "prettier --check src test *.json *.ts *.md",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@mamluk/world-map-core": "file:../mamluk-world-map-core"
+  },
+  "peerDependencies": {
+    "maplibre-gl": ">=5 <7"
+  },
+  "devDependencies": {
+    "maplibre-gl": "6.11.2",
+    "@vitest/coverage-v8": "4.1.10",
+    "prettier": "^3.9.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

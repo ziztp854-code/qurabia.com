@@ -11,7 +11,10 @@ function getClientIp(request: Request) {
 
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin) {
+  const configuredOrigin = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
+  const allowedOrigins = new Set([new URL(request.url).origin]);
+  if (configuredOrigin) allowedOrigins.add(new URL(configuredOrigin).origin);
+  if (origin && !allowedOrigins.has(origin)) {
     return NextResponse.json({ ok: false }, { status: 403 });
   }
 
