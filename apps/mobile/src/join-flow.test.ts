@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildQuizJoinUrl } from './join-flow';
+import { roomCodeFromLink, siteUrl } from './join-flow';
 
-test('builds the official join URL from a normalized quiz room code', () => {
-  assert.equal(buildQuizJoinUrl(' h7uzt3 '), 'https://qurabia.com/join/H7UZT3');
+test('reads a normalized room code from app and website invite links', () => {
+  assert.equal(roomCodeFromLink('tahaddi://join/h7uzt3'), 'H7UZT3');
+  assert.equal(roomCodeFromLink('https://qurabia.com/join/H7UZT3?ref=qr'), 'H7UZT3');
+  assert.equal(roomCodeFromLink('https://www.qurabia.com/join/h7uzt3'), 'H7UZT3');
 });
 
-test('rejects codes that cannot identify a quiz room', () => {
-  assert.equal(buildQuizJoinUrl('ABC01'), null);
+test('ignores links that cannot identify a quiz room', () => {
+  assert.equal(roomCodeFromLink('tahaddi://join/ABC01'), null);
+  assert.equal(roomCodeFromLink('https://evil.example/join/H7UZT3'), null);
+  assert.equal(roomCodeFromLink(null), null);
+});
+
+test('builds official site URLs', () => {
+  assert.equal(siteUrl('/privacy'), 'https://qurabia.com/privacy');
+  assert.equal(siteUrl('games/ladder'), 'https://qurabia.com/games/ladder');
 });
