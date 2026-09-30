@@ -18,7 +18,7 @@ import { AppText, Button, Card, Screen, uiStyles } from '../ui';
 import { useLiveRoom, type ConnectionStatus } from '../use-live-room';
 
 const CONNECTION_COPY: Record<ConnectionStatus, { label: string; color: string }> = {
-  connecting: { label: 'جارٍ الاتصال…', color: theme.colors.goldLight },
+  connecting: { label: 'جارٍ الاتصال…', color: theme.colors.gold },
   online: { label: 'متصل', color: theme.colors.success },
   offline: { label: 'انقطع الاتصال — نعيد المحاولة', color: theme.colors.danger },
 };
@@ -55,7 +55,7 @@ export function RoomScreen({
           </AppText>
         </View>
         <View style={styles.headerScore} accessibilityLabel={`نقاطك ${me?.score ?? 0}`}>
-          <AppText weight="bold" style={styles.scoreValue}>
+          <AppText weight="heading" style={styles.scoreValue}>
             {arabicNumber(me?.score ?? snapshot?.playerResult?.totalScore ?? 0)}
           </AppText>
           <AppText style={uiStyles.small}>نقطة</AppText>
@@ -71,7 +71,7 @@ export function RoomScreen({
 
       {live.fatalError ? (
         <Card>
-          <AppText weight="bold" style={uiStyles.title}>
+          <AppText weight="heading" style={uiStyles.title}>
             انتهت الجلسة
           </AppText>
           <AppText style={uiStyles.body}>{live.fatalError}</AppText>
@@ -116,7 +116,7 @@ function PhaseView({
         <AppText weight="semibold" style={[uiStyles.eyebrow, styles.centerText]}>
           أنت في الغرفة
         </AppText>
-        <AppText weight="bold" style={[uiStyles.title, styles.centerText]}>
+        <AppText weight="heading" style={[uiStyles.title, styles.centerText]}>
           بانتظار المضيف
         </AppText>
         <AppText style={[uiStyles.body, styles.centerText]}>
@@ -162,7 +162,7 @@ function PhaseView({
           <AppText weight="semibold" style={[uiStyles.eyebrow, styles.centerText]}>
             انتهت الجولة
           </AppText>
-          <AppText weight="bold" style={styles.finalRank}>
+          <AppText weight="heading" style={styles.finalRank}>
             {me ? `المركز ${arabicNumber(me.rank)}` : 'شكرًا للمشاركة'}
           </AppText>
           {me ? (
@@ -251,7 +251,7 @@ function QuestionView({
         />
       ) : null}
 
-      <AppText weight="bold" style={styles.prompt} accessibilityRole="header">
+      <AppText weight="heading" style={styles.prompt} accessibilityRole="header">
         {question.prompt}
       </AppText>
 
@@ -276,7 +276,10 @@ function QuestionView({
               ]}
             >
               <View style={[styles.optionBadge, selected ? styles.optionBadgeSelected : null]}>
-                <AppText weight="bold" style={styles.optionBadgeText}>
+                <AppText
+                  weight="bold"
+                  style={[styles.optionBadgeText, selected ? styles.optionBadgeTextSelected : null]}
+                >
                   {OPTION_LABELS[index] ?? arabicNumber(index + 1)}
                 </AppText>
               </View>
@@ -321,7 +324,7 @@ function RevealView({
   return (
     <Card>
       <AppText
-        weight="bold"
+        weight="heading"
         style={[
           styles.verdict,
           playerOptionId ? (correct ? styles.verdictCorrect : styles.verdictWrong) : null,
@@ -389,7 +392,7 @@ function Leaderboard({
 
   return (
     <Card>
-      <AppText weight="bold" style={uiStyles.title} accessibilityRole="header">
+      <AppText weight="heading" style={uiStyles.title} accessibilityRole="header">
         {title}
       </AppText>
       <View style={styles.leaderboard}>
@@ -429,7 +432,7 @@ function Leaderboard({
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   headerIdentity: { flex: 1 },
-  playerName: { fontSize: 20, color: theme.colors.goldLight },
+  playerName: { fontSize: 20, color: theme.colors.gold },
   roomCode: { color: theme.colors.text, writingDirection: 'ltr', letterSpacing: 1.2 },
   headerScore: {
     alignItems: 'center',
@@ -438,8 +441,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     borderRadius: theme.radius.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.borderGold,
+    backgroundColor: theme.colors.ghost,
   },
   scoreValue: { fontSize: 22, color: theme.colors.gold, textAlign: 'center' },
   connection: {
@@ -489,26 +492,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.radius.md,
     borderWidth: 1,
-    borderColor: theme.colors.borderSoft,
+    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surfaceStrong,
   },
-  optionSelected: { borderColor: theme.colors.gold, backgroundColor: 'rgba(255, 180, 12, 0.14)' },
+  optionSelected: { borderColor: theme.colors.gold, backgroundColor: theme.colors.goldTint },
   optionPressed: { opacity: 0.85 },
   optionMuted: { opacity: 0.6 },
-  optionCorrect: { borderColor: theme.colors.success, backgroundColor: 'rgba(34, 197, 94, 0.14)' },
-  optionWrong: { borderColor: theme.colors.danger, backgroundColor: 'rgba(255, 107, 107, 0.12)' },
+  optionCorrect: { borderColor: theme.colors.success, backgroundColor: theme.colors.successTint },
+  optionWrong: { borderColor: theme.colors.danger, backgroundColor: theme.colors.dangerTint },
   optionBadge: {
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.surfaceSoft,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderGold,
   },
-  optionBadgeSelected: { backgroundColor: theme.colors.gold },
-  optionBadgeText: { fontSize: 15, color: theme.colors.goldLight, textAlign: 'center' },
+  optionBadgeSelected: { backgroundColor: theme.colors.gold, borderColor: theme.colors.gold },
+  optionBadgeText: { fontSize: 15, color: theme.colors.gold, textAlign: 'center' },
+  optionBadgeTextSelected: { color: theme.colors.onGold },
   optionText: { flex: 1, fontSize: 16, lineHeight: 25 },
   answerStatus: { marginTop: theme.spacing.md, minHeight: 40 },
   verdict: { fontSize: 28, lineHeight: 40, textAlign: 'center', color: theme.colors.text },
@@ -527,7 +531,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderSoft,
   },
-  finalRank: { fontSize: 36, lineHeight: 48, color: theme.colors.goldLight, textAlign: 'center' },
+  finalRank: { fontSize: 36, lineHeight: 50, color: theme.colors.gold, textAlign: 'center' },
   leaderboard: { marginTop: theme.spacing.md, gap: theme.spacing.xs },
   leaderRow: {
     flexDirection: 'row',
@@ -538,9 +542,13 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.surfaceStrong,
   },
-  leaderRowMine: { borderWidth: 1, borderColor: theme.colors.gold },
+  leaderRowMine: {
+    borderWidth: 1,
+    borderColor: theme.colors.borderGold,
+    backgroundColor: theme.colors.goldTint,
+  },
   leaderRank: { width: 32, fontSize: 16, color: theme.colors.muted, textAlign: 'center' },
   leaderRankTop: { color: theme.colors.gold },
   leaderName: { flex: 1, fontSize: 15 },
-  leaderScore: { fontSize: 15, color: theme.colors.goldLight },
+  leaderScore: { fontSize: 15, color: theme.colors.gold },
 });

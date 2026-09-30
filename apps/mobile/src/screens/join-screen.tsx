@@ -18,7 +18,7 @@ import {
   type PlayerIdentity,
 } from '../live-room';
 import { theme } from '../theme';
-import { AppText, Button, Card, Screen, uiStyles } from '../ui';
+import { AppText, Button, Card, Screen, uiStyles, useFontsReady } from '../ui';
 
 const JOIN_TIMEOUT_MS = 10_000;
 
@@ -55,6 +55,8 @@ export function JoinScreen({
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
+  const [focusedField, setFocusedField] = useState<'name' | 'code' | null>(null);
+  const inputFont = useFontsReady() ? styles.inputFont : null;
 
   useEffect(() => {
     const fillFromLink = (url: string | null | undefined) => {
@@ -103,7 +105,7 @@ export function JoinScreen({
             resizeMode="contain"
             accessible={false}
           />
-          <AppText weight="bold" style={styles.brandName}>
+          <AppText weight="heading" style={styles.brandName}>
             تحدّي
           </AppText>
           <AppText weight="semibold" style={styles.brandTagline}>
@@ -121,7 +123,7 @@ export function JoinScreen({
           <AppText weight="semibold" style={uiStyles.eyebrow}>
             دخول اللاعبين
           </AppText>
-          <AppText weight="bold" style={uiStyles.title}>
+          <AppText weight="heading" style={uiStyles.title}>
             ادخل التحدّي
           </AppText>
           <AppText style={uiStyles.body}>
@@ -140,7 +142,14 @@ export function JoinScreen({
                 if (error) setError('');
               }}
               onSubmitEditing={() => codeRef.current?.focus()}
-              style={[styles.input, styles.nameInput]}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField(null)}
+              style={[
+                styles.input,
+                inputFont,
+                styles.nameInput,
+                focusedField === 'name' ? styles.inputFocused : null,
+              ]}
               placeholder="الاسم الذي سيظهر في الغرفة"
               placeholderTextColor={theme.colors.placeholder}
               autoComplete="nickname"
@@ -163,7 +172,14 @@ export function JoinScreen({
                 if (error) setError('');
               }}
               onSubmitEditing={join}
-              style={[styles.input, styles.codeInput]}
+              onFocus={() => setFocusedField('code')}
+              onBlur={() => setFocusedField(null)}
+              style={[
+                styles.input,
+                inputFont,
+                styles.codeInput,
+                focusedField === 'code' ? styles.inputFocused : null,
+              ]}
               placeholder="مثال: H7UZT3"
               placeholderTextColor={theme.colors.placeholder}
               autoCapitalize="characters"
@@ -221,10 +237,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.colors.background },
   brandBlock: { alignItems: 'center', marginTop: theme.spacing.md },
   crown: { width: 104, height: 70, marginBottom: -4 },
-  brandName: { color: theme.colors.goldLight, fontSize: 44, lineHeight: 54, textAlign: 'center' },
-  brandTagline: { color: theme.colors.gold, fontSize: 13, marginTop: -3, textAlign: 'center' },
+  brandName: { color: theme.colors.gold, fontSize: 42, lineHeight: 58, textAlign: 'center' },
+  brandTagline: { color: theme.colors.textSoft, fontSize: 13, marginTop: -4, textAlign: 'center' },
   stageRail: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  railLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
+  railLine: { flex: 1, height: 1, backgroundColor: 'rgba(255, 197, 89, 0.18)' },
   railNotch: {
     width: 9,
     height: 9,
@@ -235,15 +251,20 @@ const styles = StyleSheet.create({
   form: { marginTop: theme.spacing.lg, gap: theme.spacing.sm },
   label: { fontSize: 14 },
   input: {
-    minHeight: 56,
-    borderRadius: theme.radius.md,
+    minHeight: 54,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.borderSoft,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.input,
     color: theme.colors.text,
     paddingHorizontal: theme.spacing.md,
     textAlign: 'right',
   },
+  inputFocused: {
+    borderColor: 'rgba(255, 197, 89, 0.46)',
+    boxShadow: '0 0 0 3px rgba(255, 197, 89, 0.18)',
+  },
+  inputFont: { fontFamily: theme.fonts.body },
   nameInput: { fontSize: 17, writingDirection: 'rtl' },
   codeInput: { fontSize: 18, writingDirection: 'ltr', letterSpacing: 1.6 },
   feedback: { minHeight: 40 },

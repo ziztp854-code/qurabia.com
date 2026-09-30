@@ -36,7 +36,7 @@ export function GamesScreen({ onBack }: { onBack: () => void }) {
         <AppText weight="semibold" style={uiStyles.eyebrow}>
           مكتبة الألعاب
         </AppText>
-        <AppText weight="bold" style={uiStyles.title} accessibilityRole="header">
+        <AppText weight="heading" style={uiStyles.title} accessibilityRole="header">
           ألعاب تحدّي
         </AppText>
         <AppText style={uiStyles.body}>
@@ -78,12 +78,12 @@ export function GamesScreen({ onBack }: { onBack: () => void }) {
             accessibilityHint={href ? 'يفتح اللعبة على موقع تحدّي' : undefined}
             style={({ pressed }) => [
               styles.game,
-              { borderColor: game.accent },
+              { borderRightColor: game.accent },
               pressed ? styles.gamePressed : null,
             ]}
           >
             <View style={styles.gameHeader}>
-              <AppText weight="bold" style={styles.gameTitle}>
+              <AppText weight="heading" style={styles.gameTitle}>
                 {game.title}
               </AppText>
               <AppText weight="semibold" style={[styles.kind, { color: game.accent }]}>
@@ -117,24 +117,27 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.colors.borderSoft,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.ghost,
   },
-  filterSelected: { borderColor: theme.colors.gold, backgroundColor: 'rgba(255, 180, 12, 0.14)' },
+  filterSelected: { borderColor: theme.colors.gold, backgroundColor: theme.colors.goldTint },
   filterText: { fontSize: 13, color: theme.colors.muted },
-  filterTextSelected: { color: theme.colors.goldLight },
+  filterTextSelected: { color: theme.colors.goldHover },
   game: {
     padding: theme.spacing.md,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
-    borderRightWidth: 4,
+    borderColor: theme.colors.border,
+    borderRightWidth: 3,
     backgroundColor: theme.colors.surface,
+    experimental_backgroundImage: theme.gradients.card,
+    boxShadow: '0 24px 70px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
     gap: theme.spacing.xs,
   },
   gamePressed: { opacity: 0.85 },
   gameHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   gameTitle: { flex: 1, fontSize: 18 },
   kind: { fontSize: 12 },
-  gameDescription: { color: theme.colors.muted, fontSize: 14, lineHeight: 23 },
+  gameDescription: { color: theme.colors.textSoft, fontSize: 14, lineHeight: 23 },
   tags: {
     flexDirection: 'row',
     flexWrap: 'wrap',

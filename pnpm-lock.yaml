@@ -101,9 +101,12 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@expo-google-fonts/readex-pro':
-        specifier: 0.4.1
-        version: 0.4.1
+      '@expo-google-fonts/alexandria':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/cairo':
+        specifier: 0.4.2
+        version: 0.4.2
       '@tahaddi/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -1334,8 +1337,11 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@expo-google-fonts/readex-pro@0.4.1':
-    resolution: {integrity: sha512-BADsKySd3E/KIHvm5rHNvaRGTM2WmJ6EgnLAaj3ksgV+wyBbRaOSvqik2gYh00vb74AUSZGmvei/YeAv3Korsw==}
+  '@expo-google-fonts/alexandria@0.4.2':
+    resolution: {integrity: sha512-maaOCuuDgt0ek1wxquTOgT4EKxDRvDxNSXuMyHP9esxFW56EZm9Xd+PTurzeYXHhDL6p9F5sn8AWVSXQ5wVlaQ==}
+
+  '@expo-google-fonts/cairo@0.4.2':
+    resolution: {integrity: sha512-iWXHgE4MH6BfFqs8IxhbjNphAboUsb8NSEVIf1kWVGkiwCkAXDHxotgASabuPhhM1SQQXrgOPdmjT9VyeakM3Q==}
 
   '@expo/cli@57.0.25':
     resolution: {integrity: sha512-G2FJfwClIPNPhH2sJlIFAkhQLYaKNGzSarIQUl6sVA8oGdrmBnhRvbtTzxDzjS6WzO2aDX8DY7y1aNbCFILodg==}
@@ -10926,7 +10932,9 @@ snapshots:
     optionalDependencies:
       '@noble/hashes': 1.8.0
 
-  '@expo-google-fonts/readex-pro@0.4.1': {}
+  '@expo-google-fonts/alexandria@0.4.2': {}
+
+  '@expo-google-fonts/cairo@0.4.2': {}
 
   '@expo/cli@57.0.25(@expo/dom-webview@57.0.1)(expo-constants@57.0.18(expo@57.0.23)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.18)(react@19.2.3)(supports-color@10.2.2))(supports-color@10.2.2))(expo-font@57.0.4(expo@57.0.23)(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.18)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3))(expo@57.0.23)(react-dom@19.3.0(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@10.2.2))(@types/react@19.2.18)(react@19.2.3)(supports-color@10.2.2))(react@19.2.3)(supports-color@10.2.2)(typescript@5.9.3)':
     dependencies:

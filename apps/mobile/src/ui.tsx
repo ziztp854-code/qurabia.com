@@ -18,12 +18,24 @@ const FontsReadyContext = createContext(false);
 
 export const FontsReadyProvider = FontsReadyContext.Provider;
 
-type Weight = 'regular' | 'semibold' | 'bold';
+export function useFontsReady() {
+  return useContext(FontsReadyContext);
+}
+
+type Weight = 'regular' | 'semibold' | 'bold' | 'heading';
 
 const FONT_FAMILIES: Record<Weight, string> = {
-  regular: 'ReadexPro_400Regular',
-  semibold: 'ReadexPro_600SemiBold',
-  bold: 'ReadexPro_700Bold',
+  regular: theme.fonts.body,
+  semibold: theme.fonts.bodySemibold,
+  bold: theme.fonts.bodyBold,
+  heading: theme.fonts.heading,
+};
+
+const FALLBACK_WEIGHTS: Record<Weight, TextStyle['fontWeight']> = {
+  regular: '400',
+  semibold: '600',
+  bold: '700',
+  heading: '800',
 };
 
 export function AppText({
@@ -35,7 +47,13 @@ export function AppText({
   return (
     <Text
       {...props}
-      style={[styles.text, fontsReady ? { fontFamily: FONT_FAMILIES[weight] } : null, style]}
+      style={[
+        styles.text,
+        fontsReady
+          ? { fontFamily: FONT_FAMILIES[weight] }
+          : { fontWeight: FALLBACK_WEIGHTS[weight] },
+        style,
+      ]}
     />
   );
 }
@@ -51,8 +69,7 @@ export function Screen({
 }) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
-      <View pointerEvents="none" style={styles.ambientTop} />
-      <View pointerEvents="none" style={styles.ambientBottom} />
+      <View pointerEvents="none" style={styles.backdrop} />
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -109,10 +126,10 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={primary ? theme.colors.background : theme.colors.gold} />
+        <ActivityIndicator color={primary ? theme.colors.onGold : theme.colors.gold} />
       ) : (
         <AppText
-          weight="bold"
+          weight="heading"
           style={[styles.buttonText, primary ? styles.buttonTextPrimary : styles.buttonTextGhost]}
         >
           {label}
@@ -124,8 +141,8 @@ export function Button({
 
 export const uiStyles = StyleSheet.create({
   eyebrow: { color: theme.colors.gold, fontSize: 14 },
-  title: { color: theme.colors.text, fontSize: 26, lineHeight: 36, marginTop: theme.spacing.xs },
-  body: { color: theme.colors.muted, fontSize: 15, lineHeight: 26, marginTop: theme.spacing.sm },
+  title: { color: theme.colors.text, fontSize: 25, lineHeight: 36, marginTop: theme.spacing.xs },
+  body: { color: theme.colors.textSoft, fontSize: 15, lineHeight: 26, marginTop: theme.spacing.sm },
   small: { color: theme.colors.muted, fontSize: 12, lineHeight: 20 },
   danger: { color: theme.colors.danger, fontSize: 13, lineHeight: 21 },
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
@@ -148,59 +165,51 @@ const styles = StyleSheet.create({
     maxWidth: 560,
     alignSelf: 'center',
   },
-  ambientTop: {
+  backdrop: {
     position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: theme.colors.gold,
-    opacity: 0.055,
-    top: -130,
-    right: -80,
-  },
-  ambientBottom: {
-    position: 'absolute',
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    backgroundColor: theme.colors.cyan,
-    opacity: 0.035,
-    bottom: -140,
-    left: -110,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    experimental_backgroundImage: [
+      'linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px)',
+      'linear-gradient(0deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px)',
+      'linear-gradient(120deg, transparent 36%, rgba(255, 197, 89, 0.045) 36.2%, rgba(255, 197, 89, 0.045) 36.45%, transparent 36.7%)',
+      'linear-gradient(240deg, transparent 62%, rgba(0, 212, 255, 0.04) 62.2%, rgba(0, 212, 255, 0.04) 62.45%, transparent 62.7%)',
+    ].join(', '),
+    experimental_backgroundSize: '88px 88px, 88px 88px, auto, auto',
   },
   card: {
     backgroundColor: theme.colors.surface,
+    experimental_backgroundImage: theme.gradients.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.md,
     padding: theme.spacing.lg,
-    shadowColor: theme.colors.shadow,
-    shadowOpacity: 0.42,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 8,
+    boxShadow: '0 24px 70px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
   },
   button: {
-    minHeight: 56,
+    minHeight: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.sm,
     borderWidth: 1,
     paddingHorizontal: theme.spacing.md,
   },
   buttonPrimary: {
     backgroundColor: theme.colors.gold,
-    borderColor: theme.colors.goldLight,
-    shadowColor: theme.colors.gold,
-    shadowOpacity: 0.24,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
+    experimental_backgroundImage: theme.gradients.gold,
+    borderColor: 'rgba(255, 197, 89, 0.42)',
+    boxShadow: '0 16px 42px rgba(245, 165, 36, 0.18)',
   },
-  buttonGhost: { backgroundColor: 'transparent', borderColor: theme.colors.border },
-  buttonPressed: { opacity: 0.9 },
+  buttonGhost: {
+    backgroundColor: theme.colors.ghost,
+    borderColor: theme.colors.borderSoft,
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.055)',
+  },
+  buttonPressed: { opacity: 0.88 },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { fontSize: 17, textAlign: 'center' },
-  buttonTextPrimary: { color: theme.colors.background },
-  buttonTextGhost: { color: theme.colors.goldLight },
+  buttonText: { fontSize: 16, textAlign: 'center' },
+  buttonTextPrimary: { color: theme.colors.onGold },
+  buttonTextGhost: { color: theme.colors.text },
 });

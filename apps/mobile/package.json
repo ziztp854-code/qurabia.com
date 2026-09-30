@@ -13,7 +13,8 @@
     "test": "pnpm --filter @tahaddi/domain build && tsx --test src/*.test.ts"
   },
   "dependencies": {
-    "@expo-google-fonts/readex-pro": "0.4.1",
+    "@expo-google-fonts/alexandria": "0.4.2",
+    "@expo-google-fonts/cairo": "0.4.2",
     "@tahaddi/domain": "workspace:*",
     "expo": "~57.0.23",
     "expo-font": "~57.0.4",
