@@ -19,11 +19,16 @@ const troops = z
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('found'), name }).strict(),
-  z.object({
-    type: z.literal('allianceEventClaim'),
-    villageId,
-    eventKey: z.string().max(60).regex(/^s[1-9]\d*-w\d+$/),
-  }).strict(),
+  z
+    .object({
+      type: z.literal('allianceEventClaim'),
+      villageId,
+      eventKey: z
+        .string()
+        .max(60)
+        .regex(/^s[1-9]\d*-w\d+$/),
+    })
+    .strict(),
   z.object({ type: z.literal('build'), villageId, building: z.enum(buildingKeys) }).strict(),
   z
     .object({
@@ -39,7 +44,7 @@ export const kingdomsCommandSchema = z.discriminatedUnion('type', [
       villageId,
       targetX: z.number().int().min(-1000).max(1000),
       targetY: z.number().int().min(-1000).max(1000),
-      mission: z.enum(['attack', 'raid', 'scout', 'reinforce', 'settle', 'occupy']),
+      mission: z.enum(['attack', 'raid', 'scout', 'reinforce', 'settle', 'occupy', 'gather']),
       troops,
     })
     .strict(),

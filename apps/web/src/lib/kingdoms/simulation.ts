@@ -1,4 +1,11 @@
 import { creditAllianceEvent } from './alliance-events';
+import {
+  gatherPreview,
+  pruneResourceSiteStocks,
+  resourceSiteAt,
+  resourceSiteResourceNames,
+  resourceSiteSupply,
+} from './resource-sites';
 import { resources } from './config';
 import {
   buildingKeys,
@@ -18,6 +25,7 @@ export function assertRule(ok: unknown, message: string): asserts ok {
   if (!ok) throw new Error(message);
 }
 export const total = (r: Resources | Troops) => Object.values(r).reduce((a, b) => a + b, 0);
+const gatherAmountLabel = (amount: number) => Number(amount.toFixed(2)).toString();
 
 export const nonAggression = (w: KingdomsWorld, a?: string, b?: string) =>
   Boolean(
@@ -246,11 +254,64 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
   if (m.mission === 'return') {
     const home = w.villages[m.sourceId];
     if (home?.ownerId === m.ownerId) {
+      const before = m.gather ? home.resources[m.gather.resource] : 0;
       home.troops = Object.fromEntries(
         unitKeys.map((k) => [k, home.troops[k] + m.troops[k]]),
       ) as Troops;
       credit(w, home, m.loot);
+      if (m.gather) {
+        const received = home.resources[m.gather.resource] - before;
+        const overflow = m.loot[m.gather.resource] - received;
+        const resourceName = resourceSiteResourceNames[m.gather.resource];
+        report(
+          w,
+          at,
+          [m.ownerId],
+          'عودة حملة جمع الموارد',
+          `عادت القوات إلى ${home.name}؛ استلمت ${gatherAmountLabel(received)} ${resourceName}${overflow > 0 ? `؛ لم يتسع المخزن لـ ${gatherAmountLabel(overflow)} ${resourceName}` : ''}`,
+        );
+      }
+    } else if (m.gather) {
+      report(
+        w,
+        at,
+        [m.ownerId],
+        'تعذّرت عودة حملة جمع الموارد',
+        'القرية الأصلية لم تعد تابعة لمملكتك؛ لم تُسلّم الموارد إلى مملكة أخرى',
+      );
     }
+    return;
+  }
+  if (m.mission === 'gather') {
+    const site = resourceSiteAt(w.config.worldRadius, m.targetX, m.targetY);
+    const key = `${m.targetX},${m.targetY}`;
+    if (!site || target || w.territories[key]) {
+      report(
+        w,
+        at,
+        [m.ownerId],
+        'تعذّر جمع الموارد',
+        'الموقع لم يعد متاحًا؛ تعود القوات دون موارد',
+      );
+      returnMovement(w, { ...m, loot: resources() }, at);
+      return;
+    }
+    const supply = resourceSiteSupply(w, m.targetX, m.targetY, at);
+    const carry = gatherPreview(w.config, { x: m.targetX, y: m.targetY }, site, m.troops).carry;
+    const amount = Math.min(Math.floor(supply), carry);
+    w.resourceSiteStocks = {
+      ...w.resourceSiteStocks,
+      [key]: { available: supply - amount, updatedAt: at },
+    };
+    const loot = { ...resources(), [site.resource]: amount };
+    report(
+      w,
+      at,
+      [m.ownerId],
+      'جمع الموارد',
+      `${site.name}: جُمعت ${gatherAmountLabel(amount)} ${resourceSiteResourceNames[site.resource]}؛ القوات في طريق العودة`,
+    );
+    returnMovement(w, { ...m, loot, gather: { siteId: site.id, resource: site.resource } }, at);
     return;
   }
   if (m.mission === 'settle') {
@@ -372,7 +433,14 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
       }
       if (v.training && v.training.endsAt === next) {
         if (v.training.allianceEvent) {
-          creditAllianceEvent(w, v.ownerId, 'train', v.training.count, next, v.training.allianceEvent);
+          creditAllianceEvent(
+            w,
+            v.ownerId,
+            'train',
+            v.training.count,
+            next,
+            v.training.allianceEvent,
+          );
         }
         v.troops = { ...v.troops, [v.training.unit]: v.troops[v.training.unit] + v.training.count };
         delete v.training;
@@ -387,6 +455,7 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
   }
   accrue(w, end);
   w.updatedAt = end;
+  pruneResourceSiteStocks(w, end);
   if (now >= w.season.endsAt && w.season.status === 'active') {
     const ranking = Object.values(w.players).sort(
       (a, b) => b.throne - a.throne || b.score - a.score || a.id.localeCompare(b.id),

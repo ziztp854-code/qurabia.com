@@ -52,6 +52,123 @@ function renderMap(props: Partial<ComponentProps<typeof WorldMap>> = {}) {
 }
 
 describe('world terrain map', () => {
+  it('changes physical zoom while preserving the full-name cell floor', () => {
+    const { scene } = renderMap({
+      villages: [village('v1', 'p1', 'قرية السهول الخضراء وحراس مملكة النور', 0, 0)],
+    });
+    const physicalSize = () => Number.parseFloat(scene.style.getPropertyValue('--cell-size'));
+    const initial = physicalSize();
+    fireEvent.click(screen.getByRole('button', { name: 'تكبير الخريطة' }));
+    expect(physicalSize()).toBeGreaterThan(initial);
+    fireEvent.click(screen.getByRole('button', { name: 'تصغير الخريطة' }));
+    expect(physicalSize()).toBe(initial);
+    fireEvent.click(screen.getByRole('button', { name: 'تصغير الخريطة' }));
+    expect(physicalSize()).toBeLessThan(initial);
+    fireEvent.click(screen.getByRole('button', { name: 'تصغير الخريطة' }));
+    expect(physicalSize()).toBe(160);
+  });
+  it('does not mark empty coordinates as owned when no player is supplied', () => {
+    const { container } = renderMap();
+    expect(container.querySelector('g[data-own="true"]')).toBeNull();
+    expect(container.querySelector('button[data-own="true"]')).toBeNull();
+  });
+  it('shows a long Arabic village name in full and selects its original coordinate', () => {
+    const name = 'قرية الواحة الخضراء الشمالية العريقة';
+    const { onSelect } = renderMap({ villages: [village('long', 'p1', name, 1, 1)] });
+    const tile = screen.getByRole('button', { name: `${name}، X 1، Y 1` });
+    expect(screen.getByText(name)).toBeVisible();
+    const grid = tile.parentElement!;
+    expect(grid.style.gridTemplateColumns).toBe('repeat(9,minmax(0,1fr))');
+    expect(grid.style.gridTemplateRows).toBe('repeat(9,minmax(0,1fr))');
+    fireEvent.click(tile);
+    expect(onSelect).toHaveBeenCalledWith({ x: 1, y: 1 });
+  });
+  it('keeps adjacent long village labels inside separate large coordinate cells', () => {
+    const names = [
+      'قرية السهول الخضراء وحراس مملكة النور',
+      'قرية الواحة الشمالية وحراس الأرض العريقة',
+    ];
+    const { scene, onSelect } = renderMap({
+      center: { x: 0, y: -3 },
+      villages: names.map((name, index) => village(`v${index}`, 'p1', name, 0, index)),
+    });
+    expect(scene.style.getPropertyValue('--cell-min')).toBe('160px');
+    fireEvent.click(screen.getByText(names[0]));
+    expect(onSelect).toHaveBeenLastCalledWith({ x: 0, y: 0 });
+    fireEvent.click(screen.getByText(names[1]));
+    expect(onSelect).toHaveBeenLastCalledWith({ x: 0, y: 1 });
+  });
+  it('gives short wide-script village names room for the photo and ownership label', () => {
+    const name = 'WWWWWWWWWW';
+    const { scene, onSelect } = renderMap({
+      playerId: 'p1',
+      villages: [village('wide', 'p1', name, 0, 0)],
+    });
+    expect(scene.style.getPropertyValue('--cell-min')).toBe('128px');
+    fireEvent.click(screen.getByText(name));
+    expect(onSelect).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+  it('uses a photographed village landmark and keeps terrain anchored when the map center changes', () => {
+    const props = { playerId: 'p1', villages: [village('v1', 'p1', 'الواحة', 1, 1)] };
+    const { container, rerender, onCenter, onSelect } = renderMap(props);
+    const own = screen.getByRole('button', { name: 'الواحة، X 1، Y 1' });
+    expect(own).toHaveTextContent('قريتك');
+    expect(own.querySelector('image')?.getAttribute('href')).toContain('village-realistic.webp');
+    const terrain = container.querySelector('pattern[data-terrain-photo]')!;
+    expect(terrain.querySelector('image')?.getAttribute('href')).toContain(
+      'world-terrain-realistic.webp',
+    );
+    const before = Number(terrain.getAttribute('x'));
+    rerender(
+      <WorldMap
+        {...props}
+        center={{ x: 1, y: 0 }}
+        target={{ x: 0, y: 0 }}
+        radius={100}
+        territories={{}}
+        onCenter={onCenter}
+        onSelect={onSelect}
+      />,
+    );
+    expect(Number(container.querySelector('pattern[data-terrain-photo]')!.getAttribute('x'))).toBe(
+      before - 90,
+    );
+  });
+  it('distinguishes actionable resource sites from decorative terrain and selects their coordinates', () => {
+    const { onSelect } = renderMap({
+      resourceSites: [
+        {
+          id: 'wood:2,2',
+          x: 2,
+          y: 2,
+          resource: 'wood',
+          name: 'غابة الخشب',
+          available: 450,
+          capacity: 600,
+          regenerationPerHour: 100,
+        },
+        {
+          id: 'iron:-2,2',
+          x: -2,
+          y: 2,
+          resource: 'iron',
+          name: 'منجم الحديد',
+          available: 0,
+          capacity: 600,
+          regenerationPerHour: 100,
+        },
+      ],
+    });
+    const wood = screen.getByRole('button', { name: 'غابة الخشب، متاح ٤٥٠ خشب، X 2، Y 2' });
+    expect(wood).toHaveTextContent('خشب');
+    expect(wood.querySelector('img')?.getAttribute('src')).toContain('resource-wood.webp');
+    fireEvent.click(wood);
+    expect(onSelect).toHaveBeenCalledWith({ x: 2, y: 2 });
+    expect(
+      screen.getByRole('button', { name: 'منجم الحديد، ناضب الآن، X -2، Y 2' }),
+    ).toHaveTextContent('ناضب');
+    expect(screen.getByText(/صور الموارد تحدد مواقع الجمع/)).toBeVisible();
+  });
   it('keeps keyboard focus on the viewport when panning removes a focused edge cell', () => {
     function Harness() {
       const [center, setCenter] = useState({ x: 0, y: 0 });

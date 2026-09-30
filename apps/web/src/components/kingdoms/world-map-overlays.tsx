@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   ArrowDown,
   ArrowLeft,
@@ -11,16 +10,10 @@ import {
   Plus,
 } from 'lucide-react';
 import type { KingdomsView } from '@/lib/kingdoms/types';
-import {
-  moveMapCenter,
-  riverBands,
-  riverY,
-  terrainAt,
-  type MapPoint,
-  type TerrainKind,
-} from './world-terrain';
-import { cellKey, spans, type Span } from './world-map-layout';
+import { moveMapCenter, type MapPoint } from './world-terrain';
+import { spans, type Span } from './world-map-layout';
 import styles from './world-map.module.css';
+import { ResourceIcon } from './resource-icon';
 
 type Villages = KingdomsView['map'];
 
@@ -178,22 +171,6 @@ export function Overview({
   onCenter: (point: MapPoint) => void;
 }) {
   const size = radius * 2 + 1;
-  const relief = useMemo(() => {
-    const step = Math.max(1, Math.ceil(size / 36));
-    const out: { x: number; y: number; kind: TerrainKind }[] = [];
-    for (let y = -radius; y <= radius; y += step)
-      for (let x = -radius; x <= radius; x += step) {
-        const kind = terrainAt(x, y).kind;
-        if (kind !== 'plain') out.push({ x, y, kind });
-      }
-    const rivers = riverBands(-radius, radius, -radius, radius).map((band) =>
-      Array.from({ length: 49 }, (_, i) => {
-        const x = -radius - 0.5 + (size * i) / 48;
-        return `${i ? 'L' : 'M'}${x.toFixed(2)} ${riverY(x, band).toFixed(2)}`;
-      }).join(''),
-    );
-    return { step, cells: out, rivers };
-  }, [radius, size]);
   const half = Math.floor(span / 2);
   const dot = Math.max(0.7, size / 55);
   return (
@@ -218,19 +195,17 @@ export function Overview({
           height={size}
           className={styles.ground}
         />
-        {relief.cells.map((cell) => (
-          <rect
-            key={cellKey(cell.x, cell.y)}
-            x={cell.x - 0.5}
-            y={cell.y - 0.5}
-            width={relief.step}
-            height={relief.step}
-            className={styles[`${cell.kind}Mini`]}
-          />
-        ))}
-        {relief.rivers.map((d, i) => (
-          <path key={i} d={d} className={styles.riverMini} style={{ strokeWidth: size / 60 }} />
-        ))}
+        {Array.from({ length: 9 }, (_, index) => {
+          const coordinate = -radius - 0.5 + ((index + 1) * size) / 10;
+          return (
+            <path
+              key={index}
+              d={`M ${coordinate} ${-radius - 0.5} v ${size} M ${-radius - 0.5} ${coordinate} h ${size}`}
+              className={styles.miniGrid}
+              style={{ strokeWidth: size / 300 }}
+            />
+          );
+        })}
         {villages.map((village) => (
           <circle
             key={village.id}
@@ -255,21 +230,17 @@ export function Overview({
 
 export function Compass() {
   return (
-    <svg className={styles.compass} viewBox="-30 -30 60 60" aria-hidden="true">
-      <circle r="21" className={styles.compassRing} />
-      <path d="M0-26 5 0 0 26-5 0Z" className={styles.compassNeedle} />
-      <path d="M0-26 5 0H-5Z" className={styles.compassNorth} />
-      <text y="-15" className={styles.compassText}>
-        ش
-      </text>
-    </svg>
+    <div className={styles.compass} aria-hidden="true">
+      <ArrowUp size={16} />
+      <span>شمال</span>
+    </div>
   );
 }
 
-export function MapLegend() {
+export function MapLegend({ hasResources = false }: { hasResources?: boolean }) {
   return (
     <>
-      <div className={styles.legend} aria-hidden="true">
+      <div className={styles.legend} aria-label="مفتاح الخريطة">
         <p>
           <span data-key="own">
             <i />
@@ -292,31 +263,25 @@ export function MapLegend() {
             مسار الحملة
           </span>
         </p>
-        <p>
-          {(['plain', 'steppe', 'forest', 'hills', 'mountain'] as const).map((kind) => (
-            <span key={kind} data-terrain={kind}>
-              <i />
-              {
-                {
-                  plain: 'سهول',
-                  steppe: 'بادية',
-                  forest: 'غابات',
-                  hills: 'تلال',
-                  mountain: 'جبال',
-                }[kind]
-              }
-            </span>
-          ))}
-          <span data-terrain="river">
-            <i />
-            أنهار
-          </span>
-        </p>
       </div>
+      {hasResources && (
+        <p className={styles.resourceLegend}>
+          <span>
+            <ResourceIcon resource="wood" size={24} /> خشب
+          </span>
+          <span>
+            <ResourceIcon resource="iron" size={24} /> حديد
+          </span>
+          <span>
+            <ResourceIcon resource="food" size={24} /> قمح
+          </span>
+          <span>صور الموارد تحدد مواقع الجمع، والرقم يوضح المتاح الآن.</span>
+        </p>
+      )}
       <p className={styles.hint}>
         اسحب الخريطة أو استخدم الأسهم للتحريك (<kbd dir="ltr">Shift</kbd> لثلاث خانات)، و
         <kbd dir="ltr">+</kbd> / <kbd dir="ltr">−</kbd> للتكبير، و<kbd dir="ltr">Home</kbd> للعودة
-        إلى قريتك. التضاريس زينة بصرية لا تغيّر الحركة أو الإنتاج.
+        إلى قريتك. التضاريس خلفية بصرية؛ مواقع الجمع تحمل صور الموارد وأسماءها.
       </p>
     </>
   );

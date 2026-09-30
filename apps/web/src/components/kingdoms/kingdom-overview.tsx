@@ -70,7 +70,12 @@ export function KingdomOverview({
       : []),
     ...view.movements.slice(0, 2).map((movement) => ({
       id: movement.id,
-      text: `حملة ${movement.mission === 'attack' ? 'هجوم' : movement.mission === 'scout' ? 'استطلاع' : 'متجهة'} إلى (${movement.targetX}, ${movement.targetY})`,
+      text:
+        movement.mission === 'gather'
+          ? `جمع موارد من (${movement.targetX}, ${movement.targetY})`
+          : movement.mission === 'return' && movement.gather
+            ? `عودة جيش الجمع إلى (${movement.targetX}, ${movement.targetY})`
+            : `حملة ${movement.mission === 'attack' ? 'هجوم' : movement.mission === 'scout' ? 'استطلاع' : 'متجهة'} إلى (${movement.targetX}, ${movement.targetY})`,
       at: movement.arrivesAt,
       icon: Flag,
     })),
@@ -211,6 +216,7 @@ export function KingdomOverview({
           playerId={view.player?.id}
           villages={view.map}
           territories={view.territories}
+          resourceSites={view.resourceSites}
           onCenter={setCenter}
           onSelect={setTarget}
         />

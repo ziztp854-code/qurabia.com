@@ -1,4 +1,10 @@
 import { creditAllianceEvent, projectAllianceEvent, stampAllianceEvent } from './alliance-events';
+import {
+  gatherPreview,
+  projectResourceSites,
+  resourceSiteAt,
+  resourceSiteSupply,
+} from './resource-sites';
 import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
@@ -85,14 +91,22 @@ function found(w: KingdomsWorld, actor: string, name: string, at: number) {
   for (let radius = 1; radius <= w.config.worldRadius && !point; radius++) {
     for (let x = -radius; x <= radius && !point; x++)
       for (const y of [-radius, radius]) {
-        if (!occupied.has(`${x},${y}`) && !w.territories[`${x},${y}`]) {
+        if (
+          !occupied.has(`${x},${y}`) &&
+          !w.territories[`${x},${y}`] &&
+          !resourceSiteAt(w.config.worldRadius, x, y)
+        ) {
           point = { x, y };
           break;
         }
       }
     for (let y = -radius + 1; y < radius && !point; y++)
       for (const x of [-radius, radius]) {
-        if (!occupied.has(`${x},${y}`) && !w.territories[`${x},${y}`]) {
+        if (
+          !occupied.has(`${x},${y}`) &&
+          !w.territories[`${x},${y}`] &&
+          !resourceSiteAt(w.config.worldRadius, x, y)
+        ) {
           point = { x, y };
           break;
         }
@@ -190,6 +204,23 @@ function march(
     'بلغت الحد الأعلى للحركات',
   );
   const target = Object.values(w.villages).find((t) => t.x === c.targetX && t.y === c.targetY);
+  const site = resourceSiteAt(w.config.worldRadius, c.targetX, c.targetY);
+  if (c.mission === 'gather') {
+    assertRule(
+      site && !target && !w.territories[`${c.targetX},${c.targetY}`],
+      'اختر موقع موارد متاحًا',
+    );
+    const preview = gatherPreview(w.config, v, { x: c.targetX, y: c.targetY }, c.troops);
+    assertRule(preview.carry > 0, 'تحتاج قوات لها سعة حمل لجمع الموارد');
+    assertRule(
+      Math.floor(resourceSiteSupply(w, c.targetX, c.targetY, at)) > 0,
+      'الموقع مستنزف؛ انتظر تجدّد موارده',
+    );
+    assertRule(
+      deadline(at, preview.roundTripMs) < w.season.endsAt,
+      'لا يكفي وقت الموسم لذهاب الحملة وعودتها',
+    );
+  }
   const hostile = ['attack', 'raid', 'scout'].includes(c.mission);
   if (hostile) {
     assertRule(target && target.ownerId !== actor, 'اختر قرية خصم');
@@ -209,6 +240,7 @@ function march(
       'التعزيز لقرى المملكة أو التحالف',
     );
   if (c.mission === 'settle' || c.mission === 'occupy') {
+    assertRule(!site, 'هذا موقع موارد؛ لا يمكن تأسيس قرية أو احتلاله');
     assertRule(!target, 'الأرض مشغولة');
     const key = `${c.targetX},${c.targetY}`;
     assertRule(!w.territories[key] || w.territories[key] === actor, 'الأرض تابعة لمملكة أخرى');
@@ -249,6 +281,9 @@ function march(
     unitKeys.map((k) => [k, v.troops[k] - c.troops[k]]),
   ) as Village['troops'];
   w.movements.push({
+    ...(c.mission === 'gather' && site
+      ? { gather: { siteId: site.id, resource: site.resource } }
+      : {}),
     id: nextId(w, 'm'),
     ownerId: actor,
     sourceId: v.id,
@@ -480,7 +515,13 @@ function claimAllianceEvent(
   credit(w, village, event.reward);
   const names = { wood: 'خشب', stone: 'حجر', iron: 'حديد', food: 'غذاء', gold: 'ذهب' };
   const receipt = resourceKeys.map((key) => `${event.reward[key]} ${names[key]}`).join('، ');
-  report(w, at, [actor], 'مكافأة فعالية التحالف', `${event.title}: استلمت ${receipt} في ${village.name}`);
+  report(
+    w,
+    at,
+    [actor],
+    'مكافأة فعالية التحالف',
+    `${event.title}: استلمت ${receipt} في ${village.name}`,
+  );
 }
 function recall(
   w: KingdomsWorld,
@@ -615,6 +656,7 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
   }
   return {
     serverNow: now,
+    resourceSites: projectResourceSites(w, actorId, Math.max(now, w.updatedAt)),
     allianceEvent: projectAllianceEvent(w, actorId, Math.max(now, w.updatedAt)),
     config: w.config,
     season: w.season,

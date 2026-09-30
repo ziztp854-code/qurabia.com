@@ -1,13 +1,20 @@
 'use client';
 
-import { useId, useMemo, type CSSProperties } from 'react';
+import { useId, useLayoutEffect, useMemo, type CSSProperties } from 'react';
 import type { KingdomsView } from '@/lib/kingdoms/types';
-import { terrainLabel, type MapPoint } from './world-terrain';
+import type { MapPoint } from './world-terrain';
 import { MapDefs, SceneOverlay, TerrainLayer } from './world-map-artwork';
 import { cellKey, margin, routePreview, unit, withinSpan } from './world-map-layout';
 import { Beacon, Compass, MapControls, MapLegend, Overview } from './world-map-overlays';
 import { useWorldMapNavigation } from './use-world-map-navigation';
+import { ResourceIcon } from './resource-icon';
+import { number } from './shared';
+import { siteResourceLabels } from './resource-site-panel';
+import { hitBox, villageArt } from './village-layout';
 import styles from './world-map.module.css';
+
+const villagePhoto = hitBox('hall');
+const zoomScale = { 7: 1.3, 9: 1.2, 11: 1.1, 13: 1 } as const;
 
 type Props = {
   center: MapPoint;
@@ -17,6 +24,7 @@ type Props = {
   playerId?: string;
   villages: KingdomsView['map'];
   territories: KingdomsView['territories'];
+  resourceSites?: KingdomsView['resourceSites'];
   onCenter: (point: MapPoint) => void;
   onSelect: (point: MapPoint) => void;
 };
@@ -29,6 +37,7 @@ export function WorldMap({
   playerId,
   villages,
   territories,
+  resourceSites,
   onCenter,
   onSelect,
 }: Props) {
@@ -43,14 +52,9 @@ export function WorldMap({
   const visible = (point: MapPoint) => withinSpan(point, start, span);
   const inside = (point: MapPoint) => Math.abs(point.x) <= radius && Math.abs(point.y) <= radius;
   const byCell = useMemo(() => new Map(villages.map((v) => [cellKey(v.x, v.y), v])), [villages]);
-  const settled = useMemo(
-    () =>
-      villages
-        .filter((v) => withinSpan(v, { x: startX, y: startY }, span, margin))
-        .map((v) => cellKey(v.x, v.y))
-        .sort()
-        .join('|'),
-    [villages, startX, startY, span],
+  const sitesByCell = useMemo(
+    () => new Map((resourceSites ?? []).map((site) => [cellKey(site.x, site.y), site])),
+    [resourceSites],
   );
   const route = routePreview(origin, target, start);
   const hitCells = Array.from({ length: span * span }, (_, i) => ({
@@ -59,6 +63,27 @@ export function WorldMap({
   }));
   const extent = cells * unit;
   const percent = (value: number) => `${(value / (span * unit)) * 100}%`;
+  const longestName = hitCells.reduce(
+    (longest, point) => Math.max(longest, byCell.get(cellKey(point.x, point.y))?.name.length ?? 0),
+    0,
+  );
+  const cellMinimum = longestName > 20 ? 160 : longestName > 0 ? 128 : 80;
+  const cellSize = Math.ceil(cellMinimum * zoomScale[span]);
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const scene = sceneRef.current;
+    if (!viewport || !scene) return;
+    const centerViewport = () => {
+      viewport.scrollLeft = Math.max(0, (scene.clientWidth - viewport.clientWidth) / 2);
+      viewport.scrollTop = Math.max(0, (scene.clientHeight - viewport.clientHeight) / 2);
+    };
+    centerViewport();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(centerViewport);
+    observer.observe(viewport);
+    observer.observe(scene);
+    return () => observer.disconnect();
+  }, [span, cellMinimum, center.x, center.y, viewportRef, sceneRef]);
 
   return (
     <section className={styles.world} aria-label="خريطة الأراضي">
@@ -85,7 +110,13 @@ export function WorldMap({
           <div
             ref={sceneRef}
             className={styles.scene}
-            style={{ '--span': span } as CSSProperties}
+            style={
+              {
+                '--span': span,
+                '--cell-min': `${cellMinimum}px`,
+                '--cell-size': `${cellSize}px`,
+              } as CSSProperties
+            }
             data-dense={span > 9}
             {...sceneHandlers}
           >
@@ -107,7 +138,6 @@ export function WorldMap({
                   startY={start.y}
                   span={span}
                   radius={radius}
-                  settled={settled}
                 />
                 <SceneOverlay
                   id={id}
@@ -124,32 +154,71 @@ export function WorldMap({
               </svg>
               <div
                 className={styles.hitLayer}
-                style={{ gridTemplateColumns: `repeat(${span},1fr)` }}
+                style={{
+                  gridTemplateColumns: `repeat(${span},minmax(0,1fr))`,
+                  gridTemplateRows: `repeat(${span},minmax(0,1fr))`,
+                }}
               >
                 {hitCells.map((point) => {
                   const key = cellKey(point.x, point.y);
                   const village = byCell.get(key);
                   const owner = territories[key];
+                  const site = !village && !owner ? sitesByCell.get(key) : undefined;
                   const selected = point.x === target.x && point.y === target.y;
-                  const own = village?.ownerId === playerId;
+                  const own = Boolean(village && village.ownerId === playerId);
                   return (
                     <button
                       key={key}
                       type="button"
                       disabled={!inside(point)}
-                      aria-label={`${village?.name ?? (owner ? 'أرض محتلة' : 'أرض خالية')}، X ${point.x}، Y ${point.y}`}
+                      aria-label={`${village?.name ?? (owner ? 'أرض محتلة' : site ? `${site.name}، ${site.available > 0 ? `متاح ${number(site.available)} ${siteResourceLabels[site.resource]}` : 'ناضب الآن'}` : 'أرض خالية')}، X ${point.x}، Y ${point.y}`}
                       aria-pressed={selected}
                       onClick={() => onSelect(point)}
                       className={styles.tile}
                       data-own={own}
                       data-village={Boolean(village)}
+                      data-resource={site?.resource}
                     >
-                      {village && <span className={styles.villageName}>{village.name}</span>}
+                      {site && (
+                        <span className={styles.resourceMarker} data-empty={site.available <= 0}>
+                          <ResourceIcon resource={site.resource} size={32} />
+                          <span>{siteResourceLabels[site.resource]}</span>
+                          <strong>
+                            {site.available > 0
+                              ? site.available.toLocaleString('ar-SA', {
+                                  notation: 'compact',
+                                  maximumFractionDigits: 1,
+                                })
+                              : 'ناضب'}
+                          </strong>
+                        </span>
+                      )}
+                      {village && (
+                        <span className={styles.villageMarker}>
+                          <svg
+                            className={styles.villagePhoto}
+                            viewBox={`${villagePhoto.x} ${villagePhoto.y} ${villagePhoto.w} ${villagePhoto.h}`}
+                            aria-hidden="true"
+                          >
+                            <image
+                              href={villageArt.src}
+                              width={villageArt.width}
+                              height={villageArt.height}
+                            />
+                          </svg>
+                          <span className={styles.villageName}>{village.name}</span>
+                          {own && <small>قريتك</small>}
+                        </span>
+                      )}
+                      {!village && owner && (
+                        <span className={styles.claimPlate}>
+                          {owner === playerId ? 'أرضك' : 'محتلة'}
+                        </span>
+                      )}
                       <span className={styles.coordinate}>
                         <bdi dir="ltr">
                           {point.x}, {point.y}
                         </bdi>
-                        {inside(point) && <span>{terrainLabel(point.x, point.y)}</span>}
                       </span>
                     </button>
                   );
@@ -219,7 +288,7 @@ export function WorldMap({
           />
         )}
       </div>
-      <MapLegend />
+      <MapLegend hasResources={Boolean(resourceSites?.length)} />
     </section>
   );
 }
