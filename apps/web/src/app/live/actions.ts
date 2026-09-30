@@ -12,7 +12,11 @@ import {
 } from '@/lib/live/engine';
 import { resolveQuizQuestion } from '@/lib/live/resolve-quiz-question';
 import { isClassicLiveQuizMode } from '@/lib/live/classic-quiz-mode';
-import { createPlayerLiveAccessToken } from '@/lib/live/access-token';
+import {
+  isUniqueConstraintError,
+  joinQuizSessionByCode,
+  normalizePlayerName,
+} from '@/lib/live/join-quiz-session';
 import { setMafiaAccessToken } from '@/lib/mafia/access-cookie';
 import { isRoomCode, normalizeRoomCode } from '@/lib/quiz/room-code';
 import {
@@ -24,8 +28,6 @@ import {
   type QuotaConsumption,
 } from '@/lib/subscription/entitlements';
 import type { PlanCode } from '@tahaddi/domain';
-
-const MAX_PLAYER_NAME_LENGTH = 40;
 
 export type JoinLiveSessionResult =
   | {
@@ -44,14 +46,6 @@ export type JoinLiveSessionResult =
       roomCode: string;
     }
   | { status: 'error'; message: string };
-
-function normalizePlayerName(value: string) {
-  return value.trim().replace(/\s+/g, ' ').slice(0, MAX_PLAYER_NAME_LENGTH);
-}
-
-function isUniqueConstraintError(error: unknown) {
-  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'P2002');
-}
 
 function requireDatabaseReady() {
   if (!hasDatabaseUrl()) {
@@ -248,40 +242,15 @@ export async function joinLiveSessionByCode(
   }
 
   try {
-    const prisma = getPrismaClient();
-    const session = await prisma.liveSession.findFirst({
-      where: { roomCode, status: { in: ['WAITING', 'ACTIVE'] } },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        roomCode: true,
-        quiz: { select: { maxPlayers: true } },
-        _count: { select: { participants: true } },
-      },
-    });
-
-    if (session) {
-      if (session._count.participants >= session.quiz.maxPlayers) {
-        return { status: 'error', message: 'اكتمل عدد اللاعبين المسموح به في هذه الغرفة.' };
-      }
-
-      const participant = await prisma.liveParticipant.create({
-        data: { sessionId: session.id, displayName },
-        select: { id: true },
-      });
-
-      revalidatePath(`/live/${session.id}/play`);
-      revalidatePath('/broadcast');
-      return {
-        status: 'success',
-        gameType: 'quiz',
-        sessionId: session.id,
-        participantId: participant.id,
-        participantToken: createPlayerLiveAccessToken(session.id, participant.id),
-        roomCode: session.roomCode,
-      };
+    const quizJoin = await joinQuizSessionByCode(roomCode, displayName);
+    if (quizJoin.status === 'full') {
+      return { status: 'error', message: 'اكتمل عدد اللاعبين المسموح به في هذه الغرفة.' };
+    }
+    if (quizJoin.status === 'success') {
+      return { ...quizJoin, gameType: 'quiz' };
     }
 
+    const prisma = getPrismaClient();
     const mafiaJoin = await prisma.$transaction(async (tx) => {
       const [mafiaGame] = await tx.$queryRaw<
         Array<{ id: string; roomCode: string; status: string; maxPlayers: number }>

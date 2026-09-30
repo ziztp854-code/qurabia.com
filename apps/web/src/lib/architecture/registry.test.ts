@@ -28,6 +28,7 @@ describe('architecture registry', () => {
         'POST /api/auth/[...nextauth]',
         'POST /api/live/[sessionId]/room',
         'POST /api/live/[sessionId]/tick',
+        'POST /api/live/join',
         'POST /api/mafia/[gameId]/tick',
         'POST /api/presence/heartbeat',
         'GET /api/admin/audience',
