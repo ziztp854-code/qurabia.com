@@ -1,0 +1,305 @@
+.world {
+  /* Illustration pigments belong to the map artwork; interface chrome uses Tahaddi tokens. */
+  --terrain-meadow: var(--kingdoms-terrain-meadow);
+  --terrain-earth: var(--kingdoms-terrain-earth);
+  --terrain-forest: var(--kingdoms-terrain-forest);
+  --terrain-water: var(--kingdoms-terrain-water);
+  --terrain-stone: var(--kingdoms-terrain-stone);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.6rem;
+  font-size: 0.75rem;
+}
+.navigation {
+  display: flex;
+  direction: ltr;
+  gap: 0.3rem;
+}
+.navigation button {
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  cursor: pointer;
+}
+.navigation button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.viewport {
+  overflow: auto;
+  max-block-size: 650px;
+  direction: ltr;
+  overscroll-behavior: contain;
+}
+.scene {
+  position: relative;
+  inline-size: 100%;
+  isolation: isolate;
+}
+.artwork {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.hitLayer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+.tile {
+  background: transparent;
+  border: 0;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
+  position: relative;
+  cursor: pointer;
+  color: var(--foreground);
+  font: inherit;
+}
+.tile:disabled {
+  cursor: default;
+}
+.tile:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+.tile:focus-visible,
+.navigation button:focus-visible,
+.viewport:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+.coordinate {
+  display: none;
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline: 0;
+  margin: auto;
+  inline-size: max-content;
+  font-size: 0.62rem;
+  padding: 0.15rem 0.3rem;
+  background: var(--background);
+  border-radius: 3px;
+}
+.tile:hover .coordinate,
+.tile:focus-visible .coordinate,
+.tile[aria-pressed='true'] .coordinate {
+  display: block;
+}
+.villageName {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  margin-inline: auto;
+  max-inline-size: 105%;
+  inline-size: max-content;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
+  direction: rtl;
+}
+.tile[data-own='true'] .villageName {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  line-height: 1.8;
+  padding: 0.7rem;
+  margin: 0;
+}
+.shadow {
+  fill: var(--kingdoms-terrain-shadow);
+  opacity: 0.2;
+}
+.trunk {
+  fill: none;
+  stroke: var(--kingdoms-terrain-trunk);
+  stroke-width: 4;
+}
+.tree {
+  fill: var(--kingdoms-terrain-tree);
+}
+.treeLight {
+  fill: var(--kingdoms-terrain-tree-light);
+}
+.forestFloor {
+  fill: var(--terrain-forest);
+  opacity: 0.13;
+}
+.meadowPatch {
+  fill: var(--kingdoms-terrain-meadow-patch);
+  opacity: 0.11;
+}
+.grassMark {
+  fill: none;
+  stroke: var(--kingdoms-terrain-grass);
+  stroke-width: 0.8;
+  opacity: 0.3;
+}
+.contour {
+  fill: none;
+  stroke: var(--kingdoms-terrain-contour);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+.mountain {
+  fill: var(--terrain-stone);
+}
+.mountainShade {
+  fill: var(--kingdoms-terrain-mountain-shade);
+}
+.mountainLight {
+  fill: var(--kingdoms-terrain-mountain-light);
+}
+.snow {
+  fill: var(--kingdoms-terrain-snow);
+}
+.riverBank {
+  fill: none;
+  stroke: var(--kingdoms-terrain-river-bank);
+  stroke-width: 34;
+  stroke-linecap: round;
+}
+.river {
+  fill: none;
+  stroke: var(--terrain-water);
+  stroke-width: 24;
+  stroke-linecap: round;
+}
+.riverShine {
+  fill: none;
+  stroke: var(--kingdoms-terrain-river-shine);
+  stroke-width: 4;
+  opacity: 0.7;
+}
+.castleGround {
+  fill: var(--kingdoms-terrain-castle-ground);
+}
+.castleWall {
+  fill: var(--kingdoms-terrain-castle-wall);
+  stroke: var(--kingdoms-terrain-castle-outline);
+  stroke-width: 1.3;
+}
+.castleShade {
+  fill: var(--kingdoms-terrain-castle-shade);
+}
+.roof {
+  fill: var(--kingdoms-terrain-roof);
+}
+.gate {
+  fill: var(--kingdoms-terrain-gate);
+}
+.flagPole {
+  fill: none;
+  stroke: var(--kingdoms-terrain-gate);
+  stroke-width: 2.5;
+}
+.flag {
+  fill: var(--kingdoms-terrain-other-banner);
+}
+.fortress[data-own='true'] .flag {
+  fill: var(--kingdoms-terrain-own-banner);
+}
+.claimFlag {
+  fill: var(--kingdoms-terrain-claim-banner);
+}
+.outside {
+  fill: var(--kingdoms-terrain-outside);
+  opacity: 0.75;
+}
+.selection {
+  fill: none;
+  stroke: var(--kingdoms-terrain-selection);
+  stroke-width: 3;
+  stroke-dasharray: 5 3;
+}
+@media (max-width: 700px) {
+  .viewport {
+    max-block-size: 520px;
+  }
+  .controls {
+    gap: 0.25rem;
+  }
+  .controls > bdi {
+    order: 3;
+    inline-size: 100%;
+    text-align: center;
+  }
+}
+.route {
+  fill: none;
+  stroke: var(--kingdoms-terrain-selection);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+  border-block-start: 1px solid var(--border);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.legend i {
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 50%;
+  background: var(--kingdoms-terrain-other-banner);
+}
+.legend [data-own='true'] i {
+  background: var(--kingdoms-terrain-own-banner);
+}
+.legend [data-kind='claim'] i {
+  background: var(--kingdoms-terrain-claim-banner);
+}
+.ownRing {
+  fill: none;
+  stroke: var(--kingdoms-terrain-own-banner);
+  stroke-width: 3;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.selection {
+  animation: selectionDash 1.2s linear infinite;
+}
+@keyframes selectionDash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .selection {
+    animation: none;
+  }
+}

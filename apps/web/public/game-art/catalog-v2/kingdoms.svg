@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img" aria-labelledby="title desc">
+  <title id="title">تحدي الممالك</title>
+  <desc id="desc">قلعة ذهبية أصلية فوق خريطة أراض هندسية تتصل فيها ثلاث قرى بطريق العهد</desc>
+  <defs>
+    <linearGradient id="night" x2="1" y2="1"><stop stop-color="#10081a"/><stop offset="1" stop-color="#06020a"/></linearGradient>
+    <linearGradient id="gold" x2="0.3" y2="1"><stop stop-color="#f3d58b"/><stop offset="0.55" stop-color="#d4af37"/><stop offset="1" stop-color="#96651d"/></linearGradient>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="translate(0 160) rotate(-25)"><path d="M80 0H0V80" fill="none" stroke="#d4af37" stroke-opacity=".12"/></pattern>
+  </defs>
+  <path fill="url(#night)" d="M0 0h960v640H0z"/>
+  <path fill="url(#grid)" d="M0 0h960v640H0z"/>
+  <path d="M140 428 482 590 816 422 479 270Z" fill="#180e24" stroke="#96651d" stroke-width="2"/>
+  <path d="m200 430 282 129 270-137-274-126Z" fill="none" stroke="#d4af37" stroke-opacity=".35"/>
+  <path d="m220 423 256 32 244-39" fill="none" stroke="#d4af37" stroke-width="3" stroke-dasharray="8 12"/>
+  <g fill="#10081a" stroke="#d4af37" stroke-width="3"><path d="m190 417 30-18 31 18-31 18Z"/><path d="m690 417 30-18 31 18-31 18Z"/></g>
+  <g fill="url(#gold)">
+    <path d="M365 425V248h29v24h26v-24h30v177Z"/>
+    <path d="M510 425V248h29v24h26v-24h30v177Z"/>
+    <path d="M439 422V209h28v23h25v-23h28v213Z"/>
+    <path d="M399 344h162v82H399Z"/>
+    <path d="m431 179 12-64 34 29 34-29 12 64Z"/>
+    <path d="M438 187h78v11h-78Z"/>
+  </g>
+  <g fill="#10081a"><path d="M458 426v-45q20-35 40 0v45Z"/><path d="M391 299h18v29h-18zM552 299h18v29h-18zM469 265h18v30h-18z"/></g>
+  <path d="m352 427 126 58 131-58-28-14-103 46-101-46Z" fill="#96651d"/>
+  <g fill="#d4af37"><path d="M216 402v-39h8v39zm8-40 29 10-29 11Z"/><path d="M716 402v-39h8v39zm8-40 29 10-29 11Z"/></g>
+  <path d="M62 70h90M62 70v90M898 70h-90M898 70v90M62 570h90M62 570v-90M898 570h-90M898 570v-90" fill="none" stroke="#d4af37" stroke-opacity=".45" stroke-width="2"/>
+</svg>

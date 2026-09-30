@@ -1,6 +1,19 @@
 'use client';
 
-export default function AppError({ reset }: { reset: () => void }) {
+import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react';
+
+export default function AppError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    Sentry.captureMessage('Application error');
+  }, [error]);
+
   return (
     <main className="section">
       <div className="container empty-state" role="alert">

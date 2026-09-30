@@ -27,6 +27,7 @@ type RealtimeNamespace =
   | '/baloot'
   | '/ladder'
   | '/scrambled-words'
+  | '/kingdoms'
   | '/elimination';
 
 function resolveDefaultOrigin(currentOrigin: string, namespace: RealtimeNamespace) {

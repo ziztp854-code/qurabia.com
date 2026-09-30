@@ -1,0 +1,118 @@
+.ladder {
+  display: grid;
+  gap: 0.75rem;
+  padding: clamp(0.9rem, 2vw, 1.25rem);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 8%, transparent), transparent 70%),
+    var(--surface);
+  min-inline-size: 0;
+}
+.head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.head h3 {
+  margin: 0.15rem 0;
+  font-size: 1.25rem;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.counter {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.track {
+  display: block;
+  block-size: 6px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+.track > span {
+  display: block;
+  block-size: 100%;
+  background: var(--gold-gradient);
+  transition: width 0.6s ease-out;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.steps li {
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  min-inline-size: 0;
+}
+.node {
+  display: grid;
+  place-items: center;
+  inline-size: 1.7rem;
+  block-size: 1.7rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.steps strong {
+  font-size: 0.95rem;
+}
+.note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+.steps li[data-state='done'] {
+  border-color: var(--border-gold);
+}
+.steps li[data-state='done'] .node {
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+}
+.steps li[data-state='current'] {
+  border-color: var(--gold);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+.steps li[data-state='current'] .node {
+  background: var(--gold-gradient);
+  color: var(--gold-foreground);
+  border-color: var(--gold);
+}
+.steps li[data-state='locked'] {
+  opacity: 0.72;
+}
+.steps li[data-state='locked'] .node {
+  border-style: dashed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track > span {
+    transition: none;
+  }
+}

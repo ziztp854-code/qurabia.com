@@ -12,6 +12,7 @@ import { BalootModule } from './baloot/baloot.module.js';
 import { LadderModule } from './ladder/ladder.module.js';
 import { ScrambledWordsModule } from './scrambled-words/scrambled-words.module.js';
 import { EliminationModule } from './elimination/elimination.module.js';
+import { KingdomsModule } from './kingdoms/kingdoms.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { EliminationModule } from './elimination/elimination.module.js';
     LadderModule,
     ScrambledWordsModule,
     EliminationModule,
+    KingdomsModule,
   ],
   controllers: [AppController],
   providers: [

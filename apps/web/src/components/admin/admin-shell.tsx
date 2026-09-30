@@ -1,4 +1,17 @@
-import { Activity, BarChart3, FileQuestion, Gauge, Network, Radar, Radio, ShieldCheck, Stamp, Users, Layers } from 'lucide-react';
+import {
+  Activity,
+  BarChart3,
+  FileQuestion,
+  Gauge,
+  Network,
+  Radar,
+  Radio,
+  ShieldCheck,
+  Stamp,
+  Users,
+  Layers,
+  MonitorDot,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DashboardLayout } from '@/components/layout';
@@ -19,11 +32,13 @@ const navigation: readonly {
   managersOnly?: boolean;
 }[] = [
   { href: '/admin', label: 'النظرة العامة', icon: Gauge },
+  { href: '/admin/monitor', label: 'مراقبة الموقع', icon: MonitorDot, managersOnly: true },
   { href: '/admin/audience', label: 'رادار الجمهور', icon: Radar, managersOnly: true },
   { href: '/admin/permissions', label: 'الصلاحيات', icon: ShieldCheck },
   { href: '/admin/stamps', label: 'أختام الأوسمة', icon: Stamp, permission: 'MANAGE_USERS' },
   { href: '/admin/content', label: 'المحتوى', icon: FileQuestion, permission: 'MANAGE_CONTENT' },
   { href: '/admin/rooms', label: 'الغرف المباشرة', icon: Radio, permission: 'MANAGE_ROOMS' },
+  { href: '/admin/kingdoms', label: 'تحدي الممالك', icon: ShieldCheck, managersOnly: true },
   { href: '/questions', label: 'بنك الأسئلة', icon: Layers },
   { href: '/admin/users', label: 'المستخدمون', icon: Users, permission: 'MANAGE_USERS' },
   { href: '/admin/reports', label: 'التقارير', icon: BarChart3, permission: 'VIEW_REPORTS' },

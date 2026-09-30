@@ -11,7 +11,14 @@ describe('AdminShell navigation', () => {
   it('shows the full console to administrators', () => {
     render(<AdminShell role="ADMIN">المحتوى</AdminShell>);
 
-    expect(screen.getByRole('link', { name: 'رادار الجمهور' })).toHaveAttribute('href', '/admin/audience');
+    expect(screen.getByRole('link', { name: 'رادار الجمهور' })).toHaveAttribute(
+      'href',
+      '/admin/audience',
+    );
+    expect(screen.getByRole('link', { name: 'مراقبة الموقع' })).toHaveAttribute(
+      'href',
+      '/admin/monitor',
+    );
     expect(screen.getByRole('link', { name: 'المستخدمون' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'سجل النشاط' })).toBeInTheDocument();
     expect(screen.getByText('أدمن')).toBeInTheDocument();
@@ -37,6 +44,7 @@ describe('AdminShell navigation', () => {
     expect(screen.getByRole('link', { name: 'التقارير' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'المستخدمون' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'رادار الجمهور' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'مراقبة الموقع' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'الغرف المباشرة' })).not.toBeInTheDocument();
   });
 
