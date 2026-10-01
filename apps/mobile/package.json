@@ -10,20 +10,22 @@
     "build:ios": "npx eas-cli@latest build --platform ios --profile production",
     "submit:ios": "npx eas-cli@latest submit --platform ios --profile production",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm --filter @tahaddi/domain build && tsx --test src/join-flow.test.ts"
+    "test": "pnpm --filter @tahaddi/domain build && tsx --test src/*.test.ts"
   },
   "dependencies": {
-    "@expo-google-fonts/readex-pro": "0.4.1",
+    "@expo-google-fonts/alexandria": "0.4.2",
+    "@expo-google-fonts/cairo": "0.4.2",
     "@tahaddi/domain": "workspace:*",
     "expo": "~57.0.23",
     "expo-font": "~57.0.4",
     "expo-status-bar": "~57.0.1",
-    "react": "19.3.0",
-    "react-native": "0.87.1",
-    "react-native-safe-area-context": "~5.10.0"
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
   },
   "devDependencies": {
-    "@types/react": "~19.3.0",
+    "@tahaddi/contracts": "workspace:*",
+    "@types/react": "~19.2.18",
     "tsx": "^4.23.13",
     "typescript": "5.9.3"
   },
