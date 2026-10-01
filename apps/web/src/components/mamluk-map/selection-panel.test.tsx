@@ -55,6 +55,10 @@ describe('map selection panel', () => {
         relocation={{ ...relocation, approved: false }}
       />,
     );
+    expect(screen.getByRole('complementary', { name: 'تفاصيل الخريطة' })).toHaveAttribute(
+      'data-expanded',
+      'true',
+    );
     expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).toBeVisible();
     expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: 'تأكيد النقل الدائم' })).toBeDisabled();

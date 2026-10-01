@@ -40,7 +40,8 @@ export function SelectionPanel({
     if (selectionId) panel.current?.scrollTo?.({ top: 0, behavior: 'instant' });
   }, [selectionId]);
   const [expanded, setExpanded] = useState(false);
-  const sheetExpanded = expanded || Boolean(selection);
+  // Selection intent survives a refresh; authorized detail data still clears.
+  const sheetExpanded = expanded || Boolean(key);
   const Icon =
     selection?.layer === 'castles'
       ? Castle
