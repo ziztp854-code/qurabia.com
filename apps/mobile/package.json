@@ -15,7 +15,7 @@
   "dependencies": {
     "@expo-google-fonts/readex-pro": "0.4.1",
     "@tahaddi/domain": "workspace:*",
-    "expo": "~57.0.23",
+    "expo": "~57.0.25",
     "expo-font": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "react": "19.3.0",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3"
   },
   "expo": {
