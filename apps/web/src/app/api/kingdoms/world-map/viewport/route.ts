@@ -26,7 +26,8 @@ export async function GET(request: Request) {
     }
     let repository;
     let playerId;
-    if (viewport.worldId === PUBLIC_ATLAS_WORLD.id) {
+    const referenceAtlas = viewport.worldId === PUBLIC_ATLAS_WORLD.id;
+    if (referenceAtlas) {
       const ip = (request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown').slice(
         0,
         256,
@@ -47,7 +48,9 @@ export async function GET(request: Request) {
     return NextResponse.json(result.payload, {
       headers: {
         ...headers,
-        'X-Mamluk-Public-Settlements': result.publicSettlements ? '1' : '0',
+        // The read-only atlas contains public geographic landmarks only.
+        // Private campaigns still require their repository's explicit grant.
+        'X-Mamluk-Public-Settlements': referenceAtlas || result.publicSettlements ? '1' : '0',
       },
     });
   } catch (error) {

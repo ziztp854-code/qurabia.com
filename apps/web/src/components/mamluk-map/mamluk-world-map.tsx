@@ -6,6 +6,7 @@ import {
   Eye,
   Flag,
   Globe,
+  Layers,
   Map,
   MapPin,
   Minus,
@@ -14,7 +15,7 @@ import {
   Shield,
   Target,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
@@ -22,6 +23,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { findSelection, listSelectableFeatures } from './selection';
 import { SelectionPanel } from './selection-panel';
 import { useWorldMap } from './use-world-map';
+import { getPlayerColor } from './player-ownership';
 import styles from './mamluk-world-map.module.css';
 import type { VillageRelocationEligibility } from './use-village-relocation';
 
@@ -45,6 +47,14 @@ const messages = {
   zoom: 'قرّب الخريطة لعرض المواقع',
   error: 'تعذر تحديث الخريطة. أعد المحاولة.',
 };
+const ownerColors = {
+  own: 'var(--map-owner-self)',
+  neutral: 'var(--map-owner-neutral)',
+  selected: 'var(--map-owner-selected)',
+  halo: 'var(--map-owner-halo)',
+  players: Array.from({ length: 6 }, (_, index) => `var(--map-owner-${index + 1})`),
+};
+const number = (value: number) => new Intl.NumberFormat('ar-SA').format(value);
 
 export function MamlukWorldMap({
   worlds,
@@ -102,29 +112,108 @@ function WorldScene({
     container,
     status,
     payload,
+    publicPayload,
     selected,
     setSelected,
     projection,
     setProjection,
     moveCamera,
+    focusSelection,
     refresh,
   } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId);
-  const selection = useMemo(
-    () => findSelection(payload, selected, viewerPlayerId, referenceOnly),
-    [payload, selected, viewerPlayerId, referenceOnly],
-  );
+  const scenePayload = payload ?? publicPayload;
+  const selection = useMemo(() => {
+    const current = findSelection(payload, selected, viewerPlayerId, referenceOnly);
+    if (current) return current;
+    const publicCity = findSelection(publicPayload, selected, viewerPlayerId, true);
+    if (!publicCity) return null;
+    const owner = publicPayload?.layers.cities.features.find((city) => city.id === publicCity.id)
+      ?.properties.ownerPlayerId;
+    return {
+      ...publicCity,
+      kind: referenceOnly ? 'مرجع جغرافي' : 'قرية',
+      details: referenceOnly
+        ? []
+        : [
+            {
+              label: 'الملكية',
+              value:
+                owner === viewerPlayerId
+                  ? 'تحت رايتك'
+                  : owner === null
+                    ? 'مستقلة'
+                    : 'تحت راية أخرى',
+            },
+          ],
+    };
+  }, [payload, publicPayload, selected, viewerPlayerId, referenceOnly]);
   const features = useMemo(
-    () => listSelectableFeatures(payload, referenceOnly),
-    [payload, referenceOnly],
+    () => listSelectableFeatures(scenePayload, referenceOnly),
+    [scenePayload, referenceOnly],
   );
+  const ownerGroups = useMemo(() => {
+    if (referenceOnly || !scenePayload) return [];
+    const owners = [
+      ...new Set(
+        scenePayload.layers.territories.features.map((feature) =>
+          typeof feature.properties.ownerPlayerId === 'string'
+            ? feature.properties.ownerPlayerId
+            : null,
+        ),
+      ),
+    ];
+    return owners
+      .sort((left, right) =>
+        left === viewerPlayerId
+          ? -1
+          : right === viewerPlayerId
+            ? 1
+            : (left ?? '').localeCompare(right ?? ''),
+      )
+      .map((ownerPlayerId) => {
+        const cities = scenePayload.layers.cities.features.filter(
+          (city) => city.properties.ownerPlayerId === ownerPlayerId,
+        );
+        const names = cities
+          .map((city) => String(city.properties.name))
+          .slice(0, 2)
+          .join('، ');
+        const label =
+          ownerPlayerId === viewerPlayerId
+            ? `مملكتك${names ? `: ${names}` : ''}`
+            : ownerPlayerId === null
+              ? 'قرى مستقلة'
+              : names
+                ? `قرى ${names}`
+                : 'حدود لاعب آخر';
+        return {
+          ownerPlayerId,
+          label,
+          cityId: cities[0]?.id,
+          selected: selected?.layer === 'cities' && cities.some((city) => city.id === selected.id),
+          color: getPlayerColor(ownerPlayerId, { viewerPlayerId, colors: ownerColors }),
+          count: scenePayload.layers.territories.features.filter(
+            (feature) => feature.properties.ownerPlayerId === ownerPlayerId,
+          ).length,
+        };
+      });
+  }, [referenceOnly, scenePayload, viewerPlayerId, selected]);
+  const pendingTitle =
+    selected?.layer === 'cities'
+      ? scenePayload?.layers.cities.features.find((city) => city.id === selected.id)?.properties
+          .name
+      : undefined;
   const ownVillage =
     selection?.layer === 'cities' &&
     villageLocations?.find((village) => village.villageId === selection.id);
   const approvedCity = payload?.layers.cities.features.find(
     (feature) => feature.id === selection?.id,
   );
+  const publicCity = scenePayload?.layers.cities.features.find(
+    (feature) => feature.id === selection?.id,
+  );
   const managementHref =
-    !referenceOnly && ownVillage && approvedCity?.properties.ownerPlayerId === viewerPlayerId
+    !referenceOnly && ownVillage && publicCity?.properties.ownerPlayerId === viewerPlayerId
       ? villageManagementHref(worldId, ownVillage.villageId)
       : undefined;
   const relocationVillage =
@@ -137,13 +226,16 @@ function WorldScene({
     router.refresh();
     refresh();
   };
-  const statusMessage = referenceOnly
-    ? status === 'ready'
-      ? 'مدن الأطلس الجغرافي'
-      : status === 'loading'
-        ? 'جارٍ تحميل الأطلس…'
-        : messages[status]
-    : messages[status];
+  const statusMessage =
+    status === 'loading' && publicPayload
+      ? 'جارٍ تحديث المشهد…'
+      : referenceOnly
+        ? status === 'ready'
+          ? 'مدن الأطلس الجغرافي'
+          : status === 'loading'
+            ? 'جارٍ تحميل الأطلس…'
+            : messages[status]
+        : messages[status];
   return (
     <section
       className={styles.root}
@@ -200,6 +292,70 @@ function WorldScene({
           لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.
         </p>
       )}
+      <div className={styles.sceneOverview} aria-label="المشهد الحالي">
+        <div className={styles.sceneCount}>
+          <MapPin size={16} aria-hidden="true" />
+          <span>{number(scenePayload?.layers.cities.features.length ?? 0)}</span>
+          {referenceOnly ? 'مدينة في المشهد' : 'قرية في المشهد'}
+        </div>
+        {!referenceOnly && (
+          <div className={styles.sceneCount}>
+            <Flag size={16} aria-hidden="true" />
+            <span>
+              {number(ownerGroups.filter((owner) => owner.ownerPlayerId !== null).length)}
+            </span>
+            ممالك ظاهرة
+          </div>
+        )}
+        <p>اسحب للاستكشاف · قرّب لرؤية الحدود · اختر موقعًا للتفاصيل</p>
+      </div>
+      {!referenceOnly && (
+        <section className={styles.ownerLegend} aria-label="حدود الممالك">
+          <div className={styles.ownerHeading}>
+            <Layers size={20} aria-hidden="true" />
+            <div>
+              <h2>حدود الممالك</h2>
+              <p>كل لون يجمع قرى اللاعب وحدودها. اختر راية لتفقد حدودها.</p>
+            </div>
+          </div>
+          {ownerGroups.length ? (
+            <ul className={styles.ownerList}>
+              {ownerGroups.map((owner) => (
+                <li
+                  key={owner.ownerPlayerId ?? 'neutral'}
+                  style={{ '--owner-color': owner.color } as CSSProperties}
+                >
+                  {owner.cityId ? (
+                    <button
+                      type="button"
+                      aria-label={`استكشف حدود ${owner.label}`}
+                      aria-pressed={owner.selected}
+                      onClick={() => focusSelection({ layer: 'cities', id: owner.cityId! }, 11)}
+                    >
+                      <span className={styles.ownerSwatch} aria-hidden="true">
+                        <Flag size={14} />
+                      </span>
+                      <span>{owner.label}</span>
+                      <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
+                      <Target size={16} aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <span className={styles.ownerItem}>
+                      <span className={styles.ownerSwatch} aria-hidden="true">
+                        <Flag size={14} />
+                      </span>
+                      <span>{owner.label}</span>
+                      <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.boundaryEmpty}>تظهر حدود الممالك مع القرى المتاحة في المشهد.</p>
+          )}
+        </section>
+      )}
       <div className={styles.workspace}>
         <div className={styles.mapFrame}>
           <div
@@ -226,6 +382,15 @@ function WorldScene({
             >
               <Map size={18} aria-hidden="true" />
               خريطة مسطحة
+            </button>
+            <button
+              className={styles.iconButton}
+              type="button"
+              aria-label="حدّث الخريطة"
+              disabled={status === 'loading'}
+              onClick={refresh}
+            >
+              <RefreshCw size={18} aria-hidden="true" />
             </button>
           </div>
           <div className={styles.navigation} role="group" aria-label="التنقل على الخريطة">
@@ -257,6 +422,7 @@ function WorldScene({
           <div
             className={`${styles.status} ${status === 'error' ? styles.error : ''}`}
             role={status === 'error' ? 'alert' : 'status'}
+            data-state={status}
           >
             {referenceOnly ? (
               <MapPin size={16} aria-hidden="true" />
@@ -281,8 +447,10 @@ function WorldScene({
           managementHref={managementHref}
           referenceOnly={referenceOnly}
           selectedKey={selected}
+          loading={status === 'loading' && Boolean(selected)}
+          pendingTitle={typeof pendingTitle === 'string' ? pendingTitle : undefined}
           features={features}
-          onSelect={setSelected}
+          onSelect={focusSelection}
           onClose={() => setSelected(null)}
           relocation={
             relocationVillage
@@ -304,10 +472,6 @@ function WorldScene({
         {!referenceOnly && (
           <>
             <span>
-              <Map size={16} aria-hidden="true" />
-              حدود القرى
-            </span>
-            <span>
               <Castle size={16} aria-hidden="true" />
               القلاع
             </span>
@@ -322,7 +486,6 @@ function WorldScene({
           </>
         )}
         <p className={styles.help}>حرّك الخريطة بالأسهم، أو اختر موقعًا من القائمة.</p>
-        <p className={styles.help}>الخلفية من خريطتك المرجعية، وحدود القرى باللون الذهبي.</p>
         <p className={styles.help}>
           إحداثيات المدن: <a href="https://www.geonames.org/">GeoNames</a> ·{' '}
           <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>

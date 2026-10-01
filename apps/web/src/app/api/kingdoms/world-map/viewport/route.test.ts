@@ -137,6 +137,7 @@ describe('authenticated host map viewport', () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('x-mamluk-public-settlements')).toBe('1');
     const body = await response.json();
     expect(body.worldId).toBe(PUBLIC_ATLAS_WORLD.id);
     expect(body.layers.cities.features.map((city: { id: string }) => city.id)).toEqual(['cairo']);

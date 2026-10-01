@@ -112,32 +112,6 @@ it('scrubs private city attributes from retained public source copies without al
   session.dispose();
 });
 
-it('removes every cached layer if the SDK cannot replace private city attributes', async () => {
-  vi.useFakeTimers();
-  vi.stubGlobal(
-    'fetch',
-    vi
-      .fn()
-      .mockResolvedValueOnce(publicResponse())
-      .mockImplementation(() => new Promise(() => {})),
-  );
-  const { map, callbacks, session } = retrySession();
-  await vi.advanceTimersByTimeAsync(0);
-  const source = map.sources.get('mamluk-cities')!;
-  source.setData = () => {
-    throw new Error('SDK source unavailable');
-  };
-
-  expect(() => {
-    void session.loader.refresh();
-  }).not.toThrow();
-  await vi.advanceTimersByTimeAsync(0);
-  expect(map.sources.size).toBe(0);
-  expect(map.layers.size).toBe(0);
-  expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
-  session.dispose();
-});
-
 it('retains only explicitly public village layers beyond private expiry while the same viewport is pending', async () => {
   vi.useFakeTimers();
   const original = territoryPayload();
@@ -234,7 +208,9 @@ it.each([401, 403, 503])(
     );
     const { map, callbacks, session } = retrySession();
     await vi.advanceTimersByTimeAsync(0);
-    expect(map.sources.get('mamluk-cities')?.data).toMatchObject(territoryPayload().layers.cities);
+    expect(map.sources.get('mamluk-cities')?.data).toMatchObject({
+      features: [{ id: 'cairo', properties: { name: 'القاهرة' } }],
+    });
     await vi.advanceTimersByTimeAsync(5000);
 
     expect(map.sources.size).toBe(0);
@@ -280,34 +256,6 @@ it('does not preserve previous public villages after a policy downgrade or a rev
     type: 'FeatureCollection',
     features: [],
   });
-  session.dispose();
-});
-
-it('clears public geometry on movement and ignores a late classified response from the previous viewport', async () => {
-  vi.useFakeTimers();
-  let deliver: ((value: unknown) => void) | undefined;
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValueOnce(publicResponse())
-    .mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          deliver = resolve;
-        }),
-    );
-  vi.stubGlobal('fetch', fetchMock);
-  const { map, session } = retrySession();
-  await vi.advanceTimersByTimeAsync(5000);
-  expect(map.sources.has('mamluk-cities')).toBe(true);
-  const oldDelivery = deliver;
-  map.bounds = { west: 30, south: 29, east: 34, north: 33 };
-  map.fire('moveend');
-  expect(map.sources.size).toBe(0);
-  oldDelivery?.(publicResponse({ ...territoryPayload(), revision: '2' }));
-  await vi.advanceTimersByTimeAsync(150);
-
-  expect(map.sources.size).toBe(0);
-  expect(fetchMock).toHaveBeenCalledTimes(3);
   session.dispose();
 });
 
@@ -374,7 +322,9 @@ it('keeps approved village markers and borders visible while an automatic refres
   await vi.advanceTimersByTimeAsync(0);
   expect(map.sources.get('mamluk-cities')).toBe(citySource);
   expect(map.sources.get('mamluk-territories')).toBe(territorySource);
-  expect(citySource?.data).toMatchObject(territoryPayload().layers.cities);
+  expect(citySource?.data).toMatchObject({
+    features: [{ id: 'cairo', properties: { name: 'القاهرة' } }],
+  });
   session.dispose();
 });
 

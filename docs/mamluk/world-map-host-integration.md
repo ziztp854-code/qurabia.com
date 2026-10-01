@@ -598,14 +598,60 @@ source image with known projection or additional surveyed control points.
 
 The authenticated viewport response carries `X-Mamluk-Public-Settlements: 1`
 only when the same authorized repository snapshot explicitly permits public
-village locations. This header is outside the accepted domain payload. Private
-campaigns and the reference atlas return `0`; denied requests carry no retention
-permission. The host retains only the already approved city and village plot
-sources while refreshing the same viewport, avoiding the five-second marker
-flicker. Current detail payloads and all private intelligence still clear normally.
-Errors, changed bounds, style replacement, world/session reset and teardown clear
-the retained public presentation. New snapshots replace its data, including
-deleted or relocated villages; no whole-world cache is introduced.
+village locations. This header is outside the accepted domain payload. The reserved
+read-only reference atlas also grants public settlement retention; private campaigns
+return `0`, and denied requests carry no retention permission. The host retains only
+the already approved city and village plot sources during polling, panning, zooming
+and manual refresh. Public city source copies contain only the name, region and
+ownership fields. Current private details and all military intelligence still clear
+normally. Errors, policy downgrade, style replacement, world/viewer session reset
+and teardown clear the retained public presentation. New authorized bounded
+snapshots replace its data, including deleted or relocated villages; no whole-world
+cache is introduced. Identical public snapshots reuse their source data instead of
+rebuilding symbols every five seconds.
+
+Camera initialization depends on scalar authoritative coordinates, rather than the
+identity of a location prop object. Parent rerenders keep the existing SDK canvas,
+camera and session. An accepted relocation recenters that same canvas. Payloads are
+tagged with their world/viewer session so a changed viewer cannot reuse public UI
+state from the previous session.
+
+### Player boundaries and interactive presentation
+
+Each approved village territory uses a deterministic owner color, an outline with a
+dark halo, and a matching ground ring under its settlement artwork. The viewer's
+territory is gold; independent plots use the neutral token. Selection highlights
+the approved city and its existing territory feature together. Geometry always
+comes from the server's village plots: the host does not infer connected empire
+polygons, geographic borders, or ownership from the basemap.
+
+The ownership legend groups visible plots and focuses their approved city at zoom
+11, where the village boundary can be inspected. Directory selection preserves the
+current zoom. Basic public names, coordinates, ownership and village management
+links remain available while refreshing; private statistics require the current
+payload. The existing relocation draft remains mounted, with confirmation disabled
+until current authorization is available again.
+
+Settlement artwork is bottom-anchored to its geographic coordinate and stays upright
+through camera rotation and pitch. Overlapping SDK hit areas resolve to the nearest
+approved marker body rather than layer order. Click properties cannot supply panel
+content or an unapproved entity. Ground rings and boundaries follow the map plane.
+The supplied atlas raster fades out between zoom 5.5 and 8, and the low-resolution
+relief fades between zoom 7 and 10, exposing precise provider geography at village
+detail scale without shifting any game coordinates.
+
+Validation for this update passed 142 focused tests across 15 files, with 98.52%
+line and 91.32% branch coverage for the map presentation modules. All six isolated
+desktop/mobile browser cases passed for the anonymous atlas, authenticated campaign
+and actual village world; both village cases were rerun after the final label and
+panel-artwork polish. They verify real coordinate hit testing, owner boundary focus,
+an unchanged SDK canvas during a deliberately held refresh, retained basic village
+details, and removal of private statistics during that refresh. Production build,
+TypeScript and lint completed successfully; lint retains one existing navigation
+warning in `site-shell.tsx`. These results are local and do not claim a production
+deployment.
+
+### One-time relocation
 
 The owner can request one geographic relocation per village through
 `GET /api/kingdoms/world-map/relocate?worldId=…&villageId=…` (eligibility) and

@@ -34,6 +34,17 @@
   --map-forest: #b5cda6;
   --map-country-border: #777565;
   --map-label: #403c2f;
+  /* Player ownership stays consistent as the viewport and projection change. */
+  --map-owner-self: var(--brand-gold);
+  --map-owner-neutral: #8b7650;
+  --map-owner-selected: #fff1ba;
+  --map-owner-halo: #493718;
+  --map-owner-1: #426b4a;
+  --map-owner-2: #377a91;
+  --map-owner-3: #a04f50;
+  --map-owner-4: #776397;
+  --map-owner-5: #338477;
+  --map-owner-6: #a7763c;
   --gold-gradient: linear-gradient(135deg, var(--gold-100), var(--gold-500), var(--gold-700));
   --border-gold: rgb(212 175 55 / 0.38);
 

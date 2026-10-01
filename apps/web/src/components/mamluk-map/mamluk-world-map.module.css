@@ -130,6 +130,130 @@
   direction: ltr;
   min-block-size: 600px;
 }
+.sceneOverview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  background: var(--map-background);
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
+  color: var(--map-muted);
+  font-size: 12px;
+}
+.sceneCount {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sceneCount svg {
+  color: var(--map-bronze);
+}
+.sceneCount > span {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--map-text);
+  font-variant-numeric: tabular-nums;
+}
+.sceneOverview > p {
+  margin: 0;
+  margin-inline-start: auto;
+  line-height: 1.8;
+}
+.ownerLegend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  background: var(--map-surface);
+  border-block-end: 1px solid var(--map-border);
+}
+.ownerHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.ownerHeading > svg {
+  color: var(--map-gold);
+}
+.ownerHeading h2 {
+  margin: 0;
+  color: var(--map-gold);
+  font-size: 14px;
+}
+.ownerHeading p,
+.boundaryEmpty {
+  margin: var(--space-1) 0 0;
+  color: var(--map-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.ownerHeading p {
+  max-inline-size: 260px;
+}
+.ownerList {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.ownerList > li {
+  flex-shrink: 0;
+  max-inline-size: 310px;
+}
+.ownerList button,
+.ownerItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 48px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--map-background);
+  color: var(--map-text);
+  border: 1px solid color-mix(in srgb, var(--owner-color) 45%, transparent);
+  border-radius: 6px;
+  text-align: start;
+  font: inherit;
+  font-size: 13px;
+}
+.ownerList button {
+  cursor: pointer;
+}
+.ownerList button:hover,
+.ownerList button[aria-pressed='true'] {
+  border-color: var(--owner-color);
+  background: color-mix(in srgb, var(--owner-color) 12%, var(--map-background));
+}
+.ownerList button:focus-visible {
+  outline: 3px solid var(--map-gold);
+  outline-offset: 2px;
+}
+.ownerSwatch {
+  display: grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  flex-shrink: 0;
+  border: 2px solid var(--owner-color);
+  color: var(--owner-color);
+  border-radius: 4px;
+}
+.ownerCount {
+  flex-shrink: 0;
+  color: var(--map-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.ownerList button > svg {
+  flex-shrink: 0;
+  color: var(--owner-color);
+}
 .mapFrame {
   position: relative;
   min-inline-size: 0;
@@ -177,7 +301,8 @@
 .iconButton:hover {
   border-color: var(--map-gold);
 }
-.control:disabled {
+.control:disabled,
+.iconButton:disabled {
   cursor: wait;
   opacity: 0.6;
 }
@@ -194,9 +319,10 @@
   position: absolute;
   z-index: 2;
   inset-block-start: 78px;
-  inset-inline-start: 20px;
+  inset-inline-end: 20px;
   display: grid;
   gap: var(--space-2);
+  direction: rtl;
 }
 .status {
   position: absolute;
@@ -217,6 +343,12 @@
 .status > svg {
   color: var(--map-success);
   flex-shrink: 0;
+}
+.status[data-state='loading'] > svg {
+  color: var(--map-muted);
+}
+.status[data-state='error'] > svg {
+  color: var(--map-danger);
 }
 .error {
   color: var(--map-text);
@@ -285,8 +417,10 @@
 }
 .selectionArt {
   display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   block-size: 130px;
+  overflow: hidden;
   margin-block: var(--space-3);
   border-block-end: 1px solid color-mix(in srgb, var(--map-border) 40%, transparent);
 }
@@ -338,6 +472,28 @@
 }
 .emptySelection {
   padding-block: 8px 20px;
+}
+.pendingSelection {
+  padding-block: var(--space-2) var(--space-4);
+}
+.pendingSelection > svg {
+  color: var(--map-gold);
+}
+.pendingSelection h2 {
+  margin: var(--space-2) 0;
+  font-size: 20px;
+}
+.pendingSelection p {
+  margin: 0;
+  color: var(--map-muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.pendingNote {
+  margin: var(--space-3) 0 0;
+  color: var(--map-muted);
+  font-size: 12px;
+  line-height: 1.8;
 }
 .emptySelection svg {
   color: var(--map-bronze);
@@ -484,6 +640,27 @@
     block-size: 76dvh;
     min-block-size: 580px;
   }
+  .sceneOverview {
+    gap: var(--space-2) var(--space-4);
+    padding-inline: var(--space-3);
+  }
+  .sceneOverview > p {
+    inline-size: 100%;
+    margin-inline-start: 0;
+  }
+  .ownerLegend {
+    display: block;
+    padding: var(--space-3);
+  }
+  .ownerHeading p {
+    max-inline-size: none;
+  }
+  .ownerList {
+    margin-block-start: var(--space-2);
+  }
+  .ownerList > li {
+    max-inline-size: 260px;
+  }
   .mapFrame {
     block-size: 100%;
     min-block-size: 0;
@@ -498,7 +675,7 @@
     padding-inline: 10px;
   }
   .navigation {
-    inset-inline-start: 12px;
+    inset-inline-end: 12px;
     inset-block-start: 72px;
   }
   .panel {

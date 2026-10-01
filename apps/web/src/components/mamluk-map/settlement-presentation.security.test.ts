@@ -87,7 +87,13 @@ describe('settlement artwork security boundary', () => {
       source: 'mamluk-cities',
       type: 'symbol',
       minzoom: 3,
-      layout: { 'icon-anchor': 'bottom' },
+      layout: {
+        'icon-anchor': 'bottom',
+        'icon-pitch-alignment': 'viewport',
+        'icon-rotation-alignment': 'viewport',
+        'text-pitch-alignment': 'viewport',
+        'text-rotation-alignment': 'viewport',
+      },
     });
     expect(layer).toHaveProperty('filter', ['==', ['get', 'kind'], 'city']);
     expect(original).toEqual(before);

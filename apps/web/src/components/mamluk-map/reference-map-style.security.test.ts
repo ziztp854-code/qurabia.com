@@ -70,11 +70,29 @@ describe('reference-image basemap boundary', () => {
       id: 'mamluk-reference-basemap',
       source: 'mamluk-reference-basemap',
       type: 'raster',
-      paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 },
+      paint: { 'raster-fade-duration': 0 },
     });
     expect(style.glyphs).toBe(before.glyphs);
     expect(style.sprite).toBe(before.sprite);
     expect(style.name).toBe(before.name);
+  });
+
+  it('reveals precise vector geography when inspecting village boundaries instead of magnifying the overview artwork', () => {
+    const style = buildReferenceMapStyle(baseStyle());
+    const atlas = style.layers.find((layer) => layer.id === 'mamluk-reference-basemap');
+    expect(atlas?.type).toBe('raster');
+    if (atlas?.type !== 'raster') throw new Error('Missing atlas layer');
+    expect(atlas.maxzoom).toBe(9);
+    expect(atlas.paint?.['raster-opacity']).toEqual([
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      5.5,
+      1,
+      8,
+      0,
+    ]);
+    expect(style.sources.geographic).toEqual(baseStyle().sources.geographic);
   });
 
   it('uses four distinct clockwise finite WGS84 corners without reinterpreting game coordinates', () => {

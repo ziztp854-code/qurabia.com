@@ -18,13 +18,17 @@ export function withFeatureIdentity(data: SdkGeoJson): SdkGeoJson {
 }
 
 /** Keep every SDK receiver bound while enriching subsequent setData copies. */
-export function withSourceIdentity<T extends Source>(source: T): T {
+export function withSourceIdentity<T extends Source>(
+  source: T,
+  present: (data: SdkGeoJson) => SdkGeoJson = (data) => data,
+): T {
   if (source.type !== 'geojson') return source;
   return new Proxy(source, {
     get(target, property) {
       const value = Reflect.get(target, property, target);
       if (property === 'setData' && typeof value === 'function') {
-        return (data: SdkGeoJson) => Reflect.apply(value, target, [withFeatureIdentity(data)]);
+        return (data: SdkGeoJson) =>
+          Reflect.apply(value, target, [withFeatureIdentity(present(data))]);
       }
       return typeof value === 'function' ? value.bind(target) : value;
     },

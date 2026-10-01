@@ -53,7 +53,15 @@ describe('geographically anchored physical basemap', () => {
     const style = buildPhysicalMapStyle(base, colors);
     const relief = style.layers.find((layer) => layer.id === 'natural_earth')!;
     expect(relief.maxzoom).toBe(24);
-    expect(relief.type === 'raster' && relief.paint!['raster-opacity']).toBeGreaterThanOrEqual(0.9);
+    expect(relief.type === 'raster' && relief.paint!['raster-opacity']).toEqual([
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      7,
+      0.96,
+      10,
+      0,
+    ]);
     const water = style.layers.find((layer) => layer.id === 'water')!;
     expect(water.type === 'fill' && water.paint!['fill-color']).toBe('#3399c8');
     expect(style.sources).toEqual(base.sources);

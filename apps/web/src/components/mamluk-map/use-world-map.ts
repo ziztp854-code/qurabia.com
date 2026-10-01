@@ -8,6 +8,7 @@ import { createMapSession } from './map-session';
 import type { SelectionKey } from './selection';
 import { buildPhysicalMapStyle, type PhysicalMapColors } from './physical-map-style';
 import { buildReferenceMapStyle } from './reference-map-style';
+import type { OwnershipPresentationOptions } from './player-ownership';
 import {
   createSettlementPresentation,
   type SettlementPresentation,
@@ -44,6 +45,24 @@ function physicalPalette(container: HTMLElement): PhysicalMapColors {
   };
 }
 
+function ownershipPalette(
+  container: HTMLElement,
+  viewerPlayerId: string,
+): OwnershipPresentationOptions {
+  const tokens = getComputedStyle(container);
+  const color = (token: string) => tokens.getPropertyValue(token).trim();
+  return {
+    viewerPlayerId,
+    colors: {
+      own: color('--map-owner-self'),
+      neutral: color('--map-owner-neutral'),
+      selected: color('--map-owner-selected'),
+      halo: color('--map-owner-halo'),
+      players: [1, 2, 3, 4, 5, 6].map((index) => color(`--map-owner-${index}`)),
+    },
+  };
+}
+
 export function useWorldMap(
   worldId: string,
   viewerPlayerId: string,
@@ -54,11 +73,36 @@ export function useWorldMap(
   const mapRef = useRef<LibreMap | null>(null);
   const sessionRef = useRef<ReturnType<typeof createMapSession> | null>(null);
   const [status, setStatus] = useState<Status>('loading');
-  const [payload, setPayload] = useState<MapPayload | null>(null);
-  const [selected, setSelected] = useState<SelectionKey | null>(null);
+  const sessionKey = `${worldId}:${viewerPlayerId}`;
+  const [snapshot, setSnapshot] = useState<{
+    readonly sessionKey: string;
+    readonly payload: MapPayload | null;
+  } | null>(null);
+  const [publicSnapshot, setPublicSnapshot] = useState<{
+    readonly sessionKey: string;
+    readonly payload: MapPayload | null;
+  } | null>(null);
+  const payload = snapshot?.sessionKey === sessionKey ? snapshot.payload : null;
+  const publicPayload = publicSnapshot?.sessionKey === sessionKey ? publicSnapshot.payload : null;
+  const [selected, setSelectedState] = useState<SelectionKey | null>(null);
   const [projection, setProjectionState] = useState<MapProjection>('globe');
   const [attempt, setAttempt] = useState(0);
   const projectionRef = useRef<MapProjection>('globe');
+  const longitude = initialLocation?.longitude;
+  const latitude = initialLocation?.latitude;
+  const cameraRef = useRef({ longitude, latitude });
+  const pendingInitialSelection = useRef(initialVillageId);
+  useEffect(() => {
+    cameraRef.current = { longitude, latitude };
+    pendingInitialSelection.current = initialVillageId;
+    const map = mapRef.current;
+    if (!map || longitude === undefined || latitude === undefined) return;
+    map.easeTo({
+      center: [longitude, latitude],
+      zoom: VILLAGE_OVERVIEW_ZOOM,
+      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250,
+    });
+  }, [longitude, latitude, initialVillageId]);
   useEffect(() => {
     let cancelled = false;
     let map: LibreMap | null = null;
@@ -66,18 +110,17 @@ export function useWorldMap(
     let settlements: SettlementPresentation | null = null;
     let styleReady = false;
     const artworkController = new AbortController();
-    let pendingInitialSelection = initialVillageId;
     async function initialize() {
       try {
         const { Map, setWorkerUrl } = await import('maplibre-gl');
         if (cancelled || !container.current) return;
         setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
+        const camera = cameraRef.current;
+        const hasLocation = camera.longitude !== undefined && camera.latitude !== undefined;
         map = new Map({
           container: container.current,
-          center: initialLocation
-            ? [initialLocation.longitude, initialLocation.latitude]
-            : [34, 30.4],
-          zoom: initialLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3,
+          center: hasLocation ? [camera.longitude!, camera.latitude!] : [34, 30.4],
+          zoom: hasLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3,
           renderWorldCopies: false,
           attributionControl: { compact: true },
         });
@@ -116,22 +159,29 @@ export function useWorldMap(
           {
             // Keep only the selection key during refresh; null payload hides every detail.
             onPayload: (nextPayload) => {
-              setPayload(nextPayload);
+              setSnapshot({ sessionKey: `${worldId}:${viewerPlayerId}`, payload: nextPayload });
               if (
-                pendingInitialSelection &&
+                pendingInitialSelection.current &&
                 nextPayload?.layers.cities.features.some(
-                  (city) => city.id === pendingInitialSelection,
+                  (city) => city.id === pendingInitialSelection.current,
                 )
               ) {
-                setSelected({ layer: 'cities', id: pendingInitialSelection });
-                pendingInitialSelection = undefined;
+                setSelectedState({ layer: 'cities', id: pendingInitialSelection.current });
+                session?.select({ layer: 'cities', id: pendingInitialSelection.current });
+                pendingInitialSelection.current = undefined;
               }
             },
-            onSelection: setSelected,
+            onPublicPayload: (nextPayload) =>
+              setPublicSnapshot({
+                sessionKey: `${worldId}:${viewerPlayerId}`,
+                payload: nextPayload,
+              }),
+            onSelection: setSelectedState,
             onStatus: setStatus,
           },
           settlements,
           styleReady,
+          ownershipPalette(container.current, viewerPlayerId),
         );
         sessionRef.current = session;
       } catch {
@@ -148,7 +198,23 @@ export function useWorldMap(
       mapRef.current = null;
       sessionRef.current = null;
     };
-  }, [worldId, viewerPlayerId, attempt, initialLocation, initialVillageId]);
+  }, [worldId, viewerPlayerId, attempt]);
+  function setSelected(key: SelectionKey | null) {
+    setSelectedState(key);
+    sessionRef.current?.select(key);
+  }
+  function focusSelection(key: SelectionKey, zoom?: number) {
+    const source = payload ?? (key.layer === 'cities' ? publicPayload : null);
+    const feature = source?.layers[key.layer].features.find((entry) => entry.id === key.id);
+    if (!feature || feature.geometry.type !== 'Point') return;
+    const [pointLongitude, pointLatitude] = feature.geometry.coordinates;
+    mapRef.current?.easeTo({
+      center: [pointLongitude, pointLatitude],
+      ...(zoom === undefined ? {} : { zoom }),
+      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 400,
+    });
+    setSelected(key);
+  }
   function setProjection(value: MapProjection) {
     projectionRef.current = value;
     setProjectionState(value);
@@ -174,8 +240,10 @@ export function useWorldMap(
     container,
     status,
     payload,
+    publicPayload,
     selected,
     setSelected,
+    focusSelection,
     projection,
     setProjection,
     moveCamera,

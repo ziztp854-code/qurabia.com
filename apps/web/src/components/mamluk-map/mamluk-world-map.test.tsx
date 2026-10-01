@@ -30,6 +30,167 @@ const worlds = [
 ];
 
 describe('strategic world map controls', () => {
+  it('groups real player boundaries and focuses an approved village for inspecting its realm', async () => {
+    const original = approvedPayload();
+    const cairo = original.layers.cities.features[0]!;
+    const payload = {
+      ...original,
+      layers: {
+        ...original.layers,
+        cities: {
+          type: 'FeatureCollection',
+          features: [
+            cairo,
+            {
+              ...cairo,
+              id: 'alexandria',
+              geometry: { type: 'Point', coordinates: [29.9553, 31.2156] },
+              properties: {
+                ...cairo.properties,
+                name: 'الإسكندرية',
+                ownerPlayerId: 'other-player',
+              },
+            },
+          ],
+        },
+        territories: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              id: 'realm-cairo',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [31.22, 30.03],
+                    [31.25, 30.03],
+                    [31.25, 30.06],
+                    [31.22, 30.03],
+                  ],
+                ],
+              },
+              properties: { regionId: 'egypt', ownerPlayerId: 'viewer', ownerSultanateId: null },
+            },
+            {
+              type: 'Feature',
+              id: 'realm-alexandria',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [29.94, 31.2],
+                    [29.97, 31.2],
+                    [29.97, 31.23],
+                    [29.94, 31.2],
+                  ],
+                ],
+              },
+              properties: {
+                regionId: 'egypt',
+                ownerPlayerId: 'other-player',
+                ownerSultanateId: null,
+              },
+            },
+          ],
+        },
+      },
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+        json: async () => payload,
+      }),
+    );
+    render(<MamlukWorldMap worlds={worlds} initialWorldId="world" viewerPlayerId="viewer" />);
+    const boundaries = await screen.findByRole('region', { name: 'حدود الممالك' });
+    const own = within(boundaries).getByRole('button', { name: 'استكشف حدود مملكتك: القاهرة' });
+    const other = within(boundaries).getByRole('button', { name: 'استكشف حدود قرى الإسكندرية' });
+    expect(boundaries).not.toHaveTextContent('other-player');
+    expect(own).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(own);
+    expect(own).toHaveAttribute('aria-pressed', 'true');
+    expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({
+      center: [31.2357, 30.0444],
+      zoom: 11,
+    });
+    fireEvent.click(other);
+    expect(other).toHaveAttribute('aria-pressed', 'true');
+    expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({
+      center: [29.9553, 31.2156],
+      zoom: 11,
+    });
+  });
+
+  it('keeps the approved public locations and chosen title steady during polling', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+          json: async () => approvedPayload(),
+        })
+        .mockImplementation(() => new Promise(() => {})),
+    );
+    render(<MamlukWorldMap worlds={worlds} initialWorldId="world" viewerPlayerId="viewer" />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(screen.getByRole('button', { name: 'القاهرة' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'القاهرة' })).toBeInTheDocument();
+    expect(screen.getByText('جارٍ تحديث تفاصيل الموقع…')).toBeInTheDocument();
+    expect(screen.queryByText('التحصين')).not.toBeInTheDocument();
+    expect(screen.getByText('جارٍ تحديث المشهد…')).toBeInTheDocument();
+  });
+
+  it('keeps approved own-village navigation usable while private details refresh', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+          json: async () => approvedPayload(),
+        })
+        .mockImplementation(() => new Promise(() => {})),
+    );
+    const village = { villageId: 'cairo', name: 'القاهرة', longitude: 31.2357, latitude: 30.0444 };
+    render(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        initialLocation={village}
+        initialVillageId="cairo"
+        villageLocations={[village]}
+      />,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const manage = screen.getByRole('link', { name: 'إدارة القرية' });
+    expect(screen.getByText('التحصين')).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(screen.getByRole('link', { name: 'إدارة القرية' })).toBe(manage);
+    expect(screen.getByText('تحت رايتك')).toBeInTheDocument();
+    expect(screen.getByText('31.2357 / 30.0444')).toBeInTheDocument();
+    expect(screen.queryByText('التحصين')).not.toBeInTheDocument();
+    expect(screen.queryByText('القيمة الاستراتيجية')).not.toBeInTheDocument();
+  });
+
   it('focuses the accepted relocation coordinates and refreshes the selected village context', async () => {
     let moved = false;
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
@@ -97,12 +258,12 @@ describe('strategic world map controls', () => {
     expect(navigation.replace).toHaveBeenCalledWith(
       '/games/kingdoms/world-map/?worldId=world&villageId=cairo',
     );
-    await waitFor(() => expect(MapSdkFixture.instances).toHaveLength(2));
-    expect(MapSdkFixture.instances[0].removed).toBe(true);
-    expect(MapSdkFixture.instances[1].initialCamera).toEqual({ center: [35, 32], zoom: 6.5 });
+    expect(MapSdkFixture.instances).toHaveLength(1);
+    expect(MapSdkFixture.instances[0].removed).toBe(false);
+    expect(MapSdkFixture.instances[0].lastCamera).toMatchObject({ center: [35, 32], zoom: 6.5 });
     await screen.findByRole('heading', { name: 'القاهرة', level: 2 });
     fireEvent.click(screen.getByRole('button', { name: 'انتقل إلى قريتك' }));
-    expect(MapSdkFixture.instances[1].lastCamera).toMatchObject({ center: [35, 32], zoom: 6.5 });
+    expect(MapSdkFixture.instances[0].lastCamera).toMatchObject({ center: [35, 32], zoom: 6.5 });
     expect(fetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
   });
   it('links real own villages above the map to their authorized geographic context', async () => {
@@ -243,7 +404,7 @@ describe('strategic world map controls', () => {
     expect(screen.queryByText('حدود القرى')).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'قراي' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
-    expect(screen.getByRole('heading', { level: 2, name: 'القاهرة' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'القاهرة' })).toBeInTheDocument();
     expect(screen.getByText('31.2357 / 30.0444')).toBeInTheDocument();
     expect(screen.queryByText('الملكية')).not.toBeInTheDocument();
     expect(screen.queryByText('التحصين')).not.toBeInTheDocument();
@@ -266,7 +427,9 @@ describe('strategic world map controls', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
-    fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
+    const map = MapSdkFixture.instances[0]!;
+    map.clicked = [{ source: 'mamluk-cities', id: 'cairo' }];
+    act(() => map.fire('click', { point: { x: 1, y: 1 } }));
     expect(screen.getByText('التحصين')).toBeInTheDocument();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
@@ -310,7 +473,7 @@ describe('strategic world map controls', () => {
       '/maplibre/maplibre-gl-worker.mjs',
     );
     expect(screen.getByRole('heading', { level: 1, name: 'خريطة العالم' })).toBeInTheDocument();
-    expect(screen.getByText('حدود القرى')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'حدود الممالك' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'GeoNames' })).toHaveAttribute(
       'href',
       'https://www.geonames.org/',
@@ -325,7 +488,7 @@ describe('strategic world map controls', () => {
     expect(MapSdkFixture.instances[0]?.projection).toBe('globe');
     await screen.findByRole('button', { name: 'القاهرة' });
     fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
-    expect(screen.getByText('التحصين')).toBeInTheDocument();
+    expect(await screen.findByText('التحصين')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('region', { name: 'خريطة حروب المماليك' }), {
       key: 'Escape',
     });
@@ -373,7 +536,7 @@ describe('strategic world map controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'أعد محاولة تحميل الخريطة' }));
     await screen.findByRole('button', { name: 'القاهرة' });
     fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
-    fireEvent.click(screen.getByRole('button', { name: 'أغلق تفاصيل الموقع' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'أغلق تفاصيل الموقع' }));
     expect(screen.queryByText('التحصين')).not.toBeInTheDocument();
   });
 

@@ -10,8 +10,8 @@ export interface PhysicalMapColors {
 }
 
 /** Restyles provider-owned geographic data while preserving sources and credits.
- * Natural Earth relief uses existing OpenFreeMap tiles and overzooms their capped
- * raster source; it never generates terrain or changes settlement coordinates.
+ * Natural Earth relief uses existing OpenFreeMap tiles at regional zoom and
+ * fades into precise vector geography; settlement coordinates stay unchanged.
  */
 export function buildPhysicalMapStyle(
   base: StyleSpecification,
@@ -41,7 +41,15 @@ function physicalLayer(layer: LayerSpecification, colors: PhysicalMapColors): La
   if (layer.type === 'background')
     return { ...layer, paint: { ...layer.paint, 'background-color': colors.land } };
   if (layer.type === 'raster' && layer.source === 'ne2_shaded')
-    return { ...layer, maxzoom: 24, paint: { ...layer.paint, 'raster-opacity': 0.96 } };
+    return {
+      ...layer,
+      maxzoom: 24,
+      paint: {
+        ...layer.paint,
+        'raster-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.96, 10, 0],
+        'raster-fade-duration': 0,
+      },
+    };
   if (layer.type === 'fill' && layer['source-layer'] === 'water')
     return { ...layer, paint: { ...layer.paint, 'fill-color': colors.ocean } };
   const sourceLayer = 'source-layer' in layer ? layer['source-layer'] : undefined;

@@ -17,6 +17,8 @@ interface SelectionPanelProps {
   readonly referenceOnly?: boolean;
   readonly managementHref?: string;
   readonly relocation?: VillageRelocationProps;
+  readonly loading?: boolean;
+  readonly pendingTitle?: string;
 }
 
 export function SelectionPanel({
@@ -28,6 +30,8 @@ export function SelectionPanel({
   referenceOnly = false,
   managementHref,
   relocation,
+  loading = false,
+  pendingTitle,
 }: SelectionPanelProps) {
   const contentId = useId();
   const searchId = useId();
@@ -128,7 +132,14 @@ export function SelectionPanel({
               <span>خط الطول / خط العرض</span>
               <bdi dir="ltr">{selection.coordinates}</bdi>
             </div>
+            {loading && <p className={styles.pendingNote}>جارٍ تحديث تفاصيل الموقع…</p>}
           </>
+        ) : loading ? (
+          <div className={styles.pendingSelection}>
+            <MapPin size={24} aria-hidden="true" />
+            <h2>{pendingTitle ?? 'الموقع المحدد'}</h2>
+            <p>جارٍ تحديث تفاصيل الموقع…</p>
+          </div>
         ) : (
           <div className={styles.emptySelection}>
             <MapPin size={28} aria-hidden="true" />
@@ -186,7 +197,7 @@ export function SelectionPanel({
                       setExpanded(true);
                       onSelect({ layer: feature.layer, id: feature.id });
                     }}
-                    aria-pressed={selection?.layer === feature.layer && selection.id === feature.id}
+                    aria-pressed={key?.layer === feature.layer && key.id === feature.id}
                   >
                     <MapPin size={16} aria-hidden="true" />
                     <span>{feature.label}</span>

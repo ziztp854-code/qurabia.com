@@ -66,6 +66,12 @@ function monitorPhysicalMapResources(page: Page): () => Promise<void> {
           'The browser must load the supplied reference background, real shaded relief and both settlement PNG assets with HTTP 200.',
       })
       .toEqual(['castle', 'reference', 'relief', 'village']);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
   };
 }
 
@@ -381,12 +387,13 @@ function monitorTraffic(
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
   });
-  page.on('response', (response) => {
-    if (!isViewport(response)) return;
+  page.on('requestfinished', (request) => {
+    if (new URL(request.url()).pathname.replace(/\/$/, '') !== viewportPath) return;
     payloads.push(
       (async () => {
         // Panning deliberately cancels in-flight reads; inspect every completed response.
-        if (await response.finished()) return;
+        const response = await request.response();
+        if (!response || !isViewport(response)) return;
         expect(response.status()).toBe(200);
         validate(parseMapPayload(await response.json()), response.url());
       })().catch((error) => {
@@ -547,7 +554,8 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
     fullPage: false,
   });
   const collapse = page.getByRole('button', { name: 'اطوِ تفاصيل الخريطة', exact: true });
-  if (await collapse.isVisible()) await collapse.click();
+  const closedMobileDetails = await collapse.isVisible();
+  if (closedMobileDetails) await collapse.click();
   const beforePan = payload.bounds;
   payload = await changePublicViewport(
     async () => {
@@ -557,7 +565,12 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
     (query) => Math.abs(Number(query.get('west')) - beforePan.west) > 0.000001,
   );
   expect(payload.bounds.west).not.toBe(beforePan.west);
-  await expect(panel.getByRole('heading', { name: 'القاهرة', exact: true })).toHaveCount(0);
+  if (closedMobileDetails) {
+    await expect(panel.getByRole('heading', { name: 'القاهرة', exact: true })).toHaveCount(0);
+  } else {
+    // An approved public city selection remains stable during a pan until closed.
+    await expect(panel.getByRole('heading', { name: 'القاهرة', exact: true })).toBeVisible();
+  }
   const beforeZoomOut = payload.bounds.north - payload.bounds.south;
   payload = await changePublicViewport(
     () => page.getByRole('button', { name: 'أبعد الخريطة', exact: true }).click(),
@@ -793,6 +806,66 @@ test('a village world-map entry opens its real geographic village and returns to
       fullPage: false,
     });
     await checkTraffic();
+    const kingdoms = page.getByRole('region', { name: 'حدود الممالك', exact: true });
+    const ownBorder = kingdoms.getByRole('button', {
+      name: 'استكشف حدود مملكتك: عاصمة الحاكم',
+      exact: true,
+    });
+    await expect(ownBorder).toBeVisible();
+    const focused = page.waitForResponse(
+      (candidate) =>
+        isViewport(candidate) &&
+        new URL(candidate.url()).searchParams.get('worldId') === worldId &&
+        Number(new URL(candidate.url()).searchParams.get('north')) -
+          Number(new URL(candidate.url()).searchParams.get('south')) <
+          1,
+    );
+    await ownBorder.click();
+    const focusedPayload = parseMapPayload(await (await focused).json());
+    expect(
+      focusedPayload.layers.cities.features.find((city) => city.id === village.id)?.geometry,
+    ).toEqual(marker.geometry);
+    await expect(ownBorder).toHaveAttribute('aria-pressed', 'true');
+    await expect(manageVillage).toBeVisible();
+    await checkPhysicalResources();
+    await canvas.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: testInfo.outputPath('player-kingdom-boundaries.png'),
+      fullPage: false,
+    });
+
+    // Hold a real authorized refresh at the network boundary. Public selection
+    // and navigation must remain usable while private snapshot details clear.
+    let releaseRefresh: () => void = () => {};
+    let refreshStarted: () => void = () => {};
+    const heldRefresh = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    const startedRefresh = new Promise<void>((resolve) => {
+      refreshStarted = resolve;
+    });
+    const canvasHandle = await canvas.elementHandle();
+    const refreshPattern = '**/api/kingdoms/world-map/viewport?**';
+    await page.route(refreshPattern, async (route) => {
+      const refreshed = await route.fetch();
+      refreshStarted();
+      await heldRefresh;
+      await route.fulfill({ response: refreshed });
+    });
+    try {
+      await page.getByRole('button', { name: 'حدّث الخريطة', exact: true }).click();
+      await startedRefresh;
+      await expect(page.getByRole('status').filter({ hasText: 'جارٍ تحديث المشهد' })).toBeVisible();
+      await expect(panel.getByRole('heading', { name: 'عاصمة الحاكم', exact: true })).toBeVisible();
+      await expect(manageVillage).toBeVisible();
+      await expect(ownBorder).toBeVisible();
+      expect(await canvasHandle?.evaluate((element) => element.isConnected)).toBe(true);
+      await expect(panel.getByText('التحصين', { exact: true })).toHaveCount(0);
+    } finally {
+      releaseRefresh();
+      await page.unrouteAll({ behavior: 'wait' });
+    }
+    await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
     await manageVillage.click();
     await expect(page.getByRole('combobox', { name: 'العالم والموسم', exact: true })).toHaveValue(
       worldId,

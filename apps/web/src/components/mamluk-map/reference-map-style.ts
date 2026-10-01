@@ -43,7 +43,13 @@ export function buildReferenceMapStyle(base: StyleSpecification): StyleSpecifica
         id: REFERENCE_ID,
         type: 'raster',
         source: REFERENCE_ID,
-        paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 },
+        maxzoom: 9,
+        // The illustrated atlas suits the regional view. Its finite resolution
+        // gives way to provider geography when inspecting a village's plot.
+        paint: {
+          'raster-opacity': ['interpolate', ['linear'], ['zoom'], 5.5, 1, 8, 0],
+          'raster-fade-duration': 0,
+        },
       },
     ],
   };
