@@ -6,6 +6,12 @@ import type { MapPayload, MapProjection } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
 import { createMapSession } from './map-session';
 import type { SelectionKey } from './selection';
+import { buildPhysicalMapStyle, type PhysicalMapColors } from './physical-map-style';
+import { buildReferenceMapStyle } from './reference-map-style';
+import {
+  createSettlementPresentation,
+  type SettlementPresentation,
+} from './settlement-presentation';
 
 type Status = 'loading' | 'ready' | 'zoom' | 'error';
 const VILLAGE_OVERVIEW_ZOOM = 6.5;
@@ -23,6 +29,18 @@ function palette(container: HTMLElement): MapPalette {
     siege: color('--map-danger'),
     visible: color('--map-success'),
     fog: color('--map-background'),
+  };
+}
+
+function physicalPalette(container: HTMLElement): PhysicalMapColors {
+  const tokens = getComputedStyle(container);
+  const color = (token: string) => tokens.getPropertyValue(token).trim();
+  return {
+    ocean: color('--map-ocean'),
+    land: color('--map-land'),
+    forest: color('--map-forest'),
+    border: color('--map-country-border'),
+    label: color('--map-label'),
   };
 }
 
@@ -45,6 +63,9 @@ export function useWorldMap(
     let cancelled = false;
     let map: LibreMap | null = null;
     let session: ReturnType<typeof createMapSession> | null = null;
+    let settlements: SettlementPresentation | null = null;
+    let styleReady = false;
+    const artworkController = new AbortController();
     let pendingInitialSelection = initialVillageId;
     async function initialize() {
       try {
@@ -53,7 +74,6 @@ export function useWorldMap(
         setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
         map = new Map({
           container: container.current,
-          style: OPEN_FREE_MAP_STYLE,
           center: initialLocation
             ? [initialLocation.longitude, initialLocation.latitude]
             : [34, 30.4],
@@ -68,6 +88,26 @@ export function useWorldMap(
             'خريطة العالم: استخدم الأسهم للتحريك وعلامتي الجمع والطرح للتكبير',
           );
         mapRef.current = map;
+        map.on('style.load', () => {
+          styleReady = true;
+        });
+        map.on('error', () => {
+          if (!cancelled) setStatus('error');
+        });
+        const colors = physicalPalette(container.current);
+        settlements = createSettlementPresentation(
+          map,
+          { label: colors.label, halo: colors.land },
+          artworkController.signal,
+        );
+        // The SDK loads the provider style. Its geographic sources and credits
+        // remain intact; the host changes presentation only.
+        map.setStyle(OPEN_FREE_MAP_STYLE, {
+          transformStyle: (_previous, next) =>
+            buildReferenceMapStyle(buildPhysicalMapStyle(next, colors)),
+        });
+        await settlements.ready;
+        if (cancelled) return;
         session = createMapSession(
           map,
           worldId,
@@ -90,11 +130,10 @@ export function useWorldMap(
             onSelection: setSelected,
             onStatus: setStatus,
           },
+          settlements,
+          styleReady,
         );
         sessionRef.current = session;
-        map.on('error', () => {
-          if (!cancelled) setStatus('error');
-        });
       } catch {
         if (!cancelled) setStatus('error');
       }
@@ -102,7 +141,9 @@ export function useWorldMap(
     void initialize();
     return () => {
       cancelled = true;
+      artworkController.abort();
       session?.dispose();
+      settlements?.dispose();
       map?.remove();
       mapRef.current = null;
       sessionRef.current = null;

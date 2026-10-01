@@ -5,9 +5,16 @@ import {
   type MapPalette,
 } from '@mamluk/maplibre-adapter';
 import { parseMapPayload, type MapPayload, type MapProjection } from '@mamluk/world-map-core';
-import type { Map as LibreMap, MapMouseEvent, Source } from 'maplibre-gl';
+import type {
+  AddLayerObject,
+  LayerSpecification,
+  Map as LibreMap,
+  MapMouseEvent,
+  Source,
+} from 'maplibre-gl';
 import type { SelectionKey, SelectableLayer } from './selection';
 import { SDK_FEATURE_ID, withFeatureIdentity, withSourceIdentity } from './source-identity';
+import type { SettlementPresentation } from './settlement-presentation';
 
 export interface MapSessionCallbacks {
   readonly onPayload: (payload: MapPayload | null) => void;
@@ -15,10 +22,19 @@ export interface MapSessionCallbacks {
   readonly onStatus: (status: 'loading' | 'ready' | 'zoom' | 'error') => void;
 }
 
+function isStyleLayer(layer: AddLayerObject): layer is LayerSpecification {
+  return layer.type !== 'custom' && (!('source' in layer) || typeof layer.source === 'string');
+}
+
 /** SDK 6 emits movement events even when the projection does not change. */
-function presentationPort(map: LibreMap, palette: MapPalette) {
+function presentationPort(
+  map: LibreMap,
+  palette: MapPalette,
+  settlements?: Pick<SettlementPresentation, 'layer'>,
+  initialStyleReady?: boolean,
+) {
   // SDK isStyleLoaded also waits for tiles. Overlay removal must not wait for them.
-  let styleReady = map.isStyleLoaded();
+  let styleReady = initialStyleReady ?? map.isStyleLoaded();
   const onStyleReady = () => {
     styleReady = true;
   };
@@ -39,7 +55,13 @@ function presentationPort(map: LibreMap, palette: MapPalette) {
     getLayer: map.getLayer.bind(map),
     addLayer: (layer) => {
       // Fog shades the basemap; every overlay already passed the server's policy.
-      map.addLayer(layer, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
+      const presented =
+        layer.id === 'mamluk-fog' && layer.type === 'fill'
+          ? { ...layer, paint: { ...layer.paint, 'fill-opacity': 0.14 } }
+          : isStyleLayer(layer)
+            ? (settlements?.layer(layer) ?? layer)
+            : layer;
+      map.addLayer(presented, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
       if (layer.id === 'mamluk-territories') {
         // Only outline approved server polygons, sharing the adapter's expiry lifecycle.
         map.addLayer({
@@ -120,6 +142,8 @@ export function createMapSession(
   projection: MapProjection,
   palette: MapPalette,
   callbacks: MapSessionCallbacks,
+  settlements?: Pick<SettlementPresentation, 'layer'>,
+  initialStyleReady?: boolean,
 ) {
   let disposed = false;
   let recoveryAttempts = 0;
@@ -128,7 +152,7 @@ export function createMapSession(
     clearTimeout(recoveryTimer);
     recoveryTimer = undefined;
   };
-  const presentation = presentationPort(map, palette);
+  const presentation = presentationPort(map, palette, settlements, initialStyleReady);
   const adapter = new ObservedAdapter(presentation.port, palette, (payload) => {
     if (disposed) return;
     callbacks.onPayload(payload);
@@ -192,7 +216,7 @@ export function createMapSession(
   map.on('style.load', onStyleLoad);
   map.on('moveend', onMove);
   map.on('click', onClick);
-  if (map.isStyleLoaded()) void loader.refresh();
+  if (presentation.port.isStyleLoaded()) void loader.refresh();
   return {
     adapter,
     loader,

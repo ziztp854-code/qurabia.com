@@ -499,3 +499,97 @@ reports zero critical advisories and pre-existing transitive advisories.
 Docker Desktop stopped during the first browser run. Restoring its temporary
 IPC directory and restarting the existing isolated container preserved its
 database; all six browser cases then passed without changing test expectations.
+
+## Illustrated physical map presentation
+
+The host applies `buildPhysicalMapStyle` through MapLibre's `setStyle` transform.
+It retains OpenFreeMap Liberty's sources, sprites, glyphs and attribution. Its
+existing Natural Earth `ne2_shaded` source supplies geographic shaded relief;
+azure water, parchment land and green landcover use host design tokens. The
+raster source's maximum zoom remains 6: closer views overzoom its tiles, so
+terrain becomes softer while coordinates and vector features remain accurate.
+Modern place labels and roads appear only at detailed zoom. Basemap country
+lines are geographic context, distinct from server-approved game plot borders.
+
+Provider credits remain visible in the map control. Customized basemap design
+uses OpenFreeMap / OpenMapTiles / OpenStreetMap data and the OSM Liberty style.
+Natural Earth relief is public-domain cartographic data. Refer to the upstream
+license sources below before replacing or redistributing basemap resources.
+
+The transparent village and castle illustrations are generated original game
+assets, stored at `apps/web/public/game-art/mamluk-map/village.png` and
+`castle.png`. Each is trimmed and exported as a 256px PNG, together about 83KB.
+The SDK loads both static same-origin files once per map instance. Successful
+registration replaces only the approved city/castle circle layers, preserving
+layer IDs, sources, filters, feature identity and the adapter's clearing/expiry
+lifecycle. The bottom anchor sits on the existing longitude/latitude coordinate.
+Failed asset loading or registration leaves both original circle layers usable.
+Cached artwork is restored before the adapter handles style replacement; abort
+and teardown never wait for an outstanding image request.
+
+Artwork prompt set (transparent background for both):
+
+- Village: One isolated miniature medieval Mamluk village, six warm sandstone
+  and adobe houses, a small central golden dome, two date palms and an arched
+  courtyard gate on a compact pale-sand oval base with an aged-gold rim. Three
+  quarter isometric view, warm daylight from the upper left, Egyptian/Levantine
+  materials, bronze details and limited emerald, fully visible and centered,
+  readable at 64px. No people, modern objects, text, logo, watermark or background.
+- Castle: One isolated miniature medieval Mamluk citadel, warm sandstone walls,
+  four crenellated round towers, a tall arched entrance, central turquoise dome
+  and gold finial, a crimson pennant and one date palm on a compact oval stone
+  base with an aged-gold rim. Match the village's view, lighting and materials;
+  fully visible, readable at 64px. No text, people, modern objects or background.
+
+The desktop panel floats over the full map; mobile uses a bottom sheet. Owned
+village links retain server-provided world/village context, and search operates
+only on the current approved viewport snapshot. Military fog shades the basemap
+at 0.14 opacity; the server still excludes hidden armies, routes, siege details,
+resources and troop information before serialization. Visual fog opacity is not
+an authorization mechanism. This presentation release adds no settlements,
+changes no geographic locations and does not modify either accepted package.
+
+Upstream sources: [OpenFreeMap quick start](https://openfreemap.org/quick_start/),
+[OpenFreeMap license](https://github.com/hyperknot/openfreemap/blob/main/LICENSE.md),
+[OSM Liberty license](https://github.com/maputnik/osm-liberty/blob/gh-pages/LICENSE.md),
+[Natural Earth terms](https://www.naturalearthdata.com/about/terms-of-use/) and
+[Natural Earth II](https://www.naturalearthdata.com/downloads/10m-raster-data/10m-natural-earth-2/).
+The host changes the Liberty palette, layer visibility and relief opacity;
+its linked OpenMapTiles and OpenStreetMap corner attribution remains intact.
+
+Validation for this presentation change: focused host tests cover failed image
+loading/partial registration, deferred style readiness, replacement, viewport
+clearing, TTL expiry and SDK click identity. The new isolated desktop/mobile
+browser cases additionally require actual raster and both artwork HTTP 200
+responses. They were updated and linted but could not run in this session:
+the automatic tool policy rejected starting the local host server. Do not count
+these cases as passing. Authenticated production browser verification follows
+publication and is recorded separately in the release report.
+
+### Supplied reference image as the primary basemap
+
+The user's supplied second reference (the physical atlas without painted villages)
+is the primary presentation image. The image-generation edit removes only its
+baked-in zoom/target and globe/flat controls; live host controls replace them.
+Its geography, borders, relief, framing and colors are retained. The cleaned
+1859×846 image is exported as the 191KB same-origin
+`apps/web/public/game-art/mamluk-map/reference-basemap.webp`.
+
+`buildReferenceMapStyle` adds this fixed image source and one raster layer above
+provider basemap layers and below all approved game layers. Existing OpenFreeMap
+geography supplies coverage beyond the supplied image. The image contains no
+village, castle, army, ownership or intelligence data. It never replaces or
+alters the game GeoJSON, entity IDs or server-provided longitude/latitude.
+
+The attachment has no geographic projection metadata. Host corner registration
+is a measured, approximate Mercator fit, anchored by the Egypt/Libya/Sudan
+tripoint (25°E,22°N) at image pixel (737,426) and checked against the nearby
+Libya/Sudan/Chad tripoint (24°E,19.5°N) at (729,450). A broad 8px per longitude /
+Mercator-degree scale places Cairo near image pixel (787,354) and Gaza (813,341).
+The [official boundary study](https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs010.pdf)
+confirms these geographic tripoints. This artistic registration has local
+residual error, is not a surveyed map, and becomes soft when highly magnified.
+Do not adjust game coordinates to match the picture or use its painted borders
+to calculate ownership, travel, military positions or visibility. Those remain
+server-authoritative. Precise global image alignment would require a geographic
+source image with known projection or additional surveyed control points.

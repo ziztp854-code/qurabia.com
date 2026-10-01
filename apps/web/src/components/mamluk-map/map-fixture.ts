@@ -15,6 +15,7 @@ export class MapSdkFixture {
     { type: string; data: unknown; setData: (data: unknown) => void }
   >();
   readonly layers = new Map<string, unknown>();
+  readonly images = new Map<string, unknown>();
   readonly canvas = document.createElement('canvas');
   bounds = { west: 28, south: 25, east: 40, north: 36 };
   projection = 'mercator';
@@ -86,6 +87,15 @@ export class MapSdkFixture {
   }
   setStyle() {
     this.fire('style.load');
+  }
+  async loadImage() {
+    return { data: { width: 1, height: 1, data: new Uint8Array([255, 255, 255, 255]) } };
+  }
+  addImage(id: string, data: unknown) {
+    this.images.set(id, data);
+  }
+  hasImage(id: string) {
+    return this.images.has(id);
   }
   project(point: [number, number]) {
     return { x: point[0], y: point[1] };

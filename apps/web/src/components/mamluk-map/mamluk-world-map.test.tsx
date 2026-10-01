@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MapSdkFixture, approvedPayload } from './map-fixture';
 import { MamlukWorldMap } from './mamluk-world-map';
@@ -28,6 +28,36 @@ const worlds = [
 ];
 
 describe('strategic world map controls', () => {
+  it('links real own villages above the map to their authorized geographic context', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+    );
+    const villages = [
+      { villageId: 'cairo', name: 'القاهرة', longitude: 31.2357, latitude: 30.0444 },
+      { villageId: 'my-second', name: 'قرية النور', longitude: 29.9553, latitude: 31.2156 },
+    ];
+    render(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        initialVillageId="cairo"
+        villageLocations={villages}
+      />,
+    );
+    const navigation = screen.getByRole('navigation', { name: 'قراي' });
+    expect(within(navigation).getByRole('link', { name: 'القاهرة' })).toHaveAttribute(
+      'aria-current',
+      'location',
+    );
+    expect(within(navigation).getByRole('link', { name: 'قرية النور' })).toHaveAttribute(
+      'href',
+      '/games/kingdoms/world-map?worldId=world&villageId=my-second',
+    );
+    expect(within(navigation).getAllByRole('link')).toHaveLength(2);
+    await screen.findByRole('button', { name: 'القاهرة' });
+  });
   it('does not offer village management after current authoritative ownership changes', async () => {
     const original = approvedPayload();
     const city = original.layers.cities.features[0];
@@ -134,6 +164,7 @@ describe('strategic world map controls', () => {
     expect(screen.queryByText('الحصار')).not.toBeInTheDocument();
     expect(screen.queryByText('القلاع')).not.toBeInTheDocument();
     expect(screen.queryByText('حدود القرى')).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'قراي' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
     expect(screen.getByRole('heading', { level: 2, name: 'القاهرة' })).toBeInTheDocument();
     expect(screen.getByText('31.2357 / 30.0444')).toBeInTheDocument();

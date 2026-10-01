@@ -28,6 +28,12 @@
   --brand-gold: var(--gold-500);
   --brand-cream: #f2e8d5;
   --brand-ivory: #fefbf6;
+  /* Geographic atlas palette: shared by the physical map renderer and its frame. */
+  --map-ocean: #6aabf4;
+  --map-land: #e9dbb8;
+  --map-forest: #b5cda6;
+  --map-country-border: #777565;
+  --map-label: #403c2f;
   --gold-gradient: linear-gradient(135deg, var(--gold-100), var(--gold-500), var(--gold-700));
   --border-gold: rgb(212 175 55 / 0.38);
 

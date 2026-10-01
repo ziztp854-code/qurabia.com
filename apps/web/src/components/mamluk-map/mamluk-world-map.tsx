@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { findSelection, listSelectableFeatures } from './selection';
@@ -153,6 +154,25 @@ function WorldScene({
           </select>
         </label>
       </header>
+      {!referenceOnly && Boolean(villageLocations?.length) && (
+        <nav className={styles.villageNavigation} aria-label="قراي">
+          <span className={styles.villageCaption}>
+            <Castle size={18} aria-hidden="true" /> قراي
+          </span>
+          <div className={styles.villageLinks}>
+            {villageLocations?.map((village) => (
+              <Link
+                key={village.villageId}
+                href={geographicMapHref(worldId, village.villageId)}
+                aria-current={village.villageId === initialVillageId ? 'location' : undefined}
+              >
+                <MapPin size={16} aria-hidden="true" />
+                {village.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
       {referenceOnly && (
         <p className={styles.referenceNotice}>
           لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.
@@ -270,6 +290,7 @@ function WorldScene({
           </>
         )}
         <p className={styles.help}>حرّك الخريطة بالأسهم، أو اختر موقعًا من القائمة.</p>
+        <p className={styles.help}>الخلفية من خريطتك المرجعية، وحدود القرى باللون الذهبي.</p>
         <p className={styles.help}>
           إحداثيات المدن: <a href="https://www.geonames.org/">GeoNames</a> ·{' '}
           <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>

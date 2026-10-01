@@ -43,6 +43,32 @@ function isBasemapTile(response: Response): boolean {
   );
 }
 
+function monitorPhysicalMapResources(page: Page): () => Promise<void> {
+  const loaded = new Set<string>();
+  page.on('response', (response) => {
+    if (response.status() !== 200 || !response.headers()['content-type']?.startsWith('image/'))
+      return;
+    const url = new URL(response.url());
+    if (
+      url.hostname === 'tiles.openfreemap.org' &&
+      /^\/natural_earth\/ne2sr\/\d+\/\d+\/\d+\.png$/.test(url.pathname)
+    )
+      loaded.add('relief');
+    if (url.origin !== 'http://127.0.0.1:3000') return;
+    if (url.pathname === '/game-art/mamluk-map/reference-basemap.webp') loaded.add('reference');
+    if (url.pathname === '/game-art/mamluk-map/village.png') loaded.add('village');
+    if (url.pathname === '/game-art/mamluk-map/castle.png') loaded.add('castle');
+  });
+  return async () => {
+    await expect
+      .poll(() => [...loaded].sort(), {
+        message:
+          'The browser must load the supplied reference background, real shaded relief and both settlement PNG assets with HTTP 200.',
+      })
+      .toEqual(['castle', 'reference', 'relief', 'village']);
+  };
+}
+
 async function signIn(page: Page): Promise<void> {
   await page.goto(`/auth/sign-in/?next=${encodeURIComponent(mapPath)}`);
   // The toggle proves React has hydrated before submitting the real credentials form.
@@ -189,6 +215,8 @@ async function checkMarkerClicks(page: Page, screenshotPath: string): Promise<vo
     if (feature?.geometry.type !== 'Point')
       throw new Error('The authorized marker is outside this viewport');
     const position = pointOnFlatCanvas(payload, feature.geometry.coordinates, size);
+    // The artwork's bottom sits at the real coordinate; click its visible body.
+    if (layer === 'cities' || layer === 'castles') position.y -= 18;
     // Source workers finish asynchronously; every retry remains a real SDK hit-test click.
     await expect(async () => {
       await canvas.click({ position });
@@ -298,7 +326,9 @@ async function checkNavigation(page: Page): Promise<void> {
 }
 
 async function checkLayout(page: Page, mobile: boolean): Promise<void> {
-  const canvas = page.getByRole('region', { name: 'الخريطة الاستراتيجية' }).locator('canvas');
+  const canvas = page
+    .getByRole('region', { name: /الخريطة (?:الاستراتيجية|الجغرافية)/ })
+    .locator('canvas');
   const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة' });
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -312,6 +342,15 @@ async function checkLayout(page: Page, mobile: boolean): Promise<void> {
     .boundingBox();
   expect(control?.width).toBeGreaterThanOrEqual(44);
   expect(control?.height).toBeGreaterThanOrEqual(44);
+  if (!mapBounds) throw new Error('The illustrated map canvas is unavailable');
+  const panelBounds = await panel.boundingBox();
+  if (!panelBounds) throw new Error('The map details overlay is unavailable');
+  expect(panelBounds.x).toBeGreaterThanOrEqual(mapBounds.x);
+  expect(panelBounds.x + panelBounds.width).toBeLessThanOrEqual(mapBounds.x + mapBounds.width + 1);
+  expect(panelBounds.y).toBeGreaterThan(mapBounds.y);
+  expect(panelBounds.y + panelBounds.height).toBeLessThanOrEqual(
+    mapBounds.y + mapBounds.height + 1,
+  );
   if (mobile) {
     const expand = page.getByRole('button', { name: 'افتح تفاصيل الخريطة', exact: true });
     if (await expand.isVisible()) await expand.click();
@@ -324,6 +363,11 @@ async function checkLayout(page: Page, mobile: boolean): Promise<void> {
     expect(collapsed?.height).toBeLessThanOrEqual(100);
     await page.getByRole('button', { name: 'افتح تفاصيل الخريطة', exact: true }).click();
     expect((await panel.boundingBox())?.height).toBeGreaterThan(collapsed?.height ?? 0);
+    expect((await canvas.boundingBox())?.height).toBe(mapBounds.height);
+    expect((await canvas.boundingBox())?.width).toBe(mapBounds.width);
+  } else {
+    expect(panelBounds.width).toBeLessThan(mapBounds.width / 2);
+    expect(panelBounds.height).toBeLessThan(mapBounds.height);
   }
 }
 
@@ -403,6 +447,7 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
   page,
 }, testInfo) => {
   const checkTraffic = monitorTraffic(page, checkPublicAtlasPayload);
+  const checkPhysicalResources = monitorPhysicalMapResources(page);
   const initialResponse = page.waitForResponse(isViewport);
   const tileResponse = page.waitForResponse(isBasemapTile);
   await page.goto(`${mapPath}/`);
@@ -411,6 +456,7 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
   let payload = parseMapPayload(await response.json());
   checkPublicAtlasPayload(payload, response.url());
   expect((await tileResponse).status()).toBe(200);
+  await checkPhysicalResources();
   await expect(page.getByRole('heading', { name: 'خريطة العالم', level: 1 })).toBeVisible();
   await expect(
     page.getByText('أطلس جغرافي · مدن مصر والشام والحجاز', { exact: true }),
@@ -477,6 +523,7 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
   if (cairoMarker?.geometry.type !== 'Point')
     throw new Error('Cairo must be in the public viewport');
   const position = pointOnFlatCanvas(payload, cairoMarker.geometry.coordinates, bounds);
+  position.y -= 18; // Click the illustrated building above its geographic bottom anchor.
   const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة' });
   await expect(async () => {
     await canvas.click({ position });
@@ -532,6 +579,7 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
     true,
   );
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await checkLayout(page, testInfo.project.name === 'mamluk-mobile');
 
   // A public atlas request never permits anonymous access to a persisted game world.
   const privateResponse = await page.request.get(
@@ -550,6 +598,7 @@ test('real globe, authorized panels and bounded loading work on desktop and mobi
   page,
 }, testInfo) => {
   const checkTraffic = monitorTraffic(page);
+  const checkPhysicalResources = monitorPhysicalMapResources(page);
   const initialResponse = page.waitForResponse(isViewport);
   const basemapTile = page.waitForResponse(isBasemapTile);
   await signIn(page);
@@ -558,6 +607,7 @@ test('real globe, authorized panels and bounded loading work on desktop and mobi
   const initial = parseMapPayload(await response.json());
   checkPayload(initial, response.url());
   expect((await basemapTile).status()).toBe(200);
+  await checkPhysicalResources();
   await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'الكرة الأرضية', exact: true })).toHaveAttribute(
     'aria-pressed',
@@ -609,6 +659,7 @@ test('real globe, authorized panels and bounded loading work on desktop and mobi
 test('a village world-map entry opens its real geographic village and returns to village management', async ({
   page,
 }, testInfo) => {
+  const checkPhysicalResources = monitorPhysicalMapResources(page);
   const db = createPrismaClient(process.env.KINGDOMS_TEST_DATABASE_URL!);
   const worldId = `map_village_e2e_${randomUUID()}`;
   const neighbourId = `map_neighbour_e2e_${randomUUID()}`;
@@ -626,12 +677,7 @@ test('a village world-map entry opens its real geographic village and returns to
       now,
     );
     const village = Object.values(ownState.villages)[0];
-    const state = executeCommand(
-      ownState,
-      neighbourId,
-      { type: 'found', name: 'جار الحاكم' },
-      now,
-    );
+    const state = executeCommand(ownState, neighbourId, { type: 'found', name: 'جار الحاكم' }, now);
     const neighbour = Object.values(state.villages).find((town) => town.ownerId === neighbourId);
     if (!neighbour) throw new Error('The neighbouring village fixture was not created');
     await db.kingdomWorld.create({
@@ -708,6 +754,7 @@ test('a village world-map entry opens its real geographic village and returns to
     expect(Math.max(...latitudes)).toBeGreaterThan(marker.geometry.coordinates[1]);
     expect(payload.layers.fog.features.length).toBeGreaterThan(0);
     expect((await tile).status()).toBe(200);
+    await checkPhysicalResources();
     await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
     await showPanel(page, 'عاصمة جار الحاكم', 'عاصمة جار الحاكم');
     await expect(page.getByRole('link', { name: 'إدارة القرية', exact: true })).toHaveCount(0);
@@ -730,6 +777,7 @@ test('a village world-map entry opens its real geographic village and returns to
     const size = await canvas.boundingBox();
     if (!size) throw new Error('The actual village map canvas is unavailable');
     const position = pointOnFlatCanvas(flatPayload, marker.geometry.coordinates, size);
+    position.y -= 18; // Click the real village sprite without moving its coordinate anchor.
     const collapse = page.getByRole('button', { name: 'اطوِ تفاصيل الخريطة', exact: true });
     if (await collapse.isVisible()) await collapse.click();
     await expect(async () => {
@@ -738,6 +786,7 @@ test('a village world-map entry opens its real geographic village and returns to
         timeout: 1000,
       });
     }).toPass({ timeout: 10_000, intervals: [200, 400, 800] });
+    await checkLayout(page, testInfo.project.name === 'mamluk-mobile');
     await canvas.scrollIntoViewIfNeeded();
     await page.screenshot({
       path: testInfo.outputPath('actual-village-geographic-map.png'),

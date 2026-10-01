@@ -16,7 +16,7 @@
   background: var(--map-background);
   color: var(--map-text);
   border: 1px solid var(--map-border);
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
   isolation: isolate;
   font-family: var(--font-sans);
@@ -25,8 +25,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
   border-block-end: 1px solid var(--map-border);
 }
 .referenceNotice {
@@ -45,10 +45,16 @@
 }
 .heading > svg {
   color: var(--map-gold);
+  inline-size: 48px;
+  block-size: 48px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--map-gold) 40%, transparent);
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 .heading h1 {
   margin: 0;
-  font-size: clamp(22px, 3vw, 32px);
+  font-size: clamp(22px, 2.5vw, 28px);
   line-height: 1.4;
 }
 .eyebrow {
@@ -65,7 +71,7 @@
 }
 .worldSelect select {
   min-block-size: 44px;
-  max-inline-size: 240px;
+  max-inline-size: 320px;
   background: var(--map-surface);
   color: var(--map-text);
   border: 1px solid var(--map-border);
@@ -73,18 +79,62 @@
   padding-inline: 12px;
   font: inherit;
 }
+.villageNavigation {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 65%, transparent);
+  background: var(--map-surface);
+}
+.villageCaption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--map-gold);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.villageLinks {
+  min-inline-size: 0;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-block: var(--space-1);
+  scrollbar-width: thin;
+}
+.villageLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--map-border) 60%, transparent);
+  border-radius: 6px;
+  color: var(--map-text);
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.villageLinks a[aria-current='location'] {
+  background: var(--map-raised);
+  border-color: var(--map-gold);
+  color: var(--map-gold);
+}
+.villageLinks a:hover {
+  border-color: var(--map-gold);
+}
 .workspace {
-  block-size: 630px;
+  block-size: clamp(600px, 76dvh, 880px);
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
   direction: ltr;
-  min-block-size: 630px;
+  min-block-size: 600px;
 }
 .mapFrame {
   position: relative;
   min-inline-size: 0;
-  background: var(--map-background);
+  block-size: 100%;
+  background: var(--map-ocean);
 }
 .canvas {
   position: absolute;
@@ -95,10 +145,10 @@
   position: absolute;
   z-index: 2;
   inset-block-start: 16px;
-  inset-inline-start: 16px;
+  inset-inline-end: 20px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
   direction: rtl;
 }
 .control,
@@ -110,7 +160,7 @@
   min-block-size: 44px;
   min-inline-size: 44px;
   border: 1px solid var(--map-border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--map-surface);
   color: var(--map-text);
   font: inherit;
@@ -134,7 +184,9 @@
 .control:focus-visible,
 .iconButton:focus-visible,
 .worldSelect select:focus-visible,
-.visibleLocations button:focus-visible {
+.visibleLocations button:focus-visible,
+.villageLinks a:focus-visible,
+.locationSearch input:focus-visible {
   outline: 3px solid var(--map-gold);
   outline-offset: 3px;
 }
@@ -142,15 +194,15 @@
   position: absolute;
   z-index: 2;
   inset-block-start: 78px;
-  inset-inline-start: 16px;
+  inset-inline-start: 20px;
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .status {
   position: absolute;
   z-index: 2;
   inset-block-end: 46px;
-  inset-inline-start: 16px;
+  inset-inline-end: 20px;
   max-inline-size: calc(100% - 32px);
   display: flex;
   align-items: center;
@@ -173,10 +225,13 @@
   padding: 12px 24px;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px 20px;
   border-block-start: 1px solid var(--map-border);
   font-size: 12px;
   color: var(--map-muted);
+}
+.legend a {
+  color: var(--map-gold);
 }
 .legend span {
   display: flex;
@@ -187,13 +242,26 @@
   color: var(--map-bronze);
 }
 .panel {
+  position: absolute;
+  z-index: 6;
+  inset-block: 20px;
+  inset-inline-start: 20px;
+  inline-size: 300px;
   min-block-size: 0;
   direction: rtl;
-  padding: 24px;
+  padding: var(--space-5);
   background: var(--map-surface);
-  border-inline-start: 1px solid var(--map-border);
+  border: 1px solid var(--map-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
   overflow-y: auto;
-  max-block-size: 100%;
+  max-block-size: calc(100% - 40px);
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+.mapFrame :global(.maplibregl-ctrl-bottom-right) {
+  inset-inline-end: auto;
+  inset-inline-start: 8px;
 }
 .panelHandle {
   display: none;
@@ -211,22 +279,41 @@
   flex-shrink: 0;
 }
 .selectionHeader h2 {
-  font-size: 22px;
+  font-size: 20px;
   margin: 0;
   overflow-wrap: anywhere;
+}
+.selectionArt {
+  display: grid;
+  place-items: center;
+  block-size: 130px;
+  margin-block: var(--space-3);
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 40%, transparent);
+}
+.selectionArt img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+.managementLink {
+  inline-size: 100%;
+  background: var(--map-gold);
+  color: var(--map-background);
+  border-color: var(--map-gold);
+  font-weight: 700;
 }
 .selectionHeader .iconButton {
   margin-inline-start: auto;
   padding: 8px;
 }
 .details {
-  margin: 24px 0 16px;
+  margin: 16px 0;
 }
 .details > div {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding-block: 12px;
+  padding-block: 10px;
   border-block-end: 1px solid color-mix(in srgb, var(--map-border) 40%, transparent);
 }
 .details dt {
@@ -268,12 +355,67 @@
   line-height: 1.8;
 }
 .visibleLocations {
-  margin-block-start: 28px;
+  margin-block-start: 24px;
+}
+.locationsHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-block-end: var(--space-3);
+}
+.locationsHeading > span {
+  color: var(--map-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 .visibleLocations h3 {
   font-size: 13px;
   color: var(--map-gold);
-  margin: 0 0 12px;
+  margin: 0;
+}
+.locationSearch {
+  margin-block-end: var(--space-2);
+}
+.locationSearch label {
+  display: block;
+  margin-block-end: var(--space-1);
+  color: var(--map-muted);
+  font-size: 12px;
+}
+.locationSearch > div {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--map-border);
+  border-radius: 6px;
+  background: var(--map-background);
+}
+.locationSearch > div > svg {
+  flex-shrink: 0;
+  color: var(--map-muted);
+}
+.locationSearch input {
+  min-inline-size: 0;
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--map-text);
+  font: inherit;
+  font-size: 14px;
+}
+.locationSearch input::placeholder {
+  color: var(--map-muted);
+}
+.locationSearch .iconButton {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 .visibleLocations ul {
   padding: 0;
@@ -317,6 +459,18 @@
     padding: 16px;
     flex-wrap: wrap;
   }
+  .heading > svg {
+    inline-size: 40px;
+    block-size: 40px;
+    padding: 8px;
+  }
+  .heading h1 {
+    font-size: 22px;
+  }
+  .villageNavigation {
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
   .worldSelect {
     inline-size: 100%;
   }
@@ -327,8 +481,8 @@
   .workspace {
     position: relative;
     display: block;
-    block-size: 74dvh;
-    min-block-size: 500px;
+    block-size: 76dvh;
+    min-block-size: 580px;
   }
   .mapFrame {
     block-size: 100%;
@@ -336,8 +490,8 @@
   }
   .toolbar {
     inset-block-start: 12px;
-    inset-inline-start: 12px;
-    gap: 6px;
+    inset-inline-end: 12px;
+    gap: var(--space-2);
   }
   .control {
     font-size: 13px;
@@ -351,13 +505,21 @@
     position: absolute;
     z-index: 6;
     inset-inline: 0;
+    inline-size: 100%;
+    inset-block-start: auto;
     inset-block-end: 0;
-    max-block-size: 42dvh;
+    max-block-size: 36dvh;
     border-inline-start: 0;
     border-block-start: 1px solid var(--map-border);
     border-start-start-radius: 18px;
     border-start-end-radius: 18px;
     padding: 10px 20px max(12px, env(safe-area-inset-bottom));
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+  .selectionArt {
+    block-size: 72px;
+    margin-block: var(--space-2);
   }
   .panelHandle {
     display: block;
@@ -389,7 +551,13 @@
     display: none;
   }
   .status {
-    inset-block-end: 100px;
+    inset-block-start: 76px;
+    inset-block-end: auto;
+    inset-inline-end: auto;
+    inset-inline-start: 12px;
+    max-inline-size: calc(100% - 88px);
+    padding: 8px 10px;
+    font-size: 12px;
   }
   .mapFrame :global(.maplibregl-ctrl-bottom-right) {
     inset-block-end: 76px;

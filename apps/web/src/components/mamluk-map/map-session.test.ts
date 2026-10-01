@@ -3,6 +3,7 @@ import { DEFAULT_PALETTE } from '@mamluk/maplibre-adapter';
 import type { MapPayload } from '@mamluk/world-map-core';
 import { createMapSession } from './map-session';
 import { MapSdkFixture, approvedPayload } from './map-fixture';
+import { createSettlementPresentation } from './settlement-presentation';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -73,6 +74,85 @@ function territoryPayload(): MapPayload {
   };
 }
 
+it('keeps illustrated settlement clicks tied to approved IDs and removes every sprite on movement and expiry', async () => {
+  vi.useFakeTimers();
+  const payload = approvedPayload();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));
+  const map = new MapSdkFixture();
+  const controller = new AbortController();
+  const settlements = createSettlementPresentation(
+    map.asMap(),
+    { label: 'black', halo: 'white' },
+    controller.signal,
+  );
+  expect(await settlements.ready).toBe(true);
+  const callbacks = { onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn() };
+  const session = createMapSession(
+    map.asMap(),
+    'world',
+    'mercator',
+    DEFAULT_PALETTE,
+    callbacks,
+    settlements,
+  );
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.layers.get('mamluk-cities')).toMatchObject({
+    type: 'symbol',
+    source: 'mamluk-cities',
+    layout: { 'icon-anchor': 'bottom' },
+  });
+  expect(map.sources.size).toBe(9);
+  expect(map.sources.get('mamluk-cities')).toMatchObject({
+    promoteId: '__mamlukFeatureId',
+    data: { features: [{ properties: { __mamlukFeatureId: 'cairo' } }] },
+  });
+  map.clicked = [{ source: 'mamluk-cities', id: 'cairo' }];
+  map.fire('click', { point: { x: 1, y: 1 } });
+  expect(callbacks.onSelection).toHaveBeenLastCalledWith({ layer: 'cities', id: 'cairo' });
+  map.fire('moveend');
+  expect(map.layers.size).toBe(0);
+  expect(map.sources.size).toBe(0);
+  await vi.advanceTimersByTimeAsync(150);
+  expect(map.layers.get('mamluk-cities')).toMatchObject({ type: 'symbol' });
+  map.images.clear();
+  map.sources.clear();
+  map.layers.clear();
+  map.fire('style.load');
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.layers.get('mamluk-cities')).toMatchObject({ type: 'symbol' });
+  session.loader.dispose();
+  await vi.advanceTimersByTimeAsync(8000);
+  expect(map.layers.size).toBe(0);
+  expect(map.sources.size).toBe(0);
+  session.dispose();
+  controller.abort();
+  settlements.dispose();
+  expect(map.listeners.get('style.load')?.size).toBe(0);
+  expect(payload.layers.cities.features[0]?.properties).not.toHaveProperty('__mamlukFeatureId');
+});
+
+it('loads approved overlays when the style event preceded sprite loading and basemap tiles remain pending', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+  );
+  const map = new MapSdkFixture();
+  map.styleLoaded = false;
+  const session = createMapSession(
+    map.asMap(),
+    'world',
+    'mercator',
+    DEFAULT_PALETTE,
+    { onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn() },
+    undefined,
+    true,
+  );
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.sources.size).toBe(9);
+  session.dispose();
+});
+
 it('keeps approved settlement markers and gold borders above fog without adding another source', async () => {
   vi.useFakeTimers();
   const payload = territoryPayload();
@@ -99,7 +179,7 @@ it('keeps approved settlement markers and gold borders above fog without adding 
   expect(order.indexOf('mamluk-cities')).toBeGreaterThan(order.indexOf('mamluk-fog'));
   expect(map.layers.get('mamluk-fog')).toMatchObject({
     type: 'fill',
-    paint: { 'fill-opacity': 0.92 },
+    paint: { 'fill-opacity': 0.14 },
   });
   expect(map.sources.get('mamluk-fog')?.data).toMatchObject(payload.layers.fog);
   expect(map.sources.get('mamluk-armies')?.data).toEqual({

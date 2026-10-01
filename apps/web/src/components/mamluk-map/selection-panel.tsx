@@ -1,8 +1,9 @@
 'use client';
 
-import { Castle, ChevronDown, ChevronUp, Flag, MapPin, Shield, X } from 'lucide-react';
+import { Castle, ChevronDown, ChevronUp, Flag, MapPin, Search, Shield, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { SelectionDetails, SelectionKey } from './selection';
 import styles from './mamluk-world-map.module.css';
 
@@ -26,6 +27,9 @@ export function SelectionPanel({
   managementHref,
 }: SelectionPanelProps) {
   const contentId = useId();
+  const searchId = useId();
+  const [query, setQuery] = useState('');
+  const matchingFeatures = features.filter((feature) => feature.label.includes(query.trim()));
   const panel = useRef<HTMLElement>(null);
   const key = selectedKey === undefined ? selection : selectedKey;
   const selectionId = key ? `${key.layer}:${key.id}` : null;
@@ -86,6 +90,26 @@ export function SelectionPanel({
                 <X size={20} aria-hidden="true" />
               </button>
             </header>
+            {(selection.layer === 'cities' || selection.layer === 'castles') && (
+              <div className={styles.selectionArt} aria-hidden="true">
+                <Image
+                  src={
+                    selection.layer === 'castles'
+                      ? '/game-art/mamluk-map/castle.png'
+                      : '/game-art/mamluk-map/village.png'
+                  }
+                  alt=""
+                  width={240}
+                  height={168}
+                  draggable={false}
+                />
+              </div>
+            )}
+            {managementHref && !referenceOnly && (
+              <Link className={`${styles.control} ${styles.managementLink}`} href={managementHref}>
+                إدارة القرية
+              </Link>
+            )}
             {!referenceOnly && (
               <dl className={styles.details}>
                 {selection.details.map((detail) => (
@@ -100,11 +124,6 @@ export function SelectionPanel({
               <span>خط الطول / خط العرض</span>
               <bdi dir="ltr">{selection.coordinates}</bdi>
             </div>
-            {managementHref && !referenceOnly && (
-              <Link className={styles.control} href={managementHref}>
-                إدارة القرية
-              </Link>
-            )}
           </>
         ) : (
           <div className={styles.emptySelection}>
@@ -118,10 +137,38 @@ export function SelectionPanel({
           </div>
         )}
         <section className={styles.visibleLocations} aria-label="المواقع المتاحة في المشهد">
-          <h3>المواقع في المشهد</h3>
-          {features.length ? (
+          <div className={styles.locationsHeading}>
+            <h3>المواقع في المشهد</h3>
+            <span>{new Intl.NumberFormat('ar').format(features.length)}</span>
+          </div>
+          {(features.length > 1 || Boolean(query)) && (
+            <div className={styles.locationSearch}>
+              <label htmlFor={searchId}>ابحث في المواقع الظاهرة</label>
+              <div>
+                <Search size={16} aria-hidden="true" />
+                <input
+                  id={searchId}
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="مدينة أو قلعة"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label="امسح البحث"
+                    onClick={() => setQuery('')}
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {matchingFeatures.length ? (
             <ul>
-              {features.slice(0, 40).map((feature) => (
+              {matchingFeatures.slice(0, 40).map((feature) => (
                 <li key={`${feature.layer}:${feature.id}`}>
                   <button
                     type="button"
@@ -138,7 +185,11 @@ export function SelectionPanel({
               ))}
             </ul>
           ) : (
-            <p>قرّب الخريطة لاستكشاف المواقع.</p>
+            <p>
+              {query.trim() && features.length
+                ? 'لا مواقع تطابق البحث في هذا المشهد.'
+                : 'قرّب الخريطة لاستكشاف المواقع.'}
+            </p>
           )}
         </section>
         <p className={styles.panelNote}>
