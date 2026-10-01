@@ -63,6 +63,7 @@ describe('authenticated host map viewport', () => {
     const response = await GET(request());
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('x-mamluk-public-settlements')).toBe('0');
     const body = await response.json();
     expect(body.layers.cities.features).toHaveLength(12);
     expect(JSON.stringify(body)).not.toContain('enemy-hidden');
@@ -88,6 +89,27 @@ describe('authenticated host map viewport', () => {
       ).status,
     ).toBe(400);
     expect(dependencies.read).not.toHaveBeenCalled();
+  });
+  it('emits retention permission only for server-approved public settlement sessions', async () => {
+    const originalRead = dependencies.read.getMockImplementation()!;
+    dependencies.read.mockImplementation((_world, _viewer, read) =>
+      originalRead(_world, _viewer, (session: WorldMapReadSession) =>
+        read({
+          ...session,
+          settlementsPublic: true,
+          getPublicVillageCitiesInBounds: async () => [],
+          getPublicVillageTerritoriesInBounds: async () => [],
+        }),
+      ),
+    );
+    const response = await GET(request());
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-mamluk-public-settlements')).toBe('1');
+    expect(JSON.stringify(await response.json())).not.toContain('enemy-hidden');
+    dependencies.read.mockRejectedValue(new KingdomsHttpError(401, 'الجلسة غير صالحة.'));
+    const denied = await GET(request());
+    expect(denied.status).toBe(401);
+    expect(denied.headers.has('x-mamluk-public-settlements')).toBe(false);
   });
   it('requires a current session and rate limit before reading', async () => {
     dependencies.identity.mockRejectedValue(new KingdomsHttpError(401, 'سجّل الدخول.'));

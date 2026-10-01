@@ -43,8 +43,13 @@ export async function GET(request: Request) {
       repository = new PrismaWorldMapRepository(identity);
     }
     const service = new MamlukViewportService(repository);
-    const payload = await service.getViewport(viewport, { playerId });
-    return NextResponse.json(payload, { headers });
+    const result = await service.getViewportResult(viewport, { playerId });
+    return NextResponse.json(result.payload, {
+      headers: {
+        ...headers,
+        'X-Mamluk-Public-Settlements': result.publicSettlements ? '1' : '0',
+      },
+    });
   } catch (error) {
     const cause = error instanceof MapQueryError ? error.cause : error;
     if (cause instanceof KingdomsHttpError) {

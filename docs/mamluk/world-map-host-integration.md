@@ -593,3 +593,44 @@ Do not adjust game coordinates to match the picture or use its painted borders
 to calculate ownership, travel, military positions or visibility. Those remain
 server-authoritative. Precise global image alignment would require a geographic
 source image with known projection or additional surveyed control points.
+
+## Stable village markers and one-time relocation
+
+The authenticated viewport response carries `X-Mamluk-Public-Settlements: 1`
+only when the same authorized repository snapshot explicitly permits public
+village locations. This header is outside the accepted domain payload. Private
+campaigns and the reference atlas return `0`; denied requests carry no retention
+permission. The host retains only the already approved city and village plot
+sources while refreshing the same viewport, avoiding the five-second marker
+flicker. Current detail payloads and all private intelligence still clear normally.
+Errors, changed bounds, style replacement, world/session reset and teardown clear
+the retained public presentation. New snapshots replace its data, including
+deleted or relocated villages; no whole-world cache is introduced.
+
+The owner can request one geographic relocation per village through
+`GET /api/kingdoms/world-map/relocate?worldId=…&villageId=…` (eligibility) and
+`POST /api/kingdoms/world-map/relocate` (confirmed request). The POST body contains
+only `worldId`, `villageId`, `idempotencyKey`, `longitude`, and `latitude`.
+The existing authenticated Kingdoms envelope, same-origin protection, bounded
+JSON reader and rate limits apply. The server rechecks current membership,
+account/token validity and ownership inside the world transaction. The permanent
+one-use record is keyed by village identity, rather than account or browser state.
+Concurrent requests and exact retry handling share the existing PostgreSQL
+serialization boundary. No schema migration or second persistence system is added.
+
+Geographic relocation updates the persisted settlement location and game plot
+geometry together with the world revision. It does not translate or move the
+legacy Kingdoms grid, armies, routes, scheduled travel or combat state. The supplied
+artwork is still presentation only; its approximate calibration never authorizes
+or calculates a relocation.
+
+Targeted validation passed 24 files / 214 tests, including real PostgreSQL
+transactions, concurrent competing moves, exact retries, ownership/token denial,
+old/new bounded viewport queries, high-latitude vision and preservation through
+ordinary game commands. Presentation tests cover uninterrupted public source
+identity, private attribute scrubbing, expiry/error cleanup, editable relocation
+drafts during polling and camera/home updates from accepted server coordinates.
+The polling module has 90% branch coverage; relocation backend exceeds 83%,
+relocation UI exceeds 93%, and viewport transport exceeds 90%. Production browser
+verification exercises the form without consuming a real player's one-time move;
+actual mutations are tested only against unique isolated database fixtures.

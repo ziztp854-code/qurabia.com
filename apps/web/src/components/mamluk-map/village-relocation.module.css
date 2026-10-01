@@ -1,0 +1,70 @@
+.root {
+  margin-block: var(--space-3);
+  border-block-start: 1px solid var(--map-border);
+  padding-block-start: var(--space-3);
+}
+.form {
+  display: grid;
+  gap: var(--space-2);
+}
+.form h3 {
+  margin: 0;
+  color: var(--map-gold);
+  font-size: 15px;
+}
+.form p,
+.note {
+  margin-block: var(--space-2);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--map-muted);
+}
+.form > input {
+  min-inline-size: 0;
+  inline-size: 100%;
+  min-block-size: 44px;
+  border: 1px solid var(--map-border);
+  border-radius: 6px;
+  background: var(--map-background);
+  color: var(--map-text);
+  padding-inline: var(--space-2);
+  font: inherit;
+}
+.confirmation {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  font-size: 13px;
+  line-height: 1.7;
+  cursor: pointer;
+}
+.confirmation input {
+  flex-shrink: 0;
+  inline-size: 20px;
+  block-size: 20px;
+  accent-color: var(--map-gold);
+}
+.button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: var(--space-2);
+  border: 1px solid var(--map-border);
+  border-radius: 6px;
+  background: var(--map-surface);
+  color: var(--map-gold);
+  font: inherit;
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.button:focus-visible,
+.form input:focus-visible {
+  outline: 3px solid var(--map-gold);
+  outline-offset: 3px;
+}

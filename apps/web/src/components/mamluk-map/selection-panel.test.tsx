@@ -3,6 +3,66 @@ import { describe, expect, it, vi } from 'vitest';
 import { SelectionPanel } from './selection-panel';
 
 describe('map selection panel', () => {
+  it('keeps an authorized relocation form mounted when viewport details temporarily clear', async () => {
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          worldId: 'world',
+          villageId: 'cairo',
+          longitude: 31.24967,
+          latitude: 30.06263,
+          relocationUsed: false,
+          canRelocate: true,
+          reason: null,
+          bounds: { west: -67, south: -28, east: 165, north: 60 },
+          revision: 1,
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetch);
+    const selection = {
+      layer: 'cities' as const,
+      id: 'cairo',
+      title: 'القاهرة',
+      kind: 'قرية',
+      coordinates: '31 / 30',
+      details: [],
+    };
+    const relocation = {
+      worldId: 'world',
+      villageId: 'cairo',
+      approved: true,
+      onRelocated: vi.fn(),
+    };
+    const props = {
+      features: [],
+      selectedKey: { layer: 'cities' as const, id: 'cairo' },
+      onSelect: vi.fn(),
+      onClose: vi.fn(),
+      relocation,
+    };
+    const view = render(<SelectionPanel {...props} selection={selection} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'نقل القرية' }));
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'خط الطول' }), {
+      target: { value: '31.3' },
+    });
+    view.rerender(
+      <SelectionPanel
+        {...props}
+        selection={null}
+        relocation={{ ...relocation, approved: false }}
+      />,
+    );
+    expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).toBeVisible();
+    expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'تأكيد النقل الدائم' })).toBeDisabled();
+    view.rerender(<SelectionPanel {...props} selection={selection} />);
+    expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).toHaveValue(31.3);
+    expect(fetch).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
   it('removes revoked viewport locations while retaining a usable search clear control', () => {
     const props = { selection: null, onSelect: vi.fn(), onClose: vi.fn() };
     const cairo = { layer: 'cities' as const, id: 'cairo', label: 'القاهرة' };

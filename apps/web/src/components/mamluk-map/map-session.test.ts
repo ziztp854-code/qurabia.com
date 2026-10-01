@@ -74,6 +74,310 @@ function territoryPayload(): MapPayload {
   };
 }
 
+function publicResponse(payload = territoryPayload()) {
+  return {
+    ok: true,
+    headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+    json: async () => payload,
+  };
+}
+
+it('scrubs private city attributes from retained public source copies without altering approved payloads', async () => {
+  vi.useFakeTimers();
+  const payload = territoryPayload();
+  const before = structuredClone(payload);
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(publicResponse(payload))
+      .mockImplementation(() => new Promise(() => {})),
+  );
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(5000);
+  const cityData = map.sources.get('mamluk-cities')?.data as {
+    features: { id: string; geometry: unknown; properties: Record<string, unknown> }[];
+  };
+
+  expect(cityData.features[0]?.id).toBe('cairo');
+  expect(cityData.features[0]?.geometry).toEqual(payload.layers.cities.features[0]?.geometry);
+  expect(cityData.features[0]?.properties).toMatchObject({
+    name: 'القاهرة',
+    ownerPlayerId: 'viewer',
+    __mamlukFeatureId: 'cairo',
+  });
+  expect(cityData.features[0]?.properties).not.toHaveProperty('fortificationLevel');
+  expect(cityData.features[0]?.properties).not.toHaveProperty('strategicValue');
+  expect(payload).toEqual(before);
+  session.dispose();
+});
+
+it('removes every cached layer if the SDK cannot replace private city attributes', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(publicResponse())
+      .mockImplementation(() => new Promise(() => {})),
+  );
+  const { map, callbacks, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  const source = map.sources.get('mamluk-cities')!;
+  source.setData = () => {
+    throw new Error('SDK source unavailable');
+  };
+
+  expect(() => {
+    void session.loader.refresh();
+  }).not.toThrow();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.sources.size).toBe(0);
+  expect(map.layers.size).toBe(0);
+  expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+  session.dispose();
+});
+
+it('retains only explicitly public village layers beyond private expiry while the same viewport is pending', async () => {
+  vi.useFakeTimers();
+  const original = territoryPayload();
+  const payload: MapPayload = {
+    ...original,
+    layers: {
+      ...original.layers,
+      armies: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'own-army',
+            geometry: { type: 'Point', coordinates: [31, 30] },
+            properties: {
+              armyId: 'own-army',
+              ownerPlayerId: 'viewer',
+              ownerSultanateId: null,
+              status: 'moving',
+              own: true,
+            },
+          },
+        ],
+      },
+      armyRoutes: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'own-army',
+            geometry: {
+              type: 'LineString',
+              coordinates: [
+                [31, 30],
+                [32, 31],
+              ],
+            },
+            properties: {
+              armyId: 'own-army',
+              distance: 10000,
+              departureTime: 2000,
+              arrivalTime: 9000,
+            },
+          },
+        ],
+      },
+      sieges: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'private-siege',
+            geometry: { type: 'Point', coordinates: [31, 30] },
+            properties: {
+              targetId: 'cairo',
+              targetKind: 'city',
+              status: 'active',
+            },
+          },
+        ],
+      },
+    },
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(publicResponse(payload))
+      .mockImplementation(() => new Promise(() => {})),
+  );
+  const { map, callbacks, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.sources.get('mamluk-armies')?.data).toMatchObject(payload.layers.armies);
+  await vi.advanceTimersByTimeAsync(9000);
+
+  expect([...map.sources.keys()].sort()).toEqual(['mamluk-cities', 'mamluk-territories']);
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+  expect(map.sources.get('mamluk-cities')?.data).toMatchObject({
+    features: [{ id: 'cairo', geometry: payload.layers.cities.features[0]?.geometry }],
+  });
+  session.dispose();
+  expect(map.sources.size).toBe(0);
+  expect(map.layers.size).toBe(0);
+});
+
+it.each([401, 403, 503])(
+  'clears retained public village geometry on an HTTP %i refresh failure',
+  async (status) => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(publicResponse()).mockResolvedValue({ ok: false, status }),
+    );
+    const { map, callbacks, session } = retrySession();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(map.sources.get('mamluk-cities')?.data).toMatchObject(territoryPayload().layers.cities);
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(map.sources.size).toBe(0);
+    expect(map.layers.size).toBe(0);
+    expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+    expect(callbacks.onStatus).toHaveBeenLastCalledWith('error');
+    session.dispose();
+  },
+);
+
+it('does not preserve previous public villages after a policy downgrade or a revoked next snapshot', async () => {
+  vi.useFakeTimers();
+  const original = territoryPayload();
+  const revoked: MapPayload = {
+    ...original,
+    revision: '2',
+    serverTime: 7000,
+    expiresAt: 15000,
+    layers: {
+      ...original.layers,
+      cities: { type: 'FeatureCollection', features: [] },
+      territories: { type: 'FeatureCollection', features: [] },
+    },
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(publicResponse())
+      .mockResolvedValue({ ok: true, headers: new Headers(), json: async () => revoked }),
+  );
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  const citySource = map.sources.get('mamluk-cities');
+  await vi.advanceTimersByTimeAsync(5000);
+
+  expect(map.sources.get('mamluk-cities')).not.toBe(citySource);
+  expect(map.sources.get('mamluk-cities')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [],
+  });
+  expect(map.sources.get('mamluk-territories')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [],
+  });
+  session.dispose();
+});
+
+it('clears public geometry on movement and ignores a late classified response from the previous viewport', async () => {
+  vi.useFakeTimers();
+  let deliver: ((value: unknown) => void) | undefined;
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(publicResponse())
+    .mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          deliver = resolve;
+        }),
+    );
+  vi.stubGlobal('fetch', fetchMock);
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(map.sources.has('mamluk-cities')).toBe(true);
+  const oldDelivery = deliver;
+  map.bounds = { west: 30, south: 29, east: 34, north: 33 };
+  map.fire('moveend');
+  expect(map.sources.size).toBe(0);
+  oldDelivery?.(publicResponse({ ...territoryPayload(), revision: '2' }));
+  await vi.advanceTimersByTimeAsync(150);
+
+  expect(map.sources.size).toBe(0);
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+  session.dispose();
+});
+
+it('clears retained public geometry during style replacement before loading a fresh snapshot', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(publicResponse())
+      .mockImplementation(() => new Promise(() => {})),
+  );
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(5000);
+  map.sources.clear();
+  map.layers.clear();
+  map.fire('style.load');
+
+  expect(map.sources.size).toBe(0);
+  expect(map.layers.size).toBe(0);
+  session.dispose();
+});
+
+it('keeps approved village markers and borders visible while an automatic refresh is pending', async () => {
+  vi.useFakeTimers();
+  let deliver: ((value: unknown) => void) | undefined;
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+      json: async () => territoryPayload(),
+    })
+    .mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          deliver = resolve;
+        }),
+    );
+  vi.stubGlobal('fetch', fetchMock);
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  const citySource = map.sources.get('mamluk-cities');
+  const territorySource = map.sources.get('mamluk-territories');
+
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(map.sources.get('mamluk-cities')).toBe(citySource);
+  expect(map.sources.get('mamluk-territories')).toBe(territorySource);
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  expect(citySource?.data).toMatchObject({
+    features: [{ id: 'cairo', properties: { name: 'القاهرة' } }],
+  });
+  deliver?.({
+    ok: true,
+    headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+    json: async () => ({
+      ...territoryPayload(),
+      revision: '2',
+      serverTime: 7000,
+      expiresAt: 15000,
+    }),
+  });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.sources.get('mamluk-cities')).toBe(citySource);
+  expect(map.sources.get('mamluk-territories')).toBe(territorySource);
+  expect(citySource?.data).toMatchObject(territoryPayload().layers.cities);
+  session.dispose();
+});
+
 it('keeps illustrated settlement clicks tied to approved IDs and removes every sprite on movement and expiry', async () => {
   vi.useFakeTimers();
   const payload = approvedPayload();

@@ -78,6 +78,20 @@ function fixture() {
   return { session, repository, read };
 }
 describe('host public settlements with private intelligence', () => {
+  it('classifies retained settlement presentation only from the same authorized public snapshot', async () => {
+    const { session, repository, read } = fixture();
+    const service = new MamlukViewportService(repository);
+    const result = await service.getViewportResult(request, viewer);
+    expect(result.publicSettlements).toBe(true);
+    expect(read).toHaveBeenCalledOnce();
+    expect(result.payload.layers.armies.features).toEqual([]);
+    expect(result.payload).not.toHaveProperty('publicSettlements');
+    const privateSession: PublicVillageReadSession = { ...session, settlementsPublic: false };
+    repository.withSnapshot = async (_world, _viewer, callback) => callback(privateSession);
+    const privateResult = await service.getViewportResult(request, viewer);
+    expect(privateResult.publicSettlements).toBe(false);
+    expect(privateResult.payload.layers.cities.features).toEqual([]);
+  });
   it('publishes village and plot without widening private fog, grants or army vision in one snapshot', async () => {
     const { session, repository, read } = fixture();
     const privatePayload = await new WorldMapService(repository).getViewport(request, viewer);

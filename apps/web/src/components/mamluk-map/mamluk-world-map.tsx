@@ -23,6 +23,7 @@ import { findSelection, listSelectableFeatures } from './selection';
 import { SelectionPanel } from './selection-panel';
 import { useWorldMap } from './use-world-map';
 import styles from './mamluk-world-map.module.css';
+import type { VillageRelocationEligibility } from './use-village-relocation';
 
 export interface MamlukWorldMapProps {
   readonly worlds: readonly { readonly id: string; readonly name: string }[];
@@ -86,6 +87,17 @@ function WorldScene({
   worldId: string;
   onWorldChange: (id: string) => void;
 }) {
+  const router = useRouter();
+  const [relocatedLocation, setRelocatedLocation] = useState<{
+    longitude: number;
+    latitude: number;
+  } | null>(null);
+  const longitude = relocatedLocation?.longitude ?? initialLocation?.longitude;
+  const latitude = relocatedLocation?.latitude ?? initialLocation?.latitude;
+  const cameraLocation = useMemo(
+    () => (longitude === undefined || latitude === undefined ? undefined : { longitude, latitude }),
+    [longitude, latitude],
+  );
   const {
     container,
     status,
@@ -96,7 +108,7 @@ function WorldScene({
     setProjection,
     moveCamera,
     refresh,
-  } = useWorldMap(worldId, viewerPlayerId, initialLocation, initialVillageId);
+  } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId);
   const selection = useMemo(
     () => findSelection(payload, selected, viewerPlayerId, referenceOnly),
     [payload, selected, viewerPlayerId, referenceOnly],
@@ -115,6 +127,16 @@ function WorldScene({
     !referenceOnly && ownVillage && approvedCity?.properties.ownerPlayerId === viewerPlayerId
       ? villageManagementHref(worldId, ownVillage.villageId)
       : undefined;
+  const relocationVillage =
+    !referenceOnly && selected?.layer === 'cities'
+      ? villageLocations?.find((village) => village.villageId === selected.id)
+      : undefined;
+  const onRelocated = (result: VillageRelocationEligibility) => {
+    setRelocatedLocation({ longitude: result.longitude, latitude: result.latitude });
+    router.replace(geographicMapHref(worldId, result.villageId));
+    router.refresh();
+    refresh();
+  };
   const statusMessage = referenceOnly
     ? status === 'ready'
       ? 'مدن الأطلس الجغرافي'
@@ -262,6 +284,16 @@ function WorldScene({
           features={features}
           onSelect={setSelected}
           onClose={() => setSelected(null)}
+          relocation={
+            relocationVillage
+              ? {
+                  worldId,
+                  villageId: relocationVillage.villageId,
+                  approved: approvedCity?.properties.ownerPlayerId === viewerPlayerId,
+                  onRelocated,
+                }
+              : undefined
+          }
         />
       </div>
       <footer className={styles.legend} aria-label="مفتاح الخريطة">

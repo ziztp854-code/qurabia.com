@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { SelectionDetails, SelectionKey } from './selection';
 import styles from './mamluk-world-map.module.css';
+import { VillageRelocation, type VillageRelocationProps } from './village-relocation';
 
 interface SelectionPanelProps {
   readonly selection: SelectionDetails | null;
@@ -15,6 +16,7 @@ interface SelectionPanelProps {
   readonly onClose: () => void;
   readonly referenceOnly?: boolean;
   readonly managementHref?: string;
+  readonly relocation?: VillageRelocationProps;
 }
 
 export function SelectionPanel({
@@ -25,6 +27,7 @@ export function SelectionPanel({
   onClose,
   referenceOnly = false,
   managementHref,
+  relocation,
 }: SelectionPanelProps) {
   const contentId = useId();
   const searchId = useId();
@@ -135,6 +138,12 @@ export function SelectionPanel({
                 : 'افتح مدينة أو قلعة أو جيشًا للاطلاع على معلوماته المتاحة.'}
             </p>
           </div>
+        )}
+        {relocation && !referenceOnly && (
+          <VillageRelocation
+            key={`${relocation.worldId}:${relocation.villageId}`}
+            {...relocation}
+          />
         )}
         <section className={styles.visibleLocations} aria-label="المواقع المتاحة في المشهد">
           <div className={styles.locationsHeading}>

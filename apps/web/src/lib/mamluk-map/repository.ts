@@ -327,8 +327,9 @@ class PrismaMapReadSession implements PublicVillageReadSession {
     return rows.map((point) => {
       validateId(point.id);
       validateCoordinates(point);
-      const halfLongitude = 0.045 / Math.cos((point.latitude * Math.PI) / 180);
-      if (halfLongitude > 0.06) throw new RangeError('Invalid allocated village latitude');
+      // The same bounded candidate predicate above caps longitude at 0.06.
+      // Geographic relocation can reach high latitudes; never widen that policy.
+      const halfLongitude = Math.min(0.06, 0.045 / Math.cos((point.latitude * Math.PI) / 180));
       return Object.freeze({
         region: Object.freeze({
           id: `village-vision:${point.id}`,
@@ -336,10 +337,10 @@ class PrismaMapReadSession implements PublicVillageReadSession {
           recipientPlayerId: this.snapshot.viewerPlayerId,
           kind: 'territory' as const,
           geometry: boundsGeometry({
-            west: point.longitude - halfLongitude,
-            east: point.longitude + halfLongitude,
-            south: point.latitude - 0.045,
-            north: point.latitude + 0.045,
+            west: Math.max(-180, point.longitude - halfLongitude),
+            east: Math.min(180, point.longitude + halfLongitude),
+            south: Math.max(-90, point.latitude - 0.045),
+            north: Math.min(90, point.latitude + 0.045),
           }),
           startsAt: this.snapshot.serverTime,
           expiresAt: this.snapshot.validUntil,

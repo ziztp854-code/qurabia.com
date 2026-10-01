@@ -25,6 +25,17 @@ export interface MamlukMapState {
   readonly source?: 'kingdom-villages-v1';
   readonly villagePlotsVersion?: 1;
   readonly omittedVillagePlotIds?: readonly string[];
+  readonly villageRelocations?: Readonly<
+    Record<
+      string,
+      {
+        readonly actorId: string;
+        readonly at: number;
+        readonly longitude: number;
+        readonly latitude: number;
+      }
+    >
+  >;
   readonly cities: readonly StoredMapRecord<City>[];
   readonly castles: readonly StoredMapRecord<Castle>[];
   readonly territories: readonly StoredMapRecord<Territory>[];

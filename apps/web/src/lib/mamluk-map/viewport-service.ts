@@ -66,6 +66,16 @@ export class MamlukViewportService {
     this.limits = Object.freeze({ ...DEFAULT_MAP_QUERY_LIMITS, ...limits });
   }
   async getViewport(request: ViewportRequest, viewer: AuthenticatedMapViewer): Promise<MapPayload> {
+    return (await this.getViewportResult(request, viewer)).payload;
+  }
+  /** Presentation retention policy travels outside the accepted domain payload.
+   * It is decided in the same authorized snapshot, never from client world IDs.
+   * Only cities and village plots qualify; private intelligence still expires.
+   */
+  async getViewportResult(
+    request: ViewportRequest,
+    viewer: AuthenticatedMapViewer,
+  ): Promise<{ readonly payload: MapPayload; readonly publicSettlements: boolean }> {
     try {
       validateId(request.worldId);
       validateId(viewer.playerId);
@@ -90,8 +100,12 @@ export class MamlukViewportService {
             boundRepository,
             this.limits,
           ).getViewport(safeRequest, safeViewer);
-          if (!publicSettlements(session)) return privatePayload;
-          return this.projectSettlements(session, safeRequest, privatePayload);
+          if (!publicSettlements(session))
+            return { payload: privatePayload, publicSettlements: false };
+          return {
+            payload: await this.projectSettlements(session, safeRequest, privatePayload),
+            publicSettlements: true,
+          };
         },
       );
     } catch (error) {
