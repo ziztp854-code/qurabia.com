@@ -67,6 +67,7 @@
 .goldButton,
 .outlineButton,
 .mapFooter button,
+.mapFooter a,
 .cardHeading button {
   display: inline-flex;
   align-items: center;
@@ -200,11 +201,13 @@
   font-size: 0.8rem;
 }
 .mapFooter button,
+.mapFooter a,
 .cardHeading button {
   background: transparent;
   color: var(--gold);
   border: 1px solid var(--border-gold);
   font-size: 0.78rem;
+  text-decoration: none;
 }
 .lowerGrid {
   display: grid;

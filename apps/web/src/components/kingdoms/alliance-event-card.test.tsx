@@ -180,7 +180,7 @@ describe('weekly alliance event', () => {
         view={props.view}
         village={props.village}
         onNavigate={onNavigate}
-        onOpenMap={vi.fn()}
+        worldMapHref="/games/kingdoms/world-map/"
         onSelectBuilding={vi.fn()}
       />,
     );

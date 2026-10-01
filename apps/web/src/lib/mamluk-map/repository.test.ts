@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DatabaseClient, Prisma } from '@tahaddi/database';
 import type { WorldMapReadSession } from '@mamluk/world-map-core/server';
-import { PrismaWorldMapRepository, listMamlukMapWorlds } from './repository';
+import {
+  PrismaWorldMapRepository,
+  listMamlukMapWorlds,
+  getOwnVillageMapLocations,
+} from './repository';
 
 vi.mock('@/lib/auth/prisma', () => ({
   getPrismaClient: () => {
@@ -54,6 +58,7 @@ function database(
     status?: string;
     tokenVersion?: number;
     world?: boolean;
+    ownLocations?: unknown[];
     records?: Record<string, unknown[] | undefined>;
   } = {},
 ) {
@@ -72,13 +77,17 @@ function database(
           ? []
           : [
               {
-                id: sql.values[0],
+                id: sql.values.find(
+                  (value) => typeof value === 'string' && value.startsWith('world'),
+                ),
                 revision: 42,
                 geographyVersion: '1',
+                geographySource: options.ownLocations ? 'kingdom-villages-v1' : undefined,
                 serverTime: new Date(2000),
               },
             ];
       if (sql.text.includes('SELECT w.id, w.name')) return [{ id: 'world', name: 'Campaign' }];
+      if (sql.text.includes('AS "villageId"')) return options.ownLocations ?? [];
       const collection = sql.values.find(
         (value) =>
           typeof value === 'string' &&
@@ -198,6 +207,27 @@ describe('Prisma geographic map repository authorization', () => {
     ]);
     expect(test.calls[0]!.text).toContain('LIMIT 50');
     expect(test.calls[0]!.values).toContain('viewer');
+    expect(test.calls[0]!.text).not.toContain("geography'->>'version' = '1'");
+  });
+
+  it('returns only bounded owned village locations for authorized map focus', async () => {
+    const test = database({
+      ownLocations: [
+        {
+          villageId: 'v1',
+          name: 'عاصمة الحاكم',
+          longitude: 31.24967,
+          latitude: 30.06263,
+        },
+      ],
+    });
+    await expect(getOwnVillageMapLocations('world', identity, test.db)).resolves.toEqual([
+      { villageId: 'v1', name: 'عاصمة الحاكم', longitude: 31.24967, latitude: 30.06263 },
+    ]);
+    const sql = test.calls.at(-1)!;
+    expect(sql.values).toContain('viewer');
+    expect(sql.text).toContain('LIMIT 100');
+    expect(sql.text).not.toMatch(/SELECT\s+(?:\*|w\.state)/i);
   });
 
   it('rejects invalid bounds and limits and closes the session at the transaction boundary', async () => {

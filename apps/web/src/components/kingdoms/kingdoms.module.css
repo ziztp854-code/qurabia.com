@@ -80,7 +80,8 @@
   flex-wrap: wrap;
   margin-block: 1.5rem;
 }
-.nav button {
+.nav button,
+.nav a {
   min-block-size: 44px;
   padding: 0.6rem 1rem;
   border: 1px solid var(--border);
@@ -89,6 +90,10 @@
   color: var(--foreground);
   cursor: pointer;
   font: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .nav button[aria-pressed='true'] {
   color: var(--gold);
@@ -556,7 +561,8 @@
   margin: 0;
   gap: 0.45rem;
 }
-.gameLayout .nav button {
+.gameLayout .nav button,
+.gameLayout .nav a {
   display: grid;
   justify-items: center;
   align-content: center;
@@ -812,7 +818,8 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.3rem;
   }
-  .gameLayout .nav button {
+  .gameLayout .nav button,
+  .gameLayout .nav a {
     display: flex;
     justify-content: center;
     gap: 0.25rem;
@@ -991,13 +998,15 @@
     transform: translateY(6px);
   }
 }
-.gameLayout .nav button {
+.gameLayout .nav button,
+.gameLayout .nav a {
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
     transform 0.15s ease;
 }
-.gameLayout .nav button:hover:not([aria-pressed='true']) {
+.gameLayout .nav button:hover:not([aria-pressed='true']),
+.gameLayout .nav a:hover:not([aria-pressed='true']) {
   border-color: var(--border-gold);
   transform: translateX(-2px);
 }
@@ -1103,7 +1112,8 @@
   border-radius: var(--radius-lg);
   background: var(--surface);
 }
-.gameLayout .nav button {
+.gameLayout .nav button,
+.gameLayout .nav a {
   display: flex;
   align-items: center;
   justify-content: start;
@@ -1115,7 +1125,8 @@
   font-size: 0.82rem;
   text-align: start;
 }
-.gameLayout .nav button svg {
+.gameLayout .nav button svg,
+.gameLayout .nav a svg {
   flex: 0 0 auto;
   color: var(--gold);
 }
@@ -1185,7 +1196,8 @@
     padding: 0.35rem;
     scrollbar-width: thin;
   }
-  .gameLayout .nav button {
+  .gameLayout .nav button,
+  .gameLayout .nav a {
     flex: 0 0 auto;
     min-block-size: 44px;
     padding: 0.35rem 0.55rem;
@@ -1224,13 +1236,15 @@
     transform: translateY(6px);
   }
 }
-.gameLayout .nav button {
+.gameLayout .nav button,
+.gameLayout .nav a {
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
     transform 0.15s ease;
 }
-.gameLayout .nav button:hover:not([aria-pressed='true']) {
+.gameLayout .nav button:hover:not([aria-pressed='true']),
+.gameLayout .nav a:hover:not([aria-pressed='true']) {
   border-color: var(--border-gold);
   transform: translateX(-2px);
 }

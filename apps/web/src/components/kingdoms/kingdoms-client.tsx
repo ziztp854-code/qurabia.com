@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Crown,
   RefreshCw,
@@ -16,7 +18,8 @@ import { Button, ButtonLink, Input, Select } from '@/components/ui';
 import { CommandForm, Empty, date, labels, number } from './shared';
 import { useKingdoms } from './use-kingdoms';
 import { VillagePanel, ArmyPanel } from './village-panel';
-import { MapPanel, type MapSelection } from './map-panel';
+import { MapPanel } from './map-panel';
+import { geographicMapHref } from './map-links';
 import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
@@ -29,6 +32,7 @@ const tabs = {
   village: 'القرية',
   army: 'الجيش',
   map: 'خريطة العالم',
+  campaigns: 'إرسال حملة',
   market: 'السوق',
   alliances: 'التحالفات',
   reports: 'التقارير والمهام',
@@ -39,34 +43,43 @@ const tabIcons = {
   village: Castle,
   army: Swords,
   map: Map,
+  campaigns: Swords,
   market: Store,
   alliances: Flag,
   reports: ScrollText,
   throne: Crown,
 };
 const resourceOrder = ['iron', 'food', 'stone', 'wood', 'gold'] as const;
-type ScopedMapSelection = MapSelection & { worldId: string; villageId: string };
 type ScopedBuildingSelection = { worldId: string; villageId: string; building: Building };
 
-export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
-  const game = useKingdoms();
-  const [tab, setTab] = useState<keyof typeof tabs>('overview');
-  const [villageId, setVillageId] = useState('');
-  const [mapSelection, setMapSelection] = useState<ScopedMapSelection | null>(null);
+export function KingdomsClient({
+  canManage = false,
+  initialWorldId = '',
+  initialVillageId = '',
+  initialTab = 'overview',
+}: {
+  canManage?: boolean;
+  initialWorldId?: string;
+  initialVillageId?: string;
+  initialTab?: 'overview' | 'village';
+}) {
+  const router = useRouter();
+  const game = useKingdoms(initialWorldId);
+  const [tab, setTab] = useState<keyof typeof tabs>(initialTab);
+  const [villageId, setVillageId] = useState(initialVillageId);
   const [buildingSelection, setBuildingSelection] = useState<ScopedBuildingSelection | null>(null);
   const { view, busy, loading, send } = game;
   const village = view?.villages.find((item) => item.id === villageId) ?? view?.villages[0];
   const locked = busy || !!view?.paused || view?.season.status === 'ended';
   const props = view && village ? { view, village, busy: locked, send } : null;
+  const mapHref = geographicMapHref(view?.worldId ?? game.worldId, village?.id);
   const navigate = (nextTab: keyof typeof tabs) => {
-    if (nextTab === 'map') setMapSelection(null);
+    if (nextTab === 'map') {
+      router.push(mapHref);
+      return;
+    }
     if (nextTab === 'village') setBuildingSelection(null);
     setTab(nextTab);
-  };
-  const openMap = (selection: MapSelection) => {
-    if (!view || !village) return;
-    setMapSelection({ ...selection, worldId: view.worldId, villageId: village.id });
-    setTab('map');
   };
   const openBuilding = (building: Building) => {
     if (!view || !village) return;
@@ -119,7 +132,7 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
         </p>
       )}
       <div className={styles.toolbar}>
-        <ButtonLink href="/games/kingdoms/world-map" variant="outline">
+        <ButtonLink href={mapHref} variant="outline">
           الخريطة الجغرافية
         </ButtonLink>
         <Select
@@ -244,6 +257,13 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                 <nav aria-label="إدارة المملكة" className={styles.nav}>
                   {Object.entries(tabs).map(([key, label]) => {
                     const Icon = tabIcons[key as keyof typeof tabs];
+                    if (key === 'map')
+                      return (
+                        <Link key={key} href={mapHref}>
+                          <Icon size={20} aria-hidden="true" />
+                          <span>{label}</span>
+                        </Link>
+                      );
                     return (
                       <button
                         key={key}
@@ -263,7 +283,7 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                       view={view}
                       village={village}
                       onNavigate={navigate}
-                      onOpenMap={openMap}
+                      worldMapHref={mapHref}
                       onSelectBuilding={openBuilding}
                     />
                   )}
@@ -280,17 +300,8 @@ export function KingdomsClient({ canManage = false }: { canManage?: boolean }) {
                     />
                   )}
                   {tab === 'army' && <ArmyPanel key={`${view.worldId}:${village.id}`} {...props} />}
-                  {tab === 'map' && (
-                    <MapPanel
-                      key={`${view.worldId}:${village.id}`}
-                      {...props}
-                      initialSelection={
-                        mapSelection?.worldId === view.worldId &&
-                        mapSelection?.villageId === village.id
-                          ? mapSelection
-                          : null
-                      }
-                    />
+                  {tab === 'campaigns' && (
+                    <MapPanel key={`${view.worldId}:${village.id}`} {...props} />
                   )}
                   {tab === 'market' && <MarketPanel {...props} />}
                   {tab === 'alliances' && <AlliancePanel {...props} />}

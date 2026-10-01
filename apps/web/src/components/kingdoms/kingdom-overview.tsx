@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowLeft,
   Castle,
@@ -16,37 +16,29 @@ import {
 } from 'lucide-react';
 import { unitKeys, type Building } from '@/lib/kingdoms/types';
 import { date, number, type GameProps } from './shared';
-import { WorldMap } from './world-map';
 import { VillageMap } from './village-map';
 import { villageArt } from './village-layout';
-import type { MapSelection } from './map-panel';
 import styles from './kingdom-overview.module.css';
 
-type OverviewTab = 'village' | 'army' | 'map' | 'alliances' | 'reports' | 'throne';
+type OverviewTab = 'village' | 'army' | 'map' | 'campaigns' | 'alliances' | 'reports' | 'throne';
 
 export function KingdomOverview({
   view,
   village,
   onNavigate,
-  onOpenMap,
+  worldMapHref,
   onSelectBuilding,
 }: Pick<GameProps, 'view' | 'village'> & {
   onNavigate: (tab: OverviewTab) => void;
-  onOpenMap: (selection: MapSelection) => void;
+  worldMapHref: string;
   onSelectBuilding: (building: Building) => void;
 }) {
-  const [center, setCenter] = useState({ x: village.x, y: village.y });
-  const [target, setTarget] = useState({ x: village.x, y: village.y });
-  const [mapQuery, setMapQuery] = useState('');
   const troops = view.villages.reduce(
     (sum, item) => sum + unitKeys.reduce((count, unit) => count + item.troops[unit], 0),
     0,
   );
   const alliance = view.alliances.find((item) => item.id === view.player?.allianceId);
   const suggestedAlliance = view.alliances.find((item) => item.id !== alliance?.id);
-  const matchingVillage = view.map.find((item) =>
-    `${item.name} ${item.kingdomName}`.includes(mapQuery.trim()),
-  );
   const activities = [
     ...(village.build
       ? [
@@ -103,7 +95,7 @@ export function KingdomOverview({
     {
       name: 'أسّس قرية ثانية',
       done: view.player?.claims.includes('founder') ?? false,
-      tab: 'map' as const,
+      tab: 'campaigns' as const,
     },
   ];
 
@@ -174,62 +166,15 @@ export function KingdomOverview({
       <section className={styles.mapCard} aria-label="خريطة المملكة">
         <div className={styles.mapToolbar}>
           <div>
-            <p className={styles.kicker}>الأطلس الملكي</p>
-            <h2>خريطة المملكة</h2>
+            <p className={styles.kicker}>الخريطة الجغرافية</p>
+            <h2>قراك في العالم</h2>
           </div>
-          <form
-            role="search"
-            className={styles.mapSearch}
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (matchingVillage) {
-                setCenter({ x: matchingVillage.x, y: matchingVillage.y });
-                setTarget({ x: matchingVillage.x, y: matchingVillage.y });
-              }
-            }}
-          >
-            <label htmlFor="kingdom-overview-search">ابحث عن قرية أو مملكة</label>
-            <div>
-              <input
-                id="kingdom-overview-search"
-                type="search"
-                value={mapQuery}
-                onChange={(event) => setMapQuery(event.target.value)}
-                placeholder="اسم القرية أو المملكة"
-              />
-              <button type="submit" aria-label="ابحث في الخريطة" disabled={!mapQuery.trim()}>
-                انتقال
-              </button>
-            </div>
-          </form>
         </div>
-        {mapQuery.trim() && !matchingVillage && (
-          <p className={styles.mapFeedback} role="status">
-            لا قرى تطابق البحث.
-          </p>
-        )}
-        <WorldMap
-          center={center}
-          target={target}
-          origin={village}
-          radius={view.config.worldRadius}
-          playerId={view.player?.id}
-          villages={view.map}
-          territories={view.territories}
-          resourceSites={view.resourceSites}
-          onCenter={setCenter}
-          onSelect={setTarget}
-        />
         <div className={styles.mapFooter}>
-          <span>
-            الموضع المختار{' '}
-            <bdi dir="ltr">
-              ({target.x}, {target.y})
-            </bdi>
-          </span>
-          <button type="button" onClick={() => onOpenMap({ center, target })}>
+          <span>افتح الخريطة التفاعلية عند قرية {village.name}.</span>
+          <Link href={worldMapHref}>
             افتح خريطة العالم <ArrowLeft size={16} aria-hidden="true" />
-          </button>
+          </Link>
         </div>
       </section>
 

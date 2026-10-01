@@ -2,6 +2,7 @@
 
 import { Castle, ChevronDown, ChevronUp, Flag, MapPin, Shield, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import Link from 'next/link';
 import type { SelectionDetails, SelectionKey } from './selection';
 import styles from './mamluk-world-map.module.css';
 
@@ -12,6 +13,7 @@ interface SelectionPanelProps {
   readonly onSelect: (key: SelectionKey) => void;
   readonly onClose: () => void;
   readonly referenceOnly?: boolean;
+  readonly managementHref?: string;
 }
 
 export function SelectionPanel({
@@ -21,6 +23,7 @@ export function SelectionPanel({
   onSelect,
   onClose,
   referenceOnly = false,
+  managementHref,
 }: SelectionPanelProps) {
   const contentId = useId();
   const panel = useRef<HTMLElement>(null);
@@ -97,6 +100,11 @@ export function SelectionPanel({
               <span>خط الطول / خط العرض</span>
               <bdi dir="ltr">{selection.coordinates}</bdi>
             </div>
+            {managementHref && !referenceOnly && (
+              <Link className={styles.control} href={managementHref}>
+                إدارة القرية
+              </Link>
+            )}
           </>
         ) : (
           <div className={styles.emptySelection}>

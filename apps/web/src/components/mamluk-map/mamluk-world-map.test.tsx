@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MapSdkFixture, approvedPayload } from './map-fixture';
 import { MamlukWorldMap } from './mamluk-world-map';
+const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
 vi.mock('maplibre-gl', async () => {
   const { MapSdkFixture } = await import('./map-fixture');
@@ -18,6 +20,7 @@ afterEach(() => {
   MapSdkFixture.instances = [];
   MapSdkFixture.failCreation = false;
   MapSdkFixture.workerUrl = null;
+  navigation.push.mockClear();
 });
 const worlds = [
   { id: 'world', name: 'مصر والشام' },
@@ -25,6 +28,84 @@ const worlds = [
 ];
 
 describe('strategic world map controls', () => {
+  it('does not offer village management after current authoritative ownership changes', async () => {
+    const original = approvedPayload();
+    const city = original.layers.cities.features[0];
+    const payload = {
+      ...original,
+      layers: {
+        ...original.layers,
+        cities: {
+          type: 'FeatureCollection',
+          features: [
+            { ...city, properties: { ...city.properties, ownerPlayerId: 'other-player' } },
+          ],
+        },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));
+    const village = { villageId: 'cairo', name: 'القاهرة', longitude: 31.2357, latitude: 30.0444 };
+    render(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        initialLocation={village}
+        initialVillageId="cairo"
+        villageLocations={[village]}
+      />,
+    );
+    await screen.findByRole('heading', { name: 'القاهرة', level: 2 });
+    expect(screen.queryByRole('link', { name: 'إدارة القرية' })).not.toBeInTheDocument();
+  });
+  it('focuses server-provided village coordinates and exposes management only after an approved own-city payload', async () => {
+    const payload = approvedPayload();
+    const village = { villageId: 'cairo', name: 'القاهرة', longitude: 31.2357, latitude: 30.0444 };
+    let deliver: ((value: unknown) => void) | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            deliver = resolve;
+          }),
+      ),
+    );
+    render(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        initialLocation={village}
+        initialVillageId="cairo"
+        villageLocations={[village]}
+      />,
+    );
+    await waitFor(() => expect(deliver).toBeDefined());
+    expect(screen.queryByRole('link', { name: 'إدارة القرية' })).not.toBeInTheDocument();
+    expect(MapSdkFixture.instances[0]?.initialCamera).toEqual({
+      center: [31.2357, 30.0444],
+      zoom: 10,
+    });
+    await act(async () => {
+      deliver?.({ ok: true, json: async () => payload });
+    });
+    expect(await screen.findByRole('heading', { name: 'القاهرة', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'إدارة القرية' })).toHaveAttribute(
+      'href',
+      '/games/kingdoms?worldId=world&villageId=cairo&tab=village',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'انتقل إلى قريتك' }));
+    expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({
+      center: [31.2357, 30.0444],
+      zoom: 10,
+    });
+    expect(screen.queryByRole('link', { name: 'إدارة القرية' })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox', { name: 'العالم' }), {
+      target: { value: 'other' },
+    });
+    expect(navigation.push).toHaveBeenCalledWith('/games/kingdoms/world-map/?worldId=other');
+  });
   it('labels the reference atlas and presents public city coordinates without game claims', async () => {
     const atlasId = 'mamluk-public-geographic-atlas-v1';
     const publicPayload = approvedPayload(atlasId);

@@ -4,7 +4,13 @@ import type { DatabaseClient, Prisma } from '@tahaddi/database';
 import type { Army, AreaGeometry, City } from '@mamluk/world-map-core';
 import { WorldMapService } from '@mamluk/world-map-core/server';
 import { createWorld, executeCommand } from '../kingdoms/engine';
-import { PrismaWorldMapRepository, listMamlukMapWorlds } from './repository';
+import { commandKingdomWorld } from '../kingdoms/repository';
+import type { KingdomsWorld } from '../kingdoms/types';
+import {
+  PrismaWorldMapRepository,
+  listMamlukMapWorlds,
+  getOwnVillageMapLocations,
+} from './repository';
 import { storeMapRecord, type MamlukMapState } from './storage';
 
 const databaseUrl = process.env.KINGDOMS_TEST_DATABASE_URL;
@@ -22,6 +28,8 @@ function assertIsolatedDatabase(value: string): void {
     );
 }
 const bounds = { west: 30, south: 29, east: 34, north: 33 };
+const withoutGeography = (state: KingdomsWorld) =>
+  Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'geography')) as KingdomsWorld;
 const polygon: AreaGeometry = {
   type: 'Polygon',
   coordinates: [
@@ -347,5 +355,144 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
       'cairo',
       'visible-city',
     ]);
+  });
+
+  it('provisions actual legacy member villages once and never sends the distant enemy village', async () => {
+    const { viewer, outsider, worldId, state } = await fixture();
+    const original = withoutGeography(state);
+    const legacy = executeCommand(
+      original,
+      outsider.id,
+      { type: 'found', name: 'خصم بعيد' },
+      original.updatedAt,
+    );
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(legacy)) as Prisma.InputJsonValue,
+      },
+    });
+    const own = Object.values(legacy.villages).find((village) => village.ownerId === viewer.id)!;
+    const enemy = Object.values(legacy.villages).find(
+      (village) => village.ownerId === outsider.id,
+    )!;
+    const service = new WorldMapService(new PrismaWorldMapRepository(viewer, db));
+    const read = () =>
+      service.getViewport(
+        { worldId, bounds: { west: 28, south: 29, east: 35, north: 33 } },
+        { playerId: viewer.id },
+      );
+    const [first, second] = await Promise.all([read(), read()]);
+    for (const payload of [first, second]) {
+      expect(payload.revision).toBe('8');
+      expect(payload.layers.cities.features.map((feature) => feature.id)).toEqual([own.id]);
+      expect(payload.layers.cities.features[0]!.geometry.coordinates).toEqual([31.24967, 30.06263]);
+      expect(payload.layers.armies.features).toEqual([]);
+      expect(payload.layers.visibility.features).toHaveLength(1);
+      expect(JSON.stringify(payload)).not.toContain(enemy.name);
+      expect(JSON.stringify(payload)).not.toContain('resources');
+      expect(JSON.stringify(payload)).not.toContain('troops');
+    }
+    expect((await read()).revision).toBe('8');
+    expect(await getOwnVillageMapLocations(worldId, viewer, db)).toEqual([
+      { villageId: own.id, name: own.name, longitude: 31.24967, latitude: 30.06263 },
+    ]);
+    const persisted = (await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } }))
+      .state as unknown as typeof legacy & { geography: MamlukMapState };
+    const { geography: savedGeography, ...unchanged } = persisted;
+    expect(unchanged).toEqual(legacy);
+    // Current names and owners must win over the original stored city copy.
+    const changed = {
+      ...persisted,
+      villages: {
+        ...persisted.villages,
+        [own.id]: { ...own, ownerId: outsider.id, name: 'قرية انتقلت ملكيتها' },
+      },
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(changed)) as Prisma.InputJsonValue,
+      },
+    });
+    expect((await read()).layers.cities.features).toEqual([]);
+    expect(await getOwnVillageMapLocations(worldId, viewer, db)).toEqual([]);
+    expect(await getOwnVillageMapLocations(worldId, outsider, db)).toContainEqual({
+      villageId: own.id,
+      name: 'قرية انتقلت ملكيتها',
+      longitude: 31.24967,
+      latitude: 30.06263,
+    });
+    expect(savedGeography.cities[0]!.value.ownerPlayerId).toBe(viewer.id);
+    const remainingVillages = Object.fromEntries(
+      Object.entries(changed.villages).filter(([id]) => id !== own.id),
+    );
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(
+          JSON.stringify({ ...changed, villages: remainingVillages }),
+        ) as Prisma.InputJsonValue,
+      },
+    });
+    expect(await getOwnVillageMapLocations(worldId, outsider, db)).toHaveLength(1);
+    expect((await read()).layers.cities.features).toEqual([]);
+  });
+
+  it('allocates newly founded actual villages inside the existing authoritative game transaction', async () => {
+    const { viewer, outsider, worldId, state } = await fixture();
+    const legacy = withoutGeography(state);
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(legacy)) as Prisma.InputJsonValue,
+      },
+    });
+    const result = await commandKingdomWorld(
+      worldId,
+      outsider,
+      randomUUID(),
+      {
+        type: 'found',
+        name: 'مملكة جديدة',
+      },
+      db,
+    );
+    const locations = await getOwnVillageMapLocations(worldId, outsider, db);
+    expect(locations).toHaveLength(1);
+    expect(locations[0]).toMatchObject({
+      name: 'عاصمة مملكة جديدة',
+      longitude: 29.91582,
+      latitude: 31.20176,
+    });
+    expect(await getOwnVillageMapLocations(worldId, viewer, db)).toHaveLength(1);
+    const snapshot = await new PrismaWorldMapRepository(outsider, db).withSnapshot(
+      worldId,
+      { playerId: outsider.id },
+      async (session) => session.snapshot,
+    );
+    // Focus reads must not provision a second time after the game mutation.
+    expect(snapshot.revision).toBe(String(result.revision));
+  });
+
+  it('never provisions legacy worlds for outsiders or revoked sessions', async () => {
+    const { viewer, outsider, worldId, state } = await fixture();
+    const legacy = withoutGeography(state);
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(legacy)) as Prisma.InputJsonValue,
+      },
+    });
+    await expect(getOwnVillageMapLocations(worldId, outsider, db)).rejects.toMatchObject({
+      status: 404,
+    });
+    await db.user.update({ where: { id: viewer.id }, data: { tokenVersion: 1 } });
+    await expect(getOwnVillageMapLocations(worldId, viewer, db)).rejects.toMatchObject({
+      status: 401,
+    });
+    const row = await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } });
+    expect(row.state).toEqual(legacy);
+    expect(row.revision).toBe(7);
   });
 });

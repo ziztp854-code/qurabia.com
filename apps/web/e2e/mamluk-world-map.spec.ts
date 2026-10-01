@@ -1,5 +1,8 @@
 import { expect, test, type Page, type Response } from '@playwright/test';
 import { parseMapPayload, type MapPayload } from '@mamluk/world-map-core';
+import { randomUUID } from 'node:crypto';
+import { createPrismaClient, type Prisma } from '@tahaddi/database';
+import { createWorld, executeCommand } from '../src/lib/kingdoms/engine';
 
 const mapPath = '/games/kingdoms/world-map';
 const viewportPath = '/api/kingdoms/world-map/viewport';
@@ -601,4 +604,120 @@ test('real globe, authorized panels and bounded loading work on desktop and mobi
   await page.screenshot({ path: testInfo.outputPath('mamluk-map-final.png'), fullPage: false });
   await expect(page.getByRole('alert').filter({ hasText: 'تعذر تحديث الخريطة' })).toHaveCount(0);
   await checkTraffic();
+});
+
+test('a village world-map entry opens its real geographic village and returns to village management', async ({
+  page,
+}, testInfo) => {
+  const db = createPrismaClient(process.env.KINGDOMS_TEST_DATABASE_URL!);
+  const worldId = `map_village_e2e_${randomUUID()}`;
+  try {
+    const player = await db.user.findUniqueOrThrow({
+      where: { email: 'mamluk-map@example.test' },
+      select: { id: true },
+    });
+    const now = Date.now();
+    const state = executeCommand(
+      createWorld(now),
+      player.id,
+      { type: 'found', name: 'الحاكم' },
+      now,
+    );
+    const village = Object.values(state.villages)[0];
+    await db.kingdomWorld.create({
+      data: {
+        id: worldId,
+        name: 'عالم القرى الجغرافية',
+        // Keep the existing explicit campaign as the default for the other browser checks.
+        createdAt: new Date('2000-01-01T00:00:00Z'),
+        state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue,
+      },
+    });
+    await signIn(page);
+    await page.goto(`/games/kingdoms/?worldId=${worldId}&villageId=${village.id}&tab=village`);
+    await expect(page.getByRole('combobox', { name: 'العالم والموسم', exact: true })).toHaveValue(
+      worldId,
+    );
+    const navigation = page.getByRole('navigation', { name: 'إدارة المملكة', exact: true });
+    const mapLink = navigation.getByRole('link', { name: 'خريطة العالم', exact: true });
+    await expect(mapLink).toHaveAttribute(
+      'href',
+      `/games/kingdoms/world-map/?worldId=${worldId}&villageId=${village.id}`,
+    );
+    const viewport = page.waitForResponse(
+      (response) =>
+        isViewport(response) && new URL(response.url()).searchParams.get('worldId') === worldId,
+    );
+    const tile = page.waitForResponse(isBasemapTile);
+    await mapLink.click();
+    await expect(page).toHaveURL(new RegExp(`/games/kingdoms/world-map/?.*worldId=${worldId}`));
+    const checkTraffic = monitorTraffic(page, (payload) => {
+      expect(payload.worldId).toBe(worldId);
+      expect(JSON.stringify(payload)).not.toMatch(
+        /"(?:troops|resources|reinforcements|reports|loot)"/,
+      );
+      expect(payload.layers.armies.features).toEqual([]);
+    });
+    const response = await viewport;
+    expect(response.status()).toBe(200);
+    const payload = parseMapPayload(await response.json());
+    const marker = payload.layers.cities.features.find((feature) => feature.id === village.id);
+    expect(marker?.geometry.type).toBe('Point');
+    expect(marker?.properties.name).toBe('عاصمة الحاكم');
+    if (marker?.geometry.type !== 'Point')
+      throw new Error('Actual village marker was not projected');
+    expect(marker.geometry.coordinates[0]).toBeGreaterThan(28);
+    expect(marker.geometry.coordinates[0]).toBeLessThan(41);
+    expect(marker.geometry.coordinates[1]).toBeGreaterThan(20);
+    expect(marker.geometry.coordinates[1]).toBeLessThan(38);
+    expect(marker.geometry.coordinates).not.toEqual([village.x, village.y]);
+    expect(marker.geometry.coordinates).toEqual([31.24967, 30.06263]);
+    expect(payload.layers.fog.features.length).toBeGreaterThan(0);
+    expect((await tile).status()).toBe(200);
+    await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+    await showPanel(page, 'عاصمة الحاكم', 'عاصمة الحاكم');
+    const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة', exact: true });
+    await expect(panel.getByText('تحت رايتك', { exact: true })).toBeVisible();
+    const manageVillage = panel.getByRole('link', { name: 'إدارة القرية', exact: true });
+    await expect(manageVillage).toHaveAttribute(
+      'href',
+      `/games/kingdoms/?worldId=${worldId}&villageId=${village.id}&tab=village`,
+    );
+    const canvas = page.getByRole('region', { name: 'الخريطة الاستراتيجية' }).locator('canvas');
+    const flatViewport = page.waitForResponse(
+      (candidate) =>
+        isViewport(candidate) && new URL(candidate.url()).searchParams.get('worldId') === worldId,
+    );
+    await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).click();
+    const flatPayload = parseMapPayload(await (await flatViewport).json());
+    await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+    const size = await canvas.boundingBox();
+    if (!size) throw new Error('The actual village map canvas is unavailable');
+    const position = pointOnFlatCanvas(flatPayload, marker.geometry.coordinates, size);
+    const collapse = page.getByRole('button', { name: 'اطوِ تفاصيل الخريطة', exact: true });
+    if (await collapse.isVisible()) await collapse.click();
+    await expect(async () => {
+      await canvas.click({ position });
+      await expect(panel.getByRole('heading', { name: 'عاصمة الحاكم', exact: true })).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass({ timeout: 10_000, intervals: [200, 400, 800] });
+    await canvas.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: testInfo.outputPath('actual-village-geographic-map.png'),
+      fullPage: false,
+    });
+    await checkTraffic();
+    await manageVillage.click();
+    await expect(page.getByRole('combobox', { name: 'العالم والموسم', exact: true })).toHaveValue(
+      worldId,
+    );
+    await expect(navigation.getByRole('button', { name: 'القرية', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  } finally {
+    await db.kingdomWorld.deleteMany({ where: { id: worldId } });
+    await db.$disconnect();
+  }
 });

@@ -17,6 +17,7 @@ import type {
 } from '@mamluk/world-map-core/server';
 import {
   containsPoint,
+  boundsGeometry,
   createArmyPosition,
   createArmyRoute,
   createCastle,
@@ -34,11 +35,18 @@ import { getPrismaClient } from '@/lib/auth/prisma';
 import { KingdomsHttpError } from '../kingdoms/http';
 import type { KingdomIdentity } from '../kingdoms/repository';
 import type { MamlukMapState, StoredVisibilityGrant } from './storage';
+import { ensureVillageGeography } from './village-persistence';
+import { VILLAGE_GEOGRAPHY_SOURCE } from './village-geography';
 
 type Transaction = Prisma.TransactionClient;
-type Collection = Exclude<keyof MamlukMapState, 'version'>;
+type Collection = Exclude<keyof MamlukMapState, 'version' | 'source'>;
 type JsonRow = { value: unknown };
 const item = Prisma.sql`item`;
+const villageSource = Prisma.sql`w.state->'geography'->>'source' = ${VILLAGE_GEOGRAPHY_SOURCE}`;
+const currentVillage = Prisma.sql`w.state->'villages'->(item->'value'->>'id')`;
+const currentCityOwner = Prisma.sql`CASE WHEN ${villageSource} THEN ${currentVillage}->>'ownerId'
+  ELSE item->'value'->>'ownerPlayerId' END`;
+class VillageProvisioningRequired extends Error {}
 const transactionOptions = {
   isolationLevel: 'RepeatableRead' as const,
   maxWait: 5000,
@@ -193,6 +201,7 @@ class PrismaMapReadSession implements WorldMapReadSession {
   constructor(
     private readonly tx: Transaction,
     readonly snapshot: MapReadSnapshot,
+    private readonly villageGeography = false,
   ) {}
   close(): void {
     this.active = false;
@@ -207,10 +216,27 @@ class PrismaMapReadSession implements WorldMapReadSession {
     condition = Prisma.sql`TRUE`,
   ): Promise<JsonRow[]> {
     const safe = this.check(query);
+    const value =
+      collection === 'cities'
+        ? Prisma.sql`CASE WHEN ${villageSource} THEN
+      jsonb_build_object('id', item->'value'->>'id', 'worldId', item->'value'->>'worldId',
+        'regionId', item->'value'->>'regionId', 'longitude', item->'value'->'longitude',
+        'latitude', item->'value'->'latitude', 'name', ${currentVillage}->>'name',
+        'ownerPlayerId', ${currentVillage}->>'ownerId', 'ownerSultanateId', NULL,
+        'fortificationLevel', CASE WHEN ${currentVillage}->>'ownerId' = ${this.snapshot.viewerPlayerId}
+          THEN ${currentVillage}->'buildings'->'wall' ELSE '0'::jsonb END,
+        'strategicValue', 0)
+      ELSE item->'value' END`
+        : Prisma.sql`item->'value'`;
+    const exists =
+      collection === 'cities'
+        ? Prisma.sql`(${villageSource}) IS NOT TRUE
+      OR ${currentVillage}->>'id' = item->'value'->>'id'`
+        : Prisma.sql`TRUE`;
     return this.tx.$queryRaw<JsonRow[]>(Prisma.sql`
-      SELECT item->'value' AS value FROM "KingdomWorld" w
+      SELECT ${value} AS value FROM "KingdomWorld" w
       CROSS JOIN LATERAL ${records(collection)} AS item
-      WHERE w.id = ${this.snapshot.worldId} AND ${overlaps(item, safe.bounds)} AND (${condition})
+      WHERE w.id = ${this.snapshot.worldId} AND ${overlaps(item, safe.bounds)} AND (${condition}) AND (${exists})
       ORDER BY item->'value'->>'id', item->'value'->'region'->>'id' LIMIT ${safe.limit}`);
   }
   private knownWorld(value: { worldId: string }): void {
@@ -244,9 +270,85 @@ class PrismaMapReadSession implements WorldMapReadSession {
   }
   private visiblePoint(point: Prisma.Sql, owner: Prisma.Sql): Prisma.Sql {
     const grant = Prisma.sql`grant_record`;
+    const ownVillageVision = this.villageGeography
+      ? Prisma.sql`OR EXISTS (
+      SELECT 1 FROM ${records('cities')} AS own_record
+      WHERE w.state->'villages'->(own_record->'value'->>'id')->>'ownerId' = ${this.snapshot.viewerPlayerId}
+        AND abs((${point}->>'latitude')::double precision - (own_record->'value'->>'latitude')::double precision) <= 0.045
+        AND abs((${point}->>'longitude')::double precision - (own_record->'value'->>'longitude')::double precision) <= 0.06
+    )`
+      : Prisma.sql``;
     return Prisma.sql`${owner} = ${this.snapshot.viewerPlayerId} OR EXISTS (
       SELECT 1 FROM ${records('visibility')} AS grant_record
-      WHERE ${activeGrant(Prisma.sql`grant_record->'value'->'region'`, this.snapshot)} AND ${pointWithin(grant, point)})`;
+      WHERE ${activeGrant(Prisma.sql`grant_record->'value'->'region'`, this.snapshot)} AND ${pointWithin(grant, point)}) ${ownVillageVision}`;
+  }
+  private async ownVillageGrants(query: SpatialQuery): Promise<readonly StoredVisibilityGrant[]> {
+    if (!this.villageGeography) return [];
+    const expanded = Prisma.sql`jsonb_build_object(
+      'west', (item->'value'->>'longitude')::double precision - 0.06,
+      'east', (item->'value'->>'longitude')::double precision + 0.06,
+      'south', (item->'value'->>'latitude')::double precision - 0.045,
+      'north', (item->'value'->>'latitude')::double precision + 0.045)`;
+    const rows = await this.tx.$queryRaw<
+      { id: string; longitude: number; latitude: number }[]
+    >(Prisma.sql`
+      SELECT item->'value'->>'id' AS id,
+        (item->'value'->>'longitude')::double precision AS longitude,
+        (item->'value'->>'latitude')::double precision AS latitude
+      FROM "KingdomWorld" w CROSS JOIN LATERAL ${records('cities')} AS item
+      WHERE w.id = ${this.snapshot.worldId}
+        AND ${currentVillage}->>'ownerId' = ${this.snapshot.viewerPlayerId}
+        AND ${currentVillage}->>'id' = item->'value'->>'id'
+        AND ${overlaps(expanded, query.bounds)} ORDER BY item->'value'->>'id' LIMIT ${query.limit}`);
+    return rows.map((point) => {
+      validateId(point.id);
+      validateCoordinates(point);
+      const halfLongitude = 0.045 / Math.cos((point.latitude * Math.PI) / 180);
+      if (halfLongitude > 0.06) throw new RangeError('Invalid allocated village latitude');
+      return Object.freeze({
+        region: Object.freeze({
+          id: `village-vision:${point.id}`,
+          worldId: this.snapshot.worldId,
+          recipientPlayerId: this.snapshot.viewerPlayerId,
+          kind: 'territory' as const,
+          geometry: boundsGeometry({
+            west: point.longitude - halfLongitude,
+            east: point.longitude + halfLongitude,
+            south: point.latitude - 0.045,
+            north: point.latitude + 0.045,
+          }),
+          startsAt: this.snapshot.serverTime,
+          expiresAt: this.snapshot.validUntil,
+        }),
+        visibleTerritoryIds: [],
+        visibleSultanateTerritoryIds: [],
+      });
+    });
+  }
+  async getOwnVillageLocations(): Promise<readonly OwnVillageMapLocation[]> {
+    if (!this.active) throw new Error('Geographic read session has ended');
+    if (!this.villageGeography) return [];
+    const rows = await this.tx.$queryRaw<OwnVillageMapLocation[]>(Prisma.sql`
+      SELECT item->'value'->>'id' AS "villageId", ${currentVillage}->>'name' AS name,
+        (item->'value'->>'longitude')::double precision AS longitude,
+        (item->'value'->>'latitude')::double precision AS latitude
+      FROM "KingdomWorld" w CROSS JOIN LATERAL ${records('cities')} AS item
+      WHERE w.id = ${this.snapshot.worldId} AND ${villageSource}
+        AND ${currentVillage}->>'id' = item->'value'->>'id'
+        AND ${currentVillage}->>'ownerId' = ${this.snapshot.viewerPlayerId}
+      ORDER BY item->'value'->>'id' LIMIT 100`);
+    return rows.map((row) => {
+      validateId(row.villageId);
+      validateCoordinates(row);
+      if (typeof row.name !== 'string' || !row.name.trim() || row.name.length > 100)
+        throw new RangeError('Invalid village name');
+      return Object.freeze({
+        villageId: row.villageId,
+        name: row.name,
+        longitude: row.longitude,
+        latitude: row.latitude,
+      });
+    });
   }
   async getVisibilityInBounds(query: SpatialQuery): Promise<VisibilitySnapshot> {
     const safe = this.check(query);
@@ -258,7 +360,10 @@ class PrismaMapReadSession implements WorldMapReadSession {
       safe,
       activeGrant(Prisma.sql`item->'value'->'region'`, this.snapshot),
     );
-    const grants = rows.map((row) => visibilityGrant(row.value, this.snapshot));
+    const grants = [
+      ...rows.map((row) => visibilityGrant(row.value, this.snapshot)),
+      ...(await this.ownVillageGrants(safe)),
+    ];
     const result = Object.freeze({
       regions: Object.freeze(grants.map((grant) => grant.region)),
       visibleTerritoryIds: Object.freeze([
@@ -277,7 +382,7 @@ class PrismaMapReadSession implements WorldMapReadSession {
     const rows = await this.read(
       'cities',
       safe,
-      this.visiblePoint(Prisma.sql`item->'value'`, Prisma.sql`item->'value'->>'ownerPlayerId'`),
+      this.visiblePoint(Prisma.sql`item->'value'`, currentCityOwner),
     );
     return this.filterCandidates(
       rows.map((row) => createCity(row.value as City)),
@@ -419,14 +524,40 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
     validateId(worldId);
     if (viewer.playerId !== this.identity.id)
       throw new KingdomsHttpError(403, 'الخريطة غير متاحة.');
+    try {
+      return await this.readSnapshot(worldId, read);
+    } catch (error) {
+      if (!(error instanceof VillageProvisioningRequired)) throw error;
+      await ensureVillageGeography(worldId, this.identity, this.db);
+      return this.readSnapshot(worldId, read);
+    }
+  }
+  private async readSnapshot<T>(
+    worldId: string,
+    read: (session: WorldMapReadSession) => Promise<T>,
+  ): Promise<T> {
     return this.db.$transaction(async (tx) => {
       await authorize(tx, this.identity);
       const [row] = await tx.$queryRaw<
-        { id: string; revision: number; geographyVersion: string; serverTime: Date }[]
+        {
+          id: string;
+          revision: number;
+          geographyVersion: string;
+          geographySource: string;
+          needsProvision: boolean;
+          serverTime: Date;
+        }[]
       >(Prisma.sql`
-        SELECT w.id, w.revision, w.state->'geography'->>'version' AS "geographyVersion", clock_timestamp() AS "serverTime"
-        FROM "KingdomWorld" w WHERE w.id = ${worldId} AND w.state->'geography'->>'version' = '1'
+        SELECT w.id, w.revision, w.state->'geography'->>'version' AS "geographyVersion",
+          w.state->'geography'->>'source' AS "geographySource", clock_timestamp() AS "serverTime",
+          CASE WHEN NOT (w.state ? 'geography') THEN TRUE
+            WHEN ${villageSource} AND w.state->'geography'->>'version' = '1' THEN EXISTS (
+              SELECT 1 FROM jsonb_each(w.state->'villages') v
+              WHERE NOT EXISTS (SELECT 1 FROM ${records('cities')} city
+                WHERE city->'value'->>'id' = v.value->>'id')) ELSE FALSE END AS "needsProvision"
+        FROM "KingdomWorld" w WHERE w.id = ${worldId}
           AND w.state->'players' ? ${this.identity.id}::text`);
+      if (row?.needsProvision) throw new VillageProvisioningRequired();
       if (!row || row.id !== worldId || row.geographyVersion !== '1')
         throw new KingdomsHttpError(404, 'الخريطة غير متاحة.');
       if (!Number.isSafeInteger(row.revision) || row.revision < 0)
@@ -440,7 +571,11 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
         serverTime,
         validUntil: serverTime + 15000,
       });
-      const session = new PrismaMapReadSession(tx, snapshot);
+      const session = new PrismaMapReadSession(
+        tx,
+        snapshot,
+        row.geographySource === VILLAGE_GEOGRAPHY_SOURCE,
+      );
       try {
         return await read(session);
       } finally {
@@ -459,7 +594,7 @@ export async function listMamlukMapWorlds(
     await authorize(tx, safe);
     const rows = await tx.$queryRaw<{ id: string; name: string }[]>(Prisma.sql`
       SELECT w.id, w.name FROM "KingdomWorld" w
-      WHERE w.state->'geography'->>'version' = '1' AND w.state->'players' ? ${safe.id}::text
+      WHERE w.state->'players' ? ${safe.id}::text
       ORDER BY w."createdAt" DESC, w.id LIMIT 50`);
     return rows.map((row) => {
       validateId(row.id);
@@ -468,4 +603,24 @@ export async function listMamlukMapWorlds(
       return Object.freeze({ id: row.id, name: row.name });
     });
   }, transactionOptions);
+}
+
+export interface OwnVillageMapLocation {
+  readonly villageId: string;
+  readonly name: string;
+  readonly longitude: number;
+  readonly latitude: number;
+}
+
+/** Server-rendered focus metadata: the requester can only focus their own villages. */
+export async function getOwnVillageMapLocations(
+  worldId: string,
+  identity: KingdomIdentity,
+  db: DatabaseClient = getPrismaClient(),
+): Promise<readonly OwnVillageMapLocation[]> {
+  return new PrismaWorldMapRepository(identity, db).withSnapshot(
+    worldId,
+    { playerId: identity.id },
+    async (session) => (session as PrismaMapReadSession).getOwnVillageLocations(),
+  );
 }

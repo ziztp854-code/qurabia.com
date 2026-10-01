@@ -71,7 +71,7 @@ export function MapPanel({
       <section className={mapStyles.mapSurface}>
         <div className={mapStyles.mapHeader}>
           <div>
-            <h2>خريطة العالم</h2>
+            <h2>إرسال حملة</h2>
             <p>حدّد وجهتك، واستكشف مواقع الموارد القريبة من قريتك.</p>
           </div>
           <span className={styles.cost}>حدود العالم ±{number(radius)}</span>

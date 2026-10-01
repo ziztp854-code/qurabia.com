@@ -6,6 +6,7 @@ import { advanceWorld, createWorld, executeCommand, projectWorld } from './engin
 import { kingdomsCommandSchema } from './commands';
 import { KingdomsHttpError, stableFingerprint } from './http';
 import type { KingdomsConfig, KingdomsWorld } from './types';
+import { provisionVillageGeography } from '../mamluk-map/village-geography';
 
 export type KingdomIdentity = { id: string; tokenVersion: number };
 type WorldRow = { id: string; name: string; state: unknown; revision: number; paused: boolean };
@@ -51,7 +52,7 @@ async function save(tx: Tx, row: WorldRow, state: KingdomsWorld, paused = row.pa
   return tx.kingdomWorld.update({
     where: { id: row.id },
     data: {
-      state: json(state),
+      state: json(provisionVillageGeography(row.id, state)),
       revision: { increment: 1 },
       nextEventAt: nextDeadline(state),
       paused,
@@ -199,7 +200,7 @@ export async function createKingdomWorld(
       await checkReceipt(tx, existing, identity.id, key, fingerprint);
       return { id, name: existing.name, revision: existing.revision };
     }
-    const state = createWorld(await dbNow(tx), config);
+    const state = provisionVillageGeography(id, createWorld(await dbNow(tx), config));
     await tx.kingdomWorld.create({
       data: { id, name, state: json(state), nextEventAt: nextDeadline(state) },
     });

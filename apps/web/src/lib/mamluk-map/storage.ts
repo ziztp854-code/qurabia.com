@@ -22,6 +22,7 @@ export interface StoredVisibilityGrant {
 /** Optional geographic read model inside the existing authoritative KingdomWorld.state aggregate. */
 export interface MamlukMapState {
   readonly version: 1;
+  readonly source?: 'kingdom-villages-v1';
   readonly cities: readonly StoredMapRecord<City>[];
   readonly castles: readonly StoredMapRecord<Castle>[];
   readonly territories: readonly StoredMapRecord<Territory>[];

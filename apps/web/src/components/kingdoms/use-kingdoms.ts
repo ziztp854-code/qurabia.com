@@ -30,7 +30,7 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return payload.data as T;
 }
 
-export function useKingdoms() {
+export function useKingdoms(initialWorldId = '') {
   const [worlds, setWorlds] = useState<WorldSummary[]>([]);
   const [worldId, updateWorldId] = useState('');
   const [view, setView] = useState<WorldView | null>(null);
@@ -59,20 +59,25 @@ export function useKingdoms() {
     try {
       const result = await request<WorldSummary[]>('/api/kingdoms/worlds');
       setWorlds(result);
-      updateWorldId((current) => current || result[0]?.id || '');
+      updateWorldId(
+        (current) =>
+          current || result.find((world) => world.id === initialWorldId)?.id || result[0]?.id || '',
+      );
     } catch (failure) {
       setError((failure as Error).message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [initialWorldId]);
   useEffect(() => {
     let current = true;
     void request<WorldSummary[]>('/api/kingdoms/worlds')
       .then((result) => {
         if (current) {
           setWorlds(result);
-          updateWorldId(result[0]?.id || '');
+          updateWorldId(
+            result.find((world) => world.id === initialWorldId)?.id || result[0]?.id || '',
+          );
           if (!result.length) setLoading(false);
         }
       })
@@ -85,7 +90,7 @@ export function useKingdoms() {
     return () => {
       current = false;
     };
-  }, []);
+  }, [initialWorldId]);
   const refresh = useCallback(async () => {
     if (!worldId || mutating.current) return;
     const version = generation.current;

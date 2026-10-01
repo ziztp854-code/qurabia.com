@@ -7,6 +7,8 @@ export class MapSdkFixture {
   static failCreation = false;
   static workerUrl: string | null = null;
   readonly workerUrlAtCreation: string | null;
+  readonly initialCamera: { center?: readonly number[]; zoom?: number };
+  lastCamera: { center?: readonly number[]; zoom?: number; duration?: number } | null = null;
   readonly listeners = new Map<string, Set<(...args: unknown[]) => void>>();
   readonly sources = new Map<
     string,
@@ -19,8 +21,9 @@ export class MapSdkFixture {
   styleLoaded = true;
   removed = false;
   clicked: { source: string; id: string }[] = [];
-  constructor(options?: { container?: HTMLElement }) {
+  constructor(options?: { container?: HTMLElement; center?: readonly number[]; zoom?: number }) {
     this.workerUrlAtCreation = MapSdkFixture.workerUrl;
+    this.initialCamera = { center: options?.center, zoom: options?.zoom };
     if (MapSdkFixture.failCreation) throw new Error('WebGL unavailable');
     MapSdkFixture.instances.push(this);
     options?.container?.append(this.canvas);
@@ -101,7 +104,8 @@ export class MapSdkFixture {
   zoomOut() {
     this.fire('moveend');
   }
-  easeTo() {
+  easeTo(camera?: { center?: readonly number[]; zoom?: number; duration?: number }) {
+    this.lastCamera = camera ?? null;
     this.fire('moveend');
   }
   remove() {

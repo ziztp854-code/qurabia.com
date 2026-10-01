@@ -116,6 +116,7 @@
   font: inherit;
   cursor: pointer;
   padding: 8px 12px;
+  text-decoration: none;
 }
 .control[aria-pressed='true'] {
   background: var(--map-gold);

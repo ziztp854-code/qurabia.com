@@ -15,6 +15,8 @@ import {
   Target,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { findSelection, listSelectableFeatures } from './selection';
 import { SelectionPanel } from './selection-panel';
@@ -26,6 +28,14 @@ export interface MamlukWorldMapProps {
   readonly initialWorldId: string;
   readonly viewerPlayerId: string;
   readonly referenceOnly?: boolean;
+  readonly initialLocation?: { readonly longitude: number; readonly latitude: number };
+  readonly initialVillageId?: string;
+  readonly villageLocations?: readonly {
+    readonly villageId: string;
+    readonly name: string;
+    readonly longitude: number;
+    readonly latitude: number;
+  }[];
 }
 const messages = {
   loading: 'جارٍ استطلاع المشهد…',
@@ -39,7 +49,11 @@ export function MamlukWorldMap({
   initialWorldId,
   viewerPlayerId,
   referenceOnly = false,
+  initialLocation,
+  initialVillageId,
+  villageLocations,
 }: MamlukWorldMapProps) {
+  const router = useRouter();
   const [worldId, setWorldId] = useState(initialWorldId);
   return (
     <WorldScene
@@ -48,7 +62,12 @@ export function MamlukWorldMap({
       worldId={worldId}
       viewerPlayerId={viewerPlayerId}
       referenceOnly={referenceOnly}
-      onWorldChange={setWorldId}
+      initialLocation={initialLocation}
+      initialVillageId={initialVillageId}
+      villageLocations={villageLocations}
+      onWorldChange={(id) =>
+        villageLocations ? router.push(geographicMapHref(id)) : setWorldId(id)
+      }
     />
   );
 }
@@ -58,6 +77,9 @@ function WorldScene({
   worldId,
   viewerPlayerId,
   referenceOnly = false,
+  initialLocation,
+  initialVillageId,
+  villageLocations,
   onWorldChange,
 }: Omit<MamlukWorldMapProps, 'initialWorldId'> & {
   worldId: string;
@@ -73,7 +95,7 @@ function WorldScene({
     setProjection,
     moveCamera,
     refresh,
-  } = useWorldMap(worldId, viewerPlayerId);
+  } = useWorldMap(worldId, viewerPlayerId, initialLocation, initialVillageId);
   const selection = useMemo(
     () => findSelection(payload, selected, viewerPlayerId, referenceOnly),
     [payload, selected, viewerPlayerId, referenceOnly],
@@ -82,6 +104,16 @@ function WorldScene({
     () => listSelectableFeatures(payload, referenceOnly),
     [payload, referenceOnly],
   );
+  const ownVillage =
+    selection?.layer === 'cities' &&
+    villageLocations?.find((village) => village.villageId === selection.id);
+  const approvedCity = payload?.layers.cities.features.find(
+    (feature) => feature.id === selection?.id,
+  );
+  const managementHref =
+    !referenceOnly && ownVillage && approvedCity?.properties.ownerPlayerId === viewerPlayerId
+      ? villageManagementHref(worldId, ownVillage.villageId)
+      : undefined;
   const statusMessage = referenceOnly
     ? status === 'ready'
       ? 'مدن الأطلس الجغرافي'
@@ -174,7 +206,7 @@ function WorldScene({
             <button
               className={styles.iconButton}
               type="button"
-              aria-label="انتقل إلى القاهرة"
+              aria-label={initialLocation ? 'انتقل إلى قريتك' : 'انتقل إلى القاهرة'}
               onClick={() => moveCamera('home')}
             >
               <Target size={20} aria-hidden="true" />
@@ -203,7 +235,8 @@ function WorldScene({
           </div>
         </div>
         <SelectionPanel
-          selection={selection}
+          selection={managementHref && selection ? { ...selection, kind: 'قرية' } : selection}
+          managementHref={managementHref}
           referenceOnly={referenceOnly}
           selectedKey={selected}
           features={features}

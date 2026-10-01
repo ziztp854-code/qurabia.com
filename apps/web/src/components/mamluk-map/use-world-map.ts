@@ -25,7 +25,12 @@ function palette(container: HTMLElement): MapPalette {
   };
 }
 
-export function useWorldMap(worldId: string, viewerPlayerId: string) {
+export function useWorldMap(
+  worldId: string,
+  viewerPlayerId: string,
+  initialLocation?: { readonly longitude: number; readonly latitude: number },
+  initialVillageId?: string,
+) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
   const sessionRef = useRef<ReturnType<typeof createMapSession> | null>(null);
@@ -39,6 +44,7 @@ export function useWorldMap(worldId: string, viewerPlayerId: string) {
     let cancelled = false;
     let map: LibreMap | null = null;
     let session: ReturnType<typeof createMapSession> | null = null;
+    let pendingInitialSelection = initialVillageId;
     async function initialize() {
       try {
         const { Map, setWorkerUrl } = await import('maplibre-gl');
@@ -47,8 +53,10 @@ export function useWorldMap(worldId: string, viewerPlayerId: string) {
         map = new Map({
           container: container.current,
           style: OPEN_FREE_MAP_STYLE,
-          center: [34, 30.4],
-          zoom: 5.3,
+          center: initialLocation
+            ? [initialLocation.longitude, initialLocation.latitude]
+            : [34, 30.4],
+          zoom: initialLocation ? 10 : 5.3,
           renderWorldCopies: false,
           attributionControl: { compact: true },
         });
@@ -66,7 +74,18 @@ export function useWorldMap(worldId: string, viewerPlayerId: string) {
           palette(container.current),
           {
             // Keep only the selection key during refresh; null payload hides every detail.
-            onPayload: setPayload,
+            onPayload: (nextPayload) => {
+              setPayload(nextPayload);
+              if (
+                pendingInitialSelection &&
+                nextPayload?.layers.cities.features.some(
+                  (city) => city.id === pendingInitialSelection,
+                )
+              ) {
+                setSelected({ layer: 'cities', id: pendingInitialSelection });
+                pendingInitialSelection = undefined;
+              }
+            },
             onSelection: setSelected,
             onStatus: setStatus,
           },
@@ -87,7 +106,7 @@ export function useWorldMap(worldId: string, viewerPlayerId: string) {
       mapRef.current = null;
       sessionRef.current = null;
     };
-  }, [worldId, viewerPlayerId, attempt]);
+  }, [worldId, viewerPlayerId, attempt, initialLocation, initialVillageId]);
   function setProjection(value: MapProjection) {
     projectionRef.current = value;
     setProjectionState(value);
@@ -98,7 +117,14 @@ export function useWorldMap(worldId: string, viewerPlayerId: string) {
     const map = mapRef.current;
     if (!map) return;
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250;
-    if (action === 'home') map.easeTo({ center: [31.24967, 30.06263], zoom: 5.3, duration });
+    if (action === 'home')
+      map.easeTo({
+        center: initialLocation
+          ? [initialLocation.longitude, initialLocation.latitude]
+          : [31.24967, 30.06263],
+        zoom: initialLocation ? 10 : 5.3,
+        duration,
+      });
     else if (action === 'in') map.zoomIn({ duration });
     else map.zoomOut({ duration });
   }

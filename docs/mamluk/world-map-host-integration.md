@@ -1,7 +1,8 @@
 # Mamluk world map: host integration
 
-The geographic atlas is available at `/games/kingdoms/world-map/`, with a link from
-the existing Kingdoms screen. It uses the site's existing authentication,
+The geographic atlas is available at `/games/kingdoms/world-map/`. The village's
+World Map navigation, overview links and toolbar open this route with the current
+`worldId` and `villageId`. It uses the site's existing authentication,
 Prisma/PostgreSQL connection and `KingdomWorld` aggregate. This integration adds no
 schema migration or second persistence system.
 
@@ -10,13 +11,28 @@ fictional ownership, army positions, routes, sieges and visibility grants to
 exercise the presentation pipeline. It does not implement a geographic movement
 or combat simulation. The legacy Kingdoms engine retains its grid `x/y` positions,
 commands, ownership rules and scheduled events; those coordinates are not
-converted into longitude/latitude.
+converted into longitude/latitude. Its campaign commands remain accessible under
+the distinct "إرسال حملة" navigation entry.
+
+Existing Kingdoms villages also have a persisted geographic presentation model.
+The server allocates WGS84 locations near the twelve real city centres, beginning
+with Cairo, in stable village-ID order. Later cycles use bounded identity-derived
+offsets and collision checks. These are allocated gameplay locations, not claims
+that player-created villages are historical settlements. Allocation never reads
+legacy grid coordinates, and a stored village location never moves after rename,
+ownership transfer or the addition of other villages.
+
+An own village clicked on the geographic map exposes an "إدارة القرية" link back
+to `/games/kingdoms/?worldId=…&villageId=…&tab=village`. The server accepts a camera
+focus only for an owned village. The browser receives no directory of hidden
+enemy villages for centering or selection.
 
 The published page also offers a clearly labeled public geographic reference
 atlas when a visitor has no authorized geographic campaign. Its twelve GeoNames
 landmarks contain only public names and coordinates, and its panels omit all
 gameplay facts. This fallback requires no test account or database seed. Signing
-in reveals an existing campaign only after current-session and membership checks.
+in reveals the player's actual member worlds after current-session and membership
+checks, including worlds created before geographic integration.
 
 ## Host files
 
@@ -30,6 +46,9 @@ apps/web/src/
     storage.ts                             Geographic extents and stored contracts
     data.ts                                Real city centres and fictional campaign
     repository.ts                          Prisma snapshot and spatial queries
+    village-geography.ts                   Stable server-side village allocation
+    village-geography.test.ts              Allocation/stability/immutability tests
+    village-map-security.test.ts           Legacy response non-disclosure checks
     public-atlas.ts                        Read-only public geographic landmarks
     public-atlas.test.ts                    Bounds, closed sessions and nonleakage
     storage.test.ts
@@ -91,6 +110,21 @@ membership in the selected world's `players` object. It accepts only a world
 whose geography version is `1`. Database time, world revision, entity ownership
 and active grants therefore come from one consistent snapshot. Read-session
 methods reject use after the transaction closes.
+
+The `kingdom-villages-v1` source tag distinguishes allocated village geography
+from an existing explicit Mamluk campaign, which remains unchanged. Existing
+worlds receive missing geographic records in an idempotent `ReadCommitted`
+transaction under the existing world row lock. Authorization and membership are
+rechecked after the lock; only the geography JSONB extension is updated and the
+revision advances when allocation changes. Existing command/admin/worker saves
+allocate any new villages within their normal locked transaction.
+
+Village queries join stored coordinates to the current authoritative village
+records for names, ownership and wall levels. Deleted villages disappear. Finite
+visibility areas around owned villages are issued by the server; hidden enemy
+villages stay out of the payload. Resources, garrisons, reports and movements are
+not copied from legacy state into the geographic payload. This integration does
+not synthesize geographic army positions or reveal legacy enemy movements.
 
 Queries use parameterized SQL against the selected world's JSONB arrays, bounding
 extent predicates, deterministic ordering and bounded result limits. Point
