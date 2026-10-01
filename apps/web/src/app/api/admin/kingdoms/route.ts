@@ -8,6 +8,8 @@ import {
   readCommandBody,
 } from '@/lib/kingdoms/http';
 import { createKingdomWorld, editKingdomWorld, readKingdomWorld } from '@/lib/kingdoms/repository';
+import type { KingdomsMutationContext } from '@/lib/kingdoms/repository';
+import { relocateVillageForAdministration } from '@/lib/mamluk-map/admin-village-relocation';
 import { resourceKeys, type KingdomsWorld } from '@/lib/kingdoms/types';
 import { advanceWorld } from '@/lib/kingdoms/engine';
 export const runtime = 'nodejs';
@@ -37,10 +39,28 @@ export async function POST(request: Request) {
       return jsonSuccess(
         await createKingdomWorld(user, input.idempotencyKey, input.name, input.config),
       );
-    const mutate = (state: KingdomsWorld, now: number): KingdomsWorld => {
+    const mutate = (
+      state: KingdomsWorld,
+      now: number,
+      context: KingdomsMutationContext,
+    ): KingdomsWorld => {
       if (input.action === 'pause') return state;
       if (state.season.status !== 'active')
         throw new KingdomsHttpError(409, 'الموسم منتهٍ. أنشئ عالمًا لموسم جديد.');
+      if (input.action === 'relocate')
+        return relocateVillageForAdministration(
+          state,
+          {
+            worldId: input.worldId,
+            villageId: input.villageId,
+            administratorId: user.id,
+            expectedOwnerId: input.expectedOwnerId,
+            revision: context.revision,
+            paused: context.paused,
+          },
+          { longitude: input.longitude, latitude: input.latitude },
+          now,
+        );
       if (input.action === 'season') {
         if (input.endsAt < now - 60_000 || input.endsAt > now + 365 * 86_400_000)
           throw new KingdomsHttpError(400, 'اختر موعدًا من الآن وحتى سنة واحدة.');

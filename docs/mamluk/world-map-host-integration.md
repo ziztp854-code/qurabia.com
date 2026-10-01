@@ -654,8 +654,8 @@ deployment.
 ### One-time relocation
 
 The owner can request one geographic relocation per village through
-`GET /api/kingdoms/world-map/relocate?worldId=…&villageId=…` (eligibility) and
-`POST /api/kingdoms/world-map/relocate` (confirmed request). The POST body contains
+`GET /api/kingdoms/world-map/relocate/?worldId=…&villageId=…` (eligibility) and
+`POST /api/kingdoms/world-map/relocate/` (confirmed request). The POST body contains
 only `worldId`, `villageId`, `idempotencyKey`, `longitude`, and `latitude`.
 The existing authenticated Kingdoms envelope, same-origin protection, bounded
 JSON reader and rate limits apply. The server rechecks current membership,
@@ -680,3 +680,30 @@ The polling module has 90% branch coverage; relocation backend exceeds 83%,
 relocation UI exceeds 93%, and viewport transport exceeds 90%. Production browser
 verification exercises the form without consuming a real player's one-time move;
 actual mutations are tested only against unique isolated database fixtures.
+
+### Selecting a relocation destination on the map
+
+Selecting an owned village and pressing **نقل القرية** starts destination picking
+directly. On a phone, the details panel is hidden while its form remains mounted,
+so the canvas remains available for touch. A map tap previews the new destination
+without changing the persisted village. **استخدم مركز الخريطة** provides a
+keyboard-friendly alternative; **راجع الوجهة** returns to the approval form.
+**إدخال الإحداثيات يدويًا** remains optional and accepts Arabic/Persian digits and
+decimal separators without clearing incomplete drafts during mobile typing.
+
+The destination marker is temporary and independent of the authoritative village
+sources. Ordinary polling, camera movement and projection changes retain it;
+cancellation, success, village changes, disposal or a different world/viewer clear
+it. Choosing another destination resets consent. No relocation POST is sent until
+the player explicitly accepts the one-use warning and confirms the reviewed
+destination against a current approved map payload. Canonical trailing-slash
+routes avoid redirecting the POST.
+
+The existing administrator endpoint also accepts a strict **relocate** command for
+explicitly requested operational moves. Its form previews the selected village,
+owner and current location, requires consent, and sends the expected owner ID.
+ADMIN/OWNER account and token validity are rechecked inside the world lock; pause,
+season, military activity, occupied destination and the permanent one-use rule
+remain enforced. The relocation history and existing audit receipt identify the
+actual administrator. Ownership, legacy grid and military travel are preserved;
+the existing transaction may advance ordinary due game events before saving.

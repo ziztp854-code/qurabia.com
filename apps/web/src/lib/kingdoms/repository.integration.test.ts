@@ -4,6 +4,9 @@ import type { DatabaseClient, Prisma } from '@tahaddi/database';
 import { createWorld, executeCommand } from './engine';
 import { defaultKingdomsConfig, resources } from './config';
 import type { KingdomsWorld } from './types';
+import { provisionVillageGeography } from '../mamluk-map/village-geography';
+import { relocateVillageForAdministration } from '../mamluk-map/admin-village-relocation';
+import type { VillageRelocationWorld } from '../mamluk-map/village-relocation';
 
 // Deliberately never fall back to DATABASE_URL. Run migrations separately against
 // an explicitly provisioned local database named kingdoms_test or kingdoms_test_*.
@@ -664,6 +667,125 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
       requestId: idempotencyKey,
     });
     expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
+  });
+
+  it('serializes administrator relocation and audits the actual administrator once', async () => {
+    const {
+      worldId,
+      identities: [originalAdmin, owner],
+      state,
+    } = await fixture(2);
+    const admin = await db.user.update({
+      where: { id: originalAdmin.id },
+      data: { role: 'ADMIN' },
+      select: { id: true, tokenVersion: true },
+    });
+    const prepared = provisionVillageGeography(worldId, state);
+    const village = Object.values(state.villages).find((entry) => entry.ownerId === owner.id)!;
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(prepared)) as Prisma.InputJsonValue,
+      },
+    });
+    const change = {
+      action: 'relocate',
+      villageId: village.id,
+      expectedOwnerId: owner.id,
+      longitude: 51.53096,
+      latitude: 25.28545,
+      confirmed: true,
+    };
+    const edit = () =>
+      repository.editKingdomWorld(
+        worldId,
+        admin,
+        key(),
+        change,
+        (locked, now, context) =>
+          relocateVillageForAdministration(
+            locked,
+            {
+              worldId,
+              administratorId: admin.id,
+              villageId: village.id,
+              expectedOwnerId: owner.id,
+              ...context,
+            },
+            change,
+            now,
+          ),
+        undefined,
+        db,
+      );
+    const replies = await Promise.allSettled([edit(), edit()]);
+    expect(replies.filter((reply) => reply.status === 'fulfilled')).toHaveLength(1);
+    expect(replies.find((reply) => reply.status === 'rejected')).toMatchObject({
+      reason: { status: 409 },
+    });
+    const saved = (await stateOf(worldId)).state as VillageRelocationWorld;
+    expect(saved.villages[village.id].ownerId).toBe(owner.id);
+    expect(saved.geography!.villageRelocations![village.id]).toMatchObject({
+      actorId: admin.id,
+      longitude: change.longitude,
+      latitude: change.latitude,
+    });
+    const audits = await db.auditLog.findMany({
+      where: { actorId: admin.id, resourceId: worldId },
+    });
+    expect(audits).toHaveLength(1);
+    expect(audits[0].after).toEqual(change);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
+  });
+
+  it('passes locked pause state to administrator relocation and leaves the village untouched', async () => {
+    const {
+      worldId,
+      identities: [originalAdmin, owner],
+      state,
+    } = await fixture(2);
+    const admin = await db.user.update({
+      where: { id: originalAdmin.id },
+      data: { role: 'ADMIN' },
+      select: { id: true, tokenVersion: true },
+    });
+    const prepared = provisionVillageGeography(worldId, state);
+    const village = Object.values(state.villages).find((entry) => entry.ownerId === owner.id)!;
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        paused: true,
+        state: JSON.parse(JSON.stringify(prepared)) as Prisma.InputJsonValue,
+      },
+    });
+    const change = { longitude: 51.53096, latitude: 25.28545 };
+    await expect(
+      repository.editKingdomWorld(
+        worldId,
+        admin,
+        key(),
+        change,
+        (locked, now, context) =>
+          relocateVillageForAdministration(
+            locked,
+            {
+              worldId,
+              administratorId: admin.id,
+              villageId: village.id,
+              expectedOwnerId: owner.id,
+              ...context,
+            },
+            change,
+            now,
+          ),
+        undefined,
+        db,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    const saved = (await stateOf(worldId)).state as VillageRelocationWorld;
+    expect(saved.geography!.villageRelocations?.[village.id]).toBeUndefined();
+    expect(await db.auditLog.count({ where: { actorId: admin.id, resourceId: worldId } })).toBe(0);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(0);
   });
 
   it('rejects a session revoked while its command waits for the world lock', async () => {

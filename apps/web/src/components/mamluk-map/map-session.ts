@@ -15,6 +15,12 @@ import type {
 } from 'maplibre-gl';
 import type { SelectionKey, SelectableLayer } from './selection';
 import { pickMapSelection } from './selection-hit';
+import {
+  normalizeDestination,
+  showDestinationPreview,
+  validateDestination,
+  type RelocationDestination,
+} from './relocation-destination';
 import { SDK_FEATURE_ID, withFeatureIdentity, withSourceIdentity } from './source-identity';
 import type { SettlementPresentation } from './settlement-presentation';
 import {
@@ -31,6 +37,7 @@ export interface MapSessionCallbacks {
   readonly onPublicPayload?: (payload: MapPayload | null) => void;
   readonly onSelection: (key: SelectionKey | null) => void;
   readonly onStatus: (status: 'loading' | 'ready' | 'zoom' | 'error') => void;
+  readonly onDestination?: (destination: RelocationDestination) => void;
 }
 
 function isStyleLayer(layer: AddLayerObject): layer is LayerSpecification {
@@ -293,6 +300,8 @@ export function createMapSession(
   let currentPayload: MapPayload | null = null;
   let selectedStates: readonly { readonly source: string; readonly id: string }[] = [];
   let retainPublicLayers = false;
+  let destinationPicking = false;
+  let destinationPreview: RelocationDestination | null = null;
   const publicPayloads = new WeakSet<MapPayload>();
   const cancelRecovery = () => {
     clearTimeout(recoveryTimer);
@@ -368,7 +377,9 @@ export function createMapSession(
     if (disposed) return;
     cancelRecovery();
     adapter.clear();
-    if (selected?.layer !== 'cities' || !adapter.publicPayload) {
+    const keepVillageDraft =
+      selected?.layer === 'cities' && (destinationPicking || destinationPreview);
+    if (!keepVillageDraft && (selected?.layer !== 'cities' || !adapter.publicPayload)) {
       selected = null;
       callbacks.onSelection(null);
     }
@@ -379,6 +390,13 @@ export function createMapSession(
     callbacks.onStatus(width > 90 || bounds.north - bounds.south > 90 ? 'zoom' : 'loading');
   };
   const onClick = (event: MapMouseEvent) => {
+    if (destinationPicking) {
+      const destination =
+        event.lngLat &&
+        normalizeDestination({ longitude: event.lngLat.lng, latitude: event.lngLat.lat });
+      if (destination) callbacks.onDestination?.(destination);
+      return;
+    }
     const visibleLayers = layers.map((layer) => `mamluk-${layer}`).filter((id) => map.getLayer(id));
     if (!visibleLayers.length) return;
     selected = pickMapSelection(
@@ -420,6 +438,7 @@ export function createMapSession(
   }
   const onStyleLoad = () => {
     adapter.clearPublic();
+    if (destinationPreview) showDestinationPreview(map, destinationPreview, palette);
     void loader.refresh();
   };
   map.on('style.load', onStyleLoad);
@@ -429,6 +448,14 @@ export function createMapSession(
   return {
     adapter,
     loader,
+    setDestinationPicking: (picking: boolean) => {
+      destinationPicking = picking;
+      map.getCanvas().style.cursor = picking ? 'crosshair' : '';
+    },
+    setDestinationPreview: (destination: RelocationDestination | null) => {
+      destinationPreview = destination ? validateDestination(destination) : null;
+      showDestinationPreview(map, destinationPreview, palette);
+    },
     select: (key: SelectionKey | null) => {
       selected = key;
       applySelection();
@@ -436,6 +463,10 @@ export function createMapSession(
     dispose: () => {
       disposed = true;
       cancelRecovery();
+      destinationPicking = false;
+      destinationPreview = null;
+      showDestinationPreview(map, null, palette);
+      map.getCanvas().style.cursor = '';
       adapter.clearPublic();
       loader.dispose();
       adapter.dispose();

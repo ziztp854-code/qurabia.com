@@ -45,7 +45,7 @@ describe('map selection panel', () => {
     };
     const view = render(<SelectionPanel {...props} selection={selection} />);
     fireEvent.click(await screen.findByRole('button', { name: 'نقل القرية' }));
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'خط الطول' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'خط الطول' }), {
       target: { value: '31.3' },
     });
     view.rerender(
@@ -59,11 +59,11 @@ describe('map selection panel', () => {
       'data-expanded',
       'true',
     );
-    expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).toBeVisible();
-    expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).not.toBeDisabled();
+    expect(screen.getByRole('textbox', { name: 'خط الطول' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'خط الطول' })).not.toBeDisabled();
     expect(screen.getByRole('button', { name: 'تأكيد النقل الدائم' })).toBeDisabled();
     view.rerender(<SelectionPanel {...props} selection={selection} />);
-    expect(screen.getByRole('spinbutton', { name: 'خط الطول' })).toHaveValue(31.3);
+    expect(screen.getByRole('textbox', { name: 'خط الطول' })).toHaveValue('31.3');
     expect(fetch).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
   });

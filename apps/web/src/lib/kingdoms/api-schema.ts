@@ -19,6 +19,17 @@ export const adminRequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('pause'), ...common, paused: z.boolean() }).strict(),
   z
     .object({
+      action: z.literal('relocate'),
+      ...common,
+      villageId: worldIdSchema,
+      expectedOwnerId: worldIdSchema,
+      longitude: z.number().finite().min(-179.9).max(179.9),
+      latitude: z.number().finite().min(-85).max(85),
+      confirmed: z.literal(true),
+    })
+    .strict(),
+  z
+    .object({
       action: z.literal('grant'),
       ...common,
       playerId: worldIdSchema,

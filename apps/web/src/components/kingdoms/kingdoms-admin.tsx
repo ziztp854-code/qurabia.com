@@ -7,6 +7,7 @@ import { kingdomsConfigSchema, defaultKingdomsConfig } from '@/lib/kingdoms/conf
 import { request, type WorldSummary } from './use-kingdoms';
 import { CommandForm, ResourceFields, amounts, date, number } from './shared';
 import styles from './kingdoms.module.css';
+import { AdminVillageRelocation } from './admin-village-relocation';
 
 type AdminWorld = { id: string; name: string; revision: number; state: KingdomsWorld };
 export function KingdomsAdmin() {
@@ -70,7 +71,7 @@ export function KingdomsAdmin() {
         : crypto.randomUUID();
     pending.current = { fingerprint, idempotencyKey };
     try {
-      const saved = await request<{ id: string }>('/api/admin/kingdoms', {
+      const saved = await request<{ id: string }>('/api/admin/kingdoms/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...body, idempotencyKey }),
@@ -229,6 +230,13 @@ export function KingdomsAdmin() {
               احفظ إعدادات التوازن
             </Button>
           </section>
+          <AdminVillageRelocation
+            key={`${world.id}:${world.revision}`}
+            world={world}
+            paused={selected?.status !== 'OPEN'}
+            busy={busy}
+            onSubmit={(command) => void act({ ...command })}
+          />
           <section className={styles.panel}>
             <h2>تعديل موارد لاعب</h2>
             <CommandForm

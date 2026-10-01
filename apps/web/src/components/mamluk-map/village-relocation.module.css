@@ -19,7 +19,15 @@
   line-height: 1.8;
   color: var(--map-muted);
 }
-.form > input {
+.coordinateFields {
+  display: grid;
+  gap: var(--space-2);
+}
+.coordinateFields label {
+  display: grid;
+  gap: var(--space-2);
+}
+.coordinateFields input {
   min-inline-size: 0;
   inline-size: 100%;
   min-block-size: 44px;
@@ -29,6 +37,16 @@
   color: var(--map-text);
   padding-inline: var(--space-2);
   font: inherit;
+}
+.destination {
+  padding: var(--space-2);
+  border: 1px solid var(--map-border);
+  border-radius: 6px;
+  background: var(--map-surface);
+  overflow-wrap: anywhere;
+}
+.destination strong {
+  color: var(--map-gold);
 }
 .confirmation {
   display: flex;

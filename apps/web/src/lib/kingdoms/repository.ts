@@ -221,12 +221,17 @@ export async function createKingdomWorld(
   }, db);
 }
 
+export interface KingdomsMutationContext {
+  readonly revision: number;
+  readonly paused: boolean;
+}
+
 export async function editKingdomWorld(
   worldId: string,
   identity: KingdomIdentity,
   key: string,
   change: unknown,
-  mutate: (state: KingdomsWorld, now: number) => KingdomsWorld,
+  mutate: (state: KingdomsWorld, now: number, context: KingdomsMutationContext) => KingdomsWorld,
   paused?: boolean,
   db?: DatabaseClient,
 ) {
@@ -237,7 +242,10 @@ export async function editKingdomWorld(
     const now = await dbNow(tx);
     if (await checkReceipt(tx, row, identity.id, key, fingerprint))
       return { id: row.id, name: row.name, revision: row.revision };
-    const state = mutate(advanceWorld(row.state as KingdomsWorld, now), now);
+    const state = mutate(advanceWorld(row.state as KingdomsWorld, now), now, {
+      revision: row.revision,
+      paused: row.paused,
+    });
     const saved = await save(tx, row, state, paused);
     await receipt(tx, worldId, identity.id, key, fingerprint, saved.revision);
     await tx.auditLog.create({

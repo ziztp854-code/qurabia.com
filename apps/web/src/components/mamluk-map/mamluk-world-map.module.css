@@ -340,6 +340,62 @@
   direction: rtl;
   font-size: 13px;
 }
+.destinationPicker {
+  position: absolute;
+  z-index: 7;
+  inset-block-end: var(--space-4);
+  inset-inline-end: var(--space-4);
+  inline-size: min(360px, calc(100% - 32px));
+  padding: var(--space-4);
+  background: var(--map-surface);
+  border: 2px solid var(--map-gold);
+  border-radius: 10px;
+  color: var(--map-text);
+  direction: rtl;
+}
+.destinationHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--map-gold);
+}
+.destinationHeading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.destinationPicker > p {
+  margin-block: var(--space-2);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--map-muted);
+}
+.destinationPicker .destinationSummary {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--map-text);
+  font-variant-numeric: tabular-nums;
+}
+.destinationActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.destinationActions .control {
+  min-inline-size: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.destinationActions .destinationReview {
+  background: var(--map-gold);
+  color: var(--map-background);
+  font-weight: 700;
+}
+.workspace[data-picking-destination='true'] .status:not([data-state='error']) {
+  display: none;
+}
+.panel[hidden] {
+  display: none;
+}
 .status > svg {
   color: var(--map-success);
   flex-shrink: 0;

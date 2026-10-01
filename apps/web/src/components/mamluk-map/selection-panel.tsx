@@ -19,6 +19,7 @@ interface SelectionPanelProps {
   readonly relocation?: VillageRelocationProps;
   readonly loading?: boolean;
   readonly pendingTitle?: string;
+  readonly pickingDestination?: boolean;
 }
 
 export function SelectionPanel({
@@ -32,12 +33,22 @@ export function SelectionPanel({
   relocation,
   loading = false,
   pendingTitle,
+  pickingDestination = false,
 }: SelectionPanelProps) {
   const contentId = useId();
   const searchId = useId();
   const [query, setQuery] = useState('');
   const matchingFeatures = features.filter((feature) => feature.label.includes(query.trim()));
   const panel = useRef<HTMLElement>(null);
+  const relocationContent = useRef<HTMLDivElement>(null);
+  const wasPickingDestination = useRef(false);
+  useEffect(() => {
+    if (wasPickingDestination.current && !pickingDestination) {
+      relocationContent.current?.scrollIntoView?.({ block: 'nearest', behavior: 'instant' });
+      relocationContent.current?.focus({ preventScroll: true });
+    }
+    wasPickingDestination.current = pickingDestination;
+  }, [pickingDestination]);
   const key = selectedKey === undefined ? selection : selectedKey;
   const selectionId = key ? `${key.layer}:${key.id}` : null;
   useEffect(() => {
@@ -60,6 +71,7 @@ export function SelectionPanel({
       className={styles.panel}
       aria-label="تفاصيل الخريطة"
       data-expanded={sheetExpanded}
+      hidden={pickingDestination}
     >
       <div className={styles.panelHandle} aria-hidden="true" />
       <button
@@ -152,10 +164,12 @@ export function SelectionPanel({
           </div>
         )}
         {relocation && !referenceOnly && (
-          <VillageRelocation
-            key={`${relocation.worldId}:${relocation.villageId}`}
-            {...relocation}
-          />
+          <div ref={relocationContent} tabIndex={-1}>
+            <VillageRelocation
+              key={`${relocation.worldId}:${relocation.villageId}`}
+              {...relocation}
+            />
+          </div>
         )}
         <section className={styles.visibleLocations} aria-label="المواقع المتاحة في المشهد">
           <div className={styles.locationsHeading}>

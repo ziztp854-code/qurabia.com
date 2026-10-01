@@ -880,3 +880,256 @@ test('a village world-map entry opens its real geographic village and returns to
     await db.$disconnect();
   }
 });
+
+for (const width of [360, 390, 430]) {
+  test(`mobile relocation keeps decimal coordinate drafts editable at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mamluk-mobile', 'Requires touch-enabled mobile context.');
+    await page.setViewportSize({ width, height: 844 });
+    const db = createPrismaClient(process.env.KINGDOMS_TEST_DATABASE_URL!);
+    const worldId = `map_mobile_relocation_${randomUUID()}`;
+    const relocationPosts: string[] = [];
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.replace(/\/$/, '') === '/api/kingdoms/world-map/relocate'
+      )
+        relocationPosts.push(request.url());
+    });
+    try {
+      const player = await db.user.findUniqueOrThrow({
+        where: { email: 'mamluk-map@example.test' },
+        select: { id: true },
+      });
+      const now = Date.now();
+      const state = executeCommand(
+        createWorld(now),
+        player.id,
+        { type: 'found', name: 'الجوال' },
+        now,
+      );
+      const village = Object.values(state.villages)[0];
+      await db.kingdomWorld.create({
+        data: {
+          id: worldId,
+          name: 'اختبار إحداثيات الجوال',
+          createdAt: new Date('2000-01-01T00:00:00Z'),
+          state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue,
+        },
+      });
+      await signIn(page);
+      await page.goto(`${mapPath}/?worldId=${worldId}&villageId=${village.id}`);
+      await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+      const expand = page.getByRole('button', { name: 'افتح تفاصيل الخريطة', exact: true });
+      if (await expand.isVisible()) await expand.tap();
+      const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة', exact: true });
+      await expect(panel.getByRole('heading', { name: 'عاصمة الجوال', exact: true })).toBeVisible();
+      await panel.getByRole('button', { name: 'نقل القرية', exact: true }).tap();
+      await page.getByRole('button', { name: 'إدخال الإحداثيات يدويًا', exact: true }).tap();
+      const longitude = panel.getByLabel('خط الطول', { exact: true });
+      const latitude = panel.getByLabel('خط العرض', { exact: true });
+      await longitude.tap();
+      await longitude.fill('');
+      await longitude.pressSequentially('51.', { delay: 60 });
+      await longitude.pressSequentially('531', { delay: 60 });
+      await expect(longitude).toHaveValue('51.531');
+      await latitude.tap();
+      await latitude.fill('');
+      await latitude.pressSequentially('25.2854', { delay: 60 });
+      await expect(latitude).toHaveValue('25.2854');
+
+      await longitude.fill('');
+      await longitude.pressSequentially('٥١٫٥٣١', { delay: 60 });
+      await expect(longitude).toHaveValue('٥١٫٥٣١');
+      await latitude.fill('');
+      await latitude.pressSequentially('-25.', { delay: 60 });
+      await expect(latitude).toHaveValue('-25.');
+      await latitude.pressSequentially('2854', { delay: 60 });
+      await expect(latitude).toHaveValue('-25.2854');
+
+      // A reduced visible height exercises the scrollable sheet while a coordinate
+      // remains focused. This does not claim to emulate a physical soft keyboard.
+      await page.setViewportSize({ width, height: 480 });
+      await longitude.tap();
+      await expect(longitude).toBeFocused();
+      await longitude.pressSequentially('0', { delay: 60 });
+      await expect(longitude).toHaveValue('٥١٫٥٣١0');
+      await latitude.tap();
+      await expect(latitude).toBeFocused();
+      await latitude.fill('٢٥٫٢٨٥٤');
+      await expect(latitude).toHaveValue('٢٥٫٢٨٥٤');
+      await page.setViewportSize({ width, height: 844 });
+      await page.getByRole('button', { name: 'حدّث الخريطة', exact: true }).tap();
+      await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+      await expect(longitude).toHaveValue('٥١٫٥٣١0');
+      await expect(latitude).toHaveValue('٢٥٫٢٨٥٤');
+      expect(relocationPosts).toEqual([]);
+      await longitude.scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: testInfo.outputPath(`mobile-relocation-${width}.png`),
+        fullPage: false,
+      });
+    } finally {
+      await db.kingdomWorld.deleteMany({ where: { id: worldId } });
+      await db.$disconnect();
+    }
+  });
+}
+
+test('mobile map destination requires review and explicit consent before its one fixture move', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mamluk-mobile', 'Requires touch-enabled mobile context.');
+  const checkPhysicalResources = monitorPhysicalMapResources(page);
+  const db = createPrismaClient(process.env.KINGDOMS_TEST_DATABASE_URL!);
+  const worldId = `map_picker_relocation_${randomUUID()}`;
+  const relocationPosts: unknown[] = [];
+  page.on('request', (request) => {
+    if (
+      request.method() === 'POST' &&
+      new URL(request.url()).pathname.replace(/\/$/, '') === '/api/kingdoms/world-map/relocate'
+    )
+      relocationPosts.push(request.postDataJSON());
+  });
+  try {
+    const player = await db.user.findUniqueOrThrow({
+      where: { email: 'mamluk-map@example.test' },
+      select: { id: true },
+    });
+    const now = Date.now();
+    const state = executeCommand(
+      createWorld(now),
+      player.id,
+      { type: 'found', name: 'اختيار الوجهة' },
+      now,
+    );
+    const village = Object.values(state.villages)[0];
+    await db.kingdomWorld.create({
+      data: {
+        id: worldId,
+        name: 'اختبار اختيار الوجهة',
+        createdAt: new Date('2000-01-01T00:00:00Z'),
+        state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue,
+      },
+    });
+    await signIn(page);
+    await page.goto(`${mapPath}/?worldId=${worldId}&villageId=${village.id}`);
+    await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+    const flat = page.waitForResponse(
+      (response) =>
+        isViewport(response) && new URL(response.url()).searchParams.get('worldId') === worldId,
+    );
+    await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).tap();
+    const payload = parseMapPayload(await (await flat).json());
+    await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+    await checkPhysicalResources();
+    const expand = page.getByRole('button', { name: 'افتح تفاصيل الخريطة', exact: true });
+    if (await expand.isVisible()) await expand.tap();
+    const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة', exact: true });
+    await panel.getByRole('button', { name: 'نقل القرية', exact: true }).tap();
+    const picker = page.getByRole('heading', { name: 'اختر الوجهة الجديدة', exact: true });
+    await expect(picker).toBeVisible({ timeout: 5000 });
+    const review = page.getByRole('button', { name: 'راجع الوجهة', exact: true });
+    await expect(review).toBeDisabled();
+    const canvas = page.getByRole('region', { name: 'الخريطة الاستراتيجية' }).locator('canvas');
+    const size = await canvas.boundingBox();
+    if (!size) throw new Error('The real geographic canvas is unavailable for destination picking');
+    const first = { x: Math.round(size.width * 0.25), y: Math.round(size.height * 0.45) };
+    const second = { x: Math.round(size.width * 0.6), y: Math.round(size.height * 0.45) };
+    const third = { x: Math.round(size.width * 0.75), y: Math.round(size.height * 0.35) };
+    await canvas.tap({ position: first });
+    await expect(review).toBeEnabled();
+    await expect(page.getByText('معاينة الوجهة', { exact: true })).toBeVisible();
+    expect(relocationPosts).toEqual([]);
+    await page.getByRole('button', { name: 'إلغاء اختيار الوجهة', exact: true }).tap();
+    await expect(picker).toHaveCount(0);
+    expect(relocationPosts).toEqual([]);
+
+    await panel.getByRole('button', { name: 'غيّر الموقع على الخريطة', exact: true }).tap();
+    await expect(picker).toBeVisible();
+    await canvas.tap({ position: second });
+    await review.tap();
+    const confirmation = panel.getByRole('checkbox');
+    const submit = panel.getByRole('button', { name: 'تأكيد النقل الدائم', exact: true });
+    await expect(submit).toBeDisabled();
+    await confirmation.check();
+    await expect(submit).toBeEnabled();
+    expect(relocationPosts).toEqual([]);
+    await panel.getByRole('button', { name: 'غيّر الموقع على الخريطة', exact: true }).tap();
+    // Native touch rounds click coordinates separately from pointerdown. Compare
+    // against the same real DOM click consumed by the geographic SDK.
+    const actualClick = canvas.evaluate(
+      (element) =>
+        new Promise<{ x: number; y: number; width: number; height: number }>((resolve) => {
+          element.addEventListener(
+            'click',
+            (event) => {
+              const click = event as MouseEvent;
+              const bounds = element.getBoundingClientRect();
+              resolve({
+                x: click.clientX - bounds.left,
+                y: click.clientY - bounds.top,
+                width: bounds.width,
+                height: bounds.height,
+              });
+            },
+            { once: true },
+          );
+        }),
+    );
+    await canvas.tap({ position: third });
+    const tapped = await actualClick;
+    await review.tap();
+    await expect(confirmation).not.toBeChecked();
+    await expect(submit).toBeDisabled();
+    await panel.getByRole('button', { name: 'إدخال الإحداثيات يدويًا', exact: true }).tap();
+    const longitude = Number(await panel.getByLabel('خط الطول', { exact: true }).inputValue());
+    const latitude = Number(await panel.getByLabel('خط العرض', { exact: true }).inputValue());
+    const mercatorY = (degrees: number) =>
+      Math.log(Math.tan(Math.PI / 4 + (degrees * Math.PI) / 360));
+    const expectedLongitude =
+      payload.bounds.west + (tapped.x / tapped.width) * (payload.bounds.east - payload.bounds.west);
+    const expectedY =
+      mercatorY(payload.bounds.north) -
+      (tapped.y / tapped.height) *
+        (mercatorY(payload.bounds.north) - mercatorY(payload.bounds.south));
+    const expectedLatitude = (Math.atan(Math.exp(expectedY)) * 360) / Math.PI - 90;
+    expect(longitude).toBeCloseTo(expectedLongitude, 4);
+    expect(latitude).toBeCloseTo(expectedLatitude, 4);
+    await page.screenshot({ path: testInfo.outputPath('mobile-map-destination-preview.png') });
+    await confirmation.check();
+    const moved = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        !(response.status() >= 300 && response.status() < 400) &&
+        new URL(response.url()).pathname.replace(/\/$/, '') === '/api/kingdoms/world-map/relocate',
+    );
+    await submit.tap();
+    const response = await moved;
+    expect(response.status()).toBe(200);
+    const result = await response.json();
+    expect(result.data).toMatchObject({
+      worldId,
+      villageId: village.id,
+      longitude,
+      latitude,
+      relocationUsed: true,
+      canRelocate: false,
+    });
+    expect(relocationPosts).toEqual([
+      expect.objectContaining({ worldId, villageId: village.id, longitude, latitude }),
+    ]);
+    await expect(page.getByRole('status').filter({ hasText: 'تم نقل القرية' })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+    if (await expand.isVisible()) await expand.tap();
+    const used = panel.getByText('استُخدمت فرصة نقل هذه القرية.', { exact: true });
+    await used.scrollIntoViewIfNeeded();
+    await expect(used).toBeVisible();
+    expect(relocationPosts).toHaveLength(1);
+  } finally {
+    await db.kingdomWorld.deleteMany({ where: { id: worldId } });
+    await db.$disconnect();
+  }
+});

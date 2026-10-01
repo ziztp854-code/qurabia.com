@@ -246,12 +246,20 @@ describe('strategic world map controls', () => {
       />,
     );
     fireEvent.click(await screen.findByRole('button', { name: 'نقل القرية' }));
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'خط الطول' }), {
-      target: { value: '35' },
+    await screen.findByRole('heading', { name: 'اختر الوجهة الجديدة' });
+    expect(screen.getByRole('button', { name: 'راجع الوجهة' })).toBeDisabled();
+    expect(screen.queryByRole('complementary', { name: 'تفاصيل الخريطة' })).not.toBeInTheDocument();
+    const map = MapSdkFixture.instances[0];
+    await act(async () => map.fire('click', {
+      point: { x: 1, y: 1 }, lngLat: { lng: 35, lat: 32 },
+    }));
+    expect(screen.getByText('معاينة الوجهة')).toBeInTheDocument();
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0);
+    expect(map.sources.get('mamluk-cities')?.data).toMatchObject({
+      features: [{ geometry: { coordinates: [31.2357, 30.0444] } }],
     });
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'خط العرض' }), {
-      target: { value: '32' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'راجع الوجهة' }));
+    expect(screen.getByRole('button', { name: 'تأكيد النقل الدائم' })).toBeDisabled();
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'تأكيد النقل الدائم' }));
     await waitFor(() => expect(navigation.refresh).toHaveBeenCalledOnce());
@@ -265,6 +273,7 @@ describe('strategic world map controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'انتقل إلى قريتك' }));
     expect(MapSdkFixture.instances[0].lastCamera).toMatchObject({ center: [35, 32], zoom: 6.5 });
     expect(fetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
+    expect(map.sources.has('qurabia-relocation-preview')).toBe(false);
   });
   it('links real own villages above the map to their authorized geographic context', async () => {
     vi.stubGlobal(

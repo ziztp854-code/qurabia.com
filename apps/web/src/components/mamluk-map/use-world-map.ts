@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { OPEN_FREE_MAP_STYLE, type MapPalette } from '@mamluk/maplibre-adapter';
 import type { MapPayload, MapProjection } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
@@ -10,12 +10,24 @@ import { buildPhysicalMapStyle, type PhysicalMapColors } from './physical-map-st
 import { buildReferenceMapStyle } from './reference-map-style';
 import type { OwnershipPresentationOptions } from './player-ownership';
 import {
+  normalizeDestination,
+  validateDestination,
+  type RelocationDestination,
+} from './relocation-destination';
+import {
   createSettlementPresentation,
   type SettlementPresentation,
 } from './settlement-presentation';
 
 type Status = 'loading' | 'ready' | 'zoom' | 'error';
 const VILLAGE_OVERVIEW_ZOOM = 6.5;
+interface DestinationDraft {
+  readonly sessionKey: string;
+  readonly villageId: string;
+  readonly destination: RelocationDestination | null;
+  readonly picking: boolean;
+  readonly manual: boolean;
+}
 
 function palette(container: HTMLElement): MapPalette {
   const tokens = getComputedStyle(container);
@@ -85,6 +97,15 @@ export function useWorldMap(
   const payload = snapshot?.sessionKey === sessionKey ? snapshot.payload : null;
   const publicPayload = publicSnapshot?.sessionKey === sessionKey ? publicSnapshot.payload : null;
   const [selected, setSelectedState] = useState<SelectionKey | null>(null);
+  const selectedRef = useRef<SelectionKey | null>(null);
+  const [destinationDraft, setDestinationDraft] = useState<DestinationDraft | null>(null);
+  const destinationRef = useRef<DestinationDraft | null>(null);
+  const activeDraft =
+    destinationDraft?.sessionKey === sessionKey &&
+    selected?.layer === 'cities' &&
+    destinationDraft.villageId === selected.id
+      ? destinationDraft
+      : null;
   const [projection, setProjectionState] = useState<MapProjection>('globe');
   const [attempt, setAttempt] = useState(0);
   const projectionRef = useRef<MapProjection>('globe');
@@ -92,6 +113,40 @@ export function useWorldMap(
   const latitude = initialLocation?.latitude;
   const cameraRef = useRef({ longitude, latitude });
   const pendingInitialSelection = useRef(initialVillageId);
+  const cancelDestination = useCallback(() => {
+    destinationRef.current = null;
+    setDestinationDraft(null);
+    sessionRef.current?.setDestinationPicking(false);
+    sessionRef.current?.setDestinationPreview(null);
+  }, []);
+  const receiveSelection = useCallback(
+    (key: SelectionKey | null) => {
+      if (key?.id !== selectedRef.current?.id || key?.layer !== selectedRef.current?.layer)
+        cancelDestination();
+      selectedRef.current = key;
+      setSelectedState(key);
+    },
+    [cancelDestination],
+  );
+  const updateDestination = useCallback(
+    (
+      point: RelocationDestination | null,
+      picking: boolean,
+      manual = destinationRef.current?.manual ?? false,
+    ) => {
+      const key = selectedRef.current;
+      if (key?.layer !== 'cities') return;
+      const destination = point
+        ? picking ? normalizeDestination(point) : validateDestination(point)
+        : null;
+      const next = { sessionKey, villageId: key.id, destination, picking, manual };
+      destinationRef.current = next;
+      setDestinationDraft(next);
+      sessionRef.current?.setDestinationPicking(picking);
+      sessionRef.current?.setDestinationPreview(destination);
+    },
+    [sessionKey],
+  );
   useEffect(() => {
     cameraRef.current = { longitude, latitude };
     pendingInitialSelection.current = initialVillageId;
@@ -166,7 +221,7 @@ export function useWorldMap(
                   (city) => city.id === pendingInitialSelection.current,
                 )
               ) {
-                setSelectedState({ layer: 'cities', id: pendingInitialSelection.current });
+                receiveSelection({ layer: 'cities', id: pendingInitialSelection.current });
                 session?.select({ layer: 'cities', id: pendingInitialSelection.current });
                 pendingInitialSelection.current = undefined;
               }
@@ -176,7 +231,8 @@ export function useWorldMap(
                 sessionKey: `${worldId}:${viewerPlayerId}`,
                 payload: nextPayload,
               }),
-            onSelection: setSelectedState,
+            onSelection: receiveSelection,
+            onDestination: (destination) => updateDestination(destination, true, false),
             onStatus: setStatus,
           },
           settlements,
@@ -197,10 +253,27 @@ export function useWorldMap(
       map?.remove();
       mapRef.current = null;
       sessionRef.current = null;
+      destinationRef.current = null;
+      setDestinationDraft(null);
     };
-  }, [worldId, viewerPlayerId, attempt]);
+  }, [worldId, viewerPlayerId, attempt, receiveSelection, updateDestination]);
+  function startPickingDestination() {
+    updateDestination(activeDraft?.destination ?? null, true, false);
+    container.current?.scrollIntoView?.({ block: 'center', behavior: 'instant' });
+    mapRef.current?.getCanvas().focus({ preventScroll: true });
+  }
+  function reviewDestination() {
+    updateDestination(activeDraft?.destination ?? null, false);
+  }
+  function useMapCenterDestination() {
+    const map = mapRef.current;
+    if (!map) return;
+    const canvas = map.getCanvas();
+    const point = map.unproject([canvas.clientWidth / 2, canvas.clientHeight / 2]);
+    updateDestination({ longitude: point.lng, latitude: point.lat }, true, false);
+  }
   function setSelected(key: SelectionKey | null) {
-    setSelectedState(key);
+    receiveSelection(key);
     sessionRef.current?.select(key);
   }
   function focusSelection(key: SelectionKey, zoom?: number) {
@@ -247,6 +320,16 @@ export function useWorldMap(
     projection,
     setProjection,
     moveCamera,
+    destination: activeDraft?.destination ?? null,
+    isPickingDestination: activeDraft?.picking ?? false,
+    manualEntryRequested: activeDraft?.manual ?? false,
+    startPickingDestination,
+    reviewDestination,
+    useMapCenterDestination,
+    cancelDestination,
+    changeDestination: (destination: RelocationDestination | null) =>
+      updateDestination(destination, false),
+    requestManualDestination: () => updateDestination(activeDraft?.destination ?? null, false, true),
     refresh: () => {
       if (sessionRef.current) void sessionRef.current.loader.refresh();
       else setAttempt((value) => value + 1);

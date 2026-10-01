@@ -20,6 +20,50 @@ function retrySession() {
   };
 }
 
+it('captures destination taps before feature selection and preserves the selected village during movement', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+  const map = new MapSdkFixture();
+  const callbacks = {
+    onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn(), onDestination: vi.fn(),
+  };
+  const session = createMapSession(map.asMap(), 'world', 'mercator', DEFAULT_PALETTE, callbacks);
+  await vi.advanceTimersByTimeAsync(0);
+  session.select({ layer: 'cities', id: 'cairo' });
+  session.setDestinationPicking(true);
+  map.clicked = [{ source: 'mamluk-cities', id: 'cairo' }];
+  map.fire('click', { point: { x: 1, y: 1 }, lngLat: { lng: 51.53104, lat: 25.285447 } });
+  expect(callbacks.onDestination).toHaveBeenCalledWith({ longitude: 51.53104, latitude: 25.285447 });
+  expect(callbacks.onSelection).not.toHaveBeenCalled();
+  map.fire('moveend');
+  expect(callbacks.onSelection).not.toHaveBeenCalled();
+  map.fire('click', { point: { x: 1, y: 1 }, lngLat: { lng: NaN, lat: 25 } });
+  expect(callbacks.onDestination).toHaveBeenCalledTimes(1);
+  session.dispose();
+  expect(map.listeners.get('click')?.size).toBe(0);
+});
+
+it('keeps only the temporary destination marker across refresh and projection then removes it on cancel or dispose', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  session.setDestinationPreview({ longitude: 51.53104, latitude: 25.285447 });
+  const preview = map.sources.get('qurabia-relocation-preview');
+  expect(preview?.data).toMatchObject({ features: [{ geometry: { coordinates: [51.53104, 25.285447] } }] });
+  const originalCity = map.sources.get('mamluk-cities')?.data;
+  expect(originalCity).toMatchObject({ features: [{ geometry: { coordinates: [31.2357, 30.0444] } }] });
+  await session.loader.refresh();
+  session.adapter.setProjection('globe');
+  expect(map.sources.get('qurabia-relocation-preview')).toBe(preview);
+  session.setDestinationPreview(null);
+  expect(map.sources.has('qurabia-relocation-preview')).toBe(false);
+  session.setDestinationPreview({ longitude: 51.6, latitude: 25.3 });
+  session.dispose();
+  expect(map.sources.has('qurabia-relocation-preview')).toBe(false);
+  expect([...map.layers.keys()].some((id) => id.startsWith('qurabia-relocation-preview'))).toBe(false);
+});
+
 function territoryPayload(): MapPayload {
   const payload = approvedPayload();
   return {

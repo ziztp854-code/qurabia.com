@@ -37,7 +37,7 @@ export function useVillageRelocation(worldId: string, villageId: string) {
     active.current = true;
     const controller = new AbortController();
     const query = new URLSearchParams({ worldId, villageId });
-    void request<unknown>(`/api/kingdoms/world-map/relocate?${query}`, {
+    void request<unknown>(`/api/kingdoms/world-map/relocate/?${query}`, {
       credentials: 'same-origin',
       signal: controller.signal,
     })
@@ -75,7 +75,7 @@ export function useVillageRelocation(worldId: string, villageId: string) {
       )
         pending.current = { ...coordinates, idempotencyKey: crypto.randomUUID() };
       const result = eligibilitySchema.parse(
-        await request<unknown>('/api/kingdoms/world-map/relocate', {
+        await request<unknown>('/api/kingdoms/world-map/relocate/', {
           method: 'POST',
           credentials: 'same-origin',
           signal: controller.signal,

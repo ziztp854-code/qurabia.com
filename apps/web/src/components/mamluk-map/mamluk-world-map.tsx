@@ -15,7 +15,7 @@ import {
   Shield,
   Target,
 } from 'lucide-react';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useId, useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
@@ -98,6 +98,7 @@ function WorldScene({
   onWorldChange: (id: string) => void;
 }) {
   const router = useRouter();
+  const destinationInstructionsId = useId();
   const [relocatedLocation, setRelocatedLocation] = useState<{
     longitude: number;
     latitude: number;
@@ -120,6 +121,15 @@ function WorldScene({
     moveCamera,
     focusSelection,
     refresh,
+    destination,
+    isPickingDestination,
+    manualEntryRequested,
+    startPickingDestination,
+    reviewDestination,
+    useMapCenterDestination,
+    cancelDestination,
+    changeDestination,
+    requestManualDestination,
   } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId);
   const scenePayload = payload ?? publicPayload;
   const selection = useMemo(() => {
@@ -221,6 +231,7 @@ function WorldScene({
       ? villageLocations?.find((village) => village.villageId === selected.id)
       : undefined;
   const onRelocated = (result: VillageRelocationEligibility) => {
+    cancelDestination();
     setRelocatedLocation({ longitude: result.longitude, latitude: result.latitude });
     router.replace(geographicMapHref(worldId, result.villageId));
     router.refresh();
@@ -242,7 +253,10 @@ function WorldScene({
       dir="rtl"
       aria-label={referenceOnly ? 'أطلس جغرافي' : 'خريطة حروب المماليك'}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') setSelected(null);
+        if (event.key === 'Escape') {
+          if (isPickingDestination) cancelDestination();
+          else setSelected(null);
+        }
       }}
     >
       <header className={styles.header}>
@@ -356,13 +370,14 @@ function WorldScene({
           )}
         </section>
       )}
-      <div className={styles.workspace}>
+      <div className={styles.workspace} data-picking-destination={isPickingDestination}>
         <div className={styles.mapFrame}>
           <div
             ref={container}
             className={styles.canvas}
             role="region"
             aria-label={referenceOnly ? 'الخريطة الجغرافية' : 'الخريطة الاستراتيجية'}
+            aria-describedby={isPickingDestination ? destinationInstructionsId : undefined}
           />
           <div className={styles.toolbar} role="group" aria-label="عرض الخريطة">
             <button
@@ -441,6 +456,48 @@ function WorldScene({
               </button>
             )}
           </div>
+          {isPickingDestination && (
+            <section className={styles.destinationPicker} aria-label="اختيار وجهة القرية">
+              <div className={styles.destinationHeading}>
+                <MapPin size={22} aria-hidden="true" />
+                <h2>اختر الوجهة الجديدة</h2>
+              </div>
+              <p id={destinationInstructionsId}>
+                اضغط على الخريطة لتحديد الوجهة، ثم راجعها قبل الموافقة.
+              </p>
+              <p className={styles.destinationSummary} role="status">
+                {destination ? (
+                  <>
+                    <span>معاينة الوجهة</span>
+                    <bdi dir="ltr">
+                      {destination.longitude.toFixed(6)} / {destination.latitude.toFixed(6)}
+                    </bdi>
+                  </>
+                ) : (
+                  'لم تُحدد وجهة بعد. يمكنك أيضًا تحريك الخريطة بالأسهم واستخدام مركزها.'
+                )}
+              </p>
+              <div className={styles.destinationActions}>
+                <button
+                  className={`${styles.control} ${styles.destinationReview}`}
+                  type="button"
+                  disabled={!destination}
+                  onClick={reviewDestination}
+                >
+                  راجع الوجهة
+                </button>
+                <button className={styles.control} type="button" onClick={useMapCenterDestination}>
+                  استخدم مركز الخريطة
+                </button>
+                <button className={styles.control} type="button" onClick={requestManualDestination}>
+                  إدخال الإحداثيات يدويًا
+                </button>
+                <button className={styles.control} type="button" onClick={cancelDestination}>
+                  إلغاء اختيار الوجهة
+                </button>
+              </div>
+            </section>
+          )}
         </div>
         <SelectionPanel
           selection={managementHref && selection ? { ...selection, kind: 'قرية' } : selection}
@@ -452,6 +509,7 @@ function WorldScene({
           features={features}
           onSelect={focusSelection}
           onClose={() => setSelected(null)}
+          pickingDestination={isPickingDestination}
           relocation={
             relocationVillage
               ? {
@@ -459,6 +517,12 @@ function WorldScene({
                   villageId: relocationVillage.villageId,
                   approved: approvedCity?.properties.ownerPlayerId === viewerPlayerId,
                   onRelocated,
+                  destination,
+                  isPickingDestination,
+                  manualEntryRequested,
+                  onStartPickingDestination: startPickingDestination,
+                  onDestinationChange: changeDestination,
+                  onCancelDestination: cancelDestination,
                 }
               : undefined
           }
