@@ -252,6 +252,10 @@ function WorldScene({
         {!referenceOnly && (
           <>
             <span>
+              <Map size={16} aria-hidden="true" />
+              حدود القرى
+            </span>
+            <span>
               <Castle size={16} aria-hidden="true" />
               القلاع
             </span>

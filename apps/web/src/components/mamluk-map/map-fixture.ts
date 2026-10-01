@@ -63,8 +63,17 @@ export class MapSdkFixture {
   removeSource(id: string) {
     this.sources.delete(id);
   }
-  addLayer(layer: { id: string }) {
-    this.layers.set(layer.id, layer);
+  addLayer(layer: { id: string }, beforeId?: string) {
+    if (!beforeId || !this.layers.has(beforeId)) {
+      this.layers.set(layer.id, layer);
+      return;
+    }
+    const previous = [...this.layers.entries()];
+    this.layers.clear();
+    for (const [id, current] of previous) {
+      if (id === beforeId) this.layers.set(layer.id, layer);
+      this.layers.set(id, current);
+    }
   }
   removeLayer(id: string) {
     this.layers.delete(id);

@@ -144,7 +144,7 @@ export function SelectionPanel({
         <p className={styles.panelNote}>
           {referenceOnly
             ? 'الأطلس يعرض مواقع مدن حقيقية للمرجع الجغرافي.'
-            : 'تُعرض المواقع التي تسمح بها رؤيتك الحالية.'}
+            : 'تعرض الخريطة المواقع المسموح لك بالاطلاع عليها.'}
         </p>
       </div>
     </aside>

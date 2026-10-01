@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { DEFAULT_PALETTE } from '@mamluk/maplibre-adapter';
+import type { MapPayload } from '@mamluk/world-map-core';
 import { createMapSession } from './map-session';
 import { MapSdkFixture, approvedPayload } from './map-fixture';
 
@@ -17,6 +18,160 @@ function retrySession() {
     session: createMapSession(map.asMap(), 'world', 'mercator', DEFAULT_PALETTE, callbacks),
   };
 }
+
+function territoryPayload(): MapPayload {
+  const payload = approvedPayload();
+  return {
+    ...payload,
+    layers: {
+      ...payload.layers,
+      territories: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'cairo',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [31.22, 30.03],
+                  [31.25, 30.03],
+                  [31.25, 30.06],
+                  [31.22, 30.06],
+                  [31.22, 30.03],
+                ],
+              ],
+            },
+            properties: { regionId: 'egypt', ownerPlayerId: 'viewer', ownerSultanateId: null },
+          },
+        ],
+      },
+      fog: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'fog',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [28, 25],
+                  [40, 25],
+                  [40, 36],
+                  [28, 36],
+                  [28, 25],
+                ],
+              ],
+            },
+            properties: { kind: 'fog' },
+          },
+        ],
+      },
+    },
+  };
+}
+
+it('keeps approved settlement markers and gold borders above fog without adding another source', async () => {
+  vi.useFakeTimers();
+  const payload = territoryPayload();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => payload }));
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.layers.get('mamluk-village-borders')).toMatchObject({
+    type: 'line',
+    source: 'mamluk-territories',
+    paint: { 'line-color': DEFAULT_PALETTE.city, 'line-width': 2.5, 'line-opacity': 0.9 },
+  });
+  expect(map.sources.size).toBe(9);
+  expect(map.sources.get('mamluk-territories')?.data).toMatchObject(payload.layers.territories);
+  expect(payload.layers.territories.features[0]?.properties).not.toHaveProperty(
+    '__mamlukFeatureId',
+  );
+  const order = [...map.layers.keys()];
+  expect(order.indexOf('mamluk-village-borders')).toBeGreaterThan(
+    order.indexOf('mamluk-territories'),
+  );
+  expect(order.indexOf('mamluk-village-borders')).toBeLessThan(order.indexOf('mamluk-cities'));
+  expect(order.indexOf('mamluk-village-borders')).toBeGreaterThan(order.indexOf('mamluk-fog'));
+  expect(order.indexOf('mamluk-territories')).toBeGreaterThan(order.indexOf('mamluk-fog'));
+  expect(order.indexOf('mamluk-cities')).toBeGreaterThan(order.indexOf('mamluk-fog'));
+  expect(map.layers.get('mamluk-fog')).toMatchObject({
+    type: 'fill',
+    paint: { 'fill-opacity': 0.92 },
+  });
+  expect(map.sources.get('mamluk-fog')?.data).toMatchObject(payload.layers.fog);
+  expect(map.sources.get('mamluk-armies')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [],
+  });
+  expect(map.sources.get('mamluk-armyRoutes')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [],
+  });
+  session.dispose();
+});
+
+it('removes the outline before its source and restores it safely through movement, style replacement, and expiry', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => territoryPayload() }),
+  );
+  const { map, session } = retrySession();
+  const removeSource = map.removeSource.bind(map);
+  vi.spyOn(map, 'removeSource').mockImplementation((id) => {
+    if (id === 'mamluk-territories') expect(map.layers.has('mamluk-village-borders')).toBe(false);
+    return removeSource(id);
+  });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  map.fire('moveend');
+  expect(map.layers.has('mamluk-village-borders')).toBe(false);
+  expect(map.layers.has('mamluk-fog')).toBe(false);
+  expect(map.sources.size).toBe(0);
+  await vi.advanceTimersByTimeAsync(150);
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  map.sources.clear();
+  map.layers.clear();
+  map.fire('style.load');
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  const restoredOrder = [...map.layers.keys()];
+  expect(restoredOrder.indexOf('mamluk-cities')).toBeGreaterThan(
+    restoredOrder.indexOf('mamluk-fog'),
+  );
+  expect(restoredOrder.indexOf('mamluk-village-borders')).toBeGreaterThan(
+    restoredOrder.indexOf('mamluk-fog'),
+  );
+  session.loader.dispose();
+  await vi.advanceTimersByTimeAsync(8000);
+  expect(map.layers.has('mamluk-village-borders')).toBe(false);
+  expect(map.layers.has('mamluk-fog')).toBe(false);
+  expect(map.sources.size).toBe(0);
+  session.adapter.render({ ...territoryPayload(), revision: '2' });
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  session.dispose();
+  expect(map.layers.size).toBe(0);
+  expect(map.sources.size).toBe(0);
+});
+
+it('never generates village polygons when the approved territory source is empty', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+  );
+  const { map, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.sources.get('mamluk-territories')?.data).toEqual({
+    type: 'FeatureCollection',
+    features: [],
+  });
+  expect(map.sources.has('mamluk-village-borders')).toBe(false);
+  session.dispose();
+});
 
 it('requests a fresh viewport after a transient network failure and resets backoff after acceptance', async () => {
   vi.useFakeTimers();

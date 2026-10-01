@@ -8,6 +8,7 @@ import { createMapSession } from './map-session';
 import type { SelectionKey } from './selection';
 
 type Status = 'loading' | 'ready' | 'zoom' | 'error';
+const VILLAGE_OVERVIEW_ZOOM = 6.5;
 
 function palette(container: HTMLElement): MapPalette {
   const tokens = getComputedStyle(container);
@@ -56,7 +57,7 @@ export function useWorldMap(
           center: initialLocation
             ? [initialLocation.longitude, initialLocation.latitude]
             : [34, 30.4],
-          zoom: initialLocation ? 10 : 5.3,
+          zoom: initialLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3,
           renderWorldCopies: false,
           attributionControl: { compact: true },
         });
@@ -122,7 +123,7 @@ export function useWorldMap(
         center: initialLocation
           ? [initialLocation.longitude, initialLocation.latitude]
           : [31.24967, 30.06263],
-        zoom: initialLocation ? 10 : 5.3,
+        zoom: initialLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3,
         duration,
       });
     else if (action === 'in') map.zoomIn({ duration });

@@ -454,3 +454,48 @@ retries. It preserves clearing and expiry and never extends a snapshot's lifetim
 or reuses expired information. Eleven session tests passed, with 94.33% statement
 and 81.25% branch coverage, including delayed delivery, repeated failure and
 cancellation races.
+
+## Village borders and public settlements
+
+Village worlds treat settlement names, geographic coordinates, player ownership
+and game plot boundaries as public map information for authenticated members of
+the same world. This policy supersedes military-vision gating of village sites
+in the first village-navigation release. Resources, troop inventories, enemy
+army positions, movement plans and siege intelligence remain private. Explicit
+geographic campaigns retain their existing visibility policy.
+
+Public settlements are projected in a separate allowlisted batch in the same
+authorized repeatable-read transaction as the private map snapshot. Its temporary
+presentation grant is used only for cities and village territories. It never
+feeds the private army, route, siege, watchtower, scouting or alliance reader.
+Only the approved settlement layers replace the original city/territory layers;
+private visibility and fog remain unchanged. Combined payload size, entity and
+vertex limits are enforced, and every query remains limited to the viewport.
+
+Each representable village gets a server-persisted geographic game plot around
+its stable location. Balanced partitions separate neighbouring plots without
+moving village coordinates. These are game boundaries, not municipal boundary
+claims. A plot below the accepted geometry package's minimum area is omitted
+without hiding its public village marker or failing other sites; omission
+metadata remains server-only and does not cause repeated provisioning.
+
+The host renders gold outlines from the approved territory GeoJSON source.
+Approved settlement overlays appear above the fog shading, while hidden military
+data remains absent from the network response. Normal clearing, expiry, movement,
+style replacement and teardown remove these outlines with their territory source.
+The regional village camera starts at zoom 6.5 to show neighbouring settlements
+on desktop and mobile; users can zoom in to inspect individual plots.
+
+The updated full web suite passed 227 files / 1,339 tests. All six real-browser
+cases passed on desktop and mobile, including a different player's village and
+plot outside military vision, redacted enemy fortification, own-village marker
+clicks and authorized management links. Hidden armies, resources and troop
+inventories remain absent from these responses. The focused backend modules
+passed 80 tests with 92.69% branch coverage; host presentation passed 33 tests
+with 87.59% branch coverage. Typechecking, lint and the production build passed.
+Lint retains the existing site-shell navigation warning. The dependency audit
+reports zero critical advisories and pre-existing transitive advisories.
+
+Docker Desktop stopped during the first browser run. Restoring its temporary
+IPC directory and restarting the existing isolated container preserved its
+database; all six browser cases then passed without changing test expectations.

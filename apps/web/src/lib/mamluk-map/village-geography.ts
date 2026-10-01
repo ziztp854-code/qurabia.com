@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { createCity, validateId } from '@mamluk/world-map-core/server';
 import { geographicCitySeeds } from './data';
 import { storeMapRecord, type MamlukMapState } from './storage';
+import { buildVillageTerritories } from './village-territories';
 
 export const VILLAGE_GEOGRAPHY_SOURCE = 'kingdom-villages-v1' as const;
 const MAX_VILLAGES = 100_000;
@@ -45,7 +46,13 @@ export function provisionVillageGeography<T extends VillageWorld>(
   const missing = villages.filter((village) => !located.has(village.id));
   if (cities.length + missing.length > MAX_VILLAGES)
     throw new RangeError('Village geography allocation budget exceeded');
-  if (previous && missing.length === 0) return state as T & { readonly geography?: MamlukMapState };
+  const plotted = new Set(previous?.territories.map(({ value }) => value.id) ?? []);
+  const omitted = new Set(previous?.omittedVillagePlotIds ?? []);
+  const needsPlots =
+    previous?.villagePlotsVersion !== 1 ||
+    villages.some((village) => !plotted.has(village.id) && !omitted.has(village.id));
+  if (previous && missing.length === 0 && !needsPlots)
+    return state as T & { readonly geography?: MamlukMapState };
   const occupied = new Set(cities.map(({ value }) => `${value.longitude},${value.latitude}`));
   const added = missing.map((village, index) => {
     validateId(village.id);
@@ -67,14 +74,24 @@ export function provisionVillageGeography<T extends VillageWorld>(
       }),
     );
   });
+  const allCities = [...cities, ...added];
+  const territories = buildVillageTerritories(worldId, allCities, state.villages);
+  const plotIds = new Set(territories.map(({ value }) => value.id));
+  const plotMetadata = {
+    villagePlotsVersion: 1 as const,
+    omittedVillagePlotIds: villages
+      .filter((village) => !plotIds.has(village.id))
+      .map((village) => village.id),
+    territories,
+  };
   const geography: MamlukMapState = previous
-    ? { ...previous, cities: [...cities, ...added] }
+    ? { ...previous, cities: allCities, ...plotMetadata }
     : {
         version: 1,
         source: VILLAGE_GEOGRAPHY_SOURCE,
-        cities: added,
+        cities: allCities,
+        ...plotMetadata,
         castles: [],
-        territories: [],
         sultanateTerritories: [],
         armies: [],
         sieges: [],

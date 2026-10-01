@@ -85,7 +85,7 @@ describe('strategic world map controls', () => {
     expect(screen.queryByRole('link', { name: 'إدارة القرية' })).not.toBeInTheDocument();
     expect(MapSdkFixture.instances[0]?.initialCamera).toEqual({
       center: [31.2357, 30.0444],
-      zoom: 10,
+      zoom: 6.5,
     });
     await act(async () => {
       deliver?.({ ok: true, json: async () => payload });
@@ -98,7 +98,7 @@ describe('strategic world map controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'انتقل إلى قريتك' }));
     expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({
       center: [31.2357, 30.0444],
-      zoom: 10,
+      zoom: 6.5,
     });
     expect(screen.queryByRole('link', { name: 'إدارة القرية' })).not.toBeInTheDocument();
     fireEvent.change(screen.getByRole('combobox', { name: 'العالم' }), {
@@ -128,11 +128,12 @@ describe('strategic world map controls', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('رؤيتك الحالية')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('تُعرض المواقع التي تسمح بها رؤيتك الحالية.'),
+      screen.queryByText('تعرض الخريطة المواقع المسموح لك بالاطلاع عليها.'),
     ).not.toBeInTheDocument();
     expect(screen.queryByText('الجيوش')).not.toBeInTheDocument();
     expect(screen.queryByText('الحصار')).not.toBeInTheDocument();
     expect(screen.queryByText('القلاع')).not.toBeInTheDocument();
+    expect(screen.queryByText('حدود القرى')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'القاهرة' }));
     expect(screen.getByRole('heading', { level: 2, name: 'القاهرة' })).toBeInTheDocument();
     expect(screen.getByText('31.2357 / 30.0444')).toBeInTheDocument();
@@ -201,6 +202,7 @@ describe('strategic world map controls', () => {
       '/maplibre/maplibre-gl-worker.mjs',
     );
     expect(screen.getByRole('heading', { level: 1, name: 'خريطة العالم' })).toBeInTheDocument();
+    expect(screen.getByText('حدود القرى')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'GeoNames' })).toHaveAttribute(
       'href',
       'https://www.geonames.org/',

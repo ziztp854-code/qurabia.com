@@ -1,13 +1,10 @@
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
-import {
-  MapQueryError,
-  WorldMapService,
-  parseViewportRequest,
-} from '@mamluk/world-map-core/server';
+import { MapQueryError, parseViewportRequest } from '@mamluk/world-map-core/server';
 import { kingdomIdentity, kingdomRateLimit } from '@/lib/kingdoms/identity';
 import { KingdomsHttpError } from '@/lib/kingdoms/http';
 import { PrismaWorldMapRepository } from '@/lib/mamluk-map/repository';
+import { MamlukViewportService } from '@/lib/mamluk-map/viewport-service';
 import {
   PUBLIC_ATLAS_VIEWER_ID,
   PUBLIC_ATLAS_WORLD,
@@ -45,7 +42,7 @@ export async function GET(request: Request) {
       playerId = identity.id;
       repository = new PrismaWorldMapRepository(identity);
     }
-    const service = new WorldMapService(repository);
+    const service = new MamlukViewportService(repository);
     const payload = await service.getViewport(viewport, { playerId });
     return NextResponse.json(payload, { headers });
   } catch (error) {

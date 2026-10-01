@@ -12,6 +12,7 @@ import {
   getOwnVillageMapLocations,
 } from './repository';
 import { storeMapRecord, type MamlukMapState } from './storage';
+import { MamlukViewportService } from './viewport-service';
 
 const databaseUrl = process.env.KINGDOMS_TEST_DATABASE_URL;
 function assertIsolatedDatabase(value: string): void {
@@ -357,7 +358,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     ]);
   });
 
-  it('provisions actual legacy member villages once and never sends the distant enemy village', async () => {
+  it('provisions public actual villages once while keeping private enemy intelligence hidden', async () => {
     const { viewer, outsider, worldId, state } = await fixture();
     const original = withoutGeography(state);
     const legacy = executeCommand(
@@ -376,7 +377,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     const enemy = Object.values(legacy.villages).find(
       (village) => village.ownerId === outsider.id,
     )!;
-    const service = new WorldMapService(new PrismaWorldMapRepository(viewer, db));
+    const service = new MamlukViewportService(new PrismaWorldMapRepository(viewer, db));
     const read = () =>
       service.getViewport(
         { worldId, bounds: { west: 28, south: 29, east: 35, north: 33 } },
@@ -385,11 +386,20 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     const [first, second] = await Promise.all([read(), read()]);
     for (const payload of [first, second]) {
       expect(payload.revision).toBe('8');
-      expect(payload.layers.cities.features.map((feature) => feature.id)).toEqual([own.id]);
+      expect(payload.layers.cities.features.map((feature) => feature.id)).toEqual(
+        [own.id, enemy.id].sort(),
+      );
+      expect(payload.layers.territories.features.map((feature) => feature.id)).toEqual(
+        [own.id, enemy.id].sort(),
+      );
+      expect(
+        payload.layers.cities.features.find((feature) => feature.id === enemy.id)!.properties,
+      ).toMatchObject({ ownerPlayerId: outsider.id, fortificationLevel: 0 });
       expect(payload.layers.cities.features[0]!.geometry.coordinates).toEqual([31.24967, 30.06263]);
       expect(payload.layers.armies.features).toEqual([]);
       expect(payload.layers.visibility.features).toHaveLength(1);
-      expect(JSON.stringify(payload)).not.toContain(enemy.name);
+      expect(JSON.stringify(payload)).toContain(enemy.name);
+      expect(JSON.stringify(payload)).not.toContain('public-village-viewport');
       expect(JSON.stringify(payload)).not.toContain('resources');
       expect(JSON.stringify(payload)).not.toContain('troops');
     }
@@ -401,6 +411,85 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
       .state as unknown as typeof legacy & { geography: MamlukMapState };
     const { geography: savedGeography, ...unchanged } = persisted;
     expect(unchanged).toEqual(legacy);
+    const enemyPoint = savedGeography.cities.find((record) => record.value.id === enemy.id)!.value;
+    const secretArmy: Army = {
+      id: 'secret-colocated-army',
+      worldId,
+      ownerPlayerId: outsider.id,
+      ownerSultanateId: null,
+      position: {
+        armyId: 'secret-colocated-army',
+        longitude: enemyPoint.longitude,
+        latitude: enemyPoint.latitude,
+        origin: null,
+        destination: null,
+        departureTime: null,
+        arrivalTime: null,
+        status: 'stationed',
+      },
+      route: null,
+    };
+    const privateGeography = {
+      ...savedGeography,
+      armies: [storeMapRecord(secretArmy)],
+      sieges: [
+        storeMapRecord({
+          id: 'secret-colocated-siege',
+          worldId,
+          targetId: enemy.id,
+          targetKind: 'city' as const,
+          status: 'active' as const,
+          attackerPlayerId: outsider.id,
+          defenderPlayerId: viewer.id,
+          longitude: enemyPoint.longitude,
+          latitude: enemyPoint.latitude,
+        }),
+      ],
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(
+          JSON.stringify({ ...persisted, geography: privateGeography }),
+        ) as Prisma.InputJsonValue,
+      },
+    });
+    const publicWithPrivate = await read();
+    expect(publicWithPrivate.layers.cities.features.map((feature) => feature.id)).toContain(
+      enemy.id,
+    );
+    expect(publicWithPrivate.layers.territories.features.map((feature) => feature.id)).toContain(
+      enemy.id,
+    );
+    expect(publicWithPrivate.layers.armies.features).toEqual([]);
+    expect(publicWithPrivate.layers.armyRoutes.features).toEqual([]);
+    expect(publicWithPrivate.layers.sieges.features).toEqual([]);
+    expect(publicWithPrivate.layers.visibility).toEqual(first.layers.visibility);
+    expect(publicWithPrivate.layers.fog).toEqual(first.layers.fog);
+    expect(JSON.stringify(publicWithPrivate)).not.toContain('secret-colocated');
+    // Simulate the deployed old managed layout: points exist but plots are missing.
+    const oldLayout = {
+      ...savedGeography,
+      territories: [],
+      villagePlotsVersion: undefined,
+      omittedVillagePlotIds: undefined,
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(
+          JSON.stringify({ ...persisted, geography: oldLayout }),
+        ) as Prisma.InputJsonValue,
+      },
+    });
+    const upgraded = await read();
+    expect(upgraded.revision).toBe('9');
+    expect(upgraded.layers.territories.features).toHaveLength(2);
+    expect((await read()).revision).toBe('9');
+    const upgradedState = (await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } }))
+      .state as unknown as typeof persisted;
+    expect(withoutGeography(upgradedState)).toEqual(legacy);
+    expect(upgradedState.geography.cities).toEqual(savedGeography.cities);
     // Current names and owners must win over the original stored city copy.
     const changed = {
       ...persisted,
@@ -415,7 +504,13 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
         state: JSON.parse(JSON.stringify(changed)) as Prisma.InputJsonValue,
       },
     });
-    expect((await read()).layers.cities.features).toEqual([]);
+    expect(
+      (await read()).layers.cities.features.find((feature) => feature.id === own.id)!.properties,
+    ).toMatchObject({ name: changed.villages[own.id]!.name, ownerPlayerId: outsider.id });
+    expect(
+      (await read()).layers.territories.features.find((feature) => feature.id === own.id)!
+        .properties,
+    ).toMatchObject({ ownerPlayerId: outsider.id });
     expect(await getOwnVillageMapLocations(worldId, viewer, db)).toEqual([]);
     expect(await getOwnVillageMapLocations(worldId, outsider, db)).toContainEqual({
       villageId: own.id,
@@ -436,7 +531,10 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
       },
     });
     expect(await getOwnVillageMapLocations(worldId, outsider, db)).toHaveLength(1);
-    expect((await read()).layers.cities.features).toEqual([]);
+    expect((await read()).layers.cities.features.map((feature) => feature.id)).toEqual([enemy.id]);
+    expect((await read()).layers.territories.features.map((feature) => feature.id)).toEqual([
+      enemy.id,
+    ]);
   });
 
   it('allocates newly founded actual villages inside the existing authoritative game transaction', async () => {

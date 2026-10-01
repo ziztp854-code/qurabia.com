@@ -23,6 +23,8 @@ export interface StoredVisibilityGrant {
 export interface MamlukMapState {
   readonly version: 1;
   readonly source?: 'kingdom-villages-v1';
+  readonly villagePlotsVersion?: 1;
+  readonly omittedVillagePlotIds?: readonly string[];
   readonly cities: readonly StoredMapRecord<City>[];
   readonly castles: readonly StoredMapRecord<Castle>[];
   readonly territories: readonly StoredMapRecord<Territory>[];

@@ -16,7 +16,7 @@ export interface MapSessionCallbacks {
 }
 
 /** SDK 6 emits movement events even when the projection does not change. */
-function presentationPort(map: LibreMap) {
+function presentationPort(map: LibreMap, palette: MapPalette) {
   // SDK isStyleLoaded also waits for tiles. Overlay removal must not wait for them.
   let styleReady = map.isStyleLoaded();
   const onStyleReady = () => {
@@ -37,8 +37,26 @@ function presentationPort(map: LibreMap) {
           : source,
       ),
     getLayer: map.getLayer.bind(map),
-    addLayer: map.addLayer.bind(map),
-    removeLayer: map.removeLayer.bind(map),
+    addLayer: (layer) => {
+      // Fog shades the basemap; every overlay already passed the server's policy.
+      map.addLayer(layer, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
+      if (layer.id === 'mamluk-territories') {
+        // Only outline approved server polygons, sharing the adapter's expiry lifecycle.
+        map.addLayer({
+          id: 'mamluk-village-borders',
+          type: 'line',
+          source: 'mamluk-territories',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': palette.city, 'line-width': 2.5, 'line-opacity': 0.9 },
+        });
+      }
+      return map;
+    },
+    removeLayer: (id) => {
+      if (id === 'mamluk-territories' && map.getLayer('mamluk-village-borders'))
+        map.removeLayer('mamluk-village-borders');
+      return map.removeLayer(id);
+    },
     removeSource: map.removeSource.bind(map),
     setProjection: (projection) => {
       if (map.getProjection()?.type === projection.type) return map;
@@ -110,7 +128,7 @@ export function createMapSession(
     clearTimeout(recoveryTimer);
     recoveryTimer = undefined;
   };
-  const presentation = presentationPort(map);
+  const presentation = presentationPort(map, palette);
   const adapter = new ObservedAdapter(presentation.port, palette, (payload) => {
     if (disposed) return;
     callbacks.onPayload(payload);

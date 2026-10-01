@@ -34,12 +34,19 @@ import {
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { KingdomsHttpError } from '../kingdoms/http';
 import type { KingdomIdentity } from '../kingdoms/repository';
-import type { MamlukMapState, StoredVisibilityGrant } from './storage';
+import type { StoredVisibilityGrant } from './storage';
 import { ensureVillageGeography } from './village-persistence';
 import { VILLAGE_GEOGRAPHY_SOURCE } from './village-geography';
 
 type Transaction = Prisma.TransactionClient;
-type Collection = Exclude<keyof MamlukMapState, 'version' | 'source'>;
+type Collection =
+  | 'cities'
+  | 'castles'
+  | 'territories'
+  | 'sultanateTerritories'
+  | 'armies'
+  | 'sieges'
+  | 'visibility';
 type JsonRow = { value: unknown };
 const item = Prisma.sql`item`;
 const villageSource = Prisma.sql`w.state->'geography'->>'source' = ${VILLAGE_GEOGRAPHY_SOURCE}`;
@@ -191,7 +198,18 @@ function siege(value: unknown, worldId: string): SiegeMarker {
   });
 }
 
-class PrismaMapReadSession implements WorldMapReadSession {
+/** Only server-managed game settlements expose this bounded public read policy. */
+export interface PublicVillageReadSession extends WorldMapReadSession {
+  readonly settlementsPublic: boolean;
+  getPublicVillageCitiesInBounds(query: SpatialQuery): Promise<readonly City[]>;
+  getPublicVillageTerritoriesInBounds(query: SpatialQuery): Promise<readonly Territory[]>;
+}
+
+class PrismaMapReadSession implements PublicVillageReadSession {
+  get settlementsPublic(): boolean {
+    return this.villageGeography;
+  }
+
   private readonly visibilityCache = new Map<string, VisibilitySnapshot>();
   private readonly visionCache = new Map<
     string,
@@ -227,9 +245,15 @@ class PrismaMapReadSession implements WorldMapReadSession {
           THEN ${currentVillage}->'buildings'->'wall' ELSE '0'::jsonb END,
         'strategicValue', 0)
       ELSE item->'value' END`
-        : Prisma.sql`item->'value'`;
+        : collection === 'territories'
+          ? Prisma.sql`CASE WHEN ${villageSource} THEN jsonb_build_object(
+              'id', item->'value'->>'id', 'worldId', item->'value'->>'worldId',
+              'regionId', item->'value'->>'regionId', 'geometry', item->'value'->'geometry',
+              'ownerPlayerId', ${currentVillage}->>'ownerId', 'ownerSultanateId', NULL)
+            ELSE item->'value' END`
+          : Prisma.sql`item->'value'`;
     const exists =
-      collection === 'cities'
+      collection === 'cities' || collection === 'territories'
         ? Prisma.sql`(${villageSource}) IS NOT TRUE
       OR ${currentVillage}->>'id' = item->'value'->>'id'`
         : Prisma.sql`TRUE`;
@@ -396,6 +420,29 @@ class PrismaMapReadSession implements WorldMapReadSession {
       },
     );
   }
+  async getPublicVillageCitiesInBounds(query: SpatialQuery): Promise<readonly City[]> {
+    const safe = this.check(query);
+    if (!this.villageGeography) return [];
+    const rows = await this.read('cities', safe);
+    return this.filterCandidates(
+      rows.map((row) => createCity(row.value as City)),
+      safe,
+      (city) => {
+        this.knownWorld(city);
+        return containsPoint(safe.bounds, city);
+      },
+    );
+  }
+  async getPublicVillageTerritoriesInBounds(query: SpatialQuery): Promise<readonly Territory[]> {
+    const safe = this.check(query);
+    if (!this.villageGeography) return [];
+    const rows = await this.read('territories', safe);
+    return rows.map((row) => {
+      const value = row.value as Territory;
+      this.knownWorld(value);
+      return withTerritoryOwnership(value, value);
+    });
+  }
   async getCastlesInBounds(query: SpatialQuery): Promise<readonly Castle[]> {
     const safe = this.check(query);
     const visible = await this.vision(safe);
@@ -418,6 +465,8 @@ class PrismaMapReadSession implements WorldMapReadSession {
   }
   async getTerritoriesInBounds(query: SpatialQuery): Promise<readonly Territory[]> {
     const safe = this.check(query);
+    // Managed plots belong exclusively to the isolated public-settlement batch.
+    if (this.villageGeography) return [];
     const grants = await this.getVisibilityInBounds({ ...safe, limit: 129 });
     const authorized =
       grants.visibleTerritoryIds.length > 0
@@ -551,10 +600,15 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
         SELECT w.id, w.revision, w.state->'geography'->>'version' AS "geographyVersion",
           w.state->'geography'->>'source' AS "geographySource", clock_timestamp() AS "serverTime",
           CASE WHEN NOT (w.state ? 'geography') THEN TRUE
-            WHEN ${villageSource} AND w.state->'geography'->>'version' = '1' THEN EXISTS (
+            WHEN ${villageSource} AND w.state->'geography'->>'version' = '1' THEN
+              w.state->'geography'->>'villagePlotsVersion' IS DISTINCT FROM '1' OR EXISTS (
               SELECT 1 FROM jsonb_each(w.state->'villages') v
               WHERE NOT EXISTS (SELECT 1 FROM ${records('cities')} city
-                WHERE city->'value'->>'id' = v.value->>'id')) ELSE FALSE END AS "needsProvision"
+                WHERE city->'value'->>'id' = v.value->>'id')
+              OR (NOT EXISTS (SELECT 1 FROM ${records('territories')} plot
+                WHERE plot->'value'->>'id' = v.value->>'id')
+                AND NOT COALESCE(w.state->'geography'->'omittedVillagePlotIds' ? (v.value->>'id'), FALSE)))
+              ELSE FALSE END AS "needsProvision"
         FROM "KingdomWorld" w WHERE w.id = ${worldId}
           AND w.state->'players' ? ${this.identity.id}::text`);
       if (row?.needsProvision) throw new VillageProvisioningRequired();

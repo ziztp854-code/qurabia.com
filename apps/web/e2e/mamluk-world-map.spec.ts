@@ -611,19 +611,29 @@ test('a village world-map entry opens its real geographic village and returns to
 }, testInfo) => {
   const db = createPrismaClient(process.env.KINGDOMS_TEST_DATABASE_URL!);
   const worldId = `map_village_e2e_${randomUUID()}`;
+  const neighbourId = `map_neighbour_e2e_${randomUUID()}`;
   try {
     const player = await db.user.findUniqueOrThrow({
       where: { email: 'mamluk-map@example.test' },
       select: { id: true },
     });
+    await db.user.create({ data: { id: neighbourId, name: 'جار الحاكم' } });
     const now = Date.now();
-    const state = executeCommand(
+    const ownState = executeCommand(
       createWorld(now),
       player.id,
       { type: 'found', name: 'الحاكم' },
       now,
     );
-    const village = Object.values(state.villages)[0];
+    const village = Object.values(ownState.villages)[0];
+    const state = executeCommand(
+      ownState,
+      neighbourId,
+      { type: 'found', name: 'جار الحاكم' },
+      now,
+    );
+    const neighbour = Object.values(state.villages).find((town) => town.ownerId === neighbourId);
+    if (!neighbour) throw new Error('The neighbouring village fixture was not created');
     await db.kingdomWorld.create({
       data: {
         id: worldId,
@@ -672,9 +682,35 @@ test('a village world-map entry opens its real geographic village and returns to
     expect(marker.geometry.coordinates[1]).toBeLessThan(38);
     expect(marker.geometry.coordinates).not.toEqual([village.x, village.y]);
     expect(marker.geometry.coordinates).toEqual([31.24967, 30.06263]);
+    const neighbourMarker = payload.layers.cities.features.find(
+      (feature) => feature.id === neighbour.id,
+    );
+    expect(neighbourMarker?.properties.name).toBe('عاصمة جار الحاكم');
+    expect(neighbourMarker?.properties.ownerPlayerId).toBe(neighbourId);
+    expect(neighbourMarker?.properties.fortificationLevel).toBe(0);
+    expect(neighbourMarker?.geometry).toEqual({ type: 'Point', coordinates: [29.91582, 31.20176] });
+    expect(payload.layers.territories.features.some((feature) => feature.id === neighbour.id)).toBe(
+      true,
+    );
+    const territory = payload.layers.territories.features.find(
+      (feature) => feature.id === village.id,
+    );
+    expect(territory?.properties.ownerPlayerId).toBe(player.id);
+    if (territory?.geometry.type !== 'Polygon')
+      throw new Error('The actual village boundary was not projected');
+    const boundary = territory.geometry.coordinates[0];
+    expect(boundary.at(-1)).toEqual(boundary[0]);
+    const longitudes = boundary.map(([longitude]) => longitude);
+    const latitudes = boundary.map(([, latitude]) => latitude);
+    expect(Math.min(...longitudes)).toBeLessThan(marker.geometry.coordinates[0]);
+    expect(Math.max(...longitudes)).toBeGreaterThan(marker.geometry.coordinates[0]);
+    expect(Math.min(...latitudes)).toBeLessThan(marker.geometry.coordinates[1]);
+    expect(Math.max(...latitudes)).toBeGreaterThan(marker.geometry.coordinates[1]);
     expect(payload.layers.fog.features.length).toBeGreaterThan(0);
     expect((await tile).status()).toBe(200);
     await expect(page.getByRole('status').filter({ hasText: 'رؤيتك الحالية' })).toBeVisible();
+    await showPanel(page, 'عاصمة جار الحاكم', 'عاصمة جار الحاكم');
+    await expect(page.getByRole('link', { name: 'إدارة القرية', exact: true })).toHaveCount(0);
     await showPanel(page, 'عاصمة الحاكم', 'عاصمة الحاكم');
     const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة', exact: true });
     await expect(panel.getByText('تحت رايتك', { exact: true })).toBeVisible();
@@ -718,6 +754,7 @@ test('a village world-map entry opens its real geographic village and returns to
     );
   } finally {
     await db.kingdomWorld.deleteMany({ where: { id: worldId } });
+    await db.user.deleteMany({ where: { id: neighbourId } });
     await db.$disconnect();
   }
 });
