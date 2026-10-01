@@ -95,6 +95,7 @@ class ObservedAdapter extends MapLibreAdapter {
 }
 
 const layers: readonly SelectableLayer[] = ['cities', 'castles', 'armies', 'sieges'];
+const recoveryDelaysMs = [1000, 2000, 5000] as const;
 export function createMapSession(
   map: LibreMap,
   worldId: string,
@@ -103,16 +104,28 @@ export function createMapSession(
   callbacks: MapSessionCallbacks,
 ) {
   let disposed = false;
+  let recoveryAttempts = 0;
+  let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
+  const cancelRecovery = () => {
+    clearTimeout(recoveryTimer);
+    recoveryTimer = undefined;
+  };
   const presentation = presentationPort(map);
   const adapter = new ObservedAdapter(presentation.port, palette, (payload) => {
     if (disposed) return;
     callbacks.onPayload(payload);
-    if (payload) callbacks.onStatus('ready');
+    if (payload) {
+      cancelRecovery();
+      recoveryAttempts = 0;
+      callbacks.onStatus('ready');
+    }
   });
   adapter.resetSession(worldId);
   adapter.setProjection(projection);
   const loader = new ViewportLoader(map, adapter, {
     load: async (bounds, signal) => {
+      // A pending recovery must never interrupt a newer pan or manual request.
+      cancelRecovery();
       callbacks.onStatus('loading');
       const query = new URLSearchParams({
         worldId,
@@ -128,11 +141,20 @@ export function createMapSession(
       return parseMapPayload(await response.json());
     },
     onError: () => {
-      if (!disposed) callbacks.onStatus('error');
+      if (disposed) return;
+      callbacks.onStatus('error');
+      const delay = recoveryDelaysMs[recoveryAttempts];
+      if (delay === undefined) return;
+      recoveryAttempts += 1;
+      recoveryTimer = setTimeout(() => {
+        recoveryTimer = undefined;
+        if (!disposed) void loader.refresh();
+      }, delay);
     },
   });
   const onMove = () => {
     if (disposed) return;
+    cancelRecovery();
     callbacks.onSelection(null);
     const bounds = adapter.getViewportBounds();
     const width =
@@ -158,6 +180,7 @@ export function createMapSession(
     loader,
     dispose: () => {
       disposed = true;
+      cancelRecovery();
       loader.dispose();
       adapter.dispose();
       presentation.dispose();

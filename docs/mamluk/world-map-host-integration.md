@@ -417,3 +417,40 @@ again. The web rerun passed 1,264 tests while all 23 database tests failed becau
 Docker Desktop had stopped. Restarting the existing local container and rerunning
 those three integration files passed all 23 tests; no production database or test
 expectation was changed. The repeated audit reports zero critical advisories.
+
+## Existing village navigation — 1 October 2026
+
+Village and overview navigation now opens the geographic route with the active
+world and owned village identifiers. The server validates membership, provisions
+stable longitude/latitude coordinates into the existing `KingdomWorld.state`
+JSONB geography extension, and focuses the camera on the owned village. Legacy
+grid coordinates are never treated as geographic coordinates. Existing command
+and progression behavior remains in the separately labeled campaign controls.
+
+The geographic reader projects current village names and ownership. It omits
+deleted villages and filters enemy villages before constructing the response.
+Own village visibility is finite, and private resources, troop inventories and
+legacy movement plans are never projected. The accepted domain and MapLibre
+adapter packages remain unchanged.
+
+The full web suite passed 225 files / 1,318 tests, including real isolated
+PostgreSQL tests. Six real-browser cases passed across desktop and mobile,
+including opening an existing village world, clicking its geographic marker,
+and returning to the correct village management screen. Typechecking, lint and
+the production build passed; the existing navigation lint warning remains.
+
+Production browser verification on the signed-in canonical site confirmed that
+the actual village “عاصمة االحاكم” appears at Cairo, `[31.24967, 30.06263]`,
+with its current ownership and wall level. Bounded viewport responses contained
+the owned village and finite visibility/fog, without hidden enemy information
+or private gameplay fields. Globe/flat controls, zoom and pan changed the real
+basemap and requested geographic bounds without browser console errors.
+
+One production HTTP 200 took 26.7 seconds, exceeding the 15-second snapshot
+lifetime. The adapter correctly discarded it. Host recovery now requests a new
+snapshot with at most three retries after 1, 2 and 5 seconds. Accepted snapshots
+reset the retry budget; movement, newer loads and teardown cancel pending
+retries. It preserves clearing and expiry and never extends a snapshot's lifetime
+or reuses expired information. Eleven session tests passed, with 94.33% statement
+and 81.25% branch coverage, including delayed delivery, repeated failure and
+cancellation races.
