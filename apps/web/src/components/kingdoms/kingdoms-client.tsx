@@ -24,7 +24,8 @@ import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
 import { ResourceIcon } from './resource-icon';
-import { unitKeys, type Building } from '@/lib/kingdoms/types';
+import { unitKeys } from '@/lib/kingdoms/types';
+import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import styles from './kingdoms.module.css';
 
 const tabs = {
@@ -50,7 +51,7 @@ const tabIcons = {
   throne: Crown,
 };
 const resourceOrder = ['gold', 'wood', 'stone', 'iron', 'food'] as const;
-type ScopedBuildingSelection = { worldId: string; villageId: string; building: Building };
+type ScopedBuildingSelection = { worldId: string; villageId: string; building: VillageSelection };
 
 export function KingdomsClient({
   canManage = false,
@@ -81,7 +82,7 @@ export function KingdomsClient({
     if (nextTab === 'village') setBuildingSelection(null);
     setTab(nextTab);
   };
-  const openBuilding = (building: Building) => {
+  const openBuilding = (building: VillageSelection) => {
     if (!view || !village) return;
     setBuildingSelection({ worldId: view.worldId, villageId: village.id, building });
     setTab('village');

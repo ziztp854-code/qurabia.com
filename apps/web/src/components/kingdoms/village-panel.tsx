@@ -3,7 +3,7 @@
 import { Castle, Hammer, Map, ScrollText, Shield, Swords } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
-import { resourceKeys, unitKeys, type Building, type Resources } from '@/lib/kingdoms/types';
+import { resourceKeys, unitKeys, type Resources } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
 import { StageLadder } from './stage-ladder';
@@ -32,7 +32,7 @@ export function VillagePanel({
   initialBuilding = null,
   onNavigate,
 }: GameProps & {
-  initialBuilding?: Building | null;
+  initialBuilding?: VillageSelection | null;
   onNavigate?: (tab: VillageNavigation) => void;
 }) {
   const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);

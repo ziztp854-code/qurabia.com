@@ -14,7 +14,8 @@ import {
   Swords,
   Users,
 } from 'lucide-react';
-import { unitKeys, type Building } from '@/lib/kingdoms/types';
+import { unitKeys } from '@/lib/kingdoms/types';
+import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { date, number, type GameProps } from './shared';
 import { VillageMap } from './village-map';
 import { villageArt } from './village-layout';
@@ -31,7 +32,7 @@ export function KingdomOverview({
 }: Pick<GameProps, 'view' | 'village'> & {
   onNavigate: (tab: OverviewTab) => void;
   worldMapHref: string;
-  onSelectBuilding: (building: Building) => void;
+  onSelectBuilding: (building: VillageSelection) => void;
 }) {
   const troops = view.villages.reduce(
     (sum, item) => sum + unitKeys.reduce((count, unit) => count + item.troops[unit], 0),
