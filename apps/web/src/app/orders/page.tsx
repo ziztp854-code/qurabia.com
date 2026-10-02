@@ -24,7 +24,7 @@ import { RankCrest } from '@/components/orders/rank-crest';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: 'قاعة الأوسمة | تحدّي',
+  title: 'الاشتراكات ورُتب البلاط | تحدّي',
   description: 'رُتب بلاط تحدّي وامتيازاتها: فعّل ختمك الذهبي وارفع مكانتك.',
   alternates: { canonical: '/orders' },
 };
@@ -111,7 +111,7 @@ export default async function OrdersPage({
           <Sparkles aria-hidden="true" />
           بلاط تحدّي
         </span>
-        <h1>قاعة الأوسمة</h1>
+        <h1>الاشتراكات ورُتب البلاط</h1>
         <p>
           في تحدّي لا تُباع خطط، بل تُمنح رُتب. فعّل ختمك الذهبي، أو استضف جولاتك حتى يمنحك البلاط
           لقبًا أرفع.

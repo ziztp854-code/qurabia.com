@@ -1,4 +1,4 @@
-import { ArrowLeft, Crown, Gamepad2, QrCode, Trophy, Zap } from 'lucide-react';
+import { ArrowLeft, Castle, Crown, Gamepad2, Globe2, QrCode, Trophy, Zap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PrestigeStage } from '@/components/home/prestige-stage';
@@ -8,16 +8,9 @@ import { SiteLayout, type HeaderUser } from '@/components/layout';
 import { ButtonLink } from '@/components/ui';
 import { publicNavigation } from '@/config/navigation';
 import { publicGames } from '@/data/games';
-import { PLAN_CODES, planDefinition, type PlanCode } from '@tahaddi/domain';
-import { formatNumber } from '@/lib/utils';
+import type { PlanCode } from '@tahaddi/domain';
 import styles from './prestige-home.module.css';
-
-const RANK_IMAGE: Record<PlanCode, string> = {
-  SPECTATOR: '/ranks/spectator.png',
-  KNIGHT: '/ranks/knight.png',
-  PRINCE: '/ranks/prince.png',
-  SULTAN: '/ranks/sultan.png',
-};
+import worldStyles from './mamluk-home.module.css';
 
 const RANK_EMBLEM: Record<PlanCode, string> = {
   SPECTATOR: '/ranks/emblem-spectator.png',
@@ -32,6 +25,9 @@ const featuredGames = featuredGameIds.flatMap((id) => {
   return game ? [game] : [];
 });
 const productionGames = publicGames.filter((game) => game.status !== 'soon');
+const mobileNavigation = publicNavigation.filter(
+  (item) => !['/games/kingdoms', '/games/kingdoms/world-map', '/contact'].includes(item.href),
+);
 export type HomeRank = {
   code: string;
   name: string;
@@ -142,42 +138,48 @@ export function PrestigeHome({
           </section>
         </div>
 
-        <section className={styles.plansSection} aria-labelledby="plans-title">
+        <section className={worldStyles.section} id="mamluk-world" aria-labelledby="mamluk-title">
           <div className={styles.sectionHead}>
             <span aria-hidden="true" />
-            <h2 id="plans-title">رُتب البلاط والاشتراكات</h2>
+            <h2 id="mamluk-title">عالم المماليك</h2>
             <span aria-hidden="true" />
           </div>
-          <div className={styles.plans}>
-            {PLAN_CODES.map((code) => {
-              const plan = planDefinition(code);
-              const isCurrent = rank?.code === code;
-              return (
-                <Link
-                  key={code}
-                  href="/orders"
-                  className={styles.planCard}
-                  data-plan={code}
-                  data-current={isCurrent}
-                  aria-label={`رتبة ${plan.name} — ${
-                    plan.monthlyPriceSar === 0
-                      ? 'مجانًا'
-                      : `${formatNumber(plan.monthlyPriceSar)} ريال شهريًا`
-                  } — فتح قاعة الأوسمة`}
-                >
-                  <Image
-                    className={styles.planImage}
-                    src={RANK_IMAGE[code]}
-                    alt={`بطاقة رتبة ${plan.name}`}
-                    width={1024}
-                    height={1536}
-                    sizes="(max-width: 640px) 88vw, (max-width: 1024px) 44vw, 23vw"
-                  />
-                  {isCurrent ? <span className={styles.planCurrentFlag}>رتبتك الحالية</span> : null}
-                </Link>
-              );
-            })}
-          </div>
+          <figure className={worldStyles.world}>
+            <div className={worldStyles.art}>
+              <Image
+                src="/game-art/kingdoms/village-oasis.webp"
+                alt="قرية محصّنة بقصور وقباب وسط النخيل والأنهار في عالم المماليك"
+                fill
+                sizes="(max-width: 767px) 100vw, (max-width: 1440px) 58vw, 835px"
+              />
+            </div>
+            <figcaption className={worldStyles.copy}>
+              <span className={worldStyles.eyebrow}>
+                <Castle aria-hidden="true" />
+                من قريتك تبدأ الحكاية
+              </span>
+              <h3>
+                ابنِ مملكتك،<br />
+                واكتب تاريخك
+              </h3>
+              <p>طوّر قريتك، كوّن تحالفك، واستكشف خريطة العالم. كل قرار يرسم مستقبل مملكتك.</p>
+              <ul className={worldStyles.features} aria-label="مزايا عالم المماليك">
+                <li>بناء وتطوير</li>
+                <li>تحالفات ومعارك</li>
+                <li>خريطة عالم</li>
+              </ul>
+              <div className={worldStyles.actions}>
+                <ButtonLink href="/games/kingdoms" variant="gold">
+                  ادخل عالم المماليك
+                  <ArrowLeft aria-hidden="true" />
+                </ButtonLink>
+                <ButtonLink href="/games/kingdoms/world-map" variant="outline">
+                  <Globe2 aria-hidden="true" />
+                  استكشف خريطة العالم
+                </ButtonLink>
+              </div>
+            </figcaption>
+          </figure>
         </section>
 
         <section className={styles.closingCta} aria-label="استمر في التحدي">
@@ -193,7 +195,7 @@ export function PrestigeHome({
         </section>
 
         <nav className={styles.mobileDock} aria-label="التنقل السفلي">
-          {publicNavigation.map((item) => (
+          {mobileNavigation.map((item) => (
             <Link
               href={item.href}
               aria-current={item.href === '/' ? 'page' : undefined}

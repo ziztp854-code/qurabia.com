@@ -7,8 +7,11 @@ for (const viewport of [
   { width: 430, height: 932 },
   { width: 768, height: 1024 },
   { width: 820, height: 1180 },
+  { width: 1101, height: 900 },
+  { width: 1280, height: 900 },
   { width: 1366, height: 768 },
   { width: 1440, height: 900 },
+  { width: 1700, height: 900 },
   { width: 1920, height: 1080 },
 ]) {
   test(`تعرض الصفحة الرئيسية طبقاتها المتجاوبة دون تمرير أفقي عند ${viewport.width}`, async ({
@@ -34,11 +37,48 @@ for (const viewport of [
     await expect(page.getByRole('textbox', { name: 'رمز الغرفة' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'انضم' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'الألعاب الأبرز' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'رُتب البلاط والاشتراكات' })).toBeVisible();
+    const world = page.getByRole('region', { name: 'عالم المماليك' });
+    await expect(world).toBeVisible();
+    await expect(world.getByRole('link', { name: /ادخل عالم المماليك/ })).toHaveAttribute(
+      'href',
+      /\/games\/kingdoms\/?$/,
+    );
+    await expect(world.getByRole('link', { name: /استكشف خريطة العالم/ })).toHaveAttribute(
+      'href',
+      /\/games\/kingdoms\/world-map\/?$/,
+    );
+    await expect(page.getByRole('img', { name: /بطاقة رتبة/ })).toHaveCount(0);
 
     const bottomNav = page.getByRole('navigation', { name: 'التنقل السفلي' });
     if (viewport.width < 768) await expect(bottomNav).toBeVisible();
     else await expect(bottomNav).toBeHidden();
+    let navigation =
+      viewport.width < 768
+        ? bottomNav
+        : page.getByRole('navigation', { name: 'التنقل الرئيسي' });
+    if (viewport.width >= 768 && !(await navigation.isVisible())) {
+      await page.getByRole('button', { name: 'فتح القائمة' }).click();
+      navigation = page.getByRole('navigation', { name: 'قائمة الجوال' });
+    }
+    await expect(navigation.getByRole('link', { name: 'الاشتراكات' })).toHaveAttribute(
+      'href',
+      /\/orders\/?$/,
+    );
+
+    if (await page.locator('.desktop-nav').isVisible()) {
+      await expect
+        .poll(() =>
+          page.locator('.header-inner').evaluate((header) => {
+            const logo = header.querySelector('.logo')!.getBoundingClientRect();
+            const actions = header.querySelector('.header-actions')!.getBoundingClientRect();
+            return [...header.querySelectorAll('.desktop-nav a')].every((link) => {
+              const box = link.getBoundingClientRect();
+              return box.left >= actions.right && box.right <= logo.left;
+            });
+          }),
+        )
+        .toBe(true);
+    }
 
     if (viewport.width < 768) {
       const undersizedTargets = await page

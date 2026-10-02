@@ -103,6 +103,10 @@ describe('Header user menu', () => {
     );
 
     const desktopNavigation = screen.getByRole('navigation', { name: 'التنقل الرئيسي' });
+    expect(within(desktopNavigation).getByRole('link', { name: 'الاشتراكات' })).toHaveAttribute(
+      'href',
+      '/orders',
+    );
     expect(within(desktopNavigation).getByRole('link', { name: 'الرئيسية' })).toHaveAttribute(
       'href',
       '/',
@@ -142,6 +146,10 @@ describe('Header user menu', () => {
 
     await user.click(screen.getByRole('button', { name: 'فتح القائمة' }));
     const mobileNavigation = screen.getByRole('navigation', { name: 'قائمة الجوال' });
+    expect(within(mobileNavigation).getByRole('link', { name: 'الاشتراكات' })).toHaveAttribute(
+      'href',
+      '/orders',
+    );
     expect(within(mobileNavigation).getByRole('link', { name: 'الألعاب' })).toHaveAttribute(
       'href',
       '/games',

@@ -3,6 +3,7 @@ import {
   BookOpen,
   Castle,
   CircleHelp,
+  Crown,
   Gamepad2,
   Globe2,
   Home,
@@ -20,6 +21,7 @@ export const publicNavigation = [
   { label: 'خريطة العالم', href: '/games/kingdoms/world-map', icon: Globe2 },
   { label: 'المسابقات', href: '/quizzes', icon: Trophy },
   { label: 'لوحة الشرف', href: '/leaderboard', icon: BarChart3 },
+  { label: 'الاشتراكات', href: '/orders', icon: Crown },
   { label: 'الدعم', href: '/contact', icon: CircleHelp },
   { label: 'الحساب', href: '/profile', icon: UserCircle2 },
 ] as const;

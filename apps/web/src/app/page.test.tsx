@@ -61,7 +61,7 @@ describe('HomePage', () => {
     expect(container.querySelector('[data-layer="shine-crown"]')).toBeInTheDocument();
   });
 
-  it('يجمع الألعاب في تكوين الصفحة المرجعي دون إحصاءات حضور عامة', async () => {
+  it('يعرض عالم المماليك بعد الألعاب ويجعل الرتب في قسم الاشتراكات', async () => {
     const { container } = await renderHomePage();
     const showcase = container.querySelector('[data-home-showcase]');
 
@@ -71,6 +71,11 @@ describe('HomePage', () => {
     ).not.toBeInTheDocument();
     expect(within(showcase as HTMLElement).queryByRole('region', { name: 'إهداء إلى أميرة' })).not.toBeInTheDocument();
     expect(within(showcase as HTMLElement).getByRole('region', { name: 'الألعاب الأبرز' })).toBeInTheDocument();
+    const world = screen.getByRole('region', { name: 'عالم المماليك' });
+    expect(within(world).getByRole('link', { name: /ادخل عالم المماليك/ })).toHaveAttribute('href', '/games/kingdoms');
+    expect(within(world).getByRole('link', { name: /استكشف خريطة العالم/ })).toHaveAttribute('href', '/games/kingdoms/world-map');
+    expect(screen.queryByRole('region', { name: 'رُتب البلاط والاشتراكات' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /بطاقة رتبة/ })).not.toBeInTheDocument();
   });
 
   it('يعرض الألعاب المطلوبة ويحافظ على روابط الإنتاج المباشرة', async () => {
@@ -122,7 +127,8 @@ describe('HomePage', () => {
     expect(within(nav).getByRole('link', { name: 'الألعاب' })).toHaveAttribute('href', '/games');
     expect(within(nav).getByRole('link', { name: 'المسابقات' })).toHaveAttribute('href', '/quizzes');
     expect(within(nav).getByRole('link', { name: 'لوحة الشرف' })).toHaveAttribute('href', '/leaderboard');
-    expect(within(nav).getByRole('link', { name: 'الدعم' })).toHaveAttribute('href', '/contact');
+    expect(within(nav).getAllByRole('link')).toHaveLength(6);
     expect(within(nav).getByRole('link', { name: 'الحساب' })).toHaveAttribute('href', '/profile');
+    expect(within(nav).getByRole('link', { name: 'الاشتراكات' })).toHaveAttribute('href', '/orders');
   });
 });

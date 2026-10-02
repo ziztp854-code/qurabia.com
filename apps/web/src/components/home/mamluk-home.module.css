@@ -1,0 +1,121 @@
+.section {
+  inline-size: min(calc(100% - 2rem), 90rem);
+  margin: clamp(2rem, 5vw, 4rem) auto;
+  scroll-margin-block-start: 6rem;
+}
+
+.world {
+  display: grid;
+  grid-template-areas: 'copy art';
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--home-border);
+  border-radius: 1.25rem;
+  background: var(--home-panel);
+}
+
+.art {
+  grid-area: art;
+  position: relative;
+  min-block-size: 26rem;
+}
+
+.art img {
+  object-fit: cover;
+  object-position: center;
+}
+
+.copy {
+  grid-area: copy;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 1.25rem;
+  padding: clamp(1.5rem, 3vw, 3rem);
+  border-inline-end: 1px solid var(--home-border);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--home-gold-bright);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.eyebrow svg {
+  inline-size: 1.3rem;
+  block-size: 1.3rem;
+}
+
+.copy h3 {
+  margin: 0;
+  color: var(--home-ink);
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.copy p {
+  margin: 0;
+  max-inline-size: 29rem;
+  color: var(--home-muted);
+  line-height: 1.8;
+}
+
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--home-gold-bright);
+  font-size: 0.85rem;
+}
+
+.features li + li {
+  padding-inline-start: 1rem;
+  border-inline-start: 1px solid var(--home-border);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  inline-size: 100%;
+}
+
+.actions a {
+  min-block-size: 2.75rem;
+  white-space: normal;
+}
+
+@media (max-width: 767px) {
+  .section {
+    inline-size: min(calc(100% - 1.25rem), 90rem);
+  }
+
+  .world {
+    grid-template-areas: 'art' 'copy';
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .art {
+    min-block-size: 0;
+    aspect-ratio: 3 / 2;
+  }
+
+  .copy {
+    gap: 1rem;
+    padding: 1.5rem;
+    border-inline-end: 0;
+    border-block-start: 1px solid var(--home-border);
+  }
+
+  .actions a {
+    inline-size: 100%;
+  }
+}
