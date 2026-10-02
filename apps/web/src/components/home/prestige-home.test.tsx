@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PrestigeHome } from './prestige-home';
@@ -7,27 +7,28 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-describe('PrestigeHome rank showcase', () => {
-  it('renders every court rank as its full artwork card', () => {
+describe('PrestigeHome Mamluk world', () => {
+  it('shows the village artwork and world destinations in place of rank cards', () => {
     render(
       <ThemeProvider>
         <PrestigeHome user={null} />
       </ThemeProvider>,
     );
 
-    const expectedCards = [
-      ['المشاهد', '/ranks/spectator.png'],
-      ['الفارس', '/ranks/knight.png'],
-      ['الأمير', '/ranks/prince.png'],
-      ['السلطان', '/ranks/sultan.png'],
-    ] as const;
-
-    for (const [rank, source] of expectedCards) {
-      const artwork = screen.getByRole('img', { name: `بطاقة رتبة ${rank}` });
-      const renderedSource = artwork.getAttribute('src') ?? '';
-      const originalSource = new URL(renderedSource, 'http://localhost').searchParams.get('url');
-      expect(originalSource ?? renderedSource).toBe(source);
-    }
+    const world = screen.getByRole('region', { name: 'عالم المماليك' });
+    const artwork = within(world).getByRole('img');
+    const renderedSource = artwork.getAttribute('src') ?? '';
+    const originalSource = new URL(renderedSource, 'http://localhost').searchParams.get('url');
+    expect(originalSource ?? renderedSource).toBe('/game-art/kingdoms/village-oasis.webp');
+    expect(within(world).getByRole('link', { name: /ادخل عالم المماليك/ })).toHaveAttribute(
+      'href',
+      '/games/kingdoms',
+    );
+    expect(within(world).getByRole('link', { name: /استكشف خريطة العالم/ })).toHaveAttribute(
+      'href',
+      '/games/kingdoms/world-map',
+    );
+    expect(screen.queryByRole('img', { name: /بطاقة رتبة/ })).not.toBeInTheDocument();
   });
 
   it('renders the signed-in player rank as its real emblem artwork', () => {

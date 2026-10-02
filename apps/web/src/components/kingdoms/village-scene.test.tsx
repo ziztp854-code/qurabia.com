@@ -114,32 +114,39 @@ describe('village scene rendering', () => {
     };
     render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
     const map = screen.getByRole('region', { name: 'خريطة القرية' });
+    expect(map.querySelectorAll('[data-building]')).toHaveLength(buildingKeys.length);
     const hall = within(map).getByRole('button', { name: /^دار الحكم/ });
-    expect(hall).toHaveAttribute('data-visual', 'supreme');
-    expect(hall).toHaveAttribute('data-maxed', 'true');
+    expect(hall).toHaveAttribute('data-state', 'complete');
+    expect(hall).toHaveAccessibleName(/المستوى ٢٠/);
+    expect(hall).toHaveAccessibleDescription(/بلغ الحد الأعلى/);
     const market = within(map).getByRole('button', { name: /^السوق/ });
-    expect(market).toHaveAttribute('data-constructing', 'true');
-    expect(market).toHaveAccessibleName(/قيد التطوير، يُبنى المستوى الأول/);
+    expect(market).toHaveAttribute('data-state', 'construction');
+    expect(market).toHaveAccessibleName(/قيد التطوير/);
+    expect(
+      within(screen.getByRole('region', { name: 'قوائم التنفيذ' })).getByText(/السوق.*المستوى ١/),
+    ).toBeInTheDocument();
     const embassy = within(map).getByRole('button', { name: /^دار العهد/ });
-    expect(embassy).toHaveAttribute('data-visual', 'vacant');
-    expect(embassy).toHaveAccessibleName(/لم يُبنَ، أرض شاغرة/);
-    expect(within(map).getByRole('button', { name: /^مزارع الغذاء/ })).toHaveAttribute(
-      'data-visual',
-      'renaissance',
-    );
+    expect(embassy).toHaveAttribute('data-state', 'upgrade');
+    expect(embassy).toHaveAccessibleName(/لم يُبنَ/);
+    const farm = within(map).getByRole('button', { name: /^مزارع الغذاء/ });
+    expect(farm).toHaveAttribute('data-state', 'upgrade');
+    expect(farm).toHaveAccessibleName(/المستوى ٣/);
   });
 
   it('hides scene labels on request without hiding the selected building', () => {
     const view = fixture();
     const { container } = render(
-      <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} />,
+      <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} initialBuilding="hall" />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'أخفِ اللافتات' }));
-    expect(screen.getByRole('button', { name: 'أظهر اللافتات' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'hidden');
+    const labels = screen.getByRole('button', { name: 'إظهار أسماء المباني' });
+    expect(labels).toHaveAttribute('aria-pressed', 'false');
+    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
+    fireEvent.click(labels);
+    expect(labels).toHaveAttribute('aria-pressed', 'true');
+    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'true');
+    fireEvent.click(labels);
+    expect(labels).toHaveAttribute('aria-pressed', 'false');
+    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
     expect(screen.getByRole('button', { name: /^دار الحكم/ })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -154,16 +161,18 @@ describe('selected building card', () => {
       ...view.villages[0],
       build: { building: 'farm' as const, level: 1, endsAt: now + 60000 },
     };
-    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /^المخزن/ }));
-    const card = screen.getByRole('article', { name: 'المبنى المختار: المخزن' });
+    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} initialBuilding="warehouse" />);
+    const card = screen.getByRole('region', { name: 'تفاصيل المخزن' });
     const costs = within(card).getByRole('list', { name: 'تكلفة التطوير' });
     const expected = upgradeCost(view.config, 'warehouse', 0);
     expect(within(costs).getAllByRole('listitem')).toHaveLength(
       Object.values(expected).filter((amount) => amount > 0).length,
     );
-    expect(within(card).getByText(/البناء مشغول بـمزارع الغذاء/)).toBeInTheDocument();
-    expect(within(card).getByRole('button', { name: 'ابنِ المبنى' })).toBeDisabled();
+    expect(within(card).getByText('انتظر اكتمال البناء الجاري قبل بدء تطوير آخر.')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'قوائم التنفيذ' })).getByText(/مزارع الغذاء/),
+    ).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
   });
 
   it('reports the command outcome from the server snapshot', () => {
@@ -171,23 +180,39 @@ describe('selected building card', () => {
     const send = vi.fn().mockResolvedValue(undefined);
     const village = view.villages[0];
     const { rerender } = render(
-      <VillagePanel view={view} village={village} send={send} busy={false} />,
+      <VillagePanel view={view} village={village} send={send} busy={false} initialBuilding="hall" />,
     );
     fireEvent.click(screen.getByRole('button', { name: 'طوّر المبنى' }));
     expect(send).toHaveBeenCalledWith({ type: 'build', villageId: village.id, building: 'hall' });
-    rerender(<VillagePanel view={view} village={village} send={send} busy />);
-    const card = screen.getByRole('article', { name: 'المبنى المختار: دار الحكم' });
-    expect(within(card).getByRole('status')).toHaveTextContent('جارٍ إرسال الأمر');
-    rerender(<VillagePanel view={view} village={village} send={send} busy={false} />);
-    expect(within(card).getByRole('status')).toHaveTextContent('لم يبدأ البناء');
+    const card = screen.getByRole('region', { name: 'تفاصيل دار الحكم' });
+    rerender(<VillagePanel view={view} village={village} send={send} busy initialBuilding="hall" />);
+    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
+    expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
+    rerender(<VillagePanel view={view} village={village} send={send} busy={false} initialBuilding="hall" />);
+    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeEnabled();
+    expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
     rerender(
       <VillagePanel
         view={view}
         village={{ ...village, build: { building: 'hall', level: 2, endsAt: now + 60000 } }}
         send={send}
         busy={false}
+        initialBuilding="hall"
       />,
     );
-    expect(within(card).getByRole('status')).toHaveTextContent(/بدأ بناء المستوى ٢/);
+    expect(within(card).getByText('هذا المبنى قيد التطوير.')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
+    expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
+    rerender(
+      <VillagePanel
+        view={view}
+        village={{ ...village, buildings: { ...village.buildings, hall: 2 } }}
+        send={send}
+        busy={false}
+        initialBuilding="hall"
+      />,
+    );
+    expect(within(card).getByText(`مستوى ${number(2)} / ${number(20)}`)).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeEnabled();
   });
 });
