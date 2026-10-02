@@ -117,6 +117,116 @@ describe('Kingdoms player interface', () => {
     expect(screen.queryByLabelText('اسم المملكة')).not.toBeInTheDocument();
   });
 
+  it.each(['', 'paused-world', 'ended-world'])(
+    'shows only open worlds when the requested world is "%s"',
+    async (initialWorldId) => {
+      const worlds = [
+        { ...summary[0], id: 'paused-world', name: 'عالم موقوف', status: 'PAUSED' },
+        { ...summary[0], id: 'ended-world', name: 'عالم منتهٍ', status: 'ENDED' },
+        ...summary,
+      ];
+      vi.mocked(fetch).mockImplementation(async (url) =>
+        response(String(url).endsWith('/worlds') ? worlds : projection()),
+      );
+      render(<KingdomsClient initialWorldId={initialWorldId} />);
+      await screen.findByLabelText('اسم المملكة');
+      const selector = screen.getByRole('combobox', { name: 'العالم والموسم' });
+      expect(within(selector).getAllByRole('option')).toHaveLength(1);
+      expect(within(selector).getByRole('option', { name: 'عالم الاختبار · مفتوح' })).toHaveValue(
+        'world-1',
+      );
+      expect(selector).toHaveValue('world-1');
+      expect(
+        vi.mocked(fetch).mock.calls.some(([url]) =>
+          /worldId=(paused-world|ended-world)/.test(String(url)),
+        ),
+      ).toBe(false);
+    },
+  );
+
+  it('shows the empty state when every world is paused or ended', async () => {
+    const worlds = [
+      { ...summary[0], id: 'paused-world', status: 'PAUSED' },
+      { ...summary[0], id: 'ended-world', status: 'ENDED' },
+    ];
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (!String(url).endsWith('/worlds')) throw new Error('Closed world was requested');
+      return response(worlds);
+    });
+    render(<KingdomsClient />);
+    expect(await screen.findByText(/لم يُفتح عالم بعد/)).toBeInTheDocument();
+    const selector = screen.getByRole('combobox', { name: 'العالم والموسم' });
+    expect(selector).toHaveValue('');
+    expect(within(selector).getByRole('option', { name: 'لا عوالم متاحة' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('اسم المملكة')).not.toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => String(url))).toEqual([
+      '/api/kingdoms/worlds',
+    ]);
+  });
+
+  it('refreshes an empty list and selects a newly opened world without closed options', async () => {
+    let worlds = [{ ...summary[0], id: 'paused-world', status: 'PAUSED' }];
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).endsWith('/worlds')) return response(worlds);
+      if (String(url) === '/api/kingdoms?worldId=world-1') return response(projection());
+      throw new Error('Unexpected world was requested');
+    });
+    render(<KingdomsClient />);
+    await screen.findByText(/لم يُفتح عالم بعد/);
+    worlds = [...worlds, ...summary];
+    fireEvent.click(screen.getByRole('button', { name: 'تحديث' }));
+    await screen.findByLabelText('اسم المملكة');
+    const selector = screen.getByRole('combobox', { name: 'العالم والموسم' });
+    expect(selector).toHaveValue('world-1');
+    expect(within(selector).getAllByRole('option')).toHaveLength(1);
+    expect(within(selector).getByRole('option')).toHaveTextContent('عالم الاختبار · مفتوح');
+    expect(screen.queryByText(/لم يُفتح عالم بعد/)).not.toBeInTheDocument();
+  });
+
+  it('retains the selected open world when refreshing its server view', async () => {
+    let requests = 0;
+    const worlds = [...summary, { ...summary[0], id: 'world-2', name: 'العالم الثاني' }];
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).endsWith('/worlds')) return response(worlds);
+      if (String(url) !== '/api/kingdoms?worldId=world-2') {
+        throw new Error('Unexpected world was requested');
+      }
+      requests += 1;
+      return response({
+        ...projection(),
+        worldId: 'world-2',
+        worldName: requests === 1 ? 'العالم الثاني' : 'العالم الثاني بعد التحديث',
+      });
+    });
+    render(<KingdomsClient initialWorldId="world-2" />);
+    await screen.findByLabelText('اسم المملكة');
+    fireEvent.click(screen.getByRole('button', { name: 'تحديث' }));
+    expect(await screen.findByText(/العالم الثاني بعد التحديث/)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'العالم والموسم' })).toHaveValue('world-2');
+    expect(requests).toBe(2);
+  });
+
+  it('retries a failed world list without restoring paused worlds', async () => {
+    let attempts = 0;
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).endsWith('/worlds')) {
+        attempts += 1;
+        if (attempts === 1) throw new Error('تعذر تحميل العوالم');
+        return response([{ ...summary[0], id: 'paused-world', status: 'PAUSED' }, ...summary]);
+      }
+      if (String(url) === '/api/kingdoms?worldId=world-1') return response(projection());
+      throw new Error('Unexpected world was requested');
+    });
+    render(<KingdomsClient />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('تعذر تحميل العوالم');
+    fireEvent.click(screen.getByRole('button', { name: 'تحديث' }));
+    await screen.findByLabelText('اسم المملكة');
+    const selector = screen.getByRole('combobox', { name: 'العالم والموسم' });
+    expect(selector).toHaveValue('world-1');
+    expect(within(selector).getAllByRole('option')).toHaveLength(1);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('opens the interactive village first with actual troops and keeps geographic navigation context', async () => {
     const snapshot = projection(true);
     const village = snapshot.villages[0];

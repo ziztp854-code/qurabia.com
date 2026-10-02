@@ -57,11 +57,15 @@ export function useKingdoms(initialWorldId = '') {
     setLoading(true);
     setError('');
     try {
-      const result = await request<WorldSummary[]>('/api/kingdoms/worlds');
+      const result = (await request<WorldSummary[]>('/api/kingdoms/worlds')).filter(
+        (world) => world.status === 'OPEN',
+      );
       setWorlds(result);
       updateWorldId(
         (current) =>
-          current || result.find((world) => world.id === initialWorldId)?.id || result[0]?.id || '',
+          result.find((world) => world.id === current)?.id ||
+          result.find((world) => world.id === initialWorldId)?.id ||
+          result[0]?.id || '',
       );
     } catch (failure) {
       setError((failure as Error).message);
@@ -72,6 +76,7 @@ export function useKingdoms(initialWorldId = '') {
   useEffect(() => {
     let current = true;
     void request<WorldSummary[]>('/api/kingdoms/worlds')
+      .then((result) => result.filter((world) => world.status === 'OPEN'))
       .then((result) => {
         if (current) {
           setWorlds(result);
