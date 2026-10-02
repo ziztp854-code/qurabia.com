@@ -8,5 +8,5 @@ export default defineConfig({
     '@': path.resolve(__dirname, './src'),
     'server-only': path.resolve(__dirname, './node_modules/next/dist/compiled/server-only/empty.js'),
   } },
-  test: { environment: 'jsdom', setupFiles: ['./src/test/setup.ts'], include: ['src/**/*.test.{ts,tsx}'] },
+  test: { maxWorkers: 4, environment: 'jsdom', setupFiles: ['./src/test/setup.ts'], include: ['src/**/*.test.{ts,tsx}'] },
 });

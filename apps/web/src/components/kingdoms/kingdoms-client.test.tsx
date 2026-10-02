@@ -94,7 +94,7 @@ describe('Kingdoms player interface', () => {
       return response(String(url).endsWith('/worlds') ? summary : projection());
     });
     render(<KingdomsClient />);
-    fireEvent.change(await screen.findByLabelText('اسم المملكة'), {
+    fireEvent.change(await screen.findByLabelText('اسم المملكة', {}, { timeout: 3000 }), {
       target: { value: 'مملكة النور' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'أسّس مملكتي' }));
