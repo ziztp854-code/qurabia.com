@@ -28,7 +28,7 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import { buildingKeys, type Building } from '@/lib/kingdoms/types';
+import { buildingKeys } from '@/lib/kingdoms/types';
 import { villageAssets } from '@/lib/kingdoms/village/assetManifest';
 import {
   buildingGroups,
@@ -36,11 +36,12 @@ import {
   getBuildingPresentation,
 } from '@/lib/kingdoms/village/buildingConfig';
 import { createCamera } from '@/lib/kingdoms/village/cameraMath';
-import { getBuildingRect, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
+import { getBuildingRect, getVillageRect, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type {
   VillageCanvasProps,
   VillageSceneHandle,
+  VillageSelection,
   WorldRect,
 } from '@/lib/kingdoms/village/types';
 import { VillageCamera } from './village-camera';
@@ -69,9 +70,7 @@ const statusIcons = {
 };
 const supplementary = [
   { id: 'tower', name: 'أبراج الحراسة', building: 'wall' },
-  { id: 'stable', name: 'الإسطبل وتدريب الفرسان', building: 'barracks' },
   { id: 'workshop', name: 'ورش البناء والأخشاب', building: 'lumber' },
-  { id: 'research', name: 'دار العلم والتطوير', building: 'hall' },
 ] as const;
 const rectStyle = (rect: WorldRect): CSSProperties => ({
   left: rect.x,
@@ -282,7 +281,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       return () => clearInterval(timer);
     }, [props.village.build, props.view.serverNow]);
 
-    const choose = (building: Building) =>
+    const choose = (building: VillageSelection) =>
       camera.current?.focusOn(building, () => current.current.onSelect(building));
     const build = props.village.build;
     const now = props.view.serverNow + (clock.base === props.view.serverNow ? clock.elapsed : 0);
@@ -389,6 +388,29 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 </button>
               );
             })}
+            <button
+              type="button"
+              className={`${styles.hotspot} ${styles.region}`}
+              style={rectStyle(getVillageRect('stable', props.debug))}
+              aria-label={`الإسطبل، مستوى الثكنة ${props.village.buildings.barracks.toLocaleString('ar-SA')}`}
+              aria-describedby={`${descriptionId}-stable`}
+              aria-pressed={props.selected === 'stable'}
+              data-building-region="stable"
+              data-state={getBuildingPresentation('barracks', props.village, props.view.config).status}
+              onClick={() => choose('stable')}
+              onPointerEnter={() => renderer.current?.hover('stable')}
+              onPointerLeave={() => renderer.current?.hover(null)}
+              onFocus={() => renderer.current?.hover('stable')}
+              onBlur={() => renderer.current?.hover(null)}
+            >
+              <span id={`${descriptionId}-stable`} className={styles.visuallyHidden}>
+                ملحق الفرسان التابع للثكنة؛ المستوى والتطوير والتدريب مرتبطون بالثكنة.
+              </span>
+              <span className={styles.label}>
+                <Swords size={15} aria-hidden="true" />
+                <span>الإسطبل<small>مستوى الثكنة {props.village.buildings.barracks.toLocaleString('ar-SA')}</small></span>
+              </span>
+            </button>
             {supplementary.map((region) => (
               <button
                 type="button"

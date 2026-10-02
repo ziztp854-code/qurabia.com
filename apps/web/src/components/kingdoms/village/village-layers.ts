@@ -1,10 +1,11 @@
-import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { AnimatedSprite, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import { villageAssets, type VillageAssetSlot } from '@/lib/kingdoms/village/assetManifest';
 import { getBuildingPresentation } from '@/lib/kingdoms/village/buildingConfig';
-import { getBuildingRect, rectCenter } from '@/lib/kingdoms/village/coordinates';
+import { getVillageBuilding, getVillageVisualLevel, villageBuildingRegistry } from '@/lib/kingdoms/village/buildingRegistry';
+import { getBuildingRect, getVillagePlacement, getVillageRect, rectCenter } from '@/lib/kingdoms/village/coordinates';
 import { createVillageNPCs, npcPosition, type NPCSpawn } from '@/lib/kingdoms/village/npcRoutes';
 import type { QualitySettings } from '@/lib/kingdoms/village/quality';
-import type { VillageCanvasProps, WorldPoint, WorldRect } from '@/lib/kingdoms/village/types';
+import type { VillageCanvasProps, VillageSelection, WorldPoint, WorldRect } from '@/lib/kingdoms/village/types';
 import { buildingKeys, type Building } from '@/lib/kingdoms/types';
 
 export type SceneColors = Readonly<{ gold: string; light: string; water: string; dust: string }>;
@@ -64,6 +65,11 @@ export function createArtworkTextureCache(
   };
 }
 
+export function hasApprovedAsset(slot: VillageAssetSlot, approved: ReadonlyMap<string, Texture>) {
+  return (!!slot.src && approved.has(slot.src)) ||
+    (slot.frames.length > 0 && slot.frames.every((frame) => approved.has(frame)));
+}
+
 export function artworkSprite(
   source: Texture,
   slot: VillageAssetSlot,
@@ -72,7 +78,13 @@ export function artworkSprite(
   artwork?: ArtworkTextureCache,
   outline?: readonly number[],
 ): Sprite | null {
+  if (slot.animated && slot.frames.length > 1 && slot.frames.every((frame) => approved.has(frame))) {
+    // This renderer owns animation time; never start Pixi's shared ticker.
+    return new AnimatedSprite(slot.frames.map((frame) => approved.get(frame)!), false);
+  }
   if (slot.src && approved.has(slot.src)) return new Sprite(approved.get(slot.src));
+  if (slot.frames.length && slot.frames.every((frame) => approved.has(frame)))
+    return new Sprite(approved.get(slot.frames[0]));
   if (!slot.fallbackCrop) return null;
   const crop = slot.fallbackCrop;
   if (artwork && outline) {
@@ -95,21 +107,21 @@ export function createBuildingLayer(
   artwork: ArtworkTextureCache,
 ) {
   const layer = new Container();
-  for (const building of buildingKeys) {
-    const confirmed = props.village.buildings[building];
-    const level =
-      process.env.NODE_ENV === 'development' && props.debug?.building === building
-        ? (props.debug.buildingLevel ?? confirmed)
-        : confirmed;
-    const tier = Math.max(0, Math.min(5, level));
+  layer.sortableChildren = true;
+  for (const entry of villageBuildingRegistry) {
+    const building = entry.id;
+    const tier = getVillageVisualLevel(building, props.village, props.debug);
     const slot = villageAssets.buildings[building][Math.max(0, tier - 1)];
-    if (slot?.src && approved.has(slot.src) && tier > 0) {
+    if (slot && hasApprovedAsset(slot, approved) && tier > 0) {
       const sprite = artworkSprite(source, slot, textures, approved);
       if (sprite) {
-        const rect = getBuildingRect(building, props.debug);
-        sprite.position.set(rect.x, rect.y);
+        const rect = getVillageRect(building, props.debug);
+        sprite.anchor.set(slot.anchor.x, slot.anchor.y);
+        sprite.position.set(rect.x + rect.width * slot.anchor.x, rect.y + rect.height * slot.anchor.y);
         sprite.width = rect.width;
         sprite.height = rect.height;
+        sprite.zIndex = getVillagePlacement(building, props.debug).zIndex;
+        sprite.label = slot.id;
         layer.addChild(sprite);
       }
       continue;
@@ -155,24 +167,28 @@ export function createNPCLayer(
   textures: Texture[],
   approved: ReadonlyMap<string, Texture>,
   artwork: ArtworkTextureCache,
+  pool: Map<string, Container> = new Map(),
 ) {
   const layer = new Container();
   layer.sortableChildren = true;
+  const previewBuilding = props.debug?.building
+    ? getVillageBuilding(props.debug.building).building : undefined;
   const preview =
     process.env.NODE_ENV === 'development' &&
+    previewBuilding &&
     props.debug?.building &&
     props.debug.buildingLevel !== undefined
       ? {
           ...props.village,
           buildings: {
             ...props.village.buildings,
-            [props.debug.building]: props.debug.buildingLevel,
+            [previewBuilding]: props.debug.buildingLevel,
           },
         }
       : props.village;
   const npcs = createVillageNPCs(preview, quality.npcLimit).map(
     (npc): { model: NPCSpawn; container: Container } => {
-      const container = new Container();
+      const container = pool.get(npc.id) ?? new Container();
       const slot = villageAssets.npc[npc.kind];
       const width = slot.fallbackCrop?.width ?? 0;
       const height = slot.fallbackCrop?.height ?? 0;
@@ -193,15 +209,25 @@ export function createNPCLayer(
               width * 0.05,
               height * 0.4,
             ];
-      const sprite = artworkSprite(source, slot, textures, approved, artwork, outline);
-      if (sprite) {
-        sprite.anchor.set(0.5, 1);
-        if (slot.src && approved.has(slot.src)) {
-          sprite.height = npc.kind === 'horse' || npc.kind === 'cart' ? 19 : 18;
-          sprite.scale.x = sprite.scale.y;
-        }
-        container.addChild(sprite);
+      let cachedSprite = container.children[0] as Sprite | undefined;
+      if (cachedSprite && !(cachedSprite instanceof AnimatedSprite) && slot.animated &&
+          slot.frames.length > 1 && slot.frames.every((frame) => approved.has(frame))) {
+        container.removeChild(cachedSprite);
+        cachedSprite.destroy();
+        cachedSprite = undefined;
       }
+      const sprite = cachedSprite ?? artworkSprite(source, slot, textures, approved, artwork, outline);
+      if (sprite) {
+        const approvedTexture = (slot.src ? approved.get(slot.src) : undefined) ?? approved.get(slot.frames[0]);
+        if (!(sprite instanceof AnimatedSprite) && approvedTexture) sprite.texture = approvedTexture;
+        sprite.anchor.set(0.5, 1);
+        if (hasApprovedAsset(slot, approved)) {
+          sprite.width = slot.worldRect.width;
+          sprite.height = slot.worldRect.height;
+        }
+        if (!cachedSprite) container.addChild(sprite);
+      }
+      pool.set(npc.id, container);
       layer.addChild(container);
       if (npc.id.startsWith('construction') && props.village.build) {
         const center = rectCenter(getBuildingRect(props.village.build.building, props.debug));
@@ -238,16 +264,77 @@ export function createEnvironmentLayer(
   approved: ReadonlyMap<string, Texture>,
 ) {
   const layer = new Container();
+  layer.sortableChildren = true;
   const glints = new Graphics();
+  for (const [id, slot] of Object.entries(villageAssets.environment)) {
+    if (id === 'flags' || id === 'scaffold' || (!slot.src && !slot.frames.length)) continue;
+    const sprite = artworkSprite(source, slot, textures, approved);
+    if (!sprite) continue;
+    const rect = slot.worldRect;
+    sprite.anchor.set(slot.anchor.x, slot.anchor.y);
+    sprite.position.set(rect.x + slot.anchor.x * rect.width, rect.y + slot.anchor.y * rect.height);
+    sprite.width = rect.width;
+    sprite.height = rect.height;
+    sprite.zIndex = slot.zIndex;
+    layer.addChild(sprite);
+  }
   const flag = artworkSprite(source, villageAssets.environment.flags, textures, approved);
   if (flag) {
-    flag.position.set(836, 345);
-    flag.width = 14;
-    flag.height = 44;
+    const slot = villageAssets.environment.flags;
+    const isApproved = hasApprovedAsset(slot, approved);
+    const rect = isApproved ? slot.worldRect : { x: 836, y: 345, width: 14, height: 44 };
+    flag.anchor.set(isApproved ? slot.anchor.x : 0, isApproved ? slot.anchor.y : 0);
+    flag.position.set(rect.x + flag.anchor.x * rect.width, rect.y + flag.anchor.y * rect.height);
+    flag.width = rect.width;
+    flag.height = rect.height;
+    flag.zIndex = slot.zIndex;
     layer.addChild(flag);
   }
   layer.addChild(glints);
-  return { layer, glints, flag, flagScale: flag?.scale.x ?? 1 };
+  return { layer, glints, flag, flagScale: flag?.scale.x ?? 1,
+    flagSway: !hasApprovedAsset(villageAssets.environment.flags, approved) };
+}
+
+export function createConstructionAssetLayer(
+  source: Texture, props: VillageCanvasProps, textures: Texture[], approved: ReadonlyMap<string, Texture>,
+) {
+  const layer = new Container();
+  if (!props.village.build) return layer;
+  const slot = villageAssets.environment.scaffold;
+  if (!hasApprovedAsset(slot, approved)) return layer;
+  const sprite = artworkSprite(source, slot, textures, approved);
+  if (sprite) {
+    const rect = getBuildingRect(props.village.build.building, props.debug);
+    sprite.anchor.set(slot.anchor.x, slot.anchor.y);
+    sprite.position.set(rect.x + rect.width * slot.anchor.x, rect.y + rect.height * slot.anchor.y);
+    sprite.width = rect.width;
+    sprite.height = rect.height;
+    layer.addChild(sprite);
+  }
+  return layer;
+}
+
+export function createRoadLayer(source: Texture, textures: Texture[], approved: ReadonlyMap<string, Texture>) {
+  const layer = new Container();
+  const slot = villageAssets.roads;
+  if (!hasApprovedAsset(slot, approved)) return layer;
+  const sprite = artworkSprite(source, slot, textures, approved);
+  if (sprite) {
+    const rect = slot.worldRect;
+    sprite.anchor.set(slot.anchor.x, slot.anchor.y);
+    sprite.position.set(rect.x + rect.width * slot.anchor.x, rect.y + rect.height * slot.anchor.y);
+    sprite.width = rect.width;
+    sprite.height = rect.height;
+    layer.addChild(sprite);
+  }
+  return layer;
+}
+
+export function collectAssetAnimations(container: Container): AnimatedSprite[] {
+  return container.children.flatMap((child) => [
+    ...(child instanceof AnimatedSprite ? [child] : []),
+    ...collectAssetAnimations(child),
+  ]);
 }
 
 export function paintEnvironment(
@@ -293,12 +380,12 @@ export function paintEnvironment(
 export function paintInteraction(
   graphics: Graphics,
   props: VillageCanvasProps,
-  hovered: Building | null,
+  hovered: VillageSelection | null,
   colors: SceneColors,
 ) {
   graphics.clear();
-  for (const building of buildingKeys) {
-    const rect = getBuildingRect(building, props.debug);
+  for (const building of [...buildingKeys, 'stable'] as const) {
+    const rect = getVillageRect(building, props.debug);
     if (props.selected === building || hovered === building) {
       graphics
         .roundRect(rect.x, rect.y, rect.width, rect.height, 22)

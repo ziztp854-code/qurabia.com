@@ -1,4 +1,5 @@
 import type { Building, KingdomsView, Village } from '../types';
+import type { VillageBuildingId } from './buildingRegistry';
 
 export type WorldPoint = Readonly<{ x: number; y: number }>;
 export type WorldSize = Readonly<{ width: number; height: number }>;
@@ -11,7 +12,15 @@ export type CameraSnapshot = Readonly<{
   viewport: WorldSize;
 }>;
 export type VillageQuality = 'auto' | 'high' | 'medium' | 'low';
-export type VillageTarget = Building | 'gate';
+export type VillageSelection = Building | 'stable';
+export type VillageTarget = VillageSelection | 'gate';
+export type VillagePlacement = WorldRect &
+  Readonly<{
+    focusX: number;
+    focusY: number;
+    focusScale: number;
+    zIndex: number;
+  }>;
 export type VillageSceneHandle = {
   focusOn: (target: VillageTarget, onComplete?: () => void) => void;
   zoomBy: (factor: number) => void;
@@ -24,15 +33,21 @@ export type VillageDebugOptions = Readonly<{
   coordinates?: boolean;
   npcs?: boolean;
   animations?: boolean;
-  building?: Building;
+  building?: VillageBuildingId;
   buildingLevel?: number;
-  rectOverrides?: Partial<Record<Building, WorldRect>>;
+  rectOverrides?: Partial<Record<VillageBuildingId, WorldRect>>;
+  placementOverrides?: Partial<
+    Record<
+      VillageBuildingId,
+      Readonly<Partial<Pick<VillagePlacement, 'focusX' | 'focusY' | 'focusScale' | 'zIndex'>>>
+    >
+  >;
 }>;
 export type VillageCanvasProps = Readonly<{
   view: KingdomsView;
   village: Village;
-  selected: Building | null;
-  onSelect: (building: Building) => void;
+  selected: VillageSelection | null;
+  onSelect: (building: VillageSelection) => void;
   onWorldMap?: () => void;
   quality: VillageQuality;
   reducedMotion: boolean;

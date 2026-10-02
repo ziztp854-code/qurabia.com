@@ -54,6 +54,8 @@
 }
 .hotspot {
   position: absolute;
+  min-width: calc(44px / var(--camera-scale));
+  min-height: calc(44px / var(--camera-scale));
   padding: 0;
   border: 0;
   background: transparent;

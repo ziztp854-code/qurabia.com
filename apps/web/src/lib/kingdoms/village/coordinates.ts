@@ -1,5 +1,6 @@
 import type { Building } from '../types';
-import type { VillageDebugOptions, WorldPoint, WorldRect } from './types';
+import type { VillageBuildingId } from './buildingRegistry';
+import type { VillageDebugOptions, VillagePlacement, WorldPoint, WorldRect } from './types';
 
 // All coordinates refer to the unchanged 1536 × 1024 source artwork.
 export const VILLAGE_WORLD = { width: 1536, height: 1024 } as const;
@@ -25,10 +26,56 @@ export const villageRegions = {
   research: { x: 936, y: 360, width: 46, height: 60 },
 } as const satisfies Record<string, WorldRect>;
 
-export function getBuildingRect(building: Building, debug?: VillageDebugOptions): WorldRect {
+// Reserved placements do not create visible or interactive buildings without approved assets.
+export const villageBuildingPlots = {
+  ...buildingPlots,
+  stable: villageRegions.stable,
+  gate: villageRegions.gate,
+  tower: villageRegions.tower,
+  granary: { x: 1130, y: 456, width: 117, height: 117 },
+  caravanserai: { x: 1232, y: 616, width: 130, height: 95 },
+  residential: { x: 577, y: 465, width: 74, height: 64 },
+  archery: { x: 350, y: 435, width: 104, height: 67 },
+  blacksmith: villageRegions.workshop,
+  siege: { x: 459, y: 351, width: 120, height: 68 },
+  rally: { x: 365, y: 483, width: 164, height: 65 },
+  hospital: { x: 901, y: 620, width: 77, height: 65 },
+  knowledge: villageRegions.research,
+  citadel: { x: 837, y: 271, width: 148, height: 128 },
+  mosque: { x: 662, y: 576, width: 181, height: 159 },
+  madrasa: { x: 861, y: 573, width: 69, height: 62 },
+  courthouse: { x: 1011, y: 459, width: 147, height: 101 },
+  hammam: { x: 461, y: 644, width: 70, height: 77 },
+  traders: { x: 1061, y: 657, width: 130, height: 90 },
+  industry: { x: 580, y: 186, width: 104, height: 89 },
+} as const satisfies Record<VillageBuildingId, WorldRect>;
+
+export function getVillageRect(id: VillageBuildingId, debug?: VillageDebugOptions): WorldRect {
   return process.env.NODE_ENV === 'development'
-    ? (debug?.rectOverrides?.[building] ?? buildingPlots[building])
-    : buildingPlots[building];
+    ? (debug?.rectOverrides?.[id] ?? villageBuildingPlots[id])
+    : villageBuildingPlots[id];
+}
+
+export function getVillagePlacement(
+  id: VillageBuildingId,
+  debug?: VillageDebugOptions,
+): VillagePlacement {
+  const rect = getVillageRect(id, debug);
+  const center = rectCenter(rect);
+  const overrides =
+    process.env.NODE_ENV === 'development' ? debug?.placementOverrides?.[id] : undefined;
+  return {
+    ...rect,
+    focusX: center.x,
+    focusY: center.y,
+    focusScale: 2.4,
+    zIndex: rect.y + rect.height,
+    ...overrides,
+  };
+}
+
+export function getBuildingRect(building: Building, debug?: VillageDebugOptions): WorldRect {
+  return getVillageRect(building, debug);
 }
 
 export function rectCenter(rect: WorldRect): WorldPoint {

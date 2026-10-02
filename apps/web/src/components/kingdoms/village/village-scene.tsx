@@ -13,11 +13,12 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { Button, Select } from '@/components/ui';
-import { buildingKeys, type Building } from '@/lib/kingdoms/types';
+import { buildingKeys } from '@/lib/kingdoms/types';
 import type {
   VillageDebugOptions,
   VillageQuality,
   VillageSceneHandle,
+  VillageSelection,
   VillageTarget,
 } from '@/lib/kingdoms/village/types';
 import { VillageCanvas } from './village-canvas';
@@ -33,8 +34,8 @@ function subscribeMotion(listener: () => void) {
   return () => query.removeEventListener('change', listener);
 }
 export type VillageSceneProps = Pick<GameProps, 'view' | 'village'> & {
-  selected: Building | null;
-  onSelect: (building: Building) => void;
+  selected: VillageSelection | null;
+  onSelect: (building: VillageSelection) => void;
   onWorldMap?: () => void;
 };
 
@@ -160,7 +161,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
           value={selected ?? ''}
           onChange={(event) => {
             if (event.target.value) {
-              const building = event.target.value as Building;
+              const building = event.target.value as VillageSelection;
               scene.current?.focusOn(building, () => onSelect(building));
             }
           }}
@@ -173,6 +174,9 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
               {view.config.buildings[building].name} · {village.buildings[building]}
             </option>
           ))}
+          <option value="stable">
+            الإسطبل · مستوى الثكنة {village.buildings.barracks}
+          </option>
         </Select>
         <Select
           label="جودة المشهد"
@@ -199,7 +203,8 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
         />
       )}
       {process.env.NODE_ENV === 'development' && (
-        <VillageDebug view={view} options={debug} onChange={setDebug} />
+        <VillageDebug view={view} options={debug} onChange={setDebug}
+          getCamera={() => scene.current?.getSnapshot()} />
       )}
     </section>
   );

@@ -74,6 +74,7 @@ export function focusCamera(
   camera: CameraSnapshot,
   rect: WorldRect,
   anchor?: WorldPoint,
+  preferredZoom?: number,
 ): CameraSnapshot {
   const center = rectCenter(rect);
   const baseScale = camera.scale / camera.zoom;
@@ -81,7 +82,13 @@ export function focusCamera(
     (camera.viewport.width * 0.72) / rect.width,
     (camera.viewport.height * 0.66) / rect.height,
   );
-  const zoom = clamp(framingScale / baseScale, 1.6, MAX_ZOOM);
+  const zoom = clamp(
+    preferredZoom !== undefined && Number.isFinite(preferredZoom)
+      ? preferredZoom
+      : framingScale / baseScale,
+    1.6,
+    MAX_ZOOM,
+  );
   const scale = baseScale * zoom;
   const target = anchor
     ? {

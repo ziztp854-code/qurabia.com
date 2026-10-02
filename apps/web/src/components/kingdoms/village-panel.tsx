@@ -4,12 +4,14 @@ import { Castle, Hammer, Map, ScrollText, Shield, Swords } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { resourceKeys, unitKeys, type Building, type Resources } from '@/lib/kingdoms/types';
+import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
 import { StageLadder } from './stage-ladder';
 import { UnitIcon } from './unit-icon';
 import { VillageHero } from './village-hero';
 import { BuildingPanel, type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
+import { StablePanel } from './village/stable-panel';
 import { CommanderPanel } from './commander-panel';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
@@ -33,9 +35,9 @@ export function VillagePanel({
   initialBuilding?: Building | null;
   onNavigate?: (tab: VillageNavigation) => void;
 }) {
-  const [selected, setSelected] = useState<Building | null>(initialBuilding);
+  const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);
   const returnFocus = useRef<HTMLElement | null>(null);
-  const select = (building: Building) => {
+  const select = (building: VillageSelection) => {
     returnFocus.current = document.activeElement as HTMLElement | null;
     setSelected(building);
   };
@@ -64,16 +66,28 @@ export function VillagePanel({
         </div>
         {selected && (
           <aside className={villageStyles.rail} aria-label="إدارة مباني القرية">
-            <BuildingPanel
-              key={selected}
-              building={selected}
-              view={view}
-              village={village}
-              busy={busy}
-              send={send}
-              onClose={close}
-              onNavigate={onNavigate}
-            />
+            {selected === 'stable' ? (
+              <StablePanel
+                view={view}
+                village={village}
+                busy={busy}
+                send={send}
+                onClose={close}
+                onSelectBarracks={() => setSelected('barracks')}
+                onNavigate={onNavigate}
+              />
+            ) : (
+              <BuildingPanel
+                key={selected}
+                building={selected}
+                view={view}
+                village={village}
+                busy={busy}
+                send={send}
+                onClose={close}
+                onNavigate={onNavigate}
+              />
+            )}
           </aside>
         )}
         <section

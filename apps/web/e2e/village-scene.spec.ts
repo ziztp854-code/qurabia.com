@@ -14,6 +14,57 @@ test.beforeEach(async ({ request }) => {
   expect((await request.post('/__village_test/reset')).ok()).toBeTruthy();
 });
 
+test('stable uses confirmed barracks and the genuine cavalry queue, with safe mobile focus', async ({ page }, testInfo) => {
+  await page.goto('/');
+  const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  const stable = village.locator('[data-building-region="stable"]');
+  await stable.click();
+  const panel = page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true });
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText('مستوى الثكنة ٠');
+  await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
+  await panel.getByRole('button', { name: 'تطوير الثكنة', exact: true }).click();
+  const barracks = page.getByRole('region', { name: 'تفاصيل الثكنة', exact: true });
+  await expect(barracks).toBeVisible();
+  await barracks.getByRole('button', { name: 'طوّر المبنى' }).click();
+  await expect(barracks).toContainText('مستوى ٠');
+  await expect.poll(async () => (await (await page.request.get('/api/kingdoms')).json()).data.villages[0].buildings.barracks).toBe(1);
+  await page.getByRole('button', { name: 'تحديث', exact: true }).click();
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
+  await stable.click();
+  await expect(panel).toContainText('مستوى الثكنة ١');
+  const request = page.waitForRequest((request) => request.method() === 'POST' &&
+    new URL(request.url()).pathname === '/api/kingdoms');
+  await panel.getByRole('button', { name: 'درّب الفرسان', exact: true }).click();
+  expect((await request).postDataJSON().command).toMatchObject({ type: 'train', unit: 'rider', count: 1 });
+  await expect(panel.getByLabel('قائمة تدريب القرية')).toContainText('خيّال');
+  await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const sheet = page.locator('[data-village-building-sheet]');
+  await expect.poll(async () => {
+    const [rect, sheetRect] = await Promise.all([stable.boundingBox(), sheet.boundingBox()]);
+    return !!rect && !!sheetRect && rect.y + rect.height / 2 < sheetRect.y - 8 &&
+      rect.y + rect.height / 2 > 0 && rect.width >= 43.9 && rect.height >= 43.9;
+  }).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('stable-mobile-sheet.png'), scale: 'css' });
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
+  const viewport = village.locator('[data-village-scene]');
+  await expect(viewport).toHaveAttribute('data-zoom', /^1(?:\.0+)?$/);
+  // Hit test the artwork's actual barracks center, not the expanded DOM button center.
+  const point = await viewport.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const camera = (element as HTMLElement).dataset;
+    const scale = Math.min(element.clientWidth / 1536, element.clientHeight / 1024) * Number(camera.zoom);
+    return { x: rect.x + element.clientWidth / 2 + (469 - Number(camera.cameraX)) * scale,
+      y: rect.y + element.clientHeight / 2 + (504 - Number(camera.cameraY)) * scale };
+  });
+  await page.mouse.click(point.x, point.y);
+  await expect(barracks).toBeVisible();
+  await expect(panel).toHaveCount(0);
+});
+
 test('original artwork, camera, real build lifecycle, and world navigation', async ({
   page,
 }, testInfo) => {

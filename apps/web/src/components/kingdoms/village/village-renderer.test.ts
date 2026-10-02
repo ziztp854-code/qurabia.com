@@ -4,6 +4,16 @@ import { createCamera, zoomCamera } from '@/lib/kingdoms/village/cameraMath';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type { VillageCanvasProps } from '@/lib/kingdoms/village/types';
 import { createVillageRenderer } from './village-renderer';
+import { Assets, Texture, TextureSource } from 'pixi.js';
+
+vi.mock('@/lib/kingdoms/village/assetManifest', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/kingdoms/village/assetManifest')>();
+  return { ...actual, villageAssets: { ...actual.villageAssets, buildings: {
+    ...actual.villageAssets.buildings,
+    stable: actual.villageAssets.buildings.stable.map((slot, index) => index === 2
+      ? { ...slot, src: '/approved/stable-l3.webp', placeholder: false } : slot),
+  } } };
+});
 
 const gpu = vi.hoisted(() => ({
   resize: vi.fn(),
@@ -44,11 +54,39 @@ vi.mock('pixi.js', async (importOriginal) => {
 });
 
 beforeEach(() => {
+  vi.clearAllMocks();
   gpu.resize.mockClear();
   gpu.resolutionAssignment.mockClear();
 });
 
 describe('village rendering surface dimensions', () => {
+  it('applies a confirmed stable overlay after loading even when resources refresh in between', async () => {
+    const now = 1800000000000;
+    const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
+    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 2 } };
+    const props: VillageCanvasProps = {
+      view, village, selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false,
+    };
+    const quality = resolveVillageQuality('low', { width: 768, dpr: 1 });
+    const renderer = await createVillageRenderer(document.createElement('canvas'), props, quality,
+      { gold: 'gold', light: 'white', water: 'white', dust: 'gold' });
+    let resolve!: (texture: Texture) => void;
+    const loading = new Promise<Texture>((done) => { resolve = done; });
+    const assetLoad = vi.mocked(Assets.load as (src: string) => Promise<Texture>);
+    assetLoad.mockImplementationOnce(() => loading);
+    const confirmed = { ...props, village: { ...village, buildings: { ...village.buildings, barracks: 3 } } };
+    renderer.update(confirmed, quality);
+    renderer.update({ ...confirmed, village: { ...confirmed.village, resources: { ...village.resources, wood: 900 } } }, quality);
+    const texture = new Texture({ source: new TextureSource({ width: 111, height: 67 }) });
+    resolve(texture);
+    await vi.waitFor(() => {
+      const buildingLayer = gpu.stage!.children[0].children[1];
+      expect(buildingLayer.children.some((child) => child.label === 'stable-l3')).toBe(true);
+    });
+    const approvedLoad = assetLoad.mock.calls.filter(([src]) => src === '/approved/stable-l3.webp');
+    expect(approvedLoad).toHaveLength(1);
+    renderer.destroy();
+  });
   it('keeps the GPU surface stable across camera frames and coordinates DPR and viewport changes', async () => {
     const now = 1800000000000;
     const view = projectWorld(

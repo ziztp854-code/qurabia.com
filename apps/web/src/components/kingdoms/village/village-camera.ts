@@ -6,7 +6,7 @@ import {
   resizeCamera,
   zoomCamera,
 } from '@/lib/kingdoms/village/cameraMath';
-import { getBuildingRect, villageRegions } from '@/lib/kingdoms/village/coordinates';
+import { getVillagePlacement } from '@/lib/kingdoms/village/coordinates';
 import type {
   CameraSnapshot,
   VillageDebugOptions,
@@ -76,15 +76,24 @@ export class VillageCamera implements VillageSceneHandle {
     };
     this.frame = requestAnimationFrame(tick);
   }
-  focusOn = (target: VillageTarget, onComplete?: () => void) =>
+  focusOn = (target: VillageTarget, onComplete?: () => void) => {
+    const placement = getVillagePlacement(target, this.debug);
     this.animate(
       focusCamera(
         this.camera,
-        target === 'gate' ? villageRegions.gate : getBuildingRect(target, this.debug),
+        {
+          ...placement,
+          x: placement.focusX - placement.width / 2,
+          y: placement.focusY - placement.height / 2,
+        },
         this.getFocusAnchor?.(),
+        process.env.NODE_ENV === 'development'
+          ? this.debug?.placementOverrides?.[target]?.focusScale
+          : undefined,
       ),
       onComplete,
     );
+  };
   zoomBy = (factor: number) => this.animate(zoomCamera(this.camera, factor));
   zoomAt = (factor: number, anchor: WorldPoint) => {
     this.cancel();

@@ -40,7 +40,7 @@ describe('village performance and activity', () => {
       fps: 30,
     });
   });
-  it('adds activity only from confirmed building levels and always obeys the device budget', () => {
+  it('adds activity from confirmed buildings and cavalry while obeying the device budget', () => {
     const now = 1800000000000;
     const village = projectWorld(
       executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now),
@@ -49,10 +49,12 @@ describe('village performance and activity', () => {
     ).villages[0];
     const before = createVillageNPCs(village, 40);
     const after = createVillageNPCs(
-      { ...village, buildings: { ...village.buildings, farm: 5, barracks: 5, market: 5 } },
+      { ...village, buildings: { ...village.buildings, farm: 5, barracks: 5, market: 5 },
+        troops: { ...village.troops, rider: 2 } },
       40,
     );
     expect(after.length).toBeGreaterThan(before.length);
+    expect(before.some((npc) => npc.kind === 'horse')).toBe(false);
     expect(after.some((npc) => npc.kind === 'horse')).toBe(true);
     expect(after.some((npc) => npc.kind === 'cart')).toBe(true);
     expect(

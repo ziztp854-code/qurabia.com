@@ -1,19 +1,24 @@
-import { Application, Assets, Container, Graphics, type Texture } from 'pixi.js';
+import { Application, Assets, Container, Graphics, type AnimatedSprite, type Texture } from 'pixi.js';
 import { villageAssets, type VillageAssetSlot } from '@/lib/kingdoms/village/assetManifest';
+import { getVillageVisualLevel, villageBuildingRegistry } from '@/lib/kingdoms/village/buildingRegistry';
 import { getBuildingRect, rectCenter } from '@/lib/kingdoms/village/coordinates';
 import type { QualitySettings } from '@/lib/kingdoms/village/quality';
 import type {
   CameraSnapshot,
   VillageCanvasProps,
+  VillageSelection,
   WorldPoint,
   WorldSize,
 } from '@/lib/kingdoms/village/types';
-import { buildingKeys, type Building } from '@/lib/kingdoms/types';
+import { buildingKeys } from '@/lib/kingdoms/types';
 import {
   createArtworkTextureCache,
   createBuildingLayer,
   createEnvironmentLayer,
+  createConstructionAssetLayer,
   createNPCLayer,
+  createRoadLayer,
+  collectAssetAnimations,
   paintConstruction,
   paintEnvironment,
   paintInteraction,
@@ -23,7 +28,7 @@ import {
 export type VillageRenderer = {
   camera: (snapshot: CameraSnapshot) => void;
   update: (props: VillageCanvasProps, quality: QualitySettings) => void;
-  hover: (building: Building | null) => void;
+  hover: (building: VillageSelection | null) => void;
   setVisible: (visible: boolean) => void;
   destroy: () => void;
 };
@@ -71,12 +76,17 @@ export async function createVillageRenderer(
   const artwork = createArtworkTextureCache(source);
   const approved = new Map<string, Texture>();
   const pending = new Map<string, Promise<Texture>>();
+  // IDs and counts are bounded by the visual NPC budget; reuse figures across snapshots.
+  const npcPool = new Map<string, Container>();
   let buildingLayer: Container;
+  let roadLayer: Container;
+  let constructionLayer: Container;
+  let assetAnimations: AnimatedSprite[] = [];
   let npcs: ReturnType<typeof createNPCLayer>;
   let environment: ReturnType<typeof createEnvironmentLayer>;
   const effects = new Graphics();
   const interactions = new Graphics();
-  let hovered: Building | null = null;
+  let hovered: VillageSelection | null = null;
   let elapsed = 0;
   let visible = true;
   let disposed = false;
@@ -95,19 +105,19 @@ export async function createVillageRenderer(
   };
 
   const loadApprovedAssets = async (next: VillageCanvasProps, nextSettings: QualitySettings) => {
-    const buildingSlots: VillageAssetSlot[] = buildingKeys.map((building) => {
-      const level =
-        process.env.NODE_ENV === 'development' && next.debug?.building === building
-          ? (next.debug.buildingLevel ?? next.village.buildings[building])
-          : next.village.buildings[building];
-      return villageAssets.buildings[building][Math.max(0, Math.min(4, level - 1))];
+    let changed = false;
+    const buildingSlots: VillageAssetSlot[] = villageBuildingRegistry.flatMap(({ id }) => {
+      const tier = getVillageVisualLevel(id, next.village, next.debug);
+      return tier > 0 ? [villageAssets.buildings[id][tier - 1]] : [];
     });
     const slots: VillageAssetSlot[] = [
       ...buildingSlots,
+      villageAssets.roads,
+      ...(next.village.build ? [villageAssets.environment.scaffold] : []),
       ...Object.values(villageAssets.npc),
       ...(nextSettings.environment ? Object.values(villageAssets.environment) : []),
     ];
-    const sources = [...new Set(slots.flatMap((slot) => (slot.src ? [slot.src] : [])))];
+    const sources = [...new Set(slots.flatMap((slot) => [...(slot.src ? [slot.src] : []), ...slot.frames]))];
     await Promise.all(
       sources.map(async (src) => {
         if (approved.has(src)) return;
@@ -118,7 +128,10 @@ export async function createVillageRenderer(
         }
         try {
           const texture = await loading;
-          if (!disposed) approved.set(src, texture);
+          if (!disposed && approved.get(src) !== texture) {
+            approved.set(src, texture);
+            changed = true;
+          }
         } catch {
           /* Missing optional artwork retains the documented original-art fallback. */
         } finally {
@@ -126,22 +139,29 @@ export async function createVillageRenderer(
         }
       }),
     );
+    return changed;
   };
 
   const rebuild = () => {
     if (buildingLayer) {
-      world.removeChild(buildingLayer, npcs.layer, environment.layer, effects, interactions);
+      world.removeChild(roadLayer, buildingLayer, npcs.layer, environment.layer, constructionLayer, effects, interactions);
+      roadLayer.destroy({ children: true });
       buildingLayer.destroy({ children: true });
-      npcs.layer.destroy({ children: true });
+      npcs.layer.removeChildren();
+      npcs.layer.destroy();
       environment.layer.destroy({ children: true });
+      constructionLayer.destroy({ children: true });
     }
     textures.forEach((texture) => texture.destroy());
     textures = [];
+    roadLayer = createRoadLayer(source, textures, approved);
     buildingLayer = createBuildingLayer(source, props, textures, approved, artwork);
-    npcs = createNPCLayer(source, props, settings, textures, approved, artwork);
+    npcs = createNPCLayer(source, props, settings, textures, approved, artwork, npcPool);
     environment = createEnvironmentLayer(source, textures, approved);
+    constructionLayer = createConstructionAssetLayer(source, props, textures, approved);
     environment.layer.visible = settings.environment;
-    world.addChild(buildingLayer, environment.layer, npcs.layer, effects, interactions);
+    world.addChild(roadLayer, buildingLayer, environment.layer, npcs.layer, constructionLayer, effects, interactions);
+    assetAnimations = collectAssetAnimations(world);
     paintInteraction(interactions, props, hovered, colors);
     npcs.update(elapsed);
   };
@@ -156,10 +176,11 @@ export async function createVillageRenderer(
   app.ticker.add((ticker) => {
     if (disposed || !visible || !animate()) return;
     elapsed += Math.min(100, ticker.deltaMS);
+    assetAnimations.forEach((sprite) => sprite.gotoAndStop(Math.floor(elapsed / 140) % sprite.totalFrames));
     if (props.debug?.npcs !== false) npcs.update(elapsed);
     if (settings.environment) {
       paintEnvironment(environment.glints, elapsed, colors, settings.particles);
-      if (environment.flag)
+      if (environment.flag && environment.flagSway)
         environment.flag.scale.x = environment.flagScale * (1 + Math.sin(elapsed / 470) * 0.05);
     }
     paintConstruction(
@@ -196,15 +217,18 @@ export async function createVillageRenderer(
         completionUntil = elapsed + 1500;
       }
       const rebuildNeeded =
-        next.village !== props.village ||
+        next.village.id !== props.village.id ||
+        JSON.stringify(next.village.buildings) !== JSON.stringify(props.village.buildings) ||
+        JSON.stringify(next.village.troops) !== JSON.stringify(props.village.troops) ||
+        next.village.build?.building !== props.village.build?.building ||
         next.debug !== props.debug ||
         nextQuality.npcLimit !== settings.npcLimit;
       props = next;
       settings = nextQuality;
       if (rebuildNeeded) rebuild();
       if (rebuildNeeded)
-        void loadApprovedAssets(props, settings).then(() => {
-          if (!disposed && props === next && approved.size) {
+        void loadApprovedAssets(props, settings).then((changed) => {
+          if (!disposed && changed) {
             rebuild();
             render();
           }
@@ -234,6 +258,10 @@ export async function createVillageRenderer(
       disposed = true;
       app.ticker.stop();
       app.destroy(false, { children: true });
+      npcPool.forEach((container) => {
+        if (!container.destroyed) container.destroy({ children: true });
+      });
+      npcPool.clear();
       textures.forEach((texture) => texture.destroy());
       textures = [];
       artwork.destroy();
