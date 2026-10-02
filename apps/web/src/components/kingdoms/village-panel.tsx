@@ -41,6 +41,9 @@ export function VillagePanel({
     returnFocus.current = document.activeElement as HTMLElement | null;
     setSelected(building);
   };
+  const selectQueuedBuilding = () => {
+    if (village.build) select(village.build.building);
+  };
   const close = () => {
     setSelected(null);
     returnFocus.current?.focus({ preventScroll: true });
@@ -130,7 +133,7 @@ export function VillagePanel({
                         <button
                           type="button"
                           className={styles.linkButton}
-                          onClick={() => select(current.building)}
+                          onClick={selectQueuedBuilding}
                         >
                           حدّده في المشهد
                         </button>
