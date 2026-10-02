@@ -1,0 +1,153 @@
+.panel {
+  padding: var(--space-4);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  min-inline-size: 0;
+  color: var(--foreground);
+  line-height: 1.75;
+}
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+.level {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.costs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+.costs li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  background: var(--surface-strong);
+}
+.costs bdi {
+  color: var(--gold);
+}
+.costs li[data-short='true'] {
+  border-color: var(--danger);
+}
+.costs li[data-short='true'] bdi,
+.shortage {
+  color: var(--danger);
+}
+.content > button {
+  inline-size: 100%;
+}
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block: var(--space-3);
+}
+.summary p {
+  margin: 0;
+}
+.state,
+.duration,
+.hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+}
+.state {
+  color: var(--gold);
+}
+.hint {
+  color: var(--muted-foreground);
+}
+.hint svg {
+  flex: 0 0 auto;
+}
+.tabs {
+  display: flex;
+  border-block-end: 1px solid var(--border);
+  gap: var(--space-1);
+}
+.tabs button {
+  flex: 1 1 0;
+  min-block-size: 44px;
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+.tabs button[aria-selected='true'] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.tabs button:hover {
+  background: var(--surface-strong);
+}
+.content {
+  padding-block: var(--space-2);
+}
+.content p {
+  font-size: 0.9rem;
+}
+.content .production {
+  color: var(--gold);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.facts {
+  display: grid;
+  gap: var(--space-2);
+}
+.facts div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--border);
+}
+.facts dd {
+  margin: 0;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.actions {
+  display: grid;
+  gap: var(--space-2);
+}
+.costs span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.panel :focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}

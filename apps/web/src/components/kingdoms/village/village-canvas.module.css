@@ -1,0 +1,234 @@
+.stage {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 3 / 2;
+  min-block-size: 310px;
+  max-block-size: min(74dvh, 760px);
+  overflow: hidden;
+  background: var(--background);
+  touch-action: none;
+  direction: ltr;
+  cursor: grab;
+  isolation: isolate;
+  --camera-scale: 0.5;
+}
+.stage[data-dragging='true'] {
+  cursor: grabbing;
+}
+.stage:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -3px;
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.terrain,
+.world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.terrain {
+  z-index: 0;
+  pointer-events: none;
+}
+.world {
+  z-index: 2;
+}
+.artwork {
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+.hotspots {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.hotspot {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  direction: rtl;
+  border-radius: 22px;
+}
+.hotspot:hover {
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.hotspot:focus-visible {
+  outline: calc(2px / var(--camera-scale)) solid var(--gold);
+  outline-offset: calc(2px / var(--camera-scale));
+}
+.hotspot[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent);
+}
+.label {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: 210px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-strong) 94%, transparent);
+  color: var(--foreground);
+  font-size: 11px;
+  line-height: 1.5;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--background) 60%, transparent);
+  transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center bottom;
+  visibility: hidden;
+  pointer-events: none;
+}
+.label small {
+  display: block;
+  color: var(--gold);
+  font-size: 9px;
+}
+.stage[data-labels='true'] .label,
+.hotspot:hover .label,
+.hotspot:focus-visible .label,
+.hotspot[aria-pressed='true'] .label {
+  visibility: visible;
+}
+.marker {
+  position: absolute;
+  top: 12%;
+  right: 12%;
+  inline-size: 20px;
+  block-size: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-strong);
+  color: var(--gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  transform: scale(calc(1 / var(--camera-scale)));
+}
+.hotspot[data-state='construction'] .marker {
+  inline-size: 24px;
+  block-size: 24px;
+}
+.region {
+  z-index: 3;
+}
+.region .label {
+  top: 40%;
+}
+.region:hover {
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+.construction {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  width: 190px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-size: 11px;
+  direction: rtl;
+  transform: translate(-50%, 4px) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center top;
+  pointer-events: none;
+}
+.construction small {
+  display: block;
+  font-size: 9px;
+  color: var(--foreground);
+}
+.construction bdi {
+  font-variant-numeric: tabular-nums;
+  margin-inline-start: auto;
+}
+.progress {
+  inline-size: 100%;
+  block-size: 3px;
+  background: var(--background);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  block-size: 100%;
+  background: var(--gold);
+}
+.loading,
+.error {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  color: var(--foreground);
+  direction: rtl;
+}
+.error button {
+  margin-block-start: 12px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-gold);
+  color: var(--gold);
+  cursor: pointer;
+}
+.coordinates {
+  position: absolute;
+  z-index: 7;
+  inset-inline-start: 8px;
+  bottom: 8px;
+  padding: 6px;
+  color: var(--gold);
+  background: var(--surface-strong);
+  font-size: 10px;
+  pointer-events: none;
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.stage[data-debug-hitboxes='true'] .hotspot {
+  outline: 1px dashed var(--foreground);
+}
+@media (max-width: 700px) {
+  .stage {
+    min-block-size: 410px;
+    max-block-size: 66dvh;
+  }
+  .label {
+    max-width: 160px;
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .terrain,
+  .world {
+    will-change: auto;
+  }
+}

@@ -24,7 +24,7 @@ import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
 import { ResourceIcon } from './resource-icon';
-import type { Building } from '@/lib/kingdoms/types';
+import { unitKeys, type Building } from '@/lib/kingdoms/types';
 import styles from './kingdoms.module.css';
 
 const tabs = {
@@ -49,14 +49,14 @@ const tabIcons = {
   reports: ScrollText,
   throne: Crown,
 };
-const resourceOrder = ['iron', 'food', 'stone', 'wood', 'gold'] as const;
+const resourceOrder = ['gold', 'wood', 'stone', 'iron', 'food'] as const;
 type ScopedBuildingSelection = { worldId: string; villageId: string; building: Building };
 
 export function KingdomsClient({
   canManage = false,
   initialWorldId = '',
   initialVillageId = '',
-  initialTab = 'overview',
+  initialTab = 'village',
 }: {
   canManage?: boolean;
   initialWorldId?: string;
@@ -114,13 +114,24 @@ export function KingdomsClient({
                 <div key={resource} className={styles.resource} data-full={fill >= 95}>
                   <ResourceIcon resource={resource} hud />
                   <span>{labels[resource]}</span>
-                  <strong>{number(village.resources[resource])}</strong>
+                  <strong>
+                    <bdi>{number(village.resources[resource])}</bdi>
+                  </strong>
+                  <span className={styles.resourceCapacity}>من {number(cap)}</span>
                   <em className={styles.capacity} aria-hidden="true" title={`السعة ${number(cap)}`}>
                     <i style={{ inlineSize: `${fill}%` }} />
                   </em>
                 </div>
               );
             })}
+            <div className={styles.resource}>
+              <Swords size={22} aria-hidden="true" />
+              <span>الوحدات الجاهزة</span>
+              <strong>
+                <bdi>{number(unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0))}</bdi>
+              </strong>
+              <span className={styles.resourceCapacity}>في القرية الحالية</span>
+            </div>
           </section>
         )}
       </div>
@@ -169,6 +180,7 @@ export function KingdomsClient({
         )}
         <Button
           variant="outline"
+          className={styles.refreshButton}
           disabled={busy || loading}
           onClick={() => void (game.worldId ? game.refresh() : game.listWorlds())}
         >
@@ -291,11 +303,12 @@ export function KingdomsClient({
                     <VillagePanel
                       key={`${view.worldId}:${village.id}`}
                       {...props}
+                      onNavigate={navigate}
                       initialBuilding={
                         buildingSelection?.worldId === view.worldId &&
                         buildingSelection?.villageId === village.id
                           ? buildingSelection.building
-                          : 'hall'
+                          : null
                       }
                     />
                   )}

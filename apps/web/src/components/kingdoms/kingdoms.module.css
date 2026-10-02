@@ -1251,3 +1251,55 @@
 .villageMapSection {
   box-shadow: 0 10px 30px color-mix(in srgb, var(--background) 60%, transparent);
 }
+
+/* The sixth HUD figure reports troops from the village snapshot. */
+.shell.playing .resources {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.playing .resource .resourceCapacity {
+  font-size: 0.68rem;
+  line-height: 1.6;
+}
+@media (max-width: 1000px) {
+  .shell.playing .gameLayout > section {
+    animation: none;
+  }
+}
+@media (max-width: 700px) {
+  .shell.playing .resources {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .shell.playing .toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+  .shell.playing .toolbar > * {
+    min-inline-size: 0;
+  }
+  .shell.playing .toolbar > a {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 0.8rem;
+    padding-inline: var(--space-2);
+    white-space: normal;
+    line-height: 1.5;
+  }
+  .shell.playing .toolbar > div {
+    grid-row: 2;
+  }
+  .shell.playing .toolbar select {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+  .shell.playing .toolbar .refreshButton {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.8rem;
+    padding-inline: var(--space-2);
+  }
+  .shell.playing .gameLayout .nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-block: var(--space-2);
+  }
+}

@@ -26,6 +26,7 @@ minimumReleaseAgeExclude:
   - '@next/swc-win32-x64-msvc@16.3.8'
   - eslint-config-next@16.3.8
   - next@16.3.8
+  - pixi.js@8.22.0
 
 overrides:
   'fast-uri@<3.1.6': 3.1.8

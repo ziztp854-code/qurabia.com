@@ -1,18 +1,19 @@
 'use client';
 
-import { Hammer, Shield, Swords } from 'lucide-react';
-import { useState } from 'react';
+import { Castle, Hammer, Map, ScrollText, Shield, Swords } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { resourceKeys, unitKeys, type Building, type Resources } from '@/lib/kingdoms/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
 import { StageLadder } from './stage-ladder';
 import { UnitIcon } from './unit-icon';
 import { VillageHero } from './village-hero';
-import { BuildingCard } from './building-card';
+import { BuildingPanel, type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
 import { CommanderPanel } from './commander-panel';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
+import villageStyles from './village-panel.module.css';
 
 function maxAffordable(have: Resources, cost: Resources) {
   const limits = resourceKeys
@@ -26,113 +27,181 @@ export function VillagePanel({
   village,
   busy,
   send,
-  initialBuilding = 'hall',
-}: GameProps & { initialBuilding?: Building }) {
-  const [selected, setSelected] = useState<Building>(initialBuilding);
+  initialBuilding = null,
+  onNavigate,
+}: GameProps & {
+  initialBuilding?: Building | null;
+  onNavigate?: (tab: VillageNavigation) => void;
+}) {
+  const [selected, setSelected] = useState<Building | null>(initialBuilding);
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const select = (building: Building) => {
+    returnFocus.current = document.activeElement as HTMLElement | null;
+    setSelected(building);
+  };
+  const close = () => {
+    setSelected(null);
+    returnFocus.current?.focus({ preventScroll: true });
+  };
   const totalTroops = unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0);
   return (
     <div className={styles.village}>
-      <VillageHero view={view} village={village} />
-      <div className={styles.layout}>
-        <div className={styles.column}>
-          <StageLadder view={view} village={village} />
-          <VillageMap view={view} village={village} selected={selected} onSelect={setSelected} />
-        </div>
-        <aside className={styles.rail} aria-label="إدارة مباني القرية">
-          <BuildingCard
-            key={selected}
-            building={selected}
+      <div
+        className={villageStyles.layout}
+        data-selected={selected !== null}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && selected) close();
+        }}
+      >
+        <div className={villageStyles.scene}>
+          <VillageMap
             view={view}
             village={village}
-            busy={busy}
-            send={send}
+            selected={selected}
+            onSelect={select}
+            onWorldMap={onNavigate ? () => onNavigate('map') : undefined}
           />
-          <section className={`${styles.card} ${styles.queue}`} aria-label="قوائم التنفيذ">
-            <p className={styles.cardEyebrow}>لوحة التنفيذ</p>
-            <div className={styles.queueItem}>
-              <span className={styles.queueIcon} aria-hidden="true">
-                <Hammer size={16} />
-              </span>
-              <div className={styles.queueBody}>
-                <h3>قائمة البناء</h3>
-                {village.build &&
-                  (() => {
-                    const current = village.build;
-                    const name = view.config.buildings[current.building].name;
-                    const progress =
-                      current.startedAt !== undefined && current.endsAt > current.startedAt
-                        ? Math.min(
-                            100,
-                            Math.max(
-                              0,
-                              Math.round(
-                                ((view.serverNow - current.startedAt) /
-                                  (current.endsAt - current.startedAt)) *
-                                  100,
-                              ),
+        </div>
+        {selected && (
+          <aside className={villageStyles.rail} aria-label="إدارة مباني القرية">
+            <BuildingPanel
+              key={selected}
+              building={selected}
+              view={view}
+              village={village}
+              busy={busy}
+              send={send}
+              onClose={close}
+              onNavigate={onNavigate}
+            />
+          </aside>
+        )}
+        <section
+          className={`${styles.card} ${styles.queue} ${villageStyles.queues}`}
+          aria-label="قوائم التنفيذ"
+        >
+          <div className={styles.queueItem}>
+            <span className={styles.queueIcon} aria-hidden="true">
+              <Hammer size={16} />
+            </span>
+            <div className={styles.queueBody}>
+              <h3>قائمة البناء</h3>
+              {village.build &&
+                (() => {
+                  const current = village.build;
+                  const name = view.config.buildings[current.building].name;
+                  const progress =
+                    current.startedAt !== undefined && current.endsAt > current.startedAt
+                      ? Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            Math.round(
+                              ((view.serverNow - current.startedAt) /
+                                (current.endsAt - current.startedAt)) *
+                                100,
                             ),
-                          )
-                        : null;
-                    return (
-                      <>
-                        <p>
-                          {name} · المستوى {number(current.level)}
-                        </p>
-                        <time dateTime={new Date(current.endsAt).toISOString()}>
-                          يكتمل {date(current.endsAt)}
-                        </time>
-                        {selected !== current.building && (
-                          <button
-                            type="button"
-                            className={styles.linkButton}
-                            onClick={() => setSelected(current.building)}
-                          >
-                            حدّده في المشهد
-                          </button>
-                        )}
-                        {progress !== null && (
-                          <span
-                            role="progressbar"
-                            aria-label={`تقدم بناء ${name}`}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-valuenow={progress}
-                            aria-valuetext={`${number(progress)}٪ من مدة البناء`}
-                            className={styles.bar}
-                          >
-                            <span style={{ width: `${progress}%` }} />
-                          </span>
-                        )}
-                      </>
-                    );
-                  })()}
-                {!village.build && <p className={styles.queueEmpty}>لا بناء قيد التنفيذ</p>}
-              </div>
+                          ),
+                        )
+                      : null;
+                  return (
+                    <>
+                      <p>
+                        {name} · المستوى {number(current.level)}
+                      </p>
+                      <time dateTime={new Date(current.endsAt).toISOString()}>
+                        يكتمل {date(current.endsAt)}
+                      </time>
+                      {selected !== current.building && (
+                        <button
+                          type="button"
+                          className={styles.linkButton}
+                          onClick={() => select(current.building)}
+                        >
+                          حدّده في المشهد
+                        </button>
+                      )}
+                      {progress !== null && (
+                        <span
+                          role="progressbar"
+                          aria-label={`تقدم قائمة بناء ${name}`}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={progress}
+                          aria-valuetext={`${number(progress)}٪ من مدة البناء`}
+                          className={styles.bar}
+                        >
+                          <span style={{ width: `${progress}%` }} />
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
+              {!village.build && <p className={styles.queueEmpty}>لا بناء قيد التنفيذ</p>}
             </div>
-            <div className={styles.queueItem}>
-              <span className={styles.queueIcon} aria-hidden="true">
-                <Swords size={16} />
-              </span>
-              <div className={styles.queueBody}>
-                <h3>قائمة التدريب</h3>
-                {village.training ? (
-                  <>
-                    <p>
-                      {number(village.training.count)}{' '}
-                      {view.config.units[village.training.unit].name}
-                    </p>
-                    <time dateTime={new Date(village.training.endsAt).toISOString()}>
-                      يكتمل {date(village.training.endsAt)}
-                    </time>
-                  </>
-                ) : (
-                  <p className={styles.queueEmpty}>لا وحدات قيد التدريب</p>
-                )}
-              </div>
+          </div>
+          <div className={styles.queueItem}>
+            <span className={styles.queueIcon} aria-hidden="true">
+              <Swords size={16} />
+            </span>
+            <div className={styles.queueBody}>
+              <h3>قائمة التدريب</h3>
+              {village.training ? (
+                <>
+                  <p>
+                    {number(village.training.count)}{' '}
+                    {view.config.units[village.training.unit].name}
+                  </p>
+                  <time dateTime={new Date(village.training.endsAt).toISOString()}>
+                    يكتمل {date(village.training.endsAt)}
+                  </time>
+                </>
+              ) : (
+                <p className={styles.queueEmpty}>لا وحدات قيد التدريب</p>
+              )}
             </div>
-          </section>
-        </aside>
+          </div>
+        </section>
+        <nav aria-label="التنقل من القرية" className={villageStyles.navigation}>
+          <button type="button" aria-label="عرض القرية" aria-pressed={!selected} onClick={close}>
+            <Castle size={20} aria-hidden="true" />
+            <span>القرية</span>
+          </button>
+          <button type="button" aria-pressed={!!selected} onClick={() => select('hall')}>
+            <Hammer size={20} aria-hidden="true" />
+            <span>البناء</span>
+          </button>
+          <button
+            type="button"
+            aria-label="انتقل إلى الجيش"
+            disabled={!onNavigate}
+            onClick={() => onNavigate?.('army')}
+          >
+            <Swords size={20} aria-hidden="true" />
+            <span>الجيش</span>
+          </button>
+          <button
+            type="button"
+            aria-label="افتح المهام"
+            disabled={!onNavigate}
+            onClick={() => onNavigate?.('reports')}
+          >
+            <ScrollText size={20} aria-hidden="true" />
+            <span>المهام</span>
+          </button>
+          <button
+            type="button"
+            aria-label="انتقل إلى خريطة العالم"
+            disabled={!onNavigate}
+            onClick={() => onNavigate?.('map')}
+          >
+            <Map size={20} aria-hidden="true" />
+            <span>خريطة العالم</span>
+          </button>
+        </nav>
       </div>
+      <VillageHero view={view} village={village} />
+      <StageLadder view={view} village={village} />
       <section className={styles.card} aria-label="وحدات القرية">
         <p className={styles.cardEyebrow}>تشكيل القرية</p>
         <div className={styles.cardHead}>

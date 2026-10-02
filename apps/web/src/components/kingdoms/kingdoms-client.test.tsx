@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
+import { unitKeys } from '@/lib/kingdoms/types';
 import { KingdomsClient } from './kingdoms-client';
-import type { WorldView } from './shared';
+import { number, type WorldView } from './shared';
 const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
@@ -108,6 +109,31 @@ describe('Kingdoms player interface', () => {
     expect(screen.queryByLabelText('اسم المملكة')).not.toBeInTheDocument();
   });
 
+  it('opens the interactive village first with actual troops and keeps geographic navigation context', async () => {
+    const snapshot = projection(true);
+    const village = snapshot.villages[0];
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      response(String(url).endsWith('/worlds') ? summary : snapshot),
+    );
+    render(<KingdomsClient />);
+    expect(await screen.findByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'ملخص المملكة' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'إدارة مباني القرية' }),
+    ).not.toBeInTheDocument();
+    const hud = screen.getByRole('region', { name: 'موارد القرية' });
+    const troops = within(hud).getByText('الوحدات الجاهزة').parentElement!;
+    expect(troops).toHaveTextContent(
+      number(unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0)),
+    );
+    expect(within(hud).queryByText('السكان')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'انتقل إلى خريطة العالم' }));
+    expect(navigation.push).toHaveBeenCalledWith(
+      `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`,
+    );
+    expect(hud).toHaveTextContent(number(village.resources.gold));
+  });
+
   it('restores the requested nonfirst world and own village on return from the geographic map', async () => {
     const first = projection(true).villages[0];
     const villages = [first, { ...first, id: 'second-village', name: 'قرية العودة' }];
@@ -170,7 +196,7 @@ describe('Kingdoms player interface', () => {
     vi.mocked(fetch).mockImplementation(async (url) =>
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
-    render(<KingdomsClient />);
+    render(<KingdomsClient initialTab="overview" />);
     expect(await screen.findByRole('heading', { name: 'مملكة النور' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'ملخص المملكة' })).toBeInTheDocument();
     const scene = screen.getByRole('region', { name: 'خريطة القرية' });
@@ -187,22 +213,26 @@ describe('Kingdoms player interface', () => {
     vi.mocked(fetch).mockImplementation(async (url) =>
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
-    render(<KingdomsClient />);
+    render(<KingdomsClient initialTab="overview" />);
     const scene = await screen.findByRole('region', { name: 'خريطة القرية' });
     fireEvent.click(within(scene).getByRole('button', { name: /حطّاب المملكة.*لم يُبنَ/ }));
     expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'حطّاب المملكة' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'حطّاب المملكة' }, { timeout: 3000 }),
+    ).toBeInTheDocument();
     const navigation = screen.getByLabelText('إدارة المملكة');
     fireEvent.click(within(navigation).getByRole('button', { name: 'لوحة المملكة' }));
     fireEvent.click(within(navigation).getByRole('button', { name: 'القرية' }));
-    expect(screen.getByRole('heading', { name: 'دار الحكم' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'إدارة مباني القرية' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens the geographic world route from overview and navigation with the active village', async () => {
     vi.mocked(fetch).mockImplementation(async (url) =>
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
-    render(<KingdomsClient />);
+    render(<KingdomsClient initialTab="overview" />);
     const overview = await screen.findByRole('region', { name: 'خريطة المملكة' });
     const village = projection(true).villages[0];
     const expected = `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`;
@@ -257,7 +287,12 @@ describe('Kingdoms player interface', () => {
     );
     render(<KingdomsClient />);
     fireEvent.click(await screen.findByRole('button', { name: 'القرية' }));
-    const buttons = await screen.findAllByRole('button', { name: 'طوّر المبنى' });
+    fireEvent.click(screen.getByRole('button', { name: /دار الحكم.*المستوى [١1]/ }));
+    const buttons = await screen.findAllByRole(
+      'button',
+      { name: 'طوّر المبنى' },
+      { timeout: 3000 },
+    );
     expect(buttons.every((button) => button.hasAttribute('disabled'))).toBe(true);
   });
 });
