@@ -45,7 +45,7 @@
 
 ## عقد الأصول
 
-تعرف `assetManifest.ts` لكل موضع: `id`, `src`, `filename`, `placeholder`, `worldRect`, `anchor`, `zIndex`, `alpha`, `animated`, `frames`, والوصف. الملفات المفقودة تحمل `src: null`, `placeholder: true`, `frames: []`؛ فلا يطلب المتصفح URLs غير موجودة.
+تعرف `assetManifest.ts` لكل موضع: `id`, `src`, `filename`, `placeholder`, `worldRect`, `anchor`, `zIndex`, `alpha`, `animated`, `frames`, والوصف. خيار `fit: 'contain'` يحافظ على نسبة الأصل داخل المستطيل؛ فُعّل للإسطبل فقط، وبقي قياس بقية الطبقات كما هو. الملفات المفقودة تحمل `src: null`, `placeholder: true`, `frames: []`؛ فلا يطلب المتصفح URLs غير موجودة.
 
 كل أصل Overlay يحتاج خلفية شفافة حقيقية، دون مستطيل معتم أو أرضية بديلة أو أشجار تحجب الصورة الأصلية. Width وHeight أدناه هما حجم التركيب في العالم عند 1:1. يمكن تسليم صورة أكبر للحفاظ على التفاصيل مع نفس النسبة ثم عرضها بحجم `worldRect`. `anchor` نسبي داخل الأصل: المباني **0.5,1** (منتصف القاعدة)، والطرق والبيئة **0,0**. الموقع يحدد الركن العلوي الأيسر؛ العرض يعوض anchor داخل هذا المستطيل.
 
@@ -55,7 +55,7 @@
 
 ## قائمة مباني L1–L5
 
-جميع **150** صورة مستقلة أدناه مفقودة حاليًا. الصورة الأصلية الحالية وقصاصاتها المعتمدة تبقى fallback. لا تُنشأ رسومات CSS/SVG أو صور مولدة لتعويضها، ولا تعني المواضع المحجوزة أن كل مبنى أصبح مرئيًا.
+أصول الإسطبل الخمسة جاهزة؛ تبقى **145** صورة مستقلة أدناه مفقودة حاليًا. الصورة الأصلية الحالية وقصاصاتها المعتمدة تبقى fallback لبقية المباني. لا تُنشأ رسومات CSS/SVG أو صور مولدة لتعويض الأصول المفقودة، ولا تعني المواضع المحجوزة أن كل مبنى أصبح مرئيًا.
 
 | Building | Level | Filename | Width | Height | WorldX | WorldY | Anchor | Zindex | Alpha | Static/Animated | Current status |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -114,11 +114,11 @@
 | الثكنات (`barracks`) | L3 | barracks-l3.webp | 356 | 196 | 291 | 406 | 0.5,1 | 602 | نعم | Static | MISSING |
 | الثكنات (`barracks`) | L4 | barracks-l4.webp | 356 | 196 | 291 | 406 | 0.5,1 | 602 | نعم | Static | MISSING |
 | الثكنات (`barracks`) | L5 | barracks-l5.webp | 356 | 196 | 291 | 406 | 0.5,1 | 602 | نعم | Static | MISSING |
-| الإسطبل (`stable`) | L1 | stable-l1.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | MISSING |
-| الإسطبل (`stable`) | L2 | stable-l2.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | MISSING |
-| الإسطبل (`stable`) | L3 | stable-l3.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | MISSING |
-| الإسطبل (`stable`) | L4 | stable-l4.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | MISSING |
-| الإسطبل (`stable`) | L5 | stable-l5.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | MISSING |
+| الإسطبل (`stable`) | L1 | stable-l1.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | READY |
+| الإسطبل (`stable`) | L2 | stable-l2.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | READY |
+| الإسطبل (`stable`) | L3 | stable-l3.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | READY |
+| الإسطبل (`stable`) | L4 | stable-l4.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | READY |
+| الإسطبل (`stable`) | L5 | stable-l5.webp | 111 | 67 | 454 | 516 | 0.5,1 | 583 | نعم | Static | READY |
 | ميدان الرماية (`archery`) | L1 | archery-range-l1.webp | 104 | 67 | 350 | 435 | 0.5,1 | 502 | نعم | Static | MISSING |
 | ميدان الرماية (`archery`) | L2 | archery-range-l2.webp | 104 | 67 | 350 | 435 | 0.5,1 | 502 | نعم | Static | MISSING |
 | ميدان الرماية (`archery`) | L3 | archery-range-l3.webp | 104 | 67 | 350 | 435 | 0.5,1 | 502 | نعم | Static | MISSING |
@@ -282,7 +282,20 @@
 
 يمكن تسليم إطار ثابت عبر `src` أو إطارات مستقلة عبر `frames`؛ لا يكفي وضع صورة atlas غير مقسمة داخل `frames`. يحمّل العارض الإطارات في cache، ويستخدم AnimatedSprite دون shared ticker، ويوقف الزمن مع pause وreduced motion وإخفاء المشهد. المسارات والإطارات بصرية فقط. إعادة استخدام حاويات وشخصيات NPC تتم داخل ميزانية الجودة القائمة؛ تحديث الموارد وحده لا يعيد إنشاء طبقات العالم.
 
-## تحقق التكامل — 2026-10-02
+## تسليم أصول الإسطبل L1–L5 — 2026-10-02
+
+- المسار المحلي: `apps/web/public/game-art/kingdoms/village/buildings/stable-l1.webp` إلى `stable-l5.webp`.
+- أُعدت خمسة أصول منفصلة من مرجع المستخدم بواسطة أداة image_gen بخلفية Alpha حقيقية، دون اللوحات الإنجليزية. المصدر عالي الدقة والمرجع وسجل التعليمات محفوظة في [مجلد مصادر الإسطبل](assets/kingdoms-village/stable/README.md)، خارج مسار تحميل التطبيق.
+- WebP بعرض 768 بكسل مع حفظ النسبة: L1/L2/L3/L5 **768×464**، وL4 **768×463**. الأوزان بالبايت: **126478 / 135912 / 118520 / 135190 / 149240**، بالترتيب. جودة 88، Alpha quality 100؛ جميع الزوايا شفافة.
+- بقي `WorldRect={x:454,y:516,width:111,height:67}`، و`anchor={x:0.5,y:1}`، و`zIndex=583`. يحتفظ `contain` بنسبة الصورة ويثبت منتصف القاعدة عند **509.5,583**. لا تعديل على `coordinates.ts` أو صورة القرية؛ لا تكبير عشوائي للمستطيل ولا تغطية لمبنى مجاور.
+- `src` محلي فعلي، `placeholder:false`، `alpha:true`، `animated:false`، و`frames:[]` لكل مستوى. تحميل المستوى المطلوب فقط يستخدم Pixi Assets cache القائم.
+- المستوى هو `clamp(floor(village.buildings.barracks),0,5)`: صفر بلا Overlay، والمستويات الأعلى تستعمل L5 مع عرض مستوى الثكنة الحقيقي في اللوحة. ترقية معلقة لا ترفع المستوى المرئي. الخيول الثابتة زخرفة، والخيالة المتحركون يبقون من `troops.rider` وبحد ثلاثة.
+- المتبقي من الأصول غير المجهّزة: **145 building overlays + 9 NPC + 10 environment + 1 roads = 165**.
+- التحقق الخاص بهذا التسليم: CodeGraph affected بعمق 2 وترشيح `apps/web/src/**/kingdoms/**/*.test.*` أعاد **7 ملفات**. Vitest **31/31 PASS**، وTypeScript وESLint للملفات المعدلة **PASS**. Playwright desktop-1920: **6 سيناريوهات قائمة + سيناريو معايرة L1–L5/cache PASS**؛ iPhone Chromium **390×844: سيناريو الإسطبل/الثكنة + سيناريو معايرة L1–L5/cache PASS**. أُعيد الاختبار الجديد وحده بعد تصحيح إعداد الالتقاط؛ لم تُشغّل Full Matrix أو اختبارات المونوريبو أو production build.
+- لقطات المستويات الخمسة على سطح المكتب والجوال محفوظة محليًا في `artifacts/kingdoms-village/stable-integration/`. هذه معاينة باستخدام مكونات المشهد الفعلية والمحرك داخل fixture محلي؛ لا تدّعي تحقق جلسات الإنتاج أو قاعدة البيانات.
+- لم يتغير الخادم أو Prisma أو الاقتصاد أو التدريب. لم تُضف dependencies، ولم يُنفذ staging/commit/push.
+
+## تحقق توسعة القرية السابق، قبل تسليم الأصول — 2026-10-02
 
 - CodeGraph 1.6.1: اتصال MCP محلي واكتشاف الرموز الجديدة بعد auto-sync، دون إعادة `init`.
 - `codegraph affected`: 14 اختبار Village بعد ترشيح المنطقة وعمق 2؛ أضيف `village-maps.test.tsx` و`village-scene.spec.ts` يدويًا لحدود تكامل اللوحة والمشهد.
@@ -293,7 +306,7 @@
 - ESLint للملفات المعدلة **PASS**.
 - بناء الويب وفحوصه اللاحقة: `pnpm --filter @tahaddi/web build` **PASS**؛ لا اعتماد runtime على CodeGraph.
 - `git diff --check` **PASS**، صورة `village-oasis.webp` مطابقة لبصمتها قبل المهمة، وGit staging السابق محفوظ. لا commit أو push ضمن هذه المهمة.
-- الأصول المعتمدة المفقودة: **150 building overlays + 9 NPC + 10 environment + 1 roads = 170**. الشكل النهائي للمباني الجديدة ينتظر هذه الأصول؛ لا رسم تلقائي أو بديل مولّد.
+- قبل تسليم أصول الإسطبل كانت الأصول المفقودة: **150 building overlays + 9 NPC + 10 environment + 1 roads = 170**. خفّض التسليم الحالي العدد إلى **165**؛ لا رسم تلقائي لبقية الأصول المفقودة.
 
 ## الملفات المعدلة في هذه المهمة
 

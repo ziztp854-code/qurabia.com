@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createWorld, executeCommand, projectWorld } from '../engine';
 import {
   getVillageBuilding,
@@ -54,19 +56,29 @@ describe('Mamluk village presentation registry', () => {
     }
   });
 
-  it('reserves five transparent stable assets without requesting files that do not exist', () => {
+  it('uses five existing transparent stable assets inside the original placement', () => {
     expect(villageAssets.buildings.stable).toHaveLength(5);
-    expect(villageAssets.buildings.stable[2]).toMatchObject({
-      id: 'stable-l3',
-      filename: 'stable-l3.webp',
-      src: null,
-      placeholder: true,
-      alpha: true,
-      animated: false,
-      frames: [],
-      anchor: { x: 0.5, y: 1 },
-      worldRect: { x: 454, y: 516, width: 111, height: 67 },
-    });
+    for (const [index, slot] of villageAssets.buildings.stable.entries()) {
+      const filename = `stable-l${index + 1}.webp`;
+      expect(slot).toMatchObject({
+        id: `stable-l${index + 1}`,
+        filename,
+        src: `/game-art/kingdoms/village/buildings/${filename}`,
+        placeholder: false,
+        alpha: true,
+        animated: false,
+        fit: 'contain',
+        frames: [],
+        anchor: { x: 0.5, y: 1 },
+        worldRect: { x: 454, y: 516, width: 111, height: 67 },
+        zIndex: 583,
+      });
+      const webp = readFileSync(resolve('public', slot.src!.slice(1)));
+      expect(webp.toString('ascii', 0, 4)).toBe('RIFF');
+      expect(webp.toString('ascii', 8, 12)).toBe('WEBP');
+      expect(webp.toString('ascii', 12, 16)).toBe('VP8X');
+      expect(webp[20] & 0x10).toBe(0x10);
+    }
     expect(villageAssets.base).toEqual({
       src: '/game-art/kingdoms/village-oasis.webp',
       width: 1536,

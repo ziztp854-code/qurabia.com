@@ -3,6 +3,7 @@ import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine
 import { createCamera, zoomCamera } from '@/lib/kingdoms/village/cameraMath';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type { VillageCanvasProps } from '@/lib/kingdoms/village/types';
+import { villageAssets } from '@/lib/kingdoms/village/assetManifest';
 import { createVillageRenderer } from './village-renderer';
 import { Assets, Texture, TextureSource } from 'pixi.js';
 
@@ -60,6 +61,28 @@ beforeEach(() => {
 });
 
 describe('village rendering surface dimensions', () => {
+  it.each([0, 1, 2, 3, 4, 5, 20])('loads only the confirmed stable tier for barracks level %i', async (barracks) => {
+    const now = 1800000000000;
+    const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
+    const props: VillageCanvasProps = {
+      view, village: { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks },
+        build: { building: 'barracks', level: barracks + 1, endsAt: now + 5000 } },
+      selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false,
+    };
+    const quality = resolveVillageQuality('low', { width: 768, dpr: 1 });
+    const renderer = await createVillageRenderer(document.createElement('canvas'), props, quality,
+      { gold: 'gold', light: 'white', water: 'white', dust: 'gold' });
+    const tier = Math.min(5, barracks);
+    const expected = tier > 0 ? [villageAssets.buildings.stable[tier - 1].src] : [];
+    const assetLoad = vi.mocked(Assets.load as (src: string) => Promise<Texture>);
+    const stableLoads = assetLoad.mock.calls.map(([src]) => src)
+      .filter((src) => src.includes('stable-l'));
+    expect(stableLoads).toEqual(expected);
+    const buildingLayer = gpu.stage!.children[0].children[1];
+    expect(buildingLayer.children.filter((child) => child.label.startsWith('stable-l')).map((child) => child.label))
+      .toEqual(tier > 0 ? [`stable-l${tier}`] : []);
+    renderer.destroy();
+  });
   it('applies a confirmed stable overlay after loading even when resources refresh in between', async () => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);

@@ -14,6 +14,73 @@ test.beforeEach(async ({ request }) => {
   expect((await request.post('/__village_test/reset')).ok()).toBeTruthy();
 });
 
+test('stable L1–L5 calibration renders separate local cutouts without changing confirmed state', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const requested: string[] = [];
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('request', (request) => {
+    const filename = new URL(request.url()).pathname.split('/').pop() ?? '';
+    if (/^stable-l[1-5]\.webp$/.test(filename)) requested.push(filename);
+  });
+  await page.goto('/');
+  const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  const viewport = village.locator('[data-village-scene]');
+  await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
+  expect(requested).toEqual([]);
+  await village.locator('[data-building-region="stable"]').click();
+  const panel = page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true });
+  await expect(panel).toContainText('مستوى الثكنة ٠');
+  const calibration = village.locator('details').filter({ hasText: 'معايرة مشهد القرية — وضع التطوير' });
+  await calibration.locator('summary').click();
+  await calibration.getByLabel('المبنى للمعايرة').selectOption('stable');
+  await calibration.locator('summary').click();
+  const stablePixels = async () => {
+    // Editing calibration controls below the scene may scroll it off-screen on mobile.
+    await viewport.scrollIntoViewIfNeeded();
+    const clip = await viewport.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const data = (element as HTMLElement).dataset;
+      const scale = Math.min(element.clientWidth / 1536, element.clientHeight / 1024) * Number(data.zoom);
+      return {
+        x: rect.x + element.clientWidth / 2 + (454 - Number(data.cameraX)) * scale,
+        y: rect.y + element.clientHeight / 2 + (516 - Number(data.cameraY)) * scale,
+        width: 111 * scale,
+        height: 67 * scale,
+      };
+    });
+    return (await page.screenshot({ clip, scale: 'css' })).toString('base64');
+  };
+  let previous = await stablePixels();
+  // The initial field displays 1 before an override exists; start with a changed value.
+  const previewOrder = [5, 1, 2, 3, 4];
+  for (const [index, level] of previewOrder.entries()) {
+    await calibration.locator('summary').click();
+    const loaded = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/stable-l${level}.webp`));
+    await calibration.getByLabel('المستوى المرئي التجريبي').fill(String(level));
+    expect((await loaded).ok()).toBe(true);
+    await calibration.locator('summary').click();
+    await expect.poll(stablePixels).not.toBe(previous);
+    previous = await stablePixels();
+    expect(requested).toEqual(previewOrder.slice(0, index + 1).map((tier) => `stable-l${tier}.webp`));
+    await page.screenshot({ path: testInfo.outputPath(`stable-l${level}-${testInfo.project.name}.png`), scale: 'css' });
+  }
+  // Revisiting a level uses the existing Pixi texture cache.
+  await calibration.locator('summary').click();
+  await calibration.getByLabel('المستوى المرئي التجريبي').fill('1');
+  await calibration.locator('summary').click();
+  await expect.poll(stablePixels).not.toBe(previous);
+  expect(requested).toHaveLength(5);
+  await expect(panel).toContainText('مستوى الثكنة ٠');
+  await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
+  const state = (await (await page.request.get('/api/kingdoms')).json()).data.villages[0];
+  expect(state.buildings.barracks).toBe(0);
+  expect(state.buildings).not.toHaveProperty('stable');
+  expect(state.troops.rider).toBe(0);
+  expect(errors).toEqual([]);
+});
+
 test('stable uses confirmed barracks and the genuine cavalry queue, with safe mobile focus', async ({ page }, testInfo) => {
   await page.goto('/');
   const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });

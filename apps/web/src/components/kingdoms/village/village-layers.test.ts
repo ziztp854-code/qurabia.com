@@ -40,6 +40,43 @@ function canvasFactory() {
 }
 
 describe('original artwork alpha crops', () => {
+  it.each([[400, 200], [400, 600]])('contains stable artwork without distortion or moving its ground anchor (%i×%i)', (width, height) => {
+    const now = 1800000000000;
+    const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
+    const props: VillageCanvasProps = {
+      view, village: { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 1 } },
+      selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false,
+    };
+    const source = originalArtwork();
+    const cache = createArtworkTextureCache(source, canvasFactory().createCanvas);
+    const texture = new Texture({ source: new TextureSource({ width, height }) });
+    const approved = new Map([['/game-art/kingdoms/village/buildings/stable-l1.webp', texture]]);
+    const layer = createBuildingLayer(source, props, [], approved, cache);
+    const sprite = layer.children.find((child) => child.label === 'stable-l1') as Sprite;
+    expect(sprite).toBeInstanceOf(Sprite);
+    expect(sprite.scale.x).toBeCloseTo(sprite.scale.y);
+    expect(sprite.width / sprite.height).toBeCloseTo(width / height);
+    expect(sprite.width).toBeLessThanOrEqual(111 + 1e-6);
+    expect(sprite.height).toBeLessThanOrEqual(67 + 1e-6);
+    expect(sprite.anchor.x).toBe(0.5);
+    expect(sprite.anchor.y).toBe(1);
+    expect(sprite.position.x).toBe(509.5);
+    expect(sprite.position.y).toBe(583);
+    expect(sprite.zIndex).toBe(583);
+    const bounds = sprite.getBounds();
+    expect(bounds.minX).toBeGreaterThanOrEqual(454 - 1e-6);
+    expect(bounds.maxX).toBeLessThanOrEqual(565 + 1e-6);
+    expect(bounds.minY).toBeGreaterThanOrEqual(516 - 1e-6);
+    expect(bounds.maxY).toBeLessThanOrEqual(583 + 1e-6);
+    const pending = createBuildingLayer(source, { ...props, village: { ...props.village,
+      buildings: { ...props.village.buildings, barracks: 0 },
+      build: { building: 'barracks', level: 1, endsAt: now + 5000 } } }, [], approved, cache);
+    expect(pending.children.some((child) => child.label.startsWith('stable-l'))).toBe(false);
+    pending.destroy({ children: true });
+    layer.destroy({ children: true });
+    cache.destroy();
+    texture.destroy(true);
+  });
   it('renders frames-only stable assets at the confirmed level using the scene-owned ticker', () => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
@@ -57,8 +94,9 @@ describe('original artwork alpha crops', () => {
     const sprite = confirmed.children.find((child) => child.label === 'stable-l3') as AnimatedSprite;
     expect(sprite).toBeInstanceOf(AnimatedSprite);
     expect(sprite.autoUpdate).toBe(false);
-    expect(sprite.width).toBe(111);
+    expect(sprite.width).toBeCloseTo(100.5);
     expect(sprite.height).toBe(67);
+    expect(sprite.scale.x).toBeCloseTo(sprite.scale.y);
     expect(collectAssetAnimations(confirmed)).toEqual([sprite]);
     pending.destroy({ children: true });
     confirmed.destroy({ children: true });

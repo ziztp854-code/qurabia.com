@@ -13,6 +13,8 @@ export type VillageAssetSlot = Readonly<{
   alpha: boolean;
   animated: boolean;
   frames: readonly string[];
+  // Opt in for standalone cutouts; legacy overlay dimensions remain unchanged.
+  fit?: 'contain';
   // Existing source-art crops remain the fallback; missing art is never synthesized.
   fallbackCrop?: WorldRect;
   description: string;
@@ -77,12 +79,19 @@ const buildings = Object.fromEntries(
       [1, 2, 3, 4, 5].map((level) =>
         slot(
           `${id}-l${level}`,
-          `${name}: أصل مستقل للمستوى ${level} لم يُجهز بعد`,
+          `${name}: أصل مستقل للمستوى ${level}${id === 'stable' ? ' بخلفية شفافة' : ' لم يُجهز بعد'}`,
           { x, y, width, height },
           {
             filename: `${villageAssetNames[id] ?? id}-l${level}.webp`,
             zIndex,
             fallbackCrop: existingDetails[id],
+            ...(id === 'stable'
+              ? {
+                  src: `/game-art/kingdoms/village/buildings/stable-l${level}.webp`,
+                  placeholder: false,
+                  fit: 'contain' as const,
+                }
+              : {}),
           },
         ),
       ),
