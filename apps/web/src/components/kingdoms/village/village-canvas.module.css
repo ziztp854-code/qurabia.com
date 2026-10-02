@@ -1,9 +1,7 @@
 .stage {
   position: relative;
   inline-size: 100%;
-  aspect-ratio: 3 / 2;
-  min-block-size: 310px;
-  max-block-size: min(74dvh, 760px);
+  block-size: clamp(430px, 60dvh, 640px);
   overflow: hidden;
   background: var(--background);
   touch-action: none;
@@ -74,7 +72,7 @@
   outline-offset: calc(2px / var(--camera-scale));
 }
 .hotspot[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent);
+  box-shadow: inset 0 0 0 calc(2px / var(--camera-scale)) var(--gold);
 }
 .label {
   position: absolute;
@@ -85,13 +83,13 @@
   align-items: center;
   gap: 6px;
   width: max-content;
-  max-width: 210px;
-  padding: 7px 10px;
+  max-width: 240px;
+  padding: 8px 12px;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface-strong) 94%, transparent);
   color: var(--foreground);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.5;
   box-shadow: 0 3px 12px color-mix(in srgb, var(--background) 60%, transparent);
   transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
@@ -102,7 +100,7 @@
 .label small {
   display: block;
   color: var(--gold);
-  font-size: 9px;
+  font-size: 11px;
 }
 .stage[data-labels='true'] .label,
 .hotspot:hover .label,
@@ -220,12 +218,11 @@
 }
 @media (max-width: 700px) {
   .stage {
-    min-block-size: 410px;
-    max-block-size: 66dvh;
+    block-size: clamp(380px, 58dvh, 520px);
   }
   .label {
-    max-width: 160px;
-    font-size: 10px;
+    max-width: 210px;
+    font-size: 13px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

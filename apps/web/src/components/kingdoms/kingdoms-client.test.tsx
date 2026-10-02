@@ -41,6 +41,14 @@ const response = (data: unknown) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+function preferReducedMotion() {
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
+    media: query, matches: query === '(prefers-reduced-motion: reduce)', onchange: null,
+    addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(),
+    removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+  })));
+}
+
 describe('Kingdoms player interface', () => {
   beforeEach(() => {
     navigation.push.mockClear();
@@ -210,6 +218,7 @@ describe('Kingdoms player interface', () => {
   });
 
   it('opens the selected scene building in the village management panel', async () => {
+    preferReducedMotion();
     vi.mocked(fetch).mockImplementation(async (url) =>
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
@@ -282,6 +291,7 @@ describe('Kingdoms player interface', () => {
   }, 20_000);
 
   it('disables mutations in paused worlds', async () => {
+    preferReducedMotion();
     vi.mocked(fetch).mockImplementation(async (url) =>
       response(String(url).endsWith('/worlds') ? summary : { ...projection(true), paused: true }),
     );

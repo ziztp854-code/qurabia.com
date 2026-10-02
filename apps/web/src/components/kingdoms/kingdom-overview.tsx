@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -18,7 +17,6 @@ import { unitKeys } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { date, number, type GameProps } from './shared';
 import { VillageMap } from './village-map';
-import { villageArt } from './village-layout';
 import styles from './kingdom-overview.module.css';
 
 type OverviewTab = 'village' | 'army' | 'map' | 'campaigns' | 'alliances' | 'reports' | 'throne';
@@ -103,20 +101,14 @@ export function KingdomOverview({
   return (
     <div className={styles.overview}>
       <section className={styles.hero} aria-labelledby="kingdom-overview-title">
-        <Image
-          src={villageArt.src}
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 700px) 100vw, 1200px"
-          className={styles.heroImage}
-        />
         <div className={styles.heroContent}>
-          <p className={styles.kicker}>
-            عالم {view.worldName} · الموسم {number(view.season.number)}
-          </p>
-          <h2 id="kingdom-overview-title">{view.player?.name}</h2>
-          <p>مملكتك.. مجدك.. إرثك. ابنِ قرْيتك ووسّع نفوذك عبر عالم تحدي.</p>
+          <div className={styles.heroIdentity}>
+            <p className={styles.kicker}>
+              عالم {view.worldName} · الموسم {number(view.season.number)}
+            </p>
+            <h2 id="kingdom-overview-title">{view.player?.name}</h2>
+            <p className={styles.villageContext}>{village.name} · ديوان المملكة</p>
+          </div>
           <div className={styles.heroActions}>
             <button
               type="button"

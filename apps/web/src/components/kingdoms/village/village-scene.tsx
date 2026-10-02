@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUp,
   Maximize,
+  Minimize2,
   Pause,
   Play,
   Tags,
@@ -22,6 +23,8 @@ import type {
   VillageTarget,
 } from '@/lib/kingdoms/village/types';
 import { VillageCanvas } from './village-canvas';
+import { VillageActivity } from './village-activity';
+import { VillageDirectory } from './village-directory';
 import { VillageDebug } from './village-debug';
 import { VillageOnboarding } from './village-onboarding';
 import type { GameProps } from '../shared';
@@ -45,6 +48,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
   const [labels, setLabels] = useState(false);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [debug, setDebug] = useState<VillageDebugOptions>({});
   const reducedMotion = useSyncExternalStore(
     subscribeMotion,
@@ -62,30 +66,41 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
   const focusTour = useCallback((target: VillageTarget) => scene.current?.focusOn(target), []);
   const reset = useCallback(() => scene.current?.reset(), []);
   const onReady = useCallback(() => setReady(true), []);
+  const choose = useCallback((building: VillageSelection) => {
+    scene.current?.focusOn(building, () => onSelect(building));
+  }, [onSelect]);
   return (
-    <section className={styles.scene} aria-label="خريطة القرية">
+    <section className={styles.scene} aria-label="خريطة القرية" data-expanded={expanded}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>في قلب مملكتك</p>
+          <p className={styles.eyebrow}>مشهد القرية · اختر مبنى لإدارته</p>
           <h2>{village.name}</h2>
         </div>
-        <span className={styles.coordinates} dir="ltr">
-          X {village.x} / Y {village.y}
-        </span>
+        <div className={styles.headerActions}>
+          <span className={styles.coordinates} dir="ltr">X {village.x} / Y {village.y}</span>
+          <Button variant="outline" aria-pressed={expanded} onClick={() => setExpanded((value) => !value)}>
+            {expanded ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize size={18} aria-hidden="true" />}
+            {expanded ? 'العرض العادي' : 'توسيع المشهد'}
+          </Button>
+        </div>
       </header>
-      <VillageCanvas
-        ref={scene}
-        view={view}
-        village={village}
-        selected={selected}
-        onSelect={onSelect}
-        onWorldMap={onWorldMap}
-        quality={quality}
-        reducedMotion={reducedMotion}
-        showLabels={labels}
-        debug={options}
-        onReady={onReady}
-      />
+      <div className={styles.workspace}>
+        <VillageCanvas
+          ref={scene}
+          view={view}
+          village={village}
+          selected={selected}
+          onSelect={onSelect}
+          onWorldMap={onWorldMap}
+          quality={quality}
+          reducedMotion={reducedMotion}
+          showLabels={labels}
+          debug={options}
+          onReady={onReady}
+        />
+        <VillageDirectory view={view} village={village} selected={selected} onSelect={choose} />
+      </div>
+      <VillageActivity view={view} village={village} onFocus={choose} />
       <div className={styles.controls} role="group" aria-label="كاميرا القرية">
         <Button
           variant="outline"
