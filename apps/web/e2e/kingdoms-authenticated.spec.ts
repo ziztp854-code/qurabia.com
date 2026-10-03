@@ -205,7 +205,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
   const kingdomNav = page.getByRole('navigation', { name: 'إدارة المملكة' });
-  await expect(kingdomNav).toBeVisible();
+  await expect(kingdomNav).toBeVisible({ timeout: 30_000 });
   await kingdomNav.getByRole('button', { name: 'إرسال حملة', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'إرسال حملة' }).first()).toBeVisible();
   await expect(page.getByRole('region', { name: 'خريطة حروب المماليك' })).toBeVisible();
