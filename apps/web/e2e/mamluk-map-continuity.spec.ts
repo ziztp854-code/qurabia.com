@@ -12,6 +12,13 @@ declare global {
   }
 }
 
+// Needs the standalone fixture server from playwright.mamluk-continuity.config.ts; the default
+// application suite must not run it against the real app.
+test.skip(
+  process.env.RUN_MAMLUK_CONTINUITY_E2E !== '1',
+  'Requires the standalone map fixture server.',
+);
+
 const OWN_TIER = 3;
 
 test.beforeEach(async ({ request }) => {

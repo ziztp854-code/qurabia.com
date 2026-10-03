@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+process.env.RUN_MAMLUK_CONTINUITY_E2E = '1';
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: 'mamluk-map-continuity.spec.ts',
