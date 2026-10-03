@@ -11,6 +11,96 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+it('keeps the anonymous geographic reference at global zoom without requesting private world aggregates', async () => {
+  vi.useFakeTimers();
+  const fetch = vi.fn();
+  vi.stubGlobal('fetch', fetch);
+  const map = new MapSdkFixture();
+  map.bounds = { west: -180, east: 180, south: -80, north: 80 };
+  const session = createMapSession(
+    map.asMap(),
+    'mamluk-public-geographic-atlas-v1',
+    'globe',
+    DEFAULT_PALETTE,
+    { onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn() },
+  );
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(fetch).not.toHaveBeenCalled();
+  session.dispose();
+});
+
+it('keeps an unexpired authorized village snapshot visible while its background poll is pending', async () => {
+  vi.useFakeTimers();
+  const payload = approvedPayload();
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => payload })
+      .mockImplementation(() => new Promise(() => {})),
+  );
+  const { map, callbacks, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  const source = map.sources.get('mamluk-cities');
+  expect(source?.data).toMatchObject({ features: [{ id: 'cairo' }] });
+  callbacks.onPayload.mockClear();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(map.sources.get('mamluk-cities')).toBe(source);
+  expect(callbacks.onPayload).not.toHaveBeenCalledWith(null);
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+  session.dispose();
+});
+
+it.each(['network', '503'] as const)(
+  'retains authorized villages through a temporary %s outage but still expires private details',
+  async (failure) => {
+    vi.useFakeTimers();
+    const transport = vi.fn().mockResolvedValueOnce(publicResponse());
+    if (failure === 'network') transport.mockRejectedValue(new TypeError('Failed to fetch'));
+    else transport.mockResolvedValue({ ok: false, status: 503 });
+    vi.stubGlobal('fetch', transport);
+    const { map, callbacks, session } = retrySession();
+    await vi.advanceTimersByTimeAsync(0);
+    const source = map.sources.get('mamluk-cities');
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(map.sources.get('mamluk-cities')).toBe(source);
+    expect(callbacks.onPayload).toHaveBeenLastCalledWith(territoryPayload());
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+    expect(map.sources.get('mamluk-cities')).toBe(source);
+    expect(
+      (source?.data as { features: { properties: object }[] }).features[0].properties,
+    ).not.toHaveProperty('fortificationLevel');
+    session.dispose();
+  },
+);
+
+it('clusters the authorized city source and expands clusters without selecting a fabricated village', async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(publicResponse()));
+  const { map, callbacks, session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  const cities = map.sources.get('mamluk-cities')!;
+  expect(cities).toMatchObject({ cluster: true, clusterMaxZoom: 7, clusterRadius: 48 });
+  expect(map.layers.get('mamluk-cities')).toMatchObject({ filter: ['!', ['has', 'point_count']] });
+  expect(map.layers.has('mamluk-village-cluster-count')).toBe(true);
+  Object.assign(cities, { getClusterExpansionZoom: vi.fn().mockResolvedValue(8) });
+  map.clicked = [
+    {
+      source: 'mamluk-cities',
+      id: 1,
+      geometry: { type: 'Point', coordinates: [31, 30] },
+      properties: { cluster_id: 1, point_count: 42 },
+    } as never,
+  ];
+  map.fire('click', { point: { x: 2, y: 2 } });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(map.lastCamera).toMatchObject({ center: [31, 30], zoom: 8 });
+  expect(callbacks.onSelection).not.toHaveBeenCalledWith({ layer: 'cities', id: '1' });
+  session.dispose();
+});
+
 function retrySession() {
   const map = new MapSdkFixture();
   const callbacks = { onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn() };
@@ -282,7 +372,7 @@ it('keeps private expiry clearing operational if SDK feature-state highlighting 
 });
 
 it.each(['pan', 'zoom', 'projection'] as const)(
-  'preserves explicitly public settlement source identities and coordinates through %s while private data clears',
+  'preserves explicitly public settlement source identities and coordinates through %s while authorized data remains until expiry',
   async (action) => {
     vi.useFakeTimers();
     vi.stubGlobal(
@@ -311,8 +401,8 @@ it.each(['pan', 'zoom', 'projection'] as const)(
     expect(cities?.data).toMatchObject({
       features: [{ id: 'cairo', geometry: territoryPayload().layers.cities.features[0]?.geometry }],
     });
-    expect([...map.sources.keys()].sort()).toEqual(['mamluk-cities', 'mamluk-territories']);
-    expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+    expect(map.sources.size).toBe(9);
+    expect(callbacks.onPayload).toHaveBeenLastCalledWith(territoryPayload());
     await vi.advanceTimersByTimeAsync(150);
     expect(map.sources.get('mamluk-cities')).toBe(cities);
     session.dispose();
@@ -320,7 +410,7 @@ it.each(['pan', 'zoom', 'projection'] as const)(
   },
 );
 
-it('does not rebuild unchanged public settlement data on polling or strip and restore private attributes', async () => {
+it('does not rebuild unchanged public settlement data on polling while keeping authorized attributes until expiry', async () => {
   vi.useFakeTimers();
   const original = territoryPayload();
   const fetchMock = vi.fn(async () =>
@@ -342,7 +432,7 @@ it('does not rebuild unchanged public settlement data on polling or strip and re
   expect(map.sources.get('mamluk-cities')).toBe(cities);
   expect(cityUpdates).not.toHaveBeenCalled();
   expect(territoryUpdates).not.toHaveBeenCalled();
-  expect(cities.data).not.toMatchObject({ features: [{ properties: { fortificationLevel: 4 } }] });
+  expect(cities.data).toMatchObject({ features: [{ properties: { fortificationLevel: 4 } }] });
   session.dispose();
 });
 it('removes every cached layer if the SDK cannot update approved public settlement presentation', async () => {

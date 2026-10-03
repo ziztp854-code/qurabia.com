@@ -1,3 +1,4 @@
+import { villageDetailRules } from './village-details';
 import type { Geometry, Position, Feature, FeatureCollection, JsonValue } from './geojson';
 import type { BoundingBox } from './models';
 import type { MapLayers, MapPayload } from './presentation';
@@ -130,8 +131,17 @@ function decodeFeature(value: unknown, layer: keyof MapLayers, budget: DecodeBud
     feature.properties !== null &&
     typeof feature.properties === 'object' &&
     Object.hasOwn(feature.properties, 'distanceUnit');
+  const optionalVillageRules =
+    layer === 'cities' && feature.properties && typeof feature.properties === 'object'
+      ? Object.fromEntries(
+          Object.entries(villageDetailRules).filter(([key]) =>
+            Object.hasOwn(feature.properties as object, key),
+          ),
+        )
+      : {};
   const rules = {
     ...layerRules[layer],
+    ...optionalVillageRules,
     ...(hasDistanceUnit ? { distanceUnit: oneOf('metres', 'tiles') } : {}),
   };
   const fields = record(feature.properties, Object.keys(rules));

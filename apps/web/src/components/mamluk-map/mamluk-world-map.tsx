@@ -15,7 +15,7 @@ import {
   Shield,
   Target,
 } from 'lucide-react';
-import { useId, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
@@ -26,8 +26,15 @@ import { useWorldMap } from './use-world-map';
 import { getPlayerColor } from './player-ownership';
 import styles from './mamluk-world-map.module.css';
 import type { VillageRelocationEligibility } from './use-village-relocation';
+import type { MapMode } from './map-mode';
 
 export interface MamlukWorldMapProps {
+  readonly mode?: MapMode;
+  readonly onModeChange?: (mode: MapMode) => void;
+  readonly onConfirmTarget?: (villageId: string) => void;
+  readonly targetVillageIds?: readonly string[];
+  readonly onCancelTarget?: () => void;
+  readonly focusVillageId?: string;
   readonly worlds: readonly { readonly id: string; readonly name: string }[];
   readonly initialWorldId: string;
   readonly viewerPlayerId: string;
@@ -55,6 +62,13 @@ const ownerColors = {
   players: Array.from({ length: 6 }, (_, index) => `var(--map-owner-${index + 1})`),
 };
 const number = (value: number) => new Intl.NumberFormat('ar-SA').format(value);
+const modeLabels: Record<MapMode, string> = {
+  WORLD: 'استكشف العالم',
+  SELECT_ATTACK_TARGET: 'اختر هدف الهجوم',
+  SELECT_SCOUT_TARGET: 'اختر هدف الاستطلاع',
+  SELECT_REINFORCEMENT_TARGET: 'اختر هدف التعزيز',
+  SELECT_SETTLEMENT_TARGET: 'اختر موقع الاستيطان',
+};
 
 export function MamlukWorldMap({
   worlds,
@@ -64,6 +78,7 @@ export function MamlukWorldMap({
   initialLocation,
   initialVillageId,
   villageLocations,
+  ...modeProps
 }: MamlukWorldMapProps) {
   const router = useRouter();
   const [worldId, setWorldId] = useState(initialWorldId);
@@ -77,6 +92,7 @@ export function MamlukWorldMap({
       initialLocation={initialLocation}
       initialVillageId={initialVillageId}
       villageLocations={villageLocations}
+      {...modeProps}
       onWorldChange={(id) =>
         villageLocations ? router.push(geographicMapHref(id)) : setWorldId(id)
       }
@@ -93,6 +109,12 @@ function WorldScene({
   initialVillageId,
   villageLocations,
   onWorldChange,
+  mode = 'WORLD',
+  onModeChange,
+  onConfirmTarget,
+  targetVillageIds,
+  onCancelTarget,
+  focusVillageId,
 }: Omit<MamlukWorldMapProps, 'initialWorldId'> & {
   worldId: string;
   onWorldChange: (id: string) => void;
@@ -112,6 +134,7 @@ function WorldScene({
   const {
     container,
     status,
+    refreshing,
     payload,
     publicPayload,
     selected,
@@ -120,6 +143,7 @@ function WorldScene({
     setProjection,
     moveCamera,
     focusSelection,
+    focusLocation,
     refresh,
     destination,
     isPickingDestination,
@@ -132,6 +156,40 @@ function WorldScene({
     requestManualDestination,
   } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId);
   const scenePayload = payload ?? publicPayload;
+  const lastFocused = useRef<string | undefined>(undefined);
+  const [locationFailure, setLocationFailure] = useState<string | null>(null);
+  const [locationAttempt, setLocationAttempt] = useState(0);
+  const hasFocusVillage = Boolean(scenePayload?.layers.cities.features.some((city) => city.id === focusVillageId));
+  useEffect(() => {
+    if (!focusVillageId) { lastFocused.current = undefined; return; }
+    if (lastFocused.current === focusVillageId ||
+      !scenePayload?.layers.cities.features.some((city) => city.id === focusVillageId)) return;
+    lastFocused.current = focusVillageId;
+    focusSelection({ layer: 'cities', id: focusVillageId });
+  }, [focusVillageId, scenePayload, focusSelection]);
+  useEffect(() => {
+    if (!focusVillageId || hasFocusVillage || lastFocused.current === focusVillageId || referenceOnly) return;
+    const controller = new AbortController();
+    const query = new URLSearchParams({ worldId, villageId: focusVillageId });
+    void fetch(`/api/kingdoms/world-map/location?${query}`, { signal: controller.signal, cache: 'no-store' })
+      .then(async (response) => {
+        const location = await response.json();
+        if (!response.ok || location?.worldId !== worldId || location?.villageId !== focusVillageId ||
+          !Number.isFinite(location.longitude) || !Number.isFinite(location.latitude) ||
+          Math.abs(location.longitude) > 180 || Math.abs(location.latitude) > 90) throw new Error('unavailable');
+        if (controller.signal.aborted) return;
+        lastFocused.current = focusVillageId;
+        setLocationFailure(null);
+        focusLocation({ longitude: location.longitude, latitude: location.latitude });
+        setSelected({ layer: 'cities', id: focusVillageId });
+      })
+      .catch(() => { if (!controller.signal.aborted) setLocationFailure(focusVillageId); });
+    return () => controller.abort();
+  }, [focusVillageId, hasFocusVillage, worldId, referenceOnly, focusLocation, setSelected, locationAttempt]);
+  const closeSelection = () => {
+    setSelected(null);
+    container.current?.focus({ preventScroll: true });
+  };
   const selection = useMemo(() => {
     const current = findSelection(payload, selected, viewerPlayerId, referenceOnly);
     if (current) return current;
@@ -238,7 +296,7 @@ function WorldScene({
     refresh();
   };
   const statusMessage =
-    status === 'loading' && publicPayload
+    refreshing && scenePayload
       ? 'جارٍ تحديث المشهد…'
       : referenceOnly
         ? status === 'ready'
@@ -247,15 +305,19 @@ function WorldScene({
             ? 'جارٍ تحميل الأطلس…'
             : messages[status]
         : messages[status];
+  const canConfirm = !referenceOnly && mode !== 'WORLD' && mode !== 'SELECT_SETTLEMENT_TARGET' &&
+    selection?.layer === 'cities' && Boolean(approvedCity) && Boolean(onConfirmTarget) &&
+    Boolean(targetVillageIds?.includes(selection.id));
   return (
     <section
       className={styles.root}
       dir="rtl"
       aria-label={referenceOnly ? 'أطلس جغرافي' : 'خريطة حروب المماليك'}
+      data-map-mode={mode}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           if (isPickingDestination) cancelDestination();
-          else setSelected(null);
+          else closeSelection();
         }
       }}
     >
@@ -282,6 +344,17 @@ function WorldScene({
           </select>
         </label>
       </header>
+      {!referenceOnly && <div className={styles.modeBar}>
+        {onModeChange ? <label>وضع الخريطة
+          <select value={mode} onChange={(event) => onModeChange(event.target.value as MapMode)}>
+            {Object.entries(modeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label> : <span>{mode === 'WORLD' ? modeLabels.WORLD : 'اختيار هدف الحملة'}</span>}
+        {mode === 'SELECT_SETTLEMENT_TARGET' && <p>اختيار أرض الاستيطان متاح في نموذج الإحداثيات الحالي؛ لا تتوفر معاينة جغرافية معتمدة للأرض الخالية.</p>}
+        {locationFailure === focusVillageId && locationFailure && <p role="alert">تعذر تحديد موقع القرية.
+          <button type="button" className={styles.control} onClick={() => setLocationAttempt((attempt) => attempt + 1)}>أعد تحديد الموقع</button>
+        </p>}
+      </div>}
       {!referenceOnly && Boolean(villageLocations?.length) && (
         <nav className={styles.villageNavigation} aria-label="قراي">
           <span className={styles.villageCaption}>
@@ -324,6 +397,8 @@ function WorldScene({
         <p>اسحب للاستكشاف · قرّب لرؤية الحدود · اختر موقعًا للتفاصيل</p>
       </div>
       {!referenceOnly && (
+        <details className={styles.layersDisclosure}>
+          <summary><Layers size={18} aria-hidden="true" />حدود الممالك</summary>
         <section className={styles.ownerLegend} aria-label="حدود الممالك">
           <div className={styles.ownerHeading}>
             <Layers size={20} aria-hidden="true" />
@@ -369,6 +444,7 @@ function WorldScene({
             <p className={styles.boundaryEmpty}>تظهر حدود الممالك مع القرى المتاحة في المشهد.</p>
           )}
         </section>
+        </details>
       )}
       <div className={styles.workspace} data-picking-destination={isPickingDestination}>
         <div className={styles.mapFrame}>
@@ -376,10 +452,14 @@ function WorldScene({
             ref={container}
             className={styles.canvas}
             role="region"
+            tabIndex={0}
             aria-label={referenceOnly ? 'الخريطة الجغرافية' : 'الخريطة الاستراتيجية'}
             aria-describedby={isPickingDestination ? destinationInstructionsId : undefined}
           />
           <div className={styles.toolbar} role="group" aria-label="عرض الخريطة">
+            <details className={styles.displayOptions}>
+              <summary className={styles.control}><Layers size={18} aria-hidden="true" />عرض الخريطة</summary>
+              <div className={styles.displayChoices}>
             <button
               className={styles.control}
               type="button"
@@ -398,6 +478,8 @@ function WorldScene({
               <Map size={18} aria-hidden="true" />
               خريطة مسطحة
             </button>
+              </div>
+            </details>
             <button
               className={styles.control}
               type="button"
@@ -512,11 +594,17 @@ function WorldScene({
           managementHref={managementHref}
           referenceOnly={referenceOnly}
           selectedKey={selected}
-          loading={status === 'loading' && Boolean(selected)}
+          loading={(refreshing || status === 'loading') && Boolean(selected)}
           pendingTitle={typeof pendingTitle === 'string' ? pendingTitle : undefined}
           features={features}
           onSelect={focusSelection}
-          onClose={() => setSelected(null)}
+          onClose={closeSelection}
+          targetSelection={!referenceOnly && mode !== 'WORLD' ? {
+            title: modeLabels[mode],
+            canConfirm: Boolean(canConfirm),
+            onConfirm: () => { if (canConfirm && selection) onConfirmTarget?.(selection.id); },
+            onCancel: onCancelTarget,
+          } : undefined}
           pickingDestination={isPickingDestination}
           relocation={
             relocationVillage

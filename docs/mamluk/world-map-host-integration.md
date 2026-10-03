@@ -6,13 +6,13 @@ World Map navigation, overview links and toolbar open this route with the curren
 Prisma/PostgreSQL connection and `KingdomWorld` aggregate. This integration adds no
 schema migration or second persistence system.
 
-The atlas reads persisted geographic observations. The local campaign includes
-fictional ownership, army positions, routes, sieges and visibility grants to
-exercise the presentation pipeline. It does not implement a geographic movement
-or combat simulation. The legacy Kingdoms engine retains its grid `x/y` positions,
-commands, ownership rules and scheduled events; those coordinates are not
-converted into longitude/latitude. Its campaign commands remain accessible under
-the distinct "إرسال حملة" navigation entry.
+The atlas and the "إرسال حملة" selector now share `MamlukWorldMap`; only their
+presentation mode differs. Production reads authorized KingdomWorld projections
+and persisted village geography. Seeded demonstration worlds are test fixtures,
+not production campaigns. The existing engine retains its grid `x/y` positions,
+commands, ownership rules and scheduled events; no inverse geographic mapping
+or new combat/movement rules are introduced. See [the unified map report](unified-world-map.md)
+for discovery, data limitations and verification.
 
 Existing Kingdoms villages also have a persisted geographic presentation model.
 The server allocates WGS84 locations near the twelve real city centres, beginning
@@ -24,8 +24,9 @@ ownership transfer or the addition of other villages.
 
 An own village clicked on the geographic map exposes an "إدارة القرية" link back
 to `/games/kingdoms/?worldId=…&villageId=…&tab=village`. The server accepts a camera
-focus only for an owned village. The browser receives no directory of hidden
-enemy villages for centering or selection.
+initial route focus only for an owned village. Campaign directory selections can
+resolve one authorized public village ID through `/api/kingdoms/world-map/location`;
+the browser receives no hidden military data or bulk geographic directory.
 
 The published page also offers a clearly labeled public geographic reference
 atlas when a visitor has no authorized geographic campaign. Its twelve GeoNames

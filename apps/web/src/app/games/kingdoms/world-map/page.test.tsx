@@ -54,7 +54,7 @@ describe('authenticated geographic atlas page', () => {
       initialLocation: { longitude: 36.29, latitude: 33.51 },
       villageLocations: [village],
     });
-    expect(page.props.children[1].key).toBe('second:own-village:alice');
+    expect(page.props.children[1].key).toBe('second:alice');
   });
   it('preserves explicit campaign geography when a legacy village has no mapped geographic location', async () => {
     dependencies.list.mockResolvedValue([{ id: 'explicit-campaign', name: 'Existing campaign' }]);

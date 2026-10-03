@@ -22,10 +22,16 @@ function retrySession() {
 
 it('captures destination taps before feature selection and preserves the selected village during movement', async () => {
   vi.useFakeTimers();
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+  );
   const map = new MapSdkFixture();
   const callbacks = {
-    onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn(), onDestination: vi.fn(),
+    onPayload: vi.fn(),
+    onSelection: vi.fn(),
+    onStatus: vi.fn(),
+    onDestination: vi.fn(),
   };
   const session = createMapSession(map.asMap(), 'world', 'mercator', DEFAULT_PALETTE, callbacks);
   await vi.advanceTimersByTimeAsync(0);
@@ -33,7 +39,10 @@ it('captures destination taps before feature selection and preserves the selecte
   session.setDestinationPicking(true);
   map.clicked = [{ source: 'mamluk-cities', id: 'cairo' }];
   map.fire('click', { point: { x: 1, y: 1 }, lngLat: { lng: 51.53104, lat: 25.285447 } });
-  expect(callbacks.onDestination).toHaveBeenCalledWith({ longitude: 51.53104, latitude: 25.285447 });
+  expect(callbacks.onDestination).toHaveBeenCalledWith({
+    longitude: 51.53104,
+    latitude: 25.285447,
+  });
   expect(callbacks.onSelection).not.toHaveBeenCalled();
   map.fire('moveend');
   expect(callbacks.onSelection).not.toHaveBeenCalled();
@@ -45,14 +54,21 @@ it('captures destination taps before feature selection and preserves the selecte
 
 it('keeps only the temporary destination marker across refresh and projection then removes it on cancel or dispose', async () => {
   vi.useFakeTimers();
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+  );
   const { map, session } = retrySession();
   await vi.advanceTimersByTimeAsync(0);
   session.setDestinationPreview({ longitude: 51.53104, latitude: 25.285447 });
   const preview = map.sources.get('qurabia-relocation-preview');
-  expect(preview?.data).toMatchObject({ features: [{ geometry: { coordinates: [51.53104, 25.285447] } }] });
+  expect(preview?.data).toMatchObject({
+    features: [{ geometry: { coordinates: [51.53104, 25.285447] } }],
+  });
   const originalCity = map.sources.get('mamluk-cities')?.data;
-  expect(originalCity).toMatchObject({ features: [{ geometry: { coordinates: [31.2357, 30.0444] } }] });
+  expect(originalCity).toMatchObject({
+    features: [{ geometry: { coordinates: [31.2357, 30.0444] } }],
+  });
   await session.loader.refresh();
   session.adapter.setProjection('globe');
   expect(map.sources.get('qurabia-relocation-preview')).toBe(preview);
@@ -61,7 +77,9 @@ it('keeps only the temporary destination marker across refresh and projection th
   session.setDestinationPreview({ longitude: 51.6, latitude: 25.3 });
   session.dispose();
   expect(map.sources.has('qurabia-relocation-preview')).toBe(false);
-  expect([...map.layers.keys()].some((id) => id.startsWith('qurabia-relocation-preview'))).toBe(false);
+  expect([...map.layers.keys()].some((id) => id.startsWith('qurabia-relocation-preview'))).toBe(
+    false,
+  );
 });
 
 function territoryPayload(): MapPayload {
@@ -138,7 +156,7 @@ it('scrubs private city attributes from retained public source copies without al
       .mockImplementation(() => new Promise(() => {})),
   );
   const { map, session } = retrySession();
-  await vi.advanceTimersByTimeAsync(5000);
+  await vi.advanceTimersByTimeAsync(8000);
   const cityData = map.sources.get('mamluk-cities')?.data as {
     features: { id: string; geometry: unknown; properties: Record<string, unknown> }[];
   };
@@ -242,7 +260,7 @@ it('retains only explicitly public village layers beyond private expiry while th
   expect(map.layers.size).toBe(0);
 });
 
-it.each([401, 403, 503])(
+it.each([401, 403, 404])(
   'clears retained public village geometry on an HTTP %i refresh failure',
   async (status) => {
     vi.useFakeTimers();
@@ -291,7 +309,7 @@ it('does not preserve previous public villages after a policy downgrade or a rev
   const citySource = map.sources.get('mamluk-cities');
   await vi.advanceTimersByTimeAsync(5000);
 
-  expect(map.sources.get('mamluk-cities')).not.toBe(citySource);
+  expect(map.sources.get('mamluk-cities')).toBe(citySource);
   expect(map.sources.get('mamluk-cities')?.data).toEqual({
     type: 'FeatureCollection',
     features: [],
@@ -407,9 +425,10 @@ it('keeps illustrated settlement clicks tied to approved IDs and removes every s
   map.clicked = [{ source: 'mamluk-cities', id: 'cairo' }];
   map.fire('click', { point: { x: 1, y: 1 } });
   expect(callbacks.onSelection).toHaveBeenLastCalledWith({ layer: 'cities', id: 'cairo' });
+  const beforeMove = map.sources.get('mamluk-cities');
   map.fire('moveend');
-  expect(map.layers.size).toBe(0);
-  expect(map.sources.size).toBe(0);
+  expect(map.layers.has('mamluk-cities')).toBe(true);
+  expect(map.sources.get('mamluk-cities')).toBe(beforeMove);
   await vi.advanceTimersByTimeAsync(150);
   expect(map.layers.get('mamluk-cities')).toMatchObject({ type: 'symbol' });
   map.images.clear();
@@ -506,9 +525,9 @@ it('removes the outline before its source and restores it safely through movemen
   await vi.advanceTimersByTimeAsync(0);
   expect(map.layers.has('mamluk-village-borders')).toBe(true);
   map.fire('moveend');
-  expect(map.layers.has('mamluk-village-borders')).toBe(false);
-  expect(map.layers.has('mamluk-fog')).toBe(false);
-  expect(map.sources.size).toBe(0);
+  expect(map.layers.has('mamluk-village-borders')).toBe(true);
+  expect(map.layers.has('mamluk-fog')).toBe(true);
+  expect(map.sources.size).toBe(9);
   await vi.advanceTimersByTimeAsync(150);
   expect(map.layers.has('mamluk-village-borders')).toBe(true);
   map.sources.clear();
@@ -636,17 +655,29 @@ it('cancels a scheduled recovery when the session is disposed', async () => {
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-it('cancels a scheduled recovery when movement leaves a loadable viewport', async () => {
+it('cancels a scheduled local recovery and loads bounded overview after zooming out', async () => {
   vi.useFakeTimers();
-  const fetchMock = vi.fn().mockRejectedValue(new Error('Unavailable'));
+  const fetchMock = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('Unavailable'))
+    .mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        worldId: 'world',
+        revision: '1',
+        serverTime: 1000,
+        cells: { type: 'FeatureCollection', features: [] },
+      }),
+    });
   vi.stubGlobal('fetch', fetchMock);
   const { map, callbacks, session } = retrySession();
   await vi.advanceTimersByTimeAsync(0);
   map.bounds = { west: -180, east: 180, south: -80, north: 80 };
   map.fire('moveend');
   await vi.advanceTimersByTimeAsync(2000);
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(callbacks.onStatus).toHaveBeenLastCalledWith('zoom');
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(fetchMock.mock.calls[1]?.[0]).toContain('/overview?');
+  expect(callbacks.onStatus).toHaveBeenLastCalledWith('ready');
   session.dispose();
 });
 
@@ -740,7 +771,7 @@ it('clears, replaces, and expires approved sources while basemap tiles are still
   expect(map.sources.size).toBe(9);
   map.styleLoaded = false;
   map.fire('moveend');
-  expect(map.sources.size).toBe(0);
+  expect(map.sources.size).toBe(9);
   await vi.advanceTimersByTimeAsync(150);
   expect(map.sources.size).toBe(9);
   session.loader.dispose();
@@ -777,8 +808,8 @@ it('updates selection data only from accepted snapshots and clears it on movemen
   map.fire('click', { point: { x: 1, y: 1 } });
   expect(onSelection).toHaveBeenLastCalledWith({ layer: 'cities', id: 'cairo' });
   map.fire('moveend');
-  expect(onPayload).toHaveBeenLastCalledWith(null);
-  expect(onSelection).toHaveBeenLastCalledWith(null);
+  expect(onPayload.mock.lastCall?.[0]?.revision).toBe('1');
+  expect(onSelection).toHaveBeenLastCalledWith({ layer: 'cities', id: 'cairo' });
   session.loader.dispose();
   session.adapter.render(approvedPayload('world', '2'));
   await vi.advanceTimersByTimeAsync(8000);

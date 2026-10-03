@@ -8,6 +8,10 @@ import { MapPanel } from './map-panel';
 import { GatheringPanel, ResourceSiteDirectory } from './resource-site-panel';
 import type { GameProps, WorldView } from './shared';
 
+vi.mock('../mamluk-map/mamluk-world-map', () => ({
+  MamlukWorldMap: () => <div data-testid="unified-map" />,
+}));
+
 const now = 1800000000000;
 const sites: ResourceSiteView[] = [
   {

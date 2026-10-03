@@ -111,6 +111,52 @@ async function verifyLayout(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
 
+test('global aggregate markers drill into the same map with real SDK string IDs', async ({ page }, testInfo) => {
+  const { errors } = await openGlobe(page);
+  await page.evaluate(() => { (window as unknown as { savedMap: unknown }).savedMap = window.__globeFixtureMap; });
+  await page.getByRole('button', { name: 'عرض الكرة بالكامل', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__globeFixtureMap!.getLayer('mamluk-overview-cells')))).toBe(true);
+  await expect.poll(() => page.evaluate(() => {
+    const map = window.__globeFixtureMap!;
+    const point = map.project([31.2357, 30.0444]);
+    return map.queryRenderedFeatures(point, { layers: ['mamluk-overview-cells'] }).map((feature) => feature.id);
+  })).toContain('cell:14:8');
+  await page.locator('canvas.maplibregl-canvas').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('unified-world-overview.png') });
+  const point = await page.evaluate(() => {
+    const map = window.__globeFixtureMap!, bounds = map.getCanvas().getBoundingClientRect();
+    const projected = map.project([31.2357, 30.0444]);
+    return { x: bounds.left + projected.x, y: bounds.top + projected.y };
+  });
+  await page.mouse.click(point.x, point.y);
+  await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThanOrEqual(8.9);
+  await expect.poll(() => currentCity(page)).toMatchObject({ id: 'cairo' });
+  expect(await page.evaluate(() => (window as unknown as { savedMap: unknown }).savedMap === window.__globeFixtureMap)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('campaign modes preserve the actual map instance, camera and village through refresh', async ({ page }) => {
+  const { errors } = await openGlobe(page);
+  await page.evaluate(() => { (window as unknown as { savedMap: unknown }).savedMap = window.__globeFixtureMap; });
+  const before = await camera(page);
+  for (const mode of ['SELECT_ATTACK_TARGET', 'SELECT_SCOUT_TARGET', 'SELECT_REINFORCEMENT_TARGET']) {
+    await page.getByRole('combobox', { name: 'وضع الخريطة', exact: true }).selectOption(mode);
+    await expect(page.getByRole('button', { name: 'تأكيد الهدف', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'تأكيد الهدف', exact: true }).click();
+    await expect(page.getByLabel('الهدف المؤكد')).toHaveText('cairo');
+    expect(await page.evaluate(() => (window as unknown as { savedMap: unknown }).savedMap === window.__globeFixtureMap)).toBe(true);
+    expect((await camera(page)).center).toEqual(before.center);
+    expect((await camera(page)).zoom).toEqual(before.zoom);
+  }
+  const refreshed = page.waitForResponse((response) => response.url().includes('/world-map/viewport?') && response.status() === 200);
+  await page.getByRole('button', { name: 'حدّث الخريطة', exact: true }).click();
+  await refreshed;
+  await expect.poll(() => currentCity(page)).toMatchObject({ id: 'cairo' });
+  await page.getByRole('combobox', { name: 'وضع الخريطة', exact: true }).selectOption('SELECT_SETTLEMENT_TARGET');
+  await expect(page.getByRole('button', { name: 'تأكيد الهدف', exact: true })).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
 test('real globe and mercator preserve village WGS84 identity and canonical management links', async ({ page }, testInfo) => {
   const { initialPayload, errors } = await openGlobe(page);
   const expected = { id: 'cairo', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] } };
@@ -124,6 +170,7 @@ test('real globe and mercator preserve village WGS84 identity and canonical mana
   await expect(page.getByRole('navigation', { name: 'قراي' }).getByRole('link', { name: 'القاهرة' }))
     .toHaveAttribute('href', '/games/kingdoms/world-map?worldId=world&villageId=cairo');
   await verifyLayout(page);
+  await page.locator('summary').filter({ hasText: 'عرض الخريطة' }).click();
   await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).click();
   await expect.poll(async () => (await camera(page)).projection).toBe('mercator');
   await expect.poll(() => currentCity(page)).toEqual(expected);

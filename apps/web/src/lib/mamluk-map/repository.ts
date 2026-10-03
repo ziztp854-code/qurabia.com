@@ -208,7 +208,8 @@ export interface PublicVillageReadSession extends WorldMapReadSession {
   getPublicVillageTerritoriesInBounds(query: SpatialQuery): Promise<readonly Territory[]>;
 }
 
-class PrismaMapReadSession implements PublicVillageReadSession {
+/** Database adapter seam; application requests must enter through PrismaWorldMapRepository. */
+export class PrismaMapReadSession implements PublicVillageReadSession {
   get settlementsPublic(): boolean {
     return this.villageGeography;
   }
@@ -637,7 +638,10 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
                 AND NOT COALESCE(w.state->'geography'->'omittedVillagePlotIds' ? (v.value->>'id'), FALSE)))
               ELSE FALSE END AS "needsProvision"
         FROM "KingdomWorld" w WHERE w.id = ${worldId}
-          AND w.state->'players' ? ${this.identity.id}::text`);
+          AND w.state->'players' ? ${this.identity.id}::text
+          AND w.state->>'version' = '1' AND jsonb_typeof(w.state->'config') = 'object'
+          AND jsonb_typeof(w.state->'villages') = 'object'
+          AND (NOT (w.state ? 'geography') OR ${villageSource})`);
       if (row?.needsProvision) throw new VillageProvisioningRequired();
       if (!row || row.id !== worldId || row.geographyVersion !== '1')
         throw new KingdomsHttpError(404, 'الخريطة غير متاحة.');
@@ -686,6 +690,9 @@ export async function listMamlukMapWorlds(
     const rows = await tx.$queryRaw<{ id: string; name: string }[]>(Prisma.sql`
       SELECT w.id, w.name FROM "KingdomWorld" w
       WHERE w.state->'players' ? ${safe.id}::text
+          AND w.state->>'version' = '1' AND jsonb_typeof(w.state->'config') = 'object'
+          AND jsonb_typeof(w.state->'villages') = 'object'
+          AND (NOT (w.state ? 'geography') OR ${villageSource})
       ORDER BY w."createdAt" DESC, w.id LIMIT 50`);
     return rows.map((row) => {
       validateId(row.id);

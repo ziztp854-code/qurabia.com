@@ -29,6 +29,66 @@
   padding: var(--space-4) var(--space-5);
   border-block-end: 1px solid var(--map-border);
 }
+.modeBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
+  color: var(--map-gold);
+  font-size: 14px;
+}
+.modeBar label { display: flex; align-items: center; gap: var(--space-3); }
+.modeBar select {
+  min-block-size: 44px;
+  max-inline-size: 100%;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--map-border);
+  border-radius: var(--radius-sm);
+  background: var(--map-surface);
+  color: var(--map-text);
+  font: inherit;
+}
+.modeBar p { margin: 0; color: var(--map-muted); line-height: 1.7; }
+.layersDisclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-5);
+  min-block-size: 44px;
+  color: var(--map-gold);
+  cursor: pointer;
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
+}
+.displayOptions { position: relative; }
+.displayOptions summary { list-style: none; }
+.displayChoices {
+  display: grid;
+  gap: var(--space-2);
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-start: 0;
+  inline-size: 170px;
+  padding: var(--space-2);
+  border: 1px solid var(--map-border);
+  border-radius: var(--radius-sm);
+  background: var(--map-background);
+}
+.targetSelection {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+  padding-block-end: var(--space-4);
+  border-block-end: 1px solid var(--map-border);
+}
+.targetSelection p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--map-muted); }
+.targetSelection .eyebrow { color: var(--map-gold); font-size: 16px; }
+.targetSelection .confirmTarget { background: var(--map-gold); color: var(--map-background); font-weight: 700; }
+.root summary:focus-visible,
+.modeBar select:focus-visible,
+.canvas:focus-visible,
+.selectionHeader h2:focus-visible { outline: 3px solid var(--map-gold); outline-offset: 2px; }
 .referenceNotice {
   margin: 0;
   padding: 12px 24px;

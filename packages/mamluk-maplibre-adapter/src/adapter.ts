@@ -54,6 +54,7 @@ export class MapLibreAdapter implements MapProjectionAdapter {
   private deadline = 0;
   private disposed = false;
   private cancelExpiry: (() => void) | undefined;
+  private readonly sourceSignatures = new Map<string, string>();
   private readonly now: () => number;
   private readonly schedule: (task: () => void, delay: number) => () => void;
   private readonly palette: MapPalette;
@@ -139,13 +140,19 @@ export class MapLibreAdapter implements MapProjectionAdapter {
     )
       return;
     const ttl = this.remainingTtl(payload, revision, deliveryAgeMs);
-    this.clear();
+    this.cancelExpiry?.();
+    this.cancelExpiry = undefined;
     this.snapshot = structuredClone(payload);
     this.revision = revision;
     this.serverTime = payload.serverTime;
     this.deadline = this.now() + ttl;
     this.cancelExpiry = this.schedule(() => this.expire(), ttl);
-    this.restore();
+    try {
+      this.restore();
+    } catch (error) {
+      this.clear();
+      throw error;
+    }
   }
 
   private remainingTtl(payload: MapPayload, revision: bigint, deliveryAgeMs: number): number {
@@ -169,6 +176,7 @@ export class MapLibreAdapter implements MapProjectionAdapter {
     this.cancelExpiry?.();
     this.cancelExpiry = undefined;
     this.snapshot = undefined;
+    this.sourceSignatures.clear();
     if (this.disposed || !this.map.isStyleLoaded()) return;
     for (const name of [...LAYER_NAMES].reverse()) {
       const id = `mamluk-${name}`;
@@ -197,17 +205,15 @@ export class MapLibreAdapter implements MapProjectionAdapter {
     this.map.setProjection({ type: this.projection });
     for (const name of LAYER_NAMES) {
       const id = `mamluk-${name}`;
-      const data = this.snapshot ? this.copyData(this.snapshot.layers[name]) : empty();
+      const data = this.snapshot ? this.snapshot.layers[name] : empty();
+      const signature = JSON.stringify(data);
       const source = this.source(name);
-      if (source) source.setData(data);
-      else this.map.addSource(id, { type: 'geojson', data });
+      if (source) {
+        if (this.sourceSignatures.get(name) !== signature) source.setData(JSON.parse(signature));
+      } else this.map.addSource(id, { type: 'geojson', data: JSON.parse(signature) });
+      this.sourceSignatures.set(name, signature);
       if (!this.map.getLayer(id)) this.map.addLayer(mapLayer(name, this.palette));
     }
-  }
-
-  private copyData(data: MapPayload['layers']['cities']): GeoJSONSourceSpecification['data'] {
-    // JSON cloning bridges our immutable RFC 7946 contracts to the SDK's mutable types.
-    return JSON.parse(JSON.stringify(data)) as GeoJSONSourceSpecification['data'];
   }
 
   private source(name: string): GeoJSONSource | undefined {

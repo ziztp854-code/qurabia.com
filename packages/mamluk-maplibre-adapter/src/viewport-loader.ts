@@ -10,6 +10,9 @@ export interface ViewportLoaderOptions {
   readonly maxLongitudeSpan?: number;
   readonly maxLatitudeSpan?: number;
   readonly onError?: (error: unknown) => void;
+  /** Optional bounded public aggregation for viewports beyond private-query limits. */
+  readonly loadOverview?: (bounds: BoundingBox, signal: AbortSignal) => Promise<boolean>;
+  readonly retainOnError?: (error: unknown) => boolean;
 }
 
 /** Coordinates requests; cannot calculate game state or derive visibility. */
@@ -35,11 +38,23 @@ export class ViewportLoader {
     if (this.disposed) return;
     const generation = this.invalidate();
     const bounds = this.adapter.getViewportBounds();
-    if (!this.canLoad(bounds)) return;
     const request = new AbortController();
     this.request = request;
     const started = this.now();
     try {
+      if (!this.canLoad(bounds)) {
+        if (this.options.loadOverview) {
+          const accepted = await this.options.loadOverview(bounds, request.signal);
+          if (!this.disposed && !request.signal.aborted && generation === this.generation) {
+            if (accepted) this.adapter.clear();
+            this.refreshTimer = setTimeout(
+              () => void this.refresh(),
+              this.options.refreshMs ?? 5000,
+            );
+          }
+        } else this.adapter.clear();
+        return;
+      }
       const payload = await this.options.load(bounds, request.signal);
       if (this.disposed || request.signal.aborted || generation !== this.generation) return;
       if (!this.sameBounds(bounds, payload.bounds)) throw new Error('Payload viewport mismatch');
@@ -47,7 +62,7 @@ export class ViewportLoader {
       this.refreshTimer = setTimeout(() => void this.refresh(), this.options.refreshMs ?? 5000);
     } catch (error: unknown) {
       if (this.disposed || request.signal.aborted || generation !== this.generation) return;
-      this.adapter.clear();
+      if (!this.options.retainOnError?.(error)) this.adapter.clear();
       this.options.onError?.(error);
     }
   }
@@ -55,6 +70,7 @@ export class ViewportLoader {
   dispose(): void {
     if (this.disposed) return;
     this.invalidate();
+    this.adapter.clear();
     this.map.off('moveend', this.onMove);
     this.disposed = true;
   }
@@ -69,7 +85,6 @@ export class ViewportLoader {
     this.request?.abort();
     clearTimeout(this.debounce);
     clearTimeout(this.refreshTimer);
-    this.adapter.clear();
     return this.generation;
   }
 

@@ -129,6 +129,8 @@ describe('Prisma geographic map repository authorization', () => {
     );
     expect(test.calls[0]!.text).not.toMatch(/SELECT\s+(?:\*|w\.state)/i);
     expect(test.calls[0]!.values).toContain('viewer');
+    expect(test.calls[0]!.text).toContain("w.state->>'version' = '1'");
+    expect(test.calls[0]!.text).toContain("NOT (w.state ? 'geography') OR");
   });
 
   it.each([{ status: 'BANNED' }, { tokenVersion: 3 }])(

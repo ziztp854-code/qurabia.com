@@ -20,6 +20,12 @@ interface SelectionPanelProps {
   readonly loading?: boolean;
   readonly pendingTitle?: string;
   readonly pickingDestination?: boolean;
+  readonly targetSelection?: {
+    readonly title: string;
+    readonly canConfirm: boolean;
+    readonly onConfirm: () => void;
+    readonly onCancel?: () => void;
+  };
 }
 
 export function SelectionPanel({
@@ -34,6 +40,7 @@ export function SelectionPanel({
   loading = false,
   pendingTitle,
   pickingDestination = false,
+  targetSelection,
 }: SelectionPanelProps) {
   const contentId = useId();
   const searchId = useId();
@@ -45,6 +52,11 @@ export function SelectionPanel({
   }
   const matchingFeatures = features.filter((feature) => feature.label.includes(query.trim()));
   const panel = useRef<HTMLElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
+  const detailId = selection ? `${selection.layer}:${selection.id}` : null;
+  useEffect(() => {
+    if (detailId) title.current?.focus({ preventScroll: true });
+  }, [detailId]);
   const relocationContent = useRef<HTMLDivElement>(null);
   const wasPickingDestination = useRef(false);
   useEffect(() => {
@@ -61,7 +73,7 @@ export function SelectionPanel({
   }, [selectionId]);
   const [expanded, setExpanded] = useState(false);
   // Selection intent survives a refresh; authorized detail data still clears.
-  const sheetExpanded = expanded || Boolean(key);
+  const sheetExpanded = expanded || Boolean(key) || Boolean(targetSelection);
   const Icon =
     selection?.layer === 'castles'
       ? Castle
@@ -98,13 +110,22 @@ export function SelectionPanel({
         )}
       </button>
       <div id={contentId} className={styles.panelContent}>
+        {targetSelection && <section className={styles.targetSelection} aria-label="اختيار هدف الحملة">
+          <p className={styles.eyebrow}>{targetSelection.title}</p>
+          <p>اختر قرية ثم أكّد هدفك للعودة إلى إعداد الحملة.</p>
+          <p>تظهر المسافة ومدة الوصول في معاينة الحملة عند توفرها.</p>
+          <button type="button" className={`${styles.control} ${styles.confirmTarget}`}
+            disabled={!targetSelection.canConfirm} onClick={targetSelection.onConfirm}>تأكيد الهدف</button>
+          {targetSelection.onCancel && <button type="button" className={styles.control}
+            onClick={targetSelection.onCancel}>إلغاء اختيار الهدف</button>}
+        </section>}
         {selection ? (
           <>
             <header className={styles.selectionHeader}>
               <Icon size={24} aria-hidden="true" />
               <div>
                 <p className={styles.eyebrow}>{selection.kind}</p>
-                <h2>{selection.title}</h2>
+                <h2 ref={title} tabIndex={-1}>{selection.title}</h2>
               </div>
               <button
                 type="button"

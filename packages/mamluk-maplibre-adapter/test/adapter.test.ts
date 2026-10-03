@@ -4,6 +4,40 @@ import { MapLibreAdapter } from '../src/adapter';
 import { FakeMap, payload } from './fixtures';
 
 describe('MapLibre presentation boundary', () => {
+  it('keeps source/layer identities and avoids unchanged SDK uploads for 10000 stable villages', () => {
+    const map = new FakeMap();
+    const adapter = new MapLibreAdapter(map.port(), { now: () => 1000 });
+    adapter.resetSession('world');
+    const snapshot: MapPayload = {
+      ...payload(),
+      layers: {
+        ...payload().layers,
+        cities: {
+          type: 'FeatureCollection',
+          features: Array.from({ length: 10000 }, (_, i) => ({
+            type: 'Feature',
+            id: `v${i}`,
+            geometry: {
+              type: 'Point',
+              coordinates: [30 + (i % 100) / 100, 30 + Math.floor(i / 100) / 100],
+            },
+            properties: { name: `v${i}` },
+          })),
+        },
+      },
+    };
+    adapter.render(snapshot);
+    const source = map.getSource('mamluk-cities')!;
+    const uploads = vi.spyOn(source, 'setData');
+    const removeLayer = vi.spyOn(map, 'removeLayer');
+    for (let revision = 2; revision <= 12; revision++)
+      adapter.render({ ...snapshot, revision: String(revision) });
+    expect(map.getSource('mamluk-cities')).toBe(source);
+    expect(map.data('cities').features).toHaveLength(10000);
+    expect(uploads).not.toHaveBeenCalled();
+    expect(removeLayer).not.toHaveBeenCalled();
+    adapter.dispose();
+  });
   it('replaces every source snapshot so disappeared enemies leave no remnants', () => {
     const map = new FakeMap();
     const adapter = new MapLibreAdapter(map.port(), { now: () => 1000 });
@@ -13,7 +47,7 @@ describe('MapLibre presentation boundary', () => {
     const previousSource = map.getSource('mamluk-armies');
     adapter.render(payload('2'));
     expect(map.data('armies').features).toEqual([]);
-    expect(map.getSource('mamluk-armies')).not.toBe(previousSource);
+    expect(map.getSource('mamluk-armies')).toBe(previousSource);
     expect(map.layers.size).toBe(9);
     adapter.dispose();
   });

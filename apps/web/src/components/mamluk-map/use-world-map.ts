@@ -8,7 +8,6 @@ import { createMapSession } from './map-session';
 import { watchMapRevisions } from './map-revisions';
 import type { SelectionKey } from './selection';
 import { buildPhysicalMapStyle, type PhysicalMapColors } from './physical-map-style';
-import { buildReferenceMapStyle } from './reference-map-style';
 import type { OwnershipPresentationOptions } from './player-ownership';
 import {
   normalizeDestination,
@@ -86,6 +85,7 @@ export function useWorldMap(
   const mapRef = useRef<LibreMap | null>(null);
   const sessionRef = useRef<ReturnType<typeof createMapSession> | null>(null);
   const [status, setStatus] = useState<Status>('loading');
+  const [refreshing, setRefreshing] = useState(false);
   const sessionKey = `${worldId}:${viewerPlayerId}`;
   const [snapshot, setSnapshot] = useState<{
     readonly sessionKey: string;
@@ -113,6 +113,23 @@ export function useWorldMap(
   const longitude = initialLocation?.longitude;
   const latitude = initialLocation?.latitude;
   const cameraRef = useRef({ longitude, latitude });
+  const pendingFocus = useRef<{ longitude: number; latitude: number; zoom: number } | null>(null);
+  const focusLocation = useCallback(
+    (location: { longitude: number; latitude: number }, zoom = 9) => {
+      cameraRef.current = location;
+      const map = mapRef.current;
+      if (!map) {
+        pendingFocus.current = { ...location, zoom };
+        return;
+      }
+      map.easeTo({
+        center: [location.longitude, location.latitude],
+        zoom,
+        duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250,
+      });
+    },
+    [],
+  );
   const pendingInitialSelection = useRef(initialVillageId);
   const cancelDestination = useCallback(() => {
     destinationRef.current = null;
@@ -179,7 +196,7 @@ export function useWorldMap(
         map = new Map({
           container: container.current,
           center: hasLocation ? [camera.longitude!, camera.latitude!] : [34, 30.4],
-          zoom: hasLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3,
+          zoom: pendingFocus.current?.zoom ?? (hasLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3),
           renderWorldCopies: false,
           attributionControl: { compact: true },
         });
@@ -190,6 +207,7 @@ export function useWorldMap(
             'خريطة العالم: استخدم الأسهم للتحريك وعلامتي الجمع والطرح للتكبير',
           );
         mapRef.current = map;
+        pendingFocus.current = null;
         map.on('movestart', () => map?.getCanvas().removeAttribute('data-map-ready'));
         map.on('idle', () => map?.getCanvas().setAttribute('data-map-ready', 'true'));
         map.on('style.load', () => {
@@ -207,8 +225,7 @@ export function useWorldMap(
         // The SDK loads the provider style. Its geographic sources and credits
         // remain intact; the host changes presentation only.
         map.setStyle(OPEN_FREE_MAP_STYLE, {
-          transformStyle: (_previous, next) =>
-            buildReferenceMapStyle(buildPhysicalMapStyle(next, colors)),
+          transformStyle: (_previous, next) => buildPhysicalMapStyle(next, colors),
         });
         await settlements.ready;
         if (cancelled) return;
@@ -240,6 +257,7 @@ export function useWorldMap(
             onSelection: receiveSelection,
             onDestination: (destination) => updateDestination(destination, true, false),
             onStatus: setStatus,
+            onRefreshing: setRefreshing,
           },
           settlements,
           styleReady,
@@ -343,11 +361,13 @@ export function useWorldMap(
   return {
     container,
     status,
+    refreshing,
     payload,
     publicPayload,
     selected,
     setSelected,
     focusSelection,
+    focusLocation,
     projection,
     setProjection,
     moveCamera,

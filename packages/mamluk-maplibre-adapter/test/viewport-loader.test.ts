@@ -6,7 +6,7 @@ import { FakeMap, payload } from './fixtures';
 afterEach(() => vi.useRealTimers());
 
 describe('viewport loading', () => {
-  it('clears old data immediately during movement and debounces bounded requests', async () => {
+  it('keeps unexpired authorized data during movement and debounces bounded requests', async () => {
     vi.useFakeTimers();
     const map = new FakeMap();
     const adapter = new MapLibreAdapter(map.port());
@@ -16,10 +16,11 @@ describe('viewport loading', () => {
     const loader = new ViewportLoader(map.port(), adapter, { load, now: () => 0 });
     map.fire('moveend');
     map.fire('moveend');
-    expect(map.data('armies').features).toEqual([]);
+    expect(map.data('armies').features).toHaveLength(1);
     expect(load).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(150);
     expect(load).toHaveBeenCalledOnce();
+    expect(map.data('armies').features).toEqual([]);
     expect(load.mock.calls[0]![0]).toEqual({ west: 170, east: -170, south: -10, north: 10 });
     loader.dispose();
     adapter.dispose();

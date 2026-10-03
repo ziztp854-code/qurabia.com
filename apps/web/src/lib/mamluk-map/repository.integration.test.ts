@@ -1,3 +1,5 @@
+import { readMapVillageLocation } from './location';
+import { readMapOverview } from './overview';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { DatabaseClient, Prisma } from '@tahaddi/database';
@@ -8,6 +10,7 @@ import { commandKingdomWorld } from '../kingdoms/repository';
 import type { KingdomsWorld } from '../kingdoms/types';
 import {
   PrismaWorldMapRepository,
+  PrismaMapReadSession,
   listMamlukMapWorlds,
   getOwnVillageMapLocations,
 } from './repository';
@@ -207,9 +210,59 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     return { viewer, outsider, worldId, geography, state };
   }
 
+  // Deliberately test the low-level SQL adapter with artificial geometry. These
+  // fixtures can no longer enter the authenticated production repository.
+  function fixtureAdapter(viewer: { id: string }) {
+    return {
+      withSnapshot: async <T>(
+        worldId: string,
+        _viewer: unknown,
+        read: (session: PrismaMapReadSession) => Promise<T>,
+      ) =>
+        db.$transaction(
+          async (tx) => {
+            const row = await tx.kingdomWorld.findUniqueOrThrow({
+              where: { id: worldId },
+              select: { revision: true },
+            });
+            const [{ now }] = await tx.$queryRaw<{ now: Date }[]>`SELECT clock_timestamp() AS now`;
+            const serverTime = now.getTime();
+            const session = new PrismaMapReadSession(tx, {
+              worldId,
+              viewerPlayerId: viewer.id,
+              revision: String(row.revision),
+              serverTime,
+              validUntil: serverTime + 15000,
+            });
+            try {
+              return await read(session);
+            } finally {
+              session.close();
+            }
+          },
+          { isolationLevel: 'RepeatableRead' },
+        ),
+    };
+  }
+
+  it('rejects synthetic campaign geography from production browsing and discovery', async () => {
+    const { viewer, worldId } = await fixture();
+    await expect(listMamlukMapWorlds(viewer, db)).resolves.not.toContainEqual({
+      id: worldId,
+      name: 'حملة الاختبار',
+    });
+    await expect(
+      new PrismaWorldMapRepository(viewer, db).withSnapshot(
+        worldId,
+        { playerId: viewer.id },
+        async () => true,
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+
   it('executes real bounded JSONB queries and removes hole/hidden enemies before projection', async () => {
     const { viewer, worldId } = await fixture();
-    const payload = await new WorldMapService(new PrismaWorldMapRepository(viewer, db)).getViewport(
+    const payload = await new WorldMapService(fixtureAdapter(viewer)).getViewport(
       { worldId, bounds },
       { playerId: viewer.id },
     );
@@ -241,7 +294,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
 
   it('refuses nonmembers and revoked tokens and lists only authorized geographic campaigns', async () => {
     const { viewer, outsider, worldId } = await fixture();
-    await expect(listMamlukMapWorlds(viewer, db)).resolves.toContainEqual({
+    await expect(listMamlukMapWorlds(viewer, db)).resolves.not.toContainEqual({
       id: worldId,
       name: 'حملة الاختبار',
     });
@@ -265,7 +318,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
 
   it('holds revision, grants and ownership constant while another transaction updates the world', async () => {
     const { viewer, worldId, state, geography } = await fixture();
-    const result = await new PrismaWorldMapRepository(viewer, db).withSnapshot(
+    const result = await fixtureAdapter(viewer).withSnapshot(
       worldId,
       { playerId: viewer.id },
       async (session) => {
@@ -292,7 +345,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
       before: ['cairo', 'visible-city'],
       after: ['cairo', 'visible-city'],
     });
-    const current = await new WorldMapService(new PrismaWorldMapRepository(viewer, db)).getViewport(
+    const current = await new WorldMapService(fixtureAdapter(viewer)).getViewport(
       { worldId, bounds },
       { playerId: viewer.id },
     );
@@ -321,22 +374,18 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
         ) as Prisma.InputJsonValue,
       },
     });
-    await new PrismaWorldMapRepository(viewer, db).withSnapshot(
-      worldId,
-      { playerId: viewer.id },
-      async (session) => {
-        const crossing = { west: 170, east: -170, south: -10, north: 10 };
-        const all = await session.getCitiesInBounds({ bounds: crossing, limit: 100 });
-        expect(all.map((city) => city.id)).toEqual(['seam-0', 'seam-1', 'seam-2', 'seam-3']);
-        const limited = await session.getCitiesInBounds({ bounds: crossing, limit: 1 });
-        expect(limited).toHaveLength(1);
-        const edge = await session.getCitiesInBounds({
-          bounds: { west: 170, east: 180, south: -10, north: 10 },
-          limit: 100,
-        });
-        expect(edge.map((city) => city.id)).toEqual(['seam-0', 'seam-2', 'seam-3']);
-      },
-    );
+    await fixtureAdapter(viewer).withSnapshot(worldId, { playerId: viewer.id }, async (session) => {
+      const crossing = { west: 170, east: -170, south: -10, north: 10 };
+      const all = await session.getCitiesInBounds({ bounds: crossing, limit: 100 });
+      expect(all.map((city) => city.id)).toEqual(['seam-0', 'seam-1', 'seam-2', 'seam-3']);
+      const limited = await session.getCitiesInBounds({ bounds: crossing, limit: 1 });
+      expect(limited).toHaveLength(1);
+      const edge = await session.getCitiesInBounds({
+        bounds: { west: 170, east: 180, south: -10, north: 10 },
+        limit: 100,
+      });
+      expect(edge.map((city) => city.id)).toEqual(['seam-0', 'seam-2', 'seam-3']);
+    });
   });
 
   it('accepts full-precision browser bounds and echoes their unchanged WGS84 values', async () => {
@@ -347,7 +396,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
       south: 25.43477330511665,
       north: 35.1251305927309,
     };
-    const payload = await new WorldMapService(new PrismaWorldMapRepository(viewer, db)).getViewport(
+    const payload = await new WorldMapService(fixtureAdapter(viewer)).getViewport(
       { worldId, bounds: browserBounds },
       { playerId: viewer.id },
     );
@@ -666,5 +715,120 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     const row = await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } });
     expect(row.state).toEqual(legacy);
     expect(row.revision).toBe(7);
+  });
+
+  it('lazily provisions direct concurrent legacy location and overview reads once', async () => {
+    const { viewer, outsider, worldId, state } = await fixture();
+    const legacy = withoutGeography(state);
+    const villageId = Object.keys(legacy.villages)[0]!;
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(legacy)) },
+    });
+    const request = { worldId, bounds: { west: -180, east: 180, south: -90, north: 90 } };
+    await expect(readMapOverview(request, outsider, db)).rejects.toMatchObject({ status: 404 });
+    await expect(
+      readMapVillageLocation(worldId, villageId, { ...viewer, tokenVersion: 999 }, db),
+    ).rejects.toMatchObject({ status: 401 });
+    const untouched = await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } });
+    expect(untouched.state).toEqual(legacy);
+    expect(untouched.revision).toBe(7);
+    const [location, overview] = await Promise.all([
+      readMapVillageLocation(worldId, villageId, viewer, db),
+      readMapOverview(request, viewer, db),
+    ]);
+    expect(location).toMatchObject({
+      villageId,
+      longitude: 31.24967,
+      latitude: 30.06263,
+      revision: '8',
+    });
+    expect(overview.cells.features[0]?.properties).toEqual({
+      count: 1,
+      targetVillageId: villageId,
+    });
+    expect(overview.revision).toBe('8');
+    const saved = await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } });
+    expect(saved.revision).toBe(8);
+    expect(withoutGeography(saved.state as unknown as KingdomsWorld)).toEqual(legacy);
+  });
+
+  it('aggregates only real public villages in bounded world cells and rejects outsiders', async () => {
+    const { viewer, outsider, worldId, state } = await fixture();
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(withoutGeography(state))) },
+    });
+    await getOwnVillageMapLocations(worldId, viewer, db);
+    const request = { worldId, bounds: { west: -180, east: 180, south: -90, north: 90 } };
+    const overview = await readMapOverview(request, viewer, db);
+    expect(overview.cells.features).toHaveLength(1);
+    const villageId = Object.keys(state.villages)[0]!;
+    expect(await readMapVillageLocation(worldId, villageId, viewer, db)).toMatchObject({
+      worldId,
+      villageId,
+      longitude: 31.24967,
+      latitude: 30.06263,
+    });
+    await expect(readMapVillageLocation(worldId, villageId, outsider, db)).rejects.toMatchObject({
+      status: 404,
+    });
+    await expect(readMapVillageLocation(worldId, 'missing', viewer, db)).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(overview.cells.features[0]?.properties).toEqual({
+      count: 1,
+      targetVillageId: Object.keys(state.villages)[0],
+    });
+    expect(JSON.stringify(overview)).not.toMatch(/villagePower|troops|fortification|secret/);
+    expect(
+      (
+        await readMapOverview(
+          { ...request, bounds: { west: 170, east: -170, south: -10, north: 10 } },
+          viewer,
+          db,
+        )
+      ).cells.features,
+    ).toHaveLength(0);
+    await expect(readMapOverview(request, outsider, db)).rejects.toMatchObject({ status: 404 });
+    await db.user.update({ where: { id: viewer.id }, data: { tokenVersion: 1 } });
+    await expect(readMapOverview(request, viewer, db)).rejects.toMatchObject({ status: 401 });
+    await expect(readMapVillageLocation(worldId, villageId, viewer, db)).rejects.toMatchObject({
+      status: 401,
+    });
+  });
+
+  it('aggregates ten thousand actual villages without truncating counts or leaking private state', async () => {
+    const { viewer, worldId, state } = await fixture();
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(withoutGeography(state))) },
+    });
+    await getOwnVillageMapLocations(worldId, viewer, db);
+    const current = (await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } }))
+      .state as unknown as KingdomsWorld & { geography: MamlukMapState };
+    const home = Object.values(current.villages)[0]!;
+    const city = current.geography.cities[0]!;
+    const entries = Array.from({ length: 10001 }, (_, i) => ({ ...home, id: 'large-' + i }));
+    const large = {
+      ...current,
+      villages: Object.fromEntries(entries.map((v) => [v.id, v])),
+      geography: {
+        ...current.geography,
+        cities: entries.map((v) => ({ ...city, value: { ...city.value, id: v.id } })),
+      },
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(large)) },
+    });
+    const request = { worldId, bounds: { west: -180, east: 180, south: -90, north: 90 } };
+    const payload = await readMapOverview(request, viewer, db);
+    expect(payload.cells.features).toHaveLength(1);
+    expect(payload.cells.features[0]?.properties).toEqual({ count: 10001, targetVillageId: null });
+    expect(JSON.stringify(payload).length).toBeLessThan(1024);
+    expect((await readMapOverview(request, viewer, db)).cells.features[0]?.id).toBe(
+      payload.cells.features[0]?.id,
+    );
   });
 });

@@ -7,6 +7,7 @@ import {
 import { parseMapPayload, type MapPayload, type MapProjection } from '@mamluk/world-map-core';
 import type {
   AddLayerObject,
+  FilterSpecification,
   GeoJSONSource,
   LayerSpecification,
   Map as LibreMap,
@@ -23,6 +24,9 @@ import {
 } from './relocation-destination';
 import { SDK_FEATURE_ID, withFeatureIdentity, withSourceIdentity } from './source-identity';
 import type { SettlementPresentation } from './settlement-presentation';
+import { CLUSTER_LAYERS, settlementClusters } from './settlement-clusters';
+import { createWorldOverview } from './world-overview';
+import { mapRequest, RetryableMapRequestError } from './map-request';
 import {
   playerBorderLayers,
   playerOwnershipLayer,
@@ -38,6 +42,7 @@ export interface MapSessionCallbacks {
   readonly onSelection: (key: SelectionKey | null) => void;
   readonly onStatus: (status: 'loading' | 'ready' | 'zoom' | 'error') => void;
   readonly onDestination?: (destination: RelocationDestination) => void;
+  readonly onRefreshing?: (refreshing: boolean) => void;
 }
 
 function isStyleLayer(layer: AddLayerObject): layer is LayerSpecification {
@@ -51,7 +56,6 @@ function presentationPort(
   settlements?: Pick<SettlementPresentation, 'layer'>,
   initialStyleReady?: boolean,
   retainPublicLayers: () => boolean = () => false,
-  publicPayload: () => MapPayload | null = () => null,
   ownership?: OwnershipPresentationOptions,
 ) {
   // SDK isStyleLoaded also waits for tiles. Overlay removal must not wait for them.
@@ -62,16 +66,15 @@ function presentationPort(
   map.on('style.load', onStyleReady);
   const sourceCopies = new WeakMap<Source, string>();
   const isPublicSource = (id: string) => id === 'mamluk-cities' || id === 'mamluk-territories';
-  const presentedData = (id: string, data: Parameters<GeoJSONSource['setData']>[0]) => {
-    const publicCities = id === 'mamluk-cities' ? publicPayload()?.layers.cities : undefined;
-    const presented = publicCities ?? data;
+  const presentedData = (_id: string, data: Parameters<GeoJSONSource['setData']>[0]) => {
+    const presented = data;
     return ownership ? withPlayerOwnership(presented, ownership) : presented;
   };
   const removeCompanions = (id: string) => {
     const companions =
       id === 'mamluk-territories'
         ? ['mamluk-village-borders', 'mamluk-village-border-halo']
-        : [`${id}-owner-markers`];
+        : [`${id}-owner-markers`, ...(id === 'mamluk-cities' ? CLUSTER_LAYERS : [])];
     for (const companion of companions) if (map.getLayer(companion)) map.removeLayer(companion);
   };
   const port: MapLibrePort = {
@@ -104,6 +107,9 @@ function presentationPort(
               ...source,
               data: withFeatureIdentity(presentedData(id, source.data)),
               promoteId: SDK_FEATURE_ID,
+              ...(id === 'mamluk-cities'
+                ? { cluster: true, clusterMaxZoom: 7, clusterRadius: 48 }
+                : {}),
             }
           : source;
       map.addSource(id, presented);
@@ -122,12 +128,23 @@ function presentationPort(
             ? (settlements?.layer(layer) ?? layer)
             : layer;
       if (ownership)
-        for (const ground of playerSettlementLayers(layer.id, ownership)) map.addLayer(ground);
+        for (const ground of playerSettlementLayers(layer.id, ownership))
+          map.addLayer(
+            layer.id === 'mamluk-cities' && ground.type === 'circle'
+              ? { ...ground, filter: ['!', ['has', 'point_count']] }
+              : ground,
+          );
       const owned =
         ownership && isStyleLayer(presented)
           ? playerOwnershipLayer(presented, ownership)
           : presented;
-      map.addLayer(owned, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
+      const filtered =
+        layer.id === 'mamluk-cities' && isStyleLayer(owned)
+          ? { ...owned, filter: ['!', ['has', 'point_count']] as FilterSpecification }
+          : owned;
+      map.addLayer(filtered, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
+      if (layer.id === 'mamluk-cities')
+        for (const cluster of settlementClusters(palette)) map.addLayer(cluster);
       if (layer.id === 'mamluk-territories') {
         if (ownership) {
           for (const border of playerBorderLayers(ownership)) map.addLayer(border);
@@ -197,7 +214,6 @@ class ObservedAdapter extends MapLibreAdapter {
         (payload.revision === this.accepted.revision &&
           payload.serverTime < this.accepted.serverTime));
     if (stale) return;
-    if (!this.isPublic(payload)) this.clearPublic();
     this.publicPayload = this.isPublic(payload) ? publicSettlementPresentation(payload) : null;
     this.retainPublicLayers(this.publicPayload !== null);
     this.replacing = true;
@@ -303,6 +319,19 @@ export function createMapSession(
   let destinationPicking = false;
   let destinationPreview: RelocationDestination | null = null;
   const publicPayloads = new WeakSet<MapPayload>();
+  const overview = createWorldOverview(map, worldId, palette);
+  const showLocal = (visible: boolean) => {
+    if (typeof map.setLayoutProperty !== 'function') return;
+    for (const id of [
+      'mamluk-cities',
+      'mamluk-territories',
+      'mamluk-village-borders',
+      'mamluk-village-border-halo',
+      'mamluk-cities-owner-markers',
+      ...CLUSTER_LAYERS,
+    ])
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+  };
   const cancelRecovery = () => {
     clearTimeout(recoveryTimer);
     recoveryTimer = undefined;
@@ -313,7 +342,6 @@ export function createMapSession(
     settlements,
     initialStyleReady,
     () => retainPublicLayers,
-    () => adapter?.publicPayload ?? null,
     ownership,
   );
   const adapter = new ObservedAdapter(
@@ -324,6 +352,9 @@ export function createMapSession(
       currentPayload = payload;
       callbacks.onPayload(payload);
       if (payload) {
+        overview.hide();
+        showLocal(true);
+        callbacks.onRefreshing?.(false);
         cancelRecovery();
         recoveryAttempts = 0;
         callbacks.onStatus('ready');
@@ -341,28 +372,43 @@ export function createMapSession(
   adapter.resetSession(worldId);
   adapter.setProjection(projection);
   const loader = new ViewportLoader(map, adapter, {
+    retainOnError: (error) => error instanceof RetryableMapRequestError,
+    // The reserved public landmark atlas has no authenticated gameplay aggregate.
+    loadOverview:
+      worldId === 'mamluk-public-geographic-atlas-v1'
+        ? undefined
+        : async (bounds, signal) => {
+            cancelRecovery();
+            callbacks.onRefreshing?.(true);
+            const accepted = await overview.load(bounds, signal);
+            if (!signal.aborted && !disposed) {
+              if (accepted) showLocal(false);
+              callbacks.onRefreshing?.(false);
+              callbacks.onStatus('ready');
+            }
+            return accepted;
+          },
     load: async (bounds, signal) => {
       // A pending recovery must never interrupt a newer pan or manual request.
       cancelRecovery();
-      callbacks.onStatus('loading');
+      callbacks.onRefreshing?.(true);
+      if (!currentPayload && !adapter.publicPayload) callbacks.onStatus('loading');
       const query = new URLSearchParams({
         worldId,
         ...Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, String(value)])),
       });
-      const response = await fetch(`/api/kingdoms/world-map/viewport?${query}`, {
-        signal,
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) throw new Error('Map request unavailable');
+      const response = await mapRequest(`/api/kingdoms/world-map/viewport?${query}`, signal);
       const payload = parseMapPayload(await response.json());
       if (response.headers?.get('X-Mamluk-Public-Settlements') === '1') publicPayloads.add(payload);
       return payload;
     },
-    onError: () => {
+    onError: (error) => {
       if (disposed) return;
-      adapter.clearPublic();
+      callbacks.onRefreshing?.(false);
+      if (!(error instanceof RetryableMapRequestError)) {
+        overview.hide();
+        adapter.clearPublic();
+      }
       callbacks.onStatus('error');
       const delay = recoveryDelaysMs[recoveryAttempts];
       if (delay === undefined) return;
@@ -376,10 +422,13 @@ export function createMapSession(
   const onMove = () => {
     if (disposed) return;
     cancelRecovery();
-    adapter.clear();
     const keepVillageDraft =
       selected?.layer === 'cities' && (destinationPicking || destinationPreview);
-    if (!keepVillageDraft && (selected?.layer !== 'cities' || !adapter.publicPayload)) {
+    if (
+      !keepVillageDraft &&
+      !currentPayload &&
+      (selected?.layer !== 'cities' || !adapter.publicPayload)
+    ) {
       selected = null;
       callbacks.onSelection(null);
     }
@@ -387,14 +436,45 @@ export function createMapSession(
     const bounds = adapter.getViewportBounds();
     const width =
       bounds.east > bounds.west ? bounds.east - bounds.west : 360 - bounds.west + bounds.east;
-    callbacks.onStatus(width > 90 || bounds.north - bounds.south > 90 ? 'zoom' : 'loading');
+    callbacks.onStatus(
+      width > 90 || bounds.north - bounds.south > 90
+        ? 'zoom'
+        : currentPayload || adapter.publicPayload
+          ? 'ready'
+          : 'loading',
+    );
   };
   const onClick = (event: MapMouseEvent) => {
+    if (!destinationPicking && overview.click(event)) return;
     if (destinationPicking) {
       const destination =
         event.lngLat &&
         normalizeDestination({ longitude: event.lngLat.lng, latitude: event.lngLat.lat });
       if (destination) callbacks.onDestination?.(destination);
+      return;
+    }
+    const clusterLayers = CLUSTER_LAYERS.filter((id) => map.getLayer(id));
+    const cluster = clusterLayers.length
+      ? map
+          .queryRenderedFeatures(event.point, { layers: [...clusterLayers] })
+          .find((feature) => typeof feature.properties?.cluster_id === 'number')
+      : undefined;
+    if (cluster?.geometry.type === 'Point') {
+      const source = map.getSource<GeoJSONSource>('mamluk-cities');
+      const coordinates = cluster.geometry.coordinates;
+      void source
+        ?.getClusterExpansionZoom(cluster.properties.cluster_id)
+        .then((zoom) => {
+          if (!disposed && map.getSource('mamluk-cities') === source)
+            map.easeTo({
+              center: [coordinates[0], coordinates[1]],
+              zoom,
+              duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250,
+            });
+        })
+        .catch(() => {
+          if (!disposed) callbacks.onStatus('error');
+        });
       return;
     }
     const visibleLayers = layers.map((layer) => `mamluk-${layer}`).filter((id) => map.getLayer(id));
@@ -462,6 +542,7 @@ export function createMapSession(
     },
     dispose: () => {
       disposed = true;
+      overview.dispose();
       cancelRecovery();
       destinationPicking = false;
       destinationPreview = null;

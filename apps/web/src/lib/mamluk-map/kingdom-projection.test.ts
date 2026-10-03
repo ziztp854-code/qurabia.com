@@ -118,3 +118,27 @@ describe('live geographic gameplay projection', () => {
     expect(result.city({ ...ownCity, id: 'deleted' })).toBeNull();
   });
 });
+
+it('projects existing own progression only and leaves population unavailable', () => {
+  const { own, enemy, state } = fixture();
+  const projected = new KingdomMapProjection(state, 'world', 'viewer', at);
+  const city = (id: string) => state.geography!.cities.find((c) => c.value.id === id)!.value;
+  expect(projected.city(city(own.id))).toMatchObject({
+    villageLevel: 1,
+    villageRank: 'مستوطنة',
+    villagePower: 59314,
+    villageVisualTier: 1,
+    population: null,
+    constructionStatus: 'IDLE',
+    kingdomName: 'الأولى',
+    allianceName: null,
+  });
+  expect(projected.city(city(enemy.id))).toMatchObject({
+    villageLevel: null,
+    villageRank: null,
+    villagePower: null,
+    villageVisualTier: null,
+    population: null,
+    constructionStatus: null,
+  });
+});

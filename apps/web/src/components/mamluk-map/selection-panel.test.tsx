@@ -3,6 +3,21 @@ import { describe, expect, it, vi } from 'vitest';
 import { SelectionPanel } from './selection-panel';
 
 describe('map selection panel', () => {
+  it('confirms only an eligible selected village and keeps unavailable target data honest', () => {
+    const confirm = vi.fn();
+    const cancel = vi.fn();
+    const selection = { layer: 'cities' as const, id: 'v1', title: 'قرية النيل', kind: 'قرية', coordinates: '31 / 30', details: [] };
+    const props = { features: [], onSelect: vi.fn(), onClose: vi.fn(), selection };
+    const view = render(<SelectionPanel {...props} targetSelection={{ title: 'اختر هدف الهجوم', canConfirm: true, onConfirm: confirm, onCancel: cancel }} />);
+    expect(screen.getByRole('heading', { name: 'قرية النيل' })).toHaveFocus();
+    expect(screen.getByText('تظهر المسافة ومدة الوصول في معاينة الحملة عند توفرها.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'تأكيد الهدف' }));
+    expect(confirm).toHaveBeenCalledOnce();
+    view.rerender(<SelectionPanel {...props} targetSelection={{ title: 'اختر هدف الهجوم', canConfirm: false, onConfirm: confirm, onCancel: cancel }} />);
+    expect(screen.getByRole('button', { name: 'تأكيد الهدف' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'إلغاء اختيار الهدف' }));
+    expect(cancel).toHaveBeenCalledOnce();
+  });
   it('allows selecting sites beyond the first forty and resets paging when the search changes', () => {
     const onSelect = vi.fn();
     const features = Array.from({ length: 50 }, (_, index) => ({

@@ -163,3 +163,33 @@ it('round-trips tile distances and legacy metre routes while rejecting unknown u
   Object.assign(invalid.layers.armyRoutes.features[0]!.properties, { distanceUnit: 'pixels' });
   expect(() => parseMapPayload(invalid)).toThrow();
 });
+
+it('preserves authorized village details through city validation and viewport decoding', async () => {
+  const { city } = await import('./fixtures');
+  const { createCity } = await import('../src/validation');
+  const details = {
+    villageLevel: 12,
+    villageRank: 'قرية مزدهرة',
+    villagePower: 980,
+    villageVisualTier: 3,
+    population: null,
+    constructionStatus: 'BUILDING' as const,
+    kingdomName: 'النور',
+    allianceName: null,
+  };
+  const service = new WorldMapService(
+    repository({ getCitiesInBounds: async () => [createCity({ ...city('own'), ...details })] }),
+  );
+  const payload = await service.getViewport({ worldId: 'world', bounds }, { playerId: 'p1' });
+  expect(parseMapPayload(payload).layers.cities.features[0]!.properties).toMatchObject(details);
+  for (const forged of [
+    { villageLevel: -1 },
+    { villagePower: Infinity },
+    { population: 999 },
+    { constructionStatus: 'SECRET' },
+  ]) {
+    const bad = structuredClone(payload);
+    Object.assign(bad.layers.cities.features[0]!.properties, forged);
+    expect(() => parseMapPayload(bad)).toThrow();
+  }
+});

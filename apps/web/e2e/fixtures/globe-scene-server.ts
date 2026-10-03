@@ -37,6 +37,19 @@ async function main() {
       json({ success: true });
       return;
     }
+    if (url.pathname === '/api/kingdoms/world-map/overview') {
+      json({ worldId: 'world', revision: relocated ? '2' : '1', serverTime: Date.now(),
+        cells: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 'cell:14:8',
+          geometry: { type: 'Point', coordinates: location() },
+          properties: { count: 1, targetVillageId: 'cairo' } }] } });
+      return;
+    }
+    if (url.pathname.replace(/\/$/, '') === '/api/kingdoms/world-map/location') {
+      const [longitude, latitude] = location();
+      json({ worldId: 'world', villageId: 'cairo', name: 'القاهرة', longitude, latitude,
+        revision: relocated ? '2' : '1' });
+      return;
+    }
     if (url.pathname === '/api/kingdoms/world-map/viewport') {
       const worldId = url.searchParams.get('worldId');
       const bounds = Object.fromEntries(['west', 'south', 'east', 'north'].map((key) => [

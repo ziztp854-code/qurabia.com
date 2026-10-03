@@ -7,7 +7,8 @@ import { unitKeys } from '@/lib/kingdoms/types';
 import type { KingdomsCommand } from '@/lib/kingdoms/commands';
 import { CommandForm, Empty, date, number, value, type GameProps } from './shared';
 import styles from './kingdoms.module.css';
-import { WorldMap } from './world-map';
+import { MamlukWorldMap } from '../mamluk-map/mamluk-world-map';
+import type { MapMode } from '../mamluk-map/map-mode';
 import { GatheringPanel, ResourceSiteDirectory } from './resource-site-panel';
 import mapStyles from './world-map.module.css';
 import { canSelectCommander, CommanderSelect } from './commander-select';
@@ -41,6 +42,11 @@ export function MapPanel({
   const [query, setQuery] = useState('');
   const [gatherFocus, setGatherFocus] = useState(false);
   const [commanderId, setCommanderId] = useState('');
+  const [mission, setMission] = useState<March['mission']>('attack');
+  const mode: MapMode = mission === 'scout' ? 'SELECT_SCOUT_TARGET'
+    : mission === 'reinforce' ? 'SELECT_REINFORCEMENT_TARGET'
+    : mission === 'settle' || mission === 'occupy' ? 'SELECT_SETTLEMENT_TARGET'
+    : 'SELECT_ATTACK_TARGET';
   const commanderAvailable =
     !commanderId ||
     (view.commanders ?? []).some(
@@ -77,16 +83,17 @@ export function MapPanel({
           <span className={styles.cost}>حدود العالم ±{number(radius)}</span>
         </div>
         <details className={mapStyles.coordinateSearch}>
-          <summary>انتقل إلى إحداثيات</summary>
+          <summary>اختر وجهة بإحداثيات اللعبة</summary>
+          <p className={styles.muted}>اختر الأراضي الخالية ومواقع الموارد بإحداثيات اللعبة. معاينة هذه الخانات على الخريطة الجغرافية غير متوفرة.</p>
           <CommandForm
             key={`${center.x},${center.y}`}
             busy={false}
-            label="انتقل إلى الإحداثيات"
-            onSubmit={(data) => setCenter({ x: value(data, 'x'), y: value(data, 'y') })}
+            label="اختر الإحداثيات"
+            onSubmit={(data) => locate({ x: value(data, 'x'), y: value(data, 'y') })}
           >
             <div className={styles.coordinates}>
               <Input
-                label="مركز الخريطة X"
+                label="الوجهة X"
                 name="x"
                 type="number"
                 min={-radius}
@@ -96,7 +103,7 @@ export function MapPanel({
                 required
               />
               <Input
-                label="مركز الخريطة Y"
+                label="الوجهة Y"
                 name="y"
                 type="number"
                 min={-radius}
@@ -108,19 +115,17 @@ export function MapPanel({
             </div>
           </CommandForm>
         </details>
-        <WorldMap
-          center={center}
-          target={target}
-          origin={village}
-          radius={radius}
-          playerId={view.player?.id}
-          villages={view.map}
-          territories={view.territories}
-          resourceSites={resourceSites}
-          onCenter={setCenter}
-          onSelect={(point) => {
-            setTarget(point);
-            setGatherFocus(resourceSites.some((site) => site.x === point.x && site.y === point.y));
+        <MamlukWorldMap
+          worlds={[{ id: view.worldId, name: view.worldName }]}
+          initialWorldId={view.worldId}
+          viewerPlayerId={view.player!.id}
+          initialVillageId={village.id}
+          focusVillageId={chosen?.id}
+          mode={mode}
+          targetVillageIds={view.map.map((item) => item.id)}
+          onConfirmTarget={(targetVillageId) => {
+            const destination = view.map.find((item) => item.id === targetVillageId);
+            if (destination) locate(destination);
           }}
         />
         <div className={mapStyles.targetReadout}>
@@ -238,7 +243,8 @@ export function MapPanel({
                   })
                 }
               >
-                <Select name="mission" label="نوع الحملة">
+                <Select name="mission" label="نوع الحملة" value={mission}
+                  onChange={(event) => setMission(event.target.value as March['mission'])}>
                   {Object.entries(missionLabels)
                     .filter(([key]) => key !== 'return' && key !== 'gather')
                     .map(([key, label]) => (

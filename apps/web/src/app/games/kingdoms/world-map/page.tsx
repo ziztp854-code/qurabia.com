@@ -66,7 +66,7 @@ export default async function WorldMapPage({
         </p>
       )}
       <MamlukWorldMap
-        key={`${selectedWorld.id}:${selectedVillage?.villageId ?? ''}:${viewerPlayerId}`}
+        key={`${selectedWorld.id}:${viewerPlayerId}`}
         worlds={worlds}
         initialWorldId={selectedWorld.id}
         viewerPlayerId={viewerPlayerId}

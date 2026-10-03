@@ -1,3 +1,4 @@
+import { villageDetails } from './village-details';
 import type { Army, ArmyPosition, ArmyRoute, Castle, City, Ownership, Territory } from './models';
 import { freezeDto } from './immutable';
 import { coordinates, validateArea, validateCoordinates } from './spatial';
@@ -45,6 +46,7 @@ export function createCity(value: City): City {
     ownerSultanateId: value.ownerSultanateId,
     fortificationLevel: value.fortificationLevel,
     strategicValue: value.strategicValue,
+    ...villageDetails(value),
   });
 }
 

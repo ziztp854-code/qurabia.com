@@ -1,3 +1,4 @@
+import { villageDetails } from './village-details';
 import type { Coordinates } from './models';
 import type { Feature, FeatureCollection, Geometry, JsonValue } from './geojson';
 import type { MapLayers } from './presentation';
@@ -28,6 +29,7 @@ export class CityGeoJsonBuilder {
           ownerSultanateId: city.ownerSultanateId,
           fortificationLevel: city.fortificationLevel,
           strategicValue: city.strategicValue,
+          ...villageDetails(city),
         }),
       ),
     ]);

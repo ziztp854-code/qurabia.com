@@ -32,7 +32,18 @@ export interface Territory extends Ownership {
   readonly regionId: string;
   readonly geometry: AreaGeometry;
 }
-export interface City extends Coordinates, Ownership {
+export interface VillageMapDetails {
+  readonly villageLevel?: number | null;
+  readonly villageRank?: string | null;
+  readonly villagePower?: number | null;
+  readonly villageVisualTier?: number | null;
+  /** POPULATION_DATA_NOT_AVAILABLE: no population exists in the game state. */
+  readonly population?: null;
+  readonly constructionStatus?: 'BUILDING' | 'IDLE' | null;
+  readonly kingdomName?: string;
+  readonly allianceName?: string | null;
+}
+export interface City extends Coordinates, Ownership, VillageMapDetails {
   readonly id: string;
   readonly worldId: string;
   readonly name: string;

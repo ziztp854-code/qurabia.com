@@ -5,6 +5,10 @@ import { VillagePanel } from './village-panel';
 import { MapPanel } from './map-panel';
 import type { WorldView } from './shared';
 
+vi.mock('../mamluk-map/mamluk-world-map', () => ({
+  MamlukWorldMap: () => <div data-testid="unified-map" />,
+}));
+
 const now = 1800000000000;
 function fixture(): WorldView {
   const world = executeCommand(
@@ -199,7 +203,7 @@ describe('village maps', () => {
       target: { value: 'السهول' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'اعرض قرية السهول على الخريطة' }));
-    expect(screen.getByRole('button', { name: 'قرية السهول، X 85، Y -63' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'اعرض قرية السهول على الخريطة' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -211,10 +215,6 @@ describe('village maps', () => {
       expect.objectContaining({ type: 'march', targetX: 85, targetY: -63 }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'قريتي' }));
-    expect(
-      screen.getByRole('button', {
-        name: `${original.map[0].name}، X ${original.map[0].x}، Y ${original.map[0].y}`,
-      }),
-    ).toHaveAttribute('aria-pressed', 'true');
+    expect(within(screen.getByRole('region', { name: 'القرية المختارة' })).getByText(original.map[0].name)).toBeInTheDocument();
   });
 });

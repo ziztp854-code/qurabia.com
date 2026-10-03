@@ -11,6 +11,10 @@ vi.mock('socket.io-client', () => ({
   io: () => ({ on: vi.fn(), emit: vi.fn(), disconnect: vi.fn() }),
 }));
 
+vi.mock('../mamluk-map/mamluk-world-map', () => ({
+  MamlukWorldMap: () => <div data-testid="unified-map" />,
+}));
+
 const now = 1800000000000;
 const world = createWorld(now);
 const summary = [
@@ -379,8 +383,10 @@ describe('Kingdoms player interface', () => {
     render(<KingdomsClient />);
     const navigation = await screen.findByLabelText('إدارة المملكة');
     fireEvent.click(within(navigation).getByRole('button', { name: 'إرسال حملة' }));
-    const map = screen.getByLabelText('خريطة الأراضي');
-    fireEvent.click(within(map).getByLabelText('أرض خالية، X 0، Y 0'));
+    expect(screen.getByTestId('unified-map')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('الوجهة X'), { target: { value: '0' } });
+    fireEvent.change(screen.getByLabelText('الوجهة Y'), { target: { value: '0' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'اختر الإحداثيات', hidden: true }).closest('form')!);
     const mission = screen.getByLabelText('نوع الحملة');
     const form = mission.closest('form')!;
     fireEvent.change(mission, { target: { value: 'occupy' } });
