@@ -126,7 +126,7 @@ describe('village maps', () => {
     });
   });
 
-  it('shows the actual construction state on the map and prevents a second build', async () => {
+  it('shows the actual construction state and lets another upgrade join the queue', async () => {
     const view = fixture();
     const village = {
       ...view.villages[0],
@@ -135,8 +135,8 @@ describe('village maps', () => {
     render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
     fireEvent.click(screen.getByRole('button', { name: /مزارع الغذاء.*قيد التطوير/ }));
     expect(
-      await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }),
-    ).toBeDisabled();
+      await screen.findByRole('button', { name: 'أضف إلى قائمة البناء' }, { timeout: 3000 }),
+    ).toBeEnabled();
   });
 
   it('keeps the confirmed level until a new server snapshot confirms an upgrade', async () => {

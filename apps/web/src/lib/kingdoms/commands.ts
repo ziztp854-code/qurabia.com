@@ -33,6 +33,7 @@ export const kingdomsCommandSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('build'), villageId, building: z.enum(buildingKeys) }).strict(),
+  z.object({ type: z.literal('cancelBuild'), villageId, itemId: id }).strict(),
   z
     .object({
       type: z.literal('train'),

@@ -218,6 +218,7 @@ export async function createVillageRenderer(
       }
       const rebuildNeeded =
         next.village.id !== props.village.id ||
+        next.village.progression?.visualTier !== props.village.progression?.visualTier ||
         JSON.stringify(next.village.buildings) !== JSON.stringify(props.village.buildings) ||
         JSON.stringify(next.village.troops) !== JSON.stringify(props.village.troops) ||
         next.village.build?.building !== props.village.build?.building ||

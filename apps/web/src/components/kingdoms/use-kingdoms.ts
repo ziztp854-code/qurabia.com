@@ -143,9 +143,17 @@ export function useKingdoms(initialWorldId = '') {
     const timer = setInterval(() => {
       if (document.visibilityState === 'visible') void refresh();
     }, 15000);
+    const visible = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    const online = () => void refresh();
+    document.addEventListener('visibilitychange', visible);
+    window.addEventListener('online', online);
     return () => {
       generation.current += 1;
       clearInterval(timer);
+      document.removeEventListener('visibilitychange', visible);
+      window.removeEventListener('online', online);
     };
   }, [refresh, worldId]);
   useEffect(() => {
@@ -158,7 +166,10 @@ export function useKingdoms(initialWorldId = '') {
       ),
       { transports: ['websocket', 'polling'], reconnectionAttempts: 3 },
     );
-    socket.on('connect', () => socket.emit('kingdoms:watch', { worldId }));
+    socket.on('connect', () => {
+      socket.emit('kingdoms:watch', { worldId });
+      void refresh();
+    });
     socket.on('kingdoms:revision', (event: { worldId: string }) => {
       if (event.worldId === worldId) void refresh();
     });

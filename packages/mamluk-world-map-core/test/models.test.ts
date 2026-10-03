@@ -42,6 +42,20 @@ const territory: Territory = {
 };
 
 describe('authoritative map models', () => {
+  it('preserves legacy metre routes and accepts only declared distance units', () => {
+    const route = {
+      origin: cairo,
+      destination: damascus,
+      waypoints: [],
+      distance: 5,
+      departureTime: 1000,
+      arrivalTime: 9000,
+    };
+    expect(createArmyRoute(route)).toEqual(route);
+    expect(createArmyRoute({ ...route, distanceUnit: 'tiles' }).distanceUnit).toBe('tiles');
+    expect(createArmyRoute({ ...route, distanceUnit: 'metres' }).distanceUnit).toBe('metres');
+    expect(() => createArmyRoute({ ...route, distanceUnit: 'pixels' as 'tiles' })).toThrow('unit');
+  });
   it('preserves geographic cities and rejects invalid fortifications', () => {
     expect(createCity(city)).toEqual(city);
     expect(Object.isFrozen(createCity(city))).toBe(true);

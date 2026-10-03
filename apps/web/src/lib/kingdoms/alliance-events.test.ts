@@ -192,3 +192,19 @@ it('cannot earn queue credit by switching alliances before its completion', () =
   s = advanceWorld(s, s.villages[b].build!.endsAt);
   expect(projectWorld(s, 'bob', s.updatedAt).allianceEvent?.ownPoints).toBe(0);
 });
+
+
+it('preserves reserved alliance stamps across queue activation and legacy loading', () => {
+  const { w, a } = fixture();
+  let s = executeCommand(w, 'alice', { type: 'build', villageId: a, building: 'lumber' }, now);
+  s = executeCommand(s, 'alice', { type: 'build', villageId: a, building: 'quarry' }, now);
+  const end = s.villages[a].constructionQueue![1].endsAt;
+  const finished = advanceWorld(s, end);
+  expect(projectWorld(finished, 'alice', end).allianceEvent?.ownPoints).toBe(10);
+  expect(projectWorld(advanceWorld(finished, end), 'alice', end).allianceEvent?.ownPoints).toBe(10);
+  const legacy = structuredClone(s);
+  delete legacy.villages[a].constructionQueue;
+  expect(projectWorld(legacy, 'alice', end).allianceEvent?.ownPoints).toBe(5);
+  const cancelled = executeCommand(s, 'alice', { type: 'cancelBuild', villageId: a, itemId: s.villages[a].constructionQueue![1].id }, now);
+  expect(projectWorld(cancelled, 'alice', end).allianceEvent?.ownPoints).toBe(5);
+});

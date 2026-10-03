@@ -51,7 +51,46 @@ export type ResourceSiteView = {
   capacity: number;
   regenerationPerHour: number;
 };
+export type VillageProgressionConfig = {
+  maxLevel: number;
+  xpStep: number;
+  buildingXp: number;
+  trainingXp: number;
+  achievementXp: number;
+  territoryXp: number;
+  buildingPower: number;
+  defensePower: number;
+  economicPower: number;
+  strategicPower: number;
+  unitPower: Record<Unit, number>;
+  milestones: { level: number; buildings: Partial<Record<Building, number>> }[];
+  ranks: { from: number; name: string }[];
+  tiers: { from: number; tier: number }[];
+};
+export type VillageProgression = {
+  version: 1;
+  xp: number;
+  level: number;
+  rank: string;
+  visualTier: number;
+  levelStartXp: number;
+  nextLevelXp: number | null;
+  requirements: { building: Building; required: number; actual: number }[];
+  power: {
+    building: number;
+    military: number;
+    defense: number;
+    economic: number;
+    research: number;
+    strategic: number;
+    total: number;
+  };
+  /** Server-derived cache key; excluded from all command schemas. */
+  signature: string;
+};
 export type KingdomsConfig = {
+  progression?: VillageProgressionConfig;
+  construction?: { maxPending: number; historyLimit: number; queuedRefund: number; activeRefund: number };
   commanders?: CommanderConfig;
   worldRadius: number;
   seasonSeconds: number;
@@ -117,7 +156,24 @@ export type AllianceEventView = {
   reward: Resources;
   contributors: { id: string; name: string; points: number }[];
 };
+export type ConstructionItem = {
+  allianceEvent?: AllianceEventStamp;
+  id: string;
+  villageId: string;
+  building: Building;
+  fromLevel: number;
+  targetLevel: number;
+  queuedAt: number;
+  startedAt: number;
+  endsAt: number;
+  cost: Resources;
+  status: 'BUILDING' | 'QUEUED' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+  legacy?: boolean;
+  refundedCost?: Resources;
+};
 export type Village = {
+  progression?: VillageProgression;
+  constructionQueue?: ConstructionItem[];
   commanderId?: string;
   reinforcementCommanders?: Record<string, string>;
   id: string;

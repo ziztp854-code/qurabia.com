@@ -368,6 +368,13 @@ export function clipArea(geometry: AreaGeometry, bounds: BoundingBox): AreaGeome
   );
 }
 
+/** Dissolve shared presentation edges; ownership is supplied by the game engine. */
+export function unionAreas(areas: readonly AreaGeometry[]): AreaGeometry | null {
+  areas.forEach(validateArea);
+  const inputs = areas.map(clippingInput);
+  return inputs.length === 0 ? null : projectedArea(union(inputs[0]!, ...inputs.slice(1)));
+}
+
 /** Returns true only for a positive-area intersection, including the geometry's holes. */
 export function intersectsBounds(geometry: AreaGeometry, bounds: BoundingBox): boolean {
   return clipArea(geometry, bounds) !== null;

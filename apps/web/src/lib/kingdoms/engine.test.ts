@@ -51,9 +51,9 @@ describe('Kingdoms authoritative simulation', () => {
       start,
     );
     expect(a.villages[id].resources.wood).toBe(820);
-    expect(() =>
-      executeCommand(a, 'alice', { type: 'build', villageId: id, building: 'farm' }, start),
-    ).toThrow();
+    const queued = executeCommand(a, 'alice', { type: 'build', villageId: id, building: 'farm' }, start);
+    expect(queued.villages[id].constructionQueue?.map((item) => item.status)).toEqual(['BUILDING', 'QUEUED']);
+    expect(a.villages[id].constructionQueue).toHaveLength(1);
     expect(advanceWorld(a, start + 60000).villages[id].buildings.lumber).toBe(1);
     expect(advanceWorld(a, start + 3660000).villages[id].resources.wood).toBeCloseTo(
       820 + 80 / 60 + 108,

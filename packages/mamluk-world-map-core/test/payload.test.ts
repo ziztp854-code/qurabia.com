@@ -141,3 +141,25 @@ it('decodes seam-safe multiline routes and multipart fog while rejecting other s
   });
   expect(() => parseMapPayload(wrongType)).toThrow();
 });
+
+it('round-trips tile distances and legacy metre routes while rejecting unknown units', async () => {
+  const own = army('tile-route');
+  const tileArmy = {
+    ...own,
+    route: { ...own.route!, distance: 5, distanceUnit: 'tiles' as const },
+  };
+  const payload = await new WorldMapService(
+    repository({ getVisibleArmiesInBounds: async () => [tileArmy, army('legacy-route')] }),
+  ).getViewport({ worldId: 'world', bounds }, { playerId: 'p1' });
+  const decoded = parseMapPayload(JSON.parse(JSON.stringify(payload)));
+  expect(
+    decoded.layers.armyRoutes.features.find((feature) => feature.id === 'tile-route')?.properties
+      .distanceUnit,
+  ).toBe('tiles');
+  expect(
+    decoded.layers.armyRoutes.features.find((feature) => feature.id === 'legacy-route')?.properties,
+  ).not.toHaveProperty('distanceUnit');
+  const invalid = structuredClone(payload);
+  Object.assign(invalid.layers.armyRoutes.features[0]!.properties, { distanceUnit: 'pixels' });
+  expect(() => parseMapPayload(invalid)).toThrow();
+});

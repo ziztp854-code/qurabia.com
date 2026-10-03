@@ -101,6 +101,7 @@ export class ArmyRouteGeoJsonBuilder {
         feature(armyId, lineGeometry([route.origin, ...route.waypoints, route.destination]), {
           armyId,
           distance: route.distance,
+          ...(route.distanceUnit === undefined ? {} : { distanceUnit: route.distanceUnit }),
           departureTime: route.departureTime,
           arrivalTime: route.arrivalTime,
         }),

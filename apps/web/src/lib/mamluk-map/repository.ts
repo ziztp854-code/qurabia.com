@@ -17,6 +17,7 @@ import type {
 } from '@mamluk/world-map-core/server';
 import {
   containsPoint,
+  intersectsBounds,
   boundsGeometry,
   createArmyPosition,
   createArmyRoute,
@@ -37,6 +38,8 @@ import type { KingdomIdentity } from '../kingdoms/repository';
 import type { StoredVisibilityGrant } from './storage';
 import { ensureVillageGeography } from './village-persistence';
 import { VILLAGE_GEOGRAPHY_SOURCE } from './village-geography';
+import { projectKingdomMap, type KingdomMapProjection } from './kingdom-projection';
+import type { KingdomsWorld } from '../kingdoms/types';
 
 type Transaction = Prisma.TransactionClient;
 type Collection =
@@ -220,6 +223,7 @@ class PrismaMapReadSession implements PublicVillageReadSession {
     private readonly tx: Transaction,
     readonly snapshot: MapReadSnapshot,
     private readonly villageGeography = false,
+    private readonly gameplay?: KingdomMapProjection,
   ) {}
   close(): void {
     this.active = false;
@@ -395,7 +399,10 @@ class PrismaMapReadSession implements PublicVillageReadSession {
         ...new Set(grants.flatMap((grant) => grant.visibleTerritoryIds)),
       ]),
       visibleSultanateTerritoryIds: Object.freeze([
-        ...new Set(grants.flatMap((grant) => grant.visibleSultanateTerritoryIds)),
+        ...new Set([
+          ...grants.flatMap((grant) => grant.visibleSultanateTerritoryIds),
+          ...(this.gameplay?.borders.map((border) => border.id) ?? []),
+        ]),
       ]),
     });
     this.visibilityCache.set(key, result);
@@ -410,7 +417,11 @@ class PrismaMapReadSession implements PublicVillageReadSession {
       this.visiblePoint(Prisma.sql`item->'value'`, currentCityOwner),
     );
     return this.filterCandidates(
-      rows.map((row) => createCity(row.value as City)),
+      rows.flatMap((row) => {
+        const stored = createCity(row.value as City);
+        const city = this.gameplay ? this.gameplay.city(stored) : stored;
+        return city ? [createCity(city)] : [];
+      }),
       safe,
       (city) => {
         this.knownWorld(city);
@@ -426,7 +437,11 @@ class PrismaMapReadSession implements PublicVillageReadSession {
     if (!this.villageGeography) return [];
     const rows = await this.read('cities', safe);
     return this.filterCandidates(
-      rows.map((row) => createCity(row.value as City)),
+      rows.flatMap((row) => {
+        const stored = createCity(row.value as City);
+        const city = this.gameplay ? this.gameplay.city(stored) : stored;
+        return city ? [createCity(city)] : [];
+      }),
       safe,
       (city) => {
         this.knownWorld(city);
@@ -488,6 +503,10 @@ class PrismaMapReadSession implements PublicVillageReadSession {
     query: SpatialQuery,
   ): Promise<readonly SultanateTerritory[]> {
     const safe = this.check(query);
+    if (this.gameplay)
+      return this.gameplay.borders
+        .filter((border) => intersectsBounds(border.geometry, safe.bounds))
+        .slice(0, safe.limit);
     const grants = await this.getVisibilityInBounds({ ...safe, limit: 129 });
     const authorized =
       grants.visibleSultanateTerritoryIds.length > 0
@@ -510,6 +529,10 @@ class PrismaMapReadSession implements PublicVillageReadSession {
   }
   async getVisibleArmiesInBounds(query: SpatialQuery): Promise<readonly Army[]> {
     const safe = this.check(query);
+    if (this.gameplay)
+      return this.gameplay.armies
+        .filter((army) => containsPoint(safe.bounds, army.position))
+        .slice(0, safe.limit);
     const visible = await this.vision(safe);
     const rows = await this.read(
       'armies',
@@ -595,11 +618,14 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
           geographyVersion: string;
           geographySource: string;
           needsProvision: boolean;
+          authoritative: boolean;
           serverTime: Date;
         }[]
       >(Prisma.sql`
         SELECT w.id, w.revision, w.state->'geography'->>'version' AS "geographyVersion",
           w.state->'geography'->>'source' AS "geographySource", clock_timestamp() AS "serverTime",
+          (w.state->>'version' = '1' AND jsonb_typeof(w.state->'config') = 'object'
+            AND jsonb_typeof(w.state->'villages') = 'object') AS authoritative,
           CASE WHEN NOT (w.state ? 'geography') THEN TRUE
             WHEN ${villageSource} AND w.state->'geography'->>'version' = '1' THEN
               w.state->'geography'->>'villagePlotsVersion' IS DISTINCT FROM '1' OR EXISTS (
@@ -626,10 +652,20 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
         serverTime,
         validUntil: serverTime + 15000,
       });
+      let gameplay: KingdomMapProjection | undefined;
+      if (row.authoritative && row.geographySource === VILLAGE_GEOGRAPHY_SOURCE) {
+        const stored = await tx.kingdomWorld.findUnique({
+          where: { id: worldId },
+          select: { state: true },
+        });
+        if (!stored) throw new KingdomsHttpError(404, 'الخريطة غير متاحة.');
+        gameplay = projectKingdomMap(stored.state as unknown as KingdomsWorld, snapshot);
+      }
       const session = new PrismaMapReadSession(
         tx,
         snapshot,
         row.geographySource === VILLAGE_GEOGRAPHY_SOURCE,
+        gameplay,
       );
       try {
         return await read(session);

@@ -4,8 +4,9 @@ import { createWorld, projectWorld } from '@/lib/kingdoms/engine';
 import type { WorldView } from './shared';
 import { useKingdoms, type WorldSummary } from './use-kingdoms';
 
+const socket = vi.hoisted(() => ({ handlers: new Map<string, () => void>(), emit: vi.fn(), disconnect: vi.fn() }));
 vi.mock('socket.io-client', () => ({
-  io: () => ({ on: vi.fn(), emit: vi.fn(), disconnect: vi.fn() }),
+  io: () => ({ on: (name: string, handler: () => void) => socket.handlers.set(name, handler), emit: socket.emit, disconnect: socket.disconnect }),
 }));
 
 const now = 1800000000000;
@@ -39,6 +40,26 @@ afterEach(() => {
 });
 
 describe('Kingdoms snapshot freshness', () => {
+  it('refetches on reconnect, online and returning to a visible tab and removes listeners', async () => {
+    const { result, unmount } = renderHook(() => useKingdoms());
+    await waitFor(() => expect(result.current.view?.revision).toBe(1));
+    vi.mocked(fetch).mockResolvedValue(response(snapshot(2, now + 1000)));
+    await act(async () => socket.handlers.get('connect')?.());
+    expect(result.current.view?.revision).toBe(2);
+    expect(socket.emit).toHaveBeenCalledWith('kingdoms:watch', { worldId: 'world-1' });
+    vi.mocked(fetch).mockResolvedValue(response(snapshot(3, now + 2000)));
+    await act(async () => window.dispatchEvent(new Event('online')));
+    expect(result.current.view?.revision).toBe(3);
+    vi.mocked(fetch).mockResolvedValue(response(snapshot(4, now + 3000)));
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(result.current.view?.revision).toBe(4);
+    unmount();
+    const calls = vi.mocked(fetch).mock.calls.length;
+    window.dispatchEvent(new Event('online'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(calls);
+  });
+
   it('keeps the newest revision when concurrent refreshes return older state with a later clock', async () => {
     const { result } = renderHook(() => useKingdoms());
     await waitFor(() => expect(result.current.view?.revision).toBe(1));

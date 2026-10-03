@@ -1,3 +1,5 @@
+import { awardVillageXp, progressionConfig, refreshProgression } from './progression';
+import { completeConstruction, normalizeConstruction } from './construction';
 import { creditAllianceEvent } from './alliance-events';
 import {
   gatherPreview,
@@ -375,6 +377,7 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
   if (m.mission === 'occupy') {
     const key = `${m.targetX},${m.targetY}`;
     if (!target && (!w.territories[key] || w.territories[key] === m.ownerId)) {
+      if (!w.territories[key]) awardVillageXp(w.villages[m.sourceId], progressionConfig(w).territoryXp);
       w.territories[key] = m.ownerId;
       report(w, at, [m.ownerId], 'ضم أرض', 'أضيفت الأرض إلى حدود المملكة');
     }
@@ -460,6 +463,8 @@ export function earliestDeadline(w: KingdomsWorld, fallback = Infinity): number 
 }
 
 export function advanceDraft(w: KingdomsWorld, now: number) {
+  for (const v of Object.values(w.villages)) normalizeConstruction(v);
+  refreshProgression(w, deployedTroops(w));
   const end = Math.min(now, w.season.endsAt);
   if (end < w.updatedAt) return;
   while (true) {
@@ -468,14 +473,10 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
     accrue(w, next);
     for (const v of Object.values(w.villages)) {
       if (v.build && v.build.endsAt === next) {
-        if (v.build.allianceEvent) {
-          creditAllianceEvent(w, v.ownerId, 'build', 5, next, v.build.allianceEvent);
-        }
-        v.buildings = { ...v.buildings, [v.build.building]: v.build.level };
-        delete v.build;
-        report(w, next, [v.ownerId], 'اكتمل البناء', `اكتمل تطوير مبنى في ${v.name}`);
+        completeConstruction(w, v, next);
       }
       if (v.training && v.training.endsAt === next) {
+        awardVillageXp(v, v.training.count * progressionConfig(w).trainingXp);
         if (v.training.allianceEvent) {
           creditAllianceEvent(
             w,
@@ -498,6 +499,7 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
     for (const m of due) arrive(w, m, next);
   }
   accrue(w, end);
+  refreshProgression(w, deployedTroops(w));
   w.updatedAt = end;
   pruneResourceSiteStocks(w, end);
   if (now >= w.season.endsAt && w.season.status === 'active') {

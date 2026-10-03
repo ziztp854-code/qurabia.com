@@ -62,12 +62,15 @@ export function createArmyRoute(value: ArmyRoute): ArmyRoute {
   validateSchedule(value.departureTime, value.arrivalTime);
   if (!Number.isFinite(value.distance) || value.distance < 0)
     throw new RangeError('Invalid route distance');
+  if (value.distanceUnit !== undefined && !['metres', 'tiles'].includes(value.distanceUnit))
+    throw new RangeError('Invalid route distance unit');
   const waypoints = value.waypoints.map((point) => coordinates(point.longitude, point.latitude));
   return Object.freeze({
     origin: coordinates(value.origin.longitude, value.origin.latitude),
     destination: coordinates(value.destination.longitude, value.destination.latitude),
     waypoints: Object.freeze(waypoints),
     distance: value.distance,
+    ...(value.distanceUnit === undefined ? {} : { distanceUnit: value.distanceUnit }),
     departureTime: value.departureTime,
     arrivalTime: value.arrivalTime,
   });

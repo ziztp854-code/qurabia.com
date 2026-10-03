@@ -54,11 +54,15 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
   const [tab, setTab] = useState<DetailTab>('upgrade');
   const spec = view.config.buildings[building];
   const level = village.buildings[building];
-  const factor = spec.growth ** level;
+  const pending = village.constructionQueue?.filter((item) => item.status === 'BUILDING' || item.status === 'QUEUED') ?? [];
+  const plannedLevel = Math.max(level, ...pending.filter((item) => item.building === building).map((item) => item.targetLevel), village.build?.building === building ? village.build.level : 0);
+  const pendingCount = pending.length || (village.build ? 1 : 0);
+  const queueFull = pendingCount >= (view.config.construction?.maxPending ?? 5);
+  const factor = spec.growth ** plannedLevel;
   const cost = Object.fromEntries(
     resourceKeys.map((resource) => [resource, Math.ceil(spec.cost[resource] * factor)]),
   ) as Resources;
-  const maxed = level >= spec.maxLevel;
+  const maxed = plannedLevel >= spec.maxLevel;
   const shortage = resourceKeys.some((resource) => village.resources[resource] < cost[resource]);
   const resource = producers[building];
   const capacity =
@@ -209,7 +213,7 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
         {tab === 'upgrade' && (
           <>
             <p>
-              {maxed ? 'المبنى في أعلى مستوياته.' : `التطوير التالي: المستوى ${number(level + 1)}`}
+              {maxed ? 'بلغ المبنى الحد الأعلى أو أضيف تطويره الأخير إلى القائمة.' : `التطوير التالي: المستوى ${number(plannedLevel + 1)}`}
             </p>
             {!maxed && (
               <>
@@ -235,20 +239,18 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
               </>
             )}
             <Button
-              disabled={busy || !!village.build || maxed || shortage}
+              disabled={busy || queueFull || maxed || shortage}
               onClick={() => void send({ type: 'build', villageId: village.id, building })}
             >
-              {maxed ? 'بلغ الحد الأعلى' : 'طوّر المبنى'}
+              {maxed ? 'بلغ الحد الأعلى' : pendingCount ? 'أضف إلى قائمة البناء' : 'طوّر المبنى'}
             </Button>
-            {!maxed && !village.build && shortage && (
+            {!maxed && shortage && (
               <p className={styles.shortage}>الموارد الحالية لا تكفي لهذا التطوير.</p>
             )}
-            {village.build && (
+            {pendingCount > 0 && (
               <p className={styles.hint}>
                 <Hammer size={16} aria-hidden="true" />
-                {constructing
-                  ? 'هذا المبنى قيد التطوير.'
-                  : 'انتظر اكتمال البناء الجاري قبل بدء تطوير آخر.'}
+                {queueFull ? 'قائمة البناء ممتلئة.' : 'تُخصم التكلفة الآن ويبدأ التطوير بعد المشاريع السابقة، حتى وأنت خارج اللعبة.'}
               </p>
             )}
           </>
@@ -285,11 +287,11 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
             </dl>
             {!maxed && (
               <p>
-                بعد التطوير:{' '}
+                بعد التطوير إلى المستوى {number(plannedLevel + 1)}:{' '}
                 {number(
                   Math.round(
                     view.config.baseProduction[resource] *
-                      (1 + (level + 1) * view.config.productionPerLevel),
+                      (1 + (plannedLevel + 1) * view.config.productionPerLevel),
                   ),
                 )}{' '}
                 {labels[resource]} / ساعة

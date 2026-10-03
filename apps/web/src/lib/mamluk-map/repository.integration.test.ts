@@ -573,6 +573,80 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     expect(snapshot.revision).toBe(String(result.revision));
   });
 
+  it('projects live own forces and due buildings in the same relocated atlas snapshot', async () => {
+    const { viewer, outsider, worldId, state } = await fixture();
+    const base = executeCommand(
+      withoutGeography(state),
+      outsider.id,
+      { type: 'found', name: 'قرية بعيدة' },
+      state.updatedAt,
+    );
+    const own = Object.values(base.villages).find((v) => v.ownerId === viewer.id)!;
+    const enemy = Object.values(base.villages).find((v) => v.ownerId === outsider.id)!;
+    const movement = {
+      id: 'live-scouts',
+      ownerId: viewer.id,
+      sourceId: own.id,
+      mission: 'scout' as const,
+      targetX: enemy.x,
+      targetY: enemy.y,
+      departedAt: state.updatedAt,
+      arrivesAt: state.updatedAt + 60000,
+      travelMs: 60000,
+      troops: { guard: 0, rider: 0, scout: 1, settler: 0 },
+      loot: { wood: 0, stone: 0, iron: 0, food: 0, gold: 0 },
+    };
+    const gameplay = {
+      ...base,
+      villages: {
+        ...base.villages,
+        [own.id]: {
+          ...own,
+          troops: { ...own.troops, guard: 1 },
+          build: {
+            building: 'wall' as const,
+            level: own.buildings.wall + 1,
+            startedAt: state.updatedAt - 1000,
+            endsAt: state.updatedAt,
+          },
+        },
+      },
+      movements: [
+        movement,
+        { ...movement, id: 'private-enemy', ownerId: outsider.id, sourceId: enemy.id },
+      ],
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(gameplay)) },
+    });
+    const service = new MamlukViewportService(new PrismaWorldMapRepository(viewer, db));
+    const payload = await service.getViewport(
+      { worldId, bounds: { west: 28, south: 29, east: 35, north: 33 } },
+      { playerId: viewer.id },
+    );
+    expect(payload.layers.armies.features.map((feature) => feature.id)).toEqual([
+      `garrison:${own.id}`,
+      'live-scouts',
+    ]);
+    expect(
+      payload.layers.cities.features.find((feature) => feature.id === own.id)?.properties
+        .fortificationLevel,
+    ).toBe(own.buildings.wall + 1);
+    expect(payload.layers.cities.features.map((feature) => feature.id)).toContain(enemy.id);
+    expect(payload.layers.armyRoutes.features[0]?.properties).toMatchObject({
+      departureTime: movement.departedAt,
+      arrivalTime: movement.arrivesAt,
+      distanceUnit: 'tiles',
+    });
+    expect(JSON.stringify(payload)).not.toContain('private-enemy');
+    const persisted = await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } });
+    expect((persisted.state as unknown as KingdomsWorld).villages[own.id].build).toBeDefined();
+    expect((await service.getViewport({ worldId, bounds }, { playerId: viewer.id })).revision).toBe(
+      payload.revision,
+    );
+  });
+
   it('never provisions legacy worlds for outsiders or revoked sessions', async () => {
     const { viewer, outsider, worldId, state } = await fixture();
     const legacy = withoutGeography(state);

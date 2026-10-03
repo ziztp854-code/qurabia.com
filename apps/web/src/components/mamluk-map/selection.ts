@@ -74,7 +74,12 @@ export function findSelection(
       : undefined;
   const routeDetails = route
     ? [
-        field('المسافة', `${number(Number(route.properties.distance) / 1000)} كم`),
+        field(
+          'المسافة',
+          route.properties.distanceUnit === 'tiles'
+            ? `${number(Number(route.properties.distance))} خانة`
+            : `${number(Number(route.properties.distance) / 1000)} كم`,
+        ),
         field(
           'الوصول',
           new Intl.DateTimeFormat('ar-SA', {

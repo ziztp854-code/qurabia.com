@@ -1,0 +1,27 @@
+.progression {
+  padding: var(--space-3) var(--space-4);
+  border-block-start: 1px solid var(--border);
+  background: var(--surface-strong);
+  font-variant-numeric: tabular-nums;
+}
+.facts, .experience {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+}
+.facts strong { color: var(--gold); }
+.experience { margin-block-start: var(--space-2); font-size: 0.85rem; }
+.experience progress { flex: 1 1 8rem; max-inline-size: 24rem; block-size: 0.6rem; appearance: none; border: 0; border-radius: var(--radius-full); overflow: hidden; background: var(--border); }
+.experience progress::-webkit-progress-bar { background: var(--border); }
+.experience progress::-webkit-progress-value { background: var(--gold); }
+.experience progress::-moz-progress-bar { background: var(--gold); }
+.requirements { margin-block: var(--space-2) 0; font-size: 0.85rem; }
+.queue { display: grid; gap: var(--space-3); inline-size: 100%; min-inline-size: 0; }
+.queue h3, .queue p { margin: 0; }
+.items { display: grid; gap: var(--space-3); padding: 0; margin: 0; list-style: none; }
+.item { display: grid; gap: var(--space-2); padding-block-end: var(--space-3); border-block-end: 1px solid var(--border); }
+.item:last-child { border: 0; padding-block-end: 0; }
+.item time { display: block; font-size: 0.85rem; color: var(--muted-foreground); }
+.item button { justify-self: start; min-block-size: 44px; }
+.policy { color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.7; }

@@ -192,6 +192,7 @@ test('stable uses confirmed barracks and the genuine cavalry queue, with safe mo
   await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
   const viewport = village.locator('[data-village-scene]');
   await expect(viewport).toHaveAttribute('data-zoom', /^1(?:\.0+)?$/);
+  await viewport.scrollIntoViewIfNeeded();
   // Hit test the artwork's actual barracks center, not the expanded DOM button center.
   const point = await viewport.evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -335,8 +336,8 @@ test('original artwork, camera, real build lifecycle, and world navigation', asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('interactive-village.png'), fullPage: true });
   await page.getByRole('button', { name: 'انتقل إلى خريطة العالم' }).click();
-  await expect(page.getByRole('heading', { name: 'أطلس الممالك' })).toBeVisible();
-  await page.getByRole('button', { name: 'القرية', exact: true }).click();
+  await expect(page).toHaveURL(/\/games\/kingdoms\/world-map\/?\?worldId=browser-world&villageId=v1$/);
+  await page.goBack();
   await expect(village).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -462,4 +463,46 @@ test('main wall, embassy and mine clicks remain separate from gate and auxiliary
     await village.getByRole('button', { name: 'عرض القرية بالكامل' }).click();
     await expect(viewport).toHaveAttribute('data-zoom', /^1(?:\.0+)?$/);
   }
+});
+
+test('level twelve village finishes its real queue after five hours offline', async ({ page, context, request }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const seeded = await request.post('/__village_test/offline-scenario');
+  expect(seeded.ok()).toBe(true);
+  const before = (await seeded.json()).data.villages[0];
+  expect(before.progression.level).toBe(12);
+  await page.goto('/');
+  await expect(page.getByLabel('مستوى القرية', { exact: true })).toContainText('١٢');
+  for (const [building, label] of [['hall', 'دار الحكم'], ['wall', 'السور'], ['warehouse', 'المخزن']]) {
+    const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+    await village.getByLabel('اختر مبنى من الخريطة').selectOption(building);
+    const panel = page.getByRole('region', { name: `تفاصيل ${label}`, exact: true });
+    await panel.getByRole('button', { name: building === 'hall' ? 'طوّر المبنى' : 'أضف إلى قائمة البناء', exact: true }).click();
+    await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  }
+  const queued = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
+  expect(queued.constructionQueue.filter((item: { status: string }) => ['BUILDING', 'QUEUED'].includes(item.status))).toHaveLength(3);
+  await page.getByRole('list', { name: 'مشاريع البناء' }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('offline-queue.png'), fullPage: true });
+  await page.close();
+  expect((await request.post('/__village_test/advance-five-hours')).ok()).toBe(true);
+  const returned = await context.newPage();
+  await returned.emulateMedia({ reducedMotion: 'reduce' });
+  await returned.goto('/');
+  await expect(returned.getByRole('region', { name: 'قوائم التنفيذ', exact: true }).getByText('لا بناء قيد التنفيذ', { exact: true })).toBeVisible();
+  const after = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
+  expect(after.buildings).toMatchObject({ hall: 8, wall: 6, warehouse: 9 });
+  expect(after.training).toBeUndefined();
+  expect(after.troops.guard).toBe(5);
+  expect(after.resources.wood).toBeGreaterThan(queued.resources.wood);
+  expect(after.progression.xp).toBeGreaterThan(before.progression.xp);
+  expect(after.progression.power.total).toBeGreaterThan(before.progression.power.total);
+  expect(after.progression.level).toBeGreaterThan(12);
+  expect((await (await request.get('/api/kingdoms')).json()).data.villages[0].progression.xp).toBe(after.progression.xp);
+  await expect(returned.getByLabel('مستوى القرية', { exact: true })).toContainText(new Intl.NumberFormat('ar-SA').format(after.progression.level));
+  await expect(returned.getByRole('region', { name: 'تقدم القرية' })).toHaveAttribute('data-visual-tier', String(after.progression.visualTier));
+  await returned.getByRole('region', { name: 'خريطة القرية', exact: true }).scrollIntoViewIfNeeded();
+  await expect(returned.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
+  expect(await returned.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await returned.screenshot({ path: testInfo.outputPath('offline-return.png'), fullPage: true });
 });

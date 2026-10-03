@@ -125,7 +125,15 @@ function geometry(value: unknown, budget: DecodeBudget): Geometry {
 function decodeFeature(value: unknown, layer: keyof MapLayers, budget: DecodeBudget): Feature {
   const feature = record(value, ['type', 'id', 'geometry', 'properties']);
   if (feature.type !== 'Feature' || !id(feature.id) || ++budget.features > 8192) return invalid();
-  const rules = layerRules[layer];
+  const hasDistanceUnit =
+    layer === 'armyRoutes' &&
+    feature.properties !== null &&
+    typeof feature.properties === 'object' &&
+    Object.hasOwn(feature.properties, 'distanceUnit');
+  const rules = {
+    ...layerRules[layer],
+    ...(hasDistanceUnit ? { distanceUnit: oneOf('metres', 'tiles') } : {}),
+  };
   const fields = record(feature.properties, Object.keys(rules));
   if (Object.entries(rules).some(([key, rule]) => !rule(fields[key]))) return invalid();
   if (layer === 'armyRoutes' && number(fields.arrivalTime) <= number(fields.departureTime))

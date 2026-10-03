@@ -135,6 +135,14 @@ const environmentSlot = (
 
 export const villageAssets = {
   base: { src: original, ...VILLAGE_WORLD },
+  // MISSING_ASSET: dedicated settlement/city illustrations are not available.
+  // Reuse bounded banner crops from the approved base art without inventing buildings.
+  tiers: [1, 2, 3, 4, 5, 6].map((tier) => slot(
+    `village-tier-${tier}`,
+    'MISSING_ASSET: مخطط مدينة مستقل؛ البديل رايات من الرسم الأصلي',
+    { x: 0, y: 0, ...VILLAGE_WORLD },
+    { fallbackCrop: { x: 836, y: 345, width: 14, height: 44 } },
+  )),
   buildings,
   npc: {
     worker: npcSlot('worker', 'عامل من الصورة الأصلية', { x: 406, y: 506, width: 9, height: 18 }),

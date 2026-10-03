@@ -1,4 +1,5 @@
 'use client';
+import { VillageProgress } from './village-progress';
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
   ArrowDown,
@@ -84,6 +85,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
           </Button>
         </div>
       </header>
+      <VillageProgress village={village} config={view.config} />
       <div className={styles.workspace}>
         <VillageCanvas
           ref={scene}

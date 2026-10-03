@@ -57,8 +57,9 @@ export interface ArmyRoute {
   readonly origin: Coordinates;
   readonly destination: Coordinates;
   readonly waypoints: readonly Coordinates[];
-  /** Authoritative distance in metres; never inferred from a screen or basemap. */
+  /** Authoritative distance; legacy records use metres. Never inferred from a basemap. */
   readonly distance: number;
+  readonly distanceUnit?: 'metres' | 'tiles';
   readonly departureTime: number;
   readonly arrivalTime: number;
 }

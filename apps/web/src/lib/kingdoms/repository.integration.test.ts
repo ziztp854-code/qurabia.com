@@ -53,7 +53,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     }
   });
 
-  async function fixture(count = 1, found = true) {
+  async function fixture(count = 1, found = true, stock = 100) {
     const identities = await Promise.all(
       Array.from({ length: count }, async () => {
         const id = `kingdom_test_${randomUUID()}`;
@@ -77,7 +77,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
           : world,
       createWorld(now.getTime(), {
         ...defaultKingdomsConfig,
-        startingResources: resources(100, 100, 100, 100, 100),
+        startingResources: resources(stock, stock, stock, stock, stock),
         baseProduction: resources(),
       }),
     );
@@ -415,6 +415,262 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     expect(saved.movements.reduce((sum, m) => sum + m.loot.wood, 0)).toBe(600);
     expect(saved.movements.map((m) => m.loot.wood).sort((a, b) => a - b)).toEqual([200, 400]);
     expect(Object.values(saved.villages).every((v) => v.resources.wood === 100)).toBe(true);
+  });
+
+  it('derives established village progression consistently from legacy persisted JSON', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await fixture();
+    const village = Object.values(state.villages)[0];
+    const legacyVillage = Object.fromEntries(
+      Object.entries(village).filter(([field]) => field !== 'progression'),
+    );
+    const legacy = {
+      ...state,
+      villages: {
+        [village.id]: {
+          ...legacyVillage,
+          buildings: Object.fromEntries(
+            Object.keys(village.buildings).map((building) => [building, 10]),
+          ),
+        },
+      },
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(legacy)) as Prisma.InputJsonValue },
+    });
+    const first = await repository.readKingdomWorld(worldId, actor, false, db);
+    const second = await repository.readKingdomWorld(worldId, actor, false, db);
+    expect(first).toMatchObject({ villages: [{ progression: { version: 1 } }] });
+    if (!('villages' in first) || !('villages' in second)) throw new Error('Expected player view');
+    const progression = first.villages[0].progression;
+    if (!progression) throw new Error('Expected server-derived progression');
+    expect(progression.level).toBeGreaterThan(1);
+    expect(progression.xp).toBeGreaterThan(0);
+    expect(progression.power.total).toBeGreaterThan(0);
+    expect(second.villages[0]).toMatchObject({ progression });
+  });
+
+  it('persists every overdue queue completion and XP once across repeated worker ticks', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await fixture();
+    const departedAt = state.updatedAt - 5 * 60 * 60 * 1000;
+    const founded = executeCommand(
+      createWorld(departedAt, {
+        ...defaultKingdomsConfig,
+        startingResources: resources(900, 900, 900, 900, 900),
+        baseProduction: resources(),
+      }),
+      actor.id,
+      { type: 'found', name: 'قرية البناء' },
+      departedAt,
+    );
+    const villageId = Object.keys(founded.villages)[0];
+    const farm = executeCommand(
+      founded,
+      actor.id,
+      { type: 'build', villageId, building: 'farm' },
+      departedAt,
+    );
+    const building = (['wall', 'warehouse'] as const).reduce(
+      (world, name) =>
+        executeCommand(world, actor.id, { type: 'build', villageId, building: name }, departedAt),
+      farm,
+    );
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: {
+        state: JSON.parse(JSON.stringify(building)) as Prisma.InputJsonValue,
+        nextEventAt: repository.nextDeadline(building),
+      },
+    });
+    const tick = await repository.tickKingdomWorlds(db);
+    expect(tick.worlds).toContainEqual({ id: worldId, revision: 1 });
+    const first = await repository.readKingdomWorld(worldId, actor, false, db);
+    expect(first).toMatchObject({
+      revision: 1,
+      villages: [
+        {
+          buildings: { farm: 1, wall: 1, warehouse: 1 },
+          progression: { xp: 300, level: 5 },
+          constructionQueue: [
+            { status: 'COMPLETED' },
+            { status: 'COMPLETED' },
+            { status: 'COMPLETED' },
+          ],
+        },
+      ],
+    });
+    await repository.tickKingdomWorlds(db);
+    const replay = await repository.readKingdomWorld(worldId, actor, false, db);
+    expect(replay).toMatchObject({
+      revision: 1,
+      villages: [{ progression: { xp: 300, level: 5 } }],
+    });
+  });
+
+  it.each(['villageLevel', 'villagePower', 'xp', 'resources', 'battleResult'])(
+    'rejects client-supplied %s before any persistent resource mutation',
+    async (field) => {
+      const {
+        worldId,
+        identities: [actor],
+        state,
+      } = await fixture();
+      const villageId = Object.keys(state.villages)[0];
+      await expect(
+        repository.commandKingdomWorld(
+          worldId,
+          actor,
+          key(),
+          {
+            type: 'build',
+            villageId,
+            building: 'farm',
+            [field]: 999999,
+          },
+          db,
+        ),
+      ).rejects.toThrow();
+      const view = await repository.readKingdomWorld(worldId, actor, false, db);
+      expect(view).toMatchObject({
+        revision: 0,
+        villages: [{ resources: resources(100, 100, 100, 100, 100) }],
+      });
+    },
+  );
+
+  it('enqueues a retried second construction once and debits its reserved cost once', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await fixture();
+    const villageId = Object.keys(state.villages)[0];
+    const funded = {
+      ...state,
+      villages: {
+        [villageId]: {
+          ...state.villages[villageId],
+          resources: resources(900, 900, 900, 900, 900),
+        },
+      },
+    };
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(funded)) as Prisma.InputJsonValue },
+    });
+    await repository.commandKingdomWorld(
+      worldId,
+      actor,
+      key(),
+      { type: 'build', villageId, building: 'farm' },
+      db,
+    );
+    const idempotencyKey = key();
+    const enqueue = () =>
+      repository.commandKingdomWorld(
+        worldId,
+        actor,
+        idempotencyKey,
+        { type: 'build', villageId, building: 'warehouse' },
+        db,
+      );
+    const [first, retry] = await Promise.all([enqueue(), enqueue()]);
+    expect(first.revision).toBe(2);
+    expect(retry.revision).toBe(2);
+    const view = await repository.readKingdomWorld(worldId, actor, false, db);
+    expect(view).toMatchObject({
+      revision: 2,
+      villages: [
+        {
+          resources: resources(700, 660, 810, 840, 900),
+          constructionQueue: [
+            { building: 'farm', status: 'BUILDING' },
+            { building: 'warehouse', status: 'QUEUED' },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('serializes competing construction costs without spending the same balance twice', async () => {
+    const {
+      worldId,
+      identities: [actor],
+      state,
+    } = await fixture();
+    const villageId = Object.keys(state.villages)[0];
+    const command = { type: 'build', villageId, building: 'farm' };
+    const attempts = await Promise.allSettled([
+      repository.commandKingdomWorld(worldId, actor, key(), command, db),
+      repository.commandKingdomWorld(worldId, actor, key(), command, db),
+    ]);
+    expect(attempts.filter((attempt) => attempt.status === 'fulfilled')).toHaveLength(1);
+    const view = await repository.readKingdomWorld(worldId, actor, false, db);
+    expect(view).toMatchObject({
+      revision: 1,
+      villages: [{ resources: resources(20, 20, 70, 80, 100) }],
+    });
+  });
+
+  it('authorizes queue cancellation and refunds once under concurrent retries', async () => {
+    const {
+      worldId,
+      identities: [actor, other],
+      state,
+    } = await fixture(2, true, 900);
+    const villageId = Object.values(state.villages).find(
+      (village) => village.ownerId === actor.id,
+    )!.id;
+    await repository.commandKingdomWorld(
+      worldId,
+      actor,
+      key(),
+      { type: 'build', villageId, building: 'farm' },
+      db,
+    );
+    const queued = await repository.commandKingdomWorld(
+      worldId,
+      actor,
+      key(),
+      { type: 'build', villageId, building: 'warehouse' },
+      db,
+    );
+    const item = queued.villages[0].constructionQueue?.find((entry) => entry.status === 'QUEUED');
+    if (!item) throw new Error('Expected queued warehouse');
+    const command = { type: 'cancelBuild', villageId, itemId: item.id };
+    await expect(
+      repository.commandKingdomWorld(worldId, other, key(), command, db),
+    ).rejects.toThrow();
+    const idempotencyKey = key();
+    const cancel = () =>
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db);
+    const [first, retry] = await Promise.all([cancel(), cancel()]);
+    expect(first.revision).toBe(3);
+    expect(retry.revision).toBe(3);
+    await expect(
+      repository.commandKingdomWorld(worldId, actor, key(), command, db),
+    ).rejects.toThrow();
+    const view = await repository.readKingdomWorld(worldId, actor, false, db);
+    expect(view).toMatchObject({
+      revision: 3,
+      villages: [
+        {
+          resources: resources(820, 820, 870, 880, 900),
+          constructionQueue: [
+            { building: 'farm', status: 'BUILDING' },
+            { building: 'warehouse', status: 'CANCELLED' },
+          ],
+        },
+      ],
+    });
   });
 
   it('applies simultaneous identical idempotency keys exactly once', async () => {

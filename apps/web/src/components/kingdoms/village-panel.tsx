@@ -11,6 +11,7 @@ import { UnitIcon } from './unit-icon';
 import { VillageHero } from './village-hero';
 import { BuildingPanel, type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
+import { ConstructionQueue } from './village/construction-queue';
 import { StablePanel } from './village/stable-panel';
 import { CommanderPanel } from './commander-panel';
 import kingdomsStyles from './kingdoms.module.css';
@@ -102,7 +103,7 @@ export function VillagePanel({
               <Hammer size={16} />
             </span>
             <div className={styles.queueBody}>
-              <h3>قائمة البناء</h3>
+              <ConstructionQueue view={view} village={village} busy={busy} send={send} />
               {village.build &&
                 (() => {
                   const current = village.build;
@@ -123,12 +124,6 @@ export function VillagePanel({
                       : null;
                   return (
                     <>
-                      <p>
-                        {name} · المستوى {number(current.level)}
-                      </p>
-                      <time dateTime={new Date(current.endsAt).toISOString()}>
-                        يكتمل {date(current.endsAt)}
-                      </time>
                       {selected !== current.building && (
                         <button
                           type="button"
@@ -154,7 +149,6 @@ export function VillagePanel({
                     </>
                   );
                 })()}
-              {!village.build && <p className={styles.queueEmpty}>لا بناء قيد التنفيذ</p>}
             </div>
           </div>
           <div className={styles.queueItem}>

@@ -46,10 +46,12 @@ async function main() {
     );
   };
   let world = newWorld();
+  let frozenNow: number | undefined;
+  const serverNow = () => frozenNow ?? Date.now();
   const snapshot = () => {
-    world = advanceWorld(world, Date.now());
+    world = advanceWorld(world, serverNow());
     return {
-      ...projectWorld(world, 'browser-player', Date.now()),
+      ...projectWorld(world, 'browser-player', serverNow()),
       worldId: 'browser-world',
       worldName: 'عالم الاختبار المحلي',
       revision: 0,
@@ -64,8 +66,27 @@ async function main() {
       response.end(JSON.stringify({ success: status === 200, data }));
     };
     if (url.pathname === '/__village_test/reset' && request.method === 'POST') {
+      frozenNow = undefined;
       world = newWorld();
       reply(true);
+      return;
+    }
+    if (url.pathname === '/__village_test/offline-scenario' && request.method === 'POST') {
+      frozenNow = Date.now();
+      world = executeCommand(createWorld(frozenNow, { ...defaultKingdomsConfig, storageBase: 100000 }), 'browser-player', { type: 'found', name: 'مملكة الاختبار' }, frozenNow);
+      const village = Object.values(world.villages)[0];
+      world = { ...world, villages: { [village.id]: { ...village,
+        buildings: { ...village.buildings, hall: 7, wall: 5, warehouse: 8, barracks: 1 },
+        resources: { wood: 60000, stone: 60000, iron: 60000, food: 60000, gold: 60000 },
+        progression: { ...village.progression!, xp: 2175, signature: '' },
+      } } };
+      world = executeCommand(world, 'browser-player', { type: 'train', villageId: village.id, unit: 'guard', count: 5 }, frozenNow);
+      reply(snapshot());
+      return;
+    }
+    if (url.pathname === '/__village_test/advance-five-hours' && request.method === 'POST' && frozenNow !== undefined) {
+      frozenNow += 5 * 60 * 60 * 1000;
+      reply(snapshot());
       return;
     }
     if (url.pathname === '/api/kingdoms/worlds') {
@@ -99,7 +120,7 @@ async function main() {
             world,
             'browser-player',
             kingdomsCommandSchema.parse(JSON.parse(body).command),
-            Date.now(),
+            serverNow(),
           );
           reply(snapshot());
         } catch (error) {

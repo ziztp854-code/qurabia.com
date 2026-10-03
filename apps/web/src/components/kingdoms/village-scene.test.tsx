@@ -168,11 +168,11 @@ describe('selected building card', () => {
     expect(within(costs).getAllByRole('listitem')).toHaveLength(
       Object.values(expected).filter((amount) => amount > 0).length,
     );
-    expect(within(card).getByText('انتظر اكتمال البناء الجاري قبل بدء تطوير آخر.')).toBeInTheDocument();
+    expect(within(card).getByText('تُخصم التكلفة الآن ويبدأ التطوير بعد المشاريع السابقة، حتى وأنت خارج اللعبة.')).toBeInTheDocument();
     expect(
       within(screen.getByRole('region', { name: 'قوائم التنفيذ' })).getByText(/مزارع الغذاء/),
     ).toBeInTheDocument();
-    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
+    expect(within(card).getByRole('button', { name: 'أضف إلى قائمة البناء' })).toBeEnabled();
   });
 
   it('reports the command outcome from the server snapshot', () => {
@@ -200,8 +200,8 @@ describe('selected building card', () => {
         initialBuilding="hall"
       />,
     );
-    expect(within(card).getByText('هذا المبنى قيد التطوير.')).toBeInTheDocument();
-    expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
+    expect(within(card).getByText('التطوير التالي: المستوى ٣')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'أضف إلى قائمة البناء' })).toBeEnabled();
     expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
     rerender(
       <VillagePanel

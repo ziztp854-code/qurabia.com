@@ -40,6 +40,20 @@ function canvasFactory() {
 }
 
 describe('original artwork alpha crops', () => {
+  it('adds bounded original-art banners for server visual tiers without upgrading buildings', () => {
+    const now = 1800000000000;
+    const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
+    const source = originalArtwork();
+    const cache = createArtworkTextureCache(source, canvasFactory().createCanvas);
+    for (const tier of [1, 2, 3, 4, 5, 6]) {
+      const props: VillageCanvasProps = { view, village: { ...view.villages[0], progression: { ...view.villages[0].progression!, visualTier: tier } }, selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false };
+      const layer = createBuildingLayer(source, props, [], new Map(), cache);
+      expect(layer.children.filter((child) => child.label.startsWith('village-tier-banner-'))).toHaveLength(tier - 1);
+      expect(props.village.buildings).toEqual(view.villages[0].buildings);
+      layer.destroy({ children: true });
+    }
+    cache.destroy();
+  });
   it.each([[400, 200], [400, 600]])('contains stable artwork without distortion or moving its ground anchor (%i×%i)', (width, height) => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);

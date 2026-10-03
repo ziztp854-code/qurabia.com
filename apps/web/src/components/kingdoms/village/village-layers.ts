@@ -108,6 +108,17 @@ export function createBuildingLayer(
 ) {
   const layer = new Container();
   layer.sortableChildren = true;
+  const visualTier = Math.min(villageAssets.tiers.length, Math.max(1, props.village.progression?.visualTier ?? 1));
+  const tierSlot = villageAssets.tiers[visualTier - 1];
+  for (let index = 0; index < visualTier - 1; index += 1) {
+    const banner = artworkSprite(source, tierSlot, textures, approved);
+    if (!banner) continue;
+    banner.position.set(640 + index * 80, 760 + (index % 2) * 18);
+    banner.scale.set(0.9 + index * 0.04);
+    banner.zIndex = 820;
+    banner.label = `village-tier-banner-${index}`;
+    layer.addChild(banner);
+  }
   for (const entry of villageBuildingRegistry) {
     const building = entry.id;
     const tier = getVillageVisualLevel(building, props.village, props.debug);

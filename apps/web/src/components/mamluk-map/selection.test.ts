@@ -175,6 +175,22 @@ describe('approved map selection', () => {
     expect(
       findSelection(snapshot, { layer: 'armies', id: 'own' }, 'viewer')?.details,
     ).toContainEqual({ label: 'المسافة', value: '١٠ كم' });
+    const tileSnapshot = {
+      ...snapshot,
+      layers: {
+        ...snapshot.layers,
+        armyRoutes: {
+          ...snapshot.layers.armyRoutes,
+          features: snapshot.layers.armyRoutes.features.map((feature) => ({
+            ...feature,
+            properties: { ...feature.properties, distance: 5, distanceUnit: 'tiles' },
+          })),
+        },
+      },
+    };
+    expect(
+      findSelection(tileSnapshot, { layer: 'armies', id: 'own' }, 'viewer')?.details,
+    ).toContainEqual({ label: 'المسافة', value: '٥ خانة' });
     expect(
       findSelection(snapshot, { layer: 'castles', id: 'castle' }, 'viewer')?.details,
     ).toContainEqual({ label: 'الملكية', value: 'مستقلة' });

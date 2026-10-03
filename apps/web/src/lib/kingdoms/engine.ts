@@ -1,3 +1,5 @@
+import { awardVillageXp, progressionConfig, refreshProgression } from './progression';
+import { cancelConstruction, queueConstruction } from './construction';
 import { creditAllianceEvent, projectAllianceEvent, stampAllianceEvent } from './alliance-events';
 import {
   gatherPreview,
@@ -144,20 +146,7 @@ function build(
   c: Extract<KingdomsCommand, { type: 'build' }>,
   at: number,
 ) {
-  const v = own(w, actor, c.villageId),
-    spec = w.config.buildings[c.building],
-    level = v.buildings[c.building];
-  assertRule(!v.build, 'يوجد بناء جارٍ');
-  assertRule(level < spec.maxLevel, 'بلغ المبنى الحد الأعلى');
-  const factor = spec.growth ** level;
-  spend(v, scaleResources(spec.cost, factor));
-  v.build = {
-    allianceEvent: stampAllianceEvent(w, actor, at),
-    building: c.building,
-    level: level + 1,
-    startedAt: at,
-    endsAt: deadline(at, spec.seconds * factor * 1000),
-  };
+  queueConstruction(w, own(w, actor, c.villageId), c.building, at);
 }
 function train(
   w: KingdomsWorld,
@@ -496,7 +485,7 @@ function alliance(
 }
 function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { type: 'claim' }>) {
   const p = w.players[actor],
-    villages = Object.values(w.villages).filter((v) => v.ownerId === actor);
+    villages = Object.values(w.villages).filter((v) => v.ownerId === actor).sort((a,b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
   assertRule(!p.claims.includes(c.mission), 'استلمت المكافأة مسبقاً');
   const ready =
     c.mission === 'builder'
@@ -511,6 +500,7 @@ function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { ty
   p.achievements = [...new Set([...p.achievements, c.mission])];
   p.score += w.config.questScore;
   credit(w, villages[0], w.config.questReward);
+  awardVillageXp(villages[0], progressionConfig(w).achievementXp);
   if (c.mission === 'commander') {
     const commanderId = villages.find((v) => v.commanderId && total(v.troops) >= 10)?.commanderId;
     if (commanderId && w.commanders?.[commanderId]?.playerId === actor) addCommanderExperience(w, commanderId, commanderConfig(w).questXp);
@@ -607,6 +597,7 @@ export function executeCommand(
     assertRule(w.season.status === 'active', 'انتهى الموسم');
     if (c.type === 'found') {
       found(w, actorId, c.name, at);
+      refreshProgression(w, deployedTroops(w));
       return w;
     }
     assertRule(w.players[actorId], 'أنشئ مملكتك أولاً');
@@ -639,6 +630,9 @@ export function executeCommand(
       }
       case 'build':
         build(w, actorId, c, at);
+        break;
+      case 'cancelBuild':
+        cancelConstruction(w, own(w, actorId, c.villageId), c.itemId, at);
         break;
       case 'train':
         train(w, actorId, c, at);
@@ -693,6 +687,7 @@ export function executeCommand(
         break;
       }
     }
+    refreshProgression(w, deployedTroops(w));
     return w;
   } catch (error) {
     if (error instanceof KingdomsError) throw error;

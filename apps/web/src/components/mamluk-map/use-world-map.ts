@@ -5,6 +5,7 @@ import { OPEN_FREE_MAP_STYLE, type MapPalette } from '@mamluk/maplibre-adapter';
 import type { MapPayload, MapProjection } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
 import { createMapSession } from './map-session';
+import { watchMapRevisions } from './map-revisions';
 import type { SelectionKey } from './selection';
 import { buildPhysicalMapStyle, type PhysicalMapColors } from './physical-map-style';
 import { buildReferenceMapStyle } from './reference-map-style';
@@ -137,7 +138,9 @@ export function useWorldMap(
       const key = selectedRef.current;
       if (key?.layer !== 'cities') return;
       const destination = point
-        ? picking ? normalizeDestination(point) : validateDestination(point)
+        ? picking
+          ? normalizeDestination(point)
+          : validateDestination(point)
         : null;
       const next = { sessionKey, villageId: key.id, destination, picking, manual };
       destinationRef.current = next;
@@ -164,6 +167,7 @@ export function useWorldMap(
     let session: ReturnType<typeof createMapSession> | null = null;
     let settlements: SettlementPresentation | null = null;
     let styleReady = false;
+    let stopRevisions: (() => void) | undefined;
     const artworkController = new AbortController();
     async function initialize() {
       try {
@@ -242,6 +246,9 @@ export function useWorldMap(
           ownershipPalette(container.current, viewerPlayerId),
         );
         sessionRef.current = session;
+        stopRevisions = watchMapRevisions(worldId, () => {
+          void session?.loader.refresh();
+        });
       } catch {
         if (!cancelled) setStatus('error');
       }
@@ -250,6 +257,7 @@ export function useWorldMap(
     return () => {
       cancelled = true;
       artworkController.abort();
+      stopRevisions?.();
       session?.dispose();
       settlements?.dispose();
       map?.remove();
@@ -301,12 +309,15 @@ export function useWorldMap(
     if (!map) return;
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250;
     const homeVillage = initialVillageId
-      ? payload?.layers.cities.features.find((city) => city.id === initialVillageId)
-        ?? publicPayload?.layers.cities.features.find((city) => city.id === initialVillageId)
+      ? (payload?.layers.cities.features.find((city) => city.id === initialVillageId) ??
+        publicPayload?.layers.cities.features.find((city) => city.id === initialVillageId))
       : undefined;
-    const homeCenter = homeVillage?.geometry.type === 'Point'
-      ? homeVillage.geometry.coordinates
-      : initialLocation ? [initialLocation.longitude, initialLocation.latitude] : [31.24967, 30.06263];
+    const homeCenter =
+      homeVillage?.geometry.type === 'Point'
+        ? homeVillage.geometry.coordinates
+        : initialLocation
+          ? [initialLocation.longitude, initialLocation.latitude]
+          : [31.24967, 30.06263];
     if (action === 'overview') {
       setProjection('globe');
       const canvas = map.getCanvas();
@@ -349,7 +360,8 @@ export function useWorldMap(
     cancelDestination,
     changeDestination: (destination: RelocationDestination | null) =>
       updateDestination(destination, false),
-    requestManualDestination: () => updateDestination(activeDraft?.destination ?? null, false, true),
+    requestManualDestination: () =>
+      updateDestination(activeDraft?.destination ?? null, false, true),
     refresh: () => {
       if (sessionRef.current) void sessionRef.current.loader.refresh();
       else setAttempt((value) => value + 1);
