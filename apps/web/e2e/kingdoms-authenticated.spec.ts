@@ -204,34 +204,35 @@ test('administrator opens a world; a signed-in player builds and trains with per
   expect(rejected.status()).toBe(403);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
-  await page
-    .getByRole('navigation', { name: 'إدارة المملكة' })
-    .getByRole('link', { name: 'خريطة العالم', exact: true })
-    .click();
-  await expect(page.getByRole('heading', { name: 'خريطة العالم', exact: true })).toBeVisible();
+  const kingdomNav = page.getByRole('navigation', { name: 'إدارة المملكة' });
+  await expect(kingdomNav.getByRole('link', { name: 'خريطة العالم', exact: true })).toHaveAttribute(
+    'href',
+    /\/games\/kingdoms\/world-map/,
+  );
+  await kingdomNav.getByRole('button', { name: 'إرسال حملة', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'إرسال حملة' }).first()).toBeVisible();
+  await expect(page.getByRole('region', { name: 'خريطة حروب المماليك' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'أرسل الحملة', exact: true })).toBeVisible();
+  await expect(page.getByLabel('نوع الحملة')).toBeVisible();
   await page.getByLabel('قائد الحملة').selectOption(commanderId);
   await expect(page.getByLabel('قائد الحملة')).toHaveValue(commanderId);
-  await page.getByRole('button', { name: 'تكبير الخريطة', exact: true }).click();
-  await page.getByRole('button', { name: 'تحريك الخريطة شرقًا', exact: true }).click();
-  await page.getByRole('button', { name: 'تصغير الخريطة', exact: true }).click();
+  await page.getByRole('button', { name: 'قرّب الخريطة', exact: true }).click();
+  await page.getByRole('button', { name: 'أبعد الخريطة', exact: true }).click();
   const other = initial.map.find((item) => item.ownerId !== initial.player!.id)!;
   await page.getByLabel('ابحث عن قرية أو مملكة').fill('مملكة الجوار');
-  await page.getByRole('button', { name: `اعرض ${other.name} على الخريطة` }).click();
-  await expect(
-    page.getByRole('button', { name: `${other.name}، X ${other.x}، Y ${other.y}` }),
-  ).toHaveAttribute('aria-pressed', 'true');
-  const destinationBounds = await page
-    .getByRole('button', { name: `${other.name}، X ${other.x}، Y ${other.y}` })
-    .boundingBox();
+  const neighbor = page.getByRole('button', { name: `اعرض ${other.name} على الخريطة`, exact: true });
+  await neighbor.click();
+  await expect(neighbor).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('region', { name: 'القرية المختارة' })).toContainText(other.name);
+  const destinationBounds = await neighbor.boundingBox();
   expect(destinationBounds?.width).toBeGreaterThanOrEqual(44);
   expect(destinationBounds?.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  await page.getByRole('region', { name: 'خريطة الأراضي', exact: true }).screenshot({
-    path: testInfo.outputPath('kingdoms-terrain-map.png'),
-    // Keep the sticky site header from obscuring the isolated map capture.
+  await page.getByRole('region', { name: 'خريطة حروب المماليك' }).screenshot({
+    path: testInfo.outputPath('kingdoms-unified-map.png'),
     style: '.site-header { visibility: hidden !important; }',
   });
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
@@ -239,8 +240,17 @@ test('administrator opens a world; a signed-in player builds and trains with per
     path: testInfo.outputPath('kingdoms-authenticated-map.png'),
     fullPage: true,
   });
-  await page.getByRole('button', { name: /^غابة الخشب،.*X 2، Y 2$/ }).click();
+  const wood = (await read()).resourceSites?.find((site) => site.resource === 'wood');
+  expect(wood).toBeTruthy();
+  await page
+    .getByRole('button', {
+      name: `اعرض ${wood!.name} على الخريطة، X ${wood!.x}، Y ${wood!.y}`,
+      exact: true,
+    })
+    .click();
   const gathering = page.getByRole('region', { name: 'جمع الموارد', exact: true });
+  await expect(gathering).toBeVisible();
+  await expect(gathering.getByRole('heading', { name: wood!.name, exact: true })).toBeVisible();
   await gathering.getByLabel('قائد الحملة').selectOption(commanderId);
   await gathering.getByLabel(/^حارس \(/).fill('1');
   await gathering.getByRole('button', { name: 'أرسل الجيش لجمع الموارد', exact: true }).click();

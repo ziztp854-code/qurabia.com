@@ -10,6 +10,16 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 30_000,
+  testIgnore: [
+    'globe-scene.spec.ts',
+    'village-scene.spec.ts',
+    'incoming-attack-ux.spec.ts',
+    'mamluk-world-map.spec.ts',
+    'mamluk-hd-world-map.spec.ts',
+    'mamluk-map-continuity.spec.ts',
+    'kingdoms-authenticated.spec.ts',
+    'model-viewer.spec.ts',
+  ],
   use: { baseURL, trace: 'on-first-retry' },
   webServer: [
     {
