@@ -204,7 +204,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
   expect(rejected.status()).toBe(403);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
-  await page.getByRole('button', { name: 'خريطة العالم', exact: true }).click();
+  await page.getByRole('link', { name: 'خريطة العالم', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'خريطة العالم', exact: true })).toBeVisible();
   await page.getByLabel('قائد الحملة').selectOption(commanderId);
   await expect(page.getByLabel('قائد الحملة')).toHaveValue(commanderId);
