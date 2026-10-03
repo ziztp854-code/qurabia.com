@@ -1,7 +1,7 @@
 .stage {
   position: relative;
   inline-size: 100%;
-  block-size: clamp(430px, 64dvh, 720px);
+  block-size: clamp(430px, 60dvh, 640px);
   overflow: hidden;
   background: var(--background);
   touch-action: none;
@@ -235,7 +235,7 @@
 }
 @media (min-width: 2560px) {
   .stage {
-    block-size: clamp(560px, 62dvh, 880px);
+    block-size: clamp(720px, 70dvh, 1400px);
   }
   .label {
     font-size: 16px;

@@ -517,6 +517,7 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   await expect(village.getByRole('region', { name: 'تقدم القرية' })).toBeVisible();
   if (testInfo.project.name === 'iphone') {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await village.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath('village-mobile-overview.png'), scale: 'css' });
     return;
   }
@@ -528,11 +529,11 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await viewport.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('village-4k-overview.png'), scale: 'css' });
-  await village.getByRole('button', { name: /دار الحكم/ }).click();
+  await village.getByRole('button', { name: /دار الحكم.*المستوى/ }).click();
   await expect(page.getByRole('region', { name: 'تفاصيل دار الحكم' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('village-4k-selected-building.png'), scale: 'css' });
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
-  await village.getByRole('button', { name: /مزارع الغذاء/ }).click();
+  await village.getByRole('button', { name: /مزارع الغذاء.*المستوى/ }).click();
   await page.getByRole('region', { name: 'تفاصيل مزارع الغذاء' }).getByRole('button', { name: 'طوّر المبنى' }).click();
   await expect(page.getByRole('region', { name: 'قوائم التنفيذ' })).toContainText('مزارع الغذاء');
   await page.screenshot({ path: testInfo.outputPath('village-4k-construction.png'), scale: 'css' });
