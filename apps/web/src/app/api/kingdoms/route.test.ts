@@ -183,6 +183,44 @@ describe('Kingdoms authenticated commands', () => {
     expect((await POST(request(valid))).status).toBe(429);
     expect(dependencies.command).not.toHaveBeenCalled();
   });
+  it('returns a redacted incoming projection without attacker military secrets', async () => {
+    const { createWorld, executeCommand, projectWorld } = await import('@/lib/kingdoms/engine');
+    const { emptyTroops } = await import('@/lib/kingdoms/simulation');
+    const now = 1_800_000_000_000;
+    let world = executeCommand(createWorld(now), 'alice', { type: 'found', name: 'مملكة النور' }, now);
+    world = executeCommand(world, 'bob', { type: 'found', name: 'مملكة الظل' }, now);
+    const alice = Object.values(world.villages).find((village) => village.ownerId === 'alice')!;
+    const bob = Object.values(world.villages).find((village) => village.ownerId === 'bob')!;
+    world.players.alice.protectionUntil = now;
+    world.players.bob.protectionUntil = now;
+    alice.troops.guard = 12;
+    const marched = executeCommand(
+      world,
+      'alice',
+      {
+        type: 'march',
+        villageId: alice.id,
+        targetX: bob.x,
+        targetY: bob.y,
+        mission: 'attack',
+        troops: { ...emptyTroops(), guard: 6 },
+      },
+      now,
+    );
+    dependencies.read.mockResolvedValue(projectWorld(marched, 'bob', now));
+    const response = await GET(new Request('https://qurabia.com/api/kingdoms?worldId=world1'));
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      data: { incoming: unknown[]; movements: unknown[] };
+    };
+    expect(body.data.movements).toEqual([]);
+    expect(body.data.incoming).toHaveLength(1);
+    const serialized = JSON.stringify(body.data.incoming);
+    expect(serialized).not.toContain('"troops"');
+    expect(serialized).not.toContain('"commanderId"');
+    expect(serialized).not.toContain('"loot"');
+    expect(serialized).toContain('"mission":"attack"');
+  });
   it('requires authentication to view private state', async () => {
     dependencies.session.mockResolvedValue(null);
     expect((await GET(new Request('https://qurabia.com/api/kingdoms?worldId=world1'))).status).toBe(

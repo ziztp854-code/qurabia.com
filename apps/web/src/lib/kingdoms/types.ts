@@ -222,6 +222,28 @@ export type Movement = {
   travelMs: number;
   loot: Resources;
 };
+/** Hostile or allied inbound missions a target owner may see. */
+export const incomingMissions = ['attack', 'raid', 'scout', 'reinforce'] as const;
+export type IncomingMission = (typeof incomingMissions)[number];
+/** Public map identity already exposed on KingdomsView.map. */
+export type IncomingSourceView = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  kingdomName: string;
+  ownerId: string;
+  allianceId?: string;
+  protectedUntil: number;
+};
+/** Redacted inbound row. Never includes troops, commander, loot, or travel. */
+export type IncomingMovementView = {
+  id: string;
+  mission: IncomingMission;
+  targetVillageId: string;
+  arrivesAt: number;
+  source?: IncomingSourceView;
+};
 export type KingdomReport = {
   id: string;
   at: number;
@@ -299,6 +321,7 @@ export type KingdomsView = {
     protectedUntil: number;
   }[];
   movements: Movement[];
+  incoming: IncomingMovementView[];
   reports: KingdomReport[];
   alliances: Alliance[];
   offers: Offer[];

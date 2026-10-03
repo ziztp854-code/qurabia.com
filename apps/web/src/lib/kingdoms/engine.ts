@@ -31,11 +31,16 @@ import {
   total,
 } from './simulation';
 import {
+  incomingMissions,
   resourceKeys,
   unitKeys,
+  type IncomingMission,
+  type IncomingMovementView,
+  type IncomingSourceView,
   type KingdomsConfig,
   type KingdomsView,
   type KingdomsWorld,
+  type Movement,
   type Village,
 } from './types';
 export { kingdomsCommandSchema } from './commands';
@@ -694,6 +699,48 @@ export function executeCommand(
     throw new KingdomsError(error instanceof Error ? error.message : 'تعذّر تنفيذ الأمر');
   }
 }
+function isIncomingMission(mission: Movement['mission']): mission is IncomingMission {
+  return (incomingMissions as readonly string[]).includes(mission);
+}
+function incomingSource(w: KingdomsWorld, sourceId: string): IncomingSourceView | undefined {
+  const source = w.villages[sourceId];
+  const owner = source ? w.players[source.ownerId] : undefined;
+  if (!source || !owner) return undefined;
+  return {
+    id: source.id,
+    name: source.name,
+    x: source.x,
+    y: source.y,
+    kingdomName: owner.name,
+    ownerId: source.ownerId,
+    ...(owner.allianceId ? { allianceId: owner.allianceId } : {}),
+    protectedUntil: owner.protectionUntil,
+  };
+}
+/** Target-owner inbound only. Omits troops, commander, loot, and travel fields. */
+export function projectIncoming(w: KingdomsWorld, actorId: string): IncomingMovementView[] {
+  const targets = new Map<string, string>();
+  for (const village of Object.values(w.villages)) {
+    if (village.ownerId === actorId) targets.set(`${village.x},${village.y}`, village.id);
+  }
+  const incoming: IncomingMovementView[] = [];
+  for (const movement of w.movements) {
+    if (movement.ownerId === actorId || !isIncomingMission(movement.mission)) continue;
+    const targetVillageId = targets.get(`${movement.targetX},${movement.targetY}`);
+    if (!targetVillageId) continue;
+    const source = incomingSource(w, movement.sourceId);
+    incoming.push({
+      id: movement.id,
+      mission: movement.mission,
+      targetVillageId,
+      arrivesAt: movement.arrivesAt,
+      ...(source ? { source } : {}),
+    });
+  }
+  return incoming.sort(
+    (left, right) => left.arrivesAt - right.arrivesAt || left.id.localeCompare(right.id, 'en'),
+  );
+}
 export function projectWorld(state: KingdomsWorld, actorId: string, now: number): KingdomsView {
   const w = advanceWorld(state, now);
   const villages = Object.values(w.villages);
@@ -726,6 +773,7 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
       protectedUntil: w.players[v.ownerId].protectionUntil,
     })),
     movements: w.movements.filter((m) => m.ownerId === actorId),
+    incoming: projectIncoming(w, actorId),
     reports: w.reports.filter((r) => r.recipients.includes(actorId)).slice(-100),
     alliances: Object.values(w.alliances).map((a) => ({
       ...a,

@@ -286,6 +286,7 @@ it('keeps resource discovery bounded and hides occupied sites and other armies',
     now,
   );
   expect(projectWorld(sent, 'bob', now).movements).toEqual([]);
+  expect(projectWorld(sent, 'bob', now).incoming).toEqual([]);
   expect(projectWorld(sent, 'outsider', now).resourceSites).toEqual([]);
   expect(
     projectWorld(sent, 'alice', now).resourceSites!.every(
