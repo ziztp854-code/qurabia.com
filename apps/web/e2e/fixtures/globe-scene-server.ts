@@ -18,6 +18,15 @@ async function main() {
   if (original.geometry.type !== 'Point') throw new Error('The approved city must be a point.');
   const originalCoordinates = original.geometry.coordinates;
   let relocated = false;
+  // Continuity controls: reset by /__globe_test/reset, never reachable outside this fixture.
+  const control = { fault: 'ok' as 'ok' | '503' | '401' | '400', ttlMs: 15000, level: 12, revision: 0 };
+  const requests = { viewport: 0, overview: 0 };
+  const tierFor = (level: number) => (level <= 5 ? 1 : level <= 10 ? 2 : level <= 20 ? 3 : level <= 30 ? 4 : level <= 40 ? 5 : 6);
+  const faulty = (status: (code: number) => void) => {
+    const code = { '503': 503, '401': 401, '400': 400, ok: 0 }[control.fault];
+    if (code) status(code);
+    return code !== 0;
+  };
   const location = () => relocated ? [31.35, 30.12] : originalCoordinates;
   const middleware = (request: IncomingMessage, response: ServerResponse, next: () => void) => {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1:3311');
@@ -29,7 +38,26 @@ async function main() {
     };
     if (url.pathname === '/__globe_test/reset' && request.method === 'POST') {
       relocated = false;
+      Object.assign(control, { fault: 'ok', ttlMs: 15000, level: 12, revision: 0 });
+      requests.viewport = 0;
+      requests.overview = 0;
       json({ success: true });
+      return;
+    }
+    if (url.pathname === '/__globe_test/stats' && request.method === 'GET') {
+      json({ ...requests, ...control });
+      return;
+    }
+    if (url.pathname === '/__globe_test/control' && request.method === 'POST') {
+      let body = '';
+      request.on('data', (chunk) => { body += chunk; });
+      request.on('end', () => {
+        const next = JSON.parse(body || '{}') as Partial<typeof control>;
+        if (next.fault !== undefined) control.fault = next.fault;
+        if (next.ttlMs !== undefined) control.ttlMs = next.ttlMs;
+        if (next.level !== undefined) { control.level = next.level; control.revision += 1; }
+        json({ success: true });
+      });
       return;
     }
     if (url.pathname === '/__globe_test/relocated' && request.method === 'POST') {
@@ -38,6 +66,8 @@ async function main() {
       return;
     }
     if (url.pathname === '/api/kingdoms/world-map/overview') {
+      requests.overview += 1;
+      if (faulty((code) => json({ error: 'Fixture fault' }, code))) return;
       json({ worldId: 'world', revision: relocated ? '2' : '1', serverTime: Date.now(),
         cells: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 'cell:14:8',
           geometry: { type: 'Point', coordinates: location() },
@@ -51,6 +81,8 @@ async function main() {
       return;
     }
     if (url.pathname === '/api/kingdoms/world-map/viewport') {
+      requests.viewport += 1;
+      if (faulty((code) => json({ error: 'Fixture fault' }, code))) return;
       const worldId = url.searchParams.get('worldId');
       const bounds = Object.fromEntries(['west', 'south', 'east', 'north'].map((key) => [
         key, Number(url.searchParams.get(key)),
@@ -64,14 +96,14 @@ async function main() {
       }
       const [longitude, latitude] = worldId === 'public-atlas'
         ? originalCoordinates : location();
-      const base = approvedPayload(worldId!, relocated ? '2' : '1');
+      const base = approvedPayload(worldId!, String((relocated ? 2 : 1) + control.revision));
       const serverTime = Date.now();
       const visible = longitude! >= bounds.west && longitude! <= bounds.east &&
         latitude! >= bounds.south && latitude! <= bounds.north;
       const payload = parseMapPayload({
         ...base,
         serverTime,
-        expiresAt: serverTime + 15000,
+        expiresAt: serverTime + control.ttlMs,
         bounds,
         layers: {
           ...base.layers,
@@ -83,6 +115,16 @@ async function main() {
               properties: {
                 ...original.properties,
                 ownerPlayerId: worldId === 'public-atlas' ? null : 'viewer',
+                ...(worldId === 'public-atlas' ? {} : {
+                  villageLevel: control.level,
+                  villageRank: 'قرية',
+                  villagePower: control.level * 10,
+                  villageVisualTier: tierFor(control.level),
+                  constructionStatus: 'IDLE',
+                  kingdomName: 'مملكة الاختبار',
+                  allianceName: null,
+                  population: null,
+                }),
               },
             }] : [],
           },
