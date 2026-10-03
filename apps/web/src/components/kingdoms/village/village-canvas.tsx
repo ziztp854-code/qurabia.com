@@ -360,9 +360,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               const StatusIcon = statusIcons[presentation.status];
               const sceneStatus = villageBuildingSceneStatus(building, props.village);
               const state =
-                presentation.level > 0
-                  ? `المستوى ${presentation.level.toLocaleString('ar-SA')}`
-                  : sceneStatus;
+                presentation.status === 'construction'
+                  ? 'قيد التطوير'
+                  : presentation.level > 0
+                    ? `المستوى ${presentation.level.toLocaleString('ar-SA')}`
+                    : sceneStatus;
               return (
                 <button
                   type="button"

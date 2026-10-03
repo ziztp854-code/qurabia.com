@@ -21,7 +21,7 @@ it('shows only server progression and exposes milestone requirements and max lev
   const progression = { ...village.progression!, level: 12, rank: 'قرية مزدهرة', visualTier: 3, xp: 2400, levelStartXp: 2000, nextLevelXp: 2600,
     requirements: [{ building: 'hall' as const, required: 8, actual: 7 }] };
   const rendered = render(<VillageProgress village={{ ...village, progression }} config={view.config} />);
-  expect(screen.getByText('اختبار')).toBeInTheDocument();
+  expect(screen.getByText(village.name)).toBeInTheDocument();
   expect(screen.getByLabelText('مرتبة المظهر')).toHaveTextContent('قرية مزدهرة');
   expect(screen.getByLabelText('مستوى القرية')).toHaveTextContent('١٢');
   expect(screen.getByLabelText('قوة القرية')).toHaveTextContent(String(new Intl.NumberFormat('ar-SA').format(progression.power.total)));
