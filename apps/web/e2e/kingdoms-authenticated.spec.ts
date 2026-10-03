@@ -160,8 +160,9 @@ test('administrator opens a world; a signed-in player builds and trains with per
     path: testInfo.outputPath('kingdoms-authenticated-village.png'),
     fullPage: true,
   });
-  const barracks = page.getByRole('article', { name: 'المبنى المختار: الثكنة' });
-  await barracks.getByRole('button', { name: 'ابنِ المبنى', exact: true }).click();
+  const barracks = page.getByRole('region', { name: 'تفاصيل الثكنة' });
+  await expect(barracks).toBeVisible();
+  await barracks.getByRole('button', { name: 'طوّر المبنى', exact: true }).click();
   await expect.poll(async () => (await read()).villages[0].buildings.barracks).toBe(1);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
