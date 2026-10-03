@@ -91,7 +91,7 @@ describe('village maps', () => {
     };
     const send = vi.fn();
     render(<VillagePanel view={view} village={village} send={send} busy={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /الثكنة.*لم يُبنَ/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ }));
     expect(
       await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }),
     ).toBeDisabled();
@@ -121,7 +121,9 @@ describe('village maps', () => {
     expect(
       within(map).getByRole('button', { name: /دار الحكم.*المستوى [١1]/ }),
     ).toBeInTheDocument();
-    fireEvent.click(within(map).getByRole('button', { name: /الثكنة.*لم يُبنَ/ }));
+    expect(within(map).getAllByRole('button', { name: /^الثكنة،/ })).toHaveLength(1);
+    expect(within(map).getAllByRole('button', { name: /^الإسطبل،/ })).toHaveLength(1);
+    fireEvent.click(within(map).getByRole('button', { name: /^الثكنة، لم يُبنَ$/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }));
     expect(send).toHaveBeenCalledWith({
       type: 'build',

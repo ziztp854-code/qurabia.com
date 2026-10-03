@@ -152,7 +152,9 @@ test('administrator opens a world; a signed-in player builds and trains with per
         .evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
     )
     .toBe(true);
-  await villageMap.getByRole('button', { name: /الثكنة.*لم يُبنَ/ }).click();
+  await expect(villageMap.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ })).toHaveCount(1);
+  await expect(villageMap.getByRole('button', { name: /^الإسطبل،/ })).toHaveCount(1);
+  await villageMap.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ }).click();
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({
     path: testInfo.outputPath('kingdoms-authenticated-village.png'),

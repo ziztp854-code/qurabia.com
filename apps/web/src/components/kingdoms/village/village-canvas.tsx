@@ -371,7 +371,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   key={building}
                   className={styles.hotspot}
                   style={rectStyle(getBuildingRect(building, props.debug))}
-                    aria-label={`${presentation.name}، ${state}، ${sceneStatus}`}
+                    aria-label={
+                      state === sceneStatus
+                        ? `${presentation.name}، ${state}`
+                        : `${presentation.name}، ${state}، ${sceneStatus}`
+                    }
                   aria-describedby={`${descriptionId}-${building}`}
                   aria-pressed={props.selected === building}
                   data-building={building}
@@ -406,7 +410,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
               style={rectStyle(getVillageRect('stable', props.debug))}
-              aria-label={`الإسطبل، مستوى الثكنة ${props.village.buildings.barracks.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
+              aria-label={`الإسطبل، المستوى ${props.village.buildings.barracks.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
               aria-describedby={`${descriptionId}-stable`}
               aria-pressed={props.selected === 'stable'}
               data-building-region="stable"
@@ -422,7 +426,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               </span>
               <span className={styles.label}>
                 <Swords size={15} aria-hidden="true" />
-                <span>الإسطبل<small>مستوى الثكنة {props.village.buildings.barracks.toLocaleString('ar-SA')} · {villageBuildingSceneStatus('stable', props.village)}</small></span>
+                <span>الإسطبل<small>المستوى {props.village.buildings.barracks.toLocaleString('ar-SA')} · {villageBuildingSceneStatus('stable', props.village)}</small></span>
               </span>
             </button>
             {supplementary.map((region) => (
