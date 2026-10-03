@@ -1,7 +1,7 @@
 import type { BoundingBox } from '@mamluk/world-map-core';
 import type { GeoJSONSource, Map as LibreMap, MapMouseEvent } from 'maplibre-gl';
 import type { MapPalette } from '@mamluk/maplibre-adapter';
-import { mapRequest, RetryableMapRequestError } from './map-request';
+import { mapRequest, MapAuthorizationError } from './map-request';
 import { SDK_FEATURE_ID, withFeatureIdentity } from './source-identity';
 
 const sourceId = 'mamluk-overview';
@@ -80,7 +80,12 @@ export function decodeOverview(value: unknown, worldId: string): Overview {
   };
 }
 
-export function createWorldOverview(map: LibreMap, worldId: string, palette: MapPalette) {
+export function createWorldOverview(
+  map: LibreMap,
+  worldId: string,
+  palette: MapPalette,
+  visibilityFor: (layerId: string) => 'visible' | 'none' | undefined = () => undefined,
+) {
   let generation = 0,
     disposed = false;
   let accepted: Overview | null = null;
@@ -114,7 +119,7 @@ export function createWorldOverview(map: LibreMap, worldId: string, palette: Map
           !signal.aborted &&
           !disposed &&
           token === generation &&
-          !(error instanceof RetryableMapRequestError)
+          error instanceof MapAuthorizationError
         )
           clear();
         throw error;
@@ -149,6 +154,9 @@ export function createWorldOverview(map: LibreMap, worldId: string, palette: Map
           id: layerIds[0],
           type: 'circle',
           source: sourceId,
+          ...(visibilityFor(layerIds[0])
+            ? { layout: { visibility: visibilityFor(layerIds[0])! } }
+            : {}),
           paint: {
             'circle-color': palette.city,
             'circle-stroke-color': palette.border,
@@ -162,6 +170,7 @@ export function createWorldOverview(map: LibreMap, worldId: string, palette: Map
           type: 'symbol',
           source: sourceId,
           layout: {
+            ...(visibilityFor(layerIds[1]) ? { visibility: visibilityFor(layerIds[1])! } : {}),
             'text-field': ['concat', ['to-string', ['get', 'count']], ' قرية'],
             'text-font': ['Noto Sans Regular'],
             'text-size': 11,

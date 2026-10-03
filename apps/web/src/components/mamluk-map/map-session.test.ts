@@ -1,13 +1,19 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DEFAULT_PALETTE } from '@mamluk/maplibre-adapter';
 import type { MapPayload } from '@mamluk/world-map-core';
 import { createMapSession } from './map-session';
 import { MapSdkFixture, approvedPayload } from './map-fixture';
 import { createSettlementPresentation } from './settlement-presentation';
 
+beforeEach(() => {
+  // Jitter is on in production; the midpoint makes the documented delays exact.
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 function retrySession() {
@@ -590,7 +596,8 @@ it('requests a fresh viewport after a transient network failure and resets backo
   expect(callbacks.onStatus).toHaveBeenLastCalledWith('ready');
   await vi.advanceTimersByTimeAsync(5000);
   expect(fetchMock).toHaveBeenCalledTimes(3);
-  expect(map.sources.size).toBe(0);
+  // The failed poll keeps the authorized snapshot until its own expiry.
+  expect(map.sources.size).toBe(9);
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetchMock).toHaveBeenCalledTimes(4);
   expect(callbacks.onPayload.mock.lastCall?.[0]?.revision).toBe('2');
@@ -621,26 +628,29 @@ it('rejects a delayed successful response beyond its TTL and recovers only from 
   session.dispose();
 });
 
-it('limits automatic retries to three attempts with increasing delays and keeps failures visible', async () => {
+it('keeps retrying with capped exponential backoff and never gives up on a temporary outage', async () => {
   vi.useFakeTimers();
   const fetchMock = vi.fn().mockRejectedValue(new Error('Unavailable'));
   vi.stubGlobal('fetch', fetchMock);
-  const { map, callbacks, session } = retrySession();
+  const { callbacks, session } = retrySession();
   await vi.advanceTimersByTimeAsync(0);
-  await vi.advanceTimersByTimeAsync(1000);
-  expect(fetchMock).toHaveBeenCalledTimes(2);
-  await vi.advanceTimersByTimeAsync(1999);
-  expect(fetchMock).toHaveBeenCalledTimes(2);
-  await vi.advanceTimersByTimeAsync(1);
-  expect(fetchMock).toHaveBeenCalledTimes(3);
-  await vi.advanceTimersByTimeAsync(4999);
-  expect(fetchMock).toHaveBeenCalledTimes(3);
-  await vi.advanceTimersByTimeAsync(1);
-  expect(fetchMock).toHaveBeenCalledTimes(4);
-  await vi.advanceTimersByTimeAsync(60000);
-  expect(fetchMock).toHaveBeenCalledTimes(4);
+  const gaps: number[] = [];
+  let last = Date.now();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const calls = fetchMock.mock.calls.length;
+    while (fetchMock.mock.calls.length === calls) await vi.advanceTimersByTimeAsync(250);
+    gaps.push(Date.now() - last);
+    last = Date.now();
+  }
+  expect(gaps).toEqual([1000, 2000, 4000, 8000, 16000, 30000, 30000, 30000]);
   expect(callbacks.onStatus).toHaveBeenLastCalledWith('error');
-  expect(map.sources.size).toBe(0);
+  fetchMock.mockResolvedValue({ ok: true, json: async () => approvedPayload('world', '5') });
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(callbacks.onPayload.mock.lastCall?.[0]?.revision).toBe('5');
+  expect(callbacks.onStatus).toHaveBeenLastCalledWith('ready');
+  const polled = fetchMock.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(fetchMock).toHaveBeenCalledTimes(polled + 1);
   session.dispose();
 });
 

@@ -26,7 +26,13 @@ import { SDK_FEATURE_ID, withFeatureIdentity, withSourceIdentity } from './sourc
 import type { SettlementPresentation } from './settlement-presentation';
 import { CLUSTER_LAYERS, settlementClusters } from './settlement-clusters';
 import { createWorldOverview } from './world-overview';
-import { mapRequest, RetryableMapRequestError } from './map-request';
+import {
+  allLayersVisible,
+  layerVisibility,
+  managedLayerIds,
+  type LayerPreferences,
+} from './layer-visibility';
+import { mapRequest, MapAuthorizationError } from './map-request';
 import {
   playerBorderLayers,
   playerOwnershipLayer,
@@ -44,6 +50,8 @@ export interface MapSessionCallbacks {
   readonly onDestination?: (destination: RelocationDestination) => void;
   readonly onRefreshing?: (refreshing: boolean) => void;
   readonly onPresentation?: (local: boolean) => void;
+  /** The UI session's layer choices; authoritative whenever a layer is added or shown. */
+  readonly layerPreferences?: () => LayerPreferences;
 }
 
 function isStyleLayer(layer: AddLayerObject): layer is LayerSpecification {
@@ -58,7 +66,20 @@ function presentationPort(
   initialStyleReady?: boolean,
   retainPublicLayers: () => boolean = () => false,
   ownership?: OwnershipPresentationOptions,
+  visibilityFor: (layerId: string) => 'visible' | 'none' | undefined = () => undefined,
 ) {
+  const addLayer = (layer: AddLayerObject, before?: string) => {
+    const visibility = isStyleLayer(layer) ? visibilityFor(layer.id) : undefined;
+    map.addLayer(
+      visibility
+        ? ({
+            ...layer,
+            layout: { ...(layer as LayerSpecification).layout, visibility },
+          } as LayerSpecification)
+        : layer,
+      before,
+    );
+  };
   // SDK isStyleLoaded also waits for tiles. Overlay removal must not wait for them.
   let styleReady = initialStyleReady ?? map.isStyleLoaded();
   const onStyleReady = () => {
@@ -130,7 +151,7 @@ function presentationPort(
             : layer;
       if (ownership)
         for (const ground of playerSettlementLayers(layer.id, ownership))
-          map.addLayer(
+          addLayer(
             layer.id === 'mamluk-cities' && ground.type === 'circle'
               ? { ...ground, filter: ['!', ['has', 'point_count']] }
               : ground,
@@ -143,16 +164,16 @@ function presentationPort(
         layer.id === 'mamluk-cities' && isStyleLayer(owned)
           ? { ...owned, filter: ['!', ['has', 'point_count']] as FilterSpecification }
           : owned;
-      map.addLayer(filtered, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
+      addLayer(filtered, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
       if (layer.id === 'mamluk-cities')
-        for (const cluster of settlementClusters(palette)) map.addLayer(cluster);
+        for (const cluster of settlementClusters(palette)) addLayer(cluster);
       if (layer.id === 'mamluk-territories') {
         if (ownership) {
-          for (const border of playerBorderLayers(ownership)) map.addLayer(border);
+          for (const border of playerBorderLayers(ownership)) addLayer(border);
           return map;
         }
         // Only outline approved server polygons, sharing the adapter's expiry lifecycle.
-        map.addLayer({
+        addLayer({
           id: 'mamluk-village-borders',
           type: 'line',
           source: 'mamluk-territories',
@@ -205,8 +226,10 @@ class ObservedAdapter extends MapLibreAdapter {
     private readonly isPublic: (payload: MapPayload) => boolean,
     private readonly retainPublicLayers: (retain: boolean) => void,
     private readonly receivePublic: NonNullable<MapSessionCallbacks['onPublicPayload']>,
+    onExpire?: () => void,
+    private readonly viewerPlayerId?: string,
   ) {
-    super(port, { palette });
+    super(port, { palette, ...(onExpire ? { onExpire } : {}) });
   }
   override render(payload: MapPayload, deliveryAgeMs = 0): void {
     const stale =
@@ -215,7 +238,9 @@ class ObservedAdapter extends MapLibreAdapter {
         (payload.revision === this.accepted.revision &&
           payload.serverTime < this.accepted.serverTime));
     if (stale) return;
-    this.publicPayload = this.isPublic(payload) ? publicSettlementPresentation(payload) : null;
+    this.publicPayload = this.isPublic(payload)
+      ? publicSettlementPresentation(payload, this.viewerPlayerId)
+      : null;
     this.retainPublicLayers(this.publicPayload !== null);
     this.replacing = true;
     try {
@@ -266,7 +291,24 @@ class ObservedAdapter extends MapLibreAdapter {
   }
 }
 
-function publicSettlementPresentation(payload: MapPayload): MapPayload {
+/** Own-village progression that the owner may keep drawing after private detail expires. */
+function ownVillagePresentation(
+  properties: MapPayload['layers']['cities']['features'][number]['properties'],
+  viewerPlayerId: string | undefined,
+) {
+  if (!viewerPlayerId || properties.ownerPlayerId !== viewerPlayerId) return {};
+  const { villageLevel: level, villageVisualTier: tier } = properties;
+  return {
+    ...(typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 50
+      ? { villageLevel: level }
+      : {}),
+    ...(typeof tier === 'number' && Number.isInteger(tier) && tier >= 1 && tier <= 6
+      ? { villageVisualTier: tier }
+      : {}),
+  };
+}
+
+function publicSettlementPresentation(payload: MapPayload, viewerPlayerId?: string): MapPayload {
   const cities: MapPayload['layers']['cities'] = {
     type: 'FeatureCollection',
     features: payload.layers.cities.features.map((feature) => ({
@@ -278,6 +320,8 @@ function publicSettlementPresentation(payload: MapPayload): MapPayload {
         regionId: feature.properties.regionId,
         ownerPlayerId: feature.properties.ownerPlayerId,
         ownerSultanateId: feature.properties.ownerSultanateId,
+        // Only the viewer's own level and icon tier; rank, power and every rival field stay private.
+        ...ownVillagePresentation(feature.properties, viewerPlayerId),
       },
     })),
   };
@@ -299,7 +343,6 @@ function publicSettlementPresentation(payload: MapPayload): MapPayload {
 }
 
 const layers: readonly SelectableLayer[] = ['cities', 'castles', 'armies', 'sieges'];
-const recoveryDelaysMs = [1000, 2000, 5000] as const;
 export function createMapSession(
   map: LibreMap,
   worldId: string,
@@ -311,8 +354,8 @@ export function createMapSession(
   ownership?: OwnershipPresentationOptions,
 ) {
   let disposed = false;
-  let recoveryAttempts = 0;
-  let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
+  let localPresentation = true;
+  const viewport: { loader?: ViewportLoader } = {};
   let selected: SelectionKey | null = null;
   let currentPayload: MapPayload | null = null;
   let selectedStates: readonly { readonly source: string; readonly id: string }[] = [];
@@ -320,22 +363,20 @@ export function createMapSession(
   let destinationPicking = false;
   let destinationPreview: RelocationDestination | null = null;
   const publicPayloads = new WeakSet<MapPayload>();
-  const overview = createWorldOverview(map, worldId, palette);
-  const showLocal = (visible: boolean) => {
+  const preferences = () => callbacks.layerPreferences?.() ?? allLayersVisible;
+  const visibilityFor = (id: string) => layerVisibility(id, preferences(), localPresentation);
+  const overview = createWorldOverview(map, worldId, palette, visibilityFor);
+  /** The UI preference stays authoritative: presentation never re-shows a hidden group. */
+  const applyLayerVisibility = () => {
     if (typeof map.setLayoutProperty !== 'function') return;
-    for (const id of [
-      'mamluk-cities',
-      'mamluk-territories',
-      'mamluk-village-borders',
-      'mamluk-village-border-halo',
-      'mamluk-cities-owner-markers',
-      ...CLUSTER_LAYERS,
-    ])
-      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+    for (const id of managedLayerIds) {
+      const visibility = visibilityFor(id);
+      if (visibility && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
+    }
   };
-  const cancelRecovery = () => {
-    clearTimeout(recoveryTimer);
-    recoveryTimer = undefined;
+  const showLocal = (visible: boolean) => {
+    localPresentation = visible;
+    applyLayerVisibility();
   };
   const presentation = presentationPort(
     map,
@@ -344,6 +385,7 @@ export function createMapSession(
     initialStyleReady,
     () => retainPublicLayers,
     ownership,
+    visibilityFor,
   );
   const adapter = new ObservedAdapter(
     presentation.port,
@@ -357,8 +399,6 @@ export function createMapSession(
         showLocal(true);
         callbacks.onPresentation?.(true);
         callbacks.onRefreshing?.(false);
-        cancelRecovery();
-        recoveryAttempts = 0;
         callbacks.onStatus('ready');
         applySelection();
       }
@@ -370,17 +410,21 @@ export function createMapSession(
     (payload) => {
       if (!disposed) callbacks.onPublicPayload?.(payload);
     },
+    () => viewport.loader?.requestRefresh(),
+    ownership?.viewerPlayerId,
   );
   adapter.resetSession(worldId);
   adapter.setProjection(projection);
   const loader = new ViewportLoader(map, adapter, {
-    retainOnError: (error) => error instanceof RetryableMapRequestError,
+    // Only revoked access invalidates what is shown; network and data failures keep the
+    // last authorized snapshot until its own expiry and retry with bounded backoff.
+    retainOnError: (error) => !(error instanceof MapAuthorizationError),
+    shouldRetry: (error) => !(error instanceof MapAuthorizationError),
     // The reserved public landmark atlas has no authenticated gameplay aggregate.
     loadOverview:
       worldId === 'mamluk-public-geographic-atlas-v1'
         ? undefined
         : async (bounds, signal) => {
-            cancelRecovery();
             callbacks.onRefreshing?.(true);
             const accepted = await overview.load(bounds, signal);
             if (!signal.aborted && !disposed) {
@@ -394,8 +438,6 @@ export function createMapSession(
             return accepted;
           },
     load: async (bounds, signal) => {
-      // A pending recovery must never interrupt a newer pan or manual request.
-      cancelRecovery();
       callbacks.onRefreshing?.(true);
       if (!currentPayload && !adapter.publicPayload) callbacks.onStatus('loading');
       const query = new URLSearchParams({
@@ -410,23 +452,16 @@ export function createMapSession(
     onError: (error) => {
       if (disposed) return;
       callbacks.onRefreshing?.(false);
-      if (!(error instanceof RetryableMapRequestError)) {
+      if (error instanceof MapAuthorizationError) {
         overview.hide();
         adapter.clearPublic();
       }
       callbacks.onStatus('error');
-      const delay = recoveryDelaysMs[recoveryAttempts];
-      if (delay === undefined) return;
-      recoveryAttempts += 1;
-      recoveryTimer = setTimeout(() => {
-        recoveryTimer = undefined;
-        if (!disposed) void loader.refresh();
-      }, delay);
     },
   });
+  viewport.loader = loader;
   const onMove = () => {
     if (disposed) return;
-    cancelRecovery();
     const keepVillageDraft =
       selected?.layer === 'cities' && (destinationPicking || destinationPreview);
     if (
@@ -438,11 +473,8 @@ export function createMapSession(
       callbacks.onSelection(null);
     }
     applySelection();
-    const bounds = adapter.getViewportBounds();
-    const width =
-      bounds.east > bounds.west ? bounds.east - bounds.west : 360 - bounds.west + bounds.east;
     callbacks.onStatus(
-      width > 90 || bounds.north - bounds.south > 90
+      loader.isBroad(adapter.getViewportBounds())
         ? 'zoom'
         : currentPayload || adapter.publicPayload
           ? 'ready'
@@ -523,16 +555,21 @@ export function createMapSession(
   }
   const onStyleLoad = () => {
     adapter.clearPublic();
+    applyLayerVisibility();
     if (destinationPreview) showDestinationPreview(map, destinationPreview, palette);
     void loader.refresh();
   };
   map.on('style.load', onStyleLoad);
   map.on('moveend', onMove);
   map.on('click', onClick);
-  if (presentation.port.isStyleLoaded()) void loader.refresh();
+  if (presentation.port.isStyleLoaded()) {
+    applyLayerVisibility();
+    void loader.refresh();
+  }
   return {
     adapter,
     loader,
+    applyLayerVisibility,
     setDestinationPicking: (picking: boolean) => {
       destinationPicking = picking;
       map.getCanvas().style.cursor = picking ? 'crosshair' : '';
@@ -548,7 +585,6 @@ export function createMapSession(
     dispose: () => {
       disposed = true;
       overview.dispose();
-      cancelRecovery();
       destinationPicking = false;
       destinationPreview = null;
       showDestinationPreview(map, null, palette);

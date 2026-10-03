@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DEFAULT_PALETTE } from '@mamluk/maplibre-adapter';
 import type { MapPayload } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
@@ -6,9 +6,14 @@ import { createMapSession } from './map-session';
 import { MapSdkFixture, approvedPayload } from './map-fixture';
 import type { OwnershipPresentationOptions } from './player-ownership';
 
+beforeEach(() => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 it('keeps the anonymous geographic reference at global zoom without requesting private world aggregates', async () => {

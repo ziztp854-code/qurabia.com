@@ -73,51 +73,13 @@ export function useWorldMap(
 ) {
   const container = useRef<HTMLDivElement>(null);
   const [visibleLayers, setVisibleLayers] = useState(initialMapLayers);
-  const localPresentation = useRef(true);
   const visibleLayersRef = useRef(visibleLayers);
-  const applyLayers = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const groups: Record<MapLayerGroup, readonly string[]> = {
-      cities: [
-        'mamluk-cities',
-        'mamluk-cities-owner-markers',
-        'mamluk-village-clusters',
-        'mamluk-village-cluster-count',
-        'mamluk-overview-cells',
-        'mamluk-overview-count',
-      ],
-      castles: ['mamluk-castles', 'mamluk-castles-owner-markers'],
-      armies: ['mamluk-armies', 'mamluk-armyRoutes', 'mamluk-sieges'],
-      territories: [
-        'mamluk-territories',
-        'mamluk-sultanateBorders',
-        'mamluk-village-borders',
-        'mamluk-village-border-halo',
-      ],
-      relief: ['atlas-relief', 'atlas-global-relief'],
-    };
-    for (const [group, ids] of Object.entries(groups))
-      for (const id of ids)
-        if (map.getLayer(id))
-          map.setLayoutProperty(
-            id,
-            'visibility',
-            visibleLayersRef.current[group as MapLayerGroup] &&
-              ((group !== 'cities' && group !== 'territories') ||
-                (id.startsWith('mamluk-overview-')
-                  ? !localPresentation.current
-                  : localPresentation.current))
-              ? 'visible'
-              : 'none',
-          );
-  }, []);
-  useEffect(() => {
-    visibleLayersRef.current = visibleLayers;
-    applyLayers();
-  }, [visibleLayers, applyLayers]);
   const mapRef = useRef<LibreMap | null>(null);
   const sessionRef = useRef<ReturnType<typeof createMapSession> | null>(null);
+  useEffect(() => {
+    visibleLayersRef.current = visibleLayers;
+    sessionRef.current?.applyLayerVisibility();
+  }, [visibleLayers]);
   const [status, setStatus] = useState<Status>('loading');
   const [refreshing, setRefreshing] = useState(false);
   const sessionKey = `${worldId}:${viewerPlayerId}`;
@@ -287,7 +249,6 @@ export function useWorldMap(
             // Keep only the selection key during refresh; null payload hides every detail.
             onPayload: (nextPayload) => {
               setSnapshot({ sessionKey: `${worldId}:${viewerPlayerId}`, payload: nextPayload });
-              if (nextPayload) queueMicrotask(applyLayers);
               if (
                 pendingInitialSelection.current &&
                 nextPayload?.layers.cities.features.some(
@@ -306,10 +267,7 @@ export function useWorldMap(
               }),
             onSelection: receiveSelection,
             onDestination: (destination) => updateDestination(destination, true, false),
-            onPresentation: (local) => {
-              localPresentation.current = local;
-              queueMicrotask(applyLayers);
-            },
+            layerPreferences: () => visibleLayersRef.current,
             onStatus: setStatus,
             onRefreshing: setRefreshing,
           },
@@ -318,9 +276,7 @@ export function useWorldMap(
           ownershipPalette(container.current, viewerPlayerId),
         );
         sessionRef.current = session;
-        stopRevisions = watchMapRevisions(worldId, () => {
-          void session?.loader.refresh();
-        });
+        stopRevisions = watchMapRevisions(worldId, () => session?.loader.requestRefresh());
       } catch {
         if (!cancelled) setStatus('error');
       }
@@ -338,15 +294,7 @@ export function useWorldMap(
       destinationRef.current = null;
       setDestinationDraft(null);
     };
-  }, [
-    worldId,
-    viewerPlayerId,
-    attempt,
-    receiveSelection,
-    updateDestination,
-    initialOverview,
-    applyLayers,
-  ]);
+  }, [worldId, viewerPlayerId, attempt, receiveSelection, updateDestination, initialOverview]);
   function startPickingDestination() {
     updateDestination(activeDraft?.destination ?? null, true, false);
     container.current?.scrollIntoView?.({ block: 'center', behavior: 'instant' });

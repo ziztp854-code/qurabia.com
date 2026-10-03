@@ -341,7 +341,111 @@ it('hides a selected layer and its directory state without recreating the map', 
   fireEvent.click(screen.getByText('select'));
   fireEvent.click(screen.getByText('cities'));
   expect(screen.getByText('none')).toBeInTheDocument();
-  expect(map.setLayoutProperty).toHaveBeenCalledWith('mamluk-cities', 'visibility', 'none');
+  expect(map.layoutCalls).toContainEqual(['mamluk-cities', 'visibility', 'none']);
+  expect(map.layers.get('mamluk-cities')).toMatchObject({ layout: { visibility: 'none' } });
   expect(MapSdkFixture.instances).toHaveLength(1);
   view.unmount();
+});
+
+it('keeps one map instance, camera and hidden layer through poll, retry, lifecycle, expiry and overview', async () => {
+  vi.useFakeTimers();
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
+  let visibility = 'visible';
+  let online = true;
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => visibility });
+  vi.spyOn(navigator, 'onLine', 'get').mockImplementation(() => online);
+  const urls: string[] = [];
+  let failing = false;
+  let ttlMs = 60000;
+  const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+    urls.push(url);
+    if (failing) throw new TypeError('Failed to fetch');
+    const query = new URL(url, 'http://localhost').searchParams;
+    if (url.includes('/overview?'))
+      return {
+        ok: true,
+        json: async () => ({
+          worldId: 'world',
+          revision: '1',
+          serverTime: 1000,
+          cells: { type: 'FeatureCollection', features: [] },
+        }),
+      };
+    const base = approvedPayload('world', String(urls.length));
+    return {
+      ok: true,
+      headers: new Headers({ 'X-Mamluk-Public-Settlements': '1' }),
+      json: async () => ({
+        ...base,
+        expiresAt: base.serverTime + ttlMs,
+        bounds: {
+          west: Number(query.get('west')),
+          south: Number(query.get('south')),
+          east: Number(query.get('east')),
+          north: Number(query.get('north')),
+        },
+      }),
+    };
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return (
+      <>
+        <div ref={map.container} />
+        <button onClick={() => map.toggleLayer('cities')}>cities</button>
+      </>
+    );
+  }
+  const view = render(<Scene />);
+  const settle = (ms: number) =>
+    act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  await settle(0);
+  await settle(0);
+  const map = MapSdkFixture.instances[0]!;
+  expect(map.sources.size).toBe(9);
+  fireEvent.click(screen.getByText('cities'));
+  const cities = () => map.layers.get('mamluk-cities') as { layout?: { visibility?: string } };
+  expect(cities().layout?.visibility).toBe('none');
+  const camera = { center: map.lastCamera?.center, zoom: map.lastCamera?.zoom };
+  const source = map.sources.get('mamluk-cities');
+
+  await settle(5000); // poll
+  failing = true;
+  await settle(20000); // retry with backoff
+  failing = false;
+  await settle(30000); // recovery
+  ttlMs = 2000;
+  await settle(6000); // expiry-driven refresh
+  visibility = 'hidden';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await settle(10000);
+  visibility = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  await settle(0);
+  online = false;
+  window.dispatchEvent(new Event('offline'));
+  await settle(10000);
+  online = true;
+  window.dispatchEvent(new Event('online'));
+  await settle(0);
+  map.bounds = { west: -120, east: 120, south: -50, north: 50 };
+  map.fire('moveend');
+  await settle(300);
+  expect(urls.at(-1)).toContain('/overview?');
+  map.bounds = { west: 28, south: 25, east: 40, north: 36 };
+  map.fire('moveend');
+  await settle(300);
+  expect(urls.at(-1)).toContain('/viewport?');
+
+  expect(MapSdkFixture.instances).toHaveLength(1);
+  expect(map.removed).toBe(false);
+  expect(map.sources.get('mamluk-cities')).toBe(source);
+  expect(cities().layout?.visibility).toBe('none');
+  expect({ center: map.lastCamera?.center, zoom: map.lastCamera?.zoom }).toEqual(camera);
+  view.unmount();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
 });

@@ -1,5 +1,8 @@
 export class RetryableMapRequestError extends Error {}
 
+/** Access or visibility was revoked; retained data must not outlive this answer. */
+export class MapAuthorizationError extends Error {}
+
 /** Transport outages do not revoke an already-authorized snapshot; its own expiry still does. */
 export async function mapRequest(url: string, signal: AbortSignal): Promise<Response> {
   let response: Response;
@@ -17,6 +20,8 @@ export async function mapRequest(url: string, signal: AbortSignal): Promise<Resp
   }
   if (response.status === 429 || response.status >= 500)
     throw new RetryableMapRequestError('Map request temporarily unavailable');
+  if (response.status === 401 || response.status === 403 || response.status === 404)
+    throw new MapAuthorizationError('Map access unavailable');
   if (!response.ok) throw new Error('Map request unavailable');
   return response;
 }
