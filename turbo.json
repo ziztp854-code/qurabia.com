@@ -6,6 +6,16 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
+    "@mamluk/maplibre-adapter#build": {
+      "dependsOn": ["^build", "@mamluk/world-map-core#build"],
+      "outputs": ["dist/**"]
+    },
+    "@mamluk/maplibre-adapter#typecheck": {
+      "dependsOn": ["^build", "@mamluk/world-map-core#build"]
+    },
+    "@mamluk/maplibre-adapter#test": {
+      "dependsOn": ["^build", "@mamluk/world-map-core#build"]
+    },
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,
