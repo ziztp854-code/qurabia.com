@@ -2,6 +2,7 @@ import { villageBuildingRegistry, type VillageBuildingId } from './buildingRegis
 import { getVillagePlacement, VILLAGE_WORLD } from './coordinates';
 import type { WorldPoint, WorldRect } from './types';
 
+export type VillageAssetFidelity = 'standard' | 'hidpi' | 'ultra';
 export type VillageAssetSlot = Readonly<{
   id: string;
   src: string | null;
@@ -18,6 +19,8 @@ export type VillageAssetSlot = Readonly<{
   // Existing source-art crops remain the fallback; missing art is never synthesized.
   fallbackCrop?: WorldRect;
   description: string;
+  /** Future HiDPI/4K files only. Never invent a path that is not shipped. */
+  variants?: Readonly<Partial<Record<VillageAssetFidelity, string | null>>>;
 }>;
 export type VillageNPC =
   | 'worker'
@@ -30,6 +33,25 @@ export type VillageNPC =
   | 'stableMaster'
   | 'cavalry';
 const original = '/game-art/kingdoms/village-oasis.webp';
+/** LOW_RESOLUTION_FOR_4K: shipped oasis plate is 1536×1024. */
+export const villageBaseClassification = 'LOW_RESOLUTION_FOR_4K' as const;
+
+export function resolveVillageAssetSrc(
+  slot: Pick<VillageAssetSlot, 'src' | 'variants'>,
+  fidelity: VillageAssetFidelity = 'standard',
+) {
+  const preferred = slot.variants?.[fidelity];
+  if (preferred) return preferred;
+  if (fidelity === 'ultra') return slot.variants?.hidpi ?? slot.src ?? slot.variants?.standard ?? null;
+  if (fidelity === 'hidpi') return slot.src ?? slot.variants?.standard ?? null;
+  return slot.src ?? slot.variants?.standard ?? null;
+}
+
+export function villageAssetFidelity(mode: 'ultra' | 'high' | 'medium' | 'low'): VillageAssetFidelity {
+  if (mode === 'ultra') return 'ultra';
+  if (mode === 'high') return 'hidpi';
+  return 'standard';
+}
 
 const slot = (
   id: string,
@@ -134,7 +156,12 @@ const environmentSlot = (
   });
 
 export const villageAssets = {
-  base: { src: original, ...VILLAGE_WORLD },
+  base: {
+    src: original,
+    ...VILLAGE_WORLD,
+    classification: villageBaseClassification,
+    variants: { standard: original, hidpi: null, ultra: null } as const,
+  },
   // MISSING_ASSET: dedicated settlement/city illustrations are not available.
   // Reuse bounded banner crops from the approved base art without inventing buildings.
   tiers: [1, 2, 3, 4, 5, 6].map((tier) => slot(

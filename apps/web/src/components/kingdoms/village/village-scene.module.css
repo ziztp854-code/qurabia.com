@@ -5,6 +5,9 @@
   background: var(--surface);
   overflow: hidden;
 }
+.scene[data-visual-tier] {
+  --village-tier-emphasis: color-mix(in srgb, var(--gold) 18%, transparent);
+}
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 268px;
@@ -31,7 +34,11 @@
 }
 .header h2 {
   margin: 0;
-  font-size: clamp(1.2rem, 1.5vw, 1.6rem);
+  font-size: clamp(1.2rem, 1.5vw, 1.75rem);
+}
+@media (min-width: 2560px) {
+  .header h2 { font-size: clamp(1.35rem, 1.05vw, 1.9rem); }
+  .settings { max-inline-size: 48rem; }
 }
 .eyebrow {
   color: var(--gold);

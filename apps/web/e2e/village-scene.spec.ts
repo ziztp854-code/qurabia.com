@@ -506,3 +506,34 @@ test('level twelve village finishes its real queue after five hours offline', as
   expect(await returned.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await returned.screenshot({ path: testInfo.outputPath('offline-return.png'), fullPage: true });
 });
+
+test('HiDPI and 4K viewports keep the existing village camera and hotspots', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1920' && testInfo.project.name !== 'iphone');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  const viewport = village.locator('[data-village-scene]');
+  await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
+  await expect(village.getByRole('region', { name: 'تقدم القرية' })).toBeVisible();
+  if (testInfo.project.name === 'iphone') {
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('village-mobile-overview.png'), scale: 'css' });
+    return;
+  }
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await viewport.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('village-1080-overview.png'), scale: 'css' });
+  await page.setViewportSize({ width: 3840, height: 2160 });
+  await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await viewport.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('village-4k-overview.png'), scale: 'css' });
+  await village.getByRole('button', { name: /دار الحكم/ }).click();
+  await expect(page.getByRole('region', { name: 'تفاصيل دار الحكم' })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('village-4k-selected-building.png'), scale: 'css' });
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  await village.getByRole('button', { name: /مزارع الغذاء/ }).click();
+  await page.getByRole('region', { name: 'تفاصيل مزارع الغذاء' }).getByRole('button', { name: 'طوّر المبنى' }).click();
+  await expect(page.getByRole('region', { name: 'قوائم التنفيذ' })).toContainText('مزارع الغذاء');
+  await page.screenshot({ path: testInfo.outputPath('village-4k-construction.png'), scale: 'css' });
+});
