@@ -39,7 +39,11 @@
   color: var(--map-gold);
   font-size: 14px;
 }
-.modeBar label { display: flex; align-items: center; gap: var(--space-3); }
+.modeBar label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
 .modeBar select {
   min-block-size: 44px;
   max-inline-size: 100%;
@@ -50,7 +54,11 @@
   color: var(--map-text);
   font: inherit;
 }
-.modeBar p { margin: 0; color: var(--map-muted); line-height: 1.7; }
+.modeBar p {
+  margin: 0;
+  color: var(--map-muted);
+  line-height: 1.7;
+}
 .layersDisclosure > summary {
   display: flex;
   align-items: center;
@@ -61,9 +69,14 @@
   cursor: pointer;
   border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
 }
-.displayOptions { position: relative; }
-.displayOptions summary { list-style: none; }
+.displayOptions {
+  position: relative;
+}
+.displayOptions summary {
+  list-style: none;
+}
 .displayChoices {
+  z-index: 1;
   display: grid;
   gap: var(--space-2);
   position: absolute;
@@ -82,13 +95,28 @@
   padding-block-end: var(--space-4);
   border-block-end: 1px solid var(--map-border);
 }
-.targetSelection p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--map-muted); }
-.targetSelection .eyebrow { color: var(--map-gold); font-size: 16px; }
-.targetSelection .confirmTarget { background: var(--map-gold); color: var(--map-background); font-weight: 700; }
+.targetSelection p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--map-muted);
+}
+.targetSelection .eyebrow {
+  color: var(--map-gold);
+  font-size: 16px;
+}
+.targetSelection .confirmTarget {
+  background: var(--map-gold);
+  color: var(--map-background);
+  font-weight: 700;
+}
 .root summary:focus-visible,
 .modeBar select:focus-visible,
 .canvas:focus-visible,
-.selectionHeader h2:focus-visible { outline: 3px solid var(--map-gold); outline-offset: 2px; }
+.selectionHeader h2:focus-visible {
+  outline: 3px solid var(--map-gold);
+  outline-offset: 2px;
+}
 .referenceNotice {
   margin: 0;
   padding: 12px 24px;
@@ -318,7 +346,7 @@
   position: relative;
   min-inline-size: 0;
   block-size: 100%;
-  background: var(--map-ocean);
+  background: var(--map-background);
 }
 .canvas {
   position: absolute;
@@ -327,7 +355,7 @@
 }
 .toolbar {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   inset-block-start: 16px;
   inset-inline-end: 20px;
   display: flex;
@@ -874,4 +902,43 @@
     transition: none;
     animation: none;
   }
+}
+
+.layerControl {
+  position: relative;
+}
+.layerMenu {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-start: 0;
+  z-index: 8;
+  display: grid;
+  gap: 12px;
+  min-inline-size: 220px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--map-bronze);
+  border-radius: 12px;
+  background: var(--map-background);
+  color: var(--map-gold);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
+}
+.layerMenu legend {
+  padding-inline: 6px;
+  font-weight: 700;
+}
+.layerMenu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 32px;
+  font-size: 13px;
+}
+.layerMenu input {
+  inline-size: 18px;
+  block-size: 18px;
+  accent-color: var(--map-gold);
+}
+.layerMenu label:has(input:disabled) {
+  opacity: 0.55;
 }

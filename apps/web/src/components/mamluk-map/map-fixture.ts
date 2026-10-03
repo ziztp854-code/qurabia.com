@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import type { MapPayload } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
 
@@ -50,6 +51,7 @@ export class MapSdkFixture {
   getSource(id: string) {
     return this.sources.get(id);
   }
+  setLayoutProperty = vi.fn();
   getLayer(id: string) {
     return this.layers.get(id);
   }

@@ -324,3 +324,31 @@ describe('settlement artwork security boundary', () => {
     expect(presentation.layer(circle())).toEqual(circle());
   });
 });
+
+it('labels approved local levels with Cairo and leaves missing levels unnamed', async () => {
+  const fixture = sdkFixture();
+  const presentation = createSettlementPresentation(
+    fixture.map,
+    colors,
+    new AbortController().signal,
+  );
+  fixture.complete();
+  await presentation.ready;
+  const layer = presentation.layer(circle());
+  expect(layer.type).toBe('symbol');
+  if (layer.type !== 'symbol') throw new Error('Expected symbol');
+  expect(layer.layout?.['text-font']).toEqual(['Cairo']);
+  expect(layer.layout?.['text-field']).toEqual([
+    'step',
+    ['zoom'],
+    ['get', 'name'],
+    12,
+    [
+      'case',
+      ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+      ['concat', ['get', 'name'], ' · المستوى ', ['to-string', ['get', 'villageLevel']]],
+      ['get', 'name'],
+    ],
+  ]);
+  presentation.dispose();
+});

@@ -38,6 +38,7 @@ describe('MapLibre presentation boundary', () => {
     expect(removeLayer).not.toHaveBeenCalled();
     adapter.dispose();
   });
+
   it('replaces every source snapshot so disappeared enemies leave no remnants', () => {
     const map = new FakeMap();
     const adapter = new MapLibreAdapter(map.port(), { now: () => 1000 });
@@ -210,4 +211,104 @@ describe('MapLibre presentation boundary', () => {
     expect(map.data('armies').features).toEqual([]);
     adapter.dispose();
   });
+});
+
+it('clusters 10,000 permitted cities and preserves sources through updates and TTL', () => {
+  const map = new FakeMap();
+  const adapter = new MapLibreAdapter(map.port(), { symbolMarkers: true, arabicLabels: true });
+  adapter.resetSession('world');
+  const cities = {
+    type: 'FeatureCollection' as const,
+    features: Array.from({ length: 10000 }, (_, index) => ({
+      type: 'Feature' as const,
+      id: 'city-' + index,
+      geometry: { type: 'Point' as const, coordinates: [31, 30] as const },
+      properties: { name: 'قرية', villageLevel: index === 0 ? 50 : 1, villageVisualTier: 1 },
+    })),
+  };
+  adapter.render({ ...payload(), layers: { ...payload().layers, cities } });
+  const source = map.getSource('mamluk-cities');
+  expect(source).toMatchObject({ cluster: true, clusterRadius: 48, clusterMaxZoom: 9 });
+  expect(map.data('cities').features).toHaveLength(9999);
+  expect(map.data('capitals').features).toHaveLength(1);
+  expect(map.data('trade-routes').features).toEqual([]);
+  const cityUploads = vi.spyOn(source!, 'setData');
+  const capitalUploads = vi.spyOn(map.getSource('mamluk-capitals')!, 'setData');
+  adapter.render({ ...payload(), layers: { ...payload().layers, cities } });
+  expect(cityUploads).not.toHaveBeenCalled();
+  expect(capitalUploads).not.toHaveBeenCalled();
+  adapter.render(payload('2'));
+  expect(map.getSource('mamluk-cities')).toBe(source);
+  expect(map.data('capitals').features).toEqual([]);
+  adapter.dispose();
+  expect(map.sources.size).toBe(0);
+  expect(map.layers.size).toBe(0);
+});
+
+it('records bounded read-only render metrics for 10,000 features without timing thresholds', () => {
+  const map = new FakeMap();
+  const adapter = new MapLibreAdapter(map.port(), { symbolMarkers: true });
+  adapter.resetSession('world');
+  const snapshot = payload();
+  const cities = {
+    type: 'FeatureCollection' as const,
+    features: Array.from({ length: 10000 }, (_, index) => ({
+      type: 'Feature' as const,
+      id: 'city-' + index,
+      geometry: { type: 'Point' as const, coordinates: [31, 30] as const },
+      properties: { name: 'قرية', villageLevel: 1, villageVisualTier: 1 },
+    })),
+  };
+  const input = { ...snapshot, layers: { ...snapshot.layers, cities } };
+  adapter.render(input);
+  const metrics = adapter.latestRenderMetrics!;
+  expect(metrics.featureCount).toBe(10000);
+  expect(metrics.payloadBytes).toBe(new TextEncoder().encode(JSON.stringify(input)).byteLength);
+  expect(Number.isFinite(metrics.sourceUpdateMs)).toBe(true);
+  expect(metrics.sourceUpdateMs).toBeGreaterThanOrEqual(0);
+  expect(metrics.renderMs).toBeGreaterThanOrEqual(metrics.sourceUpdateMs);
+  expect(adapter.latestRenderMetrics).not.toBe(metrics);
+  adapter.dispose();
+});
+
+it('clears selection when an authorized feature disappears and never revives stale selection', () => {
+  const map = new FakeMap();
+  const setFeatureState = vi.fn();
+  Object.assign(map, { setFeatureState });
+  const adapter = new MapLibreAdapter(map.port(), { symbolMarkers: true });
+  adapter.resetSession('world');
+  const city = {
+    type: 'Feature' as const,
+    id: 'selected-city',
+    geometry: {
+      type: 'Point' as const,
+      coordinates: [31, 30] as const,
+    },
+    properties: { villageLevel: 50, name: 'العاصمة' },
+  };
+  const first = {
+    ...payload(),
+    layers: {
+      ...payload().layers,
+      cities: {
+        type: 'FeatureCollection' as const,
+        features: [city],
+      },
+    },
+  };
+  adapter.render(first);
+  adapter.setSelectedFeature('cities', 'selected-city');
+  expect(setFeatureState).toHaveBeenCalledWith(
+    { source: 'mamluk-capitals', id: 'selected-city' },
+    { selected: true },
+  );
+  adapter.render(payload('2'));
+  expect(setFeatureState).toHaveBeenLastCalledWith(
+    { source: 'mamluk-capitals', id: 'selected-city' },
+    { selected: false },
+  );
+  setFeatureState.mockClear();
+  adapter.render({ ...first, revision: '3' });
+  expect(setFeatureState).not.toHaveBeenCalled();
+  adapter.dispose();
 });

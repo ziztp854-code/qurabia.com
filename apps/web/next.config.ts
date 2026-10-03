@@ -67,7 +67,11 @@ function toWebSocketOrigin(origin: string): string {
  *  - `worker-src blob:` is required by the three.js loader workers.
  */
 function buildContentSecurityPolicy(): string {
-  const connectSources = new Set(["'self'", 'https://tiles.openfreemap.org']);
+  const connectSources = new Set([
+    "'self'",
+    'https://tiles.openfreemap.org',
+    'https://elevation-tiles-prod.s3.amazonaws.com',
+  ]);
   for (const origin of [
     toOrigin(process.env.NEXT_PUBLIC_REALTIME_URL),
     toOrigin(process.env.NEXT_PUBLIC_SITE_URL),

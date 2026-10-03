@@ -1,9 +1,11 @@
-import type { LayerSpecification, Map as LibreMap } from 'maplibre-gl';
+import { registerMapMarkerImages } from '@mamluk/maplibre-adapter';
+import type { ExpressionSpecification, LayerSpecification, Map as LibreMap } from 'maplibre-gl';
 
 export type SettlementMap = Pick<
   LibreMap,
   'loadImage' | 'addImage' | 'hasImage' | 'on' | 'off' | 'isStyleLoaded'
->;
+> &
+  Partial<Pick<LibreMap, 'getLayer' | 'setLayoutProperty'>>;
 export interface SettlementColors {
   readonly label: string;
   readonly halo: string;
@@ -13,6 +15,12 @@ export interface SettlementPresentation {
   readonly layer: (layer: LayerSpecification) => LayerSpecification;
   readonly dispose: () => void;
 }
+const tierIcon: ExpressionSpecification = [
+  'case',
+  ['>=', ['coalesce', ['get', 'villageLevel'], 0], 50],
+  'mamluk-capital',
+  ['concat', 'mamluk-tier-', ['to-string', ['coalesce', ['get', 'villageVisualTier'], 1]]],
+];
 const images = ['mamluk-village-art', 'mamluk-castle-art'] as const;
 type Artwork = Awaited<ReturnType<SettlementMap['loadImage']>>;
 
@@ -22,6 +30,7 @@ class SettlementArtwork implements SettlementPresentation {
   private active: boolean;
   private styleReady: boolean;
   private usable = false;
+  private hdReady = false;
   private artwork: readonly Artwork[] = [];
 
   constructor(
@@ -53,7 +62,9 @@ class SettlementArtwork implements SettlementPresentation {
       ]);
       if (!this.active) return;
       this.artwork = artwork;
-      this.finish(this.register());
+      const registered = this.register();
+      if (this.styleReady) await this.registerHd();
+      this.finish(registered);
     } catch {
       this.artwork = [];
       this.usable = false;
@@ -77,9 +88,50 @@ class SettlementArtwork implements SettlementPresentation {
     }
   }
 
+  private async registerHd(): Promise<void> {
+    try {
+      await registerMapMarkerImages({
+        hasImage: (id) => !this.active || this.map.hasImage(id),
+        addImage: (id, image, options) => {
+          if (this.active) this.map.addImage(id, image, options);
+          return this.map as LibreMap;
+        },
+      });
+      if (this.active) {
+        this.hdReady = true;
+        for (const id of ['mamluk-cities', 'mamluk-castles']) {
+          const current = this.map.getLayer?.(id);
+          if (current?.type !== 'symbol') continue;
+          this.map.setLayoutProperty?.(
+            id,
+            'icon-image',
+            id === 'mamluk-castles' ? 'mamluk-castle' : tierIcon,
+          );
+          this.map.setLayoutProperty?.(id, 'icon-anchor', 'center');
+          this.map.setLayoutProperty?.(id, 'icon-size', [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            3,
+            0.6,
+            10,
+            0.95,
+            14,
+            1.1,
+          ]);
+        }
+      }
+    } catch {
+      // The same-origin settlement artwork remains usable if rasterization fails.
+      this.hdReady = false;
+    }
+  }
+
   private readonly onStyle = () => {
     this.styleReady = true;
+    this.hdReady = false;
     this.register();
+    void this.registerHd();
   };
 
   readonly dispose = () => {
@@ -104,7 +156,17 @@ class SettlementArtwork implements SettlementPresentation {
       !images.every((id) => this.map.hasImage(id))
     )
       return layer;
-    return settlementLayer(layer, image, this.colors);
+    const presented = settlementLayer(layer, image, this.colors);
+    if (!this.hdReady || presented.type !== 'symbol') return presented;
+    return {
+      ...presented,
+      layout: {
+        ...presented.layout,
+        'icon-image': layer.id === 'mamluk-castles' ? 'mamluk-castle' : tierIcon,
+        'icon-anchor': 'center',
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.6, 10, 0.95, 14, 1.1],
+      },
+    };
   };
 }
 
@@ -135,8 +197,19 @@ function settlementLayer(
       ],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
-      'text-field': ['get', 'name'],
-      'text-font': ['Noto Sans Regular'],
+      'text-field': [
+        'step',
+        ['zoom'],
+        ['get', 'name'],
+        12,
+        [
+          'case',
+          ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+          ['concat', ['get', 'name'], ' · المستوى ', ['to-string', ['get', 'villageLevel']]],
+          ['get', 'name'],
+        ],
+      ],
+      'text-font': ['Cairo'],
       'text-size': ['interpolate', ['linear'], ['zoom'], 3, 11, 10, 14],
       'text-anchor': 'top',
       'text-pitch-alignment': 'viewport',

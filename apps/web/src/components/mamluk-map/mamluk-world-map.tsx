@@ -23,6 +23,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { findSelection, listSelectableFeatures } from './selection';
 import { SelectionPanel } from './selection-panel';
 import { useWorldMap } from './use-world-map';
+import { MapLayerControls } from './map-layer-controls';
 import { getPlayerColor } from './player-ownership';
 import styles from './mamluk-world-map.module.css';
 import type { VillageRelocationEligibility } from './use-village-relocation';
@@ -41,6 +42,7 @@ export interface MamlukWorldMapProps {
   readonly referenceOnly?: boolean;
   readonly initialLocation?: { readonly longitude: number; readonly latitude: number };
   readonly initialVillageId?: string;
+  readonly initialOverview?: boolean;
   readonly villageLocations?: readonly {
     readonly villageId: string;
     readonly name: string;
@@ -115,6 +117,7 @@ function WorldScene({
   targetVillageIds,
   onCancelTarget,
   focusVillageId,
+  initialOverview = false,
 }: Omit<MamlukWorldMapProps, 'initialWorldId'> & {
   worldId: string;
   onWorldChange: (id: string) => void;
@@ -133,6 +136,8 @@ function WorldScene({
   );
   const {
     container,
+    visibleLayers,
+    toggleLayer,
     status,
     refreshing,
     payload,
@@ -154,38 +159,72 @@ function WorldScene({
     cancelDestination,
     changeDestination,
     requestManualDestination,
-  } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId);
+  } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId, initialOverview);
   const scenePayload = payload ?? publicPayload;
   const lastFocused = useRef<string | undefined>(undefined);
   const [locationFailure, setLocationFailure] = useState<string | null>(null);
   const [locationAttempt, setLocationAttempt] = useState(0);
-  const hasFocusVillage = Boolean(scenePayload?.layers.cities.features.some((city) => city.id === focusVillageId));
+  const hasFocusVillage = Boolean(
+    scenePayload?.layers.cities.features.some((city) => city.id === focusVillageId),
+  );
   useEffect(() => {
-    if (!focusVillageId) { lastFocused.current = undefined; return; }
-    if (lastFocused.current === focusVillageId ||
-      !scenePayload?.layers.cities.features.some((city) => city.id === focusVillageId)) return;
+    if (!focusVillageId) {
+      lastFocused.current = undefined;
+      return;
+    }
+    if (
+      lastFocused.current === focusVillageId ||
+      !scenePayload?.layers.cities.features.some((city) => city.id === focusVillageId)
+    )
+      return;
     lastFocused.current = focusVillageId;
     focusSelection({ layer: 'cities', id: focusVillageId });
   }, [focusVillageId, scenePayload, focusSelection]);
   useEffect(() => {
-    if (!focusVillageId || hasFocusVillage || lastFocused.current === focusVillageId || referenceOnly) return;
+    if (
+      !focusVillageId ||
+      hasFocusVillage ||
+      lastFocused.current === focusVillageId ||
+      referenceOnly
+    )
+      return;
     const controller = new AbortController();
     const query = new URLSearchParams({ worldId, villageId: focusVillageId });
-    void fetch(`/api/kingdoms/world-map/location?${query}`, { signal: controller.signal, cache: 'no-store' })
+    void fetch(`/api/kingdoms/world-map/location?${query}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+    })
       .then(async (response) => {
         const location = await response.json();
-        if (!response.ok || location?.worldId !== worldId || location?.villageId !== focusVillageId ||
-          !Number.isFinite(location.longitude) || !Number.isFinite(location.latitude) ||
-          Math.abs(location.longitude) > 180 || Math.abs(location.latitude) > 90) throw new Error('unavailable');
+        if (
+          !response.ok ||
+          location?.worldId !== worldId ||
+          location?.villageId !== focusVillageId ||
+          !Number.isFinite(location.longitude) ||
+          !Number.isFinite(location.latitude) ||
+          Math.abs(location.longitude) > 180 ||
+          Math.abs(location.latitude) > 90
+        )
+          throw new Error('unavailable');
         if (controller.signal.aborted) return;
         lastFocused.current = focusVillageId;
         setLocationFailure(null);
         focusLocation({ longitude: location.longitude, latitude: location.latitude });
         setSelected({ layer: 'cities', id: focusVillageId });
       })
-      .catch(() => { if (!controller.signal.aborted) setLocationFailure(focusVillageId); });
+      .catch(() => {
+        if (!controller.signal.aborted) setLocationFailure(focusVillageId);
+      });
     return () => controller.abort();
-  }, [focusVillageId, hasFocusVillage, worldId, referenceOnly, focusLocation, setSelected, locationAttempt]);
+  }, [
+    focusVillageId,
+    hasFocusVillage,
+    worldId,
+    referenceOnly,
+    focusLocation,
+    setSelected,
+    locationAttempt,
+  ]);
   const closeSelection = () => {
     setSelected(null);
     container.current?.focus({ preventScroll: true });
@@ -216,8 +255,11 @@ function WorldScene({
     };
   }, [payload, publicPayload, selected, viewerPlayerId, referenceOnly]);
   const features = useMemo(
-    () => listSelectableFeatures(scenePayload, referenceOnly),
-    [scenePayload, referenceOnly],
+    () =>
+      listSelectableFeatures(scenePayload, referenceOnly).filter(
+        (feature) => visibleLayers[feature.layer === 'sieges' ? 'armies' : feature.layer],
+      ),
+    [scenePayload, referenceOnly, visibleLayers],
   );
   const ownerGroups = useMemo(() => {
     if (referenceOnly || !scenePayload) return [];
@@ -305,8 +347,13 @@ function WorldScene({
             ? 'جارٍ تحميل الأطلس…'
             : messages[status]
         : messages[status];
-  const canConfirm = !referenceOnly && mode !== 'WORLD' && mode !== 'SELECT_SETTLEMENT_TARGET' &&
-    selection?.layer === 'cities' && Boolean(approvedCity) && Boolean(onConfirmTarget) &&
+  const canConfirm =
+    !referenceOnly &&
+    mode !== 'WORLD' &&
+    mode !== 'SELECT_SETTLEMENT_TARGET' &&
+    selection?.layer === 'cities' &&
+    Boolean(approvedCity) &&
+    Boolean(onConfirmTarget) &&
     Boolean(targetVillageIds?.includes(selection.id));
   return (
     <section
@@ -344,17 +391,45 @@ function WorldScene({
           </select>
         </label>
       </header>
-      {!referenceOnly && <div className={styles.modeBar}>
-        {onModeChange ? <label>وضع الخريطة
-          <select value={mode} onChange={(event) => onModeChange(event.target.value as MapMode)}>
-            {Object.entries(modeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-        </label> : <span>{mode === 'WORLD' ? modeLabels.WORLD : 'اختيار هدف الحملة'}</span>}
-        {mode === 'SELECT_SETTLEMENT_TARGET' && <p>اختيار أرض الاستيطان متاح في نموذج الإحداثيات الحالي؛ لا تتوفر معاينة جغرافية معتمدة للأرض الخالية.</p>}
-        {locationFailure === focusVillageId && locationFailure && <p role="alert">تعذر تحديد موقع القرية.
-          <button type="button" className={styles.control} onClick={() => setLocationAttempt((attempt) => attempt + 1)}>أعد تحديد الموقع</button>
-        </p>}
-      </div>}
+      {!referenceOnly && (
+        <div className={styles.modeBar}>
+          {onModeChange ? (
+            <label>
+              وضع الخريطة
+              <select
+                value={mode}
+                onChange={(event) => onModeChange(event.target.value as MapMode)}
+              >
+                {Object.entries(modeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <span>{mode === 'WORLD' ? modeLabels.WORLD : 'اختيار هدف الحملة'}</span>
+          )}
+          {mode === 'SELECT_SETTLEMENT_TARGET' && (
+            <p>
+              اختيار أرض الاستيطان متاح في نموذج الإحداثيات الحالي؛ لا تتوفر معاينة جغرافية معتمدة
+              للأرض الخالية.
+            </p>
+          )}
+          {locationFailure === focusVillageId && locationFailure && (
+            <p role="alert">
+              تعذر تحديد موقع القرية.
+              <button
+                type="button"
+                className={styles.control}
+                onClick={() => setLocationAttempt((attempt) => attempt + 1)}
+              >
+                أعد تحديد الموقع
+              </button>
+            </p>
+          )}
+        </div>
+      )}
       {!referenceOnly && Boolean(villageLocations?.length) && (
         <nav className={styles.villageNavigation} aria-label="قراي">
           <span className={styles.villageCaption}>
@@ -398,52 +473,55 @@ function WorldScene({
       </div>
       {!referenceOnly && (
         <details className={styles.layersDisclosure}>
-          <summary><Layers size={18} aria-hidden="true" />حدود الممالك</summary>
-        <section className={styles.ownerLegend} aria-label="حدود الممالك">
-          <div className={styles.ownerHeading}>
-            <Layers size={20} aria-hidden="true" />
-            <div>
-              <h2>حدود الممالك</h2>
-              <p>كل لون يجمع قرى اللاعب وحدودها. اختر راية لتفقد حدودها.</p>
+          <summary>
+            <Layers size={18} aria-hidden="true" />
+            حدود الممالك
+          </summary>
+          <section className={styles.ownerLegend} aria-label="حدود الممالك">
+            <div className={styles.ownerHeading}>
+              <Layers size={20} aria-hidden="true" />
+              <div>
+                <h2>حدود الممالك</h2>
+                <p>كل لون يجمع قرى اللاعب وحدودها. اختر راية لتفقد حدودها.</p>
+              </div>
             </div>
-          </div>
-          {ownerGroups.length ? (
-            <ul className={styles.ownerList}>
-              {ownerGroups.map((owner) => (
-                <li
-                  key={owner.ownerPlayerId ?? 'neutral'}
-                  style={{ '--owner-color': owner.color } as CSSProperties}
-                >
-                  {owner.cityId ? (
-                    <button
-                      type="button"
-                      aria-label={`استكشف حدود ${owner.label}`}
-                      aria-pressed={owner.selected}
-                      onClick={() => focusSelection({ layer: 'cities', id: owner.cityId! }, 11)}
-                    >
-                      <span className={styles.ownerSwatch} aria-hidden="true">
-                        <Flag size={14} />
+            {ownerGroups.length ? (
+              <ul className={styles.ownerList}>
+                {ownerGroups.map((owner) => (
+                  <li
+                    key={owner.ownerPlayerId ?? 'neutral'}
+                    style={{ '--owner-color': owner.color } as CSSProperties}
+                  >
+                    {owner.cityId ? (
+                      <button
+                        type="button"
+                        aria-label={`استكشف حدود ${owner.label}`}
+                        aria-pressed={owner.selected}
+                        onClick={() => focusSelection({ layer: 'cities', id: owner.cityId! }, 11)}
+                      >
+                        <span className={styles.ownerSwatch} aria-hidden="true">
+                          <Flag size={14} />
+                        </span>
+                        <span>{owner.label}</span>
+                        <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
+                        <Target size={16} aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <span className={styles.ownerItem}>
+                        <span className={styles.ownerSwatch} aria-hidden="true">
+                          <Flag size={14} />
+                        </span>
+                        <span>{owner.label}</span>
+                        <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
                       </span>
-                      <span>{owner.label}</span>
-                      <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
-                      <Target size={16} aria-hidden="true" />
-                    </button>
-                  ) : (
-                    <span className={styles.ownerItem}>
-                      <span className={styles.ownerSwatch} aria-hidden="true">
-                        <Flag size={14} />
-                      </span>
-                      <span>{owner.label}</span>
-                      <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.boundaryEmpty}>تظهر حدود الممالك مع القرى المتاحة في المشهد.</p>
-          )}
-        </section>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.boundaryEmpty}>تظهر حدود الممالك مع القرى المتاحة في المشهد.</p>
+            )}
+          </section>
         </details>
       )}
       <div className={styles.workspace} data-picking-destination={isPickingDestination}>
@@ -457,34 +535,42 @@ function WorldScene({
             aria-describedby={isPickingDestination ? destinationInstructionsId : undefined}
           />
           <div className={styles.toolbar} role="group" aria-label="عرض الخريطة">
+            <MapLayerControls
+              layers={visibleLayers}
+              onChange={toggleLayer}
+              villageWorld={Boolean(villageLocations)}
+            />
+            <button type="button" className={styles.control} onClick={() => moveCamera('kingdom')}>
+              <Flag size={18} aria-hidden="true" />
+              مملكتي
+            </button>
             <details className={styles.displayOptions}>
-              <summary className={styles.control}><Layers size={18} aria-hidden="true" />عرض الخريطة</summary>
+              <summary className={styles.control}>
+                <Layers size={18} aria-hidden="true" />
+                عرض الخريطة
+              </summary>
               <div className={styles.displayChoices}>
-            <button
-              className={styles.control}
-              type="button"
-              aria-pressed={projection === 'globe'}
-              onClick={() => setProjection('globe')}
-            >
-              <Globe size={18} aria-hidden="true" />
-              الكرة الأرضية
-            </button>
-            <button
-              className={styles.control}
-              type="button"
-              aria-pressed={projection === 'mercator'}
-              onClick={() => setProjection('mercator')}
-            >
-              <Map size={18} aria-hidden="true" />
-              خريطة مسطحة
-            </button>
+                <button
+                  className={styles.control}
+                  type="button"
+                  aria-pressed={projection === 'globe'}
+                  onClick={() => setProjection('globe')}
+                >
+                  <Globe size={18} aria-hidden="true" />
+                  الكرة الأرضية
+                </button>
+                <button
+                  className={styles.control}
+                  type="button"
+                  aria-pressed={projection === 'mercator'}
+                  onClick={() => setProjection('mercator')}
+                >
+                  <Map size={18} aria-hidden="true" />
+                  خريطة مسطحة
+                </button>
               </div>
             </details>
-            <button
-              className={styles.control}
-              type="button"
-              onClick={() => moveCamera('overview')}
-            >
+            <button className={styles.control} type="button" onClick={() => moveCamera('overview')}>
               <Globe size={18} aria-hidden="true" />
               عرض الكرة بالكامل
             </button>
@@ -499,6 +585,14 @@ function WorldScene({
             </button>
           </div>
           <div className={styles.navigation} role="group" aria-label="التنقل على الخريطة">
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="اضبط اتجاه الشمال"
+              onClick={() => moveCamera('north')}
+            >
+              <Compass size={20} aria-hidden="true" />
+            </button>
             <button
               className={styles.iconButton}
               type="button"
@@ -599,12 +693,18 @@ function WorldScene({
           features={features}
           onSelect={focusSelection}
           onClose={closeSelection}
-          targetSelection={!referenceOnly && mode !== 'WORLD' ? {
-            title: modeLabels[mode],
-            canConfirm: Boolean(canConfirm),
-            onConfirm: () => { if (canConfirm && selection) onConfirmTarget?.(selection.id); },
-            onCancel: onCancelTarget,
-          } : undefined}
+          targetSelection={
+            !referenceOnly && mode !== 'WORLD'
+              ? {
+                  title: modeLabels[mode],
+                  canConfirm: Boolean(canConfirm),
+                  onConfirm: () => {
+                    if (canConfirm && selection) onConfirmTarget?.(selection.id);
+                  },
+                  onCancel: onCancelTarget,
+                }
+              : undefined
+          }
           pickingDestination={isPickingDestination}
           relocation={
             relocationVillage

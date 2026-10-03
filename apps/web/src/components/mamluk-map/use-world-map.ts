@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { OPEN_FREE_MAP_STYLE, type MapPalette } from '@mamluk/maplibre-adapter';
+import { type MapPalette } from '@mamluk/maplibre-adapter';
 import type { MapPayload, MapProjection } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
 import { createMapSession } from './map-session';
 import { watchMapRevisions } from './map-revisions';
 import type { SelectionKey } from './selection';
-import { buildPhysicalMapStyle, type PhysicalMapColors } from './physical-map-style';
+import { createHistoricalBasemap, readMapColors } from './historical-basemap';
+import { initialMapLayers, type MapLayerGroup } from './map-layer-controls';
 import type { OwnershipPresentationOptions } from './player-ownership';
 import {
   normalizeDestination,
@@ -45,18 +46,6 @@ function palette(container: HTMLElement): MapPalette {
   };
 }
 
-function physicalPalette(container: HTMLElement): PhysicalMapColors {
-  const tokens = getComputedStyle(container);
-  const color = (token: string) => tokens.getPropertyValue(token).trim();
-  return {
-    ocean: color('--map-ocean'),
-    land: color('--map-land'),
-    forest: color('--map-forest'),
-    border: color('--map-country-border'),
-    label: color('--map-label'),
-  };
-}
-
 function ownershipPalette(
   container: HTMLElement,
   viewerPlayerId: string,
@@ -80,8 +69,53 @@ export function useWorldMap(
   viewerPlayerId: string,
   initialLocation?: { readonly longitude: number; readonly latitude: number },
   initialVillageId?: string,
+  initialOverview = false,
 ) {
   const container = useRef<HTMLDivElement>(null);
+  const [visibleLayers, setVisibleLayers] = useState(initialMapLayers);
+  const localPresentation = useRef(true);
+  const visibleLayersRef = useRef(visibleLayers);
+  const applyLayers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const groups: Record<MapLayerGroup, readonly string[]> = {
+      cities: [
+        'mamluk-cities',
+        'mamluk-cities-owner-markers',
+        'mamluk-village-clusters',
+        'mamluk-village-cluster-count',
+        'mamluk-overview-cells',
+        'mamluk-overview-count',
+      ],
+      castles: ['mamluk-castles', 'mamluk-castles-owner-markers'],
+      armies: ['mamluk-armies', 'mamluk-armyRoutes', 'mamluk-sieges'],
+      territories: [
+        'mamluk-territories',
+        'mamluk-sultanateBorders',
+        'mamluk-village-borders',
+        'mamluk-village-border-halo',
+      ],
+      relief: ['atlas-relief', 'atlas-global-relief'],
+    };
+    for (const [group, ids] of Object.entries(groups))
+      for (const id of ids)
+        if (map.getLayer(id))
+          map.setLayoutProperty(
+            id,
+            'visibility',
+            visibleLayersRef.current[group as MapLayerGroup] &&
+              ((group !== 'cities' && group !== 'territories') ||
+                (id.startsWith('mamluk-overview-')
+                  ? !localPresentation.current
+                  : localPresentation.current))
+              ? 'visible'
+              : 'none',
+          );
+  }, []);
+  useEffect(() => {
+    visibleLayersRef.current = visibleLayers;
+    applyLayers();
+  }, [visibleLayers, applyLayers]);
   const mapRef = useRef<LibreMap | null>(null);
   const sessionRef = useRef<ReturnType<typeof createMapSession> | null>(null);
   const [status, setStatus] = useState<Status>('loading');
@@ -196,7 +230,24 @@ export function useWorldMap(
         map = new Map({
           container: container.current,
           center: hasLocation ? [camera.longitude!, camera.latitude!] : [34, 30.4],
-          zoom: pendingFocus.current?.zoom ?? (hasLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3),
+          zoom:
+            pendingFocus.current?.zoom ??
+            (initialOverview
+              ? Math.max(
+                  0,
+                  Math.min(
+                    1.5,
+                    Math.log2(
+                      Math.min(
+                        container.current.clientWidth || 1024,
+                        container.current.clientHeight || 630,
+                      ) / 256,
+                    ),
+                  ),
+                )
+              : hasLocation
+                ? VILLAGE_OVERVIEW_ZOOM
+                : 5.3),
           renderWorldCopies: false,
           attributionControl: { compact: true },
         });
@@ -216,17 +267,15 @@ export function useWorldMap(
         map.on('error', () => {
           if (!cancelled) setStatus('error');
         });
-        const colors = physicalPalette(container.current);
+        const colors = readMapColors(container.current);
         settlements = createSettlementPresentation(
           map,
-          { label: colors.label, halo: colors.land },
+          { label: colors.ink, halo: colors.land },
           artworkController.signal,
         );
         // The SDK loads the provider style. Its geographic sources and credits
         // remain intact; the host changes presentation only.
-        map.setStyle(OPEN_FREE_MAP_STYLE, {
-          transformStyle: (_previous, next) => buildPhysicalMapStyle(next, colors),
-        });
+        map.setStyle(createHistoricalBasemap(colors));
         await settlements.ready;
         if (cancelled) return;
         session = createMapSession(
@@ -238,6 +287,7 @@ export function useWorldMap(
             // Keep only the selection key during refresh; null payload hides every detail.
             onPayload: (nextPayload) => {
               setSnapshot({ sessionKey: `${worldId}:${viewerPlayerId}`, payload: nextPayload });
+              if (nextPayload) queueMicrotask(applyLayers);
               if (
                 pendingInitialSelection.current &&
                 nextPayload?.layers.cities.features.some(
@@ -256,6 +306,10 @@ export function useWorldMap(
               }),
             onSelection: receiveSelection,
             onDestination: (destination) => updateDestination(destination, true, false),
+            onPresentation: (local) => {
+              localPresentation.current = local;
+              queueMicrotask(applyLayers);
+            },
             onStatus: setStatus,
             onRefreshing: setRefreshing,
           },
@@ -284,7 +338,15 @@ export function useWorldMap(
       destinationRef.current = null;
       setDestinationDraft(null);
     };
-  }, [worldId, viewerPlayerId, attempt, receiveSelection, updateDestination]);
+  }, [
+    worldId,
+    viewerPlayerId,
+    attempt,
+    receiveSelection,
+    updateDestination,
+    initialOverview,
+    applyLayers,
+  ]);
   function startPickingDestination() {
     updateDestination(activeDraft?.destination ?? null, true, false);
     container.current?.scrollIntoView?.({ block: 'center', behavior: 'instant' });
@@ -322,7 +384,7 @@ export function useWorldMap(
     sessionRef.current?.adapter.setProjection(value);
     void sessionRef.current?.loader.refresh();
   }
-  function moveCamera(action: 'in' | 'out' | 'home' | 'overview') {
+  function moveCamera(action: 'in' | 'out' | 'home' | 'overview' | 'north' | 'kingdom') {
     const map = mapRef.current;
     if (!map) return;
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250;
@@ -336,6 +398,20 @@ export function useWorldMap(
         : initialLocation
           ? [initialLocation.longitude, initialLocation.latitude]
           : [31.24967, 30.06263];
+    if (action === 'north') {
+      map.easeTo({ bearing: 0, pitch: 0, duration });
+      return;
+    }
+    if (action === 'kingdom') {
+      const village = (payload ?? publicPayload)?.layers.cities.features.find(
+        (city) => city.properties.ownerPlayerId === viewerPlayerId,
+      );
+      if (village?.geometry.type === 'Point') {
+        focusSelection({ layer: 'cities', id: village.id }, 9);
+        return;
+      }
+      action = 'home';
+    }
     if (action === 'overview') {
       setProjection('globe');
       const canvas = map.getCanvas();
@@ -360,6 +436,16 @@ export function useWorldMap(
   }
   return {
     container,
+    visibleLayers,
+    toggleLayer: (group: MapLayerGroup) => {
+      if (
+        visibleLayers[group] &&
+        selected &&
+        (selected.layer === group || (group === 'armies' && selected.layer === 'sieges'))
+      )
+        setSelected(null);
+      setVisibleLayers((current) => ({ ...current, [group]: !current[group] }));
+    },
     status,
     refreshing,
     payload,

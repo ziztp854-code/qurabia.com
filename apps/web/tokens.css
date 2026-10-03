@@ -30,8 +30,19 @@
   --brand-ivory: #fefbf6;
   /* Geographic atlas palette: shared by the physical map renderer and its frame. */
   --map-ocean: #6aabf4;
-  --map-land: #e9dbb8;
-  --map-forest: #b5cda6;
+  --map-land: #d8c7a1;
+  --map-forest: #677d59;
+  --map-water: #153b50;
+  --map-coast: #79a6ad;
+  --map-sand: #c9aa73;
+  --map-ice: #e5e4cf;
+  --map-ink: #302e25;
+  --map-relief: #655b46;
+  --map-gold: #e1b963;
+  --map-owned: var(--kingdoms-ui-success);
+  --map-allied: #65a5b0;
+  --map-hostile: var(--kingdoms-ui-danger);
+  --map-neutral: #b8ac92;
   --map-country-border: #777565;
   --map-label: #403c2f;
   /* Player ownership stays consistent as the viewport and projection change. */

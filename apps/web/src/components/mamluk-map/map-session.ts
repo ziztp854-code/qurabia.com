@@ -43,6 +43,7 @@ export interface MapSessionCallbacks {
   readonly onStatus: (status: 'loading' | 'ready' | 'zoom' | 'error') => void;
   readonly onDestination?: (destination: RelocationDestination) => void;
   readonly onRefreshing?: (refreshing: boolean) => void;
+  readonly onPresentation?: (local: boolean) => void;
 }
 
 function isStyleLayer(layer: AddLayerObject): layer is LayerSpecification {
@@ -354,6 +355,7 @@ export function createMapSession(
       if (payload) {
         overview.hide();
         showLocal(true);
+        callbacks.onPresentation?.(true);
         callbacks.onRefreshing?.(false);
         cancelRecovery();
         recoveryAttempts = 0;
@@ -382,7 +384,10 @@ export function createMapSession(
             callbacks.onRefreshing?.(true);
             const accepted = await overview.load(bounds, signal);
             if (!signal.aborted && !disposed) {
-              if (accepted) showLocal(false);
+              if (accepted) {
+                showLocal(false);
+                callbacks.onPresentation?.(false);
+              }
               callbacks.onRefreshing?.(false);
               callbacks.onStatus('ready');
             }

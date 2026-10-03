@@ -318,3 +318,30 @@ it('never displays the previous viewer public presentation during a session chan
   expect(MapSdkFixture.instances[0]?.removed).toBe(true);
   view.unmount();
 });
+
+it('hides a selected layer and its directory state without recreating the map', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+  );
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return (
+      <>
+        <div ref={map.container} />
+        <button onClick={() => map.setSelected({ layer: 'cities', id: 'city' })}>select</button>
+        <button onClick={() => map.toggleLayer('cities')}>cities</button>
+        <output>{map.selected?.id ?? 'none'}</output>
+      </>
+    );
+  }
+  const view = render(<Scene />);
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  const map = MapSdkFixture.instances[0]!;
+  fireEvent.click(screen.getByText('select'));
+  fireEvent.click(screen.getByText('cities'));
+  expect(screen.getByText('none')).toBeInTheDocument();
+  expect(map.setLayoutProperty).toHaveBeenCalledWith('mamluk-cities', 'visibility', 'none');
+  expect(MapSdkFixture.instances).toHaveLength(1);
+  view.unmount();
+});
