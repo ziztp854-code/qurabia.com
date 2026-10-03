@@ -220,11 +220,14 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await page.getByRole('button', { name: 'أبعد الخريطة', exact: true }).click();
   const other = initial.map.find((item) => item.ownerId !== initial.player!.id)!;
   await page.getByLabel('ابحث عن قرية أو مملكة').fill('مملكة الجوار');
-  const neighbor = page.getByRole('button', { name: `اعرض ${other.name} على الخريطة`, exact: true });
-  await neighbor.click();
-  await expect(neighbor).toHaveAttribute('aria-pressed', 'true');
+  const neighborVillage = page.getByRole('button', {
+    name: `اعرض ${other.name} على الخريطة`,
+    exact: true,
+  });
+  await neighborVillage.click();
+  await expect(neighborVillage).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('region', { name: 'القرية المختارة' })).toContainText(other.name);
-  const destinationBounds = await neighbor.boundingBox();
+  const destinationBounds = await neighborVillage.boundingBox();
   expect(destinationBounds?.width).toBeGreaterThanOrEqual(44);
   expect(destinationBounds?.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
