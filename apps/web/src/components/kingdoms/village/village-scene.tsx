@@ -27,6 +27,7 @@ import { VillageCanvas } from './village-canvas';
 import { VillageActivity } from './village-activity';
 import { VillageIncomingAlert } from '../incoming-alert';
 import { hostileThreats, presentIncomingThreats, villageIncoming } from '@/lib/kingdoms/incoming-threats';
+import { villageVisualPresentation } from '@/lib/kingdoms/village/visual-tier';
 import { VillageDirectory } from './village-directory';
 import { VillageDebug } from './village-debug';
 import { VillageOnboarding } from './village-onboarding';
@@ -74,11 +75,22 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const choose = useCallback((building: VillageSelection) => {
     scene.current?.focusOn(building, () => onSelect(building));
   }, [onSelect]);
+  const incoming = presentIncomingThreats(view.incoming ?? [], view.serverNow);
+  const hostile = hostileThreats(villageIncoming(incoming, village.id));
+  const threatSeverity = hostile[0]?.severity === 'CRITICAL' || hostile[0]?.severity === 'DANGER'
+    ? hostile[0].severity
+    : undefined;
+  const look = villageVisualPresentation(village.progression?.visualTier);
   return (
-    <section className={styles.scene} aria-label="خريطة القرية" data-expanded={expanded}>
+    <section
+      className={styles.scene}
+      aria-label="خريطة القرية"
+      data-expanded={expanded}
+      data-visual-tier={look.tier}
+    >
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>مشهد القرية · اختر مبنى لإدارته</p>
+          <p className={styles.eyebrow}>مشهد القرية · {look.label}</p>
           <h2>{village.name}</h2>
         </div>
         <div className={styles.headerActions}>
@@ -89,7 +101,18 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           </Button>
         </div>
       </header>
-      <VillageProgress village={village} config={view.config} />
+      <VillageProgress
+        village={village}
+        config={view.config}
+        now={view.serverNow}
+        onOpenConstruction={() => choose(village.build?.building ?? 'hall')}
+        onOpenMilitary={() => choose(village.training?.unit === 'rider' ? 'stable' : 'barracks')}
+        onOpenActivity={() => {
+          document.querySelector<HTMLElement>('[aria-label="نشاط القرية"]')?.scrollIntoView({
+            block: 'nearest',
+          });
+        }}
+      />
       <VillageIncomingAlert
         incoming={view.incoming ?? []}
         village={village}
@@ -108,9 +131,8 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           quality={quality}
           reducedMotion={reducedMotion}
           showLabels={labels}
-          showThreatMarker={
-            hostileThreats(villageIncoming(presentIncomingThreats(view.incoming ?? [], view.serverNow), village.id)).length > 0
-          }
+          showThreatMarker={hostile.length > 0}
+          threatSeverity={threatSeverity}
           debug={options}
           onReady={onReady}
         />
@@ -215,6 +237,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           onChange={(event) => setQuality(event.target.value as VillageQuality)}
         >
           <option value="auto">تلقائية</option>
+          <option value="ultra">فائقة</option>
           <option value="high">عالية</option>
           <option value="medium">متوسطة</option>
           <option value="low">منخفضة</option>

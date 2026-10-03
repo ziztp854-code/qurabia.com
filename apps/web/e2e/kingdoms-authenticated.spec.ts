@@ -141,6 +141,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
   };
   const initial = await read();
   expect(initial.villages).toHaveLength(1);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.getByRole('button', { name: 'القرية', exact: true }).click();
   const villageMap = page.getByRole('region', { name: 'خريطة القرية' });
   await expect(villageMap).toBeVisible();
@@ -152,14 +153,18 @@ test('administrator opens a world; a signed-in player builds and trains with per
         .evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
     )
     .toBe(true);
-  await villageMap.getByRole('button', { name: /الثكنة.*لم يُبنَ/ }).click();
+  await expect(villageMap.locator('[data-village-scene]')).toHaveAttribute('data-camera-x', /\d/);
+  await expect(villageMap.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ })).toHaveCount(1);
+  await expect(villageMap.getByRole('button', { name: /^الإسطبل، المستوى / })).toHaveCount(1);
+  await villageMap.locator('[data-building="barracks"]').click();
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({
     path: testInfo.outputPath('kingdoms-authenticated-village.png'),
     fullPage: true,
   });
-  const barracks = page.getByRole('article', { name: 'المبنى المختار: الثكنة' });
-  await barracks.getByRole('button', { name: 'ابنِ المبنى', exact: true }).click();
+  const barracks = page.getByRole('region', { name: 'تفاصيل الثكنة' });
+  await expect(barracks).toBeVisible({ timeout: 15_000 });
+  await barracks.getByRole('button', { name: 'طوّر المبنى', exact: true }).click();
   await expect.poll(async () => (await read()).villages[0].buildings.barracks).toBe(1);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
@@ -199,7 +204,10 @@ test('administrator opens a world; a signed-in player builds and trains with per
   expect(rejected.status()).toBe(403);
   await page.reload();
   await page.getByLabel('العالم والموسم').selectOption(worldId);
-  await page.getByRole('button', { name: 'خريطة العالم', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'إدارة المملكة' })
+    .getByRole('link', { name: 'خريطة العالم', exact: true })
+    .click();
   await expect(page.getByRole('heading', { name: 'خريطة العالم', exact: true })).toBeVisible();
   await page.getByLabel('قائد الحملة').selectOption(commanderId);
   await expect(page.getByLabel('قائد الحملة')).toHaveValue(commanderId);

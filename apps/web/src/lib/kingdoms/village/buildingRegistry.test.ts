@@ -83,6 +83,12 @@ describe('Mamluk village presentation registry', () => {
       src: '/game-art/kingdoms/village-oasis.webp',
       width: 1536,
       height: 1024,
+      classification: 'LOW_RESOLUTION_FOR_4K',
+      variants: {
+        standard: '/game-art/kingdoms/village-oasis.webp',
+        hidpi: null,
+        ultra: null,
+      },
     });
   });
 

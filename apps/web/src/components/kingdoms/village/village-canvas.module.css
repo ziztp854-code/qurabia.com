@@ -10,6 +10,13 @@
   isolation: isolate;
   --camera-scale: 0.5;
 }
+.stage[data-threat-severity='DANGER'],
+.stage[data-threat-severity='CRITICAL'] {
+  box-shadow: inset 0 0 0 3px var(--danger);
+}
+.stage[data-threat-severity='CRITICAL'] [data-building-region='gate'] {
+  box-shadow: inset 0 0 0 calc(3px / var(--camera-scale)) var(--danger);
+}
 .stage[data-dragging='true'] {
   cursor: grabbing;
 }
@@ -68,11 +75,12 @@
   box-shadow: inset 0 0 0 2px var(--gold);
 }
 .hotspot:focus-visible {
-  outline: calc(2px / var(--camera-scale)) solid var(--gold);
-  outline-offset: calc(2px / var(--camera-scale));
+  outline: calc(3px / var(--camera-scale)) solid var(--gold);
+  outline-offset: calc(3px / var(--camera-scale));
 }
 .hotspot[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 calc(2px / var(--camera-scale)) var(--gold);
+  box-shadow: inset 0 0 0 calc(3px / var(--camera-scale)) var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
 }
 .label {
   position: absolute;
@@ -218,14 +226,26 @@
 }
 @media (max-width: 700px) {
   .stage {
-    block-size: clamp(380px, 58dvh, 520px);
+    block-size: clamp(420px, 62dvh, 560px);
   }
   .label {
     max-width: 210px;
     font-size: 13px;
   }
 }
+@media (min-width: 2560px) {
+  .stage {
+    block-size: clamp(720px, 70dvh, 1400px);
+  }
+  .label {
+    font-size: 16px;
+    max-width: 280px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  .stage[data-threat-severity] {
+    animation: none;
+  }
   .terrain,
   .world {
     will-change: auto;

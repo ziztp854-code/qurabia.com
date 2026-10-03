@@ -1,5 +1,10 @@
 import { Application, Assets, Container, Graphics, type AnimatedSprite, type Texture } from 'pixi.js';
-import { villageAssets, type VillageAssetSlot } from '@/lib/kingdoms/village/assetManifest';
+import {
+  resolveVillageAssetSrc,
+  villageAssetFidelity,
+  villageAssets,
+  type VillageAssetSlot,
+} from '@/lib/kingdoms/village/assetManifest';
 import { getVillageVisualLevel, villageBuildingRegistry } from '@/lib/kingdoms/village/buildingRegistry';
 import { getBuildingRect, rectCenter } from '@/lib/kingdoms/village/coordinates';
 import type { QualitySettings } from '@/lib/kingdoms/village/quality';
@@ -117,7 +122,15 @@ export async function createVillageRenderer(
       ...Object.values(villageAssets.npc),
       ...(nextSettings.environment ? Object.values(villageAssets.environment) : []),
     ];
-    const sources = [...new Set(slots.flatMap((slot) => [...(slot.src ? [slot.src] : []), ...slot.frames]))];
+    const fidelity = villageAssetFidelity(nextSettings.mode);
+    const sources = [
+      ...new Set(
+        slots.flatMap((slot) => {
+          const src = resolveVillageAssetSrc(slot, fidelity);
+          return [...(src ? [src] : []), ...slot.frames];
+        }),
+      ),
+    ];
     await Promise.all(
       sources.map(async (src) => {
         if (approved.has(src)) return;
@@ -154,11 +167,18 @@ export async function createVillageRenderer(
     }
     textures.forEach((texture) => texture.destroy());
     textures = [];
-    roadLayer = createRoadLayer(source, textures, approved);
+    const fidelity = villageAssetFidelity(settings.mode);
+    roadLayer = createRoadLayer(source, textures, approved, fidelity);
     buildingLayer = createBuildingLayer(source, props, textures, approved, artwork);
     npcs = createNPCLayer(source, props, settings, textures, approved, artwork, npcPool);
-    environment = createEnvironmentLayer(source, textures, approved);
-    constructionLayer = createConstructionAssetLayer(source, props, textures, approved);
+    environment = createEnvironmentLayer(
+      source,
+      textures,
+      approved,
+      props.village.progression?.visualTier,
+      fidelity,
+    );
+    constructionLayer = createConstructionAssetLayer(source, props, textures, approved, fidelity);
     environment.layer.visible = settings.environment;
     world.addChild(roadLayer, buildingLayer, environment.layer, npcs.layer, constructionLayer, effects, interactions);
     assetAnimations = collectAssetAnimations(world);
@@ -179,7 +199,13 @@ export async function createVillageRenderer(
     assetAnimations.forEach((sprite) => sprite.gotoAndStop(Math.floor(elapsed / 140) % sprite.totalFrames));
     if (props.debug?.npcs !== false) npcs.update(elapsed);
     if (settings.environment) {
-      paintEnvironment(environment.glints, elapsed, colors, settings.particles);
+      paintEnvironment(
+        environment.glints,
+        elapsed,
+        colors,
+        settings.particles,
+        props.village.progression?.visualTier,
+      );
       if (environment.flag && environment.flagSway)
         environment.flag.scale.x = environment.flagScale * (1 + Math.sin(elapsed / 470) * 0.05);
     }
@@ -223,7 +249,8 @@ export async function createVillageRenderer(
         JSON.stringify(next.village.troops) !== JSON.stringify(props.village.troops) ||
         next.village.build?.building !== props.village.build?.building ||
         next.debug !== props.debug ||
-        nextQuality.npcLimit !== settings.npcLimit;
+        nextQuality.npcLimit !== settings.npcLimit ||
+        nextQuality.mode !== settings.mode;
       props = next;
       settings = nextQuality;
       if (rebuildNeeded) rebuild();

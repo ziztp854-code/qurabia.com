@@ -19,6 +19,7 @@ vi.mock('@/lib/kingdoms/village/assetManifest', async (importOriginal) => {
 const gpu = vi.hoisted(() => ({
   resize: vi.fn(),
   resolutionAssignment: vi.fn(),
+  initCount: 0,
   stage: null as import('pixi.js').Container | null,
 }));
 vi.mock('pixi.js', async (importOriginal) => {
@@ -44,6 +45,7 @@ vi.mock('pixi.js', async (importOriginal) => {
         resize: gpu.resize,
       };
       init = vi.fn(async () => {
+        gpu.initCount += 1;
         gpu.stage = this.stage;
       });
       render = vi.fn();
@@ -58,6 +60,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   gpu.resize.mockClear();
   gpu.resolutionAssignment.mockClear();
+  gpu.initCount = 0;
 });
 
 describe('village rendering surface dimensions', () => {
@@ -151,6 +154,36 @@ describe('village rendering surface dimensions', () => {
     renderer.camera(createCamera({ width: 390, height: 410 }));
     renderer.update(props, resolveVillageQuality('low', { width: 390, dpr: 2 }));
     expect(gpu.resize).toHaveBeenCalledTimes(2);
+    renderer.destroy();
+  });
+  it('rebuilds presentation when visualTier changes without creating another Pixi application', async () => {
+    const now = 1800000000000;
+    const view = projectWorld(
+      executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now),
+      'p',
+      now,
+    );
+    const props: VillageCanvasProps = {
+      view,
+      village: { ...view.villages[0], progression: { ...view.villages[0].progression!, visualTier: 1 } },
+      selected: null,
+      onSelect: vi.fn(),
+      quality: 'high',
+      reducedMotion: true,
+      showLabels: false,
+    };
+    const renderer = await createVillageRenderer(
+      document.createElement('canvas'),
+      props,
+      resolveVillageQuality('high', { width: 1280, height: 720, dpr: 2 }),
+      { gold: 'gold', light: 'white', water: 'white', dust: 'gold' },
+    );
+    expect(gpu.initCount).toBe(1);
+    renderer.update(
+      { ...props, village: { ...props.village, progression: { ...props.village.progression!, visualTier: 6 } } },
+      resolveVillageQuality('ultra', { width: 1280, height: 720, dpr: 2 }),
+    );
+    expect(gpu.initCount).toBe(1);
     renderer.destroy();
   });
 });

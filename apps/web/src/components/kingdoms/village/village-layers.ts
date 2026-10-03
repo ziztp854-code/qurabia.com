@@ -1,5 +1,11 @@
 import { AnimatedSprite, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
-import { villageAssets, type VillageAssetSlot } from '@/lib/kingdoms/village/assetManifest';
+import {
+  resolveVillageAssetSrc,
+  villageAssets,
+  type VillageAssetFidelity,
+  type VillageAssetSlot,
+} from '@/lib/kingdoms/village/assetManifest';
+import { villageVisualPresentation } from '@/lib/kingdoms/village/visual-tier';
 import { getBuildingPresentation } from '@/lib/kingdoms/village/buildingConfig';
 import { getVillageBuilding, getVillageVisualLevel, villageBuildingRegistry } from '@/lib/kingdoms/village/buildingRegistry';
 import { getBuildingRect, getVillagePlacement, getVillageRect, rectCenter } from '@/lib/kingdoms/village/coordinates';
@@ -65,8 +71,13 @@ export function createArtworkTextureCache(
   };
 }
 
-export function hasApprovedAsset(slot: VillageAssetSlot, approved: ReadonlyMap<string, Texture>) {
-  return (!!slot.src && approved.has(slot.src)) ||
+export function hasApprovedAsset(
+  slot: VillageAssetSlot,
+  approved: ReadonlyMap<string, Texture>,
+  fidelity: VillageAssetFidelity = 'standard',
+) {
+  const src = resolveVillageAssetSrc(slot, fidelity);
+  return (!!src && approved.has(src)) ||
     (slot.frames.length > 0 && slot.frames.every((frame) => approved.has(frame)));
 }
 
@@ -77,12 +88,14 @@ export function artworkSprite(
   approved: ReadonlyMap<string, Texture>,
   artwork?: ArtworkTextureCache,
   outline?: readonly number[],
+  fidelity: VillageAssetFidelity = 'standard',
 ): Sprite | null {
   if (slot.animated && slot.frames.length > 1 && slot.frames.every((frame) => approved.has(frame))) {
     // This renderer owns animation time; never start Pixi's shared ticker.
     return new AnimatedSprite(slot.frames.map((frame) => approved.get(frame)!), false);
   }
-  if (slot.src && approved.has(slot.src)) return new Sprite(approved.get(slot.src));
+  const src = resolveVillageAssetSrc(slot, fidelity);
+  if (src && approved.has(src)) return new Sprite(approved.get(src));
   if (slot.frames.length && slot.frames.every((frame) => approved.has(frame)))
     return new Sprite(approved.get(slot.frames[0]));
   if (!slot.fallbackCrop) return null;
@@ -278,13 +291,17 @@ export function createEnvironmentLayer(
   source: Texture,
   textures: Texture[],
   approved: ReadonlyMap<string, Texture>,
+  visualTier?: number,
+  fidelity: VillageAssetFidelity = 'standard',
 ) {
+  const look = villageVisualPresentation(visualTier);
   const layer = new Container();
   layer.sortableChildren = true;
+  layer.label = 'village-environment';
   const glints = new Graphics();
   for (const [id, slot] of Object.entries(villageAssets.environment)) {
     if (id === 'flags' || id === 'scaffold' || (!slot.src && !slot.frames.length)) continue;
-    const sprite = artworkSprite(source, slot, textures, approved);
+    const sprite = artworkSprite(source, slot, textures, approved, undefined, undefined, fidelity);
     if (!sprite) continue;
     const rect = slot.worldRect;
     sprite.anchor.set(slot.anchor.x, slot.anchor.y);
@@ -294,31 +311,105 @@ export function createEnvironmentLayer(
     sprite.zIndex = slot.zIndex;
     layer.addChild(sprite);
   }
-  const flag = artworkSprite(source, villageAssets.environment.flags, textures, approved);
+  const flag = artworkSprite(
+    source,
+    villageAssets.environment.flags,
+    textures,
+    approved,
+    undefined,
+    undefined,
+    fidelity,
+  );
   if (flag) {
     const slot = villageAssets.environment.flags;
-    const isApproved = hasApprovedAsset(slot, approved);
+    const isApproved = hasApprovedAsset(slot, approved, fidelity);
     const rect = isApproved ? slot.worldRect : { x: 836, y: 345, width: 14, height: 44 };
     flag.anchor.set(isApproved ? slot.anchor.x : 0, isApproved ? slot.anchor.y : 0);
     flag.position.set(rect.x + flag.anchor.x * rect.width, rect.y + flag.anchor.y * rect.height);
     flag.width = rect.width;
     flag.height = rect.height;
     flag.zIndex = slot.zIndex;
+    flag.label = 'village-flag-0';
     layer.addChild(flag);
+    for (let index = 1; index < look.flagCount; index += 1) {
+      const extra = artworkSprite(
+        source,
+        villageAssets.environment.flags,
+        textures,
+        approved,
+        undefined,
+        undefined,
+        fidelity,
+      );
+      if (!extra) continue;
+      extra.anchor.copyFrom(flag.anchor);
+      extra.position.set(rect.x + index * 22, rect.y + (index % 2) * 10);
+      extra.width = rect.width;
+      extra.height = rect.height;
+      extra.zIndex = slot.zIndex;
+      extra.label = `village-flag-${index}`;
+      layer.addChild(extra);
+    }
+    if (look.marketAmbience) {
+      const market = artworkSprite(
+        source,
+        villageAssets.environment.flags,
+        textures,
+        approved,
+        undefined,
+        undefined,
+        fidelity,
+      );
+      if (market) {
+        market.position.set(1092, 686);
+        market.width = rect.width;
+        market.height = rect.height;
+        market.label = 'village-market-banner';
+        layer.addChild(market);
+      }
+    }
+    if (look.militaryAmbience) {
+      const military = artworkSprite(
+        source,
+        villageAssets.environment.flags,
+        textures,
+        approved,
+        undefined,
+        undefined,
+        fidelity,
+      );
+      if (military) {
+        military.position.set(421, 505);
+        military.width = rect.width;
+        military.height = rect.height;
+        military.label = 'village-military-banner';
+        layer.addChild(military);
+      }
+    }
   }
   layer.addChild(glints);
-  return { layer, glints, flag, flagScale: flag?.scale.x ?? 1,
-    flagSway: !hasApprovedAsset(villageAssets.environment.flags, approved) };
+  return {
+    layer,
+    glints,
+    flag,
+    flagScale: flag?.scale.x ?? 1,
+    flagSway: !hasApprovedAsset(villageAssets.environment.flags, approved, fidelity),
+    look,
+  };
 }
 
 export function createConstructionAssetLayer(
-  source: Texture, props: VillageCanvasProps, textures: Texture[], approved: ReadonlyMap<string, Texture>,
+  source: Texture,
+  props: VillageCanvasProps,
+  textures: Texture[],
+  approved: ReadonlyMap<string, Texture>,
+  fidelity: VillageAssetFidelity = 'standard',
 ) {
   const layer = new Container();
   if (!props.village.build) return layer;
   const slot = villageAssets.environment.scaffold;
-  if (!hasApprovedAsset(slot, approved)) return layer;
-  const sprite = artworkSprite(source, slot, textures, approved);
+  if (!hasApprovedAsset(slot, approved, fidelity)) return layer;
+  const sprite = artworkSprite(source, slot, textures, approved, undefined, undefined, fidelity);
   if (sprite) {
     const rect = getBuildingRect(props.village.build.building, props.debug);
     sprite.anchor.set(slot.anchor.x, slot.anchor.y);
@@ -330,11 +421,17 @@ export function createConstructionAssetLayer(
   return layer;
 }
 
-export function createRoadLayer(source: Texture, textures: Texture[], approved: ReadonlyMap<string, Texture>) {
+export function createRoadLayer(
+  source: Texture,
+  textures: Texture[],
+  approved: ReadonlyMap<string, Texture>,
+  fidelity: VillageAssetFidelity = 'standard',
+) {
   const layer = new Container();
+  layer.label = 'village-roads';
   const slot = villageAssets.roads;
-  if (!hasApprovedAsset(slot, approved)) return layer;
-  const sprite = artworkSprite(source, slot, textures, approved);
+  if (!hasApprovedAsset(slot, approved, fidelity)) return layer;
+  const sprite = artworkSprite(source, slot, textures, approved, undefined, undefined, fidelity);
   if (sprite) {
     const rect = slot.worldRect;
     sprite.anchor.set(slot.anchor.x, slot.anchor.y);
@@ -358,26 +455,29 @@ export function paintEnvironment(
   elapsed: number,
   colors: SceneColors,
   particles: boolean,
+  visualTier?: number,
 ) {
   graphics.clear();
+  const look = villageVisualPresentation(visualTier);
   const seconds = elapsed / 1000;
   if (particles) {
-    for (let i = 0; i < 12; i += 1) {
+    const count = Math.max(4, Math.round(12 * look.particleScale));
+    for (let i = 0; i < count; i += 1) {
       const phase = (seconds * 0.22 + i * 0.137) % 1;
       graphics
         .circle(146 + Math.sin(i * 7) * 15, 66 + phase * 162, 1.2 + phase)
         .fill({ color: colors.light, alpha: Math.sin(phase * Math.PI) * 0.22 });
     }
   }
-  for (let i = 0; i < 10; i += 1) {
-    const x = 280 + i * 118;
+  for (let i = 0; i < look.waterGlints; i += 1) {
+    const x = 280 + i * (1180 / Math.max(1, look.waterGlints));
     const y = 944 + Math.sin(i * 8) * 28;
     graphics
       .moveTo(x, y)
       .lineTo(x + 12 + Math.sin(seconds * 0.7 + i) * 5, y + 1)
       .stroke({
         color: colors.water,
-        width: 1.3,
+        width: look.roadEmphasis ? 1.6 : 1.3,
         alpha: (Math.sin(seconds * 0.5 + i * 2.7) + 1) * 0.11,
       });
   }

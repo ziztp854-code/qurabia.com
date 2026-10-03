@@ -8,7 +8,7 @@ import {
   villageRegions,
   VILLAGE_WORLD,
 } from './coordinates';
-import { getBuildingPresentation } from './buildingConfig';
+import { getBuildingPresentation, villageBuildingSceneStatus } from './buildingConfig';
 
 describe('village artwork mapping', () => {
   it('maps every real backend building to an area inside the unchanged artwork', () => {
@@ -56,5 +56,38 @@ describe('village artwork mapping', () => {
         view.config,
       ).tier,
     ).toBe(5);
+    expect(villageBuildingSceneStatus('farm', village)).toBe('جاهز');
+    expect(
+      villageBuildingSceneStatus('farm', {
+        ...village,
+        build: { building: 'farm', level: 2, endsAt: now + 5000 },
+      }),
+    ).toBe('قيد البناء');
+    expect(
+      villageBuildingSceneStatus('wall', {
+        ...village,
+        constructionQueue: [
+          {
+            id: 'q1',
+            villageId: village.id,
+            building: 'wall',
+            fromLevel: 0,
+            targetLevel: 1,
+            queuedAt: now,
+            startedAt: now + 1000,
+            endsAt: now + 2000,
+            cost: village.resources,
+            status: 'QUEUED',
+          },
+        ],
+      }),
+    ).toBe('في الطابور');
+    expect(
+      villageBuildingSceneStatus('barracks', {
+        ...village,
+        buildings: { ...village.buildings, barracks: 1 },
+        training: { unit: 'guard', count: 2, endsAt: now + 1000 },
+      }),
+    ).toBe('تدريب جارٍ');
   });
 });

@@ -8,6 +8,9 @@
   gap: var(--space-3);
   max-block-size: clamp(430px, 60dvh, 640px);
 }
+@media (min-width: 2560px) {
+  .directory { max-block-size: clamp(720px, 70dvh, 1400px); }
+}
 .heading {
   display: flex;
   align-items: center;

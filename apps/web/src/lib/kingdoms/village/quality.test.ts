@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveVillageQuality } from './quality';
+import { capVillageDpr, resolveVillageQuality } from './quality';
 import { createVillageNPCs, npcPosition } from './npcRoutes';
 import { createWorld, executeCommand, projectWorld } from '../engine';
 
@@ -39,6 +39,17 @@ describe('village performance and activity', () => {
       mode: 'medium',
       fps: 30,
     });
+    expect(resolveVillageQuality('auto', { width: 3840, height: 2160, memory: 8, cores: 12, dpr: 2 })).toMatchObject({
+      mode: 'ultra',
+      npcLimit: 56,
+      particles: true,
+    });
+    expect(resolveVillageQuality('ultra', { width: 3840, height: 2160, dpr: 2 }).dpr).toBe(1);
+    expect(resolveVillageQuality('ultra', { width: 1280, height: 720, dpr: 2 }).dpr).toBe(2);
+  });
+  it('caps DPR by viewport pixel budget so 4K screens do not allocate an unbounded canvas', () => {
+    expect(capVillageDpr(2, { width: 3840, height: 2160, dpr: 2 }, 8_000_000, 2.25)).toBe(1);
+    expect(capVillageDpr(2, { width: 390, height: 844, dpr: 3 }, 8_000_000, 2.25)).toBe(2);
   });
   it('adds activity from confirmed buildings and cavalry while obeying the device budget', () => {
     const now = 1800000000000;

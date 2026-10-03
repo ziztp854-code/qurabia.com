@@ -11,7 +11,7 @@ export type CameraSnapshot = Readonly<{
   scale: number;
   viewport: WorldSize;
 }>;
-export type VillageQuality = 'auto' | 'high' | 'medium' | 'low';
+export type VillageQuality = 'auto' | 'ultra' | 'high' | 'medium' | 'low';
 export type VillageSelection = Building | 'stable';
 export type VillageTarget = VillageSelection | 'gate';
 export type VillagePlacement = WorldRect &
@@ -55,4 +55,5 @@ export type VillageCanvasProps = Readonly<{
   debug?: VillageDebugOptions;
   onReady?: () => void;
   showThreatMarker?: boolean;
+  threatSeverity?: 'DANGER' | 'CRITICAL';
 }>;

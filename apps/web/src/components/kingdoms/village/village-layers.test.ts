@@ -4,7 +4,7 @@ import { villageAssets } from '@/lib/kingdoms/village/assetManifest';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type { VillageCanvasProps } from '@/lib/kingdoms/village/types';
-import { collectAssetAnimations, createArtworkTextureCache, createBuildingLayer, createNPCLayer } from './village-layers';
+import { collectAssetAnimations, createArtworkTextureCache, createBuildingLayer, createEnvironmentLayer, createNPCLayer, createRoadLayer } from './village-layers';
 
 vi.mock('@/lib/kingdoms/village/assetManifest', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/kingdoms/village/assetManifest')>();
@@ -53,6 +53,21 @@ describe('original artwork alpha crops', () => {
       layer.destroy({ children: true });
     }
     cache.destroy();
+  });
+  it('adds environment banners from server visualTier and keeps the road layer ready for a future overlay', () => {
+    const source = originalArtwork();
+    const textures: Texture[] = [];
+    const roads = createRoadLayer(source, textures, new Map());
+    expect(roads.label).toBe('village-roads');
+    expect(roads.children).toHaveLength(0);
+    const environment = createEnvironmentLayer(source, textures, new Map(), 6);
+    expect(environment.look.tier).toBe(6);
+    expect(environment.layer.children.filter((child) => String(child.label).startsWith('village-flag-'))).toHaveLength(4);
+    expect(environment.layer.children.some((child) => child.label === 'village-military-banner')).toBe(true);
+    expect(environment.layer.children.some((child) => child.label === 'village-market-banner')).toBe(true);
+    roads.destroy({ children: true });
+    environment.layer.destroy({ children: true });
+    textures.forEach((texture) => texture.destroy());
   });
   it.each([[400, 200], [400, 600]])('contains stable artwork without distortion or moving its ground anchor (%i×%i)', (width, height) => {
     const now = 1800000000000;

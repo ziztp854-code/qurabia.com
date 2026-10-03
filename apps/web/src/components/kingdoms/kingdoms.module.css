@@ -1096,6 +1096,22 @@
   font-size: clamp(0.9rem, 1.35vw, 1.25rem);
   line-height: 1.2;
 }
+@media (min-width: 2560px) {
+  .playing .resources {
+    gap: 0.75rem;
+  }
+  .playing .resource {
+    min-block-size: 88px;
+    max-inline-size: 14rem;
+    padding: 0.85rem 1rem;
+  }
+  .playing .resource span {
+    font-size: 0.8rem;
+  }
+  .playing .resource strong {
+    font-size: clamp(1rem, 0.7vw, 1.35rem);
+  }
+}
 .playing .resource .capacity {
   inset-inline: 0.8rem;
   inset-block-end: 0.5rem;

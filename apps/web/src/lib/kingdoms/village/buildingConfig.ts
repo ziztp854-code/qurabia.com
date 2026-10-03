@@ -40,6 +40,23 @@ export const buildingStatusLabels: Record<BuildingStatus, string> = {
   complete: 'بلغ الحد الأعلى',
 };
 
+/** Maps existing server build/queue/training fields for hotspot labels. */
+export function villageBuildingSceneStatus(
+  building: Building | 'stable',
+  village: Village,
+) {
+  const key = building === 'stable' ? 'barracks' : building;
+  if (village.build?.building === key) return 'قيد البناء';
+  if (village.constructionQueue?.some((item) => item.building === key && item.status === 'QUEUED'))
+    return 'في الطابور';
+  if (
+    village.training &&
+    (key === 'barracks' || (building === 'stable' && village.training.unit === 'rider'))
+  )
+    return 'تدريب جارٍ';
+  return village.buildings[key] > 0 ? 'جاهز' : 'لم يُبنَ';
+}
+
 export function getBuildingPresentation(
   building: Building,
   village: Village,
