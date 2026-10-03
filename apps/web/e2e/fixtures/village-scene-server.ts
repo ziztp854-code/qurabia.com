@@ -190,6 +190,16 @@ async function main() {
     root: process.cwd(),
     envDir: path.join(process.cwd(), 'e2e/fixtures'),
     plugins: [
+      {
+        name: 'stub-world-map',
+        enforce: 'pre',
+        resolveId(id: string) {
+          if (id.includes('mamluk-world-map') && !id.includes('e2e/fixtures')) {
+            return path.join(process.cwd(), 'e2e/fixtures/mamluk-world-map-stub.tsx');
+          }
+          return null;
+        },
+      },
       react(),
       {
         name: 'village-local-fixture',
@@ -198,7 +208,12 @@ async function main() {
         },
       },
     ],
-    resolve: { alias: { '@': path.join(process.cwd(), 'src') } },
+    resolve: {
+      alias: {
+        '@': path.join(process.cwd(), 'src'),
+        '@mamluk/maplibre-adapter': path.join(process.cwd(), 'e2e/fixtures/maplibre-adapter-stub.ts'),
+      },
+    },
     define: {
       'process.env': JSON.stringify({
         NODE_ENV: 'development',
