@@ -1,67 +1,67 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ArrowRightLeft, Hammer, Pause, Swords } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ArrowRightLeft, Eye, Hammer, Pause, Shield, Swords } from 'lucide-react';
 import { unitKeys, type Mission } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
+import {
+  formatCountdown,
+  incomingMissionLabels,
+  presentIncomingThreats,
+  remainingMs,
+  villageIncoming,
+} from '@/lib/kingdoms/incoming-threats';
 import { date, number, type GameProps } from '../shared';
+import { useViewClock } from '../use-view-clock';
 import styles from './village-activity.module.css';
 
 type Props = Pick<GameProps, 'view' | 'village'> & {
   onFocus?: (building: VillageSelection) => void;
+  onShowMap?: (villageId: string) => void;
+  onRefresh?: () => void;
 };
 const missions: Record<Mission, string> = {
   attack: 'هجوم', raid: 'غارة', scout: 'استطلاع', reinforce: 'تعزيز',
   settle: 'استيطان', occupy: 'احتلال', return: 'عودة', gather: 'جمع الموارد',
 };
-function duration(seconds: number) {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-  const remainder = (seconds % 60).toString().padStart(2, '0');
-  return hours ? `${hours}:${minutes}:${remainder}` : `${minutes}:${remainder}`;
-}
 function QueueTime({ endsAt, now, label }: { endsAt: number; now: number; label: string }) {
-  const remaining = Math.max(0, Math.ceil((endsAt - now) / 1000));
+  const remaining = remainingMs(endsAt, now);
   return remaining ? (
     <time className={styles.time} dateTime={new Date(endsAt).toISOString()} title={date(endsAt)}>
       <span>الوقت المتبقي </span>
-      <bdi dir="ltr" aria-label={`الوقت المتبقي ${label}`}>{duration(remaining)}</bdi>
+      <bdi dir="ltr" aria-label={`الوقت المتبقي ${label}`}>{formatCountdown(remaining)}</bdi>
     </time>
   ) : <span className={styles.waiting}>بانتظار تأكيد الاكتمال</span>;
 }
 
 /** Displays server-confirmed village activity; elapsed time is presentation only. */
-export function VillageActivity({ view, village, onFocus }: Props) {
-  const movements = view.movements.filter((movement) => movement.sourceId === village.id ||
+export function VillageActivity({ view, village, onFocus, onShowMap, onRefresh }: Props) {
+  const owned = view.movements.filter((movement) => movement.sourceId === village.id ||
     (movement.targetX === village.x && movement.targetY === village.y));
-  const incoming = movements.filter((movement) =>
-    movement.targetX === village.x && movement.targetY === village.y).length;
-  const outgoing = movements.length - incoming;
-  const next = movements.reduce<(typeof movements)[number] | undefined>(
+  const outgoing = view.movements.filter((movement) => movement.sourceId === village.id && movement.mission !== 'return');
+  const returning = view.movements.filter((movement) =>
+    movement.mission === 'return' && movement.targetX === village.x && movement.targetY === village.y);
+  const incoming = villageIncoming(presentIncomingThreats(view.incoming ?? [], view.serverNow), village.id);
+  const nextOwned = owned.reduce<(typeof owned)[number] | undefined>(
     (first, movement) => !first || movement.arrivesAt < first.arrivesAt ? movement : first,
     undefined,
   );
   const deadline = Math.max(view.serverNow, village.build?.endsAt ?? 0,
-    village.training?.endsAt ?? 0, ...movements.map((movement) => movement.arrivesAt));
-  const snapshot = `${village.id}:${view.revision}:${view.serverNow}:${view.paused}`;
-  const [clock, setClock] = useState({ snapshot, elapsed: 0 });
-  const anchorRef = useRef<{ snapshot: string; startedAt: number } | null>(null);
+    village.training?.endsAt ?? 0, ...owned.map((movement) => movement.arrivesAt),
+    ...incoming.map((movement) => movement.arrivesAt));
+  const now = useViewClock(view, deadline, village.id);
+  const asked = useRef(false);
   useEffect(() => {
-    if (view.paused || deadline <= view.serverNow) return;
-    if (anchorRef.current?.snapshot !== snapshot) {
-      anchorRef.current = { snapshot, startedAt: performance.now() };
-    }
-    const anchor = anchorRef.current.startedAt;
-    const timer = setInterval(() => {
-      const elapsed = Math.max(0, performance.now() - anchor);
-      setClock({ snapshot, elapsed: Math.min(elapsed, deadline - view.serverNow) });
-      if (view.serverNow + elapsed >= deadline) clearInterval(timer);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [deadline, snapshot, view.paused, view.serverNow]);
-  const now = view.serverNow + (!view.paused && clock.snapshot === snapshot ? clock.elapsed : 0);
+    if (!onRefresh || asked.current) return;
+    if (!incoming.some((row) => remainingMs(row.arrivesAt, now) === 0)) return;
+    asked.current = true;
+    onRefresh();
+  }, [incoming, now, onRefresh]);
   const troops = unitKeys.reduce((total, unit) => total + village.troops[unit], 0);
   const trainingTarget = village.training?.unit === 'rider' ? 'stable' : 'barracks';
+  const liveIncoming = villageIncoming(presentIncomingThreats(view.incoming ?? [], now), village.id)
+    .slice()
+    .sort((left, right) => left.arrivesAt - right.arrivesAt || left.id.localeCompare(right.id, 'en'));
 
   return (
     <section className={styles.activity} aria-label="نشاط القرية" dir="rtl">
@@ -103,13 +103,59 @@ export function VillageActivity({ view, village, onFocus }: Props) {
           <ArrowRightLeft size={19} aria-hidden="true" />
           <div className={styles.detail}>
             <h4>تحركات الجيش</h4>
-            {next ? <>
-              <p>قادمة {number(incoming)} · مغادرة {number(outgoing)}</p>
-              <span>الوصول التالي: {missions[next.mission]} {next.targetX === village.x && next.targetY === village.y ? 'إلى القرية' : 'من القرية'}</span>
-              <QueueTime endsAt={next.arrivesAt} now={now} label="لوصول القوات" />
+            {nextOwned || liveIncoming.length ? <>
+              <p>خارجة {number(outgoing.length)} · عائدة {number(returning.length)} · قادمة {number(liveIncoming.length)}</p>
+              <span>
+                التالي: {liveIncoming[0]
+                  ? incomingMissionLabels[liveIncoming[0].mission]
+                  : `${missions[nextOwned!.mission]} ${nextOwned!.targetX === village.x && nextOwned!.targetY === village.y ? 'إلى القرية' : 'من القرية'}`}
+              </span>
+              <QueueTime
+                endsAt={liveIncoming[0]?.arrivesAt ?? nextOwned!.arrivesAt}
+                now={now}
+                label="لوصول القوات"
+              />
             </> : <p>لا تحركات من القرية أو إليها</p>}
           </div>
         </div>
+      </div>
+      <div className={styles.marches} aria-label="تفصيل تحركات القرية">
+        <section>
+          <h4><Swords size={16} aria-hidden="true" /> القوات الخارجة</h4>
+          {outgoing.length ? outgoing.map((movement) => (
+            <p key={movement.id}>
+              {missions[movement.mission]}
+              <QueueTime endsAt={movement.arrivesAt} now={now} label={missions[movement.mission]} />
+            </p>
+          )) : <p>لا قوات خارجة</p>}
+        </section>
+        <section>
+          <h4><ArrowRightLeft size={16} aria-hidden="true" /> القوات العائدة</h4>
+          {returning.length ? returning.map((movement) => (
+            <p key={movement.id}>
+              عودة
+              <QueueTime endsAt={movement.arrivesAt} now={now} label="للعودة" />
+            </p>
+          )) : <p>لا قوات عائدة</p>}
+        </section>
+        <section>
+          <h4><Eye size={16} aria-hidden="true" /> القوات القادمة</h4>
+          {liveIncoming.length ? liveIncoming.map((threat) => (
+            <div className={styles.incoming} key={threat.id} data-severity={threat.severity}>
+              <p>
+                <Shield size={14} aria-hidden="true" />
+                {incomingMissionLabels[threat.mission]}
+                {threat.source ? ` · ${threat.source.name}` : ''}
+              </p>
+              <QueueTime endsAt={threat.arrivesAt} now={now} label={incomingMissionLabels[threat.mission]} />
+              {onShowMap && (
+                <button className={styles.action} type="button" onClick={() => onShowMap(village.id)}>
+                  عرض على الخريطة
+                </button>
+              )}
+            </div>
+          )) : <p>لا قوات قادمة</p>}
+        </section>
       </div>
     </section>
   );

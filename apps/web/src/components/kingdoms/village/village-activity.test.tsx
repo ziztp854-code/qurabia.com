@@ -64,8 +64,8 @@ describe('VillageActivity', () => {
       movement('unrelated', { sourceId: 'other', targetX: village.x + 3, targetY: village.y + 3, arrivesAt: now + 10000, mission: 'settle' }),
     ];
     render(<VillageActivity view={{ ...view, movements }} village={village} />);
-    expect(screen.getByText(`قادمة ${number(1)} · مغادرة ${number(1)}`)).toBeInTheDocument();
-    expect(screen.getByText('الوصول التالي: هجوم إلى القرية')).toBeInTheDocument();
+    expect(screen.getByText(`خارجة ${number(1)} · عائدة ${number(0)} · قادمة ${number(0)}`)).toBeInTheDocument();
+    expect(screen.getByText('التالي: هجوم إلى القرية')).toBeInTheDocument();
     expect(screen.queryByText(/استيطان/)).not.toBeInTheDocument();
   });
 
@@ -77,9 +77,71 @@ describe('VillageActivity', () => {
     expect(village.buildings.hall).toBe(view.villages[0].buildings.hall);
   });
 
+  it('lists incoming movements separately from owned marches and reports', () => {
+    const onShowMap = vi.fn();
+    const onRefresh = vi.fn();
+    render(
+      <VillageActivity
+        view={{
+          ...view,
+          movements: [movement('outbound')],
+          incoming: [
+            { id: 'in-scout', mission: 'scout', targetVillageId: village.id, arrivesAt: now + 20_000 },
+            {
+              id: 'in-attack',
+              mission: 'attack',
+              targetVillageId: village.id,
+              arrivesAt: now + 90_000,
+              source: { id: 'src', name: 'معسكر الظل', x: 2, y: 2, kingdomName: 'الظل', ownerId: 'bob', protectedUntil: 0 },
+            },
+            { id: 'in-help', mission: 'reinforce', targetVillageId: village.id, arrivesAt: now + 40_000 },
+          ],
+          reports: [{ id: 'old', at: now - 1_000, recipients: ['p'], title: 'معركة', detail: 'انتهت' }],
+        }}
+        village={village}
+        onShowMap={onShowMap}
+        onRefresh={onRefresh}
+      />,
+    );
+    expect(screen.getByText(`خارجة ${number(1)} · عائدة ${number(0)} · قادمة ${number(3)}`)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /القوات القادمة/ })).toBeInTheDocument();
+    expect(screen.getAllByText(/استطلاع قادم/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/هجوم قادم · معسكر الظل/)).toBeInTheDocument();
+    expect(screen.getAllByText(/تعزيزات قادمة/).length).toBeGreaterThan(0);
+    expect(screen.queryByText('معركة')).not.toBeInTheDocument();
+    expect(document.body.innerHTML).not.toContain('commanderId');
+    fireEvent.click(screen.getAllByRole('button', { name: 'عرض على الخريطة' })[0]!);
+    expect(onShowMap).toHaveBeenCalledWith(village.id);
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('asks for an authoritative refresh when an incoming countdown reaches zero', () => {
+    vi.useFakeTimers();
+    let elapsed = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => elapsed);
+    const onRefresh = vi.fn();
+    render(
+      <VillageActivity
+        view={{
+          ...view,
+          incoming: [{ id: 'in-attack', mission: 'attack', targetVillageId: village.id, arrivesAt: now + 2000 }],
+        }}
+        village={village}
+        onRefresh={onRefresh}
+      />,
+    );
+    expect(screen.getByText('هجوم قادم')).toBeInTheDocument();
+    act(() => {
+      elapsed = 2000;
+      vi.advanceTimersByTime(1000);
+    });
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('هجوم قادم')).toBeInTheDocument();
+  });
+
   it('names resource collection using the actual movement mission', () => {
     render(<VillageActivity view={{ ...view, movements: [movement('gathering', { mission: 'gather' })] }} village={village} />);
-    expect(screen.getByText('الوصول التالي: جمع الموارد من القرية')).toBeInTheDocument();
+    expect(screen.getByText('التالي: جمع الموارد من القرية')).toBeInTheDocument();
   });
 
   it('retains elapsed presentation time when a queue changes at the same server snapshot', () => {

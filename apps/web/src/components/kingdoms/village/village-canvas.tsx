@@ -430,11 +430,15 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               style={rectStyle(villageRegions.gate)}
               aria-label="البوابة الرئيسية، خريطة العالم"
               data-building-region="gate"
+              data-threat={props.showThreatMarker || undefined}
               onClick={() => camera.current?.focusOn('gate', () => current.current.onWorldMap?.())}
             >
               <span className={styles.label}>
                 <DoorOpen size={15} aria-hidden="true" />
                 خريطة العالم
+                {props.showThreatMarker && (
+                  <Swords size={15} aria-label="مؤشر تهديد عسكري عند البوابة" />
+                )}
               </span>
             </button>
             {build && (

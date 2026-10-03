@@ -65,6 +65,41 @@ async function main() {
       response.setHeader('Content-Type', 'application/json');
       response.end(JSON.stringify({ success: status === 200, data }));
     };
+    if (url.pathname === '/__village_test/incoming-attack' && request.method === 'POST') {
+      const at = Date.now();
+      frozenNow = at;
+      world = executeCommand(createWorld(at, config), 'browser-player', { type: 'found', name: 'مملكة الاختبار' }, at);
+      world = executeCommand(world, 'attacker', { type: 'found', name: 'مملكة الظل' }, at);
+      const defender = Object.values(world.villages).find((village) => village.ownerId === 'browser-player')!;
+      const attackerVillage = Object.values(world.villages).find((village) => village.ownerId === 'attacker')!;
+      world.players['browser-player']!.protectionUntil = at;
+      world.players.attacker!.protectionUntil = at;
+      world = {
+        ...world,
+        villages: {
+          ...world.villages,
+          [attackerVillage.id]: {
+            ...attackerVillage,
+            troops: { guard: 20, rider: 0, scout: 0, settler: 0 },
+          },
+        },
+      };
+      world = executeCommand(
+        world,
+        'attacker',
+        {
+          type: 'march',
+          villageId: attackerVillage.id,
+          targetX: defender.x,
+          targetY: defender.y,
+          mission: 'attack',
+          troops: { guard: 8, rider: 0, scout: 0, settler: 0 },
+        },
+        at,
+      );
+      reply(snapshot());
+      return;
+    }
     if (url.pathname === '/__village_test/reset' && request.method === 'POST') {
       frozenNow = undefined;
       world = newWorld();

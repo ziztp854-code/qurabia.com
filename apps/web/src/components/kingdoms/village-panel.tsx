@@ -32,9 +32,13 @@ export function VillagePanel({
   send,
   initialBuilding = null,
   onNavigate,
+  onShowMap,
+  onRefresh,
 }: GameProps & {
   initialBuilding?: VillageSelection | null;
   onNavigate?: (tab: VillageNavigation) => void;
+  onShowMap?: (villageId: string) => void;
+  onRefresh?: () => void;
 }) {
   const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -66,6 +70,8 @@ export function VillagePanel({
             selected={selected}
             onSelect={select}
             onWorldMap={onNavigate ? () => onNavigate('map') : undefined}
+            onShowMap={onShowMap}
+            onRefresh={onRefresh}
           />
         </div>
         {selected && (

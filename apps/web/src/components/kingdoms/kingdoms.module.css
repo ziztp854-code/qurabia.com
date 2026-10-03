@@ -100,6 +100,17 @@
   border-color: var(--gold);
   background: var(--surface-strong);
 }
+.threatBadge {
+  margin-inline-start: auto;
+  min-inline-size: 1.35rem;
+  padding-inline: 0.35rem;
+  border-radius: var(--radius-full);
+  background: var(--danger);
+  color: var(--background);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));

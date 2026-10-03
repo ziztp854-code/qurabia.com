@@ -25,6 +25,8 @@ import type {
 } from '@/lib/kingdoms/village/types';
 import { VillageCanvas } from './village-canvas';
 import { VillageActivity } from './village-activity';
+import { VillageIncomingAlert } from '../incoming-alert';
+import { hostileThreats, presentIncomingThreats, villageIncoming } from '@/lib/kingdoms/incoming-threats';
 import { VillageDirectory } from './village-directory';
 import { VillageDebug } from './village-debug';
 import { VillageOnboarding } from './village-onboarding';
@@ -41,9 +43,11 @@ export type VillageSceneProps = Pick<GameProps, 'view' | 'village'> & {
   selected: VillageSelection | null;
   onSelect: (building: VillageSelection) => void;
   onWorldMap?: () => void;
+  onShowMap?: (villageId: string) => void;
+  onRefresh?: () => void;
 };
 
-export function VillageScene({ view, village, selected, onSelect, onWorldMap }: VillageSceneProps) {
+export function VillageScene({ view, village, selected, onSelect, onWorldMap, onShowMap, onRefresh }: VillageSceneProps) {
   const scene = useRef<VillageSceneHandle>(null);
   const [quality, setQuality] = useState<VillageQuality>('auto');
   const [labels, setLabels] = useState(false);
@@ -86,6 +90,13 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
         </div>
       </header>
       <VillageProgress village={village} config={view.config} />
+      <VillageIncomingAlert
+        incoming={view.incoming ?? []}
+        village={village}
+        view={view}
+        onShowMap={onShowMap}
+        onRefresh={onRefresh}
+      />
       <div className={styles.workspace}>
         <VillageCanvas
           ref={scene}
@@ -97,12 +108,15 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap }: 
           quality={quality}
           reducedMotion={reducedMotion}
           showLabels={labels}
+          showThreatMarker={
+            hostileThreats(villageIncoming(presentIncomingThreats(view.incoming ?? [], view.serverNow), village.id)).length > 0
+          }
           debug={options}
           onReady={onReady}
         />
         <VillageDirectory view={view} village={village} selected={selected} onSelect={choose} />
       </div>
-      <VillageActivity view={view} village={village} onFocus={choose} />
+      <VillageActivity view={view} village={village} onFocus={choose} onShowMap={onShowMap} onRefresh={onRefresh} />
       <div className={styles.controls} role="group" aria-label="كاميرا القرية">
         <Button
           variant="outline"

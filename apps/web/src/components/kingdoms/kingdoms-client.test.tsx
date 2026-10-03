@@ -406,6 +406,44 @@ describe('Kingdoms player interface', () => {
     });
   }, 20_000);
 
+  it('shows a global incoming attack alert and focuses the existing world-map route', async () => {
+    const founded = projection(true);
+    const village = founded.villages[0];
+    const incomingView = {
+      ...founded,
+      incoming: [
+        {
+          id: 'incoming-1',
+          mission: 'attack' as const,
+          targetVillageId: village.id,
+          arrivesAt: now + 90_000,
+          source: {
+            id: 'src',
+            name: 'معسكر الظل',
+            x: 2,
+            y: 2,
+            kingdomName: 'الظل',
+            ownerId: 'bob',
+            protectedUntil: 0,
+          },
+        },
+      ],
+    };
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      response(String(url).endsWith('/worlds') ? summary : incomingView),
+    );
+    render(<KingdomsClient />);
+    expect(await screen.findByRole('alert', { name: 'تحذير عسكري' })).toBeInTheDocument();
+    expect(screen.getByLabelText('1 هجمات قادمة')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'عرض على الخريطة' })[0]!);
+    expect(navigation.push).toHaveBeenCalledWith(
+      `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`,
+    );
+    expect(screen.queryAllByTestId('unified-map')).toHaveLength(0);
+    expect(document.body.innerHTML).not.toContain('commanderId');
+    expect(document.body.innerHTML).not.toContain('"loot"');
+  });
+
   it('disables mutations in paused worlds', async () => {
     preferReducedMotion();
     vi.mocked(fetch).mockImplementation(async (url) =>

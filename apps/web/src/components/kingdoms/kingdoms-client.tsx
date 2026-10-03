@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,6 +18,8 @@ import { Button, ButtonLink, Input, Select } from '@/components/ui';
 import { CommandForm, Empty, date, labels, number } from './shared';
 import { useKingdoms } from './use-kingdoms';
 import { VillagePanel, ArmyPanel } from './village-panel';
+import { GlobalMilitaryAlert } from './incoming-alert';
+import { hostileThreats, presentIncomingThreats } from '@/lib/kingdoms/incoming-threats';
 import { MapPanel } from './map-panel';
 import { geographicMapHref } from './map-links';
 import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
@@ -73,7 +75,12 @@ export function KingdomsClient({
   const village = view?.villages.find((item) => item.id === villageId) ?? view?.villages[0];
   const locked = busy || !!view?.paused || view?.season.status === 'ended';
   const props = view && village ? { view, village, busy: locked, send } : null;
+  const threatCountId = useId();
   const mapHref = geographicMapHref(view?.worldId ?? game.worldId, village?.id);
+  const showMap = (villageId: string) => {
+    setVillageId(villageId);
+    router.push(geographicMapHref(view?.worldId ?? game.worldId, villageId));
+  };
   const navigate = (nextTab: keyof typeof tabs) => {
     if (nextTab === 'map') {
       router.push(mapHref);
@@ -260,6 +267,17 @@ export function KingdomsClient({
           )}
           {view.player && village && props && (
             <>
+              <GlobalMilitaryAlert
+                incoming={view.incoming ?? []}
+                villages={view.villages}
+                view={view}
+                onShowMap={showMap}
+                onRefresh={() => void game.refresh()}
+                onFocusVillage={(id) => {
+                  setVillageId(id);
+                  setTab('village');
+                }}
+              />
               {view.player.protectionUntil > view.serverNow && (
                 <p className={styles.protection}>
                   حماية المملكة الجديدة حتى {date(view.player.protectionUntil)}. استثمر هذه الفترة
@@ -270,6 +288,7 @@ export function KingdomsClient({
                 <nav aria-label="إدارة المملكة" className={styles.nav}>
                   {Object.entries(tabs).map(([key, label]) => {
                     const Icon = tabIcons[key as keyof typeof tabs];
+                    const hostile = hostileThreats(presentIncomingThreats(view.incoming ?? [], view.serverNow)).length;
                     if (key === 'map')
                       return (
                         <Link key={key} href={mapHref}>
@@ -281,10 +300,16 @@ export function KingdomsClient({
                       <button
                         key={key}
                         aria-pressed={tab === key}
+                        aria-describedby={key === 'village' && hostile > 0 ? threatCountId : undefined}
                         onClick={() => navigate(key as keyof typeof tabs)}
                       >
                         <Icon size={20} aria-hidden="true" />
                         <span>{label}</span>
+                        {key === 'village' && hostile > 0 && (
+                          <span id={threatCountId} className={styles.threatBadge} aria-label={`${hostile} هجمات قادمة`}>
+                            {hostile}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -305,6 +330,8 @@ export function KingdomsClient({
                       key={`${view.worldId}:${village.id}`}
                       {...props}
                       onNavigate={navigate}
+                      onShowMap={showMap}
+                      onRefresh={() => void game.refresh()}
                       initialBuilding={
                         buildingSelection?.worldId === view.worldId &&
                         buildingSelection?.villageId === village.id

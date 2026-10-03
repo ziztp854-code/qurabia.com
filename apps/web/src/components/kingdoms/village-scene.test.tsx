@@ -133,6 +133,41 @@ describe('village scene rendering', () => {
     expect(farm).toHaveAccessibleName(/المستوى ٣/);
   });
 
+  it('marks the gate when a hostile incoming movement targets the village', () => {
+    const view = fixture();
+    render(
+      <VillagePanel
+        view={{
+          ...view,
+          incoming: [
+            {
+              id: 'incoming-1',
+              mission: 'attack',
+              targetVillageId: view.villages[0].id,
+              arrivesAt: now + 90_000,
+              source: {
+                id: 'src',
+                name: 'معسكر الظل',
+                x: 2,
+                y: 2,
+                kingdomName: 'الظل',
+                ownerId: 'bob',
+                protectedUntil: 0,
+              },
+            },
+          ],
+        }}
+        village={view.villages[0]}
+        send={vi.fn()}
+        busy={false}
+      />,
+    );
+    expect(screen.getByRole('alert', { name: 'هجوم قادم' })).toBeInTheDocument();
+    expect(screen.getByLabelText('مؤشر تهديد عسكري عند البوابة')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /القوات القادمة/ }).closest('section')).toHaveTextContent('هجوم قادم');
+    expect(document.body.innerHTML).not.toContain('commanderId');
+  });
+
   it('hides scene labels on request without hiding the selected building', () => {
     const view = fixture();
     const { container } = render(

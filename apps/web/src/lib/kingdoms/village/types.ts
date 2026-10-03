@@ -54,4 +54,5 @@ export type VillageCanvasProps = Readonly<{
   showLabels: boolean;
   debug?: VillageDebugOptions;
   onReady?: () => void;
+  showThreatMarker?: boolean;
 }>;
