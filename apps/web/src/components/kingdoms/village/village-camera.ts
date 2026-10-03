@@ -59,8 +59,8 @@ export class VillageCamera implements VillageSceneHandle {
     }
     const origin = this.camera;
     const startedAt = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min(1, Math.max(0, (now - startedAt) / 650));
+    const tick = () => {
+      const progress = Math.min(1, Math.max(0, (performance.now() - startedAt) / 650));
       const ease = 1 - (1 - progress) ** 3;
       this.publish({
         ...target,

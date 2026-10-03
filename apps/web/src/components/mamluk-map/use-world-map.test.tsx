@@ -13,6 +13,79 @@ afterEach(() => {
   MapSdkFixture.instances = [];
 });
 
+it.each([[320, 700], [1000, 300], [0, 0]])('fits the full globe to a %s by %s canvas and resets camera tilt without rebuilding it', async (width, height) => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return <>
+      <div ref={map.container} />
+      <button onClick={() => map.moveCamera('overview')}>overview</button>
+      <button onClick={() => map.setProjection('mercator')}>flat</button>
+      <output>{map.projection}</output>
+    </>;
+  }
+  const view = render(<Scene />);
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  const map = MapSdkFixture.instances[0]!;
+  Object.defineProperties(map.canvas, {
+    clientWidth: { value: width }, clientHeight: { value: height },
+  });
+  fireEvent.click(screen.getByText('flat'));
+  fireEvent.click(screen.getByText('overview'));
+  expect(screen.getByText('globe')).toBeInTheDocument();
+  const expectedZoom = width === 0 ? 1.5 : Math.log2(Math.min(width, height) / 256);
+  expect(map.lastCamera).toMatchObject({ zoom: expectedZoom, pitch: 0, bearing: 0 });
+  expect(MapSdkFixture.instances).toHaveLength(1);
+  view.unmount();
+});
+
+it.each([false, true])('returns home to the accepted village location (public=%s) instead of its old initial coordinates', async (publicMap) => {
+  const payload = approvedPayload();
+  const relocated = {
+    ...payload,
+    layers: {
+      ...payload.layers,
+      cities: {
+        ...payload.layers.cities,
+        features: payload.layers.cities.features.map((city) => ({
+          ...city, geometry: { type: 'Point' as const, coordinates: [31.6, 30.3] },
+        })),
+      },
+    },
+  };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    headers: new Headers(publicMap ? { 'X-Mamluk-Public-Settlements': '1' } : {}),
+    json: async () => relocated,
+  }));
+  function Scene() {
+    const map = useWorldMap('world', 'viewer', { longitude: 31.2, latitude: 30 }, 'cairo');
+    return <><div ref={map.container} /><button onClick={() => map.moveCamera('home')}>home</button></>;
+  }
+  const view = render(<Scene />);
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  fireEvent.click(screen.getByText('home'));
+  expect(MapSdkFixture.instances[0]!.lastCamera).toMatchObject({ center: [31.6, 30.3], zoom: 6.5 });
+  view.unmount();
+});
+
+it('marks the SDK canvas ready only after idle and clears readiness when movement begins', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return <div ref={map.container} />;
+  }
+  const view = render(<Scene />);
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  const map = MapSdkFixture.instances[0]!;
+  expect(map.canvas).not.toHaveAttribute('data-map-ready');
+  act(() => map.fire('idle'));
+  expect(map.canvas).toHaveAttribute('data-map-ready', 'true');
+  act(() => map.fire('movestart'));
+  expect(map.canvas).not.toHaveAttribute('data-map-ready');
+  view.unmount();
+});
+
 it('reviews a temporary map destination without relocating or rebuilding the canvas and clears it on selection or viewer changes', async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() });
   vi.stubGlobal('fetch', fetch);

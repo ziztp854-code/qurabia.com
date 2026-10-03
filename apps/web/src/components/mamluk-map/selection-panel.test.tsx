@@ -3,6 +3,23 @@ import { describe, expect, it, vi } from 'vitest';
 import { SelectionPanel } from './selection-panel';
 
 describe('map selection panel', () => {
+  it('allows selecting sites beyond the first forty and resets paging when the search changes', () => {
+    const onSelect = vi.fn();
+    const features = Array.from({ length: 50 }, (_, index) => ({
+      layer: 'cities' as const, id: `village-${index + 1}`, label: `قرية ${index + 1}`,
+    }));
+    render(<SelectionPanel selection={null} features={features} onSelect={onSelect} onClose={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'قرية 50' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'اعرض المزيد من المواقع' }));
+    fireEvent.click(screen.getByRole('button', { name: 'قرية 50' }));
+    expect(onSelect).toHaveBeenCalledWith({ layer: 'cities', id: 'village-50' });
+    expect(screen.queryByRole('button', { name: 'اعرض المزيد من المواقع' })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'قرية 50' } });
+    expect(screen.getByRole('button', { name: 'قرية 50' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'امسح البحث' }));
+    expect(screen.queryByRole('button', { name: 'قرية 50' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'اعرض المزيد من المواقع' })).toBeInTheDocument();
+  });
   it('keeps an authorized relocation form mounted when viewport details temporarily clear', async () => {
     const fetch = vi.fn().mockResolvedValue({
       ok: true,

@@ -38,6 +38,11 @@ export function SelectionPanel({
   const contentId = useId();
   const searchId = useId();
   const [query, setQuery] = useState('');
+  const [visibleLimit, setVisibleLimit] = useState(40);
+  function changeQuery(value: string) {
+    setQuery(value);
+    setVisibleLimit(40);
+  }
   const matchingFeatures = features.filter((feature) => feature.label.includes(query.trim()));
   const panel = useRef<HTMLElement>(null);
   const relocationContent = useRef<HTMLDivElement>(null);
@@ -185,7 +190,7 @@ export function SelectionPanel({
                   id={searchId}
                   type="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => changeQuery(event.target.value)}
                   placeholder="مدينة أو قلعة"
                 />
                 {query && (
@@ -193,7 +198,7 @@ export function SelectionPanel({
                     type="button"
                     className={styles.iconButton}
                     aria-label="امسح البحث"
-                    onClick={() => setQuery('')}
+                    onClick={() => changeQuery('')}
                   >
                     <X size={16} aria-hidden="true" />
                   </button>
@@ -203,7 +208,7 @@ export function SelectionPanel({
           )}
           {matchingFeatures.length ? (
             <ul>
-              {matchingFeatures.slice(0, 40).map((feature) => (
+              {matchingFeatures.slice(0, visibleLimit).map((feature) => (
                 <li key={`${feature.layer}:${feature.id}`}>
                   <button
                     type="button"
@@ -225,6 +230,11 @@ export function SelectionPanel({
                 ? 'لا مواقع تطابق البحث في هذا المشهد.'
                 : 'قرّب الخريطة لاستكشاف المواقع.'}
             </p>
+          )}
+          {matchingFeatures.length > visibleLimit && (
+            <button type="button" onClick={() => setVisibleLimit((limit) => limit + 40)}>
+              اعرض المزيد من المواقع
+            </button>
           )}
         </section>
         <p className={styles.panelNote}>

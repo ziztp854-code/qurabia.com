@@ -186,6 +186,8 @@ export function useWorldMap(
             'خريطة العالم: استخدم الأسهم للتحريك وعلامتي الجمع والطرح للتكبير',
           );
         mapRef.current = map;
+        map.on('movestart', () => map?.getCanvas().removeAttribute('data-map-ready'));
+        map.on('idle', () => map?.getCanvas().setAttribute('data-map-ready', 'true'));
         map.on('style.load', () => {
           styleReady = true;
         });
@@ -294,16 +296,34 @@ export function useWorldMap(
     sessionRef.current?.adapter.setProjection(value);
     void sessionRef.current?.loader.refresh();
   }
-  function moveCamera(action: 'in' | 'out' | 'home') {
+  function moveCamera(action: 'in' | 'out' | 'home' | 'overview') {
     const map = mapRef.current;
     if (!map) return;
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 250;
-    if (action === 'home')
+    const homeVillage = initialVillageId
+      ? payload?.layers.cities.features.find((city) => city.id === initialVillageId)
+        ?? publicPayload?.layers.cities.features.find((city) => city.id === initialVillageId)
+      : undefined;
+    const homeCenter = homeVillage?.geometry.type === 'Point'
+      ? homeVillage.geometry.coordinates
+      : initialLocation ? [initialLocation.longitude, initialLocation.latitude] : [31.24967, 30.06263];
+    if (action === 'overview') {
+      setProjection('globe');
+      const canvas = map.getCanvas();
+      const availableSize = Math.min(canvas.clientWidth || 1024, canvas.clientHeight || 1024);
       map.easeTo({
-        center: initialLocation
-          ? [initialLocation.longitude, initialLocation.latitude]
-          : [31.24967, 30.06263],
-        zoom: initialLocation ? VILLAGE_OVERVIEW_ZOOM : 5.3,
+        center: [homeCenter[0], homeCenter[1]],
+        zoom: Math.max(0, Math.min(1.5, Math.log2(availableSize / 256))),
+        pitch: 0,
+        bearing: 0,
+        duration,
+      });
+    } else if (action === 'home')
+      map.easeTo({
+        center: [homeCenter[0], homeCenter[1]],
+        zoom: initialLocation || homeVillage ? VILLAGE_OVERVIEW_ZOOM : 5.3,
+        pitch: 0,
+        bearing: 0,
         duration,
       });
     else if (action === 'in') map.zoomIn({ duration });

@@ -30,6 +30,17 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return payload.data as T;
 }
 
+function latestView(current: WorldView | null, incoming: WorldView): WorldView {
+  if (
+    current?.worldId === incoming.worldId &&
+    (current.revision > incoming.revision ||
+      (current.revision === incoming.revision && current.serverNow > incoming.serverNow))
+  ) {
+    return current;
+  }
+  return incoming;
+}
+
 export function useKingdoms(initialWorldId = '') {
   const [worlds, setWorlds] = useState<WorldSummary[]>([]);
   const [worldId, updateWorldId] = useState('');
@@ -104,11 +115,7 @@ export function useKingdoms(initialWorldId = '') {
         `/api/kingdoms?worldId=${encodeURIComponent(worldId)}`,
       );
       if (version === generation.current && !mutating.current) {
-        setView((current) =>
-          current?.worldId === result.worldId && current.serverNow > result.serverNow
-            ? current
-            : result,
-        );
+        setView((current) => latestView(current, result));
         setError('');
       }
     } catch (failure) {
@@ -123,11 +130,7 @@ export function useKingdoms(initialWorldId = '') {
     void request<WorldView>(`/api/kingdoms?worldId=${encodeURIComponent(worldId)}`)
       .then((result) => {
         if (version === generation.current && !mutating.current) {
-          setView((current) =>
-            current?.worldId === result.worldId && current.serverNow > result.serverNow
-              ? current
-              : result,
-          );
+          setView((current) => latestView(current, result));
           setError('');
         }
       })
@@ -184,7 +187,7 @@ export function useKingdoms(initialWorldId = '') {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        setView(result);
+        setView((current) => latestView(current, result));
         pending.current = null;
         setNotice('تم تنفيذ أمرك.');
       } catch (failure) {

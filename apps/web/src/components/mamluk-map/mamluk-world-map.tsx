@@ -399,6 +399,14 @@ function WorldScene({
               خريطة مسطحة
             </button>
             <button
+              className={styles.control}
+              type="button"
+              onClick={() => moveCamera('overview')}
+            >
+              <Globe size={18} aria-hidden="true" />
+              عرض الكرة بالكامل
+            </button>
+            <button
               className={styles.iconButton}
               type="button"
               aria-label="حدّث الخريطة"

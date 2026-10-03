@@ -1,0 +1,134 @@
+// Standalone browser fixture only; it never runs through production app routes.
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { parseMapPayload } from '@mamluk/world-map-core';
+import { approvedPayload } from '../../src/components/mamluk-map/map-fixture';
+
+async function main() {
+  if (process.env.GLOBE_SCENE_E2E !== '1')
+    throw new Error('This fixture requires GLOBE_SCENE_E2E=1.');
+  await import(pathToFileURL(path.join(process.cwd(), '../../scripts/prepare-maplibre-workers.mjs')).href);
+  const require = createRequire(path.join(process.cwd(), 'package.json'));
+  const viteRequire = createRequire(require.resolve('vitest/package.json'));
+  const { createServer } = await import(pathToFileURL(viteRequire.resolve('vite')).href);
+  const { default: react } = await import(pathToFileURL(require.resolve('@vitejs/plugin-react')).href);
+  const original = approvedPayload().layers.cities.features[0]!;
+  if (original.geometry.type !== 'Point') throw new Error('The approved city must be a point.');
+  const originalCoordinates = original.geometry.coordinates;
+  let relocated = false;
+  const location = () => relocated ? [31.35, 30.12] : originalCoordinates;
+  const middleware = (request: IncomingMessage, response: ServerResponse, next: () => void) => {
+    const url = new URL(request.url ?? '/', 'http://127.0.0.1:3311');
+    const json = (value: unknown, status = 200) => {
+      response.statusCode = status;
+      response.setHeader('Content-Type', 'application/json');
+      response.setHeader('Cache-Control', 'no-store');
+      response.end(JSON.stringify(value));
+    };
+    if (url.pathname === '/__globe_test/reset' && request.method === 'POST') {
+      relocated = false;
+      json({ success: true });
+      return;
+    }
+    if (url.pathname === '/__globe_test/relocated' && request.method === 'POST') {
+      relocated = true;
+      json({ success: true });
+      return;
+    }
+    if (url.pathname === '/api/kingdoms/world-map/viewport') {
+      const worldId = url.searchParams.get('worldId');
+      const bounds = Object.fromEntries(['west', 'south', 'east', 'north'].map((key) => [
+        key, Number(url.searchParams.get(key)),
+      ])) as { west: number; south: number; east: number; north: number };
+      if (!['world', 'public-atlas'].includes(worldId ?? '') ||
+        Object.values(bounds).some((value) => !Number.isFinite(value)) ||
+        bounds.west < -180 || bounds.east > 180 || bounds.south < -90 || bounds.north > 90 ||
+        bounds.west >= bounds.east || bounds.south >= bounds.north) {
+        json({ error: 'Invalid fixture viewport' }, 400);
+        return;
+      }
+      const [longitude, latitude] = worldId === 'public-atlas'
+        ? originalCoordinates : location();
+      const base = approvedPayload(worldId!, relocated ? '2' : '1');
+      const serverTime = Date.now();
+      const visible = longitude! >= bounds.west && longitude! <= bounds.east &&
+        latitude! >= bounds.south && latitude! <= bounds.north;
+      const payload = parseMapPayload({
+        ...base,
+        serverTime,
+        expiresAt: serverTime + 15000,
+        bounds,
+        layers: {
+          ...base.layers,
+          cities: {
+            type: 'FeatureCollection',
+            features: visible ? [{
+              ...original,
+              geometry: { type: 'Point', coordinates: [longitude, latitude] },
+              properties: {
+                ...original.properties,
+                ownerPlayerId: worldId === 'public-atlas' ? null : 'viewer',
+              },
+            }] : [],
+          },
+        },
+      });
+      response.setHeader('X-Mamluk-Public-Settlements', '1');
+      json(payload);
+      return;
+    }
+    if (url.pathname === '/api/kingdoms/world-map/relocate/') {
+      if (url.searchParams.get('worldId') !== 'world' ||
+        url.searchParams.get('villageId') !== 'cairo' || request.method !== 'GET') {
+        json({ success: false, error: 'Unavailable fixture action' }, 403);
+        return;
+      }
+      const [longitude, latitude] = location();
+      json({ success: true, data: {
+        worldId: 'world', villageId: 'cairo', longitude, latitude,
+        relocationUsed: relocated, canRelocate: false, reason: 'unavailable',
+        bounds: { west: -179.9, south: -85, east: 179.9, north: 85 },
+        revision: relocated ? 2 : 1,
+      } });
+      return;
+    }
+    if (url.pathname === '/' || url.pathname === '/globe') {
+      response.setHeader('Content-Type', 'text/html');
+      const html = '<!doctype html><html lang="ar" dir="rtl"><head>' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1"></head>' +
+        '<body><div id="root"></div><script type="module" src="/e2e/fixtures/globe-scene-harness.tsx"></script></body></html>';
+      void server.transformIndexHtml('/globe', html).then((html: string) => response.end(html));
+      return;
+    }
+    next();
+  };
+  const server = await createServer({
+    configFile: false,
+    root: process.cwd(),
+    cacheDir: path.join(process.cwd(), 'node_modules/.vite-globe-scene'),
+    envDir: path.join(process.cwd(), 'e2e/fixtures'),
+    plugins: [react(), {
+      name: 'globe-local-fixture',
+      configureServer(server: { middlewares: { use: (handler: typeof middleware) => void } }) {
+        server.middlewares.use(middleware);
+      },
+    }],
+    resolve: { alias: {
+      '@': path.join(process.cwd(), 'src'),
+      '@mamluk/maplibre-adapter': path.join(process.cwd(), '../../packages/mamluk-maplibre-adapter/src/index.ts'),
+      '@mamluk/world-map-core': path.join(process.cwd(), '../../packages/mamluk-world-map-core/src/index.ts'),
+    } },
+    define: { 'process.env': JSON.stringify({ NODE_ENV: 'development' }) },
+    server: { host: '127.0.0.1', port: 3311, strictPort: true },
+  });
+  await server.listen();
+  const close = () => { void server.close().then(() => process.exit(0)); };
+  process.on('SIGINT', close);
+  process.on('SIGTERM', close);
+}
+void main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

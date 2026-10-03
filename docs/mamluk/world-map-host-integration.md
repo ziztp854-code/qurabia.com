@@ -707,3 +707,23 @@ season, military activity, occupied destination and the permanent one-use rule
 remain enforced. The relocation history and existing audit receipt identify the
 actual administrator. Ownership, legacy grid and military travel are preserved;
 the existing transaction may advance ordinary due game events before saving.
+
+### Globe overview and current village navigation
+
+**عرض الكرة بالكامل** switches the existing SDK canvas to the globe and fits its
+zoom to the available width and height, with level pitch and bearing. **انتقل إلى قريتك**
+uses the current accepted village point when available, including public village
+presentation, before falling back to the initial server location. Globe, flat map,
+village shortcuts and management links keep the same persisted village identity
+and WGS84 geography; the legacy game grid is not used to manufacture coordinates.
+The visible-site list can reveal further results in batches of forty, and changing
+or clearing search starts a new batch.
+
+Kingdoms views reject lower revisions even if their timestamps are newer; equal
+revisions compare server time. This applies to initial loads, polling and command
+responses, so delayed requests cannot undo an accepted update. Village camera
+animation uses the same monotonic clock for its start and frame times.
+
+The release pins the affected Engine.IO 6.6.9 dependency to 6.6.10. A local
+transport check verifies that missing or mismatched EIO versions are rejected
+with HTTP 400 during upgrades while valid EIO 4 upgrades still return HTTP 101.

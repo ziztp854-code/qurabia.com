@@ -74,7 +74,7 @@ async function main() {
           id: 'browser-world',
           name: 'عالم الاختبار المحلي',
           revision: 0,
-          status: 'ACTIVE',
+          status: 'OPEN',
           createdAt: new Date().toISOString(),
         },
       ]);
