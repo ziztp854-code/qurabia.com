@@ -311,6 +311,7 @@ test('a hidden layer stays hidden through refresh, expiry, recovery and overview
   const { errors } = await open(page);
   await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
   await page.getByRole('checkbox', { name: 'القرى والمدن', exact: true }).uncheck();
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
   const visibility = () =>
     page.evaluate(() => window.__savedMap!.getLayoutProperty('mamluk-cities', 'visibility'));
   await expect.poll(visibility).toBe('none');
@@ -354,10 +355,11 @@ test('a hidden layer stays hidden through refresh, expiry, recovery and overview
   expect(await lastKindAfter(page, back)).toBe('viewport');
   await expect.poll(visibility).toBe('none');
 
-  await page.getByRole('checkbox', { name: 'القرى والمدن', exact: true }).check();
   await page.evaluate(() => {
     (window as unknown as { __hideCities: boolean }).__hideCities = false;
   });
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'القرى والمدن', exact: true }).check();
   await expect.poll(visibility).toBe('visible');
   expect(await page.evaluate(() => window.__savedMap === window.__globeFixtureMap)).toBe(true);
   await finish(page, errors);
