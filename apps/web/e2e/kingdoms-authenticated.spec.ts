@@ -153,9 +153,9 @@ test('administrator opens a world; a signed-in player builds and trains with per
         .evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
     )
     .toBe(true);
-  await expect(villageMap.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
+  await expect(villageMap.locator('[data-village-scene]')).toHaveAttribute('data-camera-x', /\d/);
   await expect(villageMap.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ })).toHaveCount(1);
-  await expect(villageMap.getByRole('button', { name: /^الإسطبل،/ })).toHaveCount(1);
+  await expect(villageMap.getByRole('button', { name: /^الإسطبل، المستوى / })).toHaveCount(1);
   await villageMap.locator('[data-building="barracks"]').click();
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({
