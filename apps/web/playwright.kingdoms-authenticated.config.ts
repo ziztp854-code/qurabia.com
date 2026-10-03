@@ -23,7 +23,7 @@ export default defineConfig({
   workers: 1,
   // The authenticated journey also recruits, assigns and returns a commander
   // using the real server clock; allow its round trip after the existing UI checks.
-  timeout: 150000,
+  timeout: 180000,
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   outputDir: './test-results/kingdoms-authenticated',
   webServer: {
