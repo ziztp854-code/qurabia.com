@@ -38,6 +38,9 @@ export function applyLocalAuthBaseUrl() {
   if (!process.env.VERCEL && process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
     process.env.NEXTAUTH_URL = url;
     process.env.AUTH_URL = url;
+  } else if (!process.env.NEXTAUTH_URL && process.env.AUTH_URL) {
+    // NextAuth v4 reads NEXTAUTH_URL; keep the documented AUTH_URL alias usable.
+    process.env.NEXTAUTH_URL = process.env.AUTH_URL;
   }
 
   return url;

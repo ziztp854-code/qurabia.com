@@ -7,6 +7,7 @@ import { checkRateLimit } from './rate-limit';
 import { getPrismaClient, hasDatabaseUrl } from './prisma';
 import { signInSchema } from './validation';
 import { verifyPassword } from './password';
+import { decodeCurrentSessionToken } from './session-token';
 
 applyLocalAuthBaseUrl();
 
@@ -96,6 +97,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
+  jwt: { decode: decodeCurrentSessionToken },
   pages: {
     signIn: '/auth/sign-in',
   },
