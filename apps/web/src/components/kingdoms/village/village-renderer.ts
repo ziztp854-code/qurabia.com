@@ -244,7 +244,7 @@ export async function createVillageRenderer(
         .map((building) => rectCenter(getBuildingRect(building, next.debug)));
       if (newlyCompleted.length) {
         completed = newlyCompleted;
-        completionUntil = elapsed + 1500;
+        completionUntil = elapsed + 280;
       }
       const rebuildNeeded =
         next.village.id !== props.village.id ||

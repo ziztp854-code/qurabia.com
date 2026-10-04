@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { maxLevelLabel } from '@/lib/kingdoms/stages';
 import type { Village } from '@/lib/kingdoms/types';
+import { useViewClock } from './use-view-clock';
 import { number } from './shared';
 import styles from './building-activity.module.css';
 
@@ -28,34 +29,26 @@ export function BuildingActivity({
   x,
   y,
 }: Props) {
-  const [clock, setClock] = useState({ base: serverNow, elapsed: 0 });
   const [confirmed, setConfirmed] = useState({ level, celebrate: false });
+  const now = useViewClock(
+    { serverNow, paused: false },
+    build?.endsAt ?? serverNow,
+    `activity:${name}:${build?.endsAt ?? 0}`,
+  );
   if (confirmed.level !== level) {
     setConfirmed({ level, celebrate: level > confirmed.level });
   }
 
   useEffect(() => {
-    if (!build) return;
-    const anchor = performance.now();
-    const timer = setInterval(() => {
-      const elapsed = Math.max(0, performance.now() - anchor);
-      setClock({ base: serverNow, elapsed });
-      if (serverNow + elapsed >= build.endsAt) clearInterval(timer);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [build, serverNow]);
-
-  useEffect(() => {
     if (!confirmed.celebrate) return;
     const timer = setTimeout(
       () => setConfirmed((current) => ({ ...current, celebrate: false })),
-      4000,
+      280,
     );
     return () => clearTimeout(timer);
   }, [confirmed.celebrate, confirmed.level]);
 
   if (!build && !confirmed.celebrate) return null;
-  const now = serverNow + (clock.base === serverNow ? clock.elapsed : 0);
   const remaining = build ? Math.max(0, Math.ceil((build.endsAt - now) / 1000)) : 0;
   const progress =
     build?.startedAt !== undefined && build.endsAt > build.startedAt

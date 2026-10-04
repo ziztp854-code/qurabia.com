@@ -225,6 +225,28 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
         )}
         {tab === 'upgrade' && (
           <>
+            <p className={styles.duration}>
+              {resource
+                ? `الإنتاج الحالي ${rateAmount(serverRate?.[resource] ?? hourlyYield(view.config, resource, level))} / ساعة`
+                : building === 'warehouse'
+                  ? `السعة الحالية ${number(capacity)}`
+                  : building === 'wall'
+                    ? `تعزيز الدفاع ${number(level * view.config.wallDefensePerLevel * 100)}٪`
+                    : building === 'barracks' || building === 'stable'
+                      ? `سرعة التدريب ×${rateAmount(trainingSpeedDivisor(level, view.config.barracksSpeedPerLevel))}`
+                      : descriptions[building]}
+            </p>
+            {!maxed && resource && (
+              <p>
+                بعد الترقية{' '}
+                {rateAmount(
+                  resource === 'food'
+                    ? netAfterUpkeep(hourlyYield(view.config, 'food', offer.nextLevel), breakdown?.upkeep ?? 0)
+                    : hourlyYield(view.config, resource, offer.nextLevel),
+                )}{' '}
+                / ساعة
+              </p>
+            )}
             <p>
               المستوى الحالي {number(level)}
               {maxed ? ' · بلغ المبنى الحد الأعلى أو أضيف تطويره الأخير إلى القائمة.' : ` · المستوى التالي ${number(offer.nextLevel)}`}
@@ -309,9 +331,14 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
               )}
             </dl>
             {resource === 'food' && (
+              <p>
+                {rateAmount(hourlyYield(view.config, 'food', level))} غذاء / ساعة
+              </p>
+            )}
+            {resource === 'food' && (
               <dl className={styles.facts} aria-label="ميزان الغذاء">
                 <div>
-                  <dt>الإنتاج الإجمالي</dt>
+                  <dt>الإنتاج الإجمالي قبل إعاشة الجيش</dt>
                   <dd><bdi>{rateAmount(breakdown?.gross.food ?? hourlyYield(view.config, 'food', level))}</bdi></dd>
                 </div>
                 <div>

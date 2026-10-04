@@ -28,6 +28,8 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
+import { formatCountdown, remainingMs } from '@/lib/kingdoms/incoming-threats';
+import { presentRallyCommand } from '@/lib/kingdoms/rally-command';
 import { buildingKeys } from '@/lib/kingdoms/types';
 import { resolveVillageAssetSrc, villageAssetFidelity, villageAssets } from '@/lib/kingdoms/village/assetManifest';
 import {
@@ -48,6 +50,7 @@ import type {
 import { VillageCamera } from './village-camera';
 import { bindVillageInput } from './village-input';
 import type { VillageRenderer } from './village-renderer';
+import { useViewClock } from '../use-view-clock';
 import styles from './village-canvas.module.css';
 
 const icons = {
@@ -80,6 +83,77 @@ const rectStyle = (rect: WorldRect): CSSProperties => ({
   height: rect.height,
 });
 
+function ConstructionMarker({
+  props,
+}: {
+  props: VillageCanvasProps;
+}) {
+  const build = props.village.build;
+  const now = useViewClock(
+    props.view,
+    build?.endsAt ?? props.view.serverNow,
+    `village-build:${props.village.id}:${build?.building ?? ''}:${build?.endsAt ?? 0}`,
+  );
+  if (!build) return null;
+  const remaining = Math.max(0, Math.ceil((build.endsAt - now) / 1000));
+  const progress =
+    build.startedAt !== undefined && build.endsAt > build.startedAt
+      ? Math.min(100, Math.max(0, ((now - build.startedAt) / (build.endsAt - build.startedAt)) * 100))
+      : undefined;
+  const rect = getBuildingRect(build.building, props.debug);
+  const name = props.view.config.buildings[build.building].name;
+  return (
+    <div
+      className={styles.construction}
+      data-construction-asset={villageAssets.environment.scaffold.src ? 'dedicated' : 'MISSING_ASSET'}
+      style={{ left: rect.x + rect.width / 2, top: rect.y }}
+    >
+      <Hammer size={14} aria-hidden="true" />
+      <span>
+        {remaining ? 'قيد البناء' : 'بانتظار تأكيد الاكتمال'}
+        <small>{name}</small>
+      </span>
+      {progress !== undefined && (
+        <span
+          role="progressbar"
+          aria-label={`تقدم بناء ${name}`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.floor(progress)}
+          className={styles.progress}
+        >
+          <i style={{ width: `${progress}%` }} />
+        </span>
+      )}
+      {remaining > 0 && (
+        <bdi>{`${Math.floor(remaining / 3600)
+          .toString()
+          .padStart(2, '0')}:${Math.floor((remaining % 3600) / 60)
+          .toString()
+          .padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`}</bdi>
+      )}
+    </div>
+  );
+}
+
+function RallyPointBadge({ props }: { props: VillageCanvasProps }) {
+  const command = presentRallyCommand(props.view, props.village);
+  const threat = command.nearestThreat;
+  const now = useViewClock(
+    props.view,
+    threat?.arrivesAt ?? props.view.serverNow,
+    `rally-badge:${props.village.id}`,
+  );
+  const movements = command.outgoing.length + command.returning.length;
+  if (!movements && !command.attacks.length) return null;
+  const countdown = threat ? formatCountdown(remainingMs(threat.arrivesAt, now)) : '';
+  return (
+    <span className={styles.rallyBadge} data-severity={threat?.severity}>
+      {threat ? `⚔ ${countdown}` : movements}
+    </span>
+  );
+}
+
 function deviceQuality(props: VillageCanvasProps, width: number, height?: number) {
   const device = navigator as Navigator & {
     deviceMemory?: number;
@@ -109,7 +183,6 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     const [pixiReady, setPixiReady] = useState(false);
     const [retry, setRetry] = useState(0);
     const [measuredStage, setMeasuredStage] = useState({ width: 1, height: 1 });
-    const [clock, setClock] = useState({ base: props.view.serverNow, elapsed: 0 });
     const announced = useRef(false);
     const descriptionId = useId();
     const coordinateReadout = useRef<HTMLSpanElement>(null);
@@ -283,31 +356,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       current.current.onReady?.();
     }, [loaded]);
 
-    useEffect(() => {
-      if (!props.village.build) return;
-      const anchor = performance.now();
-      const timer = setInterval(
-        () =>
-          setClock({
-            base: props.view.serverNow,
-            elapsed: Math.max(0, performance.now() - anchor),
-          }),
-        1000,
-      );
-      return () => clearInterval(timer);
-    }, [props.village.build, props.view.serverNow]);
-
     const choose = (building: VillageSelection) => current.current.onSelect(building);
-    const build = props.village.build;
-    const now = props.view.serverNow + (clock.base === props.view.serverNow ? clock.elapsed : 0);
-    const remaining = build ? Math.max(0, Math.ceil((build.endsAt - now) / 1000)) : 0;
-    const progress =
-      build?.startedAt !== undefined && build.endsAt > build.startedAt
-        ? Math.min(
-            100,
-            Math.max(0, ((now - build.startedAt) / (build.endsAt - build.startedAt)) * 100),
-          )
-        : undefined;
     const cameraScale = createCamera(measuredStage).scale || 1;
     const hits = interactionRects(44 / cameraScale);
     const terrainFidelity = villageAssetFidelity(
@@ -471,6 +520,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               <span className={styles.rallyMark} aria-hidden="true">
                 <Flag size={18} />
               </span>
+              <RallyPointBadge props={props} />
               <span className={styles.label}>
                 <span>
                   نقطة تجمع الجيوش
@@ -508,43 +558,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 )}
               </span>
             </button>
-            {build && (
-              <div
-                className={styles.construction}
-                data-construction-asset={villageAssets.environment.scaffold.src ? 'dedicated' : 'MISSING_ASSET'}
-                style={{
-                  left:
-                    getBuildingRect(build.building, props.debug).x +
-                    getBuildingRect(build.building, props.debug).width / 2,
-                  top: getBuildingRect(build.building, props.debug).y,
-                }}
-              >
-                <Hammer size={14} aria-hidden="true" />
-                <span>
-                  {remaining ? 'قيد البناء' : 'بانتظار تأكيد الاكتمال'}
-                  <small>{props.view.config.buildings[build.building].name}</small>
-                </span>
-                {progress !== undefined && (
-                  <span
-                    role="progressbar"
-                    aria-label={`تقدم بناء ${props.view.config.buildings[build.building].name}`}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.floor(progress)}
-                    className={styles.progress}
-                  >
-                    <i style={{ width: `${progress}%` }} />
-                  </span>
-                )}
-                {remaining > 0 && (
-                  <bdi>{`${Math.floor(remaining / 3600)
-                    .toString()
-                    .padStart(2, '0')}:${Math.floor((remaining % 3600) / 60)
-                    .toString()
-                    .padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`}</bdi>
-                )}
-              </div>
-            )}
+            <ConstructionMarker props={props} />
           </div>
         </div>
         {!loaded && !failed && (

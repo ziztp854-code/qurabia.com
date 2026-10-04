@@ -7,6 +7,53 @@
   gap: clamp(0.85rem, 1.6vw, 1.25rem);
   min-inline-size: 0;
 }
+.village[data-village-screen] {
+  position: relative;
+  display: block;
+  gap: 0;
+  min-block-size: 0;
+  block-size: 100%;
+  overflow: hidden;
+}
+.village[data-village-screen] > .hero {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  inset-block-start: var(--space-2);
+  inset-inline: var(--space-3);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--kingdoms-ui-surface, var(--surface)) 88%, transparent);
+}
+.village[data-village-screen] > .hero :is(button, a) {
+  pointer-events: auto;
+}
+.village[data-village-screen] > .hero .identity {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+}
+.village[data-village-screen] > .hero .stock {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+.village[data-village-screen] > .hero .stock ul {
+  flex-wrap: nowrap;
+}
+.village[data-village-screen] > .hero .goal {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.village[data-village-screen] > .hero .troops {
+  display: none;
+}
 
 /* ── إطار مشترك: شقّ ضوئي علوي + علامات زوايا ───────────────────────── */
 .hero,
@@ -40,46 +87,53 @@
   --foreground: var(--kingdoms-ui-panel-foreground);
   --muted-foreground: var(--kingdoms-ui-panel-muted);
   --border: var(--kingdoms-ui-panel-border);
-  --border-gold: var(--kingdoms-ui-panel-border);
+  --border-gold: var(--kingdoms-ui-panel-gold);
   --gold: var(--kingdoms-ui-panel-gold);
   --success: var(--kingdoms-ui-panel-success);
   --danger: var(--kingdoms-ui-panel-danger);
-  --gold-gradient: var(--gold);
   color: var(--foreground);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: clamp(0.75rem, 1.6vw, 1.35rem);
-  padding: clamp(0.9rem, 2vw, 1.4rem);
-  background: var(--surface);
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--kingdoms-ui-surface-soft);
+  border-color: var(--kingdoms-ui-border);
 }
 .crest {
   display: grid;
   place-items: center;
-  inline-size: clamp(3rem, 6vw, 3.9rem);
-  block-size: clamp(3rem, 6vw, 3.9rem);
+  inline-size: 1.6rem;
+  block-size: 1.6rem;
   border: 1px solid var(--border-gold);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--gold) 12%, var(--surface-strong));
+  border-radius: var(--radius-sm);
   color: var(--gold);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 18%, transparent);
 }
 .identity {
-  display: grid;
-  gap: 0.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
   min-inline-size: 0;
-}
-.eyebrow {
-  margin: 0;
-  color: var(--gold);
-  font-size: 0.74rem;
-  font-weight: 700;
 }
 .name {
   margin: 0;
-  font-size: clamp(1.35rem, 3.2vw, 2.05rem);
+  font-size: 1.05rem;
   font-weight: 800;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+.level,
+.power,
+.goal {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.level {
+  color: var(--gold);
+  font-weight: 700;
+}
+.power,
+.goal {
+  color: var(--muted-foreground);
 }
 .sub {
   display: flex;
@@ -187,39 +241,145 @@
 
 /* ── الخشب/الحجر/الحديد/الغذاء/الذهب: شريط موارد مع معدل الإنتاج ────── */
 .stock {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
-  gap: 0.5rem;
+  gap: 0.25rem;
+}
+.stock ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .stockCell {
-  display: grid;
-  gap: 0.32rem;
-  padding: 0.6rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-strong);
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.4rem;
   min-inline-size: 0;
+  padding: 0.15rem 0.4rem;
+  border-inline-start: 1px solid var(--border);
+}
+.stockCell:first-child {
+  border-inline-start: 0;
+  padding-inline-start: 0;
 }
 .stockHead {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.2rem;
   color: var(--muted-foreground);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
+}
+.stockLabel {
+  font-size: 0.72rem;
 }
 .stockHead svg {
   color: var(--gold);
 }
 .stockValue {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .stockRate {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--muted-foreground);
-  font-size: 0.7rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.fullBadge {
+  padding: 0 0.35rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.foodDetail {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: calc(100% + 0.2rem);
+  inset-inline-start: 0;
+  inline-size: max-content;
+  max-inline-size: 16rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font-size: 0.72rem;
+  opacity: 0;
+  pointer-events: none;
+}
+.stockCell:hover .foodDetail,
+.stockCell:focus-within .foodDetail,
+.stockCell[data-open='true'] .foodDetail {
+  opacity: 1;
+}
+.troops {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.troops bdi {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+@media (max-width: 700px) {
+  .village[data-village-screen] > .hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.2rem;
+    padding: 0.3rem 0.45rem;
+  }
+  .village[data-village-screen] > .hero .identity {
+    flex: 0 0 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    gap: 0.2rem 0.45rem;
+  }
+  .village[data-village-screen] > .hero .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .village[data-village-screen] > .hero .tag {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .village[data-village-screen] .goal,
+  .village[data-village-screen] .stockLabel {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .village[data-village-screen] .stock ul {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .village[data-village-screen] .stockCell {
+    flex: 1 1 0;
+    min-inline-size: 0;
+    padding-inline: 0.2rem;
+    overflow: hidden;
+  }
 }
 
 /* ── شريط تقدم وحيد الشكل يستخدم في كل القرية ───────────────────────── */
@@ -235,6 +395,12 @@
   block-size: 100%;
   background: var(--gold-gradient);
   transition: inline-size 0.6s ease-out;
+}
+.stock .bar {
+  position: absolute;
+  inset-inline: 0.4rem;
+  inset-block-end: 0;
+  inline-size: auto;
 }
 .barWide {
   block-size: 6px;

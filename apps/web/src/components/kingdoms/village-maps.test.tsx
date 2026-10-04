@@ -28,7 +28,7 @@ function fixture(): WorldView {
 afterEach(cleanup);
 
 describe('village maps', () => {
-  it('keeps construction, army, tasks and world navigation available within the village', () => {
+  it('keeps construction, army, tasks and world navigation available within the village', async () => {
     const view = fixture();
     const onNavigate = vi.fn();
     render(
@@ -41,14 +41,17 @@ describe('village maps', () => {
       />,
     );
     const navigation = screen.getByRole('navigation', { name: 'التنقل من القرية' });
-    fireEvent.click(within(navigation).getByRole('button', { name: 'البناء' }));
-    expect(screen.getByRole('region', { name: 'تفاصيل دار الحكم' })).toBeInTheDocument();
+    const map = screen.getByRole('region', { name: 'خريطة القرية' });
+    fireEvent.click(within(map).getByRole('button', { name: /^دار الحكم/ }));
+    expect(await screen.findByRole('region', { name: 'تفاصيل دار الحكم' })).toBeInTheDocument();
     fireEvent.click(within(navigation).getByRole('button', { name: 'انتقل إلى الجيش' }));
     expect(onNavigate).toHaveBeenLastCalledWith('army');
-    fireEvent.click(within(navigation).getByRole('button', { name: 'افتح المهام' }));
+    fireEvent.click(within(navigation).getByRole('button', { name: 'افتح التقارير' }));
     expect(onNavigate).toHaveBeenLastCalledWith('reports');
     fireEvent.click(within(navigation).getByRole('button', { name: 'انتقل إلى خريطة العالم' }));
     expect(onNavigate).toHaveBeenLastCalledWith('map');
+    fireEvent.click(within(navigation).getByRole('button', { name: 'انتقل إلى التحالف' }));
+    expect(onNavigate).toHaveBeenLastCalledWith('alliances');
   });
   it('shows production and storage from the real farm and warehouse levels', async () => {
     const view = fixture();

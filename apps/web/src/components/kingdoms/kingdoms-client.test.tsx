@@ -84,7 +84,7 @@ describe('Kingdoms player interface', () => {
       command: { type: 'found', name: 'مملكة النور' },
       idempotencyKey: expect.any(String),
     });
-    expect(screen.getByRole('link', { name: 'خريطة العالم' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'خريطة العالم', hidden: true })).toBeInTheDocument();
   });
 
   it('keeps the same receipt key when retrying an ambiguous network failure', async () => {
@@ -283,8 +283,8 @@ describe('Kingdoms player interface', () => {
       />,
     );
     await screen.findByRole('region', { name: 'خريطة القرية' });
-    expect(screen.getByRole('combobox', { name: 'العالم والموسم' })).toHaveValue('world-2');
-    expect(screen.getByRole('combobox', { name: 'القرية الحالية' })).toHaveValue('second-village');
+    expect(screen.getByRole('combobox', { name: 'العالم والموسم', hidden: true })).toHaveValue('world-2');
+    expect(screen.getByRole('combobox', { name: 'القرية الحالية', hidden: true })).toHaveValue('second-village');
     expect(screen.queryByRole('region', { name: 'ملخص المملكة' })).not.toBeInTheDocument();
     expect(
       vi.mocked(fetch).mock.calls.some(([url]) => String(url) === '/api/kingdoms?worldId=world-2'),
@@ -305,8 +305,8 @@ describe('Kingdoms player interface', () => {
       />,
     );
     await screen.findByRole('region', { name: 'خريطة القرية' });
-    expect(screen.getByRole('combobox', { name: 'العالم والموسم' })).toHaveValue('world-1');
-    expect(screen.getByRole('combobox', { name: 'القرية الحالية' })).toHaveValue(
+    expect(screen.getByRole('combobox', { name: 'العالم والموسم', hidden: true })).toHaveValue('world-1');
+    expect(screen.getByRole('combobox', { name: 'القرية الحالية', hidden: true })).toHaveValue(
       projection(true).villages[0].id,
     );
     expect(
@@ -381,8 +381,8 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
     render(<KingdomsClient />);
-    const navigation = await screen.findByLabelText('إدارة المملكة');
-    fireEvent.click(within(navigation).getByRole('button', { name: 'إرسال حملة' }));
+    const navigation = await screen.findByRole('navigation', { name: 'إدارة المملكة', hidden: true });
+    fireEvent.click(within(navigation).getByRole('button', { name: 'إرسال حملة', hidden: true }));
     expect(screen.getByTestId('unified-map')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('الوجهة X'), { target: { value: '0' } });
     fireEvent.change(screen.getByLabelText('الوجهة Y'), { target: { value: '0' } });
@@ -433,9 +433,13 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : incomingView),
     );
     render(<KingdomsClient />);
-    expect(await screen.findByRole('alert', { name: 'تحذير عسكري' })).toBeInTheDocument();
-    expect(screen.getByLabelText('1 هجمات قادمة')).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'عرض على الخريطة' })[0]!);
+    expect(await screen.findByRole('alert', { name: 'هجوم قادم' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'إدارة المملكة', hidden: true }).querySelector('[aria-label="1 هجمات قادمة"]'),
+    ).not.toBeNull();
+    fireEvent.click(
+      within(screen.getByRole('alert', { name: 'هجوم قادم' })).getByRole('button', { name: 'عرض على الخريطة' }),
+    );
     expect(navigation.push).toHaveBeenCalledWith(
       `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`,
     );
@@ -450,7 +454,7 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : { ...projection(true), paused: true }),
     );
     render(<KingdomsClient />);
-    fireEvent.click(await screen.findByRole('button', { name: 'القرية' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'القرية', hidden: true }));
     fireEvent.click(screen.getByRole('button', { name: /دار الحكم.*المستوى [١1]/ }));
     const buttons = await screen.findAllByRole(
       'button',

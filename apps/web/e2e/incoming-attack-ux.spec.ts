@@ -16,13 +16,15 @@ test('incoming attack is visible in alert, village, and activity without leaking
     });
   });
   await page.goto('/');
-  const alert = page.getByRole('alert', { name: 'تحذير عسكري' });
+  const alert = page.getByRole('alert', { name: 'هجوم قادم' });
   await expect(alert).toBeVisible();
-  await expect(alert).toContainText('الهجمات القادمة');
+  await expect(page.getByRole('alert')).toHaveCount(1);
   await expect(alert).not.toContainText('حارس');
-  await expect(page.getByRole('alert', { name: 'هجوم قادم' })).toBeVisible();
+  const tools = page.getByRole('region', { name: 'خريطة القرية', exact: true }).locator('details').filter({ hasText: 'أدوات المشهد' });
+  await tools.locator('summary').first().click();
   await expect(page.getByRole('heading', { name: /القوات القادمة/ })).toBeVisible();
   await expect(page.getByRole('region', { name: 'نشاط القرية' })).toContainText('هجوم قادم');
+  await tools.locator('summary').first().click();
   await expect(page.locator('[data-threat]')).toHaveCount(1);
   await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-threat-severity', /DANGER|CRITICAL/);
   await expect(page.locator('body')).not.toContainText('commanderId');
@@ -31,10 +33,11 @@ test('incoming attack is visible in alert, village, and activity without leaking
   await page.screenshot({ path: testInfo.outputPath('village-incoming-overview.png'), scale: 'css' });
   if (testInfo.project.name === 'desktop-1920') {
     await page.setViewportSize({ width: 3840, height: 2160 });
-    await expect(page.getByRole('alert', { name: 'تحذير عسكري' })).toBeVisible();
+    await expect(page.getByRole('alert', { name: 'هجوم قادم' })).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(1);
     await page.screenshot({ path: testInfo.outputPath('village-4k-incoming-attack.png'), scale: 'css' });
   }
-  await page.getByRole('alert', { name: 'تحذير عسكري' }).getByRole('button', { name: 'عرض على الخريطة' }).click();
+  await page.getByRole('alert', { name: 'هجوم قادم' }).getByRole('button', { name: 'عرض على الخريطة' }).click();
   await expect(page).toHaveURL(/\/games\/kingdoms\/world-map\//);
   await expect(page.getByTestId('unified-map')).toBeVisible();
 });
