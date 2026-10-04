@@ -16,7 +16,8 @@
   max-inline-size: min(48rem, calc(100% - 1rem));
   margin-inline: auto;
   border-radius: var(--radius-full);
-  padding: 0.15rem 0.7rem;
+  min-block-size: 2.5rem;
+  padding: 0.35rem 0.85rem;
 }
 .alert[data-placement='ribbon'] .head {
   flex-wrap: nowrap;
@@ -28,7 +29,7 @@
 }
 .alert[data-placement='ribbon'] .title h3,
 .alert[data-placement='ribbon'] .meta {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 .alert[data-placement='ribbon'] .meta {
   display: inline;

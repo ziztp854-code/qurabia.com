@@ -1,6 +1,7 @@
 .scene {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-inline-size: 0;
   min-block-size: 0;
   block-size: 100%;
@@ -13,20 +14,28 @@
   --village-tier-emphasis: color-mix(in srgb, var(--gold) 18%, transparent);
 }
 .workspace {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  min-inline-size: 0;
   min-block-size: 0;
+  overflow: hidden;
+  container-type: size;
 }
 .lead {
-  position: absolute;
+  position: relative;
   z-index: 5;
-  inset-block-start: 4.35rem;
-  inset-inline: 0;
+  flex: 0 0 auto;
+  inset: auto;
   display: flex;
   justify-content: center;
+  padding: 0.2rem 0.75rem 0;
   pointer-events: none;
+}
+.lead:empty {
+  display: none;
+  padding: 0;
 }
 .lead > * {
   pointer-events: auto;
@@ -34,8 +43,8 @@
 .header {
   position: absolute;
   z-index: 6;
-  inset-block-start: 4.35rem;
-  inset-inline-end: var(--space-3);
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
   inline-size: auto;
   padding: 0;
   background: transparent;
@@ -266,21 +275,14 @@
   .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
-  .lead { inset-block-start: 7.5rem; }
+  .lead { inset: auto; padding-block: 0.15rem 0; }
   .header {
-    inset-block-start: auto;
-    inset-block-end: 4.75rem;
+    inset-block-start: var(--space-2);
+    inset-block-end: auto;
     inset-inline-end: var(--space-2);
     padding: 0;
     align-items: flex-start;
     flex-wrap: wrap;
-  }
-  :global([data-sheet='building']) .header {
-    inset-block-end: calc(4.5rem + min(24dvh, 240px) + 0.35rem);
-  }
-  :global([data-sheet='rally']) .header {
-    inset-block-start: 7.5rem;
-    inset-block-end: auto;
   }
   .toolsPanel {
     inset-block-start: 7.5rem;

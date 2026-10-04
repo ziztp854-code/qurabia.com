@@ -32,12 +32,13 @@
 }
 .header h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.45rem;
+  line-height: 1.3;
 }
 .eyebrow {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 .overview {
   display: grid;
@@ -54,10 +55,11 @@
 }
 .overview dt {
   color: var(--muted-foreground);
-  font-size: 0.75rem;
+  font-size: 0.9rem;
 }
 .overview dd {
   margin: 0;
+  font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
 }
 .status {

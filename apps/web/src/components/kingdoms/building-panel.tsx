@@ -225,17 +225,22 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
         )}
         {tab === 'upgrade' && (
           <>
-            <p className={styles.duration}>
-              {resource
-                ? `الإنتاج الحالي ${rateAmount(serverRate?.[resource] ?? hourlyYield(view.config, resource, level))} / ساعة`
-                : building === 'warehouse'
-                  ? `السعة الحالية ${number(capacity)}`
-                  : building === 'wall'
-                    ? `تعزيز الدفاع ${number(level * view.config.wallDefensePerLevel * 100)}٪`
-                    : building === 'barracks' || building === 'stable'
-                      ? `سرعة التدريب ×${rateAmount(trainingSpeedDivisor(level, view.config.barracksSpeedPerLevel))}`
-                      : descriptions[building]}
-            </p>
+            <p>{descriptions[building]}</p>
+            {resource ? (
+              <p className={styles.duration}>
+                الإنتاج الحالي {rateAmount(serverRate?.[resource] ?? hourlyYield(view.config, resource, level))} / ساعة
+              </p>
+            ) : building === 'warehouse' ? (
+              <p className={styles.duration}>السعة الحالية {number(capacity)}</p>
+            ) : building === 'wall' ? (
+              <p className={styles.duration}>
+                تعزيز الدفاع {number(level * view.config.wallDefensePerLevel * 100)}٪
+              </p>
+            ) : building === 'barracks' || building === 'stable' ? (
+              <p className={styles.duration}>
+                سرعة التدريب ×{rateAmount(trainingSpeedDivisor(level, view.config.barracksSpeedPerLevel))}
+              </p>
+            ) : null}
             {!maxed && resource && (
               <p>
                 بعد الترقية{' '}

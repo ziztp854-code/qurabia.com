@@ -1,41 +1,60 @@
 .layout {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  inline-size: 100%;
+  min-inline-size: 0;
   min-block-size: 0;
 }
 .scene {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   min-inline-size: 0;
   min-block-size: 0;
+  overflow: hidden;
 }
 .scene > * {
   flex: 1 1 auto;
+  min-inline-size: 0;
   min-block-size: 0;
 }
 .rail {
-  position: absolute;
+  position: relative;
   z-index: 4;
-  inset-block: 4.75rem 5.25rem;
-  inset-inline-start: var(--space-3);
-  inline-size: min(340px, 30vw);
-  min-inline-size: 270px;
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
   max-block-size: 100%;
-  overflow: auto;
+  overflow: hidden;
   border-radius: var(--radius-lg);
 }
+.rail > * {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+}
 .queues {
-  position: absolute;
+  position: relative;
   z-index: 4;
-  inset-block-end: 5.25rem;
-  inset-inline-end: var(--space-3);
-  inline-size: min(24rem, 42vw);
+  grid-column: 1;
+  grid-row: 1;
+  align-self: end;
+  justify-self: end;
+  inline-size: min(24rem, 42%);
   max-block-size: 7.5rem;
+  margin: var(--space-2);
   overflow: auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  pointer-events: auto;
 }
 .queues > div {
   border-block-end: 0;
@@ -45,19 +64,20 @@
   border: 0;
 }
 .navigation {
-  position: absolute;
+  position: relative;
   z-index: 4;
-  inset-block-end: var(--space-3);
-  inset-inline: 0;
-  margin-inline: auto;
-  inline-size: min(34rem, calc(100% - 2rem));
+  grid-column: 1 / -1;
+  grid-row: 2;
+  inline-size: 100%;
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--kingdoms-ui-surface-soft, var(--surface)) 92%, transparent);
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  border-block-start: 1px solid var(--border-gold);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--kingdoms-ui-surface-soft, var(--surface)) 94%, transparent);
 }
 .navigation button {
   display: flex;
@@ -71,7 +91,7 @@
   background: transparent;
   color: var(--foreground);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
 }
 .navigation svg {
@@ -91,7 +111,25 @@
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
+@media (min-width: 1001px) {
+  .layout[data-selected='true'] {
+    grid-template-columns: clamp(320px, 22vw, 380px) minmax(0, 1fr);
+  }
+  .layout[data-selected='true'] .rail {
+    grid-column: 1;
+  }
+  .layout[data-selected='true'] .scene,
+  .layout[data-selected='true'] .queues {
+    grid-column: 2;
+  }
+}
+@media (min-width: 2560px) {
+  .layout[data-selected='true'] {
+    grid-template-columns: clamp(360px, 18vw, 440px) minmax(0, 1fr);
+  }
+}
 @media (max-width: 1000px) {
+  .layout,
   .layout[data-selected='true'] {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -160,7 +198,7 @@
   .navigation button {
     flex-direction: column;
     gap: var(--space-1);
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: var(--space-1);
   }
   .queues {

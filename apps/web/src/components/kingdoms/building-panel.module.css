@@ -15,15 +15,18 @@
 }
 .header h3 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.45rem;
+  line-height: 1.3;
 }
 .eyebrow {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 .level {
   color: var(--gold);
+  font-size: 1.05rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .costs {
@@ -41,7 +44,7 @@
   padding: var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   background: var(--surface-strong);
 }
 .costs bdi {
@@ -75,7 +78,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 .state {
   color: var(--gold);
@@ -101,7 +104,7 @@
   color: var(--muted-foreground);
   cursor: pointer;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 .tabs button[aria-selected='true'] {
   border-color: var(--gold);
@@ -114,7 +117,8 @@
   padding-block: var(--space-2);
 }
 .content p {
-  font-size: 0.9rem;
+  font-size: 1rem;
+  line-height: 1.65;
 }
 .content .production {
   color: var(--gold);
