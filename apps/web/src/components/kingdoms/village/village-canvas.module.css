@@ -1,9 +1,13 @@
 .stage {
   position: relative;
-  inline-size: 100%;
-  block-size: 100%;
-  max-inline-size: none;
-  margin-inline: auto;
+  inline-size: min(100cqw, calc(100cqh * 3 / 2));
+  block-size: min(100cqh, calc(100cqw * 2 / 3));
+  aspect-ratio: 3 / 2;
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 0;
+  margin: 0;
   overflow: hidden;
   background: var(--background);
   touch-action: none;
@@ -89,14 +93,15 @@
   align-items: center;
   gap: 6px;
   width: max-content;
-  max-width: 240px;
+  max-width: 280px;
   padding: 8px 12px;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface-strong) 94%, transparent);
+  background: color-mix(in srgb, var(--background) 88%, var(--surface-strong));
   color: var(--foreground);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
   box-shadow: 0 3px 12px color-mix(in srgb, var(--background) 60%, transparent);
   transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
   transform-origin: center bottom;
@@ -104,9 +109,15 @@
   pointer-events: none;
 }
 .label small {
-  display: block;
+  display: inline;
   color: var(--gold);
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.label small::before {
+  content: ' / ';
+  color: var(--foreground);
+  font-weight: 700;
 }
 .stage[data-labels='true'] .label,
 .hotspot:hover .label,
@@ -299,21 +310,18 @@
 .stage[data-debug-hitboxes='true'] .hotspot {
   outline: 1px dashed var(--foreground);
 }
-@media (max-width: 1099px) {
-  .stage[data-labels='true'] .hotspot:not(:hover):not(:focus-visible):not([aria-pressed='true']) .label {
+@media (max-width: 1439px) {
+  .stage[data-labels='true'] .hotspot:not([data-priority='primary']):not(:hover):not(:focus-visible):not([aria-pressed='true']) .label {
     visibility: hidden;
   }
 }
 @media (max-width: 700px) {
   .label {
-    max-width: 210px;
-    font-size: 13px;
+    max-width: 220px;
+    font-size: 15px;
   }
-}
-@media (min-width: 2560px) {
-  .label {
-    font-size: 16px;
-    max-width: 280px;
+  .stage[data-labels='true'] .hotspot:not(:hover):not(:focus-visible):not([aria-pressed='true']) .label {
+    visibility: hidden;
   }
 }
 @media (prefers-reduced-motion: reduce) {

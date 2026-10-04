@@ -3,21 +3,12 @@
 import Image from 'next/image';
 import {
   ArrowUp,
-  Castle,
   Check,
   CircleAlert,
-  Coins,
   DoorOpen,
   Flag,
   Hammer,
-  Mountain,
-  Pickaxe,
-  Shield,
-  Store,
   Swords,
-  Trees,
-  Warehouse,
-  Wheat,
 } from 'lucide-react';
 import {
   forwardRef,
@@ -53,19 +44,6 @@ import type { VillageRenderer } from './village-renderer';
 import { useViewClock } from '../use-view-clock';
 import styles from './village-canvas.module.css';
 
-const icons = {
-  hall: Castle,
-  farm: Wheat,
-  lumber: Trees,
-  quarry: Mountain,
-  mine: Pickaxe,
-  treasury: Coins,
-  warehouse: Warehouse,
-  barracks: Swords,
-  wall: Shield,
-  market: Store,
-  embassy: Flag,
-};
 const statusIcons = {
   upgrade: ArrowUp,
   construction: Hammer,
@@ -430,7 +408,6 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 props.village,
                 props.view.config,
               );
-              const Icon = icons[building];
               const StatusIcon = statusIcons[presentation.status];
               const sceneStatus = villageBuildingSceneStatus(building, props.village);
               const state =
@@ -444,6 +421,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   type="button"
                   key={building}
                   className={styles.hotspot}
+                  data-priority={
+                    building === 'hall' || building === 'barracks' || building === 'market'
+                      ? 'primary'
+                      : undefined
+                  }
                   style={rectStyle(hits[building] ?? getBuildingRect(building, props.debug))}
                     aria-label={
                       state === sceneStatus
@@ -465,14 +447,8 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                     {presentation.description}، {buildingStatusLabels[presentation.status]}
                   </span>
                   <span className={styles.label}>
-                    <Icon size={15} aria-hidden="true" />
-                    <span>
-                      {presentation.name}
-                      <small>
-                        {state} · {sceneStatus}
-                      </small>
-                    </span>
-                    <StatusIcon size={13} aria-hidden="true" />
+                    <span>{presentation.name}</span>
+                    <small>Lv.{presentation.level}</small>
                   </span>
                   <span className={styles.marker} title={buildingStatusLabels[presentation.status]}>
                     <StatusIcon size={12} aria-hidden="true" />
@@ -483,6 +459,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
+              data-priority="primary"
               style={rectStyle(hits.stable)}
               aria-label={`الإسطبل، المستوى ${props.village.buildings.stable.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
               aria-describedby={`${descriptionId}-stable`}
@@ -499,13 +476,14 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 الإسطبل مبنى مستقل. مستواه يحدد تدريب الفرسان وسرعته.
               </span>
               <span className={styles.label}>
-                <Swords size={15} aria-hidden="true" />
-                <span>الإسطبل<small>المستوى {props.village.buildings.stable.toLocaleString('ar-SA')} · {villageBuildingSceneStatus('stable', props.village)}</small></span>
+                <span>الإسطبل</span>
+                <small>Lv.{props.village.buildings.stable}</small>
               </span>
             </button>
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region} ${styles.rally}`}
+              data-priority="primary"
               style={rectStyle(hits.rally)}
               aria-label="نقطة تجمع الجيوش، مركز القيادة العسكرية"
               aria-pressed={props.selected === 'rally'}
@@ -522,10 +500,8 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               </span>
               <RallyPointBadge props={props} />
               <span className={styles.label}>
-                <span>
-                  نقطة تجمع الجيوش
-                  <small>القيادة العسكرية</small>
-                </span>
+                <span>نقطة تجمع الجيوش</span>
+                <small>القيادة</small>
               </span>
             </button>
             {supplementary.map((region) => (
