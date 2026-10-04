@@ -7,7 +7,6 @@ import { trainingBuilding, trainingDurationMs } from '@/lib/kingdoms/training';
 import { resourceKeys, unitKeys, type Resources, type Unit } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
-import { VillageHero } from './village-hero';
 import { BuildingPanel, type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
 import { ConstructionQueue } from './village/construction-queue';
@@ -48,6 +47,11 @@ export function VillagePanel({
 }) {
   const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);
   const returnFocus = useRef<HTMLElement | null>(null);
+  const pendingBuilds =
+    village.constructionQueue?.filter(
+      (item) => item.status === 'BUILDING' || item.status === 'QUEUED',
+    ).length ?? 0;
+  const pendingJobs = (pendingBuilds || (village.build ? 1 : 0)) + (village.training ? 1 : 0);
   const select = (building: VillageSelection) => {
     returnFocus.current = document.activeElement as HTMLElement | null;
     setSelected(building);
@@ -61,7 +65,6 @@ export function VillagePanel({
   };
   return (
     <div className={styles.village} data-village-screen="">
-      <VillageHero view={view} village={village} />
       <div
         className={villageStyles.layout}
         data-selected={selected !== null}
@@ -122,45 +125,55 @@ export function VillagePanel({
             )}
           </aside>
         )}
-        {(village.build || village.training) && (
-        <section
-          className={`${styles.card} ${styles.queue} ${villageStyles.queues}`}
-          aria-label="قوائم التنفيذ"
-        >
-          {village.build && <div className={styles.queueItem}>
-            <span className={styles.queueIcon} aria-hidden="true">
-              <Hammer size={16} />
-            </span>
-            <div className={styles.queueBody}>
-              <ConstructionQueue view={view} village={village} busy={busy} send={send} />
-              {village.build && selected !== village.build.building && (
-                <button type="button" className={styles.linkButton} onClick={selectQueuedBuilding}>
-                  حدّده في المشهد
-                </button>
-              )}
+        <details className={villageStyles.queueDrawer}>
+          <summary>
+            <Hammer size={16} aria-hidden="true" />
+            البناء والتدريب<bdi>{number(pendingJobs)}</bdi>
+          </summary>
+          <section
+            className={`${styles.card} ${styles.queue} ${villageStyles.queues}`}
+            aria-label="قوائم التنفيذ"
+          >
+            <div className={styles.queueItem}>
+              <span className={styles.queueIcon} aria-hidden="true">
+                <Hammer size={16} />
+              </span>
+              <div className={styles.queueBody}>
+                <ConstructionQueue view={view} village={village} busy={busy} send={send} />
+                {village.build && selected !== village.build.building && (
+                  <button
+                    type="button"
+                    className={styles.linkButton}
+                    onClick={selectQueuedBuilding}
+                  >
+                    حدّده في المشهد
+                  </button>
+                )}
+              </div>
             </div>
-          </div>}
-          {village.training && <div className={styles.queueItem}>
-            <span className={styles.queueIcon} aria-hidden="true">
-              <Swords size={16} />
-            </span>
-            <div className={styles.queueBody}>
-              <h3>قائمة التدريب</h3>
-              {village.training ? (
-                <>
-                  <p>
-                    {number(village.training.count)}{' '}
-                    {view.config.units[village.training.unit].name}
-                  </p>
-                  <time dateTime={new Date(village.training.endsAt).toISOString()}>
-                    يكتمل {date(village.training.endsAt)}
-                  </time>
-                </>
-              ) : null}
-            </div>
-          </div>}
-        </section>
-        )}
+            {village.training && (
+              <div className={styles.queueItem}>
+                <span className={styles.queueIcon} aria-hidden="true">
+                  <Swords size={16} />
+                </span>
+                <div className={styles.queueBody}>
+                  <h3>قائمة التدريب</h3>
+                  {village.training ? (
+                    <>
+                      <p>
+                        {number(village.training.count)}{' '}
+                        {view.config.units[village.training.unit].name}
+                      </p>
+                      <time dateTime={new Date(village.training.endsAt).toISOString()}>
+                        يكتمل {date(village.training.endsAt)}
+                      </time>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </section>
+        </details>
         <nav aria-label="التنقل من القرية" className={villageStyles.navigation}>
           <button type="button" aria-label="عرض القرية" aria-pressed={!selected} onClick={close}>
             <Castle size={20} aria-hidden="true" />
@@ -208,7 +221,6 @@ export function VillagePanel({
   );
 }
 
-
 export function ArmyPanel({ view, village, busy, send }: GameProps) {
   return (
     <div className={kingdomsStyles.stack}>
@@ -224,67 +236,67 @@ export function ArmyPanel({ view, village, busy, send }: GameProps) {
         )}
       </div>
       <section aria-label="وحدات القرية">
-      <div className={kingdomsStyles.grid}>
-        {unitKeys.map((key) => {
-          const unit = view.config.units[key];
-          const affordable = maxAffordable(village.resources, unit.cost);
-          return (
-            <article className={kingdomsStyles.panel} key={key}>
-              <h3>{unit.name}</h3>
-              <p className={kingdomsStyles.muted}>{number(village.troops[key])} جاهز</p>
-              <p className={kingdomsStyles.cost}>
-                الحد الأقصى بمواردك الآن:{' '}
-                {Number.isFinite(affordable) ? number(affordable) : 'غير محدود بالموارد'}
-              </p>
-              <p>
-                <ResourceText resources={unit.cost} />
-              </p>
-              <p className={kingdomsStyles.cost}>
-                هجوم {number(unit.attack)} · دفاع {number(unit.defense)} · حمولة{' '}
-                {number(unit.carry)} · غذاء {number(unit.upkeep)}/ساعة
-              </p>
-              {key === 'rider' ? (
-                <p className={kingdomsStyles.muted}>تدريب الفرسان من الإسطبل.</p>
-              ) : (
-              <CommandForm
-                busy={busy || !!village.training}
-                label="درّب الوحدات"
-                onSubmit={(form) =>
-                  void send({
-                    type: 'train',
-                    villageId: village.id,
-                    unit: key,
-                    count: value(form, 'count'),
-                  })
-                }
-              >
-                <Input
-                  label={`عدد ${unit.name}`}
-                  name="count"
-                  type="number"
-                  min="1"
-                  max="10000"
-                  defaultValue="1"
-                  required
-                  dir="ltr"
-                />
-                <span className={kingdomsStyles.cost}>
-                  مدة الوحدة:{' '}
-                  {number(
-                    trainSeconds(
-                      unit.seconds,
-                      village.buildings[trainingBuilding(key as Unit)],
-                      view.config.barracksSpeedPerLevel,
-                    ),
-                  )}{' '}
-                  ثانية
-                </span>
-              </CommandForm>
-              )}
-            </article>
-          );
-        })}
-      </div>
+        <div className={kingdomsStyles.grid}>
+          {unitKeys.map((key) => {
+            const unit = view.config.units[key];
+            const affordable = maxAffordable(village.resources, unit.cost);
+            return (
+              <article className={kingdomsStyles.panel} key={key}>
+                <h3>{unit.name}</h3>
+                <p className={kingdomsStyles.muted}>{number(village.troops[key])} جاهز</p>
+                <p className={kingdomsStyles.cost}>
+                  الحد الأقصى بمواردك الآن:{' '}
+                  {Number.isFinite(affordable) ? number(affordable) : 'غير محدود بالموارد'}
+                </p>
+                <p>
+                  <ResourceText resources={unit.cost} />
+                </p>
+                <p className={kingdomsStyles.cost}>
+                  هجوم {number(unit.attack)} · دفاع {number(unit.defense)} · حمولة{' '}
+                  {number(unit.carry)} · غذاء {number(unit.upkeep)}/ساعة
+                </p>
+                {key === 'rider' ? (
+                  <p className={kingdomsStyles.muted}>تدريب الفرسان من الإسطبل.</p>
+                ) : (
+                  <CommandForm
+                    busy={busy || !!village.training}
+                    label="درّب الوحدات"
+                    onSubmit={(form) =>
+                      void send({
+                        type: 'train',
+                        villageId: village.id,
+                        unit: key,
+                        count: value(form, 'count'),
+                      })
+                    }
+                  >
+                    <Input
+                      label={`عدد ${unit.name}`}
+                      name="count"
+                      type="number"
+                      min="1"
+                      max="10000"
+                      defaultValue="1"
+                      required
+                      dir="ltr"
+                    />
+                    <span className={kingdomsStyles.cost}>
+                      مدة الوحدة:{' '}
+                      {number(
+                        trainSeconds(
+                          unit.seconds,
+                          village.buildings[trainingBuilding(key as Unit)],
+                          view.config.barracksSpeedPerLevel,
+                        ),
+                      )}{' '}
+                      ثانية
+                    </span>
+                  </CommandForm>
+                )}
+              </article>
+            );
+          })}
+        </div>
       </section>
       <section className={kingdomsStyles.panel}>
         <h2>التعزيزات في القرية</h2>

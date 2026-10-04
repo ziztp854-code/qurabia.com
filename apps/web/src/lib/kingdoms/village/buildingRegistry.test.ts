@@ -1,6 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { createWorld, executeCommand, projectWorld } from '../engine';
 import {
   getVillageBuilding,
@@ -51,10 +49,10 @@ describe('Mamluk village presentation registry', () => {
   });
 
   it('places the stable beside training and keeps every reserved asset inside the existing world', () => {
-    expect(getVillageRect('stable')).toEqual({ x: 454, y: 516, width: 111, height: 67 });
+    expect(getVillageRect('stable')).toEqual({ x: 1000, y: 472.5, width: 480, height: 144 });
     expect(getVillagePlacement('stable')).toMatchObject({
-      focusX: 509.5,
-      focusY: 549.5,
+      focusX: 1240,
+      focusY: 544.5,
       focusScale: 2.4,
     });
     expect(villageBuildingRegistry).toHaveLength(30);
@@ -68,40 +66,27 @@ describe('Mamluk village presentation registry', () => {
     }
   });
 
-  it('uses five existing transparent stable assets inside the original placement', () => {
+  it('reserves five stable visual tiers while rendering the embedded master artwork', () => {
     expect(villageAssets.buildings.stable).toHaveLength(5);
     for (const [index, slot] of villageAssets.buildings.stable.entries()) {
       const filename = `stable-l${index + 1}.webp`;
       expect(slot).toMatchObject({
         id: `stable-l${index + 1}`,
         filename,
-        src: `/game-art/kingdoms/village/buildings/${filename}`,
-        placeholder: false,
+        src: null,
+        placeholder: true,
         alpha: true,
         animated: false,
         fit: 'contain',
         frames: [],
         anchor: { x: 0.5, y: 1 },
-        worldRect: { x: 454, y: 516, width: 111, height: 67 },
-        zIndex: 583,
+        worldRect: { x: 1000, y: 472.5, width: 480, height: 144 },
+        zIndex: 616.5,
       });
-      const webp = readFileSync(resolve('public', slot.src!.slice(1)));
-      expect(webp.toString('ascii', 0, 4)).toBe('RIFF');
-      expect(webp.toString('ascii', 8, 12)).toBe('WEBP');
-      expect(webp.toString('ascii', 12, 16)).toBe('VP8X');
-      expect(webp[20] & 0x10).toBe(0x10);
     }
-    expect(villageAssets.base).toEqual({
-      src: '/game-art/kingdoms/village-oasis.webp',
-      width: 1536,
-      height: 1024,
-      classification: 'LOW_RESOLUTION_FOR_4K',
-      variants: {
-        standard: '/game-art/kingdoms/village-oasis.webp',
-        hidpi: '/game-art/kingdoms/village-oasis-hidpi.webp',
-        ultra: '/game-art/kingdoms/village-oasis-ultra.webp',
-      },
-    });
+    expect(villageAssets.base.src).toContain('mamluk-capital');
+    expect(villageAssets.base.width).toBe(1600);
+    expect(villageAssets.base.height).toBe(900);
   });
 
   it('ignores development previews in production and keeps server levels above L5 intact', () => {
@@ -117,8 +102,8 @@ describe('Mamluk village presentation registry', () => {
     expect(getVillageVisualLevel('stable', confirmed, preview)).toBe(5);
     expect(confirmed.buildings.stable).toBe(20);
     expect(confirmed.buildings.barracks).toBe(20);
-    expect(getVillageRect('stable', preview)).toEqual({ x: 454, y: 516, width: 111, height: 67 });
-    expect(getVillagePlacement('stable', preview)).toMatchObject({ focusX: 509.5, focusY: 549.5 });
+    expect(getVillageRect('stable', preview)).toEqual({ x: 1000, y: 472.5, width: 480, height: 144 });
+    expect(getVillagePlacement('stable', preview)).toMatchObject({ focusX: 1240, focusY: 544.5 });
     expect(rectsOverlap(getVillageRect('barracks'), getVillageRect('stable'))).toBe(false);
     expect(rectsOverlap(getVillageRect('barracks'), getVillageRect('rally'))).toBe(false);
     expect(rectsOverlap(getVillageRect('stable'), getVillageRect('rally'))).toBe(false);
@@ -139,6 +124,6 @@ describe('Mamluk village presentation registry', () => {
       getVillagePlacement('stable', {
         placementOverrides: { stable: { focusX: 500, focusY: 540, zIndex: 600 } },
       }),
-    ).toMatchObject({ x: 454, y: 516, focusX: 500, focusY: 540, zIndex: 600 });
+    ).toMatchObject({ x: 1000, y: 472.5, focusX: 500, focusY: 540, zIndex: 600 });
   });
 });

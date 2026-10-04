@@ -13,9 +13,12 @@ import {
   Flag,
   ScrollText,
   House,
+  Settings2,
+  Menu,
+  ArrowRight,
 } from 'lucide-react';
 import { Button, ButtonLink, Input, Select } from '@/components/ui';
-import { CommandForm, Empty, date, labels, number } from './shared';
+import { CommandForm, Empty, date, number } from './shared';
 import { useKingdoms } from './use-kingdoms';
 import { VillagePanel, ArmyPanel } from './village-panel';
 import { GlobalMilitaryAlert } from './incoming-alert';
@@ -26,6 +29,7 @@ import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
 import { ResourceIcon } from './resource-icon';
+import { VillageHero } from './village-hero';
 import { unitKeys } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import type { RallyMission } from './village/rally-panel';
@@ -53,7 +57,14 @@ const tabIcons = {
   reports: ScrollText,
   throne: Crown,
 };
-const resourceOrder = ['gold', 'wood', 'stone', 'iron', 'food'] as const;
+const resourceOrder = ['wood', 'stone', 'iron', 'food', 'gold'] as const;
+const resourceNames = {
+  wood: 'الخشب',
+  stone: 'الحجر',
+  iron: 'الحديد',
+  food: 'الطعام',
+  gold: 'الذهب',
+};
 type ScopedBuildingSelection = { worldId: string; villageId: string; building: VillageSelection };
 
 export function KingdomsClient({
@@ -71,6 +82,9 @@ export function KingdomsClient({
   const game = useKingdoms(initialWorldId);
   const [tab, setTab] = useState<keyof typeof tabs>(initialTab);
   const [villageId, setVillageId] = useState(initialVillageId);
+  const [showManagement, setShowManagement] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showResourceDetails, setShowResourceDetails] = useState(false);
   const [buildingSelection, setBuildingSelection] = useState<ScopedBuildingSelection | null>(null);
   const [campaignMission, setCampaignMission] = useState<RallyMission>('attack');
   const [campaignNonce, setCampaignNonce] = useState(0);
@@ -85,6 +99,7 @@ export function KingdomsClient({
     router.push(geographicMapHref(view?.worldId ?? game.worldId, villageId));
   };
   const navigate = (nextTab: keyof typeof tabs) => {
+    setShowManagement(false);
     if (nextTab === 'map') {
       router.push(mapHref);
       return;
@@ -104,7 +119,7 @@ export function KingdomsClient({
   };
   return (
     <div
-      className={`${styles.shell} ${view?.player ? styles.playing : ''}`}
+      className={`${styles.shell} ${view?.player ? styles.playing : ''} ${view?.player && tab === 'village' ? styles.villageView : ''}`}
       data-screen={tab}
       data-village-stage={view?.player && tab === 'village' ? 'live' : undefined}
       dir="rtl"
@@ -113,7 +128,8 @@ export function KingdomsClient({
         <header className={styles.hero}>
           <div>
             {!view?.player && <p className={styles.eyebrow}>عالم يستمرّ. عهد تصنعه.</p>}
-            <h1>تحدي الممالك</h1>
+            <h1>{view?.player && village ? village.name : 'تحدي الممالك'}</h1>
+            {view?.player && <p className={styles.villageIdentity}>تحدي المماليك</p>}
             {!view?.player && (
               <p className={styles.muted}>
                 من قرية صغيرة إلى مملكة لها كلمة. ابنِ، تحالف، وقُد جيشك نحو عرش تحدي.
@@ -124,7 +140,7 @@ export function KingdomsClient({
             <Crown size={48} strokeWidth={1.25} />
           </div>
         </header>
-        {village && tab !== 'village' && (
+        {village && (
           <section aria-label="موارد القرية" className={styles.resources}>
             {resourceOrder.map((resource) => {
               const cap =
@@ -132,9 +148,15 @@ export function KingdomsClient({
                 village.buildings.warehouse * view!.config.storagePerLevel;
               const fill = Math.min(100, (village.resources[resource] / cap) * 100);
               return (
-                <div key={resource} className={styles.resource} data-full={fill >= 95}>
-                  <ResourceIcon resource={resource} hud />
-                  <span>{labels[resource]}</span>
+                <div
+                  key={resource}
+                  className={styles.resource}
+                  data-resource={resource}
+                  data-full={fill >= 95}
+                  title={`${resourceNames[resource]} ${number(village.resources[resource])} · السعة ${number(cap)}`}
+                >
+                  <ResourceIcon resource={resource} size={32} hud />
+                  <span>{resourceNames[resource]}</span>
                   <strong>
                     <bdi>{number(village.resources[resource])}</bdi>
                   </strong>
@@ -145,25 +167,63 @@ export function KingdomsClient({
                 </div>
               );
             })}
-            <div className={styles.resource}>
-              <Swords size={22} aria-hidden="true" />
-              <span>الوحدات الجاهزة</span>
-              <strong>
-                <bdi>{number(unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0))}</bdi>
-              </strong>
-              <span className={styles.resourceCapacity}>في القرية الحالية</span>
-            </div>
           </section>
         )}
+        <div className={styles.hudActions}>
+          <ButtonLink
+            href="/games"
+            variant="ghost"
+            className={styles.returnLink}
+            aria-label="العودة إلى الألعاب"
+            title="العودة إلى الألعاب"
+          >
+            <ArrowRight size={18} aria-hidden="true" />
+            <span>الألعاب</span>
+          </ButtonLink>
+          {view?.player && (
+            <>
+              <button
+                type="button"
+                aria-label="إعدادات العالم والقرية"
+                aria-expanded={showSettings}
+                aria-controls="kingdom-settings"
+                onClick={() => {
+                  setShowManagement(false);
+                  setShowResourceDetails(false);
+                  setShowSettings(!showSettings);
+                }}
+              >
+                <Settings2 size={19} aria-hidden="true" />
+              </button>
+              {tab === 'village' && (
+                <button
+                  type="button"
+                  aria-label="إدارة المملكة"
+                  aria-expanded={showManagement}
+                  aria-controls="kingdom-navigation"
+                  onClick={() => {
+                    setShowSettings(false);
+                    setShowResourceDetails(false);
+                    setShowManagement(!showManagement);
+                  }}
+                >
+                  <Menu size={19} aria-hidden="true" />
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
-      {canManage && (
-        <p>
+      <div
+        id="kingdom-settings"
+        className={styles.toolbar}
+        hidden={!!view?.player && !showSettings}
+      >
+        {canManage && (
           <ButtonLink href="/admin/kingdoms" variant="outline">
             إدارة عوالم الممالك
           </ButtonLink>
-        </p>
-      )}
-      <div className={styles.toolbar}>
+        )}
         <ButtonLink href={mapHref} variant="outline">
           الخريطة الجغرافية
         </ButtonLink>
@@ -207,6 +267,23 @@ export function KingdomsClient({
         >
           <RefreshCw size={17} aria-hidden="true" /> تحديث
         </Button>
+        {village && (
+          <span className={styles.cost}>
+            الوحدات الجاهزة:{' '}
+            <bdi>{number(unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0))}</bdi>
+          </span>
+        )}
+        {view?.player && village && showSettings && (
+          <details
+            className={styles.resourceDetails}
+            onToggle={(event) => setShowResourceDetails(event.currentTarget.open)}
+          >
+            <summary>تفاصيل الموارد والإنتاج</summary>
+            {showResourceDetails && (
+              <VillageHero key={`${view.worldId}:${village.id}`} view={view} village={village} />
+            )}
+          </details>
+        )}
       </div>
       {game.error && (
         <div role="alert" className={`${styles.notice} ${styles.error}`}>
@@ -300,10 +377,17 @@ export function KingdomsClient({
                 </p>
               )}
               <div className={styles.gameLayout}>
-                <nav aria-label="إدارة المملكة" className={styles.nav}>
+                <nav
+                  id="kingdom-navigation"
+                  aria-label="إدارة المملكة"
+                  className={styles.nav}
+                  hidden={tab === 'village' && !showManagement}
+                >
                   {Object.entries(tabs).map(([key, label]) => {
                     const Icon = tabIcons[key as keyof typeof tabs];
-                    const hostile = hostileThreats(presentIncomingThreats(view.incoming ?? [], view.serverNow)).length;
+                    const hostile = hostileThreats(
+                      presentIncomingThreats(view.incoming ?? [], view.serverNow),
+                    ).length;
                     if (key === 'map')
                       return (
                         <Link key={key} href={mapHref}>
@@ -315,13 +399,19 @@ export function KingdomsClient({
                       <button
                         key={key}
                         aria-pressed={tab === key}
-                        aria-describedby={key === 'village' && hostile > 0 ? threatCountId : undefined}
+                        aria-describedby={
+                          key === 'village' && hostile > 0 ? threatCountId : undefined
+                        }
                         onClick={() => navigate(key as keyof typeof tabs)}
                       >
                         <Icon size={20} aria-hidden="true" />
                         <span>{label}</span>
                         {key === 'village' && hostile > 0 && (
-                          <span id={threatCountId} className={styles.threatBadge} aria-label={`${hostile} هجمات قادمة`}>
+                          <span
+                            id={threatCountId}
+                            className={styles.threatBadge}
+                            aria-label={`${hostile} هجمات قادمة`}
+                          >
                             {hostile}
                           </span>
                         )}
@@ -370,7 +460,9 @@ export function KingdomsClient({
                   {tab === 'throne' && <ThronePanel {...props} />}
                 </section>
               </div>
-              <p className={`${styles.cost} ${styles.screenMeta}`}>آخر تحديث: {date(view.serverNow)}</p>
+              <p className={`${styles.cost} ${styles.screenMeta}`}>
+                آخر تحديث: {date(view.serverNow)}
+              </p>
             </>
           )}
         </>

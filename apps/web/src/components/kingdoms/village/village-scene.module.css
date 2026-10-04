@@ -1,149 +1,36 @@
 .scene {
   position: relative;
   display: flex;
-  flex-direction: column;
-  min-inline-size: 0;
+  flex: 1;
   min-block-size: 0;
-  block-size: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: hidden;
-}
-.scene[data-visual-tier] {
-  --village-tier-emphasis: color-mix(in srgb, var(--gold) 18%, transparent);
-}
-.workspace {
-  position: relative;
-  flex: 1 1 auto;
-  display: grid;
-  place-items: center;
   min-inline-size: 0;
-  min-block-size: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--kingdoms-ui-background);
   overflow: hidden;
-  container-type: size;
-}
-.lead {
-  position: relative;
-  z-index: 5;
-  flex: 0 0 auto;
-  inset: auto;
-  display: flex;
-  justify-content: center;
-  padding: 0.2rem 0.75rem 0;
-  pointer-events: none;
-}
-.lead:empty {
-  display: none;
-  padding: 0;
-}
-.lead > * {
-  pointer-events: auto;
 }
 .header {
-  position: absolute;
-  z-index: 6;
-  inset-block-start: var(--space-2);
-  inset-inline-end: var(--space-2);
-  inline-size: auto;
-  padding: 0;
-  background: transparent;
-}
-.headerActions { display: flex; align-items: center; flex-wrap: wrap; justify-content: end; gap: var(--space-3); }
-.headerActions button { min-block-size: 44px; white-space: nowrap; }
-.tools {
-  position: relative;
-  z-index: calc(var(--z-dialog) + 1);
-}
-.tools > summary {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: 44px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-strong);
-  color: var(--foreground);
-  cursor: pointer;
-  list-style: none;
-}
-.tools > summary::-webkit-details-marker { display: none; }
-.toolsPanel {
-  position: fixed;
-  z-index: 80;
-  inset-inline-end: var(--space-3);
-  inset-block-start: 8rem;
-  inline-size: min(24rem, 80vw);
-  max-block-size: min(70dvh, 640px);
-  overflow: auto;
-  padding: var(--space-3);
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  box-shadow: 0 12px 32px color-mix(in srgb, var(--background) 55%, transparent);
-}
-.directoryLayer {
   position: absolute;
   z-index: 4;
-  inset-block: var(--space-2);
-  inset-inline-start: var(--space-2);
-  inline-size: min(18rem, 86%);
-  overflow: auto;
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  box-shadow: 0 12px 32px color-mix(in srgb, var(--background) 55%, transparent);
-}
-.directoryLayer nav {
-  max-block-size: none;
-  border: 0;
-}
-.touchDock {
-  display: none;
-}
-@media (max-width: 700px) {
-  .touchDock {
-    display: none;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3) 0;
-  }
-  .touchDock button {
-    min-block-size: 44px;
-    min-inline-size: 0;
-    padding: var(--space-1);
-    border: 1px solid var(--border-gold);
-    border-radius: var(--radius-sm);
-    background: var(--surface-strong);
-    color: var(--foreground);
-    font: inherit;
-    font-size: 0.75rem;
-  }
-  .touchDock button:focus-visible,
-  .touchDock button[aria-pressed='true'] {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
-  }
-}
-.header {
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: 0.35rem var(--space-3);
+  gap: var(--space-3);
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--kingdoms-ui-surface) 94%, transparent);
+  border-inline-start: 2px solid var(--border-gold);
+  pointer-events: none;
 }
 .header h2 {
   margin: 0;
-  font-size: 1rem;
-}
-@media (min-width: 2560px) {
-  .header h2 { font-size: clamp(1.35rem, 1.05vw, 1.9rem); }
-  .settings { max-inline-size: 48rem; }
+  font-size: .95rem;
 }
 .eyebrow {
   color: var(--gold);
   margin: 0 0 var(--space-1);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 .coordinates {
   color: var(--muted-foreground);
@@ -151,13 +38,25 @@
   font-size: 0.8rem;
 }
 .controls {
+  position: absolute;
+  z-index: 4;
+  inset-inline-end: 12px;
+  inset-block-end: 12px;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
-  padding: var(--space-3);
-  border-block-start: 1px solid var(--border);
+  padding: 4px;
+  background: var(--kingdoms-ui-surface);
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
 }
+.controls button { padding: 0; background: transparent; border: 0; }
+.preferences { position: absolute; z-index: 6; inset-inline-start: 12px; inset-block-end: 12px; max-inline-size: min(420px, calc(100% - 24px)); background: var(--kingdoms-ui-surface); border: 1px solid var(--border-gold); border-radius: 4px; }
+.preferences > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 0 12px; min-block-size: 44px; font-size: .75rem; color: var(--gold); }
+.preferences[open] { max-block-size: 62dvh; overflow-y: auto; }
+.advancedControls { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
+.tour { position: absolute; z-index: 8; inset: 20% 12px auto; max-inline-size: 480px; margin-inline: auto; border: 1px solid var(--border-gold); box-shadow: var(--shadow-lg); }
 .controls button {
   min-inline-size: 44px;
   min-block-size: 44px;
@@ -179,24 +78,15 @@
 }
 .hint {
   color: var(--muted-foreground);
-  font-size: 0.875rem;
-  padding: 0 var(--space-3) var(--space-3);
-  margin: 0;
-}
-.districts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0 var(--space-3) var(--space-3);
-  list-style: none;
-}
-.districts li {
-  padding: 0.2rem 0.7rem;
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-full, 999px);
-  color: var(--gold);
   font-size: 0.8rem;
+  padding: 0 var(--space-3) var(--space-3);
+  margin: 0;
+}
+.pan {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-block-start: var(--space-2);
 }
 .tour {
   padding: var(--space-4);
@@ -227,7 +117,6 @@
 .debug {
   border-block-start: 1px dashed var(--gold);
   padding: var(--space-3);
-  scroll-margin-block-end: calc(min(38dvh, 360px) + 5.5rem);
 }
 .debug summary {
   cursor: pointer;
@@ -271,33 +160,19 @@
   overflow: auto;
   font-size: 0.75rem;
 }
-@media (max-width: 1100px) {
-  .workspace { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1000px) {
+  .scene:has([data-focused='true']) .header {
+    display: none;
+  }
 }
 @media (max-width: 700px) {
-  .lead { inset: auto; padding-block: 0.15rem 0; }
   .header {
-    inset-block-start: var(--space-2);
-    inset-block-end: auto;
-    inset-inline-end: var(--space-2);
-    padding: 0;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    padding: 6px 10px;
   }
-  .toolsPanel {
-    inset-block-start: 7.5rem;
-    inset-block-end: 8.75rem;
-    max-block-size: none;
-  }
-  :global([data-sheet='building']) .toolsPanel {
-    inset-block-end: calc(4.5rem + min(24dvh, 240px) + 4.25rem);
-  }
-  :global([data-sheet='rally']) .toolsPanel {
-    inset-block-start: 11rem;
-    inset-block-end: auto;
-    max-block-size: min(46dvh, 420px);
-  }
-  .headerActions { margin-inline-start: auto; gap: var(--space-2); }
+  .coordinates { display: none; }
+  .controls { gap: 0; inset-inline-end: 8px; }
+  .preferences { inset-inline-start: 8px; }
+  .preferences > summary span { display: none; }
   .settings {
     gap: var(--space-2);
   }
@@ -312,3 +187,9 @@
     animation: none;
   }
 }
+
+.incoming { position: absolute; z-index: 7; inset-block-start: calc(var(--kingdoms-hud-clearance, 52px) + 12px); inset-inline: 12px; pointer-events: none; }
+.incoming > * { pointer-events: auto; }
+.preferences > details { padding: 8px 12px; }
+
+:global([data-village-stage='live']) .header { display: none; }

@@ -15,7 +15,7 @@ describe('village management return route', () => {
         tab: 'village',
       }),
     });
-    expect(page.props.children.props).toMatchObject({
+    expect(page.props.children.props.children.props).toMatchObject({
       initialWorldId: 'second',
       initialVillageId: 'own-village',
       initialTab: 'village',
@@ -33,10 +33,16 @@ describe('village management return route', () => {
         tab: 'admin',
       }),
     });
-    expect(page.props.children.props).toMatchObject({
+    expect(page.props.children.props.children.props).toMatchObject({
       initialWorldId: '',
       initialVillageId: '',
-      initialTab: 'overview',
+      initialTab: 'village',
     });
+  });
+  it('preserves explicit overview links through authentication', async () => {
+    auth.requireActiveUser.mockResolvedValue({ name: 'Alice', role: 'USER' });
+    const page = await KingdomsPage({ searchParams: Promise.resolve({ tab: 'overview' }) });
+    expect(page.props.children.props.children.props.initialTab).toBe('overview');
+    expect(auth.requireActiveUser).toHaveBeenCalledWith('/games/kingdoms?tab=overview');
   });
 });

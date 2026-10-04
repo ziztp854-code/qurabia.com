@@ -175,15 +175,15 @@ describe('village scene rendering', () => {
     expect(document.body.innerHTML).not.toContain('commanderId');
   });
 
-  it('keeps labels on the selected building without a camera zoom control', () => {
+  it('keeps selected labels and accessible camera controls', () => {
     const view = fixture();
     const { container } = render(
       <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} initialBuilding="hall" />,
     );
-    expect(screen.queryByRole('button', { name: 'تكبير القرية' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'تصغير القرية' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'عرض القرية بالكامل' })).not.toBeInTheDocument();
-    expect(container.querySelector('[data-fixed-view]')).toHaveAttribute('data-fixed-view', 'true');
+    expect(screen.getByRole('button', { name: 'تكبير القرية' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'تصغير القرية' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'عرض القرية بالكامل' })).toBeInTheDocument();
+    expect(container.querySelector('[data-village-scene]')).toHaveAttribute('aria-label', 'مشهد القرية التفاعلي، اسحب للتحريك وكبّر بعجلة الفأرة أو بإصبعين');
     expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'true');
     expect(screen.getByRole('button', { name: /^دار الحكم/ })).toHaveAttribute('aria-pressed', 'true');
   });

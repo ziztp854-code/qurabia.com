@@ -5,6 +5,7 @@ import {
   resolveVillageAssetSrc,
   villageAssetFidelity,
   villageAssets,
+  villageArtRenditions,
   villageBaseClassification,
 } from './assetManifest';
 
@@ -28,53 +29,56 @@ function webpSize(relativeUrl: string) {
 }
 
 describe('village asset manifest fidelity', () => {
-  it('classifies the shipped oasis plate as low-resolution for 4K and never invents missing files', () => {
-    expect(villageBaseClassification).toBe('LOW_RESOLUTION_FOR_4K');
-    expect(villageAssets.base.src).toBe('/game-art/kingdoms/village-oasis.webp');
-    expect(villageAssets.base.variants).toEqual({
-      standard: '/game-art/kingdoms/village-oasis.webp',
-      hidpi: '/game-art/kingdoms/village-oasis-hidpi.webp',
-      ultra: '/game-art/kingdoms/village-oasis-ultra.webp',
-    });
-    expect(resolveVillageAssetSrc(villageAssets.base, 'ultra')).toBe(
-      '/game-art/kingdoms/village-oasis-ultra.webp',
-    );
-    expect(resolveVillageAssetSrc(villageAssets.base, 'hidpi')).toBe(
-      '/game-art/kingdoms/village-oasis-hidpi.webp',
-    );
-    expect(resolveVillageAssetSrc(villageAssets.base, 'standard')).toBe(
-      '/game-art/kingdoms/village-oasis.webp',
-    );
+  it('ships native responsive master renditions and preserves the quality resolver API', () => {
+    expect(villageBaseClassification).toBe('NATIVE_MASTER_1672');
+    expect(villageAssets.base.src).toBe('/game-art/kingdoms/village/mamluk-capital-1672.webp');
+    for (const [fidelity, width] of [['standard', 960], ['hidpi', 1280], ['ultra', 1672]] as const) {
+      expect(resolveVillageAssetSrc(villageAssets.base, fidelity)).toBe(`/game-art/kingdoms/village/mamluk-capital-${width}.webp`);
+    }
+    for (const rendition of villageArtRenditions) {
+      const image = webpSize(rendition.webp);
+      expect(image.width).toBe(rendition.width);
+      expect(image.width / image.height).toBeCloseTo(16 / 9, 2);
+      expect(image.alpha).toBe(false);
+      expect(readFileSync(resolve('public', rendition.avif.slice(1))).length).toBeGreaterThan(0);
+    }
     expect(resolveVillageAssetSrc(villageAssets.roads, 'hidpi')).toBeNull();
-    expect(resolveVillageAssetSrc(villageAssets.environment.scaffold, 'standard')).toBe(
-      '/game-art/kingdoms/village/buildings/construction-scaffold.webp',
-    );
     expect(webpSize(villageAssets.environment.scaffold.src!)).toMatchObject({ alpha: true });
-    const hall = villageAssets.buildings.hall[0];
-    expect(hall.src).toBe('/game-art/kingdoms/village/buildings/hall-l1.webp');
-    expect(hall.fit).toBe('contain');
-    expect(hall.worldRect).toEqual({ x: 548, y: 206, width: 474, height: 294 });
-    expect(hall.variants?.ultra).toBeUndefined();
-    expect(webpSize(hall.src!).alpha).toBe(true);
-    expect(webpSize(hall.variants!.hidpi!).alpha).toBe(true);
-    expect(villageAssets.buildings.hall[1].src).toBe(hall.src);
-    expect(villageAssets.buildings.stable[4].src).toBe(
-      '/game-art/kingdoms/village/buildings/stable-l5.webp',
-    );
     expect(villageAssetFidelity('ultra')).toBe('ultra');
     expect(villageAssetFidelity('high')).toBe('hidpi');
     expect(villageAssetFidelity('medium')).toBe('standard');
     expect(villageAssetFidelity('low')).toBe('standard');
-    expect(webpSize(villageAssets.base.src)).toEqual({ width: 1536, height: 1024, alpha: false });
-    expect(webpSize(villageAssets.base.variants.hidpi!)).toEqual({
-      width: 3840,
-      height: 2560,
-      alpha: false,
-    });
-    expect(webpSize(villageAssets.base.variants.ultra!)).toEqual({
-      width: 7680,
-      height: 5120,
-      alpha: false,
-    });
+  });
+  it('loads only the five independent resource buildings from genuine transparent tiers', () => {
+    for (const building of ['lumber', 'quarry', 'mine', 'farm', 'treasury'] as const) {
+      for (const [index, source] of [1, 1, 3, 5, 5].entries()) {
+        const slot = villageAssets.buildings[building][index];
+        expect(slot.src).toBe(`/game-art/kingdoms/village/buildings/${building}-l${source}.webp`);
+        expect(slot.placeholder).toBe(false);
+        expect(slot.fit).toBe('contain');
+        expect(slot.fallbackCrop).toBeUndefined();
+        for (const fidelity of ['standard', 'hidpi', 'ultra'] as const) {
+          const src = resolveVillageAssetSrc(slot, fidelity)!;
+          expect(webpSize(src).alpha).toBe(true);
+          if (fidelity === 'ultra' && building === 'mine' && source === 5)
+            expect(src).toContain('-ultra.webp');
+        }
+      }
+    }
+  });
+  it('keeps embedded buildings and figures from loading old standalone cutouts', () => {
+    for (const [building, tiers] of Object.entries(villageAssets.buildings)) {
+      if (['lumber', 'quarry', 'mine', 'farm', 'treasury'].includes(building)) continue;
+      for (const slot of tiers) {
+        expect(slot.src).toBeNull();
+        expect(slot.frames).toEqual([]);
+        expect(slot.fallbackCrop).toBeUndefined();
+      }
+    }
+    for (const slot of Object.values(villageAssets.npc)) {
+      expect(slot.src).toBeNull();
+      expect(slot.frames).toEqual([]);
+      expect(slot.fallbackCrop).toBeUndefined();
+    }
   });
 });

@@ -2,28 +2,36 @@ import type { Building } from '../types';
 import type { VillageBuildingId } from './buildingRegistry';
 import type { VillageDebugOptions, VillagePlacement, WorldPoint, WorldRect } from './types';
 
-// All coordinates refer to the unchanged 1536 × 1024 source artwork.
-export const VILLAGE_WORLD = { width: 1536, height: 1024 } as const;
-export const buildingPlots = {
-  hall: { x: 548, y: 206, width: 474, height: 294 },
-  farm: { x: 1120, y: 249, width: 373, height: 214 },
-  barracks: { x: 291, y: 406, width: 356, height: 104 },
-  market: { x: 1020, y: 589, width: 356, height: 200 },
-  warehouse: { x: 985, y: 426, width: 272, height: 186 },
-  treasury: { x: 294, y: 625, width: 261, height: 145 },
-  embassy: { x: 641, y: 538, width: 315, height: 201 },
-  quarry: { x: 76, y: 284, width: 286, height: 145 },
-  mine: { x: 305, y: 108, width: 256, height: 179 },
-  lumber: { x: 748, y: 84, width: 290, height: 192 },
-  wall: { x: 265, y: 741, width: 344, height: 113 },
-} as const satisfies Record<Exclude<Building, 'stable'>, WorldRect>;
+// Logical world coordinates are independent of responsive texture resolution.
+export const VILLAGE_WORLD = { width: 1600, height: 900 } as const;
+export function fromNormalized(rect: WorldRect): WorldRect {
+  return { x: rect.x * VILLAGE_WORLD.width, y: rect.y * VILLAGE_WORLD.height,
+    width: rect.width * VILLAGE_WORLD.width, height: rect.height * VILLAGE_WORLD.height };
+}
+// Calibrated against the NEW master art, not the previous oasis illustration.
+export const normalizedBuildingPlots = {
+  stable: { x: .625, y: .525, width: .3, height: .16 },
+  hall: { x: .39, y: .095, width: .235, height: .225 },
+  farm: { x: .765, y: .23, width: .18, height: .09 },
+  barracks: { x: .66, y: .33, width: .245, height: .155 },
+  market: { x: .055, y: .51, width: .335, height: .175 },
+  warehouse: { x: .12, y: .35, width: .23, height: .12 },
+  treasury: { x: .235, y: .19, width: .15, height: .135 },
+  embassy: { x: .64, y: .205, width: .105, height: .105 },
+  quarry: { x: .015, y: .035, width: .16, height: .13 },
+  mine: { x: .855, y: .025, width: .13, height: .12 },
+  lumber: { x: .085, y: .175, width: .17, height: .105 },
+  wall: { x: .12, y: .70, width: .235, height: .11 },
+} as const satisfies Record<Building, WorldRect>;
+export const buildingPlots = Object.fromEntries(Object.entries(normalizedBuildingPlots)
+  .map(([id, rect]) => [id, fromNormalized(rect)])) as Record<Building, WorldRect>;
 
 export const villageRegions = {
-  gate: { x: 681, y: 778, width: 151, height: 118 },
-  tower: { x: 1361, y: 590, width: 68, height: 109 },
-  stable: { x: 454, y: 516, width: 111, height: 67 },
-  workshop: { x: 944, y: 247, width: 84, height: 60 },
-  research: { x: 936, y: 360, width: 46, height: 60 },
+  gate: fromNormalized({ x: .408, y: .635, width: .195, height: .2 }),
+  tower: fromNormalized({ x: .935, y: .38, width: .045, height: .12 }),
+  stable: fromNormalized({ x: .625, y: .525, width: .3, height: .16 }),
+  workshop: fromNormalized({ x: .075, y: .205, width: .07, height: .07 }),
+  research: fromNormalized({ x: .675, y: .16, width: .05, height: .06 }),
 } as const satisfies Record<string, WorldRect>;
 
 // Reserved placements do not create visible or interactive buildings without approved assets.
@@ -32,22 +40,22 @@ export const villageBuildingPlots = {
   stable: villageRegions.stable,
   gate: villageRegions.gate,
   tower: villageRegions.tower,
-  granary: { x: 1130, y: 456, width: 117, height: 117 },
-  caravanserai: { x: 1232, y: 616, width: 130, height: 95 },
-  residential: { x: 577, y: 465, width: 74, height: 64 },
-  archery: { x: 350, y: 435, width: 104, height: 67 },
+  granary: fromNormalized({ x: .275, y: .39, width: .06, height: .07 }),
+  caravanserai: fromNormalized({ x: .26, y: .54, width: .08, height: .07 }),
+  residential: fromNormalized({ x: .61, y: .24, width: .05, height: .06 }),
+  archery: fromNormalized({ x: .82, y: .415, width: .07, height: .06 }),
   blacksmith: villageRegions.workshop,
-  siege: { x: 459, y: 351, width: 120, height: 68 },
-  rally: { x: 291, y: 516, width: 153, height: 86 },
-  hospital: { x: 901, y: 620, width: 77, height: 65 },
+  siege: fromNormalized({ x: .87, y: .38, width: .05, height: .05 }),
+  rally: fromNormalized({ x: .445, y: .405, width: .11, height: .08 }),
+  hospital: fromNormalized({ x: .60, y: .32, width: .05, height: .06 }),
   knowledge: villageRegions.research,
-  citadel: { x: 837, y: 271, width: 148, height: 128 },
-  mosque: { x: 662, y: 576, width: 181, height: 159 },
-  madrasa: { x: 861, y: 573, width: 69, height: 62 },
-  courthouse: { x: 1011, y: 459, width: 147, height: 101 },
-  hammam: { x: 461, y: 644, width: 70, height: 77 },
-  traders: { x: 1061, y: 657, width: 130, height: 90 },
-  industry: { x: 580, y: 186, width: 104, height: 89 },
+  citadel: fromNormalized({ x: .425, y: .13, width: .06, height: .07 }),
+  mosque: fromNormalized({ x: .26, y: .495, width: .06, height: .085 }),
+  madrasa: fromNormalized({ x: .35, y: .49, width: .04, height: .05 }),
+  courthouse: fromNormalized({ x: .59, y: .275, width: .05, height: .05 }),
+  hammam: fromNormalized({ x: .23, y: .51, width: .045, height: .045 }),
+  traders: fromNormalized({ x: .115, y: .525, width: .075, height: .08 }),
+  industry: fromNormalized({ x: .10, y: .18, width: .055, height: .055 }),
 } as const satisfies Record<VillageBuildingId, WorldRect>;
 
 export function getVillageRect(id: VillageBuildingId, debug?: VillageDebugOptions): WorldRect {

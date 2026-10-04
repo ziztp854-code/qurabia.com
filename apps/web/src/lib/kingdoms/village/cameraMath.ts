@@ -5,11 +5,13 @@ export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 3.5;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-export function createCamera(viewport: WorldSize): CameraSnapshot {
+export function createCamera(viewport: WorldSize, fillPortrait = false): CameraSnapshot {
+  const fitScale = Math.min(viewport.width / VILLAGE_WORLD.width, viewport.height / VILLAGE_WORLD.height);
+  const coverScale = Math.max(viewport.width / VILLAGE_WORLD.width, viewport.height / VILLAGE_WORLD.height);
   return clampCamera({
     x: VILLAGE_WORLD.width / 2,
     y: VILLAGE_WORLD.height / 2,
-    zoom: 1,
+    zoom: fillPortrait ? coverScale / Math.max(fitScale, .001) : 1,
     scale: 1,
     viewport,
   });
@@ -103,6 +105,6 @@ export function focusCamera(
   return clampCamera({ ...camera, ...target, zoom });
 }
 
-export function resizeCamera(_camera: CameraSnapshot, viewport: WorldSize): CameraSnapshot {
-  return createCamera(viewport);
+export function resizeCamera(camera: CameraSnapshot, viewport: WorldSize): CameraSnapshot {
+  return clampCamera({ ...camera, viewport });
 }

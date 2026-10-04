@@ -1,25 +1,16 @@
 .stage {
   position: relative;
-  inline-size: min(100cqw, calc(100cqh * 3 / 2));
-  block-size: min(100cqh, calc(100cqw * 2 / 3));
-  aspect-ratio: 3 / 2;
-  max-inline-size: 100%;
-  max-block-size: 100%;
-  min-inline-size: 0;
+  inline-size: 100%;
+  flex: 1;
+  block-size: 100%;
   min-block-size: 0;
-  margin: 0;
   overflow: hidden;
   background: var(--background);
   touch-action: none;
   direction: ltr;
-  cursor: default;
+  cursor: grab;
   isolation: isolate;
   --camera-scale: 0.5;
-}
-.stage[data-threat-severity='CRITICAL'] [data-rally-point='true'],
-.stage[data-threat-severity='CRITICAL'] [data-building='wall'],
-.stage[data-threat-severity='CRITICAL'] [data-building-region='gate'] {
-  box-shadow: inset 0 0 0 calc(2px / var(--camera-scale)) var(--danger);
 }
 .stage[data-dragging='true'] {
   cursor: grabbing;
@@ -52,6 +43,8 @@
   z-index: 2;
 }
 .artwork {
+  inline-size: 100%;
+  block-size: 100%;
   object-fit: contain;
   user-select: none;
   pointer-events: none;
@@ -63,6 +56,8 @@
 }
 .hotspot {
   position: absolute;
+  min-width: calc(44px / var(--camera-scale));
+  min-height: calc(44px / var(--camera-scale));
   padding: 0;
   border: 0;
   background: transparent;
@@ -77,31 +72,29 @@
   box-shadow: inset 0 0 0 2px var(--gold);
 }
 .hotspot:focus-visible {
-  outline: calc(3px / var(--camera-scale)) solid var(--gold);
-  outline-offset: calc(3px / var(--camera-scale));
+  outline: calc(2px / var(--camera-scale)) solid var(--gold);
+  outline-offset: calc(2px / var(--camera-scale));
 }
 .hotspot[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 calc(3px / var(--camera-scale)) var(--gold);
-  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent);
 }
 .label {
   position: absolute;
-  left: 50%;
-  top: 20%;
+  left: calc(50% + var(--label-shift-x, 0px));
+  top: calc(20% + var(--label-shift-y, 0px));
   z-index: 5;
   display: flex;
   align-items: center;
   gap: 6px;
-  width: max-content;
-  max-width: 280px;
-  padding: 8px 12px;
+  width: 112px;
+  height: 44px;
+  padding: 4px 7px;
   border: 1px solid var(--border-gold);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--background) 88%, var(--surface-strong));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kingdoms-ui-surface) 96%, transparent);
   color: var(--foreground);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.5;
   box-shadow: 0 3px 12px color-mix(in srgb, var(--background) 60%, transparent);
   transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
   transform-origin: center bottom;
@@ -109,29 +102,27 @@
   pointer-events: none;
 }
 .label small {
-  display: inline;
+  display: block;
   color: var(--gold);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
-.label small::before {
-  content: ' / ';
-  color: var(--foreground);
-  font-weight: 700;
-}
+.label > span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.label > svg:last-child:not(:first-child) { display: none; }
 .stage[data-labels='true'] .label,
 .hotspot:hover .label,
 .hotspot:focus-visible .label,
 .hotspot[aria-pressed='true'] .label {
   visibility: visible;
 }
+.hotspot[data-label-hidden='true'] .label { visibility: hidden; }
 .marker {
+  display: none;
   position: absolute;
   top: 12%;
   right: 12%;
   inline-size: 20px;
   block-size: 20px;
-  display: grid;
   place-items: center;
   background: var(--surface-strong);
   color: var(--gold);
@@ -139,6 +130,7 @@
   border-radius: 50%;
   transform: scale(calc(1 / var(--camera-scale)));
 }
+.hotspot[data-state='construction'] .marker { display: grid; }
 .hotspot[data-state='construction'] .marker {
   inline-size: 24px;
   block-size: 24px;
@@ -146,85 +138,8 @@
 .region {
   z-index: 3;
 }
-.rally {
-  z-index: 2;
-  background: color-mix(in srgb, var(--gold) 8%, transparent);
-}
-.rallyMark {
-  position: absolute;
-  inset: 18% 30% auto;
-  display: grid;
-  place-items: center;
-  color: var(--gold);
-  pointer-events: none;
-  transform: scale(calc(1 / var(--camera-scale)));
-  transform-origin: center;
-  animation: flagSway 2.6s ease-in-out infinite alternate;
-}
-.rallyBadge {
-  position: absolute;
-  inset-block-start: 8%;
-  inset-inline-end: 8%;
-  z-index: 4;
-  min-inline-size: 1.4rem;
-  padding: 0.05rem 0.3rem;
-  border: 1px solid var(--border-gold);
-  border-radius: var(--radius-full);
-  background: var(--surface-strong);
-  color: var(--gold);
-  font-size: 0.7rem;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.4;
-  pointer-events: none;
-  transform: scale(calc(1 / var(--camera-scale)));
-  transform-origin: top right;
-}
-.rallyBadge[data-severity='CRITICAL'],
-.rallyBadge[data-severity='DANGER'] {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-.rallyBadge[data-severity='WARNING'] {
-  color: var(--warning, var(--gold));
-}
-@keyframes flagSway {
-  from { transform: scale(calc(1 / var(--camera-scale))) rotate(-5deg); }
-  to { transform: scale(calc(1 / var(--camera-scale))) rotate(5deg); }
-}
-.roads {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  overflow: visible;
-  pointer-events: none;
-}
-.roads path {
-  fill: none;
-  stroke: var(--gold);
-  stroke-width: 8;
-  stroke-linecap: round;
-  stroke-dasharray: 18 14;
-  opacity: 0.55;
-}
-.stage[data-has-selection='true'] .hotspot:not([aria-pressed='true']) {
-  opacity: 0.72;
-}
-.stage[data-has-selection='true'] .hotspot[aria-pressed='true'] {
-  opacity: 1;
-  z-index: 6;
-  box-shadow: inset 0 0 0 calc(2px / var(--camera-scale)) var(--gold);
-}
-@media (prefers-reduced-motion: reduce) {
-  .rally,
-  .hotspot,
-  .roads,
-  .rallyMark {
-    animation: none;
-    transition: none;
-  }
-}
 .region .label {
-  top: 40%;
+  top: calc(20% + var(--label-shift-y, 0px));
 }
 .region:hover {
   box-shadow: inset 0 0 0 1px var(--gold);
@@ -244,8 +159,8 @@
   color: var(--gold);
   font-size: 11px;
   direction: rtl;
-  transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
-  transform-origin: center bottom;
+  transform: translate(-50%, 4px) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center top;
   pointer-events: none;
 }
 .construction small {
@@ -310,26 +225,108 @@
 .stage[data-debug-hitboxes='true'] .hotspot {
   outline: 1px dashed var(--foreground);
 }
-@media (max-width: 1439px) {
-  .stage[data-labels='true'] .hotspot:not([data-priority='primary']):not(:hover):not(:focus-visible):not([aria-pressed='true']) .label {
-    visibility: hidden;
-  }
-}
 @media (max-width: 700px) {
-  .label {
-    max-width: 220px;
-    font-size: 15px;
+  .stage {
+    block-size: 100%;
+    min-block-size: 0;
   }
-  .stage[data-labels='true'] .hotspot:not(:hover):not(:focus-visible):not([aria-pressed='true']) .label {
-    visibility: hidden;
+  .label {
+    font-size: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .stage[data-threat-severity] {
-    animation: none;
-  }
   .terrain,
   .world {
     will-change: auto;
   }
+}
+@media (max-width: 1000px) {
+  .stage[data-focused='true'] {
+    block-size: var(--focused-stage-height, max(160px, calc(56dvh - 92px - var(--stage-top, 104px))));
+    min-block-size: 160px;
+  }
+}
+
+.rallyMark {
+  position: absolute;
+  inset: 18% 30% auto;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  pointer-events: none;
+  transform: scale(calc(1 / var(--camera-scale)));
+  transform-origin: center;
+  animation: flagSway 2.6s ease-in-out infinite alternate;
+}
+.rallyBadge {
+  position: absolute;
+  inset-block-start: 8%;
+  inset-inline-end: 8%;
+  z-index: 4;
+  min-inline-size: 1.4rem;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  pointer-events: none;
+  transform: scale(calc(1 / var(--camera-scale)));
+  transform-origin: top right;
+}
+.rallyBadge[data-severity='CRITICAL'],
+.rallyBadge[data-severity='DANGER'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.rallyBadge[data-severity='WARNING'] {
+  color: var(--warning, var(--gold));
+}
+@keyframes flagSway {
+  from { transform: scale(calc(1 / var(--camera-scale))) rotate(-5deg); }
+  to { transform: scale(calc(1 / var(--camera-scale))) rotate(5deg); }
+}
+.roads {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.roads path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 18 14;
+  opacity: 0.55;
+}
+.hotspot[data-threat] { outline: 2px solid var(--danger); }
+
+@media (prefers-reduced-motion: reduce) { .rallyMark { animation: none; } }
+
+.threatMarker {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--danger);
+  border-radius: 50%;
+  background: var(--kingdoms-ui-surface);
+  color: var(--danger);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(calc(1 / var(--camera-scale)));
+}
+
+.resourceArtwork {
+  position: absolute;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
 }

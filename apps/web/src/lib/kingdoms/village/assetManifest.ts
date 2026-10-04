@@ -1,8 +1,9 @@
 import { villageBuildingRegistry, type VillageBuildingId } from './buildingRegistry';
-import { getVillagePlacement, VILLAGE_WORLD } from './coordinates';
-import type { WorldPoint, WorldRect } from './types';
+import { fromNormalized, getVillagePlacement, VILLAGE_WORLD } from './coordinates';
+import type { WorldPoint, WorldRect, WorldSize } from './types';
 
 export type VillageAssetFidelity = 'standard' | 'hidpi' | 'ultra';
+export const villageBaseClassification = 'NATIVE_MASTER_1672' as const;
 export type VillageAssetSlot = Readonly<{
   id: string;
   src: string | null;
@@ -16,10 +17,9 @@ export type VillageAssetSlot = Readonly<{
   frames: readonly string[];
   // Opt in for standalone cutouts; legacy overlay dimensions remain unchanged.
   fit?: 'contain';
-  // Existing source-art crops remain the fallback; missing art is never synthesized.
+  // Only explicitly approved asset crops may opt in; the master needs no overlays.
   fallbackCrop?: WorldRect;
   description: string;
-  /** Future HiDPI/4K files only. Never invent a path that is not shipped. */
   variants?: Readonly<Partial<Record<VillageAssetFidelity, string | null>>>;
 }>;
 export type VillageNPC =
@@ -32,12 +32,12 @@ export type VillageNPC =
   | 'cart'
   | 'stableMaster'
   | 'cavalry';
-const original = '/game-art/kingdoms/village-oasis.webp';
-const hidpiPlate = '/game-art/kingdoms/village-oasis-hidpi.webp';
-const ultraPlate = '/game-art/kingdoms/village-oasis-ultra.webp';
-/** LOW_RESOLUTION_FOR_4K: the standard oasis plate is 1536×1024. */
-
-export const villageBaseClassification = 'LOW_RESOLUTION_FOR_4K' as const;
+const masterArt = '/game-art/kingdoms/village/mamluk-capital-1672.webp';
+export const villageArtRenditions = [960, 1280, 1672].map((width) => ({
+  width,
+  webp: `/game-art/kingdoms/village/mamluk-capital-${width}.webp`,
+  avif: `/game-art/kingdoms/village/mamluk-capital-${width}.avif`,
+}));
 
 export function resolveVillageAssetSrc(
   slot: Pick<VillageAssetSlot, 'src' | 'variants'>,
@@ -90,90 +90,54 @@ export const villageAssetNames: Partial<Record<VillageBuildingId, string>> = {
   traders: 'merchants-khan',
   industry: 'industry-house',
 };
-const existingDetails: Partial<Record<VillageBuildingId, WorldRect>> = {
-  hall: { x: 836, y: 345, width: 14, height: 44 },
-  farm: { x: 1366, y: 392, width: 56, height: 36 },
-  market: { x: 1092, y: 686, width: 43, height: 34 },
-  wall: { x: 688, y: 800, width: 12, height: 43 },
-};
-const dedicatedCutouts = new Set<VillageBuildingId>([
-  'hall', 'farm', 'lumber', 'quarry', 'mine', 'treasury', 'warehouse', 'barracks',
-  'market', 'embassy', 'wall', 'gate', 'tower', 'rally',
-]);
-/** Slots 2 and 4 reuse the nearest unique native cutout. There is no separate L2 or L4 painting. */
-function visualSourceLevel(slotLevel: number) {
-  if (slotLevel <= 2) return 1;
-  if (slotLevel === 3) return 3;
-  return 5;
-}
-const ultraCutouts = new Set(['mine-l5', 'gate-l1', 'tower-l3', 'rally-l1']);
-
+export const resourceBuildingIds = ['lumber', 'quarry', 'mine', 'farm', 'treasury'] as const;
+const resourceBuildings = new Set<VillageBuildingId>(resourceBuildingIds);
+// Native paintings exist at L1, L3 and L5; visual slots share their nearest shipped art.
+const resourceSourceLevel = (level: number) => level <= 2 ? 1 : level === 3 ? 3 : 5;
 const buildings = Object.fromEntries(
   villageBuildingRegistry.map(({ id, name }): [VillageBuildingId, readonly VillageAssetSlot[]] => {
     const { x, y, width, height, zIndex } = getVillagePlacement(id);
-    return [
-      id,
-      [1, 2, 3, 4, 5].map((level) => {
-        const source = id === 'stable' ? level : visualSourceLevel(level);
-        const file = `${id}-l${source}.webp`;
-        const base = `/game-art/kingdoms/village/buildings/${id}-l${source}`;
-        const shared = id !== 'stable' && source !== level;
-        return slot(
-          `${id}-l${level}`,
-          shared
-            ? `${name}: الخانة البصرية ${level} تعرض الأصل المستقل ${source}. لا توجد لوحة مستقلة لهذه الخانة.`
-            : `${name}: مقطع شفاف للمستوى البصري ${source}`,
-          { x, y, width, height },
-          {
-            filename: file,
-            zIndex,
-            fallbackCrop: existingDetails[id],
-            ...(id === 'stable' || dedicatedCutouts.has(id)
-              ? {
-                  src: `/game-art/kingdoms/village/buildings/${file}`,
-                  placeholder: false,
-                  fit: 'contain' as const,
-                  ...(id === 'stable'
-                    ? {}
-                    : {
-                        variants: {
-                          standard: `${base}.webp`,
-                          hidpi: `${base}-hidpi.webp`,
-                          ...(ultraCutouts.has(`${id}-l${source}`)
-                            ? { ultra: `${base}-ultra.webp` }
-                            : {}),
-                        },
-                      }),
-                }
-              : {}),
-          },
-        );
-      }),
-    ];
+    return [id, [1, 2, 3, 4, 5].map((level) => {
+      const source = resourceSourceLevel(level);
+      const base = `/game-art/kingdoms/village/buildings/${id}-l${source}`;
+      const independent = resourceBuildings.has(id);
+      return slot(`${id}-l${level}`, independent
+        ? `${name}: أصل موارد شفاف مستقل؛ الخانة البصرية ${level} تعرض اللوحة ${source}`
+        : `${name}: مدمج في المشهد الرئيسي؛ المستوى المؤكد يظهر برمجيًا`,
+      { x, y, width, height }, {
+        filename: independent ? `${id}-l${source}.webp` : `${villageAssetNames[id] ?? id}-l${level}.webp`,
+        zIndex, fit: 'contain',
+        ...(independent ? {
+          src: `${base}.webp`, placeholder: false,
+          variants: { standard: `${base}.webp`, hidpi: `${base}-hidpi.webp`,
+            ...(id === 'mine' && source === 5 ? { ultra: `${base}-ultra.webp` } : {}) },
+        } : {}),
+      });
+    })];
   }),
 ) as Readonly<Record<VillageBuildingId, readonly VillageAssetSlot[]>>;
 
-const npcSlot = (id: VillageNPC, description: string, crop?: WorldRect) =>
+const npcSlot = (id: VillageNPC, description: string, size: WorldSize = { width: 24, height: 24 }) =>
   slot(
     `npc-${id}`,
     description,
-    { x: 0, y: 0, width: crop?.width ?? 24, height: crop?.height ?? 24 },
+    { x: 0, y: 0, ...size },
     {
       filename: `${id === 'stableMaster' ? 'stable-master' : id}-atlas.webp`,
       animated: true,
-      fallbackCrop: crop,
+      // Figures are embedded in the new master. Never crop the previous artwork.
     },
   );
 const environmentPlots = {
-  waterfall: { x: 0, y: 0, width: 275, height: 337 },
-  water: { x: 0, y: 791, width: 1536, height: 233 },
-  flags: { x: 836, y: 345, width: 14, height: 44 },
-  fire: { x: 647, y: 735, width: 199, height: 145 },
-  smoke: { x: 431, y: 103, width: 200, height: 181 },
-  trees: { x: 1013, y: 177, width: 343, height: 206 },
-  palms: { x: 1013, y: 177, width: 343, height: 206 },
-  birds: { x: 1075, y: 18, width: 200, height: 70 },
-  dust: { x: 279, y: 411, width: 352, height: 187 },
+  waterfall: fromNormalized({ x: 0, y: .74, width: .17, height: .2 }),
+  water: fromNormalized({ x: 0, y: .89, width: 1, height: .11 }),
+  flags: fromNormalized({ x: .48, y: .09, width: .02, height: .06 }),
+  fire: fromNormalized({ x: .41, y: .73, width: .19, height: .1 }),
+  smoke: fromNormalized({ x: .025, y: .09, width: .12, height: .13 }),
+  trees: fromNormalized({ x: .08, y: .18, width: .17, height: .1 }),
+  palms: fromNormalized({ x: .62, y: .23, width: .04, height: .1 }),
+  birds: fromNormalized({ x: .67, y: .015, width: .12, height: .055 }),
+  dust: fromNormalized({ x: .015, y: .035, width: .16, height: .13 }),
 } as const;
 const environmentSlot = (
   id: keyof typeof environmentPlots,
@@ -188,72 +152,49 @@ const environmentSlot = (
   });
 
 export const villageAssets = {
-  base: {
-    src: original,
-    ...VILLAGE_WORLD,
-    classification: villageBaseClassification,
-    variants: { standard: original, hidpi: hidpiPlate, ultra: ultraPlate } as const,
-  },
-  // MISSING_ASSET: dedicated settlement/city illustrations are not available.
-  // Reuse bounded banner crops from the approved base art without inventing buildings.
+  base: { src: masterArt, ...VILLAGE_WORLD, classification: villageBaseClassification,
+    variants: { standard: '/game-art/kingdoms/village/mamluk-capital-960.webp',
+      hidpi: '/game-art/kingdoms/village/mamluk-capital-1280.webp', ultra: masterArt } as const },
+  // City tiers remain driven by server progress, without duplicating the embedded art.
   tiers: [1, 2, 3, 4, 5, 6].map((tier) => slot(
     `village-tier-${tier}`,
-    'MISSING_ASSET: مخطط مدينة مستقل؛ البديل رايات من الرسم الأصلي',
+    'المشهد الرئيسي المملوكي؛ رتبة المدينة تُحسب من التقدم المؤكد',
     { x: 0, y: 0, ...VILLAGE_WORLD },
-    { fallbackCrop: { x: 836, y: 345, width: 14, height: 44 } },
+    {},
   )),
   buildings,
   npc: {
-    worker: npcSlot('worker', 'عامل من الصورة الأصلية', { x: 406, y: 506, width: 9, height: 18 }),
-    farmer: npcSlot('farmer', 'عامل من الصورة الأصلية', { x: 399, y: 505, width: 9, height: 18 }),
-    merchant: npcSlot('merchant', 'تاجر من الصورة الأصلية', {
-      x: 1175,
-      y: 710,
-      width: 8,
-      height: 18,
-    }),
-    guard: npcSlot('guard', 'حارس من الصورة الأصلية', { x: 397, y: 506, width: 9, height: 18 }),
-    soldier: npcSlot('soldier', 'جندي من الصورة الأصلية', { x: 421, y: 505, width: 9, height: 18 }),
-    horse: npcSlot('horse', 'الفارس وراحلته من الصورة الأصلية؛ ليس حصانًا منفصلًا', {
-      x: 499,
-      y: 511,
-      width: 19,
-      height: 17,
-    }),
-    cart: npcSlot('cart', 'عربة من الصورة الأصلية', { x: 1119, y: 748, width: 24, height: 17 }),
+    worker: npcSlot('worker', 'العامل مدمج في المشهد؛ الأطلس المستقل غير متوفر', { width: 9, height: 18 }),
+    farmer: npcSlot('farmer', 'المزارع مدمج في المشهد؛ الأطلس المستقل غير متوفر', { width: 9, height: 18 }),
+    merchant: npcSlot('merchant', 'التاجر مدمج في المشهد؛ الأطلس المستقل غير متوفر', { width: 8, height: 18 }),
+    guard: npcSlot('guard', 'الحارس مدمج في المشهد؛ الأطلس المستقل غير متوفر', { width: 9, height: 18 }),
+    soldier: npcSlot('soldier', 'الجندي مدمج في المشهد؛ الأطلس المستقل غير متوفر', { width: 9, height: 18 }),
+    horse: npcSlot('horse', 'الحصان مدمج في المشهد؛ الأطلس المستقل غير متوفر', { width: 19, height: 17 }),
+    cart: npcSlot('cart', 'العربة مدمجة في المشهد؛ الأطلس المستقل غير متوفر', { width: 24, height: 17 }),
     stableMaster: npcSlot('stableMaster', 'أطلس مسؤول الإسطبل مفقود؛ لا يُعرض بديل مصطنع'),
     cavalry: npcSlot('cavalry', 'أطلس فرسان مملوكي مفقود؛ لا يُعرض بديل مصطنع'),
   } satisfies Record<VillageNPC, VillageAssetSlot>,
   environment: {
-    waterfall: environmentSlot('waterfall', 'الشلال الأصلي، الحركة ضوء ورذاذ خفيف'),
-    water: environmentSlot('water', 'الماء الأصلي، الحركة لمعات خفيفة'),
-    flags: environmentSlot('flags', 'راية من الصورة الأصلية', {
-      x: 836,
-      y: 345,
-      width: 14,
-      height: 44,
-    }),
-    fire: environmentSlot('fire', 'النار الأصلية، توهج خفيف'),
+    waterfall: environmentSlot('waterfall', 'الماء مدمج في المشهد الرئيسي'),
+    water: environmentSlot('water', 'الماء الفيروزي، الحركة لمعات خفيفة'),
+    flags: environmentSlot('flags', 'الرايات مدمجة في المشهد الرئيسي'),
+    fire: environmentSlot('fire', 'مواضع المشاعل في المشهد الرئيسي'),
     smoke: environmentSlot('smoke', 'الدخان، جزيئات ضوء خفيفة'),
     trees: environmentSlot('trees', 'أصل نخيل متحرك لم يُجهز بعد'),
     palms: environmentSlot('palms', 'أطلس حركة نخيل خفيفة مفقود'),
     birds: environmentSlot('birds', 'أطلس طيور لم يُجهز بعد'),
     dust: environmentSlot('dust', 'أطلس غبار خفيف مفقود'),
-    scaffold: slot('scaffold', 'سقالة خشبية شفافة فوق المبنى أثناء البناء. عرض فقط.', {
+    scaffold: slot('scaffold', 'أصل سقالة شفاف لم يُجهز بعد', {
       x: 0,
       y: 0,
       width: 160,
       height: 160,
-    }, {
-      src: '/game-art/kingdoms/village/buildings/construction-scaffold.webp',
-      filename: 'construction-scaffold.webp',
-      placeholder: false,
-      fit: 'contain',
-    }),
+    }, { src: '/game-art/kingdoms/village/buildings/construction-scaffold.webp',
+      filename: 'construction-scaffold.webp', placeholder: false, fit: 'contain' }),
   },
   roads: slot(
     'village-roads',
-    'طبقة طرق بصرية معتمدة مفقودة؛ تبقى طرق الصورة الأصلية',
+    'الطرق الواضحة مدمجة في المشهد الرئيسي',
     { x: 0, y: 0, ...VILLAGE_WORLD },
     { anchor: { x: 0, y: 0 }, zIndex: 0 },
   ),

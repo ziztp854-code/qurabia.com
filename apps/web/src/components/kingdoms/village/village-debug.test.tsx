@@ -31,7 +31,7 @@ describe('village development calibration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy Config' }));
     expect(await screen.findByRole('status')).toHaveTextContent('تم نسخ إعدادات المبنى');
     expect(JSON.parse(writeText.mock.calls[0][0])).toMatchObject({
-      id: 'stable', x: 454, y: 516, width: 111, height: 67,
+      id: 'stable', x: 1000, y: 472.5, width: 480, height: 144,
       focusX: 530, focusScale: 2.2, zIndex: 600, visualLevel: 5,
     });
     expect(JSON.stringify(view.villages[0])).toBe(original);

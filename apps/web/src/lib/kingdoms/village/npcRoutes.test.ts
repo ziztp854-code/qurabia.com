@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createWorld, executeCommand, projectWorld } from '../engine';
 import { createVillageNPCs, npcPosition } from './npcRoutes';
 import { containsPoint, getVillageRect } from './coordinates';
+vi.mock('./assetManifest', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./assetManifest')>();
+  return { ...actual, villageAssets: { ...actual.villageAssets, npc: Object.fromEntries(Object.entries(actual.villageAssets.npc).map(([kind, asset]) => [kind, { ...asset, src: ['cavalry', 'stableMaster'].includes(kind) ? null : `/fixtures/${kind}.webp` }])) } };
+});
 
 function confirmedVillage() {
   const now = 1800000000000;

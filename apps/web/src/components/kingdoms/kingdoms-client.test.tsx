@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { unitKeys } from '@/lib/kingdoms/types';
 import { KingdomsClient } from './kingdoms-client';
-import { number, type WorldView } from './shared';
+import { number, rateAmount, type WorldView } from './shared';
 const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => navigation }));
 
@@ -46,11 +46,19 @@ const response = (data: unknown) =>
   });
 
 function preferReducedMotion() {
-  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
-    media: query, matches: query === '(prefers-reduced-motion: reduce)', onchange: null,
-    addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(),
-    removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
-  })));
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      media: query,
+      matches: query === '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
 }
 
 describe('Kingdoms player interface', () => {
@@ -141,9 +149,9 @@ describe('Kingdoms player interface', () => {
       );
       expect(selector).toHaveValue('world-1');
       expect(
-        vi.mocked(fetch).mock.calls.some(([url]) =>
-          /worldId=(paused-world|ended-world)/.test(String(url)),
-        ),
+        vi
+          .mocked(fetch)
+          .mock.calls.some(([url]) => /worldId=(paused-world|ended-world)/.test(String(url))),
       ).toBe(false);
     },
   );
@@ -244,7 +252,22 @@ describe('Kingdoms player interface', () => {
       screen.queryByRole('complementary', { name: 'إدارة مباني القرية' }),
     ).not.toBeInTheDocument();
     const hud = screen.getByRole('region', { name: 'موارد القرية' });
-    const troops = within(hud).getByText('الوحدات الجاهزة').parentElement!;
+    expect(
+      Array.from(hud.querySelectorAll('[data-resource]'), (cell) =>
+        cell.getAttribute('data-resource'),
+      ),
+    ).toEqual(['wood', 'stone', 'iron', 'food', 'gold']);
+    for (const resource of ['wood', 'stone', 'iron', 'food', 'gold'] as const) {
+      expect(hud.querySelector(`[data-resource="${resource}"] strong`)).toHaveTextContent(
+        number(village.resources[resource]),
+      );
+    }
+    expect(screen.getByRole('link', { name: 'العودة إلى الألعاب' })).toHaveAttribute(
+      'href',
+      '/games',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'إعدادات العالم والقرية' }));
+    const troops = screen.getByText(/الوحدات الجاهزة:/);
     expect(troops).toHaveTextContent(
       number(unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0)),
     );
@@ -254,6 +277,38 @@ describe('Kingdoms player interface', () => {
       `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`,
     );
     expect(hud).toHaveTextContent(number(village.resources.gold));
+  });
+
+  it('keeps production and food upkeep details available through the collapsed settings', async () => {
+    const snapshot = projection(true);
+    const village = snapshot.villages[0];
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      response(String(url).endsWith('/worlds') ? summary : snapshot),
+    );
+    render(<KingdomsClient />);
+    await screen.findByRole('region', { name: 'خريطة القرية' });
+    expect(screen.queryByRole('region', { name: 'بطاقة القرية' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إعدادات العالم والقرية' }));
+    const summaryControl = screen.getByText('تفاصيل الموارد والإنتاج');
+    expect(summaryControl.closest('details')).not.toHaveAttribute('open');
+    fireEvent.click(summaryControl);
+    const details = await screen.findByRole('region', { name: 'بطاقة القرية' });
+    expect(within(details).getByRole('progressbar', { name: 'امتلاء مخزن خشب' })).toHaveAttribute(
+      'aria-valuenow',
+      '45',
+    );
+    expect(
+      within(details).getByText(`+${rateAmount(snapshot.productionRates[village.id].wood)}/ساعة`),
+    ).toBeInTheDocument();
+    const food = within(details).getByRole('button');
+    fireEvent.click(food);
+    expect(food).toHaveAttribute('aria-expanded', 'true');
+    expect(within(details).getByText(/قبل إعاشة الجيش/)).toHaveTextContent(
+      `إعاشة ${rateAmount(snapshot.productionBreakdown![village.id].upkeep)}`,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'إعدادات العالم والقرية' }));
+    fireEvent.click(screen.getByRole('button', { name: 'إعدادات العالم والقرية' }));
+    expect(screen.queryByRole('region', { name: 'بطاقة القرية' })).not.toBeInTheDocument();
   });
 
   it('restores the requested nonfirst world and own village on return from the geographic map', async () => {
@@ -283,8 +338,12 @@ describe('Kingdoms player interface', () => {
       />,
     );
     await screen.findByRole('region', { name: 'خريطة القرية' });
-    expect(screen.getByRole('combobox', { name: 'العالم والموسم', hidden: true })).toHaveValue('world-2');
-    expect(screen.getByRole('combobox', { name: 'القرية الحالية', hidden: true })).toHaveValue('second-village');
+    expect(screen.getByRole('combobox', { name: 'العالم والموسم', hidden: true })).toHaveValue(
+      'world-2',
+    );
+    expect(screen.getByRole('combobox', { name: 'القرية الحالية', hidden: true })).toHaveValue(
+      'second-village',
+    );
     expect(screen.queryByRole('region', { name: 'ملخص المملكة' })).not.toBeInTheDocument();
     expect(
       vi.mocked(fetch).mock.calls.some(([url]) => String(url) === '/api/kingdoms?worldId=world-2'),
@@ -305,7 +364,9 @@ describe('Kingdoms player interface', () => {
       />,
     );
     await screen.findByRole('region', { name: 'خريطة القرية' });
-    expect(screen.getByRole('combobox', { name: 'العالم والموسم', hidden: true })).toHaveValue('world-1');
+    expect(screen.getByRole('combobox', { name: 'العالم والموسم', hidden: true })).toHaveValue(
+      'world-1',
+    );
     expect(screen.getByRole('combobox', { name: 'القرية الحالية', hidden: true })).toHaveValue(
       projection(true).villages[0].id,
     );
@@ -343,7 +404,8 @@ describe('Kingdoms player interface', () => {
     expect(
       await screen.findByRole('heading', { name: 'حطّاب المملكة' }, { timeout: 3000 }),
     ).toBeInTheDocument();
-    const navigation = screen.getByLabelText('إدارة المملكة');
+    fireEvent.click(screen.getByRole('button', { name: 'إدارة المملكة' }));
+    const navigation = screen.getByRole('navigation', { name: 'إدارة المملكة' });
     fireEvent.click(within(navigation).getByRole('button', { name: 'لوحة المملكة' }));
     fireEvent.click(within(navigation).getByRole('button', { name: 'القرية' }));
     expect(
@@ -367,6 +429,7 @@ describe('Kingdoms player interface', () => {
       'href',
       expected.replace('/?', '?'),
     );
+    fireEvent.click(screen.getByRole('button', { name: 'إعدادات العالم والقرية' }));
     expect(screen.getByRole('link', { name: 'الخريطة الجغرافية' })).toHaveAttribute(
       'href',
       expected.replace('/?', '?'),
@@ -381,12 +444,15 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
     render(<KingdomsClient />);
-    const navigation = await screen.findByRole('navigation', { name: 'إدارة المملكة', hidden: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'إدارة المملكة' }));
+    const navigation = screen.getByRole('navigation', { name: 'إدارة المملكة' });
     fireEvent.click(within(navigation).getByRole('button', { name: 'إرسال حملة', hidden: true }));
     expect(screen.getByTestId('unified-map')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('الوجهة X'), { target: { value: '0' } });
     fireEvent.change(screen.getByLabelText('الوجهة Y'), { target: { value: '0' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'اختر الإحداثيات', hidden: true }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole('button', { name: 'اختر الإحداثيات', hidden: true }).closest('form')!,
+    );
     const mission = screen.getByLabelText('نوع الحملة');
     const form = mission.closest('form')!;
     fireEvent.change(mission, { target: { value: 'occupy' } });
@@ -434,11 +500,16 @@ describe('Kingdoms player interface', () => {
     );
     render(<KingdomsClient />);
     expect(await screen.findByRole('alert', { name: 'هجوم قادم' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إدارة المملكة' }));
     expect(
-      screen.getByRole('navigation', { name: 'إدارة المملكة', hidden: true }).querySelector('[aria-label="1 هجمات قادمة"]'),
+      screen
+        .getByRole('navigation', { name: 'إدارة المملكة', hidden: true })
+        .querySelector('[aria-label="1 هجمات قادمة"]'),
     ).not.toBeNull();
     fireEvent.click(
-      within(screen.getByRole('alert', { name: 'هجوم قادم' })).getByRole('button', { name: 'عرض على الخريطة' }),
+      within(screen.getByRole('alert', { name: 'هجوم قادم' })).getByRole('button', {
+        name: 'عرض على الخريطة',
+      }),
     );
     expect(navigation.push).toHaveBeenCalledWith(
       `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`,

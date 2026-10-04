@@ -173,7 +173,7 @@ export async function createVillageRenderer(
     textures = [];
     const fidelity = villageAssetFidelity(settings.mode);
     roadLayer = createRoadLayer(source, textures, approved, fidelity);
-    buildingLayer = createBuildingLayer(source, props, textures, approved, artwork);
+    buildingLayer = createBuildingLayer(source, props, textures, approved, artwork, fidelity);
     npcs = createNPCLayer(source, props, settings, textures, approved, artwork, npcPool);
     environment = createEnvironmentLayer(
       source,

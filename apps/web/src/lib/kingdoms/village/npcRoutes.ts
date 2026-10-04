@@ -2,6 +2,7 @@ import type { Village } from '../types';
 import { villageAssets, type VillageNPC } from './assetManifest';
 import type { VillageBuildingId } from './buildingRegistry';
 import type { WorldPoint } from './types';
+import { fromNormalized } from './coordinates';
 
 export type NPCSpawn = Readonly<{
   id: string;
@@ -10,71 +11,20 @@ export type NPCSpawn = Readonly<{
   speed: number;
   delay: number;
 }>;
+// Routes follow the master artwork; they describe optional visual activity only.
+const route = (points: readonly (readonly [number, number])[]): readonly WorldPoint[] =>
+  points.map(([x, y]) => {
+    const point = fromNormalized({ x, y, width: 0, height: 0 });
+    return { x: point.x, y: point.y };
+  });
 const paths = {
-  food: [
-    { x: 1274, y: 469 },
-    { x: 1231, y: 484 },
-    { x: 1188, y: 579 },
-    { x: 1090, y: 597 },
-    { x: 1188, y: 647 },
-    { x: 1237, y: 700 },
-    { x: 1188, y: 725 },
-    { x: 1237, y: 700 },
-    { x: 1188, y: 647 },
-    { x: 1090, y: 597 },
-    { x: 1188, y: 579 },
-    { x: 1231, y: 484 },
-  ],
-  trade: [
-    { x: 1188, y: 725 },
-    { x: 1124, y: 724 },
-    { x: 990, y: 794 },
-    { x: 844, y: 856 },
-    { x: 753, y: 886 },
-    { x: 844, y: 856 },
-    { x: 990, y: 794 },
-    { x: 1124, y: 724 },
-  ],
-  patrol: [
-    { x: 753, y: 832 },
-    { x: 880, y: 815 },
-    { x: 1030, y: 798 },
-    { x: 1260, y: 751 },
-    { x: 1395, y: 645 },
-    { x: 1260, y: 751 },
-    { x: 1030, y: 798 },
-    { x: 880, y: 815 },
-  ],
-  training: [
-    { x: 357, y: 515 },
-    { x: 438, y: 539 },
-    { x: 533, y: 523 },
-    { x: 468, y: 503 },
-    { x: 406, y: 497 },
-  ],
-  stable: [
-    { x: 510, y: 550 },
-    { x: 449, y: 536 },
-    { x: 387, y: 516 },
-    { x: 438, y: 513 },
-    { x: 510, y: 550 },
-  ],
-  work: [
-    { x: 552, y: 249 },
-    { x: 614, y: 242 },
-    { x: 670, y: 211 },
-    { x: 770, y: 183 },
-    { x: 670, y: 211 },
-    { x: 614, y: 242 },
-  ],
-  construction: [
-    { x: 697, y: 495 },
-    { x: 736, y: 514 },
-    { x: 780, y: 517 },
-    { x: 821, y: 508 },
-    { x: 780, y: 517 },
-    { x: 736, y: 514 },
-  ],
+  food: route([[.82, .315], [.74, .33], [.60, .35], [.50, .43], [.36, .45], [.25, .48], [.25, .58], [.36, .45], [.50, .43], [.60, .35], [.74, .33]]),
+  trade: route([[.25, .58], [.38, .57], [.48, .53], [.50, .64], [.50, .73], [.50, .64], [.48, .53], [.38, .57]]),
+  patrol: route([[.50, .76], [.65, .75], [.84, .73], [.95, .52], [.95, .39], [.84, .73], [.65, .75]]),
+  training: route([[.72, .42], [.79, .44], [.86, .43], [.79, .39], [.72, .42]]),
+  stable: route([[.77, .61], [.71, .60], [.65, .57], [.70, .55], [.77, .61]]),
+  work: route([[.18, .26], [.21, .29], [.28, .32], [.36, .33], [.28, .32], [.21, .29]]),
+  construction: route([[.46, .48], [.48, .51], [.51, .51], [.54, .50], [.51, .51], [.48, .51]]),
 } as const;
 
 export const villageNPCRoutes = paths;
@@ -84,59 +34,15 @@ export type VillageRoadRoute = Readonly<{
   to: VillageBuildingId;
   path: readonly WorldPoint[];
 }>;
-// Noninteractive asset calibration paths, not movement commands or gameplay roads.
+// Noninteractive calibration routes; never dispatched as movement commands.
 export const villageRoadRoutes: readonly VillageRoadRoute[] = [
-  {
-    id: 'palace-market-gate',
-    from: 'hall',
-    to: 'gate',
-    path: [
-      { x: 786, y: 458 },
-      { x: 862, y: 516 },
-      { x: 1124, y: 724 },
-      { x: 1188, y: 725 },
-      { x: 990, y: 794 },
-      { x: 753, y: 856 },
-    ],
-  },
-  {
-    id: 'barracks-stable-rally',
-    from: 'barracks',
-    to: 'rally',
-    path: [
-      { x: 387, y: 516 },
-      { x: 449, y: 536 },
-      { x: 510, y: 550 },
-      { x: 438, y: 513 },
-    ],
-  },
-  {
-    id: 'farm-storage-market',
-    from: 'farm',
-    to: 'market',
-    path: [
-      { x: 1274, y: 469 },
-      { x: 1231, y: 484 },
-      { x: 1188, y: 579 },
-      { x: 1090, y: 597 },
-      { x: 1188, y: 647 },
-      { x: 1237, y: 700 },
-      { x: 1188, y: 725 },
-    ],
-  },
-  {
-    id: 'mine-storage',
-    from: 'mine',
-    to: 'warehouse',
-    path: [
-      { x: 552, y: 249 },
-      { x: 614, y: 242 },
-      { x: 1039, y: 323 },
-      { x: 1170, y: 417 },
-      { x: 1188, y: 579 },
-      { x: 1090, y: 597 },
-    ],
-  },
+  { id: 'palace-market-gate', from: 'hall', to: 'gate',
+    path: route([[.50, .29], [.50, .43], [.38, .57], [.25, .58], [.48, .53], [.50, .73]]) },
+  { id: 'barracks-stable-rally', from: 'barracks', to: 'rally',
+    path: route([[.79, .43], [.77, .61], [.65, .57], [.50, .45]]) },
+  { id: 'farm-storage-market', from: 'farm', to: 'market', path: paths.food },
+  { id: 'mine-storage', from: 'mine', to: 'warehouse',
+    path: route([[.92, .14], [.86, .20], [.76, .32], [.60, .35], [.50, .43], [.25, .42]]) },
 ];
 const pathLengths = new WeakMap<readonly WorldPoint[], readonly number[]>();
 

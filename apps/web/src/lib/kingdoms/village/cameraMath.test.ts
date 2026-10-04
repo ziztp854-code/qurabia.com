@@ -11,11 +11,19 @@ import {
 import { buildingPlots, rectCenter } from './coordinates';
 
 describe('village world camera', () => {
-  it('contains the complete original artwork on a narrow screen without stretching', () => {
+  it('fills a portrait viewport on entry while retaining a full-city overview', () => {
+    const viewport = { width: 390, height: 526 };
+    const camera = createCamera(viewport, true);
+    expect(projectPoint({ x: 800, y: 0 }, camera).y).toBeCloseTo(0);
+    expect(projectPoint({ x: 800, y: 900 }, camera).y).toBeCloseTo(526);
+    expect(camera.zoom).toBeGreaterThan(2);
+    expect(createCamera(viewport).zoom).toBe(1);
+  });
+  it('contains the complete 16:9 master artwork on a narrow screen without stretching', () => {
     const camera = createCamera({ width: 384, height: 400 });
-    expect(projectPoint({ x: 0, y: 0 }, camera)).toEqual({ x: 0, y: 72 });
-    expect(projectPoint({ x: 1536, y: 1024 }, camera)).toEqual({ x: 384, y: 328 });
-    expect(unprojectPoint({ x: 192, y: 200 }, camera)).toEqual({ x: 768, y: 512 });
+    expect(projectPoint({ x: 0, y: 0 }, camera)).toEqual({ x: 0, y: 92 });
+    expect(projectPoint({ x: 1600, y: 900 }, camera)).toEqual({ x: 384, y: 308 });
+    expect(unprojectPoint({ x: 192, y: 200 }, camera)).toEqual({ x: 800, y: 450 });
   });
   it('keeps the world point beneath a pinch centroid in place and clamps extreme gestures', () => {
     const overview = createCamera({ width: 768, height: 512 });
@@ -29,22 +37,21 @@ describe('village world camera', () => {
     expect(zoomCamera(zoomed, 0.001).zoom).toBe(1);
     const panned = panCamera(zoomed, 100000, -100000);
     expect(projectPoint({ x: 0, y: 0 }, panned).x).toBe(0);
-    expect(projectPoint({ x: 1536, y: 1024 }, panned).y).toBe(512);
+    expect(projectPoint({ x: 1600, y: 900 }, panned).y).toBeCloseTo(512);
   });
-  it('refits the whole village on resize instead of keeping a previous zoom', () => {
+  it('focuses real artwork coordinates and preserves the world position after resize', () => {
     const focused = focusCamera(createCamera({ width: 768, height: 512 }), {
       x: 600,
       y: 400,
       width: 200,
       height: 200,
     });
-    expect(focused.zoom).toBeGreaterThan(1);
+    expect(focused.zoom).toBe(3.5);
+    expect(projectPoint({ x: 700, y: 500 }, focused)).toEqual({ x: 384, y: 256 });
     const resized = resizeCamera(focused, { width: 1536, height: 1024 });
-    expect(resized.zoom).toBe(1);
-    expect(resized.x).toBe(768);
-    expect(resized.y).toBe(512);
-    expect(projectPoint({ x: 0, y: 0 }, resized)).toEqual({ x: 0, y: 0 });
-    expect(projectPoint({ x: 1536, y: 1024 }, resized)).toEqual({ x: 1536, y: 1024 });
+    expect(resized.x).toBe(700);
+    expect(resized.y).toBe(500);
+    expect(resized.zoom).toBe(focused.zoom);
   });
   it('positions a mobile selection above the bottom sheet without changing desktop focus', () => {
     const camera = createCamera({ width: 384, height: 400 });
@@ -56,6 +63,10 @@ describe('village world camera', () => {
       expect(focused.zoom).toBe(focusCamera(camera, rect).zoom);
     }
     const hall = focusCamera(camera, buildingPlots.hall);
-    expect(projectPoint(rectCenter(buildingPlots.hall), hall)).toEqual({ x: 192, y: 200 });
+    const projected = projectPoint(rectCenter(buildingPlots.hall), hall);
+    expect(projected.x).toBeCloseTo(192);
+    expect(projected.y).toBeCloseTo(137.320851);
+    // The palace is near the top edge: focusing it must not expose space outside the art.
+    expect(projectPoint({ x: 0, y: 0 }, hall).y).toBeCloseTo(0);
   });
 });

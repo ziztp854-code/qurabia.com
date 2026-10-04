@@ -1,14 +1,22 @@
 'use client';
 
-import Image from 'next/image';
 import {
   ArrowUp,
+  Castle,
   Check,
   CircleAlert,
+  Coins,
   DoorOpen,
   Flag,
   Hammer,
+  Mountain,
+  Pickaxe,
+  Shield,
+  Store,
   Swords,
+  Trees,
+  Warehouse,
+  Wheat,
 } from 'lucide-react';
 import {
   forwardRef,
@@ -21,29 +29,45 @@ import {
 } from 'react';
 import { formatCountdown, remainingMs } from '@/lib/kingdoms/incoming-threats';
 import { presentRallyCommand } from '@/lib/kingdoms/rally-command';
+import { useViewClock } from '../use-view-clock';
 import { buildingKeys } from '@/lib/kingdoms/types';
-import { resolveVillageAssetSrc, villageAssetFidelity, villageAssets } from '@/lib/kingdoms/village/assetManifest';
+import { resourceBuildingIds, resolveVillageAssetSrc, villageAssetFidelity, villageAssets, villageArtRenditions } from '@/lib/kingdoms/village/assetManifest';
+import { villageLabelPoint, visibleVillageLabels } from '@/lib/kingdoms/village/labelLayout';
 import {
   buildingGroups,
   buildingStatusLabels,
   getBuildingPresentation,
   villageBuildingSceneStatus,
 } from '@/lib/kingdoms/village/buildingConfig';
-import { createCamera } from '@/lib/kingdoms/village/cameraMath';
-import { getBuildingRect, interactionRects, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
+import { getVillageVisualLevel } from '@/lib/kingdoms/village/buildingRegistry';
+import { createCamera, projectPoint } from '@/lib/kingdoms/village/cameraMath';
+import { getBuildingRect, getVillageRect, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type {
   VillageCanvasProps,
   VillageSceneHandle,
   VillageSelection,
+  CameraSnapshot,
   WorldRect,
 } from '@/lib/kingdoms/village/types';
 import { VillageCamera } from './village-camera';
 import { bindVillageInput } from './village-input';
 import type { VillageRenderer } from './village-renderer';
-import { useViewClock } from '../use-view-clock';
 import styles from './village-canvas.module.css';
 
+const icons = {
+  hall: Castle,
+  farm: Wheat,
+  lumber: Trees,
+  quarry: Mountain,
+  mine: Pickaxe,
+  treasury: Coins,
+  warehouse: Warehouse,
+  barracks: Swords,
+  wall: Shield,
+  market: Store,
+  embassy: Flag,
+};
 const statusIcons = {
   upgrade: ArrowUp,
   construction: Hammer,
@@ -52,13 +76,14 @@ const statusIcons = {
 };
 const supplementary = [
   { id: 'tower', name: 'أبراج الحراسة', building: 'wall' },
-  { id: 'workshop', name: 'ورش البناء والأخشاب', building: 'lumber' },
 ] as const;
 const rectStyle = (rect: WorldRect): CSSProperties => ({
   left: rect.x,
   top: rect.y,
   width: rect.width,
   height: rect.height,
+  marginLeft: `min(0px, calc((${rect.width}px - 44px / var(--camera-scale)) / 2))`,
+  marginTop: `min(0px, calc((${rect.height}px - 44px / var(--camera-scale)) / 2))`,
 });
 
 function ConstructionMarker({
@@ -133,7 +158,7 @@ function RallyPointBadge({ props }: { props: VillageCanvasProps }) {
 }
 
 function deviceQuality(props: VillageCanvasProps, width: number, height?: number) {
-  const device = navigator as Navigator & {
+  const device = (typeof navigator === 'undefined' ? {} : navigator) as Navigator & {
     deviceMemory?: number;
     connection?: { saveData?: boolean };
   };
@@ -142,7 +167,7 @@ function deviceQuality(props: VillageCanvasProps, width: number, height?: number
     height,
     memory: device.deviceMemory,
     cores: device.hardwareConcurrency,
-    dpr: devicePixelRatio,
+    dpr: typeof devicePixelRatio === 'undefined' ? 1 : devicePixelRatio,
     saveData: device.connection?.saveData,
   });
 }
@@ -160,10 +185,44 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     const [loaded, setLoaded] = useState(false);
     const [pixiReady, setPixiReady] = useState(false);
     const [retry, setRetry] = useState(0);
-    const [measuredStage, setMeasuredStage] = useState({ width: 1, height: 1 });
+    const [terrainViewport, setTerrainViewport] = useState({ width: 768, height: 512 });
     const announced = useRef(false);
     const descriptionId = useId();
     const coordinateReadout = useRef<HTMLSpanElement>(null);
+    const resizeScene = useRef<(() => void) | null>(null);
+    const syncLabels = (snapshot: CameraSnapshot, active: string | null = current.current.selected) => {
+      const anchors = [...buildingKeys, 'rally', 'tower', 'gate'] .map((id) => {
+        const rect = getVillageRect(id as Parameters<typeof getVillageRect>[0], current.current.debug);
+        return { id, x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 - Math.max(rect.height, 44 / snapshot.scale) * .3 };
+      });
+      const viewportRect = stage.current?.getBoundingClientRect();
+      const scene = stage.current?.parentElement;
+      const hud = scene?.closest('[data-village-stage="live"]')?.querySelector('[aria-label="موارد القرية"]')?.parentElement;
+      const topInset = viewportRect && hud ? Math.max(0, hud.getBoundingClientRect().bottom - viewportRect.top) : 0;
+      const overlays = [
+        ...(hud ? [hud] : []),
+        ...Array.from(scene?.querySelectorAll<HTMLElement>('header, [aria-label="كاميرا القرية"], details') ?? []),
+        ...Array.from(scene?.closest('[data-selected]')?.querySelectorAll<HTMLElement>(':scope > details') ?? []),
+      ];
+      const blockedAreas = viewportRect ? overlays.map((overlay) => {
+        const rect = overlay.getBoundingClientRect();
+        return { x: rect.left - viewportRect.left, y: rect.top - viewportRect.top, width: rect.width, height: rect.height };
+      }).filter(({ width, height }) => width > 0 && height > 0) : [];
+      const visible = new Set(visibleVillageLabels(anchors, snapshot, active, blockedAreas, topInset));
+      world.current?.querySelectorAll<HTMLElement>('[data-label-id]').forEach((element) => {
+        element.dataset.labelHidden = String(!visible.has(element.dataset.labelId!));
+        const anchor = anchors.find(({ id }) => id === element.dataset.labelId);
+        if (!anchor) return;
+        const original = projectPoint(anchor, snapshot);
+        const positioned = villageLabelPoint(anchor, snapshot, active, topInset);
+        element.style.setProperty('--label-shift-x', `${(positioned.x - original.x) / snapshot.scale}px`);
+        element.style.setProperty('--label-shift-y', `${(positioned.y - original.y) / snapshot.scale}px`);
+      });
+    };
+    const highlight = (building: VillageSelection | null) => {
+      renderer.current?.hover(building);
+      if (camera.current) syncLabels(camera.current.getSnapshot(), building ?? current.current.selected);
+    };
 
     useImperativeHandle(
       ref,
@@ -183,31 +242,15 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       if (camera.current) {
         camera.current.reducedMotion = props.reducedMotion;
         camera.current.debug = props.debug;
+        syncLabels(camera.current.getSnapshot());
       }
       if (coordinateReadout.current && camera.current) {
         const snapshot = camera.current.getSnapshot();
-        coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · إطار ثابت ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
+        coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · Zoom ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
       }
       if (renderer.current && stage.current)
-        renderer.current.update(
-          props,
-          deviceQuality(props, stage.current.clientWidth, stage.current.clientHeight),
-        );
+        renderer.current.update(props, deviceQuality(props, stage.current.clientWidth, stage.current.clientHeight));
     }, [props]);
-
-    useEffect(() => {
-      const element = stage.current;
-      if (!props.selected || !element || window.innerWidth > 1000) return;
-      const reveal = () => {
-        const rect = element.getBoundingClientRect();
-        const sheetTop = window.innerHeight * 0.62 - 16;
-        if (rect.bottom > sheetTop - 8 || rect.top < 0)
-          element.scrollIntoView({ block: 'start', behavior: 'instant' });
-      };
-      reveal();
-      const frame = requestAnimationFrame(reveal);
-      return () => cancelAnimationFrame(frame);
-    }, [props.selected]);
 
     useEffect(() => {
       if (!stage.current || !terrain.current || !world.current || !canvas.current) return;
@@ -220,9 +263,24 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         width: element.clientWidth || 768,
         height: element.clientHeight || 512,
       });
-      const controller = new VillageCamera(bounds());
+      const initialBounds = bounds();
+      const controller = new VillageCamera(initialBounds, () => typeof window !== 'undefined' && window.innerWidth <= 700);
       controller.reducedMotion = current.current.reducedMotion;
       controller.debug = current.current.debug;
+      controller.getFocusAnchor = () => {
+        if (window.innerWidth > 1000) return undefined;
+        const rect = element.getBoundingClientRect();
+        const viewport = controller.getSnapshot().viewport;
+        const sheet = element.closest('[data-selected]')?.querySelector('aside');
+        const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * .56 - 82;
+        const hudClearance = parseFloat(getComputedStyle(element).getPropertyValue('--kingdoms-hud-clearance')) || 0;
+        const visibleTop = Math.min(viewport.height, Math.max(0, hudClearance - rect.top));
+        const visibleBottom = Math.min(viewport.height, Math.max(visibleTop, sheetTop - rect.top));
+        return {
+          x: viewport.width / 2,
+          y: Math.min(viewport.height, Math.max(48, (visibleTop + visibleBottom) / 2)),
+        };
+      };
       camera.current = controller;
       let active = true;
       let scene: VillageRenderer | null = null;
@@ -234,37 +292,53 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         element.dataset.zoom = snapshot.zoom.toFixed(3);
         element.dataset.cameraX = snapshot.x.toFixed(2);
         element.dataset.cameraY = snapshot.y.toFixed(2);
+        syncLabels(snapshot);
         if (coordinateReadout.current)
-          coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · إطار ثابت ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
+          coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · Zoom ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
         scene?.camera(snapshot);
       });
       const inputCleanup = bindVillageInput(element, controller);
-      const publishStage = () => {
-        const next = { width: element.clientWidth || 1, height: element.clientHeight || 1 };
-        setMeasuredStage((prev) =>
-          prev.width === next.width && prev.height === next.height ? prev : next,
-        );
-      };
-      const revealAboveSheet = () => {
-        if (!current.current.selected || window.innerWidth > 1000) return;
-        const rect = element.getBoundingClientRect();
-        const sheetTop = window.innerHeight * 0.62 - 16;
-        if (rect.bottom > sheetTop - 8 || rect.top < 0)
-          element.scrollIntoView?.({ block: 'start', behavior: 'instant' });
-      };
       const resize = () => {
-        publishStage();
-        controller.resize(bounds());
-        revealAboveSheet();
-        scene?.update(
-          current.current,
-          deviceQuality(current.current, element.clientWidth, element.clientHeight),
-        );
+        if (window.innerWidth <= 1000 && current.current.selected) {
+          const rect = element.getBoundingClientRect();
+          const sheet = element.closest('[data-selected]')?.querySelector('aside');
+          const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * .56 - 82;
+          if (rect.top >= sheetTop - 80 || rect.bottom <= 48) {
+            element.scrollIntoView?.({ block: 'start', behavior: 'instant' });
+          }
+          element.style.setProperty('--focused-stage-height', `${Math.max(160, sheetTop - element.getBoundingClientRect().top - 12)}px`);
+        }
+        const nextBounds = bounds();
+        setTerrainViewport((previous) => previous.width === nextBounds.width && previous.height === nextBounds.height ? previous : nextBounds);
+        const pendingSelection = controller.resize(nextBounds);
+        // Keep a newly clicked hotspot's completion ahead of the previously open panel.
+        if (current.current.selected && !pendingSelection) {
+          if (window.innerWidth <= 1000) {
+            const rect = element.getBoundingClientRect();
+            const sheet = element.closest('[data-selected]')?.querySelector('aside');
+            const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * .56 - 82;
+            if (rect.top >= sheetTop - 48 || rect.bottom <= 48) {
+              element.scrollIntoView?.({ block: 'start', behavior: 'instant' });
+            }
+          }
+          controller.focusOn(current.current.selected);
+        }
+        scene?.update(current.current, deviceQuality(current.current, element.clientWidth, element.clientHeight));
+      };
+      resizeScene.current = resize;
+      // Renderer/layout writes must run after observer delivery, not inside its loop.
+      let resizeFrame = 0;
+      const scheduleResize = () => {
+        if (resizeFrame) return;
+        resizeFrame = requestAnimationFrame(() => {
+          resizeFrame = 0;
+          if (active) resize();
+        });
       };
       const observer =
-        typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(resize);
-      publishStage();
+        typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(scheduleResize);
       observer?.observe(element);
+      scheduleResize();
       window.addEventListener('resize', resize);
       let inViewport = true;
       const syncVisibility = () => scene?.setVisible(!document.hidden && inViewport);
@@ -299,10 +373,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           }
           scene = next;
           renderer.current = next;
-          scene.update(
-            current.current,
-            deviceQuality(current.current, element.clientWidth, element.clientHeight),
-          );
+          scene.update(current.current, deviceQuality(current.current, element.clientWidth, element.clientHeight));
           scene.camera(controller.getSnapshot());
           syncVisibility();
           setPixiReady(true);
@@ -320,13 +391,19 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         controller.destroy();
         scene?.destroy();
         observer?.disconnect();
+        cancelAnimationFrame(resizeFrame);
         visibility?.disconnect();
         document.removeEventListener('visibilitychange', syncVisibility);
         window.removeEventListener('resize', resize);
         renderer.current = null;
         camera.current = null;
+        resizeScene.current = null;
       };
     }, [retry]);
+
+    useEffect(() => {
+      resizeScene.current?.();
+    }, [props.selected]);
 
     useEffect(() => {
       if (!loaded || announced.current) return;
@@ -334,34 +411,31 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       current.current.onReady?.();
     }, [loaded]);
 
-    const choose = (building: VillageSelection) => current.current.onSelect(building);
-    const cameraScale = createCamera(measuredStage).scale || 1;
-    const hits = interactionRects(44 / cameraScale);
-    const terrainFidelity = villageAssetFidelity(
-      deviceQuality(props, measuredStage.width, measuredStage.height).mode,
-    );
-    const terrainSrc =
-      resolveVillageAssetSrc(villageAssets.base, terrainFidelity) ?? villageAssets.base.src;
+    const choose = (building: VillageSelection) =>
+      camera.current?.focusOn(building, () => current.current.onSelect(building));
 
+    const terrainFidelity = villageAssetFidelity(deviceQuality(props, terrainViewport.width, terrainViewport.height).mode);
+    const terrainSrc = resolveVillageAssetSrc(villageAssets.base, terrainFidelity) ?? villageAssets.base.src;
+    const textureWidth = terrainFidelity === 'ultra' ? 1672 : terrainFidelity === 'hidpi' ? 1280 : 960;
+    const renditions = villageArtRenditions.filter(({ width }) => width <= textureWidth);
     return (
       <div
         ref={stage}
         className={styles.stage}
         tabIndex={0}
         role="region"
-        aria-label="مشهد القرية الثابت، اختر مبنى من المشهد أو من الدليل"
+        aria-label="مشهد القرية التفاعلي، اسحب للتحريك وكبّر بعجلة الفأرة أو بإصبعين"
         aria-busy={!loaded && !failed}
         data-village-scene
-        data-fixed-view="true"
-        data-has-selection={props.selected ? 'true' : 'false'}
         data-pixi-ready={pixiReady}
         data-zoom="1"
         data-labels={props.showLabels}
         data-threat-severity={props.threatSeverity}
         data-visual-tier={props.village.progression?.visualTier}
-        data-debug-hitboxes={process.env.NODE_ENV === 'development' && props.debug?.hitboxes}
+        data-focused={props.selected !== null}
         data-terrain-fidelity={terrainFidelity}
         data-terrain-src={terrainSrc}
+        data-debug-hitboxes={process.env.NODE_ENV === 'development' && props.debug?.hitboxes}
       >
         <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
         <div
@@ -369,15 +443,18 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           className={styles.terrain}
           style={{ width: VILLAGE_WORLD.width, height: VILLAGE_WORLD.height }}
         >
-          <Image
-            key={`${retry}:${terrainSrc}`}
+          <picture>
+            <source type="image/avif" srcSet={renditions.map((art) => `${art.avif} ${art.width}w`).join(', ')} sizes={`${textureWidth}px`} />
+            <source type="image/webp" srcSet={renditions.map((art) => `${art.webp} ${art.width}w`).join(', ')} sizes={`${textureWidth}px`} />
+          {/* Native picture chooses pre-encoded renditions and remains available without WebGL. */}
+          <img
+            key={retry}
             src={terrainSrc}
             alt=""
-            fill
-            sizes="(min-width: 2560px) 1920px, (max-width: 700px) 100vw, 1200px"
+            width={VILLAGE_WORLD.width}
+            height={VILLAGE_WORLD.height}
             draggable={false}
-            priority
-            unoptimized
+            fetchPriority="high"
             className={styles.artwork}
             onLoad={() => {
               setFailed(false);
@@ -385,22 +462,24 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             }}
             onError={() => setFailed(true)}
           />
+          </picture>
         </div>
         <div
           ref={world}
           className={styles.world}
           style={{ width: VILLAGE_WORLD.width, height: VILLAGE_WORLD.height }}
         >
-          <svg
-            className={styles.roads}
-            viewBox={`0 0 ${VILLAGE_WORLD.width} ${VILLAGE_WORLD.height}`}
-            aria-hidden="true"
-          >
-            <path d="M756 837 L368 559" />
-            <path d="M756 837 L785 353" />
-            <path d="M785 353 L1198 689" />
-            <path d="M1198 689 L1121 519" />
-          </svg>
+          {!pixiReady && resourceBuildingIds.map((id) => {
+            const level = getVillageVisualLevel(id, props.village, props.debug);
+            if (level <= 0) return null;
+            const slot = villageAssets.buildings[id][level - 1];
+            const src = resolveVillageAssetSrc(slot, terrainFidelity);
+            if (!src) return null;
+            const rect = getVillageRect(id, props.debug);
+            return <picture key={id}><img data-resource-art={id} src={src} alt="" aria-hidden="true"
+              className={styles.resourceArtwork} draggable={false}
+              style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }} /></picture>;
+          })}
           <div className={styles.hotspots}>
             {buildingKeys.filter((building) => building !== 'stable').map((building) => {
               const presentation = getBuildingPresentation(
@@ -408,6 +487,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 props.village,
                 props.view.config,
               );
+              const Icon = icons[building];
               const StatusIcon = statusIcons[presentation.status];
               const sceneStatus = villageBuildingSceneStatus(building, props.village);
               const state =
@@ -421,34 +501,32 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   type="button"
                   key={building}
                   className={styles.hotspot}
-                  data-priority={
-                    building === 'hall' || building === 'barracks' || building === 'market'
-                      ? 'primary'
-                      : undefined
-                  }
-                  style={rectStyle(hits[building] ?? getBuildingRect(building, props.debug))}
-                    aria-label={
-                      state === sceneStatus
-                        ? `${presentation.name}، ${state}`
-                        : `${presentation.name}، ${state}، ${sceneStatus}`
-                    }
+                  style={rectStyle(getBuildingRect(building, props.debug))}
+                  aria-label={`${presentation.name}، ${state}، ${sceneStatus}`}
                   aria-describedby={`${descriptionId}-${building}`}
                   aria-pressed={props.selected === building}
                   data-building={building}
+                  data-label-id={building}
                   data-state={presentation.status}
                   data-group={buildingGroups[building]}
                   onClick={() => choose(building)}
-                  onPointerEnter={() => renderer.current?.hover(building)}
-                  onPointerLeave={() => renderer.current?.hover(null)}
-                  onFocus={() => renderer.current?.hover(building)}
-                  onBlur={() => renderer.current?.hover(null)}
+                  onPointerEnter={() => highlight(building)}
+                  onPointerLeave={() => highlight(null)}
+                  onFocus={() => highlight(building)}
+                  onBlur={() => highlight(null)}
                 >
                   <span id={`${descriptionId}-${building}`} className={styles.visuallyHidden}>
                     {presentation.description}، {buildingStatusLabels[presentation.status]}
                   </span>
                   <span className={styles.label}>
-                    <span>{presentation.name}</span>
-                    <small>Lv.{presentation.level}</small>
+                    <Icon size={15} aria-hidden="true" />
+                    <span>
+                      {presentation.name}
+                      <small>
+                        <bdi dir="ltr">Lv.{presentation.level}</bdi>
+                      </small>
+                    </span>
+                    <StatusIcon size={13} aria-hidden="true" />
                   </span>
                   <span className={styles.marker} title={buildingStatusLabels[presentation.status]}>
                     <StatusIcon size={12} aria-hidden="true" />
@@ -459,41 +537,42 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
-              data-priority="primary"
-              style={rectStyle(hits.stable)}
-              aria-label={`الإسطبل، المستوى ${props.village.buildings.stable.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
+              style={rectStyle(getVillageRect('stable', props.debug))}
+              aria-label={`الإسطبل، المستوى ${props.village.buildings.stable.toLocaleString('ar-SA')}`}
               aria-describedby={`${descriptionId}-stable`}
               aria-pressed={props.selected === 'stable'}
               data-building-region="stable"
+              data-label-id="stable"
               data-state={getBuildingPresentation('stable', props.village, props.view.config).status}
               onClick={() => choose('stable')}
-              onPointerEnter={() => renderer.current?.hover('stable')}
-              onPointerLeave={() => renderer.current?.hover(null)}
-              onFocus={() => renderer.current?.hover('stable')}
-              onBlur={() => renderer.current?.hover(null)}
+              onPointerEnter={() => highlight('stable')}
+              onPointerLeave={() => highlight(null)}
+              onFocus={() => highlight('stable')}
+              onBlur={() => highlight(null)}
             >
               <span id={`${descriptionId}-stable`} className={styles.visuallyHidden}>
                 الإسطبل مبنى مستقل. مستواه يحدد تدريب الفرسان وسرعته.
               </span>
               <span className={styles.label}>
-                <span>الإسطبل</span>
-                <small>Lv.{props.village.buildings.stable}</small>
+                <Swords size={15} aria-hidden="true" />
+                <span>الإسطبل<small><bdi dir="ltr">Lv.{props.village.buildings.stable}</bdi></small></span>
               </span>
             </button>
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region} ${styles.rally}`}
               data-priority="primary"
-              style={rectStyle(hits.rally)}
+              style={rectStyle(getVillageRect('rally', props.debug))}
               aria-label="نقطة تجمع الجيوش، مركز القيادة العسكرية"
               aria-pressed={props.selected === 'rally'}
               data-building-region="rally"
               data-rally-point="true"
+              data-label-id="rally"
               onClick={() => choose('rally')}
-              onPointerEnter={() => renderer.current?.hover('rally')}
-              onPointerLeave={() => renderer.current?.hover(null)}
-              onFocus={() => renderer.current?.hover('rally')}
-              onBlur={() => renderer.current?.hover(null)}
+              onPointerEnter={() => highlight('rally')}
+              onPointerLeave={() => highlight(null)}
+              onFocus={() => highlight('rally')}
+              onBlur={() => highlight(null)}
             >
               <span className={styles.rallyMark} aria-hidden="true">
                 <Flag size={18} />
@@ -509,9 +588,10 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 type="button"
                 key={region.id}
                 className={`${styles.hotspot} ${styles.region}`}
-                style={rectStyle(region.id === 'tower' ? hits.tower : villageRegions.workshop)}
+                style={rectStyle(villageRegions[region.id])}
                 aria-label={region.name}
                 data-building-region={region.id}
+                data-label-id={region.id}
                 onClick={() => choose(region.building)}
               >
                 <span className={styles.label}>{region.name}</span>
@@ -520,19 +600,18 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
-              style={rectStyle(hits.gate)}
+              style={rectStyle(villageRegions.gate)}
               aria-label="البوابة الرئيسية، خريطة العالم"
               data-building-region="gate"
               data-threat={props.showThreatMarker || undefined}
+              data-label-id="gate"
               onClick={() => camera.current?.focusOn('gate', () => current.current.onWorldMap?.())}
             >
               <span className={styles.label}>
                 <DoorOpen size={15} aria-hidden="true" />
                 خريطة العالم
-                {props.showThreatMarker && (
-                  <Swords size={15} aria-label="مؤشر تهديد عسكري عند البوابة" />
-                )}
               </span>
+              {props.showThreatMarker && <span className={styles.threatMarker}><Swords size={16} aria-label="مؤشر تهديد عسكري عند البوابة" /></span>}
             </button>
             <ConstructionMarker props={props} />
           </div>

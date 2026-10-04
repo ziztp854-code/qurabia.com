@@ -1399,3 +1399,337 @@
   max-block-size: 100dvh;
   overflow: hidden;
 }
+
+/* Keep the capital visible: compact live resources and optional management. */
+.shell .toolbar[hidden],
+.shell .gameLayout .nav[hidden] {
+  display: none;
+}
+.shell.playing {
+  max-inline-size: none;
+  padding: var(--space-2);
+}
+.shell.playing .hud {
+  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.shell.playing .hero {
+  min-block-size: 0;
+  padding: 0;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow:
+    0 1px 3px var(--background),
+    0 0 8px var(--background);
+}
+.shell.playing .hero h1 {
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell.playing .hero > div:first-child {
+  min-inline-size: 0;
+}
+.villageIdentity {
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.7rem;
+}
+.shell.playing .crest {
+  inline-size: 32px;
+  block-size: 38px;
+  border: 0;
+  background: transparent;
+}
+.shell.playing .crest svg {
+  inline-size: 22px;
+  block-size: 22px;
+}
+.shell.playing .resources {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 0;
+  padding: 0;
+  margin: 0;
+  gap: clamp(8px, 1vw, 16px);
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+.shell.playing .resource {
+  min-block-size: 48px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--space-2);
+  row-gap: 0;
+  padding: var(--space-1) var(--space-2);
+  align-content: center;
+  justify-items: start;
+  text-align: start;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  box-shadow: var(--shadow-sm);
+  text-shadow: none;
+}
+.shell.playing .resource:last-child {
+  border: 1px solid var(--border-gold);
+}
+.shell.playing .resource svg {
+  grid-row: 1 / 3;
+  grid-column: 1;
+  inline-size: 20px;
+  block-size: 20px;
+}
+.shell.playing .resource span {
+  grid-column: 2;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.shell.playing .resource strong {
+  grid-column: 2;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--gold);
+}
+.shell.playing .resource .resourceCapacity {
+  display: none;
+}
+.shell.playing .resource .capacity {
+  display: none;
+}
+.hudActions {
+  display: flex;
+  gap: var(--space-1);
+}
+.resourceDetails {
+  flex: 0 0 auto;
+  flex-basis: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-block-size: 35dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-gold);
+  background: var(--surface);
+}
+.resourceDetails summary {
+  min-block-size: 44px;
+  padding: var(--space-3);
+  color: var(--gold);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.resourceDetails summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+.hudActions .returnLink {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: var(--space-2);
+  gap: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--gold);
+  font-size: 0.7rem;
+}
+.hudActions button {
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--gold);
+  cursor: pointer;
+}
+.hudActions button[aria-expanded='true'] {
+  background: var(--surface-strong);
+  border-color: var(--border-gold);
+}
+.hudActions button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.shell.playing .toolbar {
+  margin-block: var(--space-2);
+}
+.villageView .gameLayout {
+  display: flex;
+  position: relative;
+}
+
+/* Full-viewport production village retains its flex camera surface. */
+.shell[data-village-stage='live'] {
+  padding: 0;
+  position: relative;
+  --kingdoms-hud-clearance: 70px;
+}
+.shell[data-village-stage='live'] .hud {
+  display: grid;
+  flex: 0 0 auto;
+  border-radius: 0;
+  position: absolute;
+  z-index: 24;
+  inset-block-start: 0;
+  inset-inline: 0;
+  pointer-events: none;
+}
+.shell[data-village-stage='live'] .hud > .hudActions {
+  pointer-events: auto;
+}
+.shell[data-village-stage='live'] .toolbar:not([hidden]) {
+  display: flex;
+  position: absolute;
+  z-index: 26;
+  inset-block-start: calc(var(--kingdoms-hud-clearance) + var(--space-2));
+  inset-inline-start: var(--space-2);
+  inline-size: min(600px, calc(100% - 16px));
+  max-block-size: min(54dvh, calc(100% - var(--kingdoms-hud-clearance) - 90px));
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overscroll-behavior: contain;
+  overflow-y: auto;
+}
+.shell[data-village-stage='live'] > .notice {
+  position: absolute;
+  z-index: 26;
+  inset-block-start: calc(var(--kingdoms-hud-clearance) + var(--space-2));
+  inset-inline-start: 50%;
+  transform: translateX(50%);
+  inline-size: min(600px, calc(100% - 16px));
+  max-block-size: 25dvh;
+  margin: 0;
+  overflow-y: auto;
+}
+.shell[data-village-stage='live'] > .notice[role='status'] {
+  inset-block-start: auto;
+  inset-block-end: calc(82px + env(safe-area-inset-bottom, 0px));
+  inline-size: fit-content;
+  max-inline-size: calc(100% - 24px);
+  pointer-events: none;
+}
+.shell[data-village-stage='live'] .gameLayout > .nav:not([hidden]) {
+  display: grid;
+  max-block-size: calc(100% - var(--kingdoms-hud-clearance) - 90px);
+  overflow-y: auto;
+}
+.shell.playing .resource > i[aria-hidden='true'] {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  filter: drop-shadow(0 2px 3px var(--background));
+}
+.villageView .gameLayout > section {
+  animation: none;
+}
+.villageView .gameLayout .nav {
+  position: absolute;
+  z-index: 25;
+  inset-block-start: calc(var(--kingdoms-hud-clearance) + var(--space-2));
+  inset-inline-end: var(--space-2);
+  display: grid;
+  inline-size: min(250px, calc(100% - 16px));
+  grid-template-columns: 1fr;
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+}
+.villageView .seasonBar {
+  margin-block: var(--space-1);
+  padding-block: 0;
+  font-size: 0.7rem;
+}
+.villageView .seasonBar .cost,
+.villageView .protection {
+  font-size: 0.7rem;
+}
+.villageView .protection {
+  margin-block: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+.villageView > p:last-child {
+  margin: var(--space-1) 0 0;
+  font-size: 0.65rem;
+}
+@media (max-width: 700px) {
+  .shell.playing {
+    padding: var(--space-1);
+  }
+  .shell.playing .hud {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1);
+    padding: var(--space-1);
+  }
+  .shell.playing .hero {
+    display: flex;
+    min-inline-size: 0;
+  }
+  .shell.playing .hero h1 {
+    font-size: 0.85rem;
+  }
+  .shell.playing .resources {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .shell.playing .resource {
+    min-block-size: 74px;
+    grid-template-columns: 1fr;
+    grid-template-rows: 32px auto auto;
+    padding: var(--space-1);
+    justify-items: center;
+    text-align: center;
+  }
+  .shell.playing .resource svg {
+    display: none;
+  }
+  .shell.playing .resource > i[aria-hidden='true'] {
+    display: inline-flex;
+    grid-row: 1;
+  }
+  .shell.playing .resource span,
+  .shell.playing .resource strong {
+    grid-column: 1;
+  }
+  .shell.playing .resource strong {
+    font-size: 0.8rem;
+  }
+  .shell.playing .resources {
+    gap: var(--space-1);
+  }
+  .shell[data-village-stage='live'] {
+    --kingdoms-hud-clearance: 140px;
+  }
+  .shell.playing .resource .capacity {
+    inset-inline: var(--space-1);
+  }
+  .hudActions {
+    gap: 0;
+  }
+  .hudActions .returnLink {
+    inline-size: 44px;
+    padding: 0;
+  }
+  .returnLink span {
+    display: none;
+  }
+  .villageView .seasonBar {
+    flex-wrap: nowrap;
+  }
+  .villageView .seasonBar .cost {
+    display: none;
+  }
+}

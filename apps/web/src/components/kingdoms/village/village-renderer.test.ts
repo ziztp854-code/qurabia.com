@@ -12,7 +12,7 @@ vi.mock('@/lib/kingdoms/village/assetManifest', async (importOriginal) => {
   return { ...actual, villageAssets: { ...actual.villageAssets, buildings: {
     ...actual.villageAssets.buildings,
     stable: actual.villageAssets.buildings.stable.map((slot, index) => index === 2
-      ? { ...slot, src: '/approved/stable-l3.webp', placeholder: false } : slot),
+      ? { ...slot, src: '/approved/stable-l3.webp', placeholder: false } : { ...slot, src: `/fixtures/stable-l${index + 1}.webp` }),
   } } };
 });
 
@@ -185,8 +185,8 @@ describe('village rendering surface dimensions', () => {
     );
     expect(gpu.initCount).toBe(1);
     const loaded = vi.mocked(Assets.load as (src: string) => Promise<Texture>).mock.calls.map(([src]) => src);
-    expect(loaded).toContain('/game-art/kingdoms/village-oasis.webp');
-    expect(loaded.some((src) => src.includes('village-oasis-ultra') || src.includes('village-oasis-hidpi'))).toBe(false);
+    expect(loaded).toContain('/game-art/kingdoms/village/mamluk-capital-960.webp');
+    expect(loaded.some((src) => src.includes('mamluk-capital-1672') || src.includes('mamluk-capital-1280'))).toBe(false);
     renderer.destroy();
   });
 });

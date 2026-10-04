@@ -8,11 +8,20 @@ import { collectAssetAnimations, createArtworkTextureCache, createBuildingLayer,
 
 vi.mock('@/lib/kingdoms/village/assetManifest', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/kingdoms/village/assetManifest')>();
-  return { ...actual, villageAssets: { ...actual.villageAssets, buildings: {
-    ...actual.villageAssets.buildings,
-    stable: actual.villageAssets.buildings.stable.map((slot, index) => index === 2
-      ? { ...slot, src: null, animated: true, frames: ['/approved/stable-a.webp', '/approved/stable-b.webp'] } : slot),
-  } } };
+  const fixtureCrop = { x: 399, y: 505, width: 9, height: 18 };
+  return { ...actual, villageAssets: { ...actual.villageAssets,
+    tiers: actual.villageAssets.tiers.map((slot) => ({ ...slot, fallbackCrop: fixtureCrop })),
+    environment: { ...actual.villageAssets.environment, flags: { ...actual.villageAssets.environment.flags, fallbackCrop: fixtureCrop } },
+    npc: Object.fromEntries(Object.entries(actual.villageAssets.npc).map(([id, slot]) => [id, { ...slot, fallbackCrop: fixtureCrop }])),
+    buildings: { ...actual.villageAssets.buildings,
+      farm: actual.villageAssets.buildings.farm.map((slot) => ({ ...slot, fallbackCrop: { x: 1366, y: 392, width: 56, height: 36 } })),
+      market: actual.villageAssets.buildings.market.map((slot) => ({ ...slot, fallbackCrop: { x: 1092, y: 686, width: 43, height: 34 } })),
+      stable: actual.villageAssets.buildings.stable.map((slot, index) => index === 2
+        ? { ...slot, src: null, animated: true, frames: ['/approved/stable-a.webp', '/approved/stable-b.webp'] }
+        : { ...slot, src: '/game-art/kingdoms/village/buildings/stable-l1.webp' }),
+    },
+  } };
+
 });
 
 function originalArtwork() {
@@ -85,18 +94,18 @@ describe('original artwork alpha crops', () => {
     expect(sprite).toBeInstanceOf(Sprite);
     expect(sprite.scale.x).toBeCloseTo(sprite.scale.y);
     expect(sprite.width / sprite.height).toBeCloseTo(width / height);
-    expect(sprite.width).toBeLessThanOrEqual(111 + 1e-6);
-    expect(sprite.height).toBeLessThanOrEqual(67 + 1e-6);
+    expect(sprite.width).toBeLessThanOrEqual(480 + 1e-6);
+    expect(sprite.height).toBeLessThanOrEqual(144 + 1e-6);
     expect(sprite.anchor.x).toBe(0.5);
     expect(sprite.anchor.y).toBe(1);
-    expect(sprite.position.x).toBe(509.5);
-    expect(sprite.position.y).toBe(583);
-    expect(sprite.zIndex).toBe(583);
+    expect(sprite.position.x).toBe(1240);
+    expect(sprite.position.y).toBe(616.5);
+    expect(sprite.zIndex).toBe(616.5);
     const bounds = sprite.getBounds();
-    expect(bounds.minX).toBeGreaterThanOrEqual(454 - 1e-6);
-    expect(bounds.maxX).toBeLessThanOrEqual(565 + 1e-6);
-    expect(bounds.minY).toBeGreaterThanOrEqual(516 - 1e-6);
-    expect(bounds.maxY).toBeLessThanOrEqual(583 + 1e-6);
+    expect(bounds.minX).toBeGreaterThanOrEqual(1000 - 1e-6);
+    expect(bounds.maxX).toBeLessThanOrEqual(1480 + 1e-6);
+    expect(bounds.minY).toBeGreaterThanOrEqual(472.5 - 1e-6);
+    expect(bounds.maxY).toBeLessThanOrEqual(616.5 + 1e-6);
     const pending = createBuildingLayer(source, { ...props, village: { ...props.village,
       buildings: { ...props.village.buildings, barracks: 0, stable: 0 },
       build: { building: 'barracks', level: 1, endsAt: now + 5000 } } }, [], approved, cache);
@@ -123,8 +132,8 @@ describe('original artwork alpha crops', () => {
     const sprite = confirmed.children.find((child) => child.label === 'stable-l3') as AnimatedSprite;
     expect(sprite).toBeInstanceOf(AnimatedSprite);
     expect(sprite.autoUpdate).toBe(false);
-    expect(sprite.width).toBeCloseTo(100.5);
-    expect(sprite.height).toBe(67);
+    expect(sprite.width).toBeCloseTo(216);
+    expect(sprite.height).toBe(144);
     expect(sprite.scale.x).toBeCloseTo(sprite.scale.y);
     expect(collectAssetAnimations(confirmed)).toEqual([sprite]);
     pending.destroy({ children: true });

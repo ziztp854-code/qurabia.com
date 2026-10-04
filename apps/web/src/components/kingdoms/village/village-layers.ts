@@ -8,7 +8,7 @@ import {
 import { villageVisualPresentation } from '@/lib/kingdoms/village/visual-tier';
 import { getBuildingPresentation } from '@/lib/kingdoms/village/buildingConfig';
 import { getVillageBuilding, getVillageVisualLevel, villageBuildingRegistry } from '@/lib/kingdoms/village/buildingRegistry';
-import { getBuildingRect, getVillagePlacement, getVillageRect, rectCenter } from '@/lib/kingdoms/village/coordinates';
+import { getBuildingRect, getVillagePlacement, getVillageRect, rectCenter, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
 import { createVillageNPCs, npcPosition, type NPCSpawn } from '@/lib/kingdoms/village/npcRoutes';
 import type { QualitySettings } from '@/lib/kingdoms/village/quality';
 import type { VillageCanvasProps, VillageSelection, WorldPoint, WorldRect } from '@/lib/kingdoms/village/types';
@@ -118,6 +118,7 @@ export function createBuildingLayer(
   textures: Texture[],
   approved: ReadonlyMap<string, Texture>,
   artwork: ArtworkTextureCache,
+  fidelity: VillageAssetFidelity = 'standard',
 ) {
   const layer = new Container();
   layer.sortableChildren = true;
@@ -136,8 +137,8 @@ export function createBuildingLayer(
     const building = entry.id;
     const tier = getVillageVisualLevel(building, props.village, props.debug);
     const slot = villageAssets.buildings[building][Math.max(0, tier - 1)];
-    if (slot && hasApprovedAsset(slot, approved) && tier > 0) {
-      const sprite = artworkSprite(source, slot, textures, approved);
+    if (slot && hasApprovedAsset(slot, approved, fidelity) && tier > 0) {
+      const sprite = artworkSprite(source, slot, textures, approved, undefined, undefined, fidelity);
       if (sprite) {
         const rect = getVillageRect(building, props.debug);
         sprite.anchor.set(slot.anchor.x, slot.anchor.y);
@@ -264,8 +265,8 @@ export function createNPCLayer(
           model: {
             ...npc,
             route: npc.route.map((point) => ({
-              x: center.x + point.x - 760,
-              y: center.y + point.y - 500,
+              x: center.x + point.x - VILLAGE_WORLD.width / 2,
+              y: center.y + point.y - VILLAGE_WORLD.height / 2,
             })),
           },
           container,
@@ -470,13 +471,13 @@ export function paintEnvironment(
     for (let i = 0; i < count; i += 1) {
       const phase = (seconds * 0.22 + i * 0.137) % 1;
       graphics
-        .circle(146 + Math.sin(i * 7) * 15, 66 + phase * 162, 1.2 + phase)
+        .circle(146 + Math.sin(i * 7) * 15, 55 + phase * 45, 1.2 + phase)
         .fill({ color: colors.light, alpha: Math.sin(phase * Math.PI) * 0.22 });
     }
   }
   for (let i = 0; i < look.waterGlints; i += 1) {
-    const x = 280 + i * (1180 / Math.max(1, look.waterGlints));
-    const y = 944 + Math.sin(i * 8) * 28;
+    const x = 360 + i * (900 / Math.max(1, look.waterGlints));
+    const y = 80 + Math.sin(i * 8) * 18;
     graphics
       .moveTo(x, y)
       .lineTo(x + 12 + Math.sin(seconds * 0.7 + i) * 5, y + 1)
@@ -487,10 +488,10 @@ export function paintEnvironment(
       });
   }
   for (const [x, y] of [
-    [692, 744],
-    [827, 749],
-    [718, 863],
-    [795, 865],
+    [465, 847],
+    [1072, 856],
+    [790, 409],
+    [814, 294],
   ]) {
     graphics
       .circle(x, y, 5 + Math.sin(seconds * 3.8 + x) * 0.8)

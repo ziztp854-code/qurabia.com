@@ -1,0 +1,19 @@
+.viewport {
+  min-block-size: 100dvh;
+  background: var(--kingdoms-ui-background);
+}
+.viewport :global(.site-header),
+.viewport :global(.page-backbar),
+.viewport :global(.site-footer) {
+  display: none;
+}
+.viewport :global(.site-layout) {
+  min-block-size: 100dvh;
+  background: var(--kingdoms-ui-background);
+}
+.viewport :global(.site-layout main) {
+  inline-size: 100%;
+  max-inline-size: none;
+  min-inline-size: 0;
+  padding: 0;
+}

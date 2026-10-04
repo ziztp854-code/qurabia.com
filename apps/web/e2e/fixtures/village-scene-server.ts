@@ -106,6 +106,17 @@ async function main() {
       reply(true);
       return;
     }
+    if (url.pathname === '/__village_test/resource-scenario' && request.method === 'POST') {
+      frozenNow = undefined;
+      world = newWorld();
+      const village = Object.values(world.villages)[0];
+      world = { ...world, villages: { ...world.villages, [village.id]: { ...village,
+        buildings: { ...village.buildings, lumber: 3, quarry: 3, mine: 3, farm: 3, treasury: 3 },
+        resources: { wood: 6000, stone: 6000, iron: 6000, food: 6000, gold: 6000 },
+      } } };
+      reply(snapshot());
+      return;
+    }
     if (url.pathname === '/__village_test/offline-scenario' && request.method === 'POST') {
       frozenNow = Date.now();
       world = executeCommand(createWorld(frozenNow, { ...defaultKingdomsConfig, storageBase: 100000 }), 'browser-player', { type: 'found', name: 'مملكة الاختبار' }, frozenNow);

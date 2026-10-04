@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { capVillageDpr, resolveVillageQuality } from './quality';
 import { createVillageNPCs, npcPosition } from './npcRoutes';
 import { createWorld, executeCommand, projectWorld } from '../engine';
+import { villageAssets } from './assetManifest';
+
+afterEach(() => {
+  vi.doUnmock('./assetManifest');
+  vi.resetModules();
+});
 
 describe('village performance and activity', () => {
   it('reduces NPC count and resolution on low memory devices and honors a manual choice', () => {
@@ -51,7 +57,21 @@ describe('village performance and activity', () => {
     expect(capVillageDpr(2, { width: 3840, height: 2160, dpr: 2 }, 8_000_000, 2.25)).toBe(1);
     expect(capVillageDpr(2, { width: 390, height: 844, dpr: 3 }, 8_000_000, 2.25)).toBe(2);
   });
-  it('adds activity from confirmed buildings and cavalry while obeying the device budget', () => {
+  it('adds activity from confirmed buildings when standalone NPC assets are available', async () => {
+    vi.resetModules();
+    vi.doMock('./assetManifest', async (importOriginal) => {
+      const original = await importOriginal<typeof import('./assetManifest')>();
+      return {
+        ...original,
+        villageAssets: {
+          ...original.villageAssets,
+          npc: Object.fromEntries(Object.entries(original.villageAssets.npc).map(([kind, asset]) =>
+            [kind, { ...asset, src: kind === 'cavalry' ? null : `/fixtures/${kind}.webp` }],
+          )),
+        },
+      };
+    });
+    const { createVillageNPCs, npcPosition } = await import('./npcRoutes');
     const now = 1800000000000;
     const village = projectWorld(
       executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now),
@@ -85,6 +105,26 @@ describe('village performance and activity', () => {
         40,
       ).filter((model) => model.id.startsWith('construction')),
     ).toHaveLength(3);
+  });
+  it('does not duplicate figures embedded in the new master artwork', () => {
+    const now = 1800000000000;
+    const village = projectWorld(
+      executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now),
+      'p', now,
+    ).villages[0];
+    const busy = { ...village,
+      buildings: { ...village.buildings, farm: 5, barracks: 5, market: 5 },
+      troops: { ...village.troops, rider: 2 },
+      build: { building: 'farm' as const, level: 6, endsAt: now + 5000 },
+    };
+    const original = JSON.stringify(busy);
+    for (const asset of Object.values(villageAssets.npc)) {
+      expect(asset.src).toBeNull();
+      expect(asset.frames).toEqual([]);
+      expect(asset.fallbackCrop).toBeUndefined();
+    }
+    expect(createVillageNPCs(busy, 40)).toEqual([]);
+    expect(JSON.stringify(busy)).toBe(original);
   });
   it('waits and turns at waypoints deterministically without changing authoritative village state', () => {
     const npc = {

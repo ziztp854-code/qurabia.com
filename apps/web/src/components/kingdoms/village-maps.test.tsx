@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { VillagePanel } from './village-panel';
@@ -25,7 +25,26 @@ function fixture(): WorldView {
     revision: 0,
   };
 }
-afterEach(cleanup);
+beforeEach(() => {
+  // These integration tests verify real commands and panels; camera animation has its own tests.
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      media: query,
+      matches: query === '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+});
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('village maps', () => {
   it('keeps construction, army, tasks and world navigation available within the village', async () => {
@@ -43,7 +62,9 @@ describe('village maps', () => {
     const navigation = screen.getByRole('navigation', { name: 'التنقل من القرية' });
     const map = screen.getByRole('region', { name: 'خريطة القرية' });
     fireEvent.click(within(map).getByRole('button', { name: /^دار الحكم/ }));
-    expect(await screen.findByRole('region', { name: 'تفاصيل دار الحكم' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('region', { name: 'تفاصيل دار الحكم' }, { timeout: 3000 }),
+    ).toBeInTheDocument();
     fireEvent.click(within(navigation).getByRole('button', { name: 'انتقل إلى الجيش' }));
     expect(onNavigate).toHaveBeenLastCalledWith('army');
     fireEvent.click(within(navigation).getByRole('button', { name: 'افتح التقارير' }));
@@ -94,7 +115,7 @@ describe('village maps', () => {
     };
     const send = vi.fn();
     render(<VillagePanel view={view} village={village} send={send} busy={false} />);
-    fireEvent.click(screen.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^الثكنة،.*لم يُبنَ/ }));
     expect(
       await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }),
     ).toBeDisabled();
@@ -126,7 +147,7 @@ describe('village maps', () => {
     ).toBeInTheDocument();
     expect(within(map).getAllByRole('button', { name: /^الثكنة،/ })).toHaveLength(1);
     expect(within(map).getAllByRole('button', { name: /^الإسطبل، المستوى / })).toHaveLength(1);
-    fireEvent.click(within(map).getByRole('button', { name: /^الثكنة، لم يُبنَ$/ }));
+    fireEvent.click(within(map).getByRole('button', { name: /^الثكنة،.*لم يُبنَ/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }));
     expect(send).toHaveBeenCalledWith({
       type: 'build',
@@ -220,6 +241,10 @@ describe('village maps', () => {
       expect.objectContaining({ type: 'march', targetX: 85, targetY: -63 }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'قريتي' }));
-    expect(within(screen.getByRole('region', { name: 'القرية المختارة' })).getByText(original.map[0].name)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'القرية المختارة' })).getByText(
+        original.map[0].name,
+      ),
+    ).toBeInTheDocument();
   });
 });
