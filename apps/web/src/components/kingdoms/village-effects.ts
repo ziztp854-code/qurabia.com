@@ -1,6 +1,6 @@
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import type { Building, KingdomsConfig, Resource, Resources, Village } from '@/lib/kingdoms/types';
-import { labels, number } from './shared';
+import { labels, number, rateAmount } from './shared';
 
 const producers: Partial<Record<Building, Resource>> = {
   lumber: 'wood',
@@ -41,7 +41,7 @@ export function buildingEffect(
     return {
       label: `إنتاج ${labels[resource]} الأساسي في الساعة`,
       ...at((lvl) =>
-        number(config.baseProduction[resource] * (1 + lvl * config.productionPerLevel)),
+        rateAmount(config.baseProduction[resource] * (1 + lvl * config.productionPerLevel)),
       ),
       note: resource === 'food' ? 'قبل خصم إعاشة القوات.' : undefined,
     };

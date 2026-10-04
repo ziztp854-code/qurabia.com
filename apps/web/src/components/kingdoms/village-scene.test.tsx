@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { buildingKeys, type Building, type Village } from '@/lib/kingdoms/types';
-import { number, type WorldView } from './shared';
+import { number, rateAmount, type WorldView } from './shared';
 import { buildingEffect, duration, upgradeCost } from './village-effects';
 import { boundsOf, hitBox, plotState, villageArt, villagePlots } from './village-layout';
 import { VillagePanel } from './village-panel';
@@ -100,6 +100,9 @@ describe('village effects', () => {
   it('has no next value at the maximum level and formats durations', () => {
     const { config } = fixture();
     expect(buildingEffect('market', config, { buildings: levels({ market: 20 }) }).next).toBe(null);
+    expect(buildingEffect('mine', config, { buildings: levels({ mine: 1 }) }).now).toBe(
+      rateAmount(55 * 1.35),
+    );
     expect(duration(3725)).toBe(`${number(1)} س ${number(2)} د ${number(5)} ث`);
     expect(duration(0)).toBe(`${number(0)} ث`);
   });

@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { type Village } from '@/lib/kingdoms/types';
 import { VillageHero } from './village-hero';
-import type { WorldView } from './shared';
+import { rateAmount, type WorldView } from './shared';
 
 const now = 1800000000000;
 
@@ -46,6 +46,10 @@ describe('village hero', () => {
     );
     expect(within(hero).getByText('+٨٠ في الساعة')).toBeVisible();
     expect(within(hero).getByText(/حماية حتى/)).toBeVisible();
+    view.productionRates[view.villages[0].id].iron = 74.25;
+    cleanup();
+    render(<VillageHero view={view} village={view.villages[0]} />);
+    expect(screen.getByText(`+${rateAmount(74.25)} في الساعة`)).toBeVisible();
   });
 
   it('shows the construction and the completed ladder when the village is maxed', () => {

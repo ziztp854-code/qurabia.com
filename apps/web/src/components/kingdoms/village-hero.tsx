@@ -4,7 +4,7 @@ import { Castle, Crown, Shield } from 'lucide-react';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { supremeStage, villageProgress } from '@/lib/kingdoms/stages';
 import { buildingKeys, resourceKeys } from '@/lib/kingdoms/types';
-import { date, labels, number, type GameProps } from './shared';
+import { date, labels, number, rateAmount, type GameProps } from './shared';
 import { ResourceIcon } from './resource-icon';
 import styles from './village.module.css';
 
@@ -125,7 +125,7 @@ export function VillageHero({ view, village }: Pick<GameProps, 'view' | 'village
                 <span style={{ width: `${fill}%` }} />
               </span>
               <span className={styles.stockRate}>
-                {rate[key] > 0 ? `+${number(rate[key])} في الساعة` : 'لا إنتاج الآن'}
+                {rate[key] > 0 ? `+${rateAmount(rate[key])} في الساعة` : 'لا إنتاج الآن'}
               </span>
             </li>
           );
