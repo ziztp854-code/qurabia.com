@@ -18,8 +18,13 @@ describe('fixed village camera', () => {
     expect(camera.getSnapshot()).toEqual(origin);
     expect(projectPoint({ x: 0, y: 0 }, camera.getSnapshot()).x).toBe(0);
     camera.zoomBy(2);
+    expect(camera.getSnapshot().zoom).toBe(origin.zoom);
+    expect(camera.getSnapshot().x).toBe(origin.x);
+    expect(camera.getSnapshot().y).toBe(origin.y);
     camera.panBy(80, 40);
-    expect(camera.getSnapshot().zoom).toBe(1);
+    expect(camera.getSnapshot().zoom).toBe(origin.zoom);
+    expect(camera.getSnapshot().x).toBe(origin.x);
+    expect(camera.getSnapshot().y).toBe(origin.y);
     camera.destroy();
   });
 

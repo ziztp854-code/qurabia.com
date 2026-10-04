@@ -38,9 +38,14 @@ export class VillageCamera implements VillageSceneHandle {
     void target;
     onComplete?.();
   }
-  zoomBy() {}
+  zoomBy(factor: number) {
+    void factor;
+  }
   zoomAt() {}
-  panBy() {}
+  panBy(dx: number, dy: number) {
+    void dx;
+    void dy;
+  }
   reset = () => {
     this.cancel();
     this.publish(createCamera(this.camera.viewport));
