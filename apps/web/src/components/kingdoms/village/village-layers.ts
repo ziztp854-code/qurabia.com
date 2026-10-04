@@ -414,8 +414,13 @@ export function createConstructionAssetLayer(
     const rect = getBuildingRect(props.village.build.building, props.debug);
     sprite.anchor.set(slot.anchor.x, slot.anchor.y);
     sprite.position.set(rect.x + rect.width * slot.anchor.x, rect.y + rect.height * slot.anchor.y);
-    sprite.width = rect.width;
-    sprite.height = rect.height;
+    if (slot.fit === 'contain') {
+      const scale = Math.min(rect.width / sprite.texture.width, rect.height / sprite.texture.height);
+      sprite.scale.set(scale);
+    } else {
+      sprite.width = rect.width;
+      sprite.height = rect.height;
+    }
     layer.addChild(sprite);
   }
   return layer;

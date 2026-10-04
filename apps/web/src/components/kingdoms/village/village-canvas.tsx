@@ -511,7 +511,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             {build && (
               <div
                 className={styles.construction}
-                data-construction-asset="MISSING_ASSET"
+                data-construction-asset={villageAssets.environment.scaffold.src ? 'dedicated' : 'MISSING_ASSET'}
                 style={{
                   left:
                     getBuildingRect(build.building, props.debug).x +

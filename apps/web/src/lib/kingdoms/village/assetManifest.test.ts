@@ -46,7 +46,21 @@ describe('village asset manifest fidelity', () => {
       '/game-art/kingdoms/village-oasis.webp',
     );
     expect(resolveVillageAssetSrc(villageAssets.roads, 'hidpi')).toBeNull();
-    expect(resolveVillageAssetSrc(villageAssets.environment.scaffold, 'standard')).toBeNull();
+    expect(resolveVillageAssetSrc(villageAssets.environment.scaffold, 'standard')).toBe(
+      '/game-art/kingdoms/village/buildings/construction-scaffold.webp',
+    );
+    expect(webpSize(villageAssets.environment.scaffold.src!)).toMatchObject({ alpha: true });
+    const hall = villageAssets.buildings.hall[0];
+    expect(hall.src).toBe('/game-art/kingdoms/village/buildings/hall-l1.webp');
+    expect(hall.fit).toBe('contain');
+    expect(hall.worldRect).toEqual({ x: 548, y: 206, width: 474, height: 294 });
+    expect(hall.variants?.ultra).toBeUndefined();
+    expect(webpSize(hall.src!).alpha).toBe(true);
+    expect(webpSize(hall.variants!.hidpi!).alpha).toBe(true);
+    expect(villageAssets.buildings.hall[1].src).toBe(hall.src);
+    expect(villageAssets.buildings.stable[4].src).toBe(
+      '/game-art/kingdoms/village/buildings/stable-l5.webp',
+    );
     expect(villageAssetFidelity('ultra')).toBe('ultra');
     expect(villageAssetFidelity('high')).toBe('hidpi');
     expect(villageAssetFidelity('medium')).toBe('standard');

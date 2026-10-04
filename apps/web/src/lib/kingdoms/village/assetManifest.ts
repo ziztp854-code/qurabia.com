@@ -96,30 +96,59 @@ const existingDetails: Partial<Record<VillageBuildingId, WorldRect>> = {
   market: { x: 1092, y: 686, width: 43, height: 34 },
   wall: { x: 688, y: 800, width: 12, height: 43 },
 };
+const dedicatedCutouts = new Set<VillageBuildingId>([
+  'hall', 'farm', 'lumber', 'quarry', 'mine', 'treasury', 'warehouse', 'barracks',
+  'market', 'embassy', 'wall', 'gate', 'tower', 'rally',
+]);
+/** Slots 2 and 4 reuse the nearest unique native cutout. There is no separate L2 or L4 painting. */
+function visualSourceLevel(slotLevel: number) {
+  if (slotLevel <= 2) return 1;
+  if (slotLevel === 3) return 3;
+  return 5;
+}
+const ultraCutouts = new Set(['mine-l5', 'gate-l1', 'tower-l3', 'rally-l1']);
+
 const buildings = Object.fromEntries(
   villageBuildingRegistry.map(({ id, name }): [VillageBuildingId, readonly VillageAssetSlot[]] => {
     const { x, y, width, height, zIndex } = getVillagePlacement(id);
     return [
       id,
-      [1, 2, 3, 4, 5].map((level) =>
-        slot(
+      [1, 2, 3, 4, 5].map((level) => {
+        const source = id === 'stable' ? level : visualSourceLevel(level);
+        const file = `${id}-l${source}.webp`;
+        const base = `/game-art/kingdoms/village/buildings/${id}-l${source}`;
+        const shared = id !== 'stable' && source !== level;
+        return slot(
           `${id}-l${level}`,
-          `${name}: أصل مستقل للمستوى ${level}${id === 'stable' ? ' بخلفية شفافة' : ' لم يُجهز بعد'}`,
+          shared
+            ? `${name}: الخانة البصرية ${level} تعرض الأصل المستقل ${source}. لا توجد لوحة مستقلة لهذه الخانة.`
+            : `${name}: مقطع شفاف للمستوى البصري ${source}`,
           { x, y, width, height },
           {
-            filename: `${villageAssetNames[id] ?? id}-l${level}.webp`,
+            filename: file,
             zIndex,
             fallbackCrop: existingDetails[id],
-            ...(id === 'stable'
+            ...(id === 'stable' || dedicatedCutouts.has(id)
               ? {
-                  src: `/game-art/kingdoms/village/buildings/stable-l${level}.webp`,
+                  src: `/game-art/kingdoms/village/buildings/${file}`,
                   placeholder: false,
                   fit: 'contain' as const,
+                  ...(id === 'stable'
+                    ? {}
+                    : {
+                        variants: {
+                          standard: `${base}.webp`,
+                          hidpi: `${base}-hidpi.webp`,
+                          ...(ultraCutouts.has(`${id}-l${source}`)
+                            ? { ultra: `${base}-ultra.webp` }
+                            : {}),
+                        },
+                      }),
                 }
               : {}),
           },
-        ),
-      ),
+        );
+      }),
     ];
   }),
 ) as Readonly<Record<VillageBuildingId, readonly VillageAssetSlot[]>>;
@@ -210,11 +239,16 @@ export const villageAssets = {
     palms: environmentSlot('palms', 'أطلس حركة نخيل خفيفة مفقود'),
     birds: environmentSlot('birds', 'أطلس طيور لم يُجهز بعد'),
     dust: environmentSlot('dust', 'أطلس غبار خفيف مفقود'),
-    scaffold: slot('scaffold', 'أصل سقالة شفاف لم يُجهز بعد', {
+    scaffold: slot('scaffold', 'سقالة خشبية شفافة فوق المبنى أثناء البناء. عرض فقط.', {
       x: 0,
       y: 0,
       width: 160,
       height: 160,
+    }, {
+      src: '/game-art/kingdoms/village/buildings/construction-scaffold.webp',
+      filename: 'construction-scaffold.webp',
+      placeholder: false,
+      fit: 'contain',
     }),
   },
   roads: slot(
