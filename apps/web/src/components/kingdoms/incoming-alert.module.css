@@ -11,7 +11,39 @@
   background: var(--surface);
   color: var(--foreground);
 }
-.alert[data-severity='CRITICAL'] {
+.alert[data-placement='ribbon'] {
+  inline-size: fit-content;
+  max-inline-size: min(48rem, calc(100% - 1rem));
+  margin-inline: auto;
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.7rem;
+}
+.alert[data-placement='ribbon'] .head {
+  flex-wrap: nowrap;
+  inline-size: auto;
+  gap: 0.65rem;
+}
+.alert[data-placement='ribbon'] .title {
+  align-items: center;
+}
+.alert[data-placement='ribbon'] .title h3,
+.alert[data-placement='ribbon'] .meta {
+  font-size: 0.85rem;
+}
+.alert[data-placement='ribbon'] .meta {
+  display: inline;
+}
+.alert[data-placement='ribbon'][data-severity='CRITICAL'],
+.alert[data-placement='ribbon'][data-severity='DANGER'] {
+  background: color-mix(in srgb, var(--danger) 18%, var(--surface));
+  border-color: var(--danger);
+}
+.alert[data-placement='ribbon'] .actions button,
+.alert[data-placement='ribbon'] .actions a {
+  min-block-size: 32px;
+}
+.alert[data-severity='CRITICAL'],
+.alert[data-severity='DANGER'] {
   border-inline-start-color: var(--danger);
   background: var(--surface);
   color: var(--foreground);
@@ -38,9 +70,10 @@
 .head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  inline-size: 100%;
 }
 .title {
   display: flex;

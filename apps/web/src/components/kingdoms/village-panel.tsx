@@ -60,11 +60,12 @@ export function VillagePanel({
     returnFocus.current?.focus({ preventScroll: true });
   };
   return (
-    <div className={styles.village}>
+    <div className={styles.village} data-village-screen="">
       <VillageHero view={view} village={village} />
       <div
         className={villageStyles.layout}
         data-selected={selected !== null}
+        data-sheet={selected === null ? undefined : selected === 'rally' ? 'rally' : 'building'}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && selected) close();
         }}

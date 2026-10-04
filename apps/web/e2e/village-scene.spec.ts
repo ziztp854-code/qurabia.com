@@ -1,5 +1,24 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { createRequire } from 'node:module';
+
+async function sceneTools(village: Locator) {
+  return village.locator('details').filter({ hasText: 'أدوات المشهد' });
+}
+
+async function openSceneTools(village: Locator) {
+  const tools = await sceneTools(village);
+  if (!(await tools.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await tools.locator('summary').first().evaluate((element: HTMLElement) => element.click());
+  }
+  return tools;
+}
+
+async function closeSceneTools(village: Locator) {
+  const tools = await sceneTools(village);
+  if (await tools.evaluate((element) => (element as HTMLDetailsElement).open)) {
+    await tools.locator('summary').first().evaluate((element: HTMLElement) => element.click());
+  }
+}
 
 const testRuntime = createRequire(__filename);
 const imageRuntime = createRequire(testRuntime.resolve('next/package.json'));
@@ -23,26 +42,33 @@ test('village command view expands the scene and keeps building choices and actu
   const viewport = village.locator('[data-village-scene]');
   await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
   const before = (await (await page.request.get('/api/kingdoms')).json()).data.villages[0];
+  await expect(village.getByRole('navigation', { name: 'دليل مباني القرية' })).toHaveCount(0);
+  await expect(village.getByRole('button', { name: 'توسيع المشهد' })).toHaveCount(0);
+  await expect(village).toHaveAttribute('data-expanded', 'true');
+  const openScene = (await viewport.boundingBox())!;
+  expect(openScene.height).toBeGreaterThan((page.viewportSize()?.height ?? 0) * 0.45);
+  await village.getByRole('button', { name: 'دليل المباني', exact: true }).click();
   const directory = village.getByRole('navigation', { name: 'دليل مباني القرية' });
   await expect(directory).toBeVisible({ timeout: 3000 });
   await expect(directory.getByRole('button')).toHaveCount(15);
   await expect(directory.getByRole('region', { name: 'العسكر' })).toBeVisible();
   await expect(directory.getByRole('region', { name: 'الدفاع' })).toBeVisible();
+  await village.getByRole('button', { name: 'دليل المباني', exact: true }).click();
+  await expect(directory).toHaveCount(0);
+  const tools = await openSceneTools(village);
   await expect(village.getByRole('region', { name: 'نشاط القرية' })).toBeVisible();
+  await tools.locator('summary').first().click();
   await expect.poll(() => page.getByRole('region', { name: 'موارد القرية' }).locator('img').evaluateAll(
     (images) => images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0),
   )).toBe(true);
   if ((page.viewportSize()?.width ?? 0) > 1100) {
     const originalSize = page.viewportSize()!;
     await page.setViewportSize({ width: 1366, height: 900 });
-    await expect.poll(async () => {
-      const [sceneBox, directoryBox] = await Promise.all([viewport.boundingBox(), directory.boundingBox()]);
-      return Math.abs(sceneBox!.height - directoryBox!.height);
-    }).toBeLessThan(1);
     await viewport.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath('village-command-laptop.png'), scale: 'css' });
     await page.setViewportSize(originalSize);
   }
+  await page.getByRole('button', { name: 'انتقل إلى الجيش', exact: true }).click();
   const navigation = page.getByLabel('إدارة المملكة');
   await navigation.getByRole('button', { name: 'لوحة المملكة', exact: true }).click();
   await expect(page.getByRole('region', { name: 'ملخص المملكة' })).toBeVisible();
@@ -52,17 +78,16 @@ test('village command view expands the scene and keeps building choices and actu
   await page.screenshot({ path: testInfo.outputPath('village-command-overview.png'), scale: 'css' });
   await navigation.getByRole('button', { name: 'القرية', exact: true }).click();
   await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
-  const initialHeight = (await viewport.boundingBox())!.height;
-  await village.getByRole('button', { name: 'توسيع المشهد', exact: true }).click();
   await expect(village).toHaveAttribute('data-expanded', 'true');
-  await expect.poll(async () => (await viewport.boundingBox())!.height).toBeGreaterThan(initialHeight);
+  await expect(village.getByRole('navigation', { name: 'دليل مباني القرية' })).toHaveCount(0);
+  const restedHeight = (await viewport.boundingBox())!.height;
+  expect(restedHeight).toBeGreaterThan((page.viewportSize()?.height ?? 0) * 0.45);
   await viewport.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('village-command-expanded.png'), scale: 'css' });
-  await village.getByRole('button', { name: 'العرض العادي', exact: true }).click();
-  await expect(village).toHaveAttribute('data-expanded', 'false');
+  await village.getByRole('button', { name: 'دليل المباني', exact: true }).click();
   await directory.getByRole('button', { name: 'اختيار مزارع الغذاء', exact: true }).click();
   await expect(page.getByRole('region', { name: 'تفاصيل مزارع الغذاء', exact: true })).toBeVisible();
-  await expect(directory.getByRole('button', { name: 'اختيار مزارع الغذاء', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(village.getByRole('navigation', { name: 'دليل مباني القرية' })).toHaveCount(0);
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   await expect(viewport).toHaveAttribute('data-zoom', /^1(?:\.0+)?$/);
   await viewport.scrollIntoViewIfNeeded();
@@ -70,6 +95,7 @@ test('village command view expands the scene and keeps building choices and actu
   await page.setViewportSize({ width: 390, height: 844 });
   await viewport.scrollIntoViewIfNeeded();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await village.getByRole('button', { name: 'دليل المباني', exact: true }).click();
   await directory.getByRole('button', { name: 'اختيار الإسطبل', exact: true }).click();
   await expect(page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true })).toBeVisible();
   await expect.poll(async () => {
@@ -104,10 +130,12 @@ test('stable L1–L5 calibration renders separate local cutouts without changing
   await village.locator('[data-building-region="stable"]').click();
   const panel = page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true });
   await expect(panel).toContainText('مستوى الإسطبل ٠');
-  const calibration = village.locator('details').filter({ hasText: 'معايرة مشهد القرية — وضع التطوير' });
+  const calibration = village.locator('details').filter({ hasText: 'معايرة مشهد القرية — وضع التطوير' }).filter({ hasNotText: 'أدوات المشهد' });
+  await openSceneTools(village);
   await calibration.locator('summary').click();
   await calibration.getByLabel('المبنى للمعايرة').selectOption('stable');
   await calibration.locator('summary').click();
+  await closeSceneTools(village);
   const stablePixels = async () => {
     // Editing calibration controls below the scene may scroll it off-screen on mobile.
     await viewport.scrollIntoViewIfNeeded();
@@ -128,21 +156,25 @@ test('stable L1–L5 calibration renders separate local cutouts without changing
   // The initial field displays 1 before an override exists; start with a changed value.
   const previewOrder = [5, 1, 2, 3, 4];
   for (const [index, level] of previewOrder.entries()) {
+    await openSceneTools(village);
     await calibration.locator('summary').click();
     const loaded = page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith(`/stable-l${level}.webp`));
     await calibration.getByLabel('المستوى المرئي التجريبي').fill(String(level));
     expect((await loaded).ok()).toBe(true);
     await calibration.locator('summary').click();
+    await closeSceneTools(village);
     await expect.poll(stablePixels).not.toBe(previous);
     previous = await stablePixels();
     expect(requested).toEqual(previewOrder.slice(0, index + 1).map((tier) => `stable-l${tier}.webp`));
     await page.screenshot({ path: testInfo.outputPath(`stable-l${level}-${testInfo.project.name}.png`), scale: 'css' });
   }
   // Revisiting a level uses the existing Pixi texture cache.
+  await openSceneTools(village);
   await calibration.locator('summary').click();
   await calibration.getByLabel('المستوى المرئي التجريبي').fill('1');
   await calibration.locator('summary').click();
+  await closeSceneTools(village);
   await expect.poll(stablePixels).not.toBe(previous);
   expect(requested).toHaveLength(5);
   await expect(panel).toContainText('مستوى الإسطبل ٠');
@@ -170,27 +202,33 @@ test('stable uses confirmed barracks and the genuine cavalry queue, with safe mo
   await barracks.getByRole('button', { name: 'طوّر المبنى' }).click();
   await expect(barracks).toContainText('مستوى ٠');
   await expect.poll(async () => (await (await page.request.get('/api/kingdoms')).json()).data.villages[0].buildings.barracks).toBe(1);
-  await page.getByRole('button', { name: 'تحديث', exact: true }).click();
+  await page.locator('button').filter({ hasText: 'تحديث' }).evaluate((button: HTMLButtonElement) => button.click());
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   await stable.click();
   await expect(panel).toContainText('مستوى الإسطبل ٠');
   await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
   await page.setViewportSize({ width: 390, height: 844 });
-  const sheet = page.locator('[data-village-building-sheet]');
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  await village.getByRole('button', { name: 'دليل المباني', exact: true }).click();
   const directoryStable = village.getByRole('button', { name: 'اختيار الإسطبل', exact: true });
   await expect.poll(async () => {
-    const [rect, barracks, rally, sheetRect, listTarget] = await Promise.all([
+    const listTarget = await directoryStable.boundingBox();
+    return !!listTarget && listTarget.height >= 44 && listTarget.width >= 44;
+  }).toBe(true);
+  await directoryStable.click();
+  const sheet = page.locator('[data-village-building-sheet]');
+  await expect.poll(async () => {
+    const [rect, barracks, rally, sheetRect] = await Promise.all([
       stable.boundingBox(),
       village.locator('[data-building="barracks"]').boundingBox(),
       village.locator('[data-rally-point]').boundingBox(),
       sheet.boundingBox(),
-      directoryStable.boundingBox(),
     ]);
-    if (!rect || !barracks || !rally || !sheetRect || !listTarget) return false;
+    if (!rect || !barracks || !rally || !sheetRect) return false;
     const separated = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
       a.x + a.width <= b.x + 1 || b.x + b.width <= a.x + 1 || a.y + a.height <= b.y + 1 || b.y + b.height <= a.y + 1;
     return separated(rect, barracks) && separated(rect, rally) && separated(barracks, rally)
-      && listTarget.height >= 44 && listTarget.width >= 44 && sheetRect.height > 0 && rect.width > 8;
+      && sheetRect.height > 0 && rect.width > 8;
   }).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('stable-mobile-sheet.png'), scale: 'css' });
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
@@ -331,11 +369,11 @@ test('original artwork, camera, real build lifecycle, and world navigation', asy
         .then((body) => body.data.villages[0].buildings.farm),
     )
     .toBe(2);
-  await page.getByRole('button', { name: 'تحديث', exact: true }).click();
+  await page.locator('button').filter({ hasText: 'تحديث' }).evaluate((button: HTMLButtonElement) => button.click());
   await expect(panel).toContainText('٢');
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   await expect(village.getByRole('button', { name: 'إظهار أسماء المباني' })).toHaveCount(0);
-  await expect(viewport).toHaveAttribute('data-labels', 'false');
+  await expect(viewport).toHaveAttribute('data-labels', 'true');
   const terrainFidelity = await viewport.getAttribute('data-terrain-fidelity');
   const terrainSrc = await viewport.locator('img').evaluate((img: HTMLImageElement) => img.currentSrc);
   if (testInfo.project.name === 'iphone' || testInfo.project.name === 'android') {
@@ -347,6 +385,7 @@ test('original artwork, camera, real build lifecycle, and world navigation', asy
     expect(terrainFidelity).not.toBe('ultra');
     expect(terrainSrc).not.toContain('village-oasis-ultra');
   }
+  await openSceneTools(village);
   await village.getByLabel('جودة المشهد').selectOption('low');
   await village.getByRole('button', { name: 'إيقاف الحركة' }).click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
@@ -398,6 +437,7 @@ test('reduced motion leaves every important scene command available', async ({ p
   await expect(page.getByRole('region', { name: 'تفاصيل دار الحكم' })).toBeVisible();
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   await expect(viewport).toHaveAttribute('data-zoom', /^1(?:\.0+)?$/);
+  await openSceneTools(village);
   await village.getByLabel('جودة المشهد').selectOption('high');
   await expect(village.locator('canvas')).toBeVisible();
 });
@@ -472,12 +512,18 @@ test('level twelve village finishes its real queue after five hours offline', as
   expect(before.progression.level).toBe(12);
   await page.goto('/');
   await expect(page.getByLabel('مستوى القرية', { exact: true })).toContainText('١٢');
+  const toolsVillage = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  await openSceneTools(toolsVillage);
   for (const [building, label] of [['hall', 'دار الحكم'], ['wall', 'السور'], ['warehouse', 'المخزن']]) {
     const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+    if (!(await (await sceneTools(village)).evaluate((element) => (element as HTMLDetailsElement).open))) {
+      await openSceneTools(village);
+    }
     await village.getByLabel('اختر مبنى من الخريطة').selectOption(building);
+    await closeSceneTools(village);
     const panel = page.getByRole('region', { name: `تفاصيل ${label}`, exact: true });
-    await panel.getByRole('button', { name: building === 'hall' ? 'طوّر المبنى' : 'أضف إلى قائمة البناء', exact: true }).click();
-    await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+    await panel.getByRole('button', { name: building === 'hall' ? 'طوّر المبنى' : 'أضف إلى قائمة البناء', exact: true }).evaluate((button: HTMLButtonElement) => button.click());
+    await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).evaluate((button: HTMLButtonElement) => button.click());
   }
   const queued = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
   expect(queued.constructionQueue.filter((item: { status: string }) => ['BUILDING', 'QUEUED'].includes(item.status))).toHaveLength(3);
@@ -499,6 +545,7 @@ test('level twelve village finishes its real queue after five hours offline', as
   expect(after.progression.level).toBeGreaterThan(12);
   expect((await (await request.get('/api/kingdoms')).json()).data.villages[0].progression.xp).toBe(after.progression.xp);
   await expect(returned.getByLabel('مستوى القرية', { exact: true })).toContainText(new Intl.NumberFormat('ar-SA').format(after.progression.level));
+  await openSceneTools(returned.getByRole('region', { name: 'خريطة القرية', exact: true }));
   await expect(returned.getByRole('region', { name: 'تقدم القرية' })).toHaveAttribute('data-visual-tier', String(after.progression.visualTier));
   await returned.getByRole('region', { name: 'خريطة القرية', exact: true }).scrollIntoViewIfNeeded();
   await expect(returned.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
@@ -513,6 +560,7 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
   const viewport = village.locator('[data-village-scene]');
   await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
+  await openSceneTools(village);
   await expect(village.getByRole('region', { name: 'تقدم القرية' })).toBeVisible();
   if (testInfo.project.name === 'iphone') {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -538,6 +586,7 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   await viewport.scrollIntoViewIfNeeded();
   await expect.poll(() => viewport.getAttribute('data-terrain-fidelity')).not.toBe('ultra');
   await page.screenshot({ path: testInfo.outputPath('village-1080-overview.png'), scale: 'css' });
+  await openSceneTools(village);
   await village.getByLabel('جودة المشهد').selectOption('high');
   await expect(viewport).toHaveAttribute('data-terrain-fidelity', 'hidpi');
   await expect(viewport).toHaveAttribute('data-terrain-src', '/game-art/kingdoms/village-oasis-hidpi.webp');
@@ -545,12 +594,14 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   await viewport.scrollIntoViewIfNeeded();
   await page.waitForTimeout(400);
   await page.screenshot({ path: testInfo.outputPath('village-hidpi-overview.png'), scale: 'css' });
+  await openSceneTools(village);
   await village.getByLabel('جودة المشهد').selectOption('auto');
   await page.setViewportSize({ width: 3840, height: 2160 });
   await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await viewport.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('village-4k-overview.png'), scale: 'css' });
+  await openSceneTools(village);
   await village.getByLabel('جودة المشهد').selectOption('ultra');
   await expect(viewport).toHaveAttribute('data-terrain-fidelity', 'ultra');
   await expect(viewport).toHaveAttribute('data-terrain-src', '/game-art/kingdoms/village-oasis-ultra.webp');

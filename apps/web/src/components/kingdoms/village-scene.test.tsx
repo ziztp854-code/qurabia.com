@@ -171,7 +171,7 @@ describe('village scene rendering', () => {
     );
     expect(screen.getByRole('alert', { name: 'هجوم قادم' })).toBeInTheDocument();
     expect(screen.getByLabelText('مؤشر تهديد عسكري عند البوابة')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /القوات القادمة/ }).closest('section')).toHaveTextContent('هجوم قادم');
+    expect(screen.getByRole('heading', { name: /القوات القادمة/, hidden: true }).closest('section')).toHaveTextContent('هجوم قادم');
     expect(document.body.innerHTML).not.toContain('commanderId');
   });
 
@@ -184,7 +184,7 @@ describe('village scene rendering', () => {
     expect(screen.queryByRole('button', { name: 'تصغير القرية' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'عرض القرية بالكامل' })).not.toBeInTheDocument();
     expect(container.querySelector('[data-fixed-view]')).toHaveAttribute('data-fixed-view', 'true');
-    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
+    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'true');
     expect(screen.getByRole('button', { name: /^دار الحكم/ })).toHaveAttribute('aria-pressed', 'true');
   });
 });

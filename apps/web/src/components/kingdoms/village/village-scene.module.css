@@ -1,23 +1,94 @@
 .scene {
+  position: relative;
+  display: block;
   min-inline-size: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+  min-block-size: 0;
+  block-size: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
 }
 .scene[data-visual-tier] {
   --village-tier-emphasis: color-mix(in srgb, var(--gold) 18%, transparent);
 }
 .workspace {
+  position: absolute;
+  inset: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 268px;
-  border-block-start: 1px solid var(--border);
+  grid-template-columns: minmax(0, 1fr);
+  min-block-size: 0;
+}
+.lead {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: 4.35rem;
+  inset-inline: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.lead > * {
+  pointer-events: auto;
+}
+.header {
+  position: absolute;
+  z-index: 6;
+  inset-block-start: 4.35rem;
+  inset-inline-end: var(--space-3);
+  inline-size: auto;
+  padding: 0;
+  background: transparent;
 }
 .headerActions { display: flex; align-items: center; flex-wrap: wrap; justify-content: end; gap: var(--space-3); }
 .headerActions button { min-block-size: 44px; white-space: nowrap; }
-.scene[data-expanded='true'] .workspace { grid-template-columns: minmax(0, 1fr); }
-.scene[data-expanded='true'] [data-village-scene] { block-size: clamp(520px, 82dvh, 900px); }
-.scene[data-expanded='true'] nav[aria-label='دليل مباني القرية'] { border-inline-start: 0; border-block-start: 1px solid var(--border); max-block-size: none; }
+.tools {
+  position: relative;
+  z-index: calc(var(--z-dialog) + 1);
+}
+.tools > summary {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  cursor: pointer;
+  list-style: none;
+}
+.tools > summary::-webkit-details-marker { display: none; }
+.toolsPanel {
+  position: fixed;
+  z-index: 80;
+  inset-inline-end: var(--space-3);
+  inset-block-start: 8rem;
+  inline-size: min(24rem, 80vw);
+  max-block-size: min(70dvh, 640px);
+  overflow: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--background) 55%, transparent);
+}
+.directoryLayer {
+  position: absolute;
+  z-index: 4;
+  inset-block: var(--space-2);
+  inset-inline-start: var(--space-2);
+  inline-size: min(18rem, 86%);
+  overflow: auto;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--background) 55%, transparent);
+}
+.directoryLayer nav {
+  max-block-size: none;
+  border: 0;
+}
 .touchDock {
   display: none;
 }
@@ -195,21 +266,36 @@
   .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
-  .scene {
-    display: flex;
-    flex-direction: column;
-  }
-  .lead { order: 0; }
-  .header { order: 1; }
-  .workspace { order: 2; }
-  .scene > :not(.lead):not(.header):not(.workspace) { order: 3; }
+  .lead { inset-block-start: 7.5rem; }
   .header {
-    padding: var(--space-3);
+    inset-block-start: auto;
+    inset-block-end: 4.75rem;
+    inset-inline-end: var(--space-2);
+    padding: 0;
     align-items: flex-start;
     flex-wrap: wrap;
   }
+  :global([data-sheet='building']) .header {
+    inset-block-end: calc(4.5rem + min(24dvh, 240px) + 0.35rem);
+  }
+  :global([data-sheet='rally']) .header {
+    inset-block-start: 7.5rem;
+    inset-block-end: auto;
+  }
+  .toolsPanel {
+    inset-block-start: 7.5rem;
+    inset-block-end: 8.75rem;
+    max-block-size: none;
+  }
+  :global([data-sheet='building']) .toolsPanel {
+    inset-block-end: calc(4.5rem + min(24dvh, 240px) + 4.25rem);
+  }
+  :global([data-sheet='rally']) .toolsPanel {
+    inset-block-start: 11rem;
+    inset-block-end: auto;
+    max-block-size: min(46dvh, 420px);
+  }
   .headerActions { margin-inline-start: auto; gap: var(--space-2); }
-  .scene[data-expanded='true'] [data-village-scene] { block-size: clamp(460px, 78dvh, 720px); }
   .settings {
     gap: var(--space-2);
   }

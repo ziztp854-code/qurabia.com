@@ -1,8 +1,8 @@
 .stage {
   position: relative;
   inline-size: 100%;
-  block-size: clamp(480px, calc(100dvh - 11rem), 820px);
-  max-inline-size: 1680px;
+  block-size: 100%;
+  max-inline-size: none;
   margin-inline: auto;
   overflow: hidden;
   background: var(--background);
@@ -299,20 +299,18 @@
 .stage[data-debug-hitboxes='true'] .hotspot {
   outline: 1px dashed var(--foreground);
 }
-@media (max-width: 700px) {
-  .stage {
-    block-size: clamp(420px, 62dvh, 560px);
+@media (max-width: 1099px) {
+  .stage[data-labels='true'] .hotspot:not(:hover):not(:focus-visible):not([aria-pressed='true']) .label {
+    visibility: hidden;
   }
+}
+@media (max-width: 700px) {
   .label {
     max-width: 210px;
     font-size: 13px;
   }
 }
 @media (min-width: 2560px) {
-  .stage {
-    block-size: clamp(640px, 62dvh, 960px);
-    max-inline-size: 1760px;
-  }
   .label {
     font-size: 16px;
     max-width: 280px;

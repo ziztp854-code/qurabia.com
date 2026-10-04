@@ -103,7 +103,12 @@ export function KingdomsClient({
     setTab('village');
   };
   return (
-    <div className={`${styles.shell} ${view?.player ? styles.playing : ''}`} data-screen={tab} dir="rtl">
+    <div
+      className={`${styles.shell} ${view?.player ? styles.playing : ''}`}
+      data-screen={tab}
+      data-village-stage={view?.player && tab === 'village' ? 'live' : undefined}
+      dir="rtl"
+    >
       <div className={styles.hud}>
         <header className={styles.hero}>
           <div>
@@ -275,17 +280,19 @@ export function KingdomsClient({
           )}
           {view.player && village && props && (
             <>
-              <GlobalMilitaryAlert
-                incoming={view.incoming ?? []}
-                villages={view.villages}
-                view={view}
-                onShowMap={showMap}
-                onRefresh={() => void game.refresh()}
-                onFocusVillage={(id) => {
-                  setVillageId(id);
-                  setTab('village');
-                }}
-              />
+              {tab !== 'village' && (
+                <GlobalMilitaryAlert
+                  incoming={view.incoming ?? []}
+                  villages={view.villages}
+                  view={view}
+                  onShowMap={showMap}
+                  onRefresh={() => void game.refresh()}
+                  onFocusVillage={(id) => {
+                    setVillageId(id);
+                    setTab('village');
+                  }}
+                />
+              )}
               {view.player.protectionUntil > view.serverNow && (
                 <p className={styles.protection}>
                   حماية المملكة الجديدة حتى {date(view.player.protectionUntil)}. استثمر هذه الفترة
@@ -363,7 +370,7 @@ export function KingdomsClient({
                   {tab === 'throne' && <ThronePanel {...props} />}
                 </section>
               </div>
-              <p className={styles.cost}>آخر تحديث: {date(view.serverNow)}</p>
+              <p className={`${styles.cost} ${styles.screenMeta}`}>آخر تحديث: {date(view.serverNow)}</p>
             </>
           )}
         </>

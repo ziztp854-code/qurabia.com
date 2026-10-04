@@ -218,6 +218,7 @@ export function VillageIncomingAlert({
     <>
       <section
         className={styles.alert}
+        data-placement="ribbon"
         data-severity={lead.severity}
         data-pulse={lead.severity === 'CRITICAL' || undefined}
         role={lead.kind === 'hostile' ? 'alert' : 'status'}
@@ -233,8 +234,7 @@ export function VillageIncomingAlert({
                 إلى {village.name}
                 {lead.source ? ` · المصدر: ${lead.source.name}` : ''}
                 {extra > 0 ? ` · +${extra} حركات أخرى` : ''}
-              </p>
-              <p className={styles.meta} aria-live="off">
+                {' · '}
                 <ArrivalText arrivesAt={lead.arrivesAt} now={now} label={incomingMissionLabels[lead.mission]} />
               </p>
             </div>
