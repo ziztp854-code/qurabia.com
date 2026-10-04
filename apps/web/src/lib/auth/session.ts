@@ -10,29 +10,9 @@ import {
   type AppRole,
 } from './authorization';
 import { sanitizeCallbackPath } from './redirects';
+import { isSessionUserCurrent, type StoredIdentity } from './session-user';
 
-type SessionIdentity = {
-  id: string;
-  tokenVersion: number;
-};
-
-type StoredIdentity = {
-  id: string;
-  role: string;
-  status: string;
-  tokenVersion: number;
-};
-
-export function isSessionUserCurrent(
-  sessionUser: SessionIdentity,
-  storedUser: StoredIdentity | null,
-): storedUser is StoredIdentity {
-  return (
-    storedUser?.status === 'ACTIVE' &&
-    storedUser.id === sessionUser.id &&
-    storedUser.tokenVersion === sessionUser.tokenVersion
-  );
-}
+export { isSessionUserCurrent } from './session-user';
 
 export async function getCurrentSession() {
   try {

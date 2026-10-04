@@ -3,12 +3,35 @@
 import { KeyRound, LogIn } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Button, Alert, Input, PasswordInput, Spinner } from '@/components/ui';
 import { sanitizeCallbackPath } from '@/lib/auth/redirects';
 import { signInSchema } from '@/lib/auth/validation';
 
 const genericMessage = 'تعذّر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.';
+const googleMessage = 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.';
+
+function returnErrorMessage(error: string | null) {
+  switch (error) {
+    case null:
+    case '':
+      return '';
+    case 'OAuthAccountNotLinked':
+      return 'استخدم طريقة تسجيل الدخول الأصلية لهذا الحساب ثم حاول مرة أخرى.';
+    case 'OAuthSignin':
+    case 'OAuthCallback':
+    case 'OAuthCreateAccount':
+    case 'Callback':
+      return googleMessage;
+    case 'AccessDenied':
+    case 'account':
+      return 'الحساب غير متاح حاليًا.';
+    case 'session-revoked':
+      return 'انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى.';
+    default:
+      return genericMessage;
+  }
+}
 
 export function SignInForm({
   googleEnabled = false,
@@ -22,12 +45,35 @@ export function SignInForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = sanitizeCallbackPath(searchParams.get('next') || defaultNext);
-  const accountError = searchParams.get('error') === 'account';
-  const [error, setError] = useState(accountError ? 'الحساب غير متاح حاليًا.' : '');
-  const [pending, setPending] = useState(false);
+  const returnError = searchParams.get('error');
+  const [previousReturnError, setPreviousReturnError] = useState(returnError);
+  const [error, setError] = useState(returnErrorMessage(returnError));
+  const [pending, setPending] = useState<'google' | 'credentials' | null>(null);
+  const inFlight = useRef(false);
+
+  if (previousReturnError !== returnError) {
+    setPreviousReturnError(returnError);
+    setError(returnErrorMessage(returnError));
+  }
+
+  async function onGoogleSignIn() {
+    if (!googleEnabled || inFlight.current) return;
+    inFlight.current = true;
+    setError('');
+    setPending('google');
+    try {
+      await signIn('google', { callbackUrl: next });
+    } catch {
+      setError(googleMessage);
+    } finally {
+      inFlight.current = false;
+      setPending(null);
+    }
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (inFlight.current) return;
     setError('');
 
     const formData = new FormData(event.currentTarget);
@@ -41,7 +87,8 @@ export function SignInForm({
       return;
     }
 
-    setPending(true);
+    inFlight.current = true;
+    setPending('credentials');
     try {
       const result = await signIn('credentials', {
         ...parsed.data,
@@ -59,7 +106,8 @@ export function SignInForm({
     } catch {
       setError(genericMessage);
     } finally {
-      setPending(false);
+      inFlight.current = false;
+      setPending(null);
     }
   }
 
@@ -71,10 +119,11 @@ export function SignInForm({
           type="button"
           variant="outline"
           fullWidth
-          disabled={!googleEnabled || pending}
-          onClick={() => signIn('google', { callbackUrl: next })}
+          disabled={!googleEnabled || pending !== null}
+          aria-busy={pending === 'google'}
+          onClick={onGoogleSignIn}
         >
-          <KeyRound />
+          {pending === 'google' ? <Spinner label="جارٍ تسجيل الدخول عبر Google" /> : <KeyRound />}
           دخول المضيف عبر Google
         </Button>
       )}
@@ -85,8 +134,14 @@ export function SignInForm({
       )}
       <Input label="البريد الإلكتروني" name="email" type="email" autoComplete="email" required />
       <PasswordInput label="كلمة المرور" name="password" autoComplete="current-password" required />
-      <Button type="submit" size="lg" fullWidth disabled={pending} aria-busy={pending}>
-        {pending ? <Spinner label="جارٍ تسجيل الدخول" /> : <LogIn />}
+      <Button
+        type="submit"
+        size="lg"
+        fullWidth
+        disabled={pending !== null}
+        aria-busy={pending === 'credentials'}
+      >
+        {pending === 'credentials' ? <Spinner label="جارٍ تسجيل الدخول" /> : <LogIn />}
         دخول بالبريد
       </Button>
     </form>
