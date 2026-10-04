@@ -30,11 +30,22 @@
 .selection span { display: block; font-size: 0.8rem; }
 .list {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   padding: var(--space-1);
   min-block-size: 0;
+}
+.district {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.district h4 {
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.8rem;
 }
 .item {
   position: relative;
@@ -67,10 +78,8 @@
 @media (max-width: 1100px) {
   .directory { border-inline-start: 0; border-block-start: 1px solid var(--border); max-block-size: none; }
   .selection { min-block-size: 0; }
-  .list { grid-auto-flow: column; grid-auto-columns: minmax(174px, 1fr); grid-template-rows: repeat(2, auto); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; }
-  .item { scroll-snap-align: start; }
 }
 @media (max-width: 700px) {
   .directory { padding: var(--space-3); gap: var(--space-2); }
-  .list { grid-auto-columns: 190px; }
+  .item { min-block-size: 44px; }
 }

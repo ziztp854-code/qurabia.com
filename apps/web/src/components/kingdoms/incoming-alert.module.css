@@ -11,7 +11,15 @@
 }
 .alert[data-severity='CRITICAL'] {
   border-inline-start-color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  background: color-mix(in srgb, var(--danger) 18%, var(--surface));
+  color: var(--danger);
+}
+.countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.alert[data-severity='CRITICAL'] .countdown {
+  font-size: 1.15rem;
 }
 .alert[data-severity='DANGER'] {
   border-inline-start-color: var(--danger);

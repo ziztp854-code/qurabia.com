@@ -311,6 +311,8 @@ export type KingdomsView = {
   player: KingdomPlayer | null;
   villages: Village[];
   productionRates: Record<string, Resources>;
+  /** Gross hourly yield and food upkeep behind productionRates. Optional for older fixtures. */
+  productionBreakdown?: Record<string, { gross: Resources; upkeep: number; net: Resources }>;
   map: {
     id: string;
     ownerId: string;

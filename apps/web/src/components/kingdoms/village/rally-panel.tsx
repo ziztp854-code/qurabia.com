@@ -185,9 +185,9 @@ export function RallyPanel({
           </p>
         ))}
       </section>
-      <section className={styles.section} aria-label="الحملات الصادرة">
+      <section className={styles.section} aria-label="القوات الخارجة">
         <h3>
-          <Flag size={16} aria-hidden="true" /> الحملات الصادرة
+          <Flag size={16} aria-hidden="true" /> القوات الخارجة
         </h3>
         {command.outgoing.length ? (
           command.outgoing.map((row) => (
@@ -249,29 +249,6 @@ export function RallyPanel({
           <p className={styles.muted}>لا قوات عائدة</p>
         )}
       </section>
-      <section className={styles.section} aria-label="الهجمات القادمة">
-        <h3>
-          <Swords size={16} aria-hidden="true" /> الهجمات القادمة
-        </h3>
-        {command.attacks.length ? (
-          command.attacks.map((threat) => (
-            <article className={styles.threat} key={threat.id} data-severity={threat.severity}>
-              <strong>
-                {incomingMissionLabels[threat.mission]} · {threatSeverityLabels[threat.severity]}
-              </strong>
-              {threat.source && <span>{threat.source.name}</span>}
-              <Arrival arrivesAt={threat.arrivesAt} now={now} label="الوصول" />
-              {onShowMap && (
-                <button type="button" onClick={() => onShowMap(village.id)}>
-                  عرض على الخريطة
-                </button>
-              )}
-            </article>
-          ))
-        ) : (
-          <p className={styles.muted}>لا هجمات قادمة</p>
-        )}
-      </section>
       <section className={styles.section} aria-label="التعزيزات">
         <h3>
           <Users size={16} aria-hidden="true" /> التعزيزات
@@ -299,6 +276,29 @@ export function RallyPanel({
         )}
         <p className={styles.muted}>استدعاء الجيش أثناء المسير غير متاح. استدعاء التعزيزات المتمركزة يبقى من لوحة الجيش.</p>
       </section>
+      <section className={styles.section} aria-label="الهجمات القادمة">
+        <h3>
+          <Swords size={16} aria-hidden="true" /> الهجمات القادمة
+        </h3>
+        {command.attacks.length ? (
+          command.attacks.map((threat) => (
+            <article className={styles.threat} key={threat.id} data-severity={threat.severity}>
+              <strong>
+                {incomingMissionLabels[threat.mission]} · {threatSeverityLabels[threat.severity]}
+              </strong>
+              {threat.source && <span>{threat.source.name}</span>}
+              <Arrival arrivesAt={threat.arrivesAt} now={now} label="الوصول" />
+              {onShowMap && (
+                <button type="button" onClick={() => onShowMap(village.id)}>
+                  عرض على الخريطة
+                </button>
+              )}
+            </article>
+          ))
+        ) : (
+          <p className={styles.muted}>لا هجمات قادمة</p>
+        )}
+      </section>
       <section className={styles.section} aria-label="الاستطلاع">
         <h3>
           <Binoculars size={16} aria-hidden="true" /> الاستطلاع
@@ -323,6 +323,23 @@ export function RallyPanel({
           <p className={styles.muted}>لا استطلاع صادر أو قادم</p>
         )}
       </section>
+      {command.commanders && (
+        <section className={styles.section} aria-label="القادة">
+          <h3>
+            <Users size={16} aria-hidden="true" /> القادة
+          </h3>
+          {command.commanders.length ? (
+            command.commanders.map((commander) => (
+              <p className={styles.row} key={commander.id}>
+                <span>{commander.name}</span>
+                <span>{commanderStatusLabels[commander.status]}</span>
+              </p>
+            ))
+          ) : (
+            <p className={styles.muted}>لا قادة في المملكة</p>
+          )}
+        </section>
+      )}
       <section className={styles.section} aria-label="التدريب">
         <h3>
           <Swords size={16} aria-hidden="true" /> التدريب
@@ -347,23 +364,6 @@ export function RallyPanel({
           </>
         )}
       </section>
-      {command.commanders && (
-        <section className={styles.section} aria-label="القادة">
-          <h3>
-            <Users size={16} aria-hidden="true" /> القادة
-          </h3>
-          {command.commanders.length ? (
-            command.commanders.map((commander) => (
-              <p className={styles.row} key={commander.id}>
-                <span>{commander.name}</span>
-                <span>{commanderStatusLabels[commander.status]}</span>
-              </p>
-            ))
-          ) : (
-            <p className={styles.muted}>لا قادة في المملكة</p>
-          )}
-        </section>
-      )}
       <section className={styles.section} aria-label="التقارير العسكرية">
         <h3>
           <ScrollText size={16} aria-hidden="true" /> التقارير العسكرية

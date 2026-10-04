@@ -112,6 +112,13 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         onShowMap={onShowMap}
         onRefresh={onRefresh}
       />
+      <nav className={styles.touchDock} aria-label="أهداف اللمس السريعة">
+        <button type="button" aria-pressed={selected === 'barracks'} onClick={() => choose('barracks')}>الثكنة</button>
+        <button type="button" aria-pressed={selected === 'stable'} onClick={() => choose('stable')}>الإسطبل</button>
+        <button type="button" aria-pressed={selected === 'rally'} onClick={() => choose('rally')}>التجمع</button>
+        <button type="button" onClick={() => onWorldMap?.()}>البوابة</button>
+        <button type="button" aria-pressed={selected === 'wall'} onClick={() => choose('wall')}>البرج</button>
+      </nav>
       <div className={styles.workspace}>
         <VillageCanvas
           ref={scene}

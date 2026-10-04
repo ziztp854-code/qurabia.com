@@ -37,7 +37,7 @@ import {
   villageBuildingSceneStatus,
 } from '@/lib/kingdoms/village/buildingConfig';
 import { createCamera } from '@/lib/kingdoms/village/cameraMath';
-import { getBuildingRect, getVillageRect, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
+import { getBuildingRect, interactionRects, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type {
   VillageCanvasProps,
@@ -308,6 +308,8 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             Math.max(0, ((now - build.startedAt) / (build.endsAt - build.startedAt)) * 100),
           )
         : undefined;
+    const cameraScale = createCamera(measuredStage).scale || 1;
+    const hits = interactionRects(44 / cameraScale);
     const terrainFidelity = villageAssetFidelity(
       deviceQuality(props, measuredStage.width, measuredStage.height).mode,
     );
@@ -393,7 +395,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   type="button"
                   key={building}
                   className={styles.hotspot}
-                  style={rectStyle(getBuildingRect(building, props.debug))}
+                  style={rectStyle(hits[building] ?? getBuildingRect(building, props.debug))}
                     aria-label={
                       state === sceneStatus
                         ? `${presentation.name}، ${state}`
@@ -432,7 +434,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
-              style={rectStyle(getVillageRect('stable', props.debug))}
+              style={rectStyle(hits.stable)}
               aria-label={`الإسطبل، المستوى ${props.village.buildings.stable.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
               aria-describedby={`${descriptionId}-stable`}
               aria-pressed={props.selected === 'stable'}
@@ -455,7 +457,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region} ${styles.rally}`}
-              style={rectStyle(getVillageRect('rally', props.debug))}
+              style={rectStyle(hits.rally)}
               aria-label="نقطة تجمع الجيوش، مركز القيادة العسكرية"
               aria-pressed={props.selected === 'rally'}
               data-building-region="rally"
@@ -481,7 +483,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 type="button"
                 key={region.id}
                 className={`${styles.hotspot} ${styles.region}`}
-                style={rectStyle(villageRegions[region.id])}
+                style={rectStyle(region.id === 'tower' ? hits.tower : villageRegions.workshop)}
                 aria-label={region.name}
                 data-building-region={region.id}
                 onClick={() => choose(region.building)}
@@ -492,7 +494,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <button
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
-              style={rectStyle(villageRegions.gate)}
+              style={rectStyle(hits.gate)}
               aria-label="البوابة الرئيسية، خريطة العالم"
               data-building-region="gate"
               data-threat={props.showThreatMarker || undefined}
@@ -509,13 +511,12 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             {build && (
               <div
                 className={styles.construction}
+                data-construction-asset="MISSING_ASSET"
                 style={{
                   left:
                     getBuildingRect(build.building, props.debug).x +
                     getBuildingRect(build.building, props.debug).width / 2,
-                  top:
-                    getBuildingRect(build.building, props.debug).y +
-                    getBuildingRect(build.building, props.debug).height,
+                  top: getBuildingRect(build.building, props.debug).y,
                 }}
               >
                 <Hammer size={14} aria-hidden="true" />

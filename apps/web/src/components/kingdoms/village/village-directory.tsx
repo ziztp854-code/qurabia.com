@@ -1,9 +1,27 @@
 'use client';
 
 import { useId } from 'react';
-import { Castle, Check, Coins, Shield } from 'lucide-react';
-import { buildingKeys } from '@/lib/kingdoms/types';
-import { buildingGroups, buildingStatusLabels, getBuildingPresentation } from '@/lib/kingdoms/village/buildingConfig';
+import {
+  Castle,
+  Coins,
+  DoorOpen,
+  Flag,
+  Mountain,
+  Pickaxe,
+  Shield,
+  Store,
+  Swords,
+  Trees,
+  TowerControl,
+  Warehouse,
+  Wheat,
+  type LucideIcon,
+} from 'lucide-react';
+import {
+  buildingStatusLabels,
+  getBuildingPresentation,
+  villageDistricts,
+} from '@/lib/kingdoms/village/buildingConfig';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { number, type GameProps } from '../shared';
 import styles from './village-directory.module.css';
@@ -12,57 +30,94 @@ type Props = Pick<GameProps, 'view' | 'village'> & {
   selected: VillageSelection | null;
   onSelect: (building: VillageSelection) => void;
 };
-const entries: VillageSelection[] = buildingKeys.flatMap((building): VillageSelection[] =>
-  building === 'barracks' ? [building, 'stable', 'rally'] : building === 'stable' ? [] : [building]);
-const groupIcons = { economy: Coins, military: Shield, civic: Castle };
+
+const icons: Record<string, LucideIcon> = {
+  hall: Castle,
+  embassy: Flag,
+  barracks: Swords,
+  stable: Swords,
+  rally: Flag,
+  market: Store,
+  warehouse: Warehouse,
+  treasury: Coins,
+  farm: Wheat,
+  lumber: Trees,
+  quarry: Mountain,
+  mine: Pickaxe,
+  wall: Shield,
+  gate: DoorOpen,
+  tower: TowerControl,
+};
 
 export function VillageDirectory({ view, village, selected, onSelect }: Props) {
   const id = useId();
-  const presentation = (building: VillageSelection) => {
-    const base = getBuildingPresentation(
-      building === 'rally' ? 'barracks' : building,
-      village,
-      view.config,
-    );
-    if (building === 'stable')
-      return { ...base, description: 'تدريب الفرسان وفق مستوى الإسطبل وسرعته' };
-    if (building === 'rally')
-      return {
-        ...base,
-        name: 'نقطة تجمع الجيوش',
-        description: 'مركز القيادة العسكرية فوق القوات والحركات الحالية',
-      };
-    return base;
-  };
-  const active = selected ? presentation(selected) : null;
+  const active = selected
+    ? getBuildingPresentation(selected === 'rally' ? 'barracks' : selected, village, view.config)
+    : null;
   return (
     <nav className={styles.directory} aria-label="دليل مباني القرية">
       <div className={styles.heading}>
         <h3>مباني القرية</h3>
-        <span>{number(entries.length)} موقعًا</span>
+        <span>خمس مناطق</span>
       </div>
       <p className={styles.selection} role="status" aria-live="polite">
-        {active ? <><strong>{active.name}</strong><span>{active.description}</span></> : 'اختر مبنى من الدليل أو اضغط عليه في المشهد.'}
+        {active && selected ? (
+          <>
+            <strong>{selected === 'rally' ? 'نقطة تجمع الجيوش' : active.name}</strong>
+            <span>
+              {selected === 'rally' ? 'مركز القيادة العسكرية' : active.description}
+              {' · '}
+              {active.level > 0 ? `المستوى ${number(selected === 'rally' ? village.buildings.barracks : active.level)}` : 'لم يُبنَ'}
+              {' · '}
+              {buildingStatusLabels[active.status]}
+            </span>
+          </>
+        ) : (
+          'اختر مبنى من الدليل أو اضغط عليه في المشهد.'
+        )}
       </p>
       <div className={styles.list}>
-        {entries.map((building) => {
-          const item = presentation(building);
-          const group = building === 'stable' || building === 'rally' ? 'military' : buildingGroups[building];
-          const Icon = groupIcons[group];
-          return (
-            <button key={building} type="button" className={styles.item}
-              aria-label={`اختيار ${item.name}`} aria-describedby={`${id}-${building}-level ${id}-${building}`}
-              aria-pressed={selected === building} data-state={item.status}
-              onClick={() => onSelect(building)}>
-              <Icon className={styles.icon} size={19} aria-hidden="true" />
-              <span className={styles.name}>{item.name}
-                <small id={`${id}-${building}-level`}>{item.level > 0 ? `مستوى ${number(item.level)}` : 'لم يُبنَ'}</small>
-              </span>
-              <span id={`${id}-${building}`} className={styles.state}>{buildingStatusLabels[item.status]}</span>
-              {selected === building && <Check className={styles.check} size={15} aria-hidden="true" />}
-            </button>
-          );
-        })}
+        {villageDistricts.map((district) => (
+          <section key={district.id} className={styles.district} aria-label={district.label} data-district={district.id}>
+            <h4>{district.label}</h4>
+            {district.entries.map((entry) => {
+              const select = entry.select;
+              const presented = getBuildingPresentation(
+                select === 'rally' ? 'barracks' : select,
+                village,
+                view.config,
+              );
+              const name = 'name' in entry ? entry.name : select === 'rally' ? 'نقطة تجمع الجيوش' : presented.name;
+              const note = 'note' in entry ? entry.note : select === 'rally' ? 'قيادة عسكرية بلا مبنى مستقل' : null;
+              const level = select === 'rally' ? 0 : presented.level;
+              const Icon = icons[entry.id] ?? Castle;
+              const upgrade = presented.status === 'upgrade' && select !== 'rally' && !note;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className={styles.item}
+                  aria-label={`اختيار ${name}`}
+                  aria-describedby={`${id}-${entry.id}`}
+                  aria-pressed={selected === select && !note}
+                  data-state={presented.status}
+                  data-upgrade={upgrade ? 'true' : undefined}
+                  onClick={() => onSelect(select)}
+                >
+                  <Icon className={styles.icon} size={19} aria-hidden="true" />
+                  <span className={styles.name}>
+                    {name}
+                    <small>{note ? note : level > 0 ? `مستوى ${number(level)}` : 'لم يُبنَ'}</small>
+                  </span>
+                  <span id={`${id}-${entry.id}`} className={styles.state}>
+                    {note ? 'تابع للسور' : buildingStatusLabels[presented.status]}
+                    {upgrade ? ' · قابل للترقية' : ''}
+                  </span>
+                </button>
+              );
+            })}
+          </section>
+        ))}
       </div>
     </nav>
   );

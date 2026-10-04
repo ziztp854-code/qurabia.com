@@ -25,7 +25,9 @@ test('village command view expands the scene and keeps building choices and actu
   const before = (await (await page.request.get('/api/kingdoms')).json()).data.villages[0];
   const directory = village.getByRole('navigation', { name: 'دليل مباني القرية' });
   await expect(directory).toBeVisible({ timeout: 3000 });
-  await expect(directory.getByRole('button')).toHaveCount(13);
+  await expect(directory.getByRole('button')).toHaveCount(15);
+  await expect(directory.getByRole('region', { name: 'العسكر' })).toBeVisible();
+  await expect(directory.getByRole('region', { name: 'الدفاع' })).toBeVisible();
   await expect(village.getByRole('region', { name: 'نشاط القرية' })).toBeVisible();
   await expect.poll(() => page.getByRole('region', { name: 'موارد القرية' }).locator('img').evaluateAll(
     (images) => images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0),

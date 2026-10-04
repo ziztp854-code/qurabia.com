@@ -235,7 +235,7 @@ describe('selected building card', () => {
         initialBuilding="hall"
       />,
     );
-    expect(within(card).getByText('التطوير التالي: المستوى ٣')).toBeInTheDocument();
+    expect(within(card).getByText(/المستوى التالي/)).toHaveTextContent('٣');
     expect(within(card).getByRole('button', { name: 'أضف إلى قائمة البناء' })).toBeEnabled();
     expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
     rerender(

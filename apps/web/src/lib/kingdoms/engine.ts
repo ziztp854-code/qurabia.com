@@ -25,6 +25,8 @@ import {
   makeVillage,
   nextId,
   report,
+  foodEconomy,
+  grossResources,
   production,
   returnMovement,
   scaleResources,
@@ -765,6 +767,14 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
     villages: ownVillages,
     productionRates: Object.fromEntries(
       ownVillages.map((v) => [v.id, production(w, v, away.get(v.id) ?? emptyTroops())]),
+    ),
+    productionBreakdown: Object.fromEntries(
+      ownVillages.map((v) => {
+        const stationed = away.get(v.id) ?? emptyTroops();
+        const net = production(w, v, stationed);
+        const food = foodEconomy(w.config, v, stationed);
+        return [v.id, { gross: grossResources(w.config, v), upkeep: food.upkeep, net }];
+      }),
     ),
     map: villages.map((v) => ({
       id: v.id,

@@ -16,7 +16,10 @@ describe('village building directory', () => {
     const onSelect = vi.fn();
     render(<VillageDirectory view={view} village={view.villages[0]} selected="stable" onSelect={onSelect} />);
     const directory = screen.getByRole('navigation', { name: 'دليل مباني القرية' });
-    expect(within(directory).getAllByRole('button')).toHaveLength(13);
+    expect(within(directory).getAllByRole('button')).toHaveLength(15);
+    expect(within(directory).getByRole('region', { name: 'العسكر' })).toBeInTheDocument();
+    expect(within(directory).getByRole('region', { name: 'الموارد' })).toBeInTheDocument();
+    expect(within(directory).queryByRole('button', { name: 'اختيار دار الحدادة' })).not.toBeInTheDocument();
     expect(within(directory).getByRole('button', { name: 'اختيار نقطة تجمع الجيوش' })).toBeInTheDocument();
     expect(within(directory).getByRole('button', { name: 'اختيار الإسطبل' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(within(directory).getByRole('button', { name: 'اختيار مزارع الغذاء' }));
@@ -32,7 +35,7 @@ describe('village building directory', () => {
     const stable = screen.getByRole('button', { name: 'اختيار الإسطبل' });
     expect(stable).toHaveTextContent('مستوى ١');
     expect(stable).toHaveTextContent('قيد التطوير');
-    expect(stable).toHaveAccessibleDescription('مستوى ١ قيد التطوير');
+    expect(stable).toHaveAccessibleDescription('قيد التطوير');
     expect(stable).not.toHaveTextContent('مستوى ٢');
     expect(screen.getByRole('status')).toHaveTextContent('تدريب الفرسان وفق مستوى الإسطبل');
   });
@@ -44,7 +47,7 @@ describe('village building directory', () => {
     const barracks = screen.getByRole('button', { name: 'اختيار الثكنة' });
     expect(barracks).toHaveTextContent('لم يُبنَ');
     expect(barracks).toHaveTextContent('يحتاج موارد');
-    expect(barracks).toHaveAccessibleDescription('لم يُبنَ يحتاج موارد');
+    expect(barracks).toHaveAccessibleDescription('يحتاج موارد');
     expect(barracks).not.toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('اختر مبنى');
   });

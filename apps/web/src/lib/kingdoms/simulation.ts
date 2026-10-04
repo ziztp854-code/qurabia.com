@@ -17,6 +17,7 @@ import {
   type KingdomsConfig,
   type KingdomsWorld,
   type Movement,
+  type Resource,
   type Resources,
   type Troops,
   type Village,
@@ -128,6 +129,51 @@ export function production(
   return productionRate(w.config, v, away);
 }
 
+const producerLevel = {
+  wood: 'lumber',
+  stone: 'quarry',
+  iron: 'mine',
+  food: 'farm',
+  gold: 'treasury',
+} as const;
+
+/** إنتاج المبنى بالساعة قبل الإعاشة. نفس معامل المحرك. */
+export function hourlyYield(config: KingdomsConfig, resource: Resource, level: number) {
+  return config.baseProduction[resource] * (1 + level * config.productionPerLevel);
+}
+
+export function netAfterUpkeep(gross: number, upkeep: number) {
+  return Math.max(0, gross - upkeep);
+}
+
+/** إعاشة الغذاء بالساعة لكل القوات في القرية وخارجها. */
+export function foodUpkeep(config: KingdomsConfig, village: Village, away: Troops = emptyTroops()) {
+  return unitKeys.reduce(
+    (sum, key) => sum + (village.troops[key] + away[key]) * config.units[key].upkeep,
+    0,
+  );
+}
+
+export function grossResources(config: KingdomsConfig, village: Pick<Village, 'buildings'>): Resources {
+  return Object.fromEntries(
+    resourceKeys.map((key) => [key, hourlyYield(config, key, village.buildings[producerLevel[key]])]),
+  ) as Resources;
+}
+
+export type FoodEconomy = { gross: number; upkeep: number; net: number };
+
+/** إجمالي الغذاء والإعاشة والصافي. الصافي هو ما يطبّقه المحرك. */
+export function foodEconomy(
+  config: KingdomsConfig,
+  village: Village,
+  away: Troops = emptyTroops(),
+  farmLevel = village.buildings.farm,
+): FoodEconomy {
+  const gross = hourlyYield(config, 'food', farmLevel);
+  const upkeep = foodUpkeep(config, village, away);
+  return { gross, upkeep, net: netAfterUpkeep(gross, upkeep) };
+}
+
 /**
  * معدل الإنتاج في الساعة. قاعدة واحدة يستخدمها المحرك والعرض معًا، فتعرض الواجهة
  * الرقم نفسه الذي يحتسبه الخادم بلا نسخة ثانية من المعادلة.
@@ -137,24 +183,13 @@ export function productionRate(
   village: Village,
   away: Troops = emptyTroops(),
 ): Resources {
-  const levels = {
-    wood: village.buildings.lumber,
-    stone: village.buildings.quarry,
-    iron: village.buildings.mine,
-    food: village.buildings.farm,
-    gold: village.buildings.treasury,
-  };
-  const upkeep = unitKeys.reduce(
-    (sum, key) => sum + (village.troops[key] + away[key]) * config.units[key].upkeep,
-    0,
-  );
+  const upkeep = foodUpkeep(config, village, away);
   return Object.fromEntries(
     resourceKeys.map((key) => [
       key,
-      Math.max(
-        0,
-        config.baseProduction[key] * (1 + levels[key] * config.productionPerLevel) -
-          (key === 'food' ? upkeep : 0),
+      netAfterUpkeep(
+        hourlyYield(config, key, village.buildings[producerLevel[key]]),
+        key === 'food' ? upkeep : 0,
       ),
     ]),
   ) as Resources;

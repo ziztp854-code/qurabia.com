@@ -40,7 +40,7 @@ function ArrivalText({
   if (!remaining) return <span className={styles.waiting}>بانتظار تأكيد الوصول</span>;
   return (
     <time dateTime={new Date(arrivesAt).toISOString()}>
-      الوصول خلال <bdi dir="ltr">{formatCountdown(remaining)}</bdi>
+        الوصول خلال <bdi className={styles.countdown} dir="ltr">{formatCountdown(remaining)}</bdi>
       <span className={styles.visuallyHidden}> {label}</span>
     </time>
   );

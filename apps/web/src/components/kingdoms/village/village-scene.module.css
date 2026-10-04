@@ -18,12 +18,32 @@
 .scene[data-expanded='true'] .workspace { grid-template-columns: minmax(0, 1fr); }
 .scene[data-expanded='true'] [data-village-scene] { block-size: clamp(520px, 82dvh, 900px); }
 .scene[data-expanded='true'] nav[aria-label='دليل مباني القرية'] { border-inline-start: 0; border-block-start: 1px solid var(--border); max-block-size: none; }
-.scene[data-expanded='true'] nav[aria-label='دليل مباني القرية'] > div:last-child {
-  grid-auto-flow: column;
-  grid-auto-columns: 200px;
-  grid-template-rows: repeat(2, auto);
-  overflow-x: auto;
-  overflow-y: hidden;
+.touchDock {
+  display: none;
+}
+@media (max-width: 700px) {
+  .touchDock {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) 0;
+  }
+  .touchDock button {
+    min-block-size: 44px;
+    min-inline-size: 0;
+    padding: var(--space-1);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-sm);
+    background: var(--surface-strong);
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.75rem;
+  }
+  .touchDock button:focus-visible,
+  .touchDock button[aria-pressed='true'] {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
 }
 .header {
   display: flex;

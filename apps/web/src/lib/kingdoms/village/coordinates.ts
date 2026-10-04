@@ -82,6 +82,74 @@ export function rectCenter(rect: WorldRect): WorldPoint {
   return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
 }
 
+const touchOrder = [
+  'tower',
+  'stable',
+  'gate',
+  'rally',
+  'barracks',
+  'wall',
+  'hall',
+  'farm',
+  'lumber',
+  'quarry',
+  'mine',
+  'warehouse',
+  'market',
+  'treasury',
+  'embassy',
+] as const satisfies readonly VillageBuildingId[];
+
+export function rectsOverlap(a: WorldRect, b: WorldRect, gap = 2) {
+  return (
+    a.x < b.x + b.width + gap &&
+    a.x + a.width + gap > b.x &&
+    a.y < b.y + b.height + gap &&
+    a.y + a.height + gap > b.y
+  );
+}
+
+/**
+ * Grows a hit rect toward a screen target without crossing a neighbor's current hit.
+ * Visual plots stay in villageBuildingPlots. Callers style the button from this rect.
+ */
+export function interactionRects(minWorld: number) {
+  const current = Object.fromEntries(
+    touchOrder.map((id) => [id, { ...villageBuildingPlots[id] }]),
+  ) as Record<(typeof touchOrder)[number], WorldRect>;
+  const step = 2;
+  for (const id of touchOrder) {
+    for (let guard = 0; guard < 500; guard += 1) {
+      const box = current[id];
+      if (box.width >= minWorld && box.height >= minWorld) break;
+      const next = { ...box };
+      if (next.width < minWorld) {
+        next.x -= step / 2;
+        next.width += step;
+      }
+      if (next.height < minWorld) {
+        next.y -= step / 2;
+        next.height += step;
+      }
+      if (next.x < 0) {
+        next.width += next.x;
+        next.x = 0;
+      }
+      if (next.y < 0) {
+        next.height += next.y;
+        next.y = 0;
+      }
+      if (next.x + next.width > VILLAGE_WORLD.width) next.width = VILLAGE_WORLD.width - next.x;
+      if (next.y + next.height > VILLAGE_WORLD.height) next.height = VILLAGE_WORLD.height - next.y;
+      const blocked = touchOrder.some((other) => other !== id && rectsOverlap(next, current[other]));
+      const unchanged = next.x === box.x && next.y === box.y && next.width === box.width && next.height === box.height;
+      if (blocked || unchanged) break;
+      current[id] = next;
+    }
+  }
+  return current;
+}
+
 export function containsPoint(rect: WorldRect, point: WorldPoint): boolean {
   return (
     point.x >= rect.x &&

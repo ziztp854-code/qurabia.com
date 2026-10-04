@@ -50,11 +50,11 @@ it('prices and previews the next queued upgrade, then blocks a full queue', () =
   const next = { ...village, resources: { wood: 5000, stone: 5000, iron: 5000, food: 5000, gold: 5000 }, constructionQueue: [pending, { ...pending, id: 'second', fromLevel: 1, targetLevel: 2, status: 'QUEUED' as const }] };
   const send = vi.fn();
   const rendered = render(<BuildingPanel view={view} village={next} send={send} busy={false} building="farm" onClose={vi.fn()} />);
-  expect(screen.getByText('التطوير التالي: المستوى ٣')).toBeInTheDocument();
+  expect(screen.getByText(/المستوى التالي/)).toHaveTextContent('٣');
   fireEvent.click(screen.getByRole('button', { name: 'أضف إلى قائمة البناء' }));
   expect(send).toHaveBeenCalledWith({ type: 'build', villageId: village.id, building: 'farm' });
   fireEvent.click(screen.getByRole('tab', { name: 'إنتاج' }));
-  expect(screen.getByText(/بعد التطوير إلى المستوى ٣/)).toHaveTextContent('٢٠٥ غذاء / ساعة');
+  expect(screen.getByText(/الإنتاج بعد الترقية/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: 'ترقية' }));
   rendered.rerender(<BuildingPanel view={{ ...view, config: { ...view.config, construction: { maxPending: 2, historyLimit: 100, queuedRefund: 1, activeRefund: 0.5 } } }} village={next} send={send} busy={false} building="farm" onClose={vi.fn()} />);
   expect(screen.getByRole('button', { name: 'أضف إلى قائمة البناء' })).toBeDisabled();

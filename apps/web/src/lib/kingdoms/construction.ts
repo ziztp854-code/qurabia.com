@@ -73,6 +73,34 @@ function activate(v: Village, at: number) {
   };
 }
 
+/** Same cost and duration the queue charges. Presentation reads this instead of a second formula. */
+export function upgradeOffer(config: KingdomsWorld['config'], village: Village, building: Building) {
+  const spec = config.buildings[building];
+  const pendingItems = (village.constructionQueue ?? []).filter(
+    (item) => item.building === building && (item.status === 'BUILDING' || item.status === 'QUEUED'),
+  );
+  const plannedLevel = Math.max(
+    village.buildings[building],
+    ...pendingItems.map((item) => item.targetLevel),
+    village.build?.building === building ? village.build.level : 0,
+  );
+  const factor = spec.growth ** plannedLevel;
+  const requirements: string[] = [];
+  if (building === 'stable') {
+    if (village.buildings.barracks < 1) requirements.push('ابنِ الثكنة أولاً');
+    if ((village.progression?.level ?? 1) < stableUnlockVillageLevel)
+      requirements.push(`يُفتح الإسطبل عند مستوى القرية ${stableUnlockVillageLevel}`);
+  }
+  return {
+    level: village.buildings[building],
+    nextLevel: plannedLevel + 1,
+    maxed: plannedLevel >= spec.maxLevel,
+    cost: scaleResources(spec.cost, factor),
+    durationSeconds: spec.seconds * factor,
+    requirements,
+  };
+}
+
 export function queueConstruction(w: KingdomsWorld, v: Village, building: Building, at: number) {
   normalizeConstruction(v);
   const queue = v.constructionQueue ?? [];

@@ -35,6 +35,54 @@ export const buildingDescriptions: Record<Building, string> = {
   market: 'تبادل الموارد مع الممالك',
   embassy: 'إدارة التحالف والعلاقات',
 };
+export const villageDistricts = [
+  {
+    id: 'administration',
+    label: 'الإدارة',
+    entries: [
+      { id: 'hall', select: 'hall' },
+      { id: 'embassy', select: 'embassy' },
+    ],
+  },
+  {
+    id: 'military',
+    label: 'العسكر',
+    entries: [
+      { id: 'barracks', select: 'barracks' },
+      { id: 'stable', select: 'stable' },
+      { id: 'rally', select: 'rally' },
+    ],
+  },
+  {
+    id: 'economy',
+    label: 'الاقتصاد',
+    entries: [
+      { id: 'market', select: 'market' },
+      { id: 'warehouse', select: 'warehouse' },
+      { id: 'treasury', select: 'treasury' },
+    ],
+  },
+  {
+    id: 'resources',
+    label: 'الموارد',
+    entries: [
+      { id: 'farm', select: 'farm' },
+      { id: 'lumber', select: 'lumber' },
+      { id: 'quarry', select: 'quarry' },
+      { id: 'mine', select: 'mine' },
+    ],
+  },
+  {
+    id: 'defense',
+    label: 'الدفاع',
+    entries: [
+      { id: 'wall', select: 'wall' },
+      { id: 'gate', select: 'wall', name: 'البوابة', note: 'مدخل السور، بلا مستوى مستقل' },
+      { id: 'tower', select: 'wall', name: 'برج المراقبة', note: 'جزء من السور، بلا مستوى مستقل' },
+    ],
+  },
+] as const;
+
 export const buildingStatusLabels: Record<BuildingStatus, string> = {
   upgrade: 'قابل للتطوير',
   construction: 'قيد التطوير',

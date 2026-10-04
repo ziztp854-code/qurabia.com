@@ -3,14 +3,16 @@
 import { ArrowUpCircle, CheckCircle2, CircleAlert, Clock, Hammer, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
+import { upgradeOffer } from '@/lib/kingdoms/construction';
+import { hourlyYield, netAfterUpkeep, storageCapacity } from '@/lib/kingdoms/simulation';
+import { trainingSpeedDivisor } from '@/lib/kingdoms/training';
 import {
   resourceKeys,
   unitKeys,
   type Building,
   type Resource,
-  type Resources,
 } from '@/lib/kingdoms/types';
-import { date, labels, number, type GameProps } from './shared';
+import { date, labels, number, rateAmount, type GameProps } from './shared';
 import styles from './building-panel.module.css';
 
 export type VillageNavigation =
@@ -62,20 +64,22 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
   const title = useRef<HTMLHeadingElement>(null);
   const [tab, setTab] = useState<DetailTab>('upgrade');
   const spec = view.config.buildings[building];
-  const level = village.buildings[building];
+  const offer = upgradeOffer(view.config, village, building);
+  const level = offer.level;
   const pending = village.constructionQueue?.filter((item) => item.status === 'BUILDING' || item.status === 'QUEUED') ?? [];
-  const plannedLevel = Math.max(level, ...pending.filter((item) => item.building === building).map((item) => item.targetLevel), village.build?.building === building ? village.build.level : 0);
   const pendingCount = pending.length || (village.build ? 1 : 0);
   const queueFull = pendingCount >= (view.config.construction?.maxPending ?? 5);
-  const factor = spec.growth ** plannedLevel;
-  const cost = Object.fromEntries(
-    resourceKeys.map((resource) => [resource, Math.ceil(spec.cost[resource] * factor)]),
-  ) as Resources;
-  const maxed = plannedLevel >= spec.maxLevel;
+  const cost = offer.cost;
+  const maxed = offer.maxed;
   const shortage = resourceKeys.some((resource) => village.resources[resource] < cost[resource]);
   const resource = producers[building];
-  const capacity =
-    view.config.storageBase + village.buildings.warehouse * view.config.storagePerLevel;
+  const capacity = storageCapacity(view.config, village);
+  const nextCapacity = storageCapacity(view.config, {
+    buildings: { ...village.buildings, warehouse: village.buildings.warehouse + 1 },
+  });
+  const breakdown = view.productionBreakdown?.[village.id];
+  const serverRate = view.productionRates[village.id];
+  const overflow = resourceKeys.some((key) => village.resources[key] >= capacity);
   const constructing = village.build?.building === building;
   const military = building === 'barracks' || building === 'stable' || building === 'wall';
   const tabs: { key: DetailTab; label: string }[] = [
@@ -222,7 +226,17 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
         {tab === 'upgrade' && (
           <>
             <p>
-              {maxed ? 'بلغ المبنى الحد الأعلى أو أضيف تطويره الأخير إلى القائمة.' : `التطوير التالي: المستوى ${number(plannedLevel + 1)}`}
+              المستوى الحالي {number(level)}
+              {maxed ? ' · بلغ المبنى الحد الأعلى أو أضيف تطويره الأخير إلى القائمة.' : ` · المستوى التالي ${number(offer.nextLevel)}`}
+            </p>
+            {offer.requirements.length > 0 && (
+              <ul aria-label="متطلبات البناء">
+                {offer.requirements.map((rule) => <li key={rule}>{rule}</li>)}
+              </ul>
+            )}
+            <p>
+              حالة الطابور: {pendingCount ? `${number(pendingCount)} أعمال` : 'فارغ'}
+              {queueFull ? ' · ممتلئ' : ''}
             </p>
             {!maxed && (
               <>
@@ -243,7 +257,7 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
                 </ul>
                 <p className={styles.duration}>
                   <Clock size={16} aria-hidden="true" />
-                  مدة التطوير <bdi dir="ltr">{formatDuration(spec.seconds * factor)}</bdi>
+                  مدة التطوير <bdi dir="ltr">{formatDuration(offer.durationSeconds)}</bdi>
                 </p>
               </>
             )}
@@ -266,47 +280,84 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
         )}
         {tab === 'production' && resource && (
           <>
-            <p className={styles.production}>
-              {number(
-                Math.round(
-                  view.config.baseProduction[resource] *
-                    (1 + level * view.config.productionPerLevel),
-                ),
-              )}{' '}
-              {labels[resource]} / ساعة
-            </p>
-            {resource === 'food' && (
-              <p className={styles.hint}>
-                إنتاج إجمالي قبل إعاشة الجيش، ويُخصم غذاء الوحدات من الإنتاج.
-              </p>
-            )}
             <dl className={styles.facts}>
               <div>
                 <dt>المخزون الحالي</dt>
-                <dd>
-                  <bdi>{number(village.resources[resource])}</bdi>
-                </dd>
+                <dd><bdi>{number(village.resources[resource])}</bdi></dd>
               </div>
               <div>
                 <dt>سعة التخزين</dt>
-                <dd>
-                  <bdi>{number(capacity)}</bdi>
-                </dd>
+                <dd><bdi>{number(capacity)}</bdi></dd>
               </div>
+              <div>
+                <dt>الإنتاج الحالي / ساعة</dt>
+                <dd><bdi>{rateAmount(serverRate?.[resource] ?? hourlyYield(view.config, resource, level))}</bdi></dd>
+              </div>
+              {!maxed && (
+                <div>
+                  <dt>الإنتاج بعد الترقية / ساعة</dt>
+                  <dd>
+                    <bdi>
+                      {rateAmount(
+                        resource === 'food'
+                          ? netAfterUpkeep(hourlyYield(view.config, 'food', offer.nextLevel), breakdown?.upkeep ?? 0)
+                          : hourlyYield(view.config, resource, offer.nextLevel),
+                      )}
+                    </bdi>
+                  </dd>
+                </div>
+              )}
             </dl>
-            {!maxed && (
-              <p>
-                بعد التطوير إلى المستوى {number(plannedLevel + 1)}:{' '}
-                {number(
-                  Math.round(
-                    view.config.baseProduction[resource] *
-                      (1 + (plannedLevel + 1) * view.config.productionPerLevel),
-                  ),
-                )}{' '}
-                {labels[resource]} / ساعة
-              </p>
+            {resource === 'food' && (
+              <dl className={styles.facts} aria-label="ميزان الغذاء">
+                <div>
+                  <dt>الإنتاج الإجمالي</dt>
+                  <dd><bdi>{rateAmount(breakdown?.gross.food ?? hourlyYield(view.config, 'food', level))}</bdi></dd>
+                </div>
+                <div>
+                  <dt>إعاشة الجيش</dt>
+                  <dd><bdi>{rateAmount(breakdown?.upkeep ?? 0)}</bdi></dd>
+                </div>
+                <div>
+                  <dt>الإنتاج الصافي</dt>
+                  <dd><bdi>{rateAmount(serverRate?.food ?? breakdown?.net.food ?? 0)}</bdi></dd>
+                </div>
+              </dl>
             )}
+            <p className={styles.duration}>
+              <Clock size={16} aria-hidden="true" />
+              تكلفة الترقية ومدة البناء في تبويب الترقية. المدة <bdi dir="ltr">{formatDuration(offer.durationSeconds)}</bdi>
+            </p>
           </>
+        )}
+        {(tab === 'info' || tab === 'upgrade') && building === 'warehouse' && (
+          <dl className={styles.facts} aria-label="سعة المخزن">
+            <div>
+              <dt>السعة الحالية</dt>
+              <dd><bdi>{number(capacity)}</bdi></dd>
+            </div>
+            {!maxed && (
+              <div>
+                <dt>السعة بعد الترقية</dt>
+                <dd><bdi>{number(nextCapacity)}</bdi></dd>
+              </div>
+            )}
+            {resourceKeys.map((key) => (
+              <div key={key}>
+                <dt>مخزون {labels[key]}</dt>
+                <dd><bdi>{number(village.resources[key])}</bdi></dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {(tab === 'info' || tab === 'upgrade') && building === 'warehouse' && overflow && (
+          <p role="status">المخزن ممتلئ. الإنتاج الزائد يهدر حتى تتسع السعة.</p>
+        )}
+        {(tab === 'info' || tab === 'upgrade') && (building === 'barracks' || building === 'stable') && (
+          <p>
+            سرعة التدريب الحالية ×{rateAmount(trainingSpeedDivisor(level, view.config.barracksSpeedPerLevel))}
+            {!maxed && ` · بعد الترقية ×${rateAmount(trainingSpeedDivisor(offer.nextLevel, view.config.barracksSpeedPerLevel))}`}
+          </p>
         )}
         {tab === 'activity' && (
           <>
