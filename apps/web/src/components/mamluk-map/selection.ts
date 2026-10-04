@@ -29,10 +29,19 @@ const numeric = (value: unknown) =>
 function villageDetails(properties: Feature['properties'], viewerPlayerId: string) {
   const own = properties.ownerPlayerId === viewerPlayerId;
   return [
-    field('المالك', own ? 'أنت' : properties.ownerPlayerId === null ? 'مستقلة' : 'لاعب آخر'),
+    field(
+      'المالك',
+      own
+        ? 'أنت'
+        : properties.ownerPlayerId === null
+          ? 'مستقلة'
+          : typeof properties.kingdomName === 'string' && properties.kingdomName
+            ? properties.kingdomName
+            : 'لاعب آخر',
+    ),
     field('المملكة', String(properties.kingdomName)),
     field('التحالف', typeof properties.allianceName === 'string' ? properties.allianceName : '—'),
-    field('المستوى', own ? numeric(properties.villageLevel) : 'غير متوفر'),
+    field('المستوى', numeric(properties.villageLevel)),
     field('الرتبة', own && typeof properties.villageRank === 'string' ? properties.villageRank : 'غير متوفر'),
     field('القوة', own ? numeric(properties.villagePower) : 'غير متوفر'),
     // POPULATION_DATA_NOT_AVAILABLE: no population rule exists in Kingdom World.
@@ -47,6 +56,15 @@ function title(feature: Feature, layer: SelectableLayer): string {
   if (layer === 'sieges')
     return feature.properties.targetKind === 'castle' ? 'حصار قلعة' : 'حصار مدينة';
   return typeof feature.properties.name === 'string' ? feature.properties.name : names[layer];
+}
+
+function featureLabel(feature: Feature, layer: SelectableLayer): string {
+  const name = title(feature, layer);
+  if (layer !== 'cities') return name;
+  const level = feature.properties.villageLevel;
+  return typeof level === 'number' && Number.isInteger(level) && level >= 1
+    ? `${name}، المستوى ${number(level)}`
+    : name;
 }
 
 /** Presentation allowlist. Neither click metadata nor arbitrary properties enter the panel. */
@@ -130,7 +148,7 @@ export function listSelectableFeatures(
     payload.layers[layer].features.map((feature) => ({
       layer,
       id: feature.id,
-      label: title(feature, layer),
+      label: featureLabel(feature, layer),
     })),
   );
 }

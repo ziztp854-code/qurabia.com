@@ -74,6 +74,11 @@ export function SelectionPanel({
   const [expanded, setExpanded] = useState(false);
   // Selection intent survives a refresh; authorized detail data still clears.
   const sheetExpanded = expanded || Boolean(key) || Boolean(targetSelection);
+  const levelDetail = selection?.details.find((detail) => detail.label === 'المستوى');
+  const accessibleName =
+    selection && levelDetail && levelDetail.value !== 'غير متوفر'
+      ? `${selection.title}، المستوى ${levelDetail.value}`
+      : selection?.title;
   const Icon =
     selection?.layer === 'castles'
       ? Castle
@@ -125,7 +130,7 @@ export function SelectionPanel({
               <Icon size={24} aria-hidden="true" />
               <div>
                 <p className={styles.eyebrow}>{selection.kind}</p>
-                <h2 ref={title} tabIndex={-1}>{selection.title}</h2>
+                <h2 ref={title} tabIndex={-1} aria-label={accessibleName}>{selection.title}</h2>
               </div>
               <button
                 type="button"

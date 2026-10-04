@@ -60,6 +60,10 @@ describe('live geographic gameplay projection', () => {
       longitude: 140,
       latitude: 60,
       fortificationLevel: 0,
+      villageLevel: 1,
+      villageRank: null,
+      villagePower: null,
+      villageVisualTier: null,
     });
     expect(result.armies.every((army) => army.ownerPlayerId === 'viewer')).toBe(true);
     expect(JSON.stringify(result.armies)).not.toContain('9999');
@@ -119,26 +123,72 @@ describe('live geographic gameplay projection', () => {
   });
 });
 
-it('projects existing own progression only and leaves population unavailable', () => {
+it('publishes stored village level for every visible settlement and keeps private progression private', () => {
   const { own, enemy, state } = fixture();
-  const projected = new KingdomMapProjection(state, 'world', 'viewer', at);
-  const city = (id: string) => state.geography!.cities.find((c) => c.value.id === id)!.value;
-  expect(projected.city(city(own.id))).toMatchObject({
-    villageLevel: 1,
+  const second = {
+    ...enemy,
+    id: 'enemy-second',
+    name: 'الثانية البعيدة',
+    x: enemy.x + 3,
+    y: enemy.y + 3,
+    progression: enemy.progression ? { ...enemy.progression, level: 14, xp: 999999 } : undefined,
+  };
+  const published = {
+    ...state,
+    villages: {
+      ...state.villages,
+      [own.id]: { ...own, progression: own.progression ? { ...own.progression, level: 20 } : undefined },
+      [enemy.id]: {
+        ...enemy,
+        progression: enemy.progression ? { ...enemy.progression, level: 50, xp: 1 } : undefined,
+      },
+      [second.id]: second,
+    },
+  };
+  const geography = provisionVillageGeography('world', published);
+  const projected = new KingdomMapProjection(geography, 'world', 'viewer', at);
+  const city = (id: string) => geography.geography!.cities.find((c) => c.value.id === id)!.value;
+  const ownCity = projected.city(city(own.id));
+  const enemyCity = projected.city(city(enemy.id));
+  const secondCity = projected.city(city(second.id));
+  expect(ownCity).toMatchObject({
+    villageLevel: 20,
     villageRank: 'مستوطنة',
-    villagePower: 59314,
     villageVisualTier: 1,
     population: null,
     constructionStatus: 'IDLE',
     kingdomName: 'الأولى',
     allianceName: null,
   });
-  expect(projected.city(city(enemy.id))).toMatchObject({
-    villageLevel: null,
+  expect(enemyCity).toMatchObject({
+    villageLevel: 50,
     villageRank: null,
     villagePower: null,
     villageVisualTier: null,
     population: null,
     constructionStatus: null,
+    kingdomName: 'الثانية',
   });
+  expect(typeof ownCity?.villagePower).toBe('number');
+  expect(secondCity).toMatchObject({ villageLevel: 14, villagePower: null, villageRank: null });
+  const serialized = JSON.stringify(enemyCity);
+  for (const secret of ['"xp"', '"troops"', '"resources"', '"training"', '"signature"', '"requirements"', '999999'])
+    expect(serialized).not.toContain(secret);
+  expect(enemyCity?.villagePower).toBeNull();
+  const missing = {
+    ...geography,
+    villages: {
+      ...geography.villages,
+      [enemy.id]: { ...geography.villages[enemy.id]!, progression: undefined },
+      legacy: { ...enemy, id: 'legacy', progression: { ...enemy.progression!, level: 0 } },
+      fractional: { ...enemy, id: 'fractional', progression: { ...enemy.progression!, level: 1.5 } },
+      overflow: { ...enemy, id: 'overflow', progression: { ...enemy.progression!, level: 51 } },
+    },
+  };
+  const guarded = new KingdomMapProjection(missing, 'world', 'viewer', at);
+  const probe = (id: string) => guarded.city({ ...city(enemy.id), id })?.villageLevel;
+  expect(probe(enemy.id)).toBeNull();
+  expect(probe('legacy')).toBeNull();
+  expect(probe('fractional')).toBeNull();
+  expect(probe('overflow')).toBeNull();
 });

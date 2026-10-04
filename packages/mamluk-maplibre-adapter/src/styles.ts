@@ -299,7 +299,12 @@ function markerLayer(
         ? [
             'step',
             ['zoom'],
-            ['coalesce', ['get', 'name'], ''],
+            [
+              'case',
+              ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+              ['to-string', ['get', 'villageLevel']],
+              '',
+            ],
             12,
             [
               'concat',

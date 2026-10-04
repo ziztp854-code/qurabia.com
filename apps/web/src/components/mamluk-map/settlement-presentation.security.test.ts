@@ -341,7 +341,12 @@ it('labels approved local levels with Cairo and leaves missing levels unnamed', 
   expect(layer.layout?.['text-field']).toEqual([
     'step',
     ['zoom'],
-    ['get', 'name'],
+    [
+      'case',
+      ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+      ['to-string', ['get', 'villageLevel']],
+      '',
+    ],
     12,
     [
       'case',

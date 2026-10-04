@@ -7,14 +7,24 @@ import {
   type SultanateTerritory,
 } from '@mamluk/world-map-core/server';
 import { projectWorld } from '../kingdoms/engine';
-import type { KingdomsWorld } from '../kingdoms/types';
+import { progressionConfig } from '../kingdoms/progression';
+import type { KingdomsWorld, Village } from '../kingdoms/types';
 import type { MamlukMapState } from './storage';
+
+/** Authoritative stored level only. Never recomputed for the map. */
+function publishedVillageLevel(village: Village | undefined, maxLevel: number): number | null {
+  const level = village?.progression?.level;
+  if (typeof level !== 'number' || !Number.isInteger(level) || level < 1 || level > maxLevel)
+    return null;
+  return level;
+}
 
 /** Live ownership and private forces over the existing persisted, relocatable atlas. */
 export class KingdomMapProjection {
   readonly armies: readonly Army[];
   readonly borders: readonly SultanateTerritory[];
   private readonly view: ReturnType<typeof projectWorld>;
+  private readonly publicLevels: ReadonlyMap<string, number>;
   constructor(
     state: KingdomsWorld & { geography?: MamlukMapState },
     worldId: string,
@@ -22,6 +32,13 @@ export class KingdomMapProjection {
     serverTime: number,
   ) {
     this.view = projectWorld(state, viewerId, serverTime);
+    const maxLevel = progressionConfig(state).maxLevel;
+    this.publicLevels = new Map(
+      Object.values(state.villages).flatMap((village) => {
+        const level = publishedVillageLevel(village, maxLevel);
+        return level === null ? [] : [[village.id, level] as const];
+      }),
+    );
     const cities = new Map(state.geography?.cities.map(({ value }) => [value.id, value]) ?? []);
     const point = (id: string) => {
       const city = cities.get(id);
@@ -125,7 +142,7 @@ export class KingdomMapProjection {
     return {
       ...city,
       name: village.name,
-      villageLevel: own?.progression?.level ?? null,
+      villageLevel: this.publicLevels.get(village.id) ?? null,
       villageRank: own?.progression?.rank ?? null,
       villagePower: own?.progression?.power.total ?? null,
       villageVisualTier: own?.progression?.visualTier ?? null,

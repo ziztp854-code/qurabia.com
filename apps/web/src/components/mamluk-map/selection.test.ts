@@ -53,9 +53,18 @@ describe('approved map selection', () => {
       { label: 'الحالة', value: 'بناء قيد التنفيذ' },
     ]));
     const enemy = findSelection(payload([village]), { layer: 'cities', id: 'cairo' }, 'other');
-    expect(JSON.stringify(enemy)).not.toMatch(/٨٧٠|قرية مزدهرة|بناء قيد التنفيذ|١٢/);
+    expect(JSON.stringify(enemy)).not.toMatch(/٨٧٠|قرية مزدهرة|بناء قيد التنفيذ/);
+    expect(enemy?.details).toContainEqual({ label: 'المستوى', value: '١٢' });
+    expect(enemy?.details).toContainEqual({ label: 'المالك', value: 'مملكة النيل' });
+    expect(enemy?.details).toContainEqual({ label: 'الرتبة', value: 'غير متوفر' });
+    expect(enemy?.details).toContainEqual({ label: 'القوة', value: 'غير متوفر' });
     expect(enemy?.details).toContainEqual({ label: 'المملكة', value: 'مملكة النيل' });
     expect(enemy?.details).toContainEqual({ label: 'السكان', value: 'غير متوفر' });
+    expect(listSelectableFeatures(payload([village]))).toContainEqual({
+      layer: 'cities',
+      id: 'cairo',
+      label: 'القاهرة، المستوى ١٢',
+    });
   });
   it('presents a city only from its approved properties and real coordinates', () => {
     const selected = findSelection(payload(), { layer: 'cities', id: 'cairo' }, 'viewer');

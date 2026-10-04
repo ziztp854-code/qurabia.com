@@ -291,20 +291,29 @@ class ObservedAdapter extends MapLibreAdapter {
   }
 }
 
-/** Own-village progression that the owner may keep drawing after private detail expires. */
-function ownVillagePresentation(
-  properties: MapPayload['layers']['cities']['features'][number]['properties'],
-  viewerPlayerId: string | undefined,
-) {
+type CityProperties = MapPayload['layers']['cities']['features'][number]['properties'];
+
+/** Stored village level is public for every settlement the viewer may already see. */
+function publicVillageLevel(properties: CityProperties) {
+  const level = properties.villageLevel;
+  return typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 50
+    ? { villageLevel: level }
+    : {};
+}
+
+/** Icon tier stays with the owner. A public level does not publish visual tier. */
+function ownVillagePresentation(properties: CityProperties, viewerPlayerId: string | undefined) {
   if (!viewerPlayerId || properties.ownerPlayerId !== viewerPlayerId) return {};
-  const { villageLevel: level, villageVisualTier: tier } = properties;
+  const tier = properties.villageVisualTier;
+  return typeof tier === 'number' && Number.isInteger(tier) && tier >= 1 && tier <= 6
+    ? { villageVisualTier: tier }
+    : {};
+}
+
+function publicIdentity(properties: CityProperties) {
   return {
-    ...(typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 50
-      ? { villageLevel: level }
-      : {}),
-    ...(typeof tier === 'number' && Number.isInteger(tier) && tier >= 1 && tier <= 6
-      ? { villageVisualTier: tier }
-      : {}),
+    ...(typeof properties.kingdomName === 'string' ? { kingdomName: properties.kingdomName } : {}),
+    ...(typeof properties.allianceName === 'string' ? { allianceName: properties.allianceName } : {}),
   };
 }
 
@@ -320,7 +329,9 @@ function publicSettlementPresentation(payload: MapPayload, viewerPlayerId?: stri
         regionId: feature.properties.regionId,
         ownerPlayerId: feature.properties.ownerPlayerId,
         ownerSultanateId: feature.properties.ownerSultanateId,
-        // Only the viewer's own level and icon tier; rank, power and every rival field stay private.
+        ...publicIdentity(feature.properties),
+        // Level is public. Rank, power, visual tier and every other rival field stay private.
+        ...publicVillageLevel(feature.properties),
         ...ownVillagePresentation(feature.properties, viewerPlayerId),
       },
     })),

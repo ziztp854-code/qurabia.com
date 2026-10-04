@@ -200,7 +200,12 @@ function settlementLayer(
       'text-field': [
         'step',
         ['zoom'],
-        ['get', 'name'],
+        [
+          'case',
+          ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+          ['to-string', ['get', 'villageLevel']],
+          '',
+        ],
         12,
         [
           'case',

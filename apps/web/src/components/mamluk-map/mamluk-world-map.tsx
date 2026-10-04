@@ -232,6 +232,10 @@ function WorldScene({
   const selection = useMemo(() => {
     const current = findSelection(payload, selected, viewerPlayerId, referenceOnly);
     if (current) return current;
+    if (!referenceOnly) {
+      const retained = findSelection(publicPayload, selected, viewerPlayerId, false);
+      if (retained?.kind === 'قرية') return retained;
+    }
     const publicCity = findSelection(publicPayload, selected, viewerPlayerId, true);
     if (!publicCity) return null;
     const owner = publicPayload?.layers.cities.features.find((city) => city.id === publicCity.id)

@@ -186,7 +186,7 @@ it('refreshes when a snapshot expires and drops private detail while the refresh
   session.dispose();
 });
 
-it('never retains level or tier of a village the viewer does not own', async () => {
+it('retains a rival village level and still drops tier, rank and power', async () => {
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce(
@@ -214,9 +214,10 @@ it('never retains level or tier of a village the viewer does not own', async () 
   ).features;
   const props = (id: string) => features.find((feature) => feature.id === id)!.properties;
   expect(props('mine')).toMatchObject({ villageLevel: 9, villageVisualTier: 2 });
-  expect(props('rival')).not.toHaveProperty('villageLevel');
+  expect(props('rival')).toMatchObject({ villageLevel: 41 });
   expect(props('rival')).not.toHaveProperty('villageVisualTier');
   expect(props('rival')).not.toHaveProperty('villagePower');
+  expect(props('rival')).not.toHaveProperty('villageRank');
   expect(props('bad')).not.toHaveProperty('villageLevel');
   expect(props('bad')).not.toHaveProperty('villageVisualTier');
   session.dispose();
