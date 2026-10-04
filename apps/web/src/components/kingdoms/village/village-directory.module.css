@@ -6,10 +6,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  max-block-size: clamp(430px, 60dvh, 640px);
+  max-block-size: clamp(480px, calc(100dvh - 11rem), 820px);
+}
+@media (max-width: 700px) {
+  .directory { max-block-size: clamp(420px, 62dvh, 560px); }
 }
 @media (min-width: 2560px) {
-  .directory { max-block-size: clamp(720px, 70dvh, 1400px); }
+  .directory { max-block-size: clamp(640px, 62dvh, 960px); }
 }
 .heading {
   display: flex;

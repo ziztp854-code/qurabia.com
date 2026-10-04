@@ -35,7 +35,7 @@
   padding: var(--space-2);
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: var(--kingdoms-ui-surface-soft, var(--surface));
 }
 .navigation button {
   display: flex;
@@ -72,6 +72,7 @@
 @media (max-width: 1000px) {
   .layout[data-selected='true'] {
     grid-template-columns: minmax(0, 1fr);
+    padding-block-end: calc(min(38dvh, 360px) + var(--space-4));
   }
   .rail {
     position: fixed;
@@ -112,9 +113,23 @@
   }
 }
 @media (max-width: 700px) {
+  .layout {
+    padding-block-end: 4.5rem;
+  }
+  .layout[data-selected='true'] {
+    padding-block-end: calc(min(38dvh, 360px) + 4.5rem + var(--space-3));
+  }
+  .rail {
+    inset-block-end: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+  }
   .navigation {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    border-radius: 0;
     gap: var(--space-1);
     padding: var(--space-1);
+    padding-block-end: calc(env(safe-area-inset-bottom, 0px) + var(--space-1));
   }
   .navigation button {
     flex-direction: column;

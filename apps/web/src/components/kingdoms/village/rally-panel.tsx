@@ -77,6 +77,8 @@ export function RallyPanel({
       aria-label="نقطة تجمع الجيوش"
       data-rally-panel
       data-readiness={command.readiness}
+      data-has-attack={command.attacks.length > 0 || undefined}
+      data-critical={command.nearestThreat?.severity === 'CRITICAL' || undefined}
       dir="rtl"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

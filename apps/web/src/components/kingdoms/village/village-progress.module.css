@@ -47,6 +47,11 @@
 .experience progress::-webkit-progress-value { background: var(--gold); }
 .experience progress::-moz-progress-bar { background: var(--gold); }
 .requirements { margin-block: var(--space-2) 0; font-size: 0.85rem; }
+@media (max-width: 700px) {
+  .progression { padding: var(--space-2) var(--space-3); }
+  .experience progress { flex-basis: 100%; }
+  .compact { min-inline-size: 0; flex: 1 1 6rem; padding: var(--space-1) var(--space-2); }
+}
 .queue { display: grid; gap: var(--space-3); inline-size: 100%; min-inline-size: 0; }
 .queue h3, .queue p { margin: 0; }
 .items { display: grid; gap: var(--space-3); padding: 0; margin: 0; list-style: none; }

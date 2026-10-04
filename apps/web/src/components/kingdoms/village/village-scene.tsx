@@ -80,13 +80,18 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
       data-expanded={expanded}
       data-visual-tier={look.tier}
     >
+      <div className={styles.lead}>
+        <VillageIncomingAlert
+          incoming={view.incoming ?? []}
+          village={village}
+          view={view}
+          onShowMap={onShowMap}
+          onRefresh={onRefresh}
+        />
+      </div>
       <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>مشهد القرية · {look.label}</p>
-          <h2>{village.name}</h2>
-        </div>
+        <span className={styles.coordinates} dir="ltr">X {village.x} / Y {village.y}</span>
         <div className={styles.headerActions}>
-          <span className={styles.coordinates} dir="ltr">X {village.x} / Y {village.y}</span>
           <Button variant="outline" aria-pressed={expanded} onClick={() => setExpanded((value) => !value)}>
             {expanded ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize size={18} aria-hidden="true" />}
             {expanded ? 'العرض العادي' : 'توسيع المشهد'}
@@ -104,13 +109,6 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
             block: 'nearest',
           });
         }}
-      />
-      <VillageIncomingAlert
-        incoming={view.incoming ?? []}
-        village={village}
-        view={view}
-        onShowMap={onShowMap}
-        onRefresh={onRefresh}
       />
       <nav className={styles.touchDock} aria-label="أهداف اللمس السريعة">
         <button type="button" aria-pressed={selected === 'barracks'} onClick={() => choose('barracks')}>الثكنة</button>

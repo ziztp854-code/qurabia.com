@@ -488,7 +488,7 @@ test('level twelve village finishes its real queue after five hours offline', as
   const returned = await context.newPage();
   await returned.emulateMedia({ reducedMotion: 'reduce' });
   await returned.goto('/');
-  await expect(returned.getByRole('region', { name: 'قوائم التنفيذ', exact: true }).getByText('لا بناء قيد التنفيذ', { exact: true })).toBeVisible();
+  await expect(returned.getByRole('region', { name: 'قوائم التنفيذ', exact: true })).toHaveCount(0);
   const after = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
   expect(after.buildings).toMatchObject({ hall: 8, wall: 6, warehouse: 9 });
   expect(after.training).toBeUndefined();

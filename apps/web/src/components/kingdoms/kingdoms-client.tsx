@@ -103,7 +103,7 @@ export function KingdomsClient({
     setTab('village');
   };
   return (
-    <div className={`${styles.shell} ${view?.player ? styles.playing : ''}`} dir="rtl">
+    <div className={`${styles.shell} ${view?.player ? styles.playing : ''}`} data-screen={tab} dir="rtl">
       <div className={styles.hud}>
         <header className={styles.hero}>
           <div>
@@ -119,7 +119,7 @@ export function KingdomsClient({
             <Crown size={48} strokeWidth={1.25} />
           </div>
         </header>
-        {village && (
+        {village && tab !== 'village' && (
           <section aria-label="موارد القرية" className={styles.resources}>
             {resourceOrder.map((resource) => {
               const cap =

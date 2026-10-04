@@ -230,7 +230,8 @@ export function VillageIncomingAlert({
             <div>
               <h3 id={titleId}>{incomingMissionLabels[lead.mission]}</h3>
               <p className={styles.meta}>
-                {lead.source ? `المصدر: ${lead.source.name}` : village.name}
+                إلى {village.name}
+                {lead.source ? ` · المصدر: ${lead.source.name}` : ''}
                 {extra > 0 ? ` · +${extra} حركات أخرى` : ''}
               </p>
               <p className={styles.meta} aria-live="off">
@@ -239,11 +240,9 @@ export function VillageIncomingAlert({
             </div>
           </div>
           <div className={styles.actions}>
-            {extra > 0 && (
-              <Button variant="outline" onClick={() => setOpen(true)}>
-                التفاصيل
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => setOpen(true)}>
+              التفاصيل
+            </Button>
             {onShowMap && <Button onClick={() => onShowMap(village.id)}>عرض على الخريطة</Button>}
           </div>
         </div>

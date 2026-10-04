@@ -1,7 +1,9 @@
 .stage {
   position: relative;
   inline-size: 100%;
-  block-size: clamp(430px, 60dvh, 640px);
+  block-size: clamp(480px, calc(100dvh - 11rem), 820px);
+  max-inline-size: 1680px;
+  margin-inline: auto;
   overflow: hidden;
   background: var(--background);
   touch-action: none;
@@ -10,12 +12,10 @@
   isolation: isolate;
   --camera-scale: 0.5;
 }
-.stage[data-threat-severity='DANGER'],
-.stage[data-threat-severity='CRITICAL'] {
-  box-shadow: inset 0 0 0 3px var(--danger);
-}
+.stage[data-threat-severity='CRITICAL'] [data-rally-point='true'],
+.stage[data-threat-severity='CRITICAL'] [data-building='wall'],
 .stage[data-threat-severity='CRITICAL'] [data-building-region='gate'] {
-  box-shadow: inset 0 0 0 calc(3px / var(--camera-scale)) var(--danger);
+  box-shadow: inset 0 0 0 calc(2px / var(--camera-scale)) var(--danger);
 }
 .stage[data-dragging='true'] {
   cursor: grabbing;
@@ -147,6 +147,38 @@
   color: var(--gold);
   pointer-events: none;
   transform: scale(calc(1 / var(--camera-scale)));
+  transform-origin: center;
+  animation: flagSway 2.6s ease-in-out infinite alternate;
+}
+.rallyBadge {
+  position: absolute;
+  inset-block-start: 8%;
+  inset-inline-end: 8%;
+  z-index: 4;
+  min-inline-size: 1.4rem;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  pointer-events: none;
+  transform: scale(calc(1 / var(--camera-scale)));
+  transform-origin: top right;
+}
+.rallyBadge[data-severity='CRITICAL'],
+.rallyBadge[data-severity='DANGER'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.rallyBadge[data-severity='WARNING'] {
+  color: var(--warning, var(--gold));
+}
+@keyframes flagSway {
+  from { transform: scale(calc(1 / var(--camera-scale))) rotate(-5deg); }
+  to { transform: scale(calc(1 / var(--camera-scale))) rotate(5deg); }
 }
 .roads {
   position: absolute;
@@ -164,17 +196,18 @@
   opacity: 0.55;
 }
 .stage[data-has-selection='true'] .hotspot:not([aria-pressed='true']) {
-  opacity: 0.38;
+  opacity: 0.72;
 }
 .stage[data-has-selection='true'] .hotspot[aria-pressed='true'] {
   opacity: 1;
   z-index: 6;
-  box-shadow: inset 0 0 0 calc(4px / var(--camera-scale)) var(--gold);
+  box-shadow: inset 0 0 0 calc(2px / var(--camera-scale)) var(--gold);
 }
 @media (prefers-reduced-motion: reduce) {
   .rally,
   .hotspot,
-  .roads {
+  .roads,
+  .rallyMark {
     animation: none;
     transition: none;
   }
@@ -277,7 +310,8 @@
 }
 @media (min-width: 2560px) {
   .stage {
-    block-size: clamp(720px, 70dvh, 1400px);
+    block-size: clamp(640px, 62dvh, 960px);
+    max-inline-size: 1760px;
   }
   .label {
     font-size: 16px;

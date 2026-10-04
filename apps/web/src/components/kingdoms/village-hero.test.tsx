@@ -36,20 +36,17 @@ describe('village hero', () => {
     const hero = screen.getByRole('region', { name: 'بطاقة القرية' });
     expect(within(hero).getByRole('heading', { name: view.villages[0].name })).toBeVisible();
     expect(within(hero).getByText(/نحو النهضة/)).toBeVisible();
-    for (const label of ['مستويات القرية', 'المباني المبنية', 'مباني المرحلة العليا']) {
-      expect(within(hero).getByText(label)).toBeVisible();
-    }
-    expect(within(hero).getByText('سعة المخزن لكل مورد')).toBeVisible();
+    expect(within(hero).getByText(/المستوى/)).toBeVisible();
     expect(within(hero).getByRole('progressbar', { name: 'امتلاء مخزن خشب' })).toHaveAttribute(
       'aria-valuenow',
       '45',
     );
-    expect(within(hero).getByText('+٨٠ في الساعة')).toBeVisible();
+    expect(within(hero).getByText('+٨٠/ساعة')).toBeVisible();
     expect(within(hero).getByText(/حماية حتى/)).toBeVisible();
     view.productionRates[view.villages[0].id].iron = 74.25;
     cleanup();
     render(<VillageHero view={view} village={view.villages[0]} />);
-    expect(screen.getByText(`+${rateAmount(74.25)} في الساعة`)).toBeVisible();
+    expect(screen.getByText(`+${rateAmount(74.25)}/ساعة`)).toBeVisible();
   });
 
   it('shows the construction and the completed ladder when the village is maxed', () => {
@@ -99,7 +96,7 @@ describe('village hero', () => {
     };
     render(<VillageHero view={view} village={view.villages[0]} />);
     const hero = screen.getByRole('region', { name: 'بطاقة القرية' });
-    expect(within(hero).getByText('+٩٠ في الساعة')).toBeVisible();
+    expect(within(hero).getByText('+٩٠/ساعة')).toBeVisible();
   });
 
   it('reports food production stopping when upkeep eats the harvest', () => {

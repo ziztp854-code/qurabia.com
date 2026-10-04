@@ -23,7 +23,7 @@
 }
 @media (max-width: 700px) {
   .touchDock {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--space-2);
     padding: var(--space-2) var(--space-3) 0;
@@ -49,12 +49,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: 0.35rem var(--space-3);
 }
 .header h2 {
   margin: 0;
-  font-size: clamp(1.2rem, 1.5vw, 1.75rem);
+  font-size: 1rem;
 }
 @media (min-width: 2560px) {
   .header h2 { font-size: clamp(1.35rem, 1.05vw, 1.9rem); }
@@ -147,6 +147,7 @@
 .debug {
   border-block-start: 1px dashed var(--gold);
   padding: var(--space-3);
+  scroll-margin-block-end: calc(min(38dvh, 360px) + 5.5rem);
 }
 .debug summary {
   cursor: pointer;
@@ -194,6 +195,14 @@
   .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 700px) {
+  .scene {
+    display: flex;
+    flex-direction: column;
+  }
+  .lead { order: 0; }
+  .header { order: 1; }
+  .workspace { order: 2; }
+  .scene > :not(.lead):not(.header):not(.workspace) { order: 3; }
   .header {
     padding: var(--space-3);
     align-items: flex-start;

@@ -1,5 +1,6 @@
 .panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
   border: 1px solid var(--border-gold);
@@ -9,6 +10,20 @@
   line-height: 1.7;
   min-inline-size: 0;
 }
+.panel[data-critical='true'] {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.panel > section[aria-label='الحامية'] { order: 2; }
+.panel > section[aria-label='القوات المتاحة'] { order: 3; }
+.panel > section[aria-label='القوات الخارجة'] { order: 4; }
+.panel > section[aria-label='القوات العائدة'] { order: 5; }
+.panel > section[aria-label='الهجمات القادمة'] { order: 6; }
+.panel > section[aria-label='التعزيزات'] { order: 7; }
+.panel > section[aria-label='الاستطلاع'] { order: 8; }
+.panel > section[aria-label='القادة'] { order: 9; }
+.panel > section[aria-label='التدريب'] { order: 10; }
+.panel > section[aria-label='التقارير العسكرية'] { order: 11; }
+.panel[data-has-attack='true'] > section[aria-label='الهجمات القادمة'] { order: 1; }
 .header {
   display: flex;
   align-items: flex-start;

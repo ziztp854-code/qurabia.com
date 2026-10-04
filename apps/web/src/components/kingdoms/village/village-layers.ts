@@ -543,10 +543,10 @@ export function paintConstruction(
     }
   }
   for (const point of completed) {
-    const radius = 24 + (elapsed % 1500) / 50;
+    const radius = 16 + (elapsed % 280) / 18;
     graphics.ellipse(point.x, point.y, radius, radius * 0.43).stroke({
       color: colors.gold,
-      alpha: Math.max(0, 0.7 - (elapsed % 1500) / 2100),
+      alpha: Math.max(0, 0.75 - (elapsed % 280) / 280),
       width: 1.5,
     });
   }
