@@ -293,28 +293,24 @@ class ObservedAdapter extends MapLibreAdapter {
 
 type CityProperties = MapPayload['layers']['cities']['features'][number]['properties'];
 
-/** Stored village level is public for every settlement the viewer may already see. */
-function publicVillageLevel(properties: CityProperties) {
+/**
+ * Public settlement fields only. Absent values are omitted so the payload never
+ * carries `undefined`, which the map contract rejects.
+ * Level is public. Visual tier stays with the owner.
+ */
+function publicSettlementFields(properties: CityProperties, viewerPlayerId: string | undefined) {
+  const fields: Record<string, string | number> = {};
+  if (typeof properties.kingdomName === 'string') fields.kingdomName = properties.kingdomName;
+  if (typeof properties.allianceName === 'string') fields.allianceName = properties.allianceName;
   const level = properties.villageLevel;
-  return typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 50
-    ? { villageLevel: level }
-    : {};
-}
-
-/** Icon tier stays with the owner. A public level does not publish visual tier. */
-function ownVillagePresentation(properties: CityProperties, viewerPlayerId: string | undefined) {
-  if (!viewerPlayerId || properties.ownerPlayerId !== viewerPlayerId) return {};
-  const tier = properties.villageVisualTier;
-  return typeof tier === 'number' && Number.isInteger(tier) && tier >= 1 && tier <= 6
-    ? { villageVisualTier: tier }
-    : {};
-}
-
-function publicIdentity(properties: CityProperties) {
-  return {
-    ...(typeof properties.kingdomName === 'string' ? { kingdomName: properties.kingdomName } : {}),
-    ...(typeof properties.allianceName === 'string' ? { allianceName: properties.allianceName } : {}),
-  };
+  if (typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 50)
+    fields.villageLevel = level;
+  if (viewerPlayerId && properties.ownerPlayerId === viewerPlayerId) {
+    const tier = properties.villageVisualTier;
+    if (typeof tier === 'number' && Number.isInteger(tier) && tier >= 1 && tier <= 6)
+      fields.villageVisualTier = tier;
+  }
+  return fields;
 }
 
 function publicSettlementPresentation(payload: MapPayload, viewerPlayerId?: string): MapPayload {
@@ -329,10 +325,8 @@ function publicSettlementPresentation(payload: MapPayload, viewerPlayerId?: stri
         regionId: feature.properties.regionId,
         ownerPlayerId: feature.properties.ownerPlayerId,
         ownerSultanateId: feature.properties.ownerSultanateId,
-        ...publicIdentity(feature.properties),
         // Level is public. Rank, power, visual tier and every other rival field stay private.
-        ...publicVillageLevel(feature.properties),
-        ...ownVillagePresentation(feature.properties, viewerPlayerId),
+        ...publicSettlementFields(feature.properties, viewerPlayerId),
       },
     })),
   };
