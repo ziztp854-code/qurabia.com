@@ -381,7 +381,7 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : projection(true)),
     );
     render(<KingdomsClient />);
-    const navigation = await screen.findByLabelText('إدارة المملكة', { hidden: true });
+    const navigation = await screen.findByRole('navigation', { name: 'إدارة المملكة', hidden: true });
     fireEvent.click(within(navigation).getByRole('button', { name: 'إرسال حملة', hidden: true }));
     expect(screen.getByTestId('unified-map')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('الوجهة X'), { target: { value: '0' } });
@@ -434,7 +434,9 @@ describe('Kingdoms player interface', () => {
     );
     render(<KingdomsClient />);
     expect(await screen.findByRole('alert', { name: 'هجوم قادم' })).toBeInTheDocument();
-    expect(screen.getByLabelText('1 هجمات قادمة', { hidden: true })).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'إدارة المملكة', hidden: true }).querySelector('[aria-label="1 هجمات قادمة"]'),
+    ).not.toBeNull();
     fireEvent.click(
       within(screen.getByRole('alert', { name: 'هجوم قادم' })).getByRole('button', { name: 'عرض على الخريطة' }),
     );
