@@ -25,7 +25,7 @@ export function VillageDirectory({ view, village, selected, onSelect }: Props) {
       view.config,
     );
     if (building === 'stable')
-      return { ...base, name: 'الإسطبل', description: 'قسم الفرسان التابع للثكنة' };
+      return { ...base, name: 'الإسطبل', description: 'مبنى الفرسان المستقل عن منطقة الثكنة' };
     if (building === 'rally')
       return {
         ...base,

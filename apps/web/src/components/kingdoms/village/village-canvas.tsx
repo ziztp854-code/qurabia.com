@@ -135,7 +135,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       }
       if (coordinateReadout.current && camera.current) {
         const snapshot = camera.current.getSnapshot();
-        coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · Zoom ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
+        coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · إطار ثابت ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
       }
       if (renderer.current && stage.current)
         renderer.current.update(
@@ -143,6 +143,20 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           deviceQuality(props, stage.current.clientWidth, stage.current.clientHeight),
         );
     }, [props]);
+
+    useEffect(() => {
+      const element = stage.current;
+      if (!props.selected || !element || window.innerWidth > 1000) return;
+      const reveal = () => {
+        const rect = element.getBoundingClientRect();
+        const sheetTop = window.innerHeight * 0.62 - 16;
+        if (rect.bottom > sheetTop - 8 || rect.top < 0)
+          element.scrollIntoView({ block: 'start', behavior: 'instant' });
+      };
+      reveal();
+      const frame = requestAnimationFrame(reveal);
+      return () => cancelAnimationFrame(frame);
+    }, [props.selected]);
 
     useEffect(() => {
       if (!stage.current || !terrain.current || !world.current || !canvas.current) return;
@@ -158,18 +172,6 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       const controller = new VillageCamera(bounds());
       controller.reducedMotion = current.current.reducedMotion;
       controller.debug = current.current.debug;
-      controller.getFocusAnchor = () => {
-        if (window.innerWidth > 1000) return undefined;
-        const rect = element.getBoundingClientRect();
-        const viewport = controller.getSnapshot().viewport;
-        const sheetTop = window.innerHeight * 0.62 - 16;
-        const visibleTop = Math.min(viewport.height, Math.max(0, -rect.top));
-        const visibleBottom = Math.min(viewport.height, Math.max(visibleTop, sheetTop - rect.top));
-        return {
-          x: viewport.width / 2,
-          y: Math.min(viewport.height, Math.max(48, (visibleTop + visibleBottom) / 2)),
-        };
-      };
       camera.current = controller;
       let active = true;
       let scene: VillageRenderer | null = null;
@@ -182,7 +184,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         element.dataset.cameraX = snapshot.x.toFixed(2);
         element.dataset.cameraY = snapshot.y.toFixed(2);
         if (coordinateReadout.current)
-          coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · Zoom ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
+          coordinateReadout.current.textContent = `X ${snapshot.x.toFixed(1)} / Y ${snapshot.y.toFixed(1)} · إطار ثابت ${snapshot.zoom.toFixed(2)}× · World ${VILLAGE_WORLD.width} × ${VILLAGE_WORLD.height}`;
         scene?.camera(snapshot);
       });
       const inputCleanup = bindVillageInput(element, controller);
@@ -192,19 +194,17 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           prev.width === next.width && prev.height === next.height ? prev : next,
         );
       };
+      const revealAboveSheet = () => {
+        if (!current.current.selected || window.innerWidth > 1000) return;
+        const rect = element.getBoundingClientRect();
+        const sheetTop = window.innerHeight * 0.62 - 16;
+        if (rect.bottom > sheetTop - 8 || rect.top < 0)
+          element.scrollIntoView?.({ block: 'start', behavior: 'instant' });
+      };
       const resize = () => {
         publishStage();
         controller.resize(bounds());
-        if (current.current.selected) {
-          if (window.innerWidth <= 1000) {
-            const rect = element.getBoundingClientRect();
-            const sheetTop = window.innerHeight * 0.62 - 16;
-            if (rect.top >= sheetTop - 48 || rect.bottom <= 48) {
-              element.scrollIntoView?.({ block: 'start', behavior: 'instant' });
-            }
-          }
-          controller.focusOn(current.current.selected);
-        }
+        revealAboveSheet();
         scene?.update(
           current.current,
           deviceQuality(current.current, element.clientWidth, element.clientHeight),
@@ -278,10 +278,6 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     }, [retry]);
 
     useEffect(() => {
-      if (props.selected) camera.current?.focusOn(props.selected);
-    }, [props.selected]);
-
-    useEffect(() => {
       if (!loaded || announced.current) return;
       announced.current = true;
       current.current.onReady?.();
@@ -301,10 +297,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       return () => clearInterval(timer);
     }, [props.village.build, props.view.serverNow]);
 
-    const choose = (building: VillageSelection) => {
-      if (camera.current) camera.current.focusOn(building, () => current.current.onSelect(building));
-      else current.current.onSelect(building);
-    };
+    const choose = (building: VillageSelection) => current.current.onSelect(building);
     const build = props.village.build;
     const now = props.view.serverNow + (clock.base === props.view.serverNow ? clock.elapsed : 0);
     const remaining = build ? Math.max(0, Math.ceil((build.endsAt - now) / 1000)) : 0;
@@ -327,9 +320,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         className={styles.stage}
         tabIndex={0}
         role="region"
-        aria-label="مشهد القرية التفاعلي، اسحب للتحريك وكبّر بعجلة الفأرة أو بإصبعين"
+        aria-label="مشهد القرية الثابت، اختر مبنى من المشهد أو من الدليل"
         aria-busy={!loaded && !failed}
         data-village-scene
+        data-fixed-view="true"
+        data-has-selection={props.selected ? 'true' : 'false'}
         data-pixi-ready={pixiReady}
         data-zoom="1"
         data-labels={props.showLabels}
@@ -367,6 +362,16 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           className={styles.world}
           style={{ width: VILLAGE_WORLD.width, height: VILLAGE_WORLD.height }}
         >
+          <svg
+            className={styles.roads}
+            viewBox={`0 0 ${VILLAGE_WORLD.width} ${VILLAGE_WORLD.height}`}
+            aria-hidden="true"
+          >
+            <path d="M756 837 L368 559" />
+            <path d="M756 837 L785 353" />
+            <path d="M785 353 L1198 689" />
+            <path d="M1198 689 L1121 519" />
+          </svg>
           <div className={styles.hotspots}>
             {buildingKeys.map((building) => {
               const presentation = getBuildingPresentation(
@@ -440,7 +445,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               onBlur={() => renderer.current?.hover(null)}
             >
               <span id={`${descriptionId}-stable`} className={styles.visuallyHidden}>
-                ملحق الفرسان التابع للثكنة؛ المستوى والتطوير والتدريب مرتبطون بالثكنة.
+                ملحق فرسان مستقل؛ المستوى والتدريب مرتبطان بالثكنة دون منطقة ضغط مشتركة.
               </span>
               <span className={styles.label}>
                 <Swords size={15} aria-hidden="true" />
@@ -461,8 +466,10 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               onFocus={() => renderer.current?.hover('rally')}
               onBlur={() => renderer.current?.hover(null)}
             >
+              <span className={styles.rallyMark} aria-hidden="true">
+                <Flag size={18} />
+              </span>
               <span className={styles.label}>
-                <Flag size={15} aria-hidden="true" />
                 <span>
                   نقطة تجمع الجيوش
                   <small>القيادة العسكرية</small>

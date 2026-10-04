@@ -7,7 +7,7 @@ export const VILLAGE_WORLD = { width: 1536, height: 1024 } as const;
 export const buildingPlots = {
   hall: { x: 548, y: 206, width: 474, height: 294 },
   farm: { x: 1120, y: 249, width: 373, height: 214 },
-  barracks: { x: 291, y: 406, width: 356, height: 196 },
+  barracks: { x: 291, y: 406, width: 356, height: 104 },
   market: { x: 1020, y: 589, width: 356, height: 200 },
   warehouse: { x: 985, y: 426, width: 272, height: 186 },
   treasury: { x: 294, y: 625, width: 261, height: 145 },
@@ -38,7 +38,7 @@ export const villageBuildingPlots = {
   archery: { x: 350, y: 435, width: 104, height: 67 },
   blacksmith: villageRegions.workshop,
   siege: { x: 459, y: 351, width: 120, height: 68 },
-  rally: { x: 365, y: 483, width: 164, height: 65 },
+  rally: { x: 291, y: 516, width: 153, height: 86 },
   hospital: { x: 901, y: 620, width: 77, height: 65 },
   knowledge: villageRegions.research,
   citadel: { x: 837, y: 271, width: 148, height: 128 },

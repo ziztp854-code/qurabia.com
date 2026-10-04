@@ -10,6 +10,18 @@ import {
 import { getVillagePlacement, getVillageRect, VILLAGE_WORLD } from './coordinates';
 import { villageAssets } from './assetManifest';
 
+function rectsOverlap(
+  left: { x: number; y: number; width: number; height: number },
+  right: { x: number; y: number; width: number; height: number },
+) {
+  return (
+    left.x < right.x + right.width &&
+    right.x < left.x + left.width &&
+    left.y < right.y + right.height &&
+    right.y < left.y + left.height
+  );
+}
+
 function confirmedVillage() {
   const now = 1800000000000;
   return projectWorld(
@@ -106,6 +118,9 @@ describe('Mamluk village presentation registry', () => {
     expect(confirmed.buildings.barracks).toBe(20);
     expect(getVillageRect('stable', preview)).toEqual({ x: 454, y: 516, width: 111, height: 67 });
     expect(getVillagePlacement('stable', preview)).toMatchObject({ focusX: 509.5, focusY: 549.5 });
+    expect(rectsOverlap(getVillageRect('barracks'), getVillageRect('stable'))).toBe(false);
+    expect(rectsOverlap(getVillageRect('barracks'), getVillageRect('rally'))).toBe(false);
+    expect(rectsOverlap(getVillageRect('stable'), getVillageRect('rally'))).toBe(false);
     expect(
       getVillageVisualLevel('archery', confirmed, { building: 'archery', buildingLevel: 3 }),
     ).toBe(0);

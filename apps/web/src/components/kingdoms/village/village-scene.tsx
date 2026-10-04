@@ -2,17 +2,10 @@
 import { VillageProgress } from './village-progress';
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
   Maximize,
   Minimize2,
   Pause,
   Play,
-  Tags,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 import { Button, Select } from '@/components/ui';
 import { buildingKeys } from '@/lib/kingdoms/types';
@@ -51,7 +44,6 @@ export type VillageSceneProps = Pick<GameProps, 'view' | 'village'> & {
 export function VillageScene({ view, village, selected, onSelect, onWorldMap, onShowMap, onRefresh }: VillageSceneProps) {
   const scene = useRef<VillageSceneHandle>(null);
   const [quality, setQuality] = useState<VillageQuality>('auto');
-  const [labels, setLabels] = useState(false);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -73,8 +65,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const reset = useCallback(() => scene.current?.reset(), []);
   const onReady = useCallback(() => setReady(true), []);
   const choose = useCallback((building: VillageSelection) => {
-    if (scene.current) scene.current.focusOn(building, () => onSelect(building));
-    else onSelect(building);
+    onSelect(building);
   }, [onSelect]);
   const incoming = presentIncomingThreats(view.incoming ?? [], view.serverNow);
   const hostile = hostileThreats(villageIncoming(incoming, village.id));
@@ -131,7 +122,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           onWorldMap={onWorldMap}
           quality={quality}
           reducedMotion={reducedMotion}
-          showLabels={labels}
+          showLabels={false}
           showThreatMarker={hostile.length > 0}
           threatSeverity={threatSeverity}
           debug={options}
@@ -140,33 +131,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         <VillageDirectory view={view} village={village} selected={selected} onSelect={choose} />
       </div>
       <VillageActivity view={view} village={village} onFocus={choose} onShowMap={onShowMap} onRefresh={onRefresh} />
-      <div className={styles.controls} role="group" aria-label="كاميرا القرية">
-        <Button
-          variant="outline"
-          aria-label="تكبير القرية"
-          onClick={() => scene.current?.zoomBy(1.25)}
-        >
-          <ZoomIn size={18} aria-hidden="true" />
-        </Button>
-        <Button
-          variant="outline"
-          aria-label="تصغير القرية"
-          onClick={() => scene.current?.zoomBy(0.8)}
-        >
-          <ZoomOut size={18} aria-hidden="true" />
-        </Button>
-        <Button variant="outline" onClick={reset}>
-          <Maximize size={18} aria-hidden="true" />
-          عرض القرية بالكامل
-        </Button>
-        <Button
-          variant="outline"
-          aria-pressed={labels}
-          onClick={() => setLabels((shown) => !shown)}
-        >
-          <Tags size={18} aria-hidden="true" />
-          إظهار أسماء المباني
-        </Button>
+      <div className={styles.controls} role="group" aria-label="عرض القرية">
         <Button
           variant="outline"
           aria-pressed={paused}
@@ -175,49 +140,13 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           {paused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
           {paused ? 'تشغيل الحركة' : 'إيقاف الحركة'}
         </Button>
-        <details>
-          <summary>تحريك الخريطة</summary>
-          <div className={styles.pan}>
-            <Button
-              variant="outline"
-              aria-label="تحريك القرية يمينًا"
-              onClick={() => scene.current?.panBy(-100, 0)}
-            >
-              <ArrowRight size={18} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="outline"
-              aria-label="تحريك القرية يسارًا"
-              onClick={() => scene.current?.panBy(100, 0)}
-            >
-              <ArrowLeft size={18} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="outline"
-              aria-label="تحريك القرية للأعلى"
-              onClick={() => scene.current?.panBy(0, 100)}
-            >
-              <ArrowUp size={18} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="outline"
-              aria-label="تحريك القرية للأسفل"
-              onClick={() => scene.current?.panBy(0, -100)}
-            >
-              <ArrowDown size={18} aria-hidden="true" />
-            </Button>
-          </div>
-        </details>
       </div>
       <div className={styles.settings}>
         <Select
           label="اختر مبنى من الخريطة"
           value={selected ?? ''}
           onChange={(event) => {
-            if (event.target.value) {
-              const building = event.target.value as VillageSelection;
-              scene.current?.focusOn(building, () => onSelect(building));
-            }
+            if (event.target.value) onSelect(event.target.value as VillageSelection);
           }}
         >
           <option value="" disabled>
@@ -246,9 +175,15 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         </Select>
       </div>
       <p className={styles.hint}>
-        اسحب للتحريك، واستخدم عجلة الماوس أو إصبعين للتكبير. لوحة المفاتيح: الأسهم للتحريك، + و−
-        للتكبير، و0 لعرض القرية.
+        القرية ثابتة في الإطار. اختر مبنى بالضغط أو من الدليل، أو بلوحة المفاتيح عبر التركيز ثم Enter.
       </p>
+      <ul className={styles.districts} aria-label="مناطق القرية">
+        <li>الإدارة</li>
+        <li>العسكر</li>
+        <li>الاقتصاد</li>
+        <li>الموارد</li>
+        <li>الدفاع</li>
+      </ul>
       {view.player && (
         <VillageOnboarding
           key={view.player.id}

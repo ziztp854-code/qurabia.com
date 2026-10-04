@@ -31,19 +31,20 @@ describe('village world camera', () => {
     expect(projectPoint({ x: 0, y: 0 }, panned).x).toBe(0);
     expect(projectPoint({ x: 1536, y: 1024 }, panned).y).toBe(512);
   });
-  it('focuses real artwork coordinates and preserves the world position after resize', () => {
+  it('refits the whole village on resize instead of keeping a previous zoom', () => {
     const focused = focusCamera(createCamera({ width: 768, height: 512 }), {
       x: 600,
       y: 400,
       width: 200,
       height: 200,
     });
-    expect(focused.zoom).toBeCloseTo(3.3792);
-    expect(projectPoint({ x: 700, y: 500 }, focused)).toEqual({ x: 384, y: 256 });
+    expect(focused.zoom).toBeGreaterThan(1);
     const resized = resizeCamera(focused, { width: 1536, height: 1024 });
-    expect(resized.x).toBe(700);
-    expect(resized.y).toBe(500);
-    expect(resized.zoom).toBe(focused.zoom);
+    expect(resized.zoom).toBe(1);
+    expect(resized.x).toBe(768);
+    expect(resized.y).toBe(512);
+    expect(projectPoint({ x: 0, y: 0 }, resized)).toEqual({ x: 0, y: 0 });
+    expect(projectPoint({ x: 1536, y: 1024 }, resized)).toEqual({ x: 1536, y: 1024 });
   });
   it('positions a mobile selection above the bottom sheet without changing desktop focus', () => {
     const camera = createCamera({ width: 384, height: 400 });

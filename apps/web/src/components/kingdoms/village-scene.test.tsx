@@ -169,24 +169,17 @@ describe('village scene rendering', () => {
     expect(document.body.innerHTML).not.toContain('commanderId');
   });
 
-  it('hides scene labels on request without hiding the selected building', () => {
+  it('keeps labels on the selected building without a camera zoom control', () => {
     const view = fixture();
     const { container } = render(
       <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} initialBuilding="hall" />,
     );
-    const labels = screen.getByRole('button', { name: 'إظهار أسماء المباني' });
-    expect(labels).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: 'تكبير القرية' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'تصغير القرية' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'عرض القرية بالكامل' })).not.toBeInTheDocument();
+    expect(container.querySelector('[data-fixed-view]')).toHaveAttribute('data-fixed-view', 'true');
     expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
-    fireEvent.click(labels);
-    expect(labels).toHaveAttribute('aria-pressed', 'true');
-    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'true');
-    fireEvent.click(labels);
-    expect(labels).toHaveAttribute('aria-pressed', 'false');
-    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
-    expect(screen.getByRole('button', { name: /^دار الحكم/ })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(screen.getByRole('button', { name: /^دار الحكم/ })).toHaveAttribute('aria-pressed', 'true');
   });
 });
 

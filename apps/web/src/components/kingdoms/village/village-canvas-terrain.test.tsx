@@ -42,7 +42,7 @@ describe('village terrain and animated overlays', () => {
         />,
       );
     });
-    const stage = screen.getByRole('region', { name: /مشهد القرية التفاعلي/ });
+    const stage = screen.getByRole('region', { name: /مشهد القرية الثابت/ });
     await vi.waitFor(() => expect(stage.dataset.pixiReady).toBe('true'));
     const terrain = stage.querySelector('img')!.parentElement!;
     const hotspots = stage.querySelector('[data-building="hall"]')!.parentElement!.parentElement!;
@@ -51,9 +51,10 @@ describe('village terrain and animated overlays', () => {
     expect(terrain.style.transform).toBe(hotspots.style.transform);
     expect(terrain.querySelector('img')!.style.visibility).not.toBe('hidden');
     await act(async () => ref.current!.zoomBy(2));
-    expect(stage.dataset.zoom).toBe('2.000');
+    expect(stage.dataset.zoom).toBe('1.000');
     expect(terrain.style.transform).toBe(hotspots.style.transform);
     await act(async () => ref.current!.panBy(120, 80));
+    expect(stage.dataset.zoom).toBe('1.000');
     expect(terrain.style.transform).toBe(hotspots.style.transform);
     await act(async () => ref.current!.reset());
     expect(stage.dataset.zoom).toBe('1.000');
@@ -82,7 +83,7 @@ describe('village terrain and animated overlays', () => {
           />,
         );
       });
-      return screen.getByRole('region', { name: /مشهد القرية التفاعلي/ });
+      return screen.getByRole('region', { name: /مشهد القرية الثابت/ });
     };
     const low = await renderAt('low');
     expect(low.dataset.terrainFidelity).toBe('standard');

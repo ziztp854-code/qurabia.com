@@ -34,7 +34,7 @@ describe('village building directory', () => {
     expect(stable).toHaveTextContent('قيد التطوير');
     expect(stable).toHaveAccessibleDescription('مستوى ٢ قيد التطوير');
     expect(stable).not.toHaveTextContent('مستوى ٣');
-    expect(screen.getByRole('status')).toHaveTextContent('قسم الفرسان التابع للثكنة');
+    expect(screen.getByRole('status')).toHaveTextContent('مبنى الفرسان المستقل عن منطقة الثكنة');
   });
 
   it('keeps unavailable building names discoverable and reports their resource state', () => {

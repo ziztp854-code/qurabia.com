@@ -1,18 +1,9 @@
-import {
-  clampCamera,
-  createCamera,
-  focusCamera,
-  panCamera,
-  resizeCamera,
-  zoomCamera,
-} from '@/lib/kingdoms/village/cameraMath';
-import { getVillagePlacement } from '@/lib/kingdoms/village/coordinates';
+import { clampCamera, createCamera } from '@/lib/kingdoms/village/cameraMath';
 import type {
   CameraSnapshot,
   VillageDebugOptions,
   VillageSceneHandle,
   VillageTarget,
-  WorldPoint,
   WorldSize,
 } from '@/lib/kingdoms/village/types';
 
@@ -23,7 +14,6 @@ export class VillageCamera implements VillageSceneHandle {
   private disposed = false;
   reducedMotion = false;
   debug?: VillageDebugOptions;
-  getFocusAnchor?: () => WorldPoint | undefined;
 
   constructor(viewport: WorldSize) {
     this.camera = createCamera(viewport);
@@ -44,69 +34,20 @@ export class VillageCamera implements VillageSceneHandle {
     cancelAnimationFrame(this.frame);
     this.frame = 0;
   }
-  private animate(target: CameraSnapshot, onComplete?: () => void) {
-    this.cancel();
-    if (this.disposed) return;
-    if (
-      this.reducedMotion ||
-      (Math.abs(this.camera.x - target.x) < 0.01 &&
-        Math.abs(this.camera.y - target.y) < 0.01 &&
-        Math.abs(this.camera.zoom - target.zoom) < 0.001)
-    ) {
-      this.publish(target);
-      onComplete?.();
-      return;
-    }
-    const origin = this.camera;
-    const startedAt = performance.now();
-    const tick = () => {
-      const progress = Math.min(1, Math.max(0, (performance.now() - startedAt) / 650));
-      const ease = 1 - (1 - progress) ** 3;
-      this.publish({
-        ...target,
-        x: origin.x + (target.x - origin.x) * ease,
-        y: origin.y + (target.y - origin.y) * ease,
-        zoom: origin.zoom + (target.zoom - origin.zoom) * ease,
-      });
-      if (progress < 1) this.frame = requestAnimationFrame(tick);
-      else {
-        this.frame = 0;
-        onComplete?.();
-      }
-    };
-    this.frame = requestAnimationFrame(tick);
+  focusOn(target: VillageTarget, onComplete?: () => void) {
+    void target;
+    onComplete?.();
   }
-  focusOn = (target: VillageTarget, onComplete?: () => void) => {
-    const placement = getVillagePlacement(target, this.debug);
-    this.animate(
-      focusCamera(
-        this.camera,
-        {
-          ...placement,
-          x: placement.focusX - placement.width / 2,
-          y: placement.focusY - placement.height / 2,
-        },
-        this.getFocusAnchor?.(),
-        process.env.NODE_ENV === 'development'
-          ? this.debug?.placementOverrides?.[target]?.focusScale
-          : undefined,
-      ),
-      onComplete,
-    );
-  };
-  zoomBy = (factor: number) => this.animate(zoomCamera(this.camera, factor));
-  zoomAt = (factor: number, anchor: WorldPoint) => {
+  zoomBy() {}
+  zoomAt() {}
+  panBy() {}
+  reset = () => {
     this.cancel();
-    this.publish(zoomCamera(this.camera, factor, anchor));
+    this.publish(createCamera(this.camera.viewport));
   };
-  panBy = (dx: number, dy: number) => {
-    this.cancel();
-    this.publish(panCamera(this.camera, dx, dy));
-  };
-  reset = () => this.animate(createCamera(this.camera.viewport));
   resize(viewport: WorldSize) {
     this.cancel();
-    this.publish(resizeCamera(this.camera, viewport));
+    this.publish(createCamera(viewport));
   }
   destroy() {
     this.cancel();

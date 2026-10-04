@@ -103,6 +103,6 @@ export function focusCamera(
   return clampCamera({ ...camera, ...target, zoom });
 }
 
-export function resizeCamera(camera: CameraSnapshot, viewport: WorldSize): CameraSnapshot {
-  return clampCamera({ ...camera, viewport });
+export function resizeCamera(_camera: CameraSnapshot, viewport: WorldSize): CameraSnapshot {
+  return createCamera(viewport);
 }

@@ -6,7 +6,7 @@
   background: var(--background);
   touch-action: none;
   direction: ltr;
-  cursor: grab;
+  cursor: default;
   isolation: isolate;
   --camera-scale: 0.5;
 }
@@ -59,8 +59,6 @@
 }
 .hotspot {
   position: absolute;
-  min-width: calc(44px / var(--camera-scale));
-  min-height: calc(44px / var(--camera-scale));
   padding: 0;
   border: 0;
   background: transparent;
@@ -139,10 +137,41 @@
 }
 .rally {
   z-index: 2;
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+.rallyMark {
+  position: absolute;
+  inset: 18% 30% auto;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  pointer-events: none;
+  transform: scale(calc(1 / var(--camera-scale)));
+}
+.roads {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.roads path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 18 14;
+  opacity: 0.55;
+}
+.stage[data-has-selection='true'] .hotspot:not([aria-pressed='true']) {
+  opacity: 0.72;
 }
 @media (prefers-reduced-motion: reduce) {
-  .rally {
+  .rally,
+  .hotspot,
+  .roads {
     animation: none;
+    transition: none;
   }
 }
 .region .label {
