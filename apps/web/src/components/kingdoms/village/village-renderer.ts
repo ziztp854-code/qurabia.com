@@ -67,8 +67,10 @@ export async function createVillageRenderer(
     throw error;
   }
   let source: Texture;
+  const cropPlate = resolveVillageAssetSrc(villageAssets.base, 'standard') ?? villageAssets.base.src;
   try {
-    source = await Assets.load<Texture>(villageAssets.base.src);
+    // Overlay crops use the 1536×1024 plate. Hidpi and ultra stay on the DOM terrain image.
+    source = await Assets.load<Texture>(cropPlate);
   } catch (error) {
     app.destroy(false, { children: true });
     throw error;
@@ -123,6 +125,8 @@ export async function createVillageRenderer(
       ...(nextSettings.environment ? Object.values(villageAssets.environment) : []),
     ];
     const fidelity = villageAssetFidelity(nextSettings.mode);
+    const terrainPlate = resolveVillageAssetSrc(villageAssets.base, fidelity);
+    const standardPlate = resolveVillageAssetSrc(villageAssets.base, 'standard');
     const sources = [
       ...new Set(
         slots.flatMap((slot) => {
@@ -130,7 +134,7 @@ export async function createVillageRenderer(
           return [...(src ? [src] : []), ...slot.frames];
         }),
       ),
-    ];
+    ].filter((src) => src === standardPlate || src !== terrainPlate);
     await Promise.all(
       sources.map(async (src) => {
         if (approved.has(src)) return;

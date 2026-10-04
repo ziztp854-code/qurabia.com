@@ -295,8 +295,20 @@ test('original artwork, camera, real build lifecycle, and world navigation', asy
         height: Math.round(16 * scale),
       })
       .toBuffer();
-    const originalPixels = await decodeImage('public/game-art/kingdoms/village-oasis.webp')
-      .extract({ left: 540, top: 265, width: 16, height: 16 })
+    const terrainUrl = await viewport.locator('img').evaluate((img: HTMLImageElement) => img.currentSrc);
+    const plate = terrainUrl.includes('village-oasis-ultra.webp')
+      ? 'public/game-art/kingdoms/village-oasis-ultra.webp'
+      : terrainUrl.includes('village-oasis-hidpi.webp')
+        ? 'public/game-art/kingdoms/village-oasis-hidpi.webp'
+        : 'public/game-art/kingdoms/village-oasis.webp';
+    const plateScale = plate.includes('ultra') ? 5 : plate.includes('hidpi') ? 3840 / 1536 : 1;
+    const originalPixels = await decodeImage(plate)
+      .extract({
+        left: Math.round(540 * plateScale),
+        top: Math.round(265 * plateScale),
+        width: Math.max(1, Math.round(16 * plateScale)),
+        height: Math.max(1, Math.round(16 * plateScale)),
+      })
       .toBuffer();
     const [actual, original] = await Promise.all([
       decodeImage(actualPixels).stats(),
@@ -330,6 +342,17 @@ test('original artwork, camera, real build lifecycle, and world navigation', asy
     'aria-pressed',
     'true',
   );
+  const terrainFidelity = await viewport.getAttribute('data-terrain-fidelity');
+  const terrainSrc = await viewport.locator('img').evaluate((img: HTMLImageElement) => img.currentSrc);
+  if (testInfo.project.name === 'iphone' || testInfo.project.name === 'android') {
+    expect(terrainFidelity).toBe('standard');
+    expect(terrainSrc).not.toContain('village-oasis-ultra');
+    expect(terrainSrc).not.toContain('village-oasis-hidpi');
+  }
+  if (testInfo.project.name === 'desktop-1920') {
+    expect(terrainFidelity).not.toBe('ultra');
+    expect(terrainSrc).not.toContain('village-oasis-ultra');
+  }
   await village.getByLabel('جودة المشهد').selectOption('low');
   await village.getByRole('button', { name: 'إيقاف الحركة' }).click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
@@ -523,12 +546,40 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   }
   await page.setViewportSize({ width: 1920, height: 1080 });
   await viewport.scrollIntoViewIfNeeded();
+  await expect.poll(() => viewport.getAttribute('data-terrain-fidelity')).not.toBe('ultra');
   await page.screenshot({ path: testInfo.outputPath('village-1080-overview.png'), scale: 'css' });
+  await village.getByLabel('جودة المشهد').selectOption('high');
+  await expect(viewport).toHaveAttribute('data-terrain-fidelity', 'hidpi');
+  await expect(viewport).toHaveAttribute('data-terrain-src', '/game-art/kingdoms/village-oasis-hidpi.webp');
+  await expect.poll(() => viewport.locator('img').evaluate((img: HTMLImageElement) => img.complete ? img.naturalWidth : 0)).toBe(3840);
+  await viewport.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: testInfo.outputPath('village-hidpi-overview.png'), scale: 'css' });
+  await village.getByLabel('جودة المشهد').selectOption('auto');
   await page.setViewportSize({ width: 3840, height: 2160 });
   await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await viewport.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('village-4k-overview.png'), scale: 'css' });
+  await village.getByLabel('جودة المشهد').selectOption('ultra');
+  await expect(viewport).toHaveAttribute('data-terrain-fidelity', 'ultra');
+  await expect(viewport).toHaveAttribute('data-terrain-src', '/game-art/kingdoms/village-oasis-ultra.webp');
+  await expect.poll(() => viewport.locator('img').evaluate((img: HTMLImageElement) => img.complete ? img.naturalWidth : 0)).toBe(7680);
+  await page.screenshot({ path: testInfo.outputPath('village-4k-ultra-overview.png'), scale: 'css' });
+  for (let step = 0; step < 4; step += 1) {
+    await village.getByRole('button', { name: 'تكبير القرية' }).click();
+  }
+  await expect.poll(async () => Number(await viewport.getAttribute('data-zoom'))).toBeGreaterThan(2);
+  await page.screenshot({ path: testInfo.outputPath('village-4k-close-zoom.png'), scale: 'css' });
+  await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
+  await village.locator('[data-building="barracks"]').click();
+  await expect(page.getByRole('region', { name: 'تفاصيل الثكنة', exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('village-4k-selected-barracks.png'), scale: 'css' });
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  await village.locator('[data-building-region="stable"]').click();
+  await expect(page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('village-4k-selected-stable.png'), scale: 'css' });
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   await village.getByRole('button', { name: /دار الحكم.*المستوى/ }).click();
   await expect(page.getByRole('region', { name: 'تفاصيل دار الحكم' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('village-4k-selected-building.png'), scale: 'css' });

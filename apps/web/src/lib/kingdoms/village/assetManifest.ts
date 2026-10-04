@@ -33,7 +33,10 @@ export type VillageNPC =
   | 'stableMaster'
   | 'cavalry';
 const original = '/game-art/kingdoms/village-oasis.webp';
-/** LOW_RESOLUTION_FOR_4K: shipped oasis plate is 1536×1024. */
+const hidpiPlate = '/game-art/kingdoms/village-oasis-hidpi.webp';
+const ultraPlate = '/game-art/kingdoms/village-oasis-ultra.webp';
+/** LOW_RESOLUTION_FOR_4K: the standard oasis plate is 1536×1024. */
+
 export const villageBaseClassification = 'LOW_RESOLUTION_FOR_4K' as const;
 
 export function resolveVillageAssetSrc(
@@ -160,7 +163,7 @@ export const villageAssets = {
     src: original,
     ...VILLAGE_WORLD,
     classification: villageBaseClassification,
-    variants: { standard: original, hidpi: null, ultra: null } as const,
+    variants: { standard: original, hidpi: hidpiPlate, ultra: ultraPlate } as const,
   },
   // MISSING_ASSET: dedicated settlement/city illustrations are not available.
   // Reuse bounded banner crops from the approved base art without inventing buildings.

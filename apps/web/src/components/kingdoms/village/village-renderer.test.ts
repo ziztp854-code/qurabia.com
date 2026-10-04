@@ -184,6 +184,9 @@ describe('village rendering surface dimensions', () => {
       resolveVillageQuality('ultra', { width: 1280, height: 720, dpr: 2 }),
     );
     expect(gpu.initCount).toBe(1);
+    const loaded = vi.mocked(Assets.load as (src: string) => Promise<Texture>).mock.calls.map(([src]) => src);
+    expect(loaded).toContain('/game-art/kingdoms/village-oasis.webp');
+    expect(loaded.some((src) => src.includes('village-oasis-ultra') || src.includes('village-oasis-hidpi'))).toBe(false);
     renderer.destroy();
   });
 });

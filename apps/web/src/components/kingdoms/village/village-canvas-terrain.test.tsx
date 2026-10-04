@@ -59,4 +59,42 @@ describe('village terrain and animated overlays', () => {
     expect(stage.dataset.zoom).toBe('1.000');
     expect(terrain.style.transform).toBe(hotspots.style.transform);
   });
+
+  it('selects the terrain plate from quality without sending the 8K master to low or medium', async () => {
+    const now = 1800000000000;
+    const view = projectWorld(
+      executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now),
+      'p',
+      now,
+    );
+    const renderAt = async (quality: 'low' | 'medium' | 'high' | 'ultra') => {
+      cleanup();
+      await act(async () => {
+        render(
+          <VillageCanvas
+            view={view}
+            village={view.villages[0]}
+            selected={null}
+            onSelect={vi.fn()}
+            quality={quality}
+            reducedMotion
+            showLabels={false}
+          />,
+        );
+      });
+      return screen.getByRole('region', { name: /مشهد القرية التفاعلي/ });
+    };
+    const low = await renderAt('low');
+    expect(low.dataset.terrainFidelity).toBe('standard');
+    expect(low.dataset.terrainSrc).toBe('/game-art/kingdoms/village-oasis.webp');
+    const medium = await renderAt('medium');
+    expect(medium.dataset.terrainSrc).toBe('/game-art/kingdoms/village-oasis.webp');
+    const high = await renderAt('high');
+    expect(high.dataset.terrainFidelity).toBe('hidpi');
+    expect(high.dataset.terrainSrc).toBe('/game-art/kingdoms/village-oasis-hidpi.webp');
+    const ultra = await renderAt('ultra');
+    expect(ultra.dataset.terrainFidelity).toBe('ultra');
+    expect(ultra.dataset.terrainSrc).toBe('/game-art/kingdoms/village-oasis-ultra.webp');
+    expect(ultra.querySelector('img')?.getAttribute('src')).toContain('village-oasis-ultra.webp');
+  });
 });

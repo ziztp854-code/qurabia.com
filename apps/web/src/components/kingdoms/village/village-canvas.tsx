@@ -29,7 +29,7 @@ import {
   type CSSProperties,
 } from 'react';
 import { buildingKeys } from '@/lib/kingdoms/types';
-import { villageAssets } from '@/lib/kingdoms/village/assetManifest';
+import { resolveVillageAssetSrc, villageAssetFidelity, villageAssets } from '@/lib/kingdoms/village/assetManifest';
 import {
   buildingGroups,
   buildingStatusLabels,
@@ -108,6 +108,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     const [loaded, setLoaded] = useState(false);
     const [pixiReady, setPixiReady] = useState(false);
     const [retry, setRetry] = useState(0);
+    const [measuredStage, setMeasuredStage] = useState({ width: 1, height: 1 });
     const [clock, setClock] = useState({ base: props.view.serverNow, elapsed: 0 });
     const announced = useRef(false);
     const descriptionId = useId();
@@ -185,7 +186,14 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         scene?.camera(snapshot);
       });
       const inputCleanup = bindVillageInput(element, controller);
+      const publishStage = () => {
+        const next = { width: element.clientWidth || 1, height: element.clientHeight || 1 };
+        setMeasuredStage((prev) =>
+          prev.width === next.width && prev.height === next.height ? prev : next,
+        );
+      };
       const resize = () => {
+        publishStage();
         controller.resize(bounds());
         if (current.current.selected) {
           if (window.innerWidth <= 1000) {
@@ -204,6 +212,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       };
       const observer =
         typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(resize);
+      publishStage();
       observer?.observe(element);
       window.addEventListener('resize', resize);
       let inViewport = true;
@@ -304,6 +313,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             Math.max(0, ((now - build.startedAt) / (build.endsAt - build.startedAt)) * 100),
           )
         : undefined;
+    const terrainFidelity = villageAssetFidelity(
+      deviceQuality(props, measuredStage.width, measuredStage.height).mode,
+    );
+    const terrainSrc =
+      resolveVillageAssetSrc(villageAssets.base, terrainFidelity) ?? villageAssets.base.src;
 
     return (
       <div
@@ -320,6 +334,8 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         data-threat-severity={props.threatSeverity}
         data-visual-tier={props.village.progression?.visualTier}
         data-debug-hitboxes={process.env.NODE_ENV === 'development' && props.debug?.hitboxes}
+        data-terrain-fidelity={terrainFidelity}
+        data-terrain-src={terrainSrc}
       >
         <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
         <div
@@ -328,8 +344,8 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           style={{ width: VILLAGE_WORLD.width, height: VILLAGE_WORLD.height }}
         >
           <Image
-            key={retry}
-            src={villageAssets.base.src}
+            key={`${retry}:${terrainSrc}`}
+            src={terrainSrc}
             alt=""
             fill
             sizes="(min-width: 2560px) 1920px, (max-width: 700px) 100vw, 1200px"
