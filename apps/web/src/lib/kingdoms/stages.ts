@@ -59,6 +59,18 @@ export function maxVillageLevels(config: KingdomsConfig): number {
   return buildingKeys.reduce((sum, key) => sum + Math.max(1, config.buildings[key].maxLevel), 0);
 }
 
+/**
+ * Stage ceiling for one village. An unbuilt stable is outside the ladder so a world
+ * that only just received the key at level 0 does not drop a stage. From level 1
+ * the stable uses its full max level, like every other building.
+ */
+export function villageStageCeiling(config: KingdomsConfig, village: Pick<Village, 'buildings'>) {
+  return buildingKeys.reduce((sum, key) => {
+    if (key === 'stable' && (village.buildings.stable ?? 0) <= 0) return sum;
+    return sum + Math.max(1, config.buildings[key].maxLevel);
+  }, 0);
+}
+
 /** مجموع مستويات المباني الفعلية في القرية كما وصلت من الخادم. */
 export function villageLevels(village: Village): number {
   return buildingKeys.reduce((sum, key) => sum + Math.max(0, village.buildings[key]), 0);
@@ -96,7 +108,7 @@ export type VillageProgress = {
 };
 
 export function villageProgress(village: Village, config: KingdomsConfig): VillageProgress {
-  const maxLevels = maxVillageLevels(config);
+  const maxLevels = villageStageCeiling(config, village);
   const levels = villageLevels(village);
   const share = maxLevels > 0 ? levels / maxLevels : 0;
   const stage = stageForFraction(share);

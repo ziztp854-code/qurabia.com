@@ -157,9 +157,6 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
               {view.config.buildings[building].name} · {village.buildings[building]}
             </option>
           ))}
-          <option value="stable">
-            الإسطبل · مستوى الثكنة {village.buildings.barracks}
-          </option>
           <option value="rally">نقطة تجمع الجيوش</option>
         </Select>
         <Select

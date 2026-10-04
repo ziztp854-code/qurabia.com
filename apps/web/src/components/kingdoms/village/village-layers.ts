@@ -500,7 +500,7 @@ export function paintInteraction(
   colors: SceneColors,
 ) {
   graphics.clear();
-  for (const building of [...buildingKeys, 'stable', 'rally'] as const) {
+  for (const building of [...new Set<VillageSelection>([...buildingKeys, 'stable', 'rally'])]) {
     const rect = getVillageRect(building, props.debug);
     if (props.selected === building || hovered === building) {
       graphics

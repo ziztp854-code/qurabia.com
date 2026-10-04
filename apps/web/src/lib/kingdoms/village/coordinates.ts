@@ -16,7 +16,7 @@ export const buildingPlots = {
   mine: { x: 305, y: 108, width: 256, height: 179 },
   lumber: { x: 748, y: 84, width: 290, height: 192 },
   wall: { x: 265, y: 741, width: 344, height: 113 },
-} as const satisfies Record<Building, WorldRect>;
+} as const satisfies Record<Exclude<Building, 'stable'>, WorldRect>;
 
 export const villageRegions = {
   gate: { x: 681, y: 778, width: 151, height: 118 },

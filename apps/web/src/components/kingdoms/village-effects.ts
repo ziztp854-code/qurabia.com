@@ -61,7 +61,14 @@ export function buildingEffect(
       };
     case 'barracks':
       return {
-        label: 'سرعة تدريب الوحدات',
+        label: 'سرعة تدريب الثكنة',
+        ...at((lvl) =>
+          lvl > 0 ? `×${decimal(1 + (lvl - 1) * config.barracksSpeedPerLevel)}` : 'مغلق',
+        ),
+      };
+    case 'stable':
+      return {
+        label: 'سرعة تدريب الفرسان',
         ...at((lvl) =>
           lvl > 0 ? `×${decimal(1 + (lvl - 1) * config.barracksSpeedPerLevel)}` : 'مغلق',
         ),

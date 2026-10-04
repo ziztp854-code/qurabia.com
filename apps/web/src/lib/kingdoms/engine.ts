@@ -10,6 +10,7 @@ import {
 import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config';
 import { addCommanderExperience, availableCommander, commanderConfig, createCommander, normalizeCommanders, projectCommanders, setCommander } from './commanders';
 import { commanderTravelFactor } from './commander-movement';
+import { trainingBuilding, trainingDurationMs } from './training';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
   advanceDraft,
@@ -161,7 +162,11 @@ function train(
 ) {
   const v = own(w, actor, c.villageId),
     spec = w.config.units[c.unit];
-  assertRule(v.buildings.barracks > 0, 'ابنِ الثكنة أولاً');
+  const hall = trainingBuilding(c.unit);
+  assertRule(
+    v.buildings[hall] > 0,
+    hall === 'stable' ? 'ابنِ الإسطبل أولاً' : 'ابنِ الثكنة أولاً',
+  );
   assertRule(!v.training, 'يوجد تدريب جارٍ');
   assertRule(
     c.unit !== 'settler' || v.buildings.hall >= w.config.settlerHallLevel,
@@ -176,8 +181,7 @@ function train(
     count: c.count,
     endsAt: deadline(
       at,
-      (spec.seconds * c.count * 1000) /
-        (1 + (v.buildings.barracks - 1) * w.config.barracksSpeedPerLevel),
+      trainingDurationMs(spec.seconds, c.count, v.buildings[hall], w.config.barracksSpeedPerLevel),
     ),
   };
 }

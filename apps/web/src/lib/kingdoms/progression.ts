@@ -106,6 +106,8 @@ export function refreshVillageProgression(
     nextLevelXp += config.xpStep * level * (1 + Math.floor(level / 10));
   }
   const power = {
+    // Hall, barracks, stable and embassy share buildingPower. Wall and economy stay separate.
+    // A missing or zero stable adds nothing; the asset alone is not power.
     building: buildingKeys
       .filter((key) => key !== 'wall' && !economic.has(key))
       .reduce((sum, key) => sum + v.buildings[key] * config.buildingPower, 0),

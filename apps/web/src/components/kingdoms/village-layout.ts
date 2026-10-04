@@ -201,7 +201,7 @@ export const villagePlots = {
       [680, 716],
     ],
   },
-} satisfies Record<Building, PlotSpec>;
+} satisfies Record<Exclude<Building, 'stable'>, PlotSpec>;
 
 export function boundsOf(points: readonly Point[]): Box {
   const xs = points.map(([x]) => x);
@@ -212,6 +212,7 @@ export function boundsOf(points: readonly Point[]): Box {
 }
 
 export function hitBox(building: Building): Box {
+  if (building === 'stable') return { x: 454, y: 516, w: 111, h: 67 };
   const plot: PlotSpec = villagePlots[building];
   return plot.hit ?? boundsOf(plot.outline);
 }

@@ -10,6 +10,7 @@ export const buildingKeys = [
   'treasury',
   'warehouse',
   'barracks',
+  'stable',
   'wall',
   'market',
   'embassy',

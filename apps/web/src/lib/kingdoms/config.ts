@@ -51,6 +51,9 @@ export const defaultKingdomsConfig: KingdomsConfig = {
     treasury: building('بيت الذهب', cost(250, 250, 150, 80, 20), 180),
     warehouse: building('المخزن', cost(120, 160, 60, 40), 100),
     barracks: building('الثكنة', cost(180, 140, 120, 60), 120),
+    // Cavalry yard beside the barracks: a little more wood, iron and food, less stone.
+    // Same 120s base, 1.55 growth and level cap. No other building cost changes.
+    stable: building('الإسطبل', cost(200, 120, 140, 80), 120),
     wall: building('السور', cost(80, 220, 100, 30), 100),
     market: building('السوق', cost(200, 180, 100, 80, 10), 150),
     embassy: building('دار العهد', cost(200, 200, 80, 60, 20), 150),

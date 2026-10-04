@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createWorld, executeCommand, projectWorld } from '../engine';
 import { buildingKeys } from '../types';
 import {
-  buildingPlots,
   containsPoint,
+  getVillageRect,
   rectCenter,
   villageRegions,
   VILLAGE_WORLD,
@@ -13,7 +13,7 @@ import { getBuildingPresentation, villageBuildingSceneStatus } from './buildingC
 describe('village artwork mapping', () => {
   it('maps every real backend building to an area inside the unchanged artwork', () => {
     for (const building of buildingKeys) {
-      const rect = buildingPlots[building];
+      const rect = getVillageRect(building);
       expect(rect.x).toBeGreaterThanOrEqual(0);
       expect(rect.y).toBeGreaterThanOrEqual(0);
       expect(rect.x + rect.width).toBeLessThanOrEqual(VILLAGE_WORLD.width);
@@ -23,10 +23,12 @@ describe('village artwork mapping', () => {
   });
   it('keeps supplemental actions from intercepting the centers of real backend buildings', () => {
     for (const building of buildingKeys) {
-      const center = rectCenter(buildingPlots[building]);
+      if (building === 'stable') continue;
+      const center = rectCenter(getVillageRect(building));
       for (const region of Object.values(villageRegions))
         expect(containsPoint(region, center)).toBe(false);
     }
+    expect(getVillageRect('stable')).toEqual(villageRegions.stable);
   });
   it('uses confirmed levels, real resources and construction for visual states', () => {
     const now = 1800000000000;

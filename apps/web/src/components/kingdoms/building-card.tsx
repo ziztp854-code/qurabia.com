@@ -33,7 +33,7 @@ export function BuildingCard({
   const stage = buildingStage(level, spec.maxLevel);
   const nextStage = state.maxed ? null : buildingStage(level + 1, spec.maxLevel);
   const topStage = stage?.key === supremeStage.key;
-  const Icon = villagePlots[key].Icon;
+  const Icon = key === 'stable' ? Hammer : villagePlots[key].Icon;
   const cost = upgradeCost(view.config, key, level);
   const capacity = storageCapacity(view.config, village);
   const missing = resourceKeys.filter((resource) => village.resources[resource] < cost[resource]);

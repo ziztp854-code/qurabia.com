@@ -8,7 +8,7 @@ import {
   resourceSiteResourceNames,
   resourceSiteSupply,
 } from './resource-sites';
-import { resources } from './config';
+import { defaultKingdomsConfig, resources } from './config';
 import { awardBattleExperience, commanderCombatPower, releaseCommander, setCommander } from './commanders';
 import {
   buildingKeys,
@@ -462,7 +462,24 @@ export function earliestDeadline(w: KingdomsWorld, fallback = Infinity): number 
   );
 }
 
+/** Old worlds predate the stable key. Level 0 adds no XP, troops, or movement changes. */
+export function normalizeStable(w: KingdomsWorld) {
+  if (!w.config.buildings.stable) {
+    const spec = defaultKingdomsConfig.buildings.stable;
+    w.config.buildings = {
+      ...w.config.buildings,
+      stable: { ...spec, cost: { ...spec.cost } },
+    };
+  }
+  for (const village of Object.values(w.villages)) {
+    const level = village.buildings.stable;
+    if (typeof level !== 'number' || !Number.isFinite(level) || level < 0)
+      village.buildings = { ...village.buildings, stable: 0 };
+  }
+}
+
 export function advanceDraft(w: KingdomsWorld, now: number) {
+  normalizeStable(w);
   for (const v of Object.values(w.villages)) normalizeConstruction(v);
   refreshProgression(w, deployedTroops(w));
   const end = Math.min(now, w.season.endsAt);

@@ -44,7 +44,8 @@ const descriptions: Record<Building, string> = {
   farm: 'تمد القرية والجيش بالغذاء. إنتاجها الإجمالي يرتفع مع كل مستوى.',
   treasury: 'يزيد إنتاج الذهب لتمويل المملكة وتجهيز الحملات.',
   warehouse: 'يحفظ الموارد ويرفع سعة التخزين لكل مورد مع كل مستوى.',
-  barracks: 'درّب الوحدات وجهّز الحامية. كل مستوى إضافي يسرّع التدريب.',
+  barracks: 'درّب الحراس والكشافة والمستوطنين. كل مستوى إضافي يسرّع تدريب الثكنة.',
+  stable: 'درّب الفرسان. كل مستوى إضافي يسرّع تدريب الإسطبل.',
   wall: 'يحسّن دفاع القرية والحامية المتمركزة فيها.',
   market: 'يفتح تبادل الموارد مع الممالك الأخرى عبر عروض السوق.',
   embassy: 'تتيح دار العهد تكوين التحالفات والانضمام إليها.',
@@ -76,7 +77,7 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
   const capacity =
     view.config.storageBase + village.buildings.warehouse * view.config.storagePerLevel;
   const constructing = village.build?.building === building;
-  const military = building === 'barracks' || building === 'wall';
+  const military = building === 'barracks' || building === 'stable' || building === 'wall';
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'info', label: 'معلومات' },
     { key: 'upgrade', label: 'ترقية' },
@@ -311,12 +312,14 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
           <>
             {military && (
               <dl className={styles.facts}>
-                {unitKeys.map((unit) => (
+                {(building === 'barracks' ? unitKeys.filter((unit) => unit !== 'rider') : unitKeys).map(
+                  (unit) => (
                   <div key={unit}>
                     <dt>{view.config.units[unit].name}</dt>
                     <dd>{number(village.troops[unit])} جاهز</dd>
                   </div>
-                ))}
+                ),
+                )}
               </dl>
             )}
             {constructing && village.build ? (
@@ -329,7 +332,7 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
             ) : (
               <p>لا تطوير جارٍ لهذا المبنى.</p>
             )}
-            {building === 'barracks' && village.training && (
+            {building === 'barracks' && village.training && village.training.unit !== 'rider' && (
               <p>
                 يتدرب {number(village.training.count)}{' '}
                 {view.config.units[village.training.unit].name} حتى {date(village.training.endsAt)}.

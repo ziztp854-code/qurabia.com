@@ -3,6 +3,7 @@
 import { Clock, Swords, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
+import { stableUnlockVillageLevel, trainingDurationMs } from '@/lib/kingdoms/training';
 import { resourceKeys, unitKeys } from '@/lib/kingdoms/types';
 import { date, labels, number, type GameProps } from '../shared';
 import type { VillageNavigation } from '../building-panel';
@@ -10,7 +11,6 @@ import styles from '../building-panel.module.css';
 
 export type StablePanelProps = GameProps & {
   onClose: () => void;
-  onSelectBarracks: () => void;
   onNavigate?: (tab: VillageNavigation) => void;
 };
 
@@ -27,7 +27,6 @@ export function StablePanel({
   busy,
   send,
   onClose,
-  onSelectBarracks,
   onNavigate,
 }: StablePanelProps) {
   const [count, setCount] = useState('1');
@@ -62,9 +61,30 @@ export function StablePanel({
   const shortage = resourceKeys.some(
     (resource) => village.resources[resource] < Math.ceil(unit.cost[resource] * amount),
   );
+  const stableLevel = village.buildings.stable;
+  const stableSpec = view.config.buildings.stable;
+  const upgradeFactor = stableSpec.growth ** stableLevel;
+  const upgradeCost = Object.fromEntries(
+    resourceKeys.map((resource) => [
+      resource,
+      Math.ceil(stableSpec.cost[resource] * upgradeFactor),
+    ]),
+  ) as typeof village.resources;
+  const upgradeSeconds = stableSpec.seconds * upgradeFactor;
+  const maxed = stableLevel >= stableSpec.maxLevel;
+  const locked =
+    (village.progression?.level ?? 1) < stableUnlockVillageLevel || village.buildings.barracks < 1;
+  const upgradeShortage = resourceKeys.some(
+    (resource) => village.resources[resource] < upgradeCost[resource],
+  );
+  const building =
+    village.build?.building === 'stable' ||
+    village.constructionQueue?.some(
+      (item) => item.building === 'stable' && (item.status === 'BUILDING' || item.status === 'QUEUED'),
+    );
   const reason =
-    village.buildings.barracks <= 0
-      ? 'ابنِ الثكنة أولاً لتدريب الفرسان.'
+    stableLevel <= 0
+      ? 'ابنِ الإسطبل أولاً لتدريب الفرسان.'
       : village.training
         ? 'يوجد تدريب جارٍ. انتظر اكتماله قبل تدريب الفرسان.'
         : remainingArmy < 1 || amount > remainingArmy
@@ -79,8 +99,12 @@ export function StablePanel({
   const trainingSeconds = Math.max(
     1,
     Math.ceil(
-      (unit.seconds * costAmount * 1000) /
-        (1 + Math.max(0, village.buildings.barracks - 1) * view.config.barracksSpeedPerLevel),
+      trainingDurationMs(
+        unit.seconds,
+        costAmount,
+        stableLevel,
+        view.config.barracksSpeedPerLevel,
+      ),
     ) / 1000,
   );
   useEffect(() => {
@@ -100,20 +124,60 @@ export function StablePanel({
     >
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>ملحق الفرسان التابع للثكنة</p>
+          <p className={styles.eyebrow}>مبنى الفرسان</p>
           <h3 ref={title} tabIndex={-1}>
-            الإسطبل
+            {stableSpec.name}
           </h3>
         </div>
         <Button variant="ghost" size="icon" aria-label="أغلق تفاصيل المبنى" onClick={onClose}>
           <X size={20} aria-hidden="true" />
         </Button>
       </header>
-      <p className={styles.level}>مستوى الثكنة {number(village.buildings.barracks)}</p>
+      <p className={styles.level}>مستوى الإسطبل {number(stableLevel)}</p>
+      <p>
+        سرعة تدريب الفرسان:{' '}
+        <bdi>
+          {stableLevel > 0
+            ? `×${(1 + (stableLevel - 1) * view.config.barracksSpeedPerLevel).toLocaleString('ar-SA', { maximumFractionDigits: 2 })}`
+            : 'مغلق'}
+        </bdi>
+      </p>
+      {village.build?.building === 'stable' ? (
+        <p>
+          قيد البناء حتى المستوى {number(village.build.level)}. يكتمل{' '}
+          <time dateTime={new Date(village.build.endsAt).toISOString()}>
+            {date(village.build.endsAt)}
+          </time>
+        </p>
+      ) : maxed ? (
+        <p>بلغ الإسطبل الحد الأعلى.</p>
+      ) : (
+        <>
+          <p>
+            ترقية إلى المستوى {number(stableLevel + 1)} خلال{' '}
+            <bdi dir="ltr">{formatDuration(upgradeSeconds)}</bdi>
+          </p>
+          <ul className={styles.costs} aria-label="تكلفة ترقية الإسطبل">
+            {resourceKeys
+              .filter((resource) => upgradeCost[resource] > 0)
+              .map((resource) => (
+                <li key={resource} data-short={village.resources[resource] < upgradeCost[resource]}>
+                  <span>{labels[resource]}</span>
+                  <bdi>{number(upgradeCost[resource])}</bdi>
+                </li>
+              ))}
+          </ul>
+          {locked && (
+            <p role="status" className={styles.hint}>
+              يُفتح الإسطبل عند مستوى القرية {number(stableUnlockVillageLevel)} وبعد بناء الثكنة.
+            </p>
+          )}
+        </>
+      )}
       <p>
         الفرسان الجاهزون: <bdi aria-label="الفرسان الجاهزون">{number(village.troops.rider)}</bdi>
       </p>
-      {village.training && (
+      {village.training?.unit === 'rider' && (
         <p aria-label="قائمة تدريب القرية">
           يتدرب الآن {number(village.training.count)}{' '}
           {view.config.units[village.training.unit].name}. يكتمل{' '}
@@ -171,8 +235,12 @@ export function StablePanel({
         يستخدم الفرسان قائمة تدريب القرية. تُحتسب القوات المنتشرة عند اعتماد أمر التدريب.
       </p>
       <div className={styles.actions}>
-        <Button variant="outline" onClick={onSelectBarracks}>
-          تطوير الثكنة
+        <Button
+          variant="outline"
+          disabled={busy || locked || maxed || upgradeShortage || Boolean(building)}
+          onClick={() => void send({ type: 'build', villageId: village.id, building: 'stable' })}
+        >
+          طوّر الإسطبل
         </Button>
         {onNavigate && (
           <Button variant="outline" onClick={() => onNavigate('army')}>

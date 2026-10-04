@@ -14,9 +14,10 @@ const village: Village = {
 };
 
 describe('sceneBuildings', () => {
-  it('keeps the eleven server-owned plots and distinguishes built, queued and vacant land', () => {
+  it('keeps the server-owned plots and distinguishes built, queued and vacant land', () => {
     const buildings = sceneBuildings(village, defaultKingdomsConfig, 200);
-    expect(buildings).toHaveLength(11);
+    expect(buildings).toHaveLength(buildingKeys.length);
+    expect(buildings.find((item) => item.key === 'stable')).toMatchObject({ built: false, level: 0 });
     expect(buildings.find((item) => item.key === 'hall')).toMatchObject({ built: true, busy: false, level: 2 });
     expect(buildings.find((item) => item.key === 'market')).toMatchObject({ built: false, busy: true, progress: 0.5 });
     expect(buildings.find((item) => item.key === 'farm')).toMatchObject({ built: false, busy: false, progress: 0 });

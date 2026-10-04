@@ -26,15 +26,15 @@ describe('village building directory', () => {
 
   it('shows pending upgrades separately without claiming the target level is confirmed', () => {
     const view = fixture();
-    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 2 },
-      build: { building: 'barracks' as const, level: 3, endsAt: now + 60000 } };
+    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 2, stable: 1 },
+      build: { building: 'stable' as const, level: 2, endsAt: now + 60000 } };
     render(<VillageDirectory view={view} village={village} selected="stable" onSelect={vi.fn()} />);
     const stable = screen.getByRole('button', { name: 'اختيار الإسطبل' });
-    expect(stable).toHaveTextContent('مستوى ٢');
+    expect(stable).toHaveTextContent('مستوى ١');
     expect(stable).toHaveTextContent('قيد التطوير');
-    expect(stable).toHaveAccessibleDescription('مستوى ٢ قيد التطوير');
-    expect(stable).not.toHaveTextContent('مستوى ٣');
-    expect(screen.getByRole('status')).toHaveTextContent('مبنى الفرسان المستقل عن منطقة الثكنة');
+    expect(stable).toHaveAccessibleDescription('مستوى ١ قيد التطوير');
+    expect(stable).not.toHaveTextContent('مستوى ٢');
+    expect(screen.getByRole('status')).toHaveTextContent('تدريب الفرسان وفق مستوى الإسطبل');
   });
 
   it('keeps unavailable building names discoverable and reports their resource state', () => {

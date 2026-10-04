@@ -149,9 +149,9 @@ export const villageBuildingRegistry: readonly VillageBuildingDefinition[] = [
   {
     id: 'stable',
     name: 'الإسطبل',
-    classification: 'composite',
-    building: 'barracks',
-    description: 'مبنى فرسان مستقل في المشهد؛ المستوى وطابور التدريب يتبعان الثكنة',
+    classification: 'existing',
+    building: 'stable',
+    description: 'مبنى فرسان مستقل: مستواه يفتح تدريب الفرسان ويحدد سرعته',
     district: 'military',
     interactive: true,
   },

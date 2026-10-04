@@ -21,7 +21,10 @@ function fixture(): GameProps {
   };
   const village = {
     ...view.villages[0],
-    buildings: { ...view.villages[0].buildings, barracks: 2 },
+    buildings: { ...view.villages[0].buildings, barracks: 2, stable: 2 },
+    progression: view.villages[0].progression
+      ? { ...view.villages[0].progression, level: 6 }
+      : view.villages[0].progression,
     troops: { ...view.villages[0].troops, rider: 3 },
     resources: { wood: 10000, stone: 10000, iron: 10000, food: 10000, gold: 10000 },
   };
@@ -32,7 +35,7 @@ function fixture(): GameProps {
     send: vi.fn(async () => {}),
   };
 }
-const navigation = { onClose: vi.fn(), onSelectBarracks: vi.fn() };
+const navigation = { onClose: vi.fn() };
 afterEach(cleanup);
 
 describe('StablePanel cavalry commands', () => {
@@ -49,21 +52,21 @@ describe('StablePanel cavalry commands', () => {
       unit: 'rider',
       count: 2,
     });
-    expect(screen.getByText('مستوى الثكنة ٢')).toBeInTheDocument();
+    expect(screen.getByText('مستوى الإسطبل ٢')).toBeInTheDocument();
     expect(screen.getByLabelText('الفرسان الجاهزون')).toHaveTextContent('٣');
 
     const confirmed = {
       ...props.village,
-      buildings: { ...props.village.buildings, barracks: 3 },
+      buildings: { ...props.village.buildings, stable: 3 },
       troops: { ...props.village.troops, rider: 5 },
     };
     rerender(<StablePanel {...props} village={confirmed} {...navigation} />);
-    expect(screen.getByText('مستوى الثكنة ٣')).toBeInTheDocument();
+    expect(screen.getByText('مستوى الإسطبل ٣')).toBeInTheDocument();
     expect(screen.getByLabelText('الفرسان الجاهزون')).toHaveTextContent('٥');
   });
 
   it.each([
-    ['missing barracks', { buildings: { barracks: 0 } }, 'ابنِ الثكنة أولاً لتدريب الفرسان.'],
+    ['missing stable', { buildings: { stable: 0 } }, 'ابنِ الإسطبل أولاً لتدريب الفرسان.'],
     [
       'active queue',
       { training: { unit: 'guard', count: 2, endsAt: now + 60000 } },
@@ -127,27 +130,28 @@ describe('StablePanel cavalry commands', () => {
     );
   });
 
-  it('focuses the sheet title and navigates to real barracks upgrades or the army', () => {
+  it('focuses the sheet title and queues a real stable upgrade or the army', () => {
     const props = fixture();
     const onClose = vi.fn();
-    const onSelectBarracks = vi.fn();
     const onNavigate = vi.fn();
     render(
       <StablePanel
         {...props}
         onClose={onClose}
-        onSelectBarracks={onSelectBarracks}
         onNavigate={onNavigate}
       />,
     );
     expect(screen.getByRole('heading', { name: 'الإسطبل' })).toHaveFocus();
-    fireEvent.click(screen.getByRole('button', { name: 'تطوير الثكنة' }));
-    expect(onSelectBarracks).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: 'طوّر الإسطبل' }));
+    expect(props.send).toHaveBeenCalledWith({
+      type: 'build',
+      villageId: props.village.id,
+      building: 'stable',
+    });
     fireEvent.click(screen.getByRole('button', { name: 'جهّز الجيش' }));
     expect(onNavigate).toHaveBeenCalledWith('army');
     fireEvent.keyDown(screen.getByRole('region', { name: 'تفاصيل الإسطبل' }), { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
-    expect(props.send).not.toHaveBeenCalled();
   });
 
   it('includes visible marching troops in the army limit without blocking an eligible count', () => {

@@ -373,7 +373,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             <path d="M1198 689 L1121 519" />
           </svg>
           <div className={styles.hotspots}>
-            {buildingKeys.map((building) => {
+            {buildingKeys.filter((building) => building !== 'stable').map((building) => {
               const presentation = getBuildingPresentation(
                 building,
                 props.village,
@@ -433,11 +433,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               type="button"
               className={`${styles.hotspot} ${styles.region}`}
               style={rectStyle(getVillageRect('stable', props.debug))}
-              aria-label={`الإسطبل، المستوى ${props.village.buildings.barracks.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
+              aria-label={`الإسطبل، المستوى ${props.village.buildings.stable.toLocaleString('ar-SA')}، ${villageBuildingSceneStatus('stable', props.village)}`}
               aria-describedby={`${descriptionId}-stable`}
               aria-pressed={props.selected === 'stable'}
               data-building-region="stable"
-              data-state={getBuildingPresentation('barracks', props.village, props.view.config).status}
+              data-state={getBuildingPresentation('stable', props.village, props.view.config).status}
               onClick={() => choose('stable')}
               onPointerEnter={() => renderer.current?.hover('stable')}
               onPointerLeave={() => renderer.current?.hover(null)}
@@ -445,11 +445,11 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               onBlur={() => renderer.current?.hover(null)}
             >
               <span id={`${descriptionId}-stable`} className={styles.visuallyHidden}>
-                ملحق فرسان مستقل؛ المستوى والتدريب مرتبطان بالثكنة دون منطقة ضغط مشتركة.
+                الإسطبل مبنى مستقل. مستواه يحدد تدريب الفرسان وسرعته.
               </span>
               <span className={styles.label}>
                 <Swords size={15} aria-hidden="true" />
-                <span>الإسطبل<small>المستوى {props.village.buildings.barracks.toLocaleString('ar-SA')} · {villageBuildingSceneStatus('stable', props.village)}</small></span>
+                <span>الإسطبل<small>المستوى {props.village.buildings.stable.toLocaleString('ar-SA')} · {villageBuildingSceneStatus('stable', props.village)}</small></span>
               </span>
             </button>
             <button

@@ -2,6 +2,7 @@ import { creditAllianceEvent, stampAllianceEvent } from './alliance-events';
 import { defaultConstructionConfig } from './construction-config';
 import { resources } from './config';
 import { awardVillageXp, progressionConfig } from './progression';
+import { stableUnlockVillageLevel } from './training';
 import { assertRule, credit, deadline, nextId, report, scaleResources, spend } from './simulation';
 import {
   resourceKeys,
@@ -77,6 +78,13 @@ export function queueConstruction(w: KingdomsWorld, v: Village, building: Buildi
   const queue = v.constructionQueue ?? [];
   const active = queue.filter(pending);
   assertRule(active.length < constructionConfig(w).maxPending, 'طابور البناء ممتلئ');
+  if (building === 'stable') {
+    assertRule(v.buildings.barracks >= 1, 'ابنِ الثكنة أولاً');
+    assertRule(
+      (v.progression?.level ?? 1) >= stableUnlockVillageLevel,
+      `يُفتح الإسطبل عند مستوى القرية ${stableUnlockVillageLevel}`,
+    );
+  }
   const spec = w.config.buildings[building];
   const level =
     active.filter((item) => item.building === building).at(-1)?.targetLevel ??

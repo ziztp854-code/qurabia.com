@@ -101,7 +101,7 @@ test('stable L1–L5 calibration renders separate local cutouts without changing
   expect(requested).toEqual([]);
   await village.locator('[data-building-region="stable"]').click();
   const panel = page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true });
-  await expect(panel).toContainText('مستوى الثكنة ٠');
+  await expect(panel).toContainText('مستوى الإسطبل ٠');
   const calibration = village.locator('details').filter({ hasText: 'معايرة مشهد القرية — وضع التطوير' });
   await calibration.locator('summary').click();
   await calibration.getByLabel('المبنى للمعايرة').selectOption('stable');
@@ -143,11 +143,11 @@ test('stable L1–L5 calibration renders separate local cutouts without changing
   await calibration.locator('summary').click();
   await expect.poll(stablePixels).not.toBe(previous);
   expect(requested).toHaveLength(5);
-  await expect(panel).toContainText('مستوى الثكنة ٠');
+  await expect(panel).toContainText('مستوى الإسطبل ٠');
   await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
   const state = (await (await page.request.get('/api/kingdoms')).json()).data.villages[0];
   expect(state.buildings.barracks).toBe(0);
-  expect(state.buildings).not.toHaveProperty('stable');
+  expect(state.buildings.stable).toBe(0);
   expect(state.troops.rider).toBe(0);
   expect(errors).toEqual([]);
 });
@@ -159,9 +159,10 @@ test('stable uses confirmed barracks and the genuine cavalry queue, with safe mo
   await stable.click();
   const panel = page.getByRole('region', { name: 'تفاصيل الإسطبل', exact: true });
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText('مستوى الثكنة ٠');
+  await expect(panel).toContainText('مستوى الإسطبل ٠');
   await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
-  await panel.getByRole('button', { name: 'تطوير الثكنة', exact: true }).click();
+  await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+  await village.locator('[data-building="barracks"]').click();
   const barracks = page.getByRole('region', { name: 'تفاصيل الثكنة', exact: true });
   await expect(barracks).toBeVisible();
   await barracks.getByRole('button', { name: 'طوّر المبنى' }).click();
@@ -170,12 +171,7 @@ test('stable uses confirmed barracks and the genuine cavalry queue, with safe mo
   await page.getByRole('button', { name: 'تحديث', exact: true }).click();
   await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   await stable.click();
-  await expect(panel).toContainText('مستوى الثكنة ١');
-  const request = page.waitForRequest((request) => request.method() === 'POST' &&
-    new URL(request.url()).pathname === '/api/kingdoms');
-  await panel.getByRole('button', { name: 'درّب الفرسان', exact: true }).click();
-  expect((await request).postDataJSON().command).toMatchObject({ type: 'train', unit: 'rider', count: 1 });
-  await expect(panel.getByLabel('قائمة تدريب القرية')).toContainText('خيّال');
+  await expect(panel).toContainText('مستوى الإسطبل ٠');
   await expect(panel.getByRole('button', { name: 'درّب الفرسان', exact: true })).toBeDisabled();
   await page.setViewportSize({ width: 390, height: 844 });
   const sheet = page.locator('[data-village-building-sheet]');

@@ -33,20 +33,20 @@ function confirmedVillage() {
 
 describe('Mamluk village presentation registry', () => {
   afterEach(() => vi.unstubAllEnvs());
-  it('shows the stable as part of the confirmed barracks, without a separate gameplay level', () => {
+  it('shows the stable from its own confirmed level', () => {
     const village = confirmedVillage();
     const building = getVillageBuilding('stable');
     const confirmed = {
       ...village,
-      buildings: { ...village.buildings, barracks: 3 },
+      buildings: { ...village.buildings, barracks: 3, stable: 2 },
       build: { building: 'barracks' as const, level: 4, endsAt: village.updatedAt + 5000 },
     };
     expect(building).toMatchObject({
-      classification: 'composite',
-      building: 'barracks',
+      classification: 'existing',
+      building: 'stable',
       interactive: true,
     });
-    expect(getVillageVisualLevel('stable', confirmed)).toBe(3);
+    expect(getVillageVisualLevel('stable', confirmed)).toBe(2);
     expect(getVillageVisualLevel('archery', confirmed)).toBe(0);
   });
 
@@ -107,7 +107,7 @@ describe('Mamluk village presentation registry', () => {
   it('ignores development previews in production and keeps server levels above L5 intact', () => {
     vi.stubEnv('NODE_ENV', 'production');
     const village = confirmedVillage();
-    const confirmed = { ...village, buildings: { ...village.buildings, barracks: 20 } };
+    const confirmed = { ...village, buildings: { ...village.buildings, barracks: 20, stable: 20 } };
     const preview = {
       building: 'stable' as const,
       buildingLevel: 1,
@@ -115,6 +115,7 @@ describe('Mamluk village presentation registry', () => {
       placementOverrides: { stable: { focusX: 0, focusY: 0, focusScale: 5, zIndex: 0 } },
     };
     expect(getVillageVisualLevel('stable', confirmed, preview)).toBe(5);
+    expect(confirmed.buildings.stable).toBe(20);
     expect(confirmed.buildings.barracks).toBe(20);
     expect(getVillageRect('stable', preview)).toEqual({ x: 454, y: 516, width: 111, height: 67 });
     expect(getVillagePlacement('stable', preview)).toMatchObject({ focusX: 509.5, focusY: 549.5 });

@@ -3,7 +3,8 @@
 import { Castle, Hammer, Map, ScrollText, Shield, Swords } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
-import { resourceKeys, unitKeys, type Resources } from '@/lib/kingdoms/types';
+import { trainingBuilding, trainingDurationMs } from '@/lib/kingdoms/training';
+import { resourceKeys, unitKeys, type Resources, type Unit } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
 import { StageLadder } from './stage-ladder';
@@ -18,6 +19,10 @@ import { CommanderPanel } from './commander-panel';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
 import villageStyles from './village-panel.module.css';
+
+function trainSeconds(unitSeconds: number, level: number, speedPerLevel: number) {
+  return Math.ceil(trainingDurationMs(unitSeconds, 1, level, speedPerLevel) / 1000);
+}
 
 function maxAffordable(have: Resources, cost: Resources) {
   const limits = resourceKeys
@@ -102,7 +107,6 @@ export function VillagePanel({
                 busy={busy}
                 send={send}
                 onClose={close}
-                onSelectBarracks={() => setSelected('barracks')}
                 onNavigate={onNavigate}
               />
             ) : (
@@ -291,6 +295,11 @@ export function VillagePanel({
                     {Number.isFinite(affordable) ? number(affordable) : 'غير محدود بالموارد'}
                   </span>
                 </p>
+                {key === 'rider' ? (
+                  <p className={styles.cardMeta}>
+                    <span>تدريب الفرسان من الإسطبل، وسرعته من مستوى الإسطبل.</span>
+                  </p>
+                ) : (
                 <CommandForm
                   busy={busy || !!village.training}
                   label="درّب الوحدات"
@@ -317,25 +326,25 @@ export function VillagePanel({
                     <span>
                       مدة الوحدة:{' '}
                       {number(
-                        Math.ceil(
-                          unit.seconds /
-                            (1 +
-                              Math.max(0, village.buildings.barracks - 1) *
-                                view.config.barracksSpeedPerLevel),
+                        trainSeconds(
+                          unit.seconds,
+                          village.buildings[trainingBuilding(key as Unit)],
+                          view.config.barracksSpeedPerLevel,
                         ),
                       )}{' '}
                       ثانية
                     </span>
                   </span>
                 </CommandForm>
+                )}
               </article>
             );
           })}
         </div>
         <p className={styles.cardMeta}>
           <span>
-            تحتاج إلى ثكنة لتدريب الجنود، ويحتاج المستوطن إلى دار حكم مستوى{' '}
-            {number(view.config.settlerHallLevel)}.
+            الحراس والكشافة والمستوطنون من الثكنة، والفرسان من الإسطبل. المستوطن يحتاج دار حكم
+            مستوى {number(view.config.settlerHallLevel)}.
           </span>
         </p>
       </section>
@@ -403,8 +412,8 @@ export function ArmyPanel({ view, village, busy, send }: GameProps) {
     <div className={kingdomsStyles.stack}>
       <CommanderPanel view={view} village={village} busy={busy} send={send} />
       <div className={kingdomsStyles.notice}>
-        <Shield aria-hidden="true" size={18} /> تحتاج إلى ثكنة لتدريب الجنود، ويحتاج المستوطن إلى
-        دار حكم مستوى {number(view.config.settlerHallLevel)}.{' '}
+        <Shield aria-hidden="true" size={18} /> الحراس والكشافة والمستوطنون من الثكنة، والفرسان من
+        الإسطبل. المستوطن يحتاج دار حكم مستوى {number(view.config.settlerHallLevel)}.{' '}
         {village.training && (
           <>
             يتدرب الآن {number(village.training.count)}{' '}
@@ -428,6 +437,9 @@ export function ArmyPanel({ view, village, busy, send }: GameProps) {
                 هجوم {number(unit.attack)} · دفاع {number(unit.defense)} · حمولة{' '}
                 {number(unit.carry)} · غذاء {number(unit.upkeep)}/ساعة
               </p>
+              {key === 'rider' ? (
+                <p className={kingdomsStyles.muted}>تدريب الفرسان من الإسطبل.</p>
+              ) : (
               <CommandForm
                 busy={busy || !!village.training}
                 label="درّب الوحدات"
@@ -453,16 +465,16 @@ export function ArmyPanel({ view, village, busy, send }: GameProps) {
                 <span className={kingdomsStyles.cost}>
                   مدة الوحدة:{' '}
                   {number(
-                    Math.ceil(
-                      unit.seconds /
-                        (1 +
-                          Math.max(0, village.buildings.barracks - 1) *
-                            view.config.barracksSpeedPerLevel),
+                    trainSeconds(
+                      unit.seconds,
+                      village.buildings[trainingBuilding(key as Unit)],
+                      view.config.barracksSpeedPerLevel,
                     ),
                   )}{' '}
                   ثانية
                 </span>
               </CommandForm>
+              )}
             </article>
           );
         })}

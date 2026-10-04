@@ -64,18 +64,18 @@ beforeEach(() => {
 });
 
 describe('village rendering surface dimensions', () => {
-  it.each([0, 1, 2, 3, 4, 5, 20])('loads only the confirmed stable tier for barracks level %i', async (barracks) => {
+  it.each([0, 1, 2, 3, 4, 5, 20])('loads only the confirmed stable tier for stable level %i', async (stable) => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
     const props: VillageCanvasProps = {
-      view, village: { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks },
-        build: { building: 'barracks', level: barracks + 1, endsAt: now + 5000 } },
+      view, village: { ...view.villages[0], buildings: { ...view.villages[0].buildings, stable },
+        build: { building: 'stable', level: stable + 1, endsAt: now + 5000 } },
       selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false,
     };
     const quality = resolveVillageQuality('low', { width: 768, dpr: 1 });
     const renderer = await createVillageRenderer(document.createElement('canvas'), props, quality,
       { gold: 'gold', light: 'white', water: 'white', dust: 'gold' });
-    const tier = Math.min(5, barracks);
+    const tier = Math.min(5, stable);
     const expected = tier > 0 ? [villageAssets.buildings.stable[tier - 1].src] : [];
     const assetLoad = vi.mocked(Assets.load as (src: string) => Promise<Texture>);
     const stableLoads = assetLoad.mock.calls.map(([src]) => src)
@@ -89,7 +89,7 @@ describe('village rendering surface dimensions', () => {
   it('applies a confirmed stable overlay after loading even when resources refresh in between', async () => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
-    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 2 } };
+    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, stable: 2 } };
     const props: VillageCanvasProps = {
       view, village, selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false,
     };
@@ -100,7 +100,7 @@ describe('village rendering surface dimensions', () => {
     const loading = new Promise<Texture>((done) => { resolve = done; });
     const assetLoad = vi.mocked(Assets.load as (src: string) => Promise<Texture>);
     assetLoad.mockImplementationOnce(() => loading);
-    const confirmed = { ...props, village: { ...village, buildings: { ...village.buildings, barracks: 3 } } };
+    const confirmed = { ...props, village: { ...village, buildings: { ...village.buildings, stable: 3 } } };
     renderer.update(confirmed, quality);
     renderer.update({ ...confirmed, village: { ...confirmed.village, resources: { ...village.resources, wood: 900 } } }, quality);
     const texture = new Texture({ source: new TextureSource({ width: 111, height: 67 }) });

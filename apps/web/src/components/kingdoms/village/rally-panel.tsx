@@ -337,9 +337,14 @@ export function RallyPanel({
           <p className={styles.muted}>لا تدريب جارٍ</p>
         )}
         {onOpenTraining && (
-          <Button type="button" variant="outline" onClick={() => onOpenTraining(trainingTarget)}>
-            الذهاب إلى التدريب
-          </Button>
+          <>
+            <Button type="button" variant="outline" onClick={() => onOpenTraining('stable')}>
+              درّب الفرسان
+            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenTraining(trainingTarget)}>
+              الذهاب إلى التدريب
+            </Button>
+          </>
         )}
       </section>
       {command.commanders && (

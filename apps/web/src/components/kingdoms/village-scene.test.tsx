@@ -37,7 +37,7 @@ afterEach(cleanup);
 
 describe('village scene layout', () => {
   it('places every building inside the artwork with a distinct touch target', () => {
-    for (const key of buildingKeys) {
+    for (const key of Object.keys(villagePlots) as (keyof typeof villagePlots)[]) {
       const outline = boundsOf(villagePlots[key].outline);
       const hit = hitBox(key);
       for (const box of [outline, hit]) {
@@ -50,7 +50,9 @@ describe('village scene layout', () => {
       const scale = 700 / villageArt.width;
       expect(hit.w * scale).toBeGreaterThanOrEqual(44);
       expect(hit.h * scale).toBeGreaterThanOrEqual(44);
-      for (const other of buildingKeys.filter((candidate) => candidate !== key)) {
+      for (const other of (Object.keys(villagePlots) as (keyof typeof villagePlots)[]).filter(
+        (candidate) => candidate !== key,
+      )) {
         const box = hitBox(other);
         const cx = hit.x + hit.w / 2;
         const cy = hit.y + hit.h / 2;
@@ -118,7 +120,8 @@ describe('village scene rendering', () => {
     };
     render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
     const map = screen.getByRole('region', { name: 'خريطة القرية' });
-    expect(map.querySelectorAll('[data-building]')).toHaveLength(buildingKeys.length);
+    expect(map.querySelectorAll('[data-building]')).toHaveLength(buildingKeys.length - 1);
+    expect(map.querySelectorAll('[data-building-region="stable"]')).toHaveLength(1);
     const hall = within(map).getByRole('button', { name: /^دار الحكم/ });
     expect(hall).toHaveAttribute('data-state', 'complete');
     expect(hall).toHaveAccessibleName(/المستوى ٢٠/);

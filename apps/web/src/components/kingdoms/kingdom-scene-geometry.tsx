@@ -13,7 +13,7 @@ const color = {
 export const scenePlots: Record<Building, [number, number]> = {
   hall: [0, -1.2], lumber: [-5.1, -2.9], quarry: [4.9, -3.1],
   mine: [5.1, -4.9], farm: [-5.2, 3.3], treasury: [2.6, -1.3],
-  warehouse: [5, 1.3], barracks: [-3.1, -0.6], wall: [0, 0],
+  warehouse: [5, 1.3], barracks: [-3.1, -0.6], stable: [-4.4, 0.8], wall: [0, 0],
   market: [2.6, 2.5], embassy: [-1.9, 2.6],
 };
 
@@ -189,6 +189,13 @@ function Embassy({ height }: { height: number }) {
   </>;
 }
 
+function StableYard({ height }: { height: number }) {
+  return <>
+    <Box at={[0, height * 0.22, 0]} size={[1.5, height * 0.44, 1.05]} paint={color.wood} />
+    <Box at={[0, height * 0.48, 0]} size={[1.7, 0.1, 1.25]} paint={color.roof} />
+  </>;
+}
+
 function CityWall({ height }: { height: number }) {
   return <>
     <Box at={[0, height * 0.42, -5.2]} size={[14.8, height * 0.84, 0.3]} paint={color.sandstone} />
@@ -212,6 +219,7 @@ function Structure({ building, height }: { building: Building; height: number })
     case 'treasury': return <Treasury height={height} />;
     case 'warehouse': return <Warehouse height={height} />;
     case 'barracks': return <Barracks height={height} />;
+    case 'stable': return <StableYard height={height} />;
     case 'wall': return <CityWall height={height} />;
     case 'market': return <Market height={height} />;
     case 'embassy': return <Embassy height={height} />;

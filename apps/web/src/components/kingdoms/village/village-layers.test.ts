@@ -73,7 +73,7 @@ describe('original artwork alpha crops', () => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
     const props: VillageCanvasProps = {
-      view, village: { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 1 } },
+      view, village: { ...view.villages[0], buildings: { ...view.villages[0].buildings, stable: 1 } },
       selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false,
     };
     const source = originalArtwork();
@@ -98,7 +98,7 @@ describe('original artwork alpha crops', () => {
     expect(bounds.minY).toBeGreaterThanOrEqual(516 - 1e-6);
     expect(bounds.maxY).toBeLessThanOrEqual(583 + 1e-6);
     const pending = createBuildingLayer(source, { ...props, village: { ...props.village,
-      buildings: { ...props.village.buildings, barracks: 0 },
+      buildings: { ...props.village.buildings, barracks: 0, stable: 0 },
       build: { building: 'barracks', level: 1, endsAt: now + 5000 } } }, [], approved, cache);
     expect(pending.children.some((child) => child.label.startsWith('stable-l'))).toBe(false);
     pending.destroy({ children: true });
@@ -109,8 +109,8 @@ describe('original artwork alpha crops', () => {
   it('renders frames-only stable assets at the confirmed level using the scene-owned ticker', () => {
     const now = 1800000000000;
     const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'اختبار' }, now), 'p', now);
-    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, barracks: 2 },
-      build: { building: 'barracks' as const, level: 3, endsAt: now + 5000 } };
+    const village = { ...view.villages[0], buildings: { ...view.villages[0].buildings, stable: 2 },
+      build: { building: 'stable' as const, level: 3, endsAt: now + 5000 } };
     const props: VillageCanvasProps = { view, village, selected: null, onSelect: vi.fn(), quality: 'low', reducedMotion: true, showLabels: false };
     const source = originalArtwork();
     const { createCanvas } = canvasFactory();
@@ -119,7 +119,7 @@ describe('original artwork alpha crops', () => {
     const pending = createBuildingLayer(source, props, [], approved, cache);
     expect(pending.children.some((child) => child.label === 'stable-l3')).toBe(false);
     const confirmed = createBuildingLayer(source, { ...props, village: { ...village,
-      buildings: { ...village.buildings, barracks: 3 }, build: undefined } }, [], approved, cache);
+      buildings: { ...village.buildings, stable: 3 }, build: undefined } }, [], approved, cache);
     const sprite = confirmed.children.find((child) => child.label === 'stable-l3') as AnimatedSprite;
     expect(sprite).toBeInstanceOf(AnimatedSprite);
     expect(sprite.autoUpdate).toBe(false);

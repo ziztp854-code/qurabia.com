@@ -69,12 +69,12 @@ describe('village stage ladder', () => {
     const village = Object.values(world.villages)[0];
     const fresh = villageProgress(village, world.config);
     expect(fresh.levels).toBe(1);
-    expect(fresh.maxLevels).toBe(maxLevels);
+    expect(fresh.maxLevels).toBe(maxLevels - world.config.buildings.stable.maxLevel);
     expect(fresh.stage.key).toBe('founding');
     expect(fresh.next?.key).toBe('renaissance');
     expect(fresh.nextFraction).toBe(0.12);
-    expect(fresh.nextLevels).toBe(Math.ceil(0.12 * maxLevels));
-    expect(fresh.percent).toBe(Math.round((1 / maxLevels) * 100));
+    expect(fresh.nextLevels).toBe(Math.ceil(0.12 * fresh.maxLevels));
+    expect(fresh.percent).toBe(Math.round((1 / fresh.maxLevels) * 100));
     expect(fresh.topBuildings).toBe(0);
     expect(fresh.maxedBuildings).toBe(0);
   });
@@ -105,7 +105,7 @@ describe('village stage ladder', () => {
       { ...village, buildings: { ...village.buildings, hall: 6 } },
       small,
     );
-    expect(progress.maxLevels).toBe(buildingKeys.length * 4);
+    expect(progress.maxLevels).toBe((buildingKeys.length - 1) * 4);
     expect(progress.stage.key).toBe('renaissance');
     expect(progress.next?.key).toBe('prosperity');
   });

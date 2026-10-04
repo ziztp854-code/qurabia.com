@@ -158,7 +158,7 @@ export function createVillageNPCs(village: Village, limit: number): NPCSpawn[] {
   const riderKind: VillageNPC = cavalry.src || cavalry.frames.length ? 'cavalry' : 'horse';
   const counts: readonly [VillageNPC, keyof typeof paths, number, number][] = [
     [riderKind, 'stable', Math.min(3, Math.max(0, village.troops.rider)), 23],
-    ['stableMaster', 'stable', village.buildings.barracks > 0 ? 1 : 0, 9],
+    ['stableMaster', 'stable', village.buildings.stable > 0 ? 1 : 0, 9],
     ['farmer', 'food', Math.min(7, village.buildings.farm + 1), 15],
     ['merchant', 'trade', Math.min(6, village.buildings.market + 1), 13],
     ['guard', 'patrol', Math.min(5, village.buildings.wall + 1), 11],

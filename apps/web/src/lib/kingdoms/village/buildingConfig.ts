@@ -16,6 +16,7 @@ export const buildingGroups: Record<Building, 'economy' | 'military' | 'civic'> 
   treasury: 'economy',
   warehouse: 'economy',
   barracks: 'military',
+  stable: 'military',
   wall: 'military',
   market: 'civic',
   embassy: 'civic',
@@ -28,7 +29,8 @@ export const buildingDescriptions: Record<Building, string> = {
   mine: 'إنتاج الحديد للجيش',
   treasury: 'إنتاج الذهب لخزانة المملكة',
   warehouse: 'زيادة سعة حفظ الموارد',
-  barracks: 'تدريب الحراس والفرسان والكشافة',
+  barracks: 'تدريب الحراس والكشافة والمستوطنين',
+  stable: 'تدريب الفرسان وفق مستوى الإسطبل',
   wall: 'حماية القرية وتعزيز دفاعها',
   market: 'تبادل الموارد مع الممالك',
   embassy: 'إدارة التحالف والعلاقات',
@@ -41,20 +43,19 @@ export const buildingStatusLabels: Record<BuildingStatus, string> = {
 };
 
 /** Maps existing server build/queue/training fields for hotspot labels. */
-export function villageBuildingSceneStatus(
-  building: Building | 'stable',
-  village: Village,
-) {
-  const key = building === 'stable' ? 'barracks' : building;
-  if (village.build?.building === key) return 'قيد البناء';
-  if (village.constructionQueue?.some((item) => item.building === key && item.status === 'QUEUED'))
+export function villageBuildingSceneStatus(building: Building, village: Village) {
+  if (village.build?.building === building) return 'قيد البناء';
+  if (
+    village.constructionQueue?.some((item) => item.building === building && item.status === 'QUEUED')
+  )
     return 'في الطابور';
   if (
     village.training &&
-    (key === 'barracks' || (building === 'stable' && village.training.unit === 'rider'))
+    ((building === 'barracks' && village.training.unit !== 'rider') ||
+      (building === 'stable' && village.training.unit === 'rider'))
   )
     return 'تدريب جارٍ';
-  return village.buildings[key] > 0 ? 'جاهز' : 'لم يُبنَ';
+  return village.buildings[building] > 0 ? 'جاهز' : 'لم يُبنَ';
 }
 
 export function getBuildingPresentation(

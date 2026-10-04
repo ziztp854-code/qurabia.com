@@ -13,19 +13,19 @@ type Props = Pick<GameProps, 'view' | 'village'> & {
   onSelect: (building: VillageSelection) => void;
 };
 const entries: VillageSelection[] = buildingKeys.flatMap((building): VillageSelection[] =>
-  building === 'barracks' ? [building, 'stable', 'rally'] : [building]);
+  building === 'barracks' ? [building, 'stable', 'rally'] : building === 'stable' ? [] : [building]);
 const groupIcons = { economy: Coins, military: Shield, civic: Castle };
 
 export function VillageDirectory({ view, village, selected, onSelect }: Props) {
   const id = useId();
   const presentation = (building: VillageSelection) => {
     const base = getBuildingPresentation(
-      building === 'stable' || building === 'rally' ? 'barracks' : building,
+      building === 'rally' ? 'barracks' : building,
       village,
       view.config,
     );
     if (building === 'stable')
-      return { ...base, name: 'الإسطبل', description: 'مبنى الفرسان المستقل عن منطقة الثكنة' };
+      return { ...base, description: 'تدريب الفرسان وفق مستوى الإسطبل وسرعته' };
     if (building === 'rally')
       return {
         ...base,
