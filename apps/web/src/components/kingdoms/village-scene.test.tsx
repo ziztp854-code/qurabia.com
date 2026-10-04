@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { buildingKeys, type Building, type Village } from '@/lib/kingdoms/types';
@@ -249,5 +250,42 @@ describe('selected building card', () => {
     );
     expect(within(card).getByText(`مستوى ${number(2)} / ${number(20)}`)).toBeInTheDocument();
     expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeEnabled();
+  });
+});
+
+describe('rally point hotspot', () => {
+  it('opens the military panel from pointer and keyboard without a second map', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    const view = fixture();
+    const onCampaign = vi.fn();
+    render(
+      <VillagePanel
+        view={view}
+        village={view.villages[0]}
+        send={vi.fn()}
+        busy={false}
+        onCampaign={onCampaign}
+      />,
+    );
+    const hotspot = screen.getByRole('button', { name: 'نقطة تجمع الجيوش، مركز القيادة العسكرية' });
+    expect(hotspot).toHaveAttribute('data-rally-point', 'true');
+    hotspot.focus();
+    expect(hotspot).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('region', { name: 'نقطة تجمع الجيوش' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'إرسال جيش' }));
+    expect(onCampaign).toHaveBeenCalledWith('attack');
+    expect(screen.queryByTestId('unified-map')).not.toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });

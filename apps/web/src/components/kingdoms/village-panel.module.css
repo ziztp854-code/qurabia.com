@@ -83,6 +83,9 @@
     box-shadow: 0 -8px 32px color-mix(in srgb, var(--background) 60%, transparent);
     border-radius: var(--radius-xl) var(--radius-xl) var(--radius-md) var(--radius-md);
   }
+  .rail[data-panel='rally'] {
+    max-block-size: min(78dvh, 720px);
+  }
   .rail > section {
     border-radius: var(--radius-xl) var(--radius-xl) var(--radius-md) var(--radius-md);
     max-block-size: inherit;

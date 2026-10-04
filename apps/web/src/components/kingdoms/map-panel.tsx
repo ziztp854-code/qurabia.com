@@ -36,13 +36,14 @@ export function MapPanel({
   busy,
   send,
   initialSelection,
-}: GameProps & { initialSelection?: MapSelection | null }) {
+  initialMission,
+}: GameProps & { initialSelection?: MapSelection | null; initialMission?: March['mission'] }) {
   const [center, setCenter] = useState(initialSelection?.center ?? { x: village.x, y: village.y });
   const [target, setTarget] = useState(initialSelection?.target ?? { x: village.x, y: village.y });
   const [query, setQuery] = useState('');
   const [gatherFocus, setGatherFocus] = useState(false);
   const [commanderId, setCommanderId] = useState('');
-  const [mission, setMission] = useState<March['mission']>('attack');
+  const [mission, setMission] = useState<March['mission']>(initialMission ?? 'attack');
   const mode: MapMode = mission === 'scout' ? 'SELECT_SCOUT_TARGET'
     : mission === 'reinforce' ? 'SELECT_REINFORCEMENT_TARGET'
     : mission === 'settle' || mission === 'occupy' ? 'SELECT_SETTLEMENT_TARGET'
@@ -212,7 +213,7 @@ export function MapPanel({
               focusOnMount={gatherFocus}
             />
           ) : (
-            <section className={styles.panel}>
+            <section className={styles.panel} data-campaign-mission={mission}>
               <h2>إرسال حملة</h2>
               <p className={styles.muted}>
                 المسافة: {Math.hypot(target.x - village.x, target.y - village.y).toFixed(2)} خانة.

@@ -28,6 +28,7 @@ import { KingdomOverview } from './kingdom-overview';
 import { ResourceIcon } from './resource-icon';
 import { unitKeys } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
+import type { RallyMission } from './village/rally-panel';
 import styles from './kingdoms.module.css';
 
 const tabs = {
@@ -71,6 +72,8 @@ export function KingdomsClient({
   const [tab, setTab] = useState<keyof typeof tabs>(initialTab);
   const [villageId, setVillageId] = useState(initialVillageId);
   const [buildingSelection, setBuildingSelection] = useState<ScopedBuildingSelection | null>(null);
+  const [campaignMission, setCampaignMission] = useState<RallyMission>('attack');
+  const [campaignNonce, setCampaignNonce] = useState(0);
   const { view, busy, loading, send } = game;
   const village = view?.villages.find((item) => item.id === villageId) ?? view?.villages[0];
   const locked = busy || !!view?.paused || view?.season.status === 'ended';
@@ -88,6 +91,11 @@ export function KingdomsClient({
     }
     if (nextTab === 'village') setBuildingSelection(null);
     setTab(nextTab);
+  };
+  const openCampaign = (mission: RallyMission) => {
+    setCampaignMission(mission);
+    setCampaignNonce((value) => value + 1);
+    setTab('campaigns');
   };
   const openBuilding = (building: VillageSelection) => {
     if (!view || !village) return;
@@ -332,6 +340,7 @@ export function KingdomsClient({
                       onNavigate={navigate}
                       onShowMap={showMap}
                       onRefresh={() => void game.refresh()}
+                      onCampaign={openCampaign}
                       initialBuilding={
                         buildingSelection?.worldId === view.worldId &&
                         buildingSelection?.villageId === village.id
@@ -342,7 +351,11 @@ export function KingdomsClient({
                   )}
                   {tab === 'army' && <ArmyPanel key={`${view.worldId}:${village.id}`} {...props} />}
                   {tab === 'campaigns' && (
-                    <MapPanel key={`${view.worldId}:${village.id}`} {...props} />
+                    <MapPanel
+                      key={`${view.worldId}:${village.id}:${campaignMission}:${campaignNonce}`}
+                      {...props}
+                      initialMission={campaignMission}
+                    />
                   )}
                   {tab === 'market' && <MarketPanel {...props} />}
                   {tab === 'alliances' && <AlliancePanel {...props} />}

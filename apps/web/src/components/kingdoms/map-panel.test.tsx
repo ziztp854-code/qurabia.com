@@ -44,4 +44,10 @@ describe('unified campaign map', () => {
       type: 'march', villageId: props.village.id, targetX: props.village.x, targetY: props.village.y, mission: 'attack',
     }));
   });
+  it('opens the existing campaign map on the mission requested by the rally point', () => {
+    render(<MapPanel {...fixture()} initialMission="scout" />);
+    expect(screen.getByTestId('unified-map')).toHaveAttribute('data-mode', 'SELECT_SCOUT_TARGET');
+    expect(screen.getByLabelText('نوع الحملة')).toHaveValue('scout');
+    expect(screen.queryByRole('region', { name: 'نقطة تجمع الجيوش' })).not.toBeInTheDocument();
+  });
 });

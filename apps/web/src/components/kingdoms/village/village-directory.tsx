@@ -13,16 +13,26 @@ type Props = Pick<GameProps, 'view' | 'village'> & {
   onSelect: (building: VillageSelection) => void;
 };
 const entries: VillageSelection[] = buildingKeys.flatMap((building): VillageSelection[] =>
-  building === 'barracks' ? [building, 'stable'] : [building]);
+  building === 'barracks' ? [building, 'stable', 'rally'] : [building]);
 const groupIcons = { economy: Coins, military: Shield, civic: Castle };
 
 export function VillageDirectory({ view, village, selected, onSelect }: Props) {
   const id = useId();
   const presentation = (building: VillageSelection) => {
-    const base = getBuildingPresentation(building === 'stable' ? 'barracks' : building, village, view.config);
-    return building === 'stable'
-      ? { ...base, name: 'الإسطبل', description: 'قسم الفرسان التابع للثكنة' }
-      : base;
+    const base = getBuildingPresentation(
+      building === 'stable' || building === 'rally' ? 'barracks' : building,
+      village,
+      view.config,
+    );
+    if (building === 'stable')
+      return { ...base, name: 'الإسطبل', description: 'قسم الفرسان التابع للثكنة' };
+    if (building === 'rally')
+      return {
+        ...base,
+        name: 'نقطة تجمع الجيوش',
+        description: 'مركز القيادة العسكرية فوق القوات والحركات الحالية',
+      };
+    return base;
   };
   const active = selected ? presentation(selected) : null;
   return (
@@ -37,7 +47,7 @@ export function VillageDirectory({ view, village, selected, onSelect }: Props) {
       <div className={styles.list}>
         {entries.map((building) => {
           const item = presentation(building);
-          const group = building === 'stable' ? 'military' : buildingGroups[building];
+          const group = building === 'stable' || building === 'rally' ? 'military' : buildingGroups[building];
           const Icon = groupIcons[group];
           return (
             <button key={building} type="button" className={styles.item}

@@ -16,7 +16,8 @@ describe('village building directory', () => {
     const onSelect = vi.fn();
     render(<VillageDirectory view={view} village={view.villages[0]} selected="stable" onSelect={onSelect} />);
     const directory = screen.getByRole('navigation', { name: 'دليل مباني القرية' });
-    expect(within(directory).getAllByRole('button')).toHaveLength(12);
+    expect(within(directory).getAllByRole('button')).toHaveLength(13);
+    expect(within(directory).getByRole('button', { name: 'اختيار نقطة تجمع الجيوش' })).toBeInTheDocument();
     expect(within(directory).getByRole('button', { name: 'اختيار الإسطبل' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(within(directory).getByRole('button', { name: 'اختيار مزارع الغذاء' }));
     expect(onSelect).toHaveBeenCalledWith('farm');

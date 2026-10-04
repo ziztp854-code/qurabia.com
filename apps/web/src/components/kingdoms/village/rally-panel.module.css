@@ -1,0 +1,118 @@
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--foreground);
+  line-height: 1.7;
+  min-inline-size: 0;
+}
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+.overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+.overview div {
+  min-inline-size: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-strong) 70%, var(--surface));
+}
+.overview dt {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.overview dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.status {
+  color: var(--gold);
+}
+.panel[data-readiness='threatened'] .status {
+  color: var(--danger);
+}
+.panel[data-readiness='training'] .status {
+  color: var(--warning);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.actions button {
+  min-block-size: 44px;
+}
+.section {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--border);
+}
+.section h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1rem;
+}
+.section h3 svg {
+  color: var(--gold);
+}
+.row,
+.threat {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--gold);
+  border-radius: var(--radius-md);
+}
+.threat[data-severity='CRITICAL'],
+.threat[data-severity='DANGER'] {
+  border-inline-start-color: var(--danger);
+}
+.threat[data-severity='WARNING'] {
+  border-inline-start-color: var(--warning);
+}
+.threat[data-severity='INFO'] {
+  border-inline-start-color: var(--info, var(--gold));
+}
+.muted {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.row button,
+.threat button,
+.section > button {
+  justify-self: start;
+  min-block-size: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .threat,
+  .row {
+    animation: none;
+    transition: none;
+  }
+}

@@ -301,8 +301,10 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       return () => clearInterval(timer);
     }, [props.village.build, props.view.serverNow]);
 
-    const choose = (building: VillageSelection) =>
-      camera.current?.focusOn(building, () => current.current.onSelect(building));
+    const choose = (building: VillageSelection) => {
+      if (camera.current) camera.current.focusOn(building, () => current.current.onSelect(building));
+      else current.current.onSelect(building);
+    };
     const build = props.village.build;
     const now = props.view.serverNow + (clock.base === props.view.serverNow ? clock.elapsed : 0);
     const remaining = build ? Math.max(0, Math.ceil((build.endsAt - now) / 1000)) : 0;
@@ -443,6 +445,28 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               <span className={styles.label}>
                 <Swords size={15} aria-hidden="true" />
                 <span>الإسطبل<small>المستوى {props.village.buildings.barracks.toLocaleString('ar-SA')} · {villageBuildingSceneStatus('stable', props.village)}</small></span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.hotspot} ${styles.region} ${styles.rally}`}
+              style={rectStyle(getVillageRect('rally', props.debug))}
+              aria-label="نقطة تجمع الجيوش، مركز القيادة العسكرية"
+              aria-pressed={props.selected === 'rally'}
+              data-building-region="rally"
+              data-rally-point="true"
+              onClick={() => choose('rally')}
+              onPointerEnter={() => renderer.current?.hover('rally')}
+              onPointerLeave={() => renderer.current?.hover(null)}
+              onFocus={() => renderer.current?.hover('rally')}
+              onBlur={() => renderer.current?.hover(null)}
+            >
+              <span className={styles.label}>
+                <Flag size={15} aria-hidden="true" />
+                <span>
+                  نقطة تجمع الجيوش
+                  <small>القيادة العسكرية</small>
+                </span>
               </span>
             </button>
             {supplementary.map((region) => (

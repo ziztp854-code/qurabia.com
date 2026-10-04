@@ -14,7 +14,15 @@ import { date, labels, number, type GameProps } from './shared';
 import styles from './building-panel.module.css';
 
 export type VillageNavigation =
-  'overview' | 'village' | 'army' | 'map' | 'market' | 'alliances' | 'reports' | 'throne';
+  | 'overview'
+  | 'village'
+  | 'army'
+  | 'map'
+  | 'campaigns'
+  | 'market'
+  | 'alliances'
+  | 'reports'
+  | 'throne';
 type DetailTab = 'info' | 'upgrade' | 'production' | 'activity';
 type Props = GameProps & {
   building: Building;

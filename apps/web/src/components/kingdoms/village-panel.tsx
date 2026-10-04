@@ -13,6 +13,7 @@ import { BuildingPanel, type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
 import { ConstructionQueue } from './village/construction-queue';
 import { StablePanel } from './village/stable-panel';
+import { RallyPanel, type RallyMission } from './village/rally-panel';
 import { CommanderPanel } from './commander-panel';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
@@ -34,11 +35,13 @@ export function VillagePanel({
   onNavigate,
   onShowMap,
   onRefresh,
+  onCampaign,
 }: GameProps & {
   initialBuilding?: VillageSelection | null;
   onNavigate?: (tab: VillageNavigation) => void;
   onShowMap?: (villageId: string) => void;
   onRefresh?: () => void;
+  onCampaign?: (mission: RallyMission) => void;
 }) {
   const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -75,8 +78,24 @@ export function VillagePanel({
           />
         </div>
         {selected && (
-          <aside className={villageStyles.rail} aria-label="إدارة مباني القرية">
-            {selected === 'stable' ? (
+          <aside
+            className={villageStyles.rail}
+            aria-label="إدارة مباني القرية"
+            data-panel={selected === 'rally' ? 'rally' : undefined}
+          >
+            {selected === 'rally' ? (
+              <RallyPanel
+                view={view}
+                village={village}
+                busy={busy}
+                send={send}
+                onClose={close}
+                onCampaign={onCampaign}
+                onOpenTraining={(target) => setSelected(target)}
+                onShowMap={onShowMap}
+                onNavigate={onNavigate}
+              />
+            ) : selected === 'stable' ? (
               <StablePanel
                 view={view}
                 village={village}

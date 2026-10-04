@@ -73,7 +73,8 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const reset = useCallback(() => scene.current?.reset(), []);
   const onReady = useCallback(() => setReady(true), []);
   const choose = useCallback((building: VillageSelection) => {
-    scene.current?.focusOn(building, () => onSelect(building));
+    if (scene.current) scene.current.focusOn(building, () => onSelect(building));
+    else onSelect(building);
   }, [onSelect]);
   const incoming = presentIncomingThreats(view.incoming ?? [], view.serverNow);
   const hostile = hostileThreats(villageIncoming(incoming, village.id));
@@ -230,6 +231,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           <option value="stable">
             الإسطبل · مستوى الثكنة {village.buildings.barracks}
           </option>
+          <option value="rally">نقطة تجمع الجيوش</option>
         </Select>
         <Select
           label="جودة المشهد"

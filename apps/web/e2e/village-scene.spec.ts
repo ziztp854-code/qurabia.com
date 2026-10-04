@@ -25,7 +25,7 @@ test('village command view expands the scene and keeps building choices and actu
   const before = (await (await page.request.get('/api/kingdoms')).json()).data.villages[0];
   const directory = village.getByRole('navigation', { name: 'دليل مباني القرية' });
   await expect(directory).toBeVisible({ timeout: 3000 });
-  await expect(directory.getByRole('button')).toHaveCount(12);
+  await expect(directory.getByRole('button')).toHaveCount(13);
   await expect(village.getByRole('region', { name: 'نشاط القرية' })).toBeVisible();
   await expect.poll(() => page.getByRole('region', { name: 'موارد القرية' }).locator('img').evaluateAll(
     (images) => images.every((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0),
@@ -588,4 +588,47 @@ test('HiDPI and 4K viewports keep the existing village camera and hotspots', asy
   await page.getByRole('region', { name: 'تفاصيل مزارع الغذاء' }).getByRole('button', { name: 'طوّر المبنى' }).click();
   await expect(page.getByRole('region', { name: 'قوائم التنفيذ' })).toContainText('مزارع الغذاء');
   await page.screenshot({ path: testInfo.outputPath('village-4k-construction.png'), scale: 'css' });
+});
+
+test('rally point opens the existing campaign flow', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-1920' && testInfo.project.name !== 'iphone');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  const viewport = village.locator('[data-village-scene]');
+  await expect(viewport).toHaveAttribute('data-pixi-ready', 'true');
+  const openRally = async () => {
+    const hotspot = village.getByRole('button', { name: 'نقطة تجمع الجيوش، مركز القيادة العسكرية' });
+    await expect(hotspot).toBeVisible();
+    const sceneBox = await viewport.boundingBox();
+    const hotspotBox = await hotspot.boundingBox();
+    expect(sceneBox && hotspotBox).toBeTruthy();
+    expect(hotspotBox!.x).toBeGreaterThanOrEqual(sceneBox!.x - 1);
+    expect(hotspotBox!.y).toBeGreaterThanOrEqual(sceneBox!.y - 1);
+    expect(hotspotBox!.x + hotspotBox!.width).toBeLessThanOrEqual(sceneBox!.x + sceneBox!.width + 1);
+    await hotspot.focus();
+    await page.keyboard.press('Enter');
+    const panel = page.getByRole('region', { name: 'نقطة تجمع الجيوش' });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('heading', { name: 'نقطة تجمع الجيوش' })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    return panel;
+  };
+  if (testInfo.project.name === 'iphone') {
+    const panel = await openRally();
+    await expect(panel.getByRole('button', { name: 'إرسال جيش' })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('rally-mobile.png'), scale: 'css' });
+    await panel.getByRole('button', { name: 'إرسال جيش' }).click();
+    await expect(page.getByLabel('نوع الحملة')).toHaveValue('attack');
+    return;
+  }
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openRally();
+  await page.screenshot({ path: testInfo.outputPath('rally-1080.png'), scale: 'css' });
+  await page.getByRole('button', { name: 'أغلق نقطة التجمع' }).click();
+  await page.setViewportSize({ width: 3840, height: 2160 });
+  const panel = await openRally();
+  await page.screenshot({ path: testInfo.outputPath('rally-4k.png'), scale: 'css' });
+  await panel.getByRole('button', { name: 'استطلاع' }).click();
+  await expect(page.getByLabel('نوع الحملة')).toHaveValue('scout');
 });

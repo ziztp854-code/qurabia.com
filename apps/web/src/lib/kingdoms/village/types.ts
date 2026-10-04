@@ -12,7 +12,7 @@ export type CameraSnapshot = Readonly<{
   viewport: WorldSize;
 }>;
 export type VillageQuality = 'auto' | 'ultra' | 'high' | 'medium' | 'low';
-export type VillageSelection = Building | 'stable';
+export type VillageSelection = Building | 'stable' | 'rally';
 export type VillageTarget = VillageSelection | 'gate';
 export type VillagePlacement = WorldRect &
   Readonly<{

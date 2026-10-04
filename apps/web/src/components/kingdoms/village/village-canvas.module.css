@@ -137,6 +137,14 @@
 .region {
   z-index: 3;
 }
+.rally {
+  z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rally {
+    animation: none;
+  }
+}
 .region .label {
   top: 40%;
 }

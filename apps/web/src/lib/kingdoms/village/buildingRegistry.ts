@@ -181,12 +181,12 @@ export const villageBuildingRegistry: readonly VillageBuildingDefinition[] = [
   },
   {
     id: 'rally',
-    name: 'ساحة التجمع',
+    name: 'نقطة تجمع الجيوش',
     classification: 'composite',
     building: 'barracks',
-    description: 'ساحة بصرية تابعة للثكنات دون أوامر جيش جديدة',
+    description: 'مركز قيادة عسكرية فوق القوات والحركات الحالية، دون مبنى خادم جديد',
     district: 'military',
-    interactive: false,
+    interactive: true,
   },
   {
     id: 'hospital',
