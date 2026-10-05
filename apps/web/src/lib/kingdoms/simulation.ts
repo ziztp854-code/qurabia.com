@@ -25,7 +25,7 @@ import {
   type KingdomReport,
   isIncomingMission,
 } from './types';
-export const emptyTroops = (): Troops => ({ guard: 0, rider: 0, scout: 0, settler: 0 });
+export const emptyTroops = (): Troops => Object.fromEntries(unitKeys.map((key) => [key, 0])) as Troops;
 export const nextId = (w: KingdomsWorld, prefix: string) => `${prefix}${w.nextId++}`;
 export function assertRule(ok: unknown, message: string): asserts ok {
   if (!ok) throw new Error(message);

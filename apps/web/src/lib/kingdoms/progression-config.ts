@@ -12,7 +12,7 @@ export const defaultVillageProgression: VillageProgressionConfig = {
   defensePower: 80,
   economicPower: 40,
   strategicPower: 100,
-  unitPower: { guard: 8, rider: 14, scout: 2, settler: 1 },
+  unitPower: { guard: 8, rider: 14, scout: 2, settler: 1, archer: 10, mounted_archer: 16, sultan_guard: 22, siege_engineer: 6, siege_tower: 18 },
   milestones: [
     { level: 10, buildings: { hall: 3, warehouse: 2 } },
     { level: 20, buildings: { hall: 6, warehouse: 5, wall: 3 } },

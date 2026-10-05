@@ -15,6 +15,11 @@ const troops = z
     rider: z.number().int().min(0).max(1e6),
     scout: z.number().int().min(0).max(1e6),
     settler: z.number().int().min(0).max(1e6),
+    archer: z.number().int().min(0).max(1e6),
+    mounted_archer: z.number().int().min(0).max(1e6),
+    sultan_guard: z.number().int().min(0).max(1e6),
+    siege_engineer: z.number().int().min(0).max(1e6),
+    siege_tower: z.number().int().min(0).max(1e6),
   })
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [

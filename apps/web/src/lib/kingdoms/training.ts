@@ -8,7 +8,7 @@ export const stableUnlockVillageLevel = 6;
 
 /** One training slot. The building only chooses the requirement and the speed level. */
 export function trainingBuilding(unit: Unit): Building {
-  return unit === 'rider' ? 'stable' : 'barracks';
+  return unit === 'rider' || unit === 'mounted_archer' ? 'stable' : 'barracks';
 }
 
 /** Same coefficient as barracks training. The level comes from the unit's own building. */

@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Flag, Shield, Swords, type LucideIcon } from 'lucide-react';
+import { Castle, Eye, Flag, Shield, Swords, Target, Wrench, type LucideIcon } from 'lucide-react';
 import type { Unit } from '@/lib/kingdoms/types';
 
 const unitIcons: Record<Unit, LucideIcon> = {
@@ -8,6 +8,11 @@ const unitIcons: Record<Unit, LucideIcon> = {
   rider: Swords,
   scout: Eye,
   settler: Flag,
+  archer: Target,
+  mounted_archer: Swords,
+  sultan_guard: Shield,
+  siege_engineer: Wrench,
+  siege_tower: Castle,
 };
 
 /**

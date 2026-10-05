@@ -16,7 +16,7 @@ export const buildingKeys = [
   'embassy',
 ] as const;
 export type Building = (typeof buildingKeys)[number];
-export const unitKeys = ['guard', 'rider', 'scout', 'settler'] as const;
+export const unitKeys = ['guard', 'rider', 'scout', 'settler', 'archer', 'mounted_archer', 'sultan_guard', 'siege_engineer', 'siege_tower'] as const;
 export type Unit = (typeof unitKeys)[number];
 export type Troops = Record<Unit, number>;
 export const commanderSpecializations = ['cavalry', 'infantry', 'archery', 'siege', 'defense', 'supply'] as const;
