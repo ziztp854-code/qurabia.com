@@ -20,6 +20,9 @@ export function nextDeadline(state: KingdomsWorld): Date | null {
     if (village.build) dates.push(village.build.endsAt);
     if (village.training) dates.push(village.training.endsAt);
   }
+  for (const caravan of state.caravans ?? []) {
+    if (caravan.status === 'traveling') dates.push(caravan.arrivesAt);
+  }
   return new Date(dates.reduce((earliest, date) => Math.min(earliest, date), state.season.endsAt));
 }
 

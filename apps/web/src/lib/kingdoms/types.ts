@@ -39,8 +39,66 @@ export type CommanderConfig = {
   recoverySeconds: number; questXp: number;
 };
 export type CommanderAward = { eventId: string; playerId: string; opponentId: string; at: number; xp: number };
+export type Terrain = 'plains' | 'hills' | 'mountains' | 'coast' | 'desert' | 'river';
+export type RegionType = 'historical_city' | 'trade_hub' | 'religious_site' | 'strategic_pass';
+export type RegionConfig = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  radius: number;
+  terrain: Terrain;
+  travelCostMultiplier: number;
+  regionType: RegionType;
+  capitalVillageId?: string;
+  controlledBy?: string;
+  bonus: string;
+};
+export type HistoricalRegion = RegionConfig;
+export type SiegeStage = 'approaching' | 'besieging' | 'assaulting' | 'withdrawing';
+export type Siege = {
+  id: string;
+  ownerId: string;
+  sourceId: string;
+  targetX: number;
+  targetY: number;
+  villageId?: string;
+  troops: Troops;
+  stage: SiegeStage;
+  supply: number;
+  startedAt: number;
+  stageStartedAt: number;
+  stageDeadline: number;
+  nextTickAt: number;
+  wallDamage: number;
+  buildingDamage: Partial<Record<Building, number>>;
+};
+export type SiegeView = Siege & { targetName?: string };
+export type SiegeConfig = {
+  stages: { key: SiegeStage; durationMs: number }[];
+  supplyRate: number;
+  tickIntervalMs: number;
+  damagePerTick: number;
+  wallDamage: number;
+  supplyBuildingKeys: Building[];
+  maxSiegeTicks: number;
+};
+export type EnemySighting = {
+  id: string;
+  villageId: string;
+  seenAt: number;
+  expiresAt: number;
+  troops: Record<string, number>;
+  commanderId?: string;
+};
+export type VisionConfig = {
+  visionRadiusByBuilding: Partial<Record<Building, number>>;
+  towerBuildingKey: Building;
+  sharedVisionRadius: number;
+  visionExpiryMs: number;
+};
 export type Mission =
-  'attack' | 'raid' | 'scout' | 'reinforce' | 'settle' | 'occupy' | 'gather' | 'return';
+  'attack' | 'raid' | 'scout' | 'reinforce' | 'settle' | 'occupy' | 'gather' | 'return' | 'intercept';
 export type ResourceSiteKind = 'wood' | 'iron' | 'food';
 export type ResourceSiteView = {
   id: string;
@@ -113,6 +171,15 @@ export type KingdomsConfig = {
   settlerHallLevel: number;
   throneGoldWeight: number;
   combatLossExponent: number;
+  caravans?: {
+    baseSpeedTilesPerSecond: number;
+    interceptWindowSeconds: number;
+    maxCaravanResources: number;
+    escortDefenseBonus: number;
+  };
+  siegeConfig?: SiegeConfig;
+  vision?: VisionConfig;
+  defaultRegions?: RegionConfig[];
   buildings: Record<
     Building,
     { name: string; cost: Resources; seconds: number; growth: number; maxLevel: number }
@@ -224,8 +291,10 @@ export type Movement = {
   loot: Resources;
 };
 /** Hostile or allied inbound missions a target owner may see. */
-export const incomingMissions = ['attack', 'raid', 'scout', 'reinforce'] as const;
+export const incomingMissions = ['attack', 'raid', 'scout', 'reinforce', 'intercept'] as const;
 export type IncomingMission = (typeof incomingMissions)[number];
+export const isIncomingMission = (mission: string): mission is IncomingMission =>
+  incomingMissions.includes(mission as IncomingMission);
 /** Public map identity already exposed on KingdomsView.map. */
 export type IncomingSourceView = {
   id: string;
@@ -277,6 +346,27 @@ export type Offer = {
   want: Resources;
   createdAt: number;
 };
+export type CaravanStatus = 'preparing' | 'traveling' | 'arrived' | 'intercepted' | 'returned';
+export type Caravan = {
+  id: string;
+  ownerId: string;
+  originVillageId: string;
+  targetVillageId: string;
+  resources: Resources;
+  departsAt: number;
+  arrivesAt: number;
+  status: CaravanStatus;
+  route: { x: number; y: number }[];
+  exposed: boolean;
+};
+export type CaravanIntercept = {
+  carrierId: string;
+  interceptorVillageId: string;
+  interceptorPlayerId: string;
+  troops: Troops;
+  dispatchedAt: number;
+};
+export type CaravanView = Pick<Caravan, 'id' | 'ownerId' | 'originVillageId' | 'targetVillageId' | 'resources' | 'departsAt' | 'arrivesAt' | 'status' | 'route'>;
 export type KingdomsWorld = {
   commanders?: Record<string, Commander>;
   commanderAwards?: CommanderAward[];
@@ -292,6 +382,9 @@ export type KingdomsWorld = {
   alliances: Record<string, Alliance>;
   offers: Offer[];
   territories: Record<string, string>;
+  caravans: Caravan[];
+  sieges: Record<string, Siege>;
+  enemySightings: EnemySighting[];
   season: {
     number: number;
     startsAt: number;
@@ -325,6 +418,9 @@ export type KingdomsView = {
   }[];
   movements: Movement[];
   incoming: IncomingMovementView[];
+  caravans: CaravanView[];
+  sieges: SiegeView[];
+  enemySightings: EnemySighting[];
   reports: KingdomReport[];
   alliances: Alliance[];
   offers: Offer[];

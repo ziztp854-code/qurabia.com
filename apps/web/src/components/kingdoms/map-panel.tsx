@@ -20,9 +20,10 @@ const missionLabels = {
   scout: 'استطلاع',
   reinforce: 'تعزيز',
   settle: 'تأسيس قرية',
-  occupy: 'احتلال أرض',
+  occupy: 'ضم أرض',
+  gather: 'جمع موارد',
   return: 'عودة',
-  gather: 'جمع الموارد',
+  intercept: 'اعتراض',
 };
 type March = Extract<KingdomsCommand, { type: 'march' }>;
 export type MapSelection = {

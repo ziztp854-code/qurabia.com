@@ -32,6 +32,7 @@ const missionKind: Record<IncomingMission, ThreatKind> = {
   raid: 'hostile',
   scout: 'intelligence',
   reinforce: 'friendly',
+  intercept: 'hostile',
 };
 
 export function incomingKind(mission: IncomingMission): ThreatKind {
@@ -115,6 +116,7 @@ export const incomingMissionLabels: Record<IncomingMission, string> = {
   raid: 'غارة قادمة',
   scout: 'استطلاع قادم',
   reinforce: 'تعزيزات قادمة',
+  intercept: 'اعتراض قادم',
 };
 
 export const threatSeverityLabels: Record<ThreatSeverity, string> = {

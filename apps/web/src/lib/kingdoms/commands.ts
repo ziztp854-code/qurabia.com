@@ -91,5 +91,8 @@ export const kingdomsCommandSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('throne'), villageId, resources: resourcesSchema }).strict(),
+  z.object({ type: z.literal('caravanSend'), villageId, targetVillageId: id, resources: resourcesSchema }).strict(),
+  z.object({ type: z.literal('caravanCancel'), caravanId: id }).strict(),
+  z.object({ type: z.literal('caravanIntercept'), carrierId: id, villageId, troops }).strict(),
 ]);
 export type KingdomsCommand = z.infer<typeof kingdomsCommandSchema>;

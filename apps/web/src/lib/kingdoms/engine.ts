@@ -14,6 +14,8 @@ import { trainingBuilding, trainingDurationMs } from './training';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
   advanceDraft,
+  advanceCaravan,
+  interceptCaravan,
   nonAggression,
   assertRule,
   credit,
@@ -32,7 +34,11 @@ import {
   scaleResources,
   spend,
   total,
+  projectEnemySightings,
 } from './simulation';
+import {
+  projectSiegeView,
+} from './siege';
 import {
   incomingMissions,
   resourceKeys,
@@ -44,6 +50,7 @@ import {
   type KingdomsView,
   type KingdomsWorld,
   type Movement,
+  type SiegeView,
   type Village,
 } from './types';
 export { kingdomsCommandSchema } from './commands';
@@ -74,6 +81,9 @@ export function createWorld(
     territories: {},
     commanders: {},
     commanderAwards: [],
+    caravans: [],
+    sieges: {},
+    enemySightings: [],
     season: {
       number: 1,
       startsAt: now,
@@ -87,6 +97,7 @@ export function advanceWorld(state: KingdomsWorld, now: number): KingdomsWorld {
   const w = clone(state);
   normalizeCommanders(w);
   advanceDraft(w, Math.max(now, w.updatedAt));
+  advanceCaravan(w, Math.max(now, w.updatedAt));
   return w;
 }
 export function nextEventAt(w: KingdomsWorld): number | null {
@@ -517,6 +528,77 @@ function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { ty
     if (commanderId && w.commanders?.[commanderId]?.playerId === actor) addCommanderExperience(w, commanderId, commanderConfig(w).questXp);
   }
 }
+function caravanSend(
+  w: KingdomsWorld,
+  actor: string,
+  c: Extract<KingdomsCommand, { type: 'caravanSend' }>,
+  at: number,
+) {
+  const v = own(w, actor, c.villageId);
+  assertRule(v.buildings.market > 0, 'ابنِ السوق أولاً');
+  const totalResources = Object.values(c.resources).reduce((sum, val) => sum + val, 0);
+  assertRule(totalResources > 0, 'يجب أن تحتوي القافلة على موارد');
+  assertRule(totalResources <= (w.config.caravans?.maxCaravanResources ?? 50000), 'بلغت القافلة الحد الأعلى للموارد');
+  assertRule(total(v.resources) >= totalResources, 'الموارد غير كافية في القرية');
+  const target = Object.values(w.villages).find((tv) => tv.id === c.targetVillageId);
+  assertRule(target, 'القرية الهدف غير موجودة');
+  const route = [
+    { x: v.x, y: v.y },
+    { x: Math.round((v.x + target.x) / 2), y: Math.round((v.y + target.y) / 2) },
+    { x: target.x, y: target.y },
+  ];
+  const distance = Math.hypot(target.x - v.x, target.y - v.y);
+  const speed = w.config.caravans?.baseSpeedTilesPerSecond ?? 4;
+  const travelMs = Math.max(1000, Math.ceil((distance * w.config.secondsPerTile * 1000) / speed));
+  spend(v, c.resources);
+  w.caravans.push({
+    id: nextId(w, 'cv'),
+    ownerId: actor,
+    originVillageId: v.id,
+    targetVillageId: c.targetVillageId,
+    resources: { ...c.resources },
+    departsAt: at,
+    arrivesAt: at + travelMs,
+    status: 'traveling',
+    route,
+    exposed: true,
+  });
+  report(w, at, [actor], 'انطلاق قافلة', `انطلقت قافلة من ${v.name} إلى ${target.name}`);
+}
+
+function caravanCancel(
+  w: KingdomsWorld,
+  actor: string,
+  c: Extract<KingdomsCommand, { type: 'caravanCancel' }>,
+  at: number,
+) {
+  const caravan = w.caravans.find((cv) => cv.id === c.caravanId);
+  assertRule(caravan && caravan.ownerId === actor, 'القافلة غير متاحة');
+  assertRule(caravan.status === 'preparing' || caravan.status === 'traveling', 'لا يمكن إلغاء القافلة في هذه الحالة');
+  const v = w.villages[caravan.originVillageId];
+  if (v && caravan.status === 'preparing') {
+    credit(w, v, caravan.resources);
+  }
+  caravan.status = 'returned';
+  report(w, at, [actor], 'إلغاء القافلة', 'أُلغيت القافلة');
+}
+
+function caravanIntercept(
+  w: KingdomsWorld,
+  actor: string,
+  c: Extract<KingdomsCommand, { type: 'caravanIntercept' }>,
+  at: number,
+) {
+  const carrier = w.caravans.find((cv) => cv.id === c.carrierId);
+  assertRule(carrier && carrier.status === 'traveling', 'القافلة غير متاحة للاعتراض');
+  const v = own(w, actor, c.villageId);
+  assertRule(total(c.troops) > 0 && unitKeys.every((k) => v.troops[k] >= c.troops[k]), 'القوات غير متاحة');
+  v.troops = Object.fromEntries(
+    unitKeys.map((k) => [k, v.troops[k] - c.troops[k]]),
+  ) as Village['troops'];
+  interceptCaravan(w, c.carrierId, c.villageId, actor, c.troops);
+  report(w, at, [actor], 'اعتراض قافلة', 'أُرسلت القوات لاعتراض القافلة');
+}
 function claimAllianceEvent(
   w: KingdomsWorld,
   actor: string,
@@ -659,6 +741,15 @@ export function executeCommand(
       case 'tradeCancel':
         trade(w, actorId, c, at);
         break;
+      case 'caravanSend':
+        caravanSend(w, actorId, c, at);
+        break;
+      case 'caravanCancel':
+        caravanCancel(w, actorId, c, at);
+        break;
+      case 'caravanIntercept':
+        caravanIntercept(w, actorId, c, at);
+        break;
       case 'allianceCreate':
       case 'allianceJoin':
       case 'allianceApprove':
@@ -788,6 +879,17 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
     })),
     movements: w.movements.filter((m) => m.ownerId === actorId),
     incoming: projectIncoming(w, actorId),
+    caravans: w.caravans.filter((cv) => cv.ownerId === actorId).map((cv) => ({
+      id: cv.id,
+      ownerId: cv.ownerId,
+      originVillageId: cv.originVillageId,
+      targetVillageId: cv.targetVillageId,
+      resources: cv.resources,
+      departsAt: cv.departsAt,
+      arrivesAt: cv.arrivesAt,
+      status: cv.status,
+      route: cv.route,
+    })),
     reports: w.reports.filter((r) => r.recipients.includes(actorId)).slice(-100),
     alliances: Object.values(w.alliances).map((a) => ({
       ...a,
@@ -798,6 +900,8 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
     })),
     offers: w.offers,
     territories: w.territories,
+    sieges: Object.values(w.sieges).map((siege) => projectSiegeView(siege, actorId)).filter(Boolean) as SiegeView[],
+    enemySightings: projectEnemySightings(w, actorId, now),
     leaderboard: Object.values(w.players)
       .map((p) => ({
         id: p.id,

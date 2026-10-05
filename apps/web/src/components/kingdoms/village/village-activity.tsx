@@ -23,6 +23,7 @@ type Props = Pick<GameProps, 'view' | 'village'> & {
 const missions: Record<Mission, string> = {
   attack: 'هجوم', raid: 'غارة', scout: 'استطلاع', reinforce: 'تعزيز',
   settle: 'استيطان', occupy: 'احتلال', return: 'عودة', gather: 'جمع الموارد',
+  intercept: 'اعتراض',
 };
 function QueueTime({ endsAt, now, label }: { endsAt: number; now: number; label: string }) {
   const remaining = remainingMs(endsAt, now);

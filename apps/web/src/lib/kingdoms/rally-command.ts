@@ -30,6 +30,7 @@ export const ownerMissionLabels: Record<Mission, string> = {
   occupy: 'احتلال أرض',
   gather: 'جمع الموارد',
   return: 'عودة',
+  intercept: 'اعتراض',
 };
 
 export const commanderStatusLabels: Record<CommanderView['status'], string> = {

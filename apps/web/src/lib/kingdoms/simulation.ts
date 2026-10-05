@@ -14,6 +14,7 @@ import {
   buildingKeys,
   resourceKeys,
   unitKeys,
+  type EnemySighting,
   type KingdomsConfig,
   type KingdomsWorld,
   type Movement,
@@ -22,6 +23,7 @@ import {
   type Troops,
   type Village,
   type KingdomReport,
+  isIncomingMission,
 } from './types';
 export const emptyTroops = (): Troops => ({ guard: 0, rider: 0, scout: 0, settler: 0 });
 export const nextId = (w: KingdomsWorld, prefix: string) => `${prefix}${w.nextId++}`;
@@ -578,4 +580,98 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
       'حُسم العرش بمجموع مساهمات الممالك والتحالفات',
     );
   }
+}
+
+/** Caravan simulation: advances traveling caravans, handles arrivals, and supports interception. */
+export function advanceCaravan(state: KingdomsWorld, now: number) {
+  if (!state.caravans?.length) return;
+  for (const caravan of state.caravans) {
+    if (caravan.status !== 'traveling') continue;
+    if (now >= caravan.arrivesAt) {
+      caravan.status = 'arrived';
+      const target = Object.values(state.villages).find(
+        (v) => v.id === caravan.targetVillageId,
+      );
+      const owner = target?.ownerId === caravan.ownerId ? target : undefined;
+      if (owner) {
+        credit(state, owner, caravan.resources);
+        caravan.resources = Object.fromEntries(
+          resourceKeys.map((k) => [k, 0]),
+        ) as Resources;
+      }
+    }
+  }
+  state.caravans = state.caravans.filter(
+    (c) => c.status !== 'returned' && c.status !== 'intercepted',
+  );
+}
+
+export function canInterceptCaravan(state: KingdomsWorld, carrierId: string): boolean {
+  const caravan = state.caravans?.find((c) => c.id === carrierId);
+  if (!caravan || caravan.status !== 'traveling' || !caravan.exposed) return false;
+  const window = state.config.caravans?.interceptWindowSeconds ?? 60;
+  return (
+    Date.now() >= caravan.departsAt - window * 1000 &&
+    Date.now() <= caravan.arrivesAt + window * 1000
+  );
+}
+
+export function interceptCaravan(
+  state: KingdomsWorld,
+  carrierId: string,
+  interceptorVillageId: string,
+  interceptorPlayerId: string,
+  troops: Troops,
+) {
+  const caravan = state.caravans?.find((c) => c.id === carrierId);
+  if (!caravan || caravan.status !== 'traveling') return;
+  const escortDefense = (state.config.caravans?.escortDefenseBonus ?? 0.25);
+  const escortStrength = Object.entries(caravan.resources).reduce((sum, [, v]) => sum + v, 0) * escortDefense;
+  const attackerStrength = Object.values(troops).reduce((sum, v) => sum + v, 0);
+  if (attackerStrength > escortStrength) {
+    caravan.status = 'intercepted';
+    const target = state.villages[interceptorVillageId];
+    if (target?.ownerId === interceptorPlayerId) {
+      credit(state, target, caravan.resources);
+    }
+    caravan.resources = Object.fromEntries(
+      resourceKeys.map((k) => [k, 0]),
+    ) as Resources;
+  }
+}
+
+export function computeVillageVision(village: Village, config: KingdomsConfig['vision']): number {
+  if (!config || !village) return 0;
+  const radiusByBuilding = config.visionRadiusByBuilding as Record<string, number> | undefined;
+  let buildingBonus = 0;
+  for (const [buildingKey, level] of Object.entries(village.buildings)) {
+    if (radiusByBuilding && buildingKey in radiusByBuilding) {
+      buildingBonus += radiusByBuilding[buildingKey] * level;
+    }
+  }
+  return config.sharedVisionRadius + buildingBonus;
+}
+
+export function projectEnemySightings(w: KingdomsWorld, actorId: string, now: number): EnemySighting[] {
+  const ownVillages = Object.values(w.villages).filter((v) => v.ownerId === actorId);
+  const visionConfig = w.config.vision;
+  if (!ownVillages.length || !visionConfig) return [];
+  const visionRadius = computeVillageVision(ownVillages[0], visionConfig);
+  if (!visionRadius) return [];
+  return w.movements
+    .filter((m) => m.ownerId !== actorId && isIncomingMission(m.mission))
+    .map((m) => {
+      const distance = Math.hypot(m.targetX - ownVillages[0].x, m.targetY - ownVillages[0].y);
+      if (distance > visionRadius) return null;
+      const targetVillageId = Object.values(w.villages).find((v) => v.x === m.targetX && v.y === m.targetY)?.id;
+      return {
+        id: m.id,
+        villageId: targetVillageId ?? '',
+        seenAt: now,
+        expiresAt: now + visionConfig.visionExpiryMs,
+        troops: m.troops,
+        commanderId: m.commanderId,
+      };
+    })
+    .filter(Boolean) as EnemySighting[];
 }
