@@ -642,7 +642,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
       departedAt: state.updatedAt,
       arrivesAt: state.updatedAt + 60000,
       travelMs: 60000,
-      troops: { guard: 0, rider: 0, scout: 1, settler: 0 },
+      troops: { guard: 0, rider: 0, scout: 1, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       loot: { wood: 0, stone: 0, iron: 0, food: 0, gold: 0 },
     };
     const gameplay = {

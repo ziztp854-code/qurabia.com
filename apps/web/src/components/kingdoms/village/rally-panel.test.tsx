@@ -46,7 +46,7 @@ describe('RallyPanel', () => {
         ownerId: 'bob',
         protectedUntil: 0,
       },
-      troops: { guard: 7777, rider: 1, scout: 1, settler: 1 },
+      troops: { guard: 7777, rider: 1, scout: 1, settler: 1, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       commanderId: 'secret-commander',
       combatPower: 8888,
       loot: { gold: 99999 },
@@ -56,7 +56,7 @@ describe('RallyPanel', () => {
         view={{ ...view, incoming: [incoming as IncomingMovementView] }}
         village={{
           ...village,
-          troops: { guard: 6, rider: 0, scout: 0, settler: 0 },
+          troops: { guard: 6, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
         }}
         busy={false}
         send={vi.fn()}

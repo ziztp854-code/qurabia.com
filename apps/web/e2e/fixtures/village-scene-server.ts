@@ -80,7 +80,7 @@ async function main() {
           ...world.villages,
           [attackerVillage.id]: {
             ...attackerVillage,
-            troops: { guard: 20, rider: 0, scout: 0, settler: 0 },
+            troops: { guard: 20, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
           },
         },
       };
@@ -93,7 +93,7 @@ async function main() {
           targetX: defender.x,
           targetY: defender.y,
           mission: 'attack',
-          troops: { guard: 8, rider: 0, scout: 0, settler: 0 },
+          troops: { guard: 8, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
         },
         at,
       );

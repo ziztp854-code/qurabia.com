@@ -83,7 +83,7 @@ describe('village hero', () => {
         ...world.villages,
         [host.id]: {
           ...host,
-          reinforcements: { [source.id]: { guard: 10, rider: 0, scout: 0, settler: 0 } },
+          reinforcements: { [source.id]: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 } },
         },
       },
     };
@@ -100,7 +100,7 @@ describe('village hero', () => {
   });
 
   it('reports food production stopping when upkeep eats the harvest', () => {
-    const view = fixture({ guard: 1000, rider: 0, scout: 0, settler: 0 });
+    const view = fixture({ guard: 1000, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 });
     render(<VillageHero view={view} village={view.villages[0]} />);
     const hero = screen.getByRole('region', { name: 'بطاقة القرية' });
     expect(within(hero).getAllByText('لا إنتاج الآن')).toHaveLength(1);

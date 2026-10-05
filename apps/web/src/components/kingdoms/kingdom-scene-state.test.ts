@@ -8,7 +8,7 @@ const village: Village = {
   resources: { wood: 0, stone: 0, iron: 0, food: 0, gold: 0 },
   updatedAt: 0,
   buildings: Object.fromEntries(buildingKeys.map((key) => [key, key === 'hall' ? 2 : 0])) as Village['buildings'],
-  troops: { guard: 0, rider: 0, scout: 0, settler: 0 },
+  troops: { guard: 0, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
   reinforcements: {},
   build: { building: 'market', level: 1, startedAt: 100, endsAt: 300 },
 };

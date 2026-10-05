@@ -83,7 +83,7 @@ describe('one geographic relocation per actual village', () => {
       targetX: village.x,
       targetY: village.y,
       mission: 'attack',
-      troops: { guard: 1, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 1, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       departedAt: 1000,
       arrivesAt: 5000,
       travelMs: 4000,

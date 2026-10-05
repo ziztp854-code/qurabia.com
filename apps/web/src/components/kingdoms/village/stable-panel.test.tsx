@@ -73,7 +73,7 @@ describe('StablePanel cavalry commands', () => {
       'يوجد تدريب جارٍ. انتظر اكتماله قبل تدريب الفرسان.',
     ],
     ['insufficient iron', { resources: { iron: 0 } }, 'الموارد الحالية لا تكفي لتدريب هذا العدد.'],
-    ['full army', { troops: { guard: 999997 } }, 'بلغ الجيش الحد الأعلى.'],
+    ['full army', { troops: { guard: 999997, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 } }, 'بلغ الجيش الحد الأعلى.'],
   ] as const)('blocks a rider command with %s', (_, change, reason) => {
     const props = fixture();
     const village = {
@@ -167,7 +167,7 @@ describe('StablePanel cavalry commands', () => {
           targetX: 1,
           targetY: 1,
           mission: 'raid' as const,
-          troops: { guard: 0, rider: 5, scout: 0, settler: 0 },
+          troops: { guard: 0, rider: 5, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
           departedAt: now,
           arrivesAt: now + 1000,
           travelMs: 1000,

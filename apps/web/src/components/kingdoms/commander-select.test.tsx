@@ -102,7 +102,7 @@ describe('army commander selection', () => {
       ...view.villages[0],
       x: 0,
       y: 0,
-      troops: { guard: 10, rider: 2, scout: 0, settler: 0 },
+      troops: { guard: 10, rider: 2, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     };
     const send = vi.fn();
     render(<GatheringPanel view={view} village={village} busy={false} send={send} site={site} />);
@@ -118,7 +118,7 @@ describe('army commander selection', () => {
       targetY: 2,
       mission: 'gather',
       commanderId: commander.id,
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     });
   });
   it('blocks a stale selection after a server refresh while letting the user remove it', () => {
@@ -127,7 +127,7 @@ describe('army commander selection', () => {
       ...view.villages[0],
       x: 0,
       y: 0,
-      troops: { guard: 10, rider: 2, scout: 0, settler: 0 },
+      troops: { guard: 10, rider: 2, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     };
     const send = vi.fn();
     const { rerender } = render(
@@ -157,7 +157,7 @@ describe('army commander selection', () => {
   });
   it('includes the commander on map missions and keeps a stale selector editable', () => {
     const view = { ...fixture(), resourceSites: [] };
-    const village = { ...view.villages[0], troops: { guard: 10, rider: 2, scout: 0, settler: 0 } };
+    const village = { ...view.villages[0], troops: { guard: 10, rider: 2, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 } };
     const send = vi.fn();
     const { rerender } = render(
       <MapPanel view={view} village={village} busy={false} send={send} />,
@@ -171,7 +171,7 @@ describe('army commander selection', () => {
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         commanderId: commander.id,
-        troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+        troops: { guard: 3, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       }),
     );
     send.mockClear();

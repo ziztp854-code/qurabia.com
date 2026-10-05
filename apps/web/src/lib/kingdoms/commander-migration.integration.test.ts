@@ -36,8 +36,8 @@ describe.skipIf(!databaseUrl)('Commander additive state migration', () => {
     const legacy = {
       version: 1,
       players: { alice: { id: 'alice', score: 90 } },
-      villages: { capital: { ownerId: 'alice', resources: { gold: 150 }, troops: { guard: 10 } } },
-      movements: [{ id: 'army1', troops: { guard: 4 }, arrivesAt: 1000 }],
+      villages: { capital: { ownerId: 'alice', resources: { gold: 150 }, troops: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 } } },
+      movements: [{ id: 'army1', troops: { guard: 4, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 }, arrivesAt: 1000 }],
       config: { secondsPerTile: 60 },
       reports: [{ id: 'report1' }],
     };

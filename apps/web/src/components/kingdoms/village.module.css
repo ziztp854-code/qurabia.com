@@ -67,7 +67,8 @@
   min-inline-size: 0;
 }
 .village[data-village-screen] > .hero .stock ul {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.35rem;
 }
 .village[data-village-screen] > .hero .goal {
   position: absolute;
@@ -493,7 +494,8 @@
 .scene {
   position: relative;
   isolation: isolate;
-  min-inline-size: 700px;
+  min-inline-size: 0;
+  inline-size: 100%;
   aspect-ratio: 3 / 2;
   background: var(--mask-ink);
 }

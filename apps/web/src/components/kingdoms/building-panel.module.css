@@ -93,10 +93,13 @@
   display: flex;
   border-block-end: 1px solid var(--border);
   gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-gutter: stable;
 }
 .tabs button {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-block-size: 44px;
+  min-inline-size: 64px;
   padding: var(--space-2) var(--space-1);
   border: 0;
   border-block-end: 2px solid transparent;
@@ -105,6 +108,7 @@
   cursor: pointer;
   font: inherit;
   font-size: 0.95rem;
+  white-space: nowrap;
 }
 .tabs button[aria-selected='true'] {
   border-color: var(--gold);

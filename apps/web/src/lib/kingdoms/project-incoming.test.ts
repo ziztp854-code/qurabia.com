@@ -108,7 +108,7 @@ describe('Redacted inbound movement projection', () => {
       ownerId: 'alice',
       mission: 'attack',
       commanderId,
-      troops: { guard: 8, rider: 3, scout: 0, settler: 0 },
+      troops: { guard: 8, rider: 3, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     });
     expect(attacker.incoming).toEqual([]);
     expect(defender.movements).toEqual([]);

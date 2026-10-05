@@ -19,7 +19,7 @@ describe('presentRallyCommand', () => {
     const view = world();
     const village = {
       ...view.villages[0],
-      troops: { guard: 4, rider: 1, scout: 0, settler: 0 },
+      troops: { guard: 4, rider: 1, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       training: { unit: 'guard' as const, count: 2, endsAt: now + 10_000 },
     };
     const incoming: IncomingMovementView[] = [
@@ -57,7 +57,7 @@ describe('presentRallyCommand', () => {
       targetX: village.x + 3,
       targetY: village.y,
       mission: 'scout',
-      troops: { guard: 0, rider: 0, scout: 2, settler: 0 },
+      troops: { guard: 0, rider: 0, scout: 2, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       departedAt: now,
       arrivesAt: now + 50_000,
       travelMs: 50_000,
@@ -70,7 +70,7 @@ describe('presentRallyCommand', () => {
       mission: 'return',
       targetX: village.x,
       targetY: village.y,
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       loot: { wood: 0, stone: 0, iron: 0, food: 0, gold: 4 },
     };
     const polluted = {
@@ -78,7 +78,7 @@ describe('presentRallyCommand', () => {
       mission: 'attack' as const,
       targetVillageId: village.id,
       arrivesAt: now + 40_000,
-      troops: { guard: 7777, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 7777, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       commanderId: 'secret-commander',
       loot: { gold: 99999 },
       combatPower: 8888,

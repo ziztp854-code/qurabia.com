@@ -118,7 +118,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
           {
             ...village,
             resources: resources(1000, 1000, 1000, 1000, 1000),
-            troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+            troops: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
           },
         ]),
       ),
@@ -189,7 +189,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
       mission: 'gather',
       targetX: 2,
       targetY: 2,
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     };
     const results = await Promise.allSettled([
       repository.commandKingdomWorld(worldId, actor, key(), command, db),
@@ -330,7 +330,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
         ...state.villages,
         [villageId]: {
           ...state.villages[villageId],
-          troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+          troops: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
         },
       },
     };
@@ -347,7 +347,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
       targetX: 2,
       targetY: 2,
       mission: 'gather',
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     };
     await Promise.all([
       repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
@@ -375,7 +375,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
           {
             ...village,
             updatedAt: arrivesAt - 1_000,
-            troops: { guard: 0, rider: 0, scout: 0, settler: 0 },
+            troops: { guard: 0, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
           },
         ]),
       ),
@@ -386,7 +386,7 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
         targetX: 2,
         targetY: 2,
         mission: 'gather',
-        troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+        troops: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
         departedAt: arrivesAt - 60_000,
         arrivesAt,
         travelMs: 60_000,

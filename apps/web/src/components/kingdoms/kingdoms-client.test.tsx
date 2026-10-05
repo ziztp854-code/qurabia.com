@@ -468,7 +468,7 @@ describe('Kingdoms player interface', () => {
       targetX: 0,
       targetY: 0,
       mission: 'occupy',
-      troops: { guard: 5, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 5, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     });
   }, 20_000);
 

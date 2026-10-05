@@ -76,7 +76,7 @@ describe('Kingdoms authenticated commands', () => {
       targetX: 2,
       targetY: 2,
       mission: 'gather',
-      troops: { guard: 2, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 2, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     };
     const response = await POST(request({ ...valid, command }));
     expect(response.status).toBe(200);
@@ -102,7 +102,7 @@ describe('Kingdoms authenticated commands', () => {
             targetX: 2,
             targetY: 2,
             mission: 'gather',
-            troops: { guard: 2, rider: 0, scout: 0, settler: 0 },
+            troops: { guard: 2, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
             ...extra,
           },
         }),

@@ -241,6 +241,11 @@ export function MapPanel({
                       rider: value(data, 'rider'),
                       scout: value(data, 'scout'),
                       settler: value(data, 'settler'),
+                      archer: value(data, 'archer'),
+                      mounted_archer: value(data, 'mounted_archer'),
+                      sultan_guard: value(data, 'sultan_guard'),
+                      siege_engineer: value(data, 'siege_engineer'),
+                      siege_tower: value(data, 'siege_tower'),
                     },
                   })
                 }

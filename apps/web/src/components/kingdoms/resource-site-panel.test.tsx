@@ -59,7 +59,7 @@ function fixture(): GameProps {
     ...view.villages[0],
     x: 0,
     y: 0,
-    troops: { guard: 10, rider: 2, scout: 1, settler: 0 },
+    troops: { guard: 10, rider: 2, scout: 1, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
   };
   return { view, village, busy: false, send: vi.fn().mockResolvedValue(undefined) };
 }
@@ -238,7 +238,7 @@ describe('resource gathering interface', () => {
       targetX: 2,
       targetY: 2,
       mission: 'gather',
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 3, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     });
     expect(screen.queryByText('تم إرسال الجيش')).not.toBeInTheDocument();
   });

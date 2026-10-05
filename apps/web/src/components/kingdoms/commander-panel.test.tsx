@@ -168,7 +168,7 @@ describe('commander management', () => {
           targetX: 2,
           targetY: 3,
           mission: 'attack' as const,
-          troops: { guard: 5, rider: 0, scout: 0, settler: 0 },
+          troops: { guard: 5, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
           departedAt: now,
           arrivesAt: now + 10000,
           travelMs: 10000,

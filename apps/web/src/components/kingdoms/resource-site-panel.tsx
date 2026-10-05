@@ -113,7 +113,7 @@ export function GatheringPanel({
 }: GameProps & { site: ResourceSiteView; focusOnMount?: boolean }) {
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
-  const [troops, setTroops] = useState<Troops>({ guard: 0, rider: 0, scout: 0, settler: 0 });
+  const [troops, setTroops] = useState<Troops>({ guard: 0, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 });
   const [commanderId, setCommanderId] = useState('');
   const selectedCommander = view.commanders?.find((commander) => commander.id === commanderId);
   const commanderAvailable =

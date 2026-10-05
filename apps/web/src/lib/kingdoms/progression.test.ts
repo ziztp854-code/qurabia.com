@@ -108,7 +108,7 @@ describe('Village authoritative progression', () => {
       mission: 'occupy',
       targetX: village.x + 1,
       targetY: village.y,
-      troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+      troops: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
     } as const;
     world = executeCommand(world, 'alice', intent, now);
     const arrival = world.movements[0].arrivesAt;
@@ -152,7 +152,7 @@ describe('Village authoritative progression', () => {
         mission: 'occupy',
         targetX: village.x + 1,
         targetY: village.y,
-        troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+        troops: { guard: 10, rider: 0, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       },
       now,
     );

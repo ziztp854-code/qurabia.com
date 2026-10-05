@@ -184,7 +184,7 @@ describe('stable server separation', () => {
       targetX: world.villages[id].x + 3,
       targetY: world.villages[id].y,
       mission: 'raid',
-      troops: { guard: 0, rider: 4, scout: 0, settler: 0 },
+      troops: { guard: 0, rider: 4, scout: 0, settler: 0, archer: 0, mounted_archer: 0, sultan_guard: 0, siege_engineer: 0, siege_tower: 0 },
       departedAt: start,
       arrivesAt: start + 90_000,
       travelMs: 90_000,
