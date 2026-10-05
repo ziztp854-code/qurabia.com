@@ -32,7 +32,7 @@ import { presentRallyCommand } from '@/lib/kingdoms/rally-command';
 import { useViewClock } from '../use-view-clock';
 import { buildingKeys } from '@/lib/kingdoms/types';
 import { resourceBuildingIds, resolveVillageAssetSrc, villageAssetFidelity, villageAssets, villageArtRenditions } from '@/lib/kingdoms/village/assetManifest';
-import { villageLabelPoint, visibleVillageLabels } from '@/lib/kingdoms/village/labelLayout';
+import { getVillageLabelDensity, villageLabelPoint, visibleVillageLabels, type VillageLabelDensity } from '@/lib/kingdoms/village/labelLayout';
 import {
   buildingGroups,
   buildingStatusLabels,
@@ -43,6 +43,7 @@ import { getVillageVisualLevel } from '@/lib/kingdoms/village/buildingRegistry';
 import { createCamera, projectPoint } from '@/lib/kingdoms/village/cameraMath';
 import { getBuildingRect, getVillageRect, villageRegions, VILLAGE_WORLD } from '@/lib/kingdoms/village/coordinates';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
+import { visibleMapAnchor } from '@/lib/kingdoms/village/visibleMapRect';
 import type {
   VillageCanvasProps,
   VillageSceneHandle,
@@ -190,6 +191,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     const descriptionId = useId();
     const coordinateReadout = useRef<HTMLSpanElement>(null);
     const resizeScene = useRef<(() => void) | null>(null);
+    const labelDensity = useRef<VillageLabelDensity | undefined>(undefined);
     const syncLabels = (snapshot: CameraSnapshot, active: string | null = current.current.selected) => {
       const anchors = [...buildingKeys, 'rally', 'tower', 'gate'] .map((id) => {
         const rect = getVillageRect(id as Parameters<typeof getVillageRect>[0], current.current.debug);
@@ -201,14 +203,15 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       const topInset = viewportRect && hud ? Math.max(0, hud.getBoundingClientRect().bottom - viewportRect.top) : 0;
       const overlays = [
         ...(hud ? [hud] : []),
-        ...Array.from(scene?.querySelectorAll<HTMLElement>('header, [aria-label="كاميرا القرية"], details') ?? []),
-        ...Array.from(scene?.closest('[data-selected]')?.querySelectorAll<HTMLElement>(':scope > details') ?? []),
+        ...Array.from(scene?.querySelectorAll<HTMLElement>('header, [aria-label="كاميرا القرية"], [aria-label="مستويات عرض المملكة"], details') ?? []),
+        ...Array.from(scene?.closest('[data-selected]')?.querySelectorAll<HTMLElement>(':scope > details, aside, nav') ?? []),
       ];
       const blockedAreas = viewportRect ? overlays.map((overlay) => {
         const rect = overlay.getBoundingClientRect();
         return { x: rect.left - viewportRect.left, y: rect.top - viewportRect.top, width: rect.width, height: rect.height };
       }).filter(({ width, height }) => width > 0 && height > 0) : [];
-      const visible = new Set(visibleVillageLabels(anchors, snapshot, active, blockedAreas, topInset));
+      labelDensity.current = getVillageLabelDensity(snapshot.zoom, labelDensity.current);
+      const visible = new Set(visibleVillageLabels(anchors, snapshot, active, blockedAreas, topInset, labelDensity.current));
       world.current?.querySelectorAll<HTMLElement>('[data-label-id]').forEach((element) => {
         element.dataset.labelHidden = String(!visible.has(element.dataset.labelId!));
         const anchor = anchors.find(({ id }) => id === element.dataset.labelId);
@@ -229,6 +232,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       () => ({
         focusOn: (target, complete) => camera.current?.focusOn(target, complete),
         zoomBy: (factor) => camera.current?.zoomBy(factor),
+        zoomTo: (zoom, complete) => camera.current?.zoomTo(zoom, complete),
         reset: () => camera.current?.reset(),
         panBy: (dx, dy) => camera.current?.panBy(dx, dy),
         getSnapshot: () =>
@@ -268,18 +272,23 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       controller.reducedMotion = current.current.reducedMotion;
       controller.debug = current.current.debug;
       controller.getFocusAnchor = () => {
-        if (window.innerWidth > 1000) return undefined;
         const rect = element.getBoundingClientRect();
-        const viewport = controller.getSnapshot().viewport;
-        const sheet = element.closest('[data-selected]')?.querySelector('aside');
-        const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * .56 - 82;
-        const hudClearance = parseFloat(getComputedStyle(element).getPropertyValue('--kingdoms-hud-clearance')) || 0;
-        const visibleTop = Math.min(viewport.height, Math.max(0, hudClearance - rect.top));
-        const visibleBottom = Math.min(viewport.height, Math.max(visibleTop, sheetTop - rect.top));
-        return {
-          x: viewport.width / 2,
-          y: Math.min(viewport.height, Math.max(48, (visibleTop + visibleBottom) / 2)),
-        };
+        if (rect.width <= 0 || rect.height <= 0) return undefined;
+        const layout = element.closest('[data-selected]');
+        const shell = element.closest('[data-village-stage="live"]');
+        const hud = shell?.querySelector('[aria-label="موارد القرية"]')?.parentElement;
+        const overlays = [
+          ...(hud ? [hud] : []),
+          ...Array.from(layout?.querySelectorAll<HTMLElement>(
+            'aside, nav, header, details, [aria-label="كاميرا القرية"], [aria-label="مستويات عرض المملكة"]',
+          ) ?? []),
+          ...Array.from(shell?.querySelectorAll<HTMLElement>('[aria-label="تنقل المملكة"]') ?? []),
+        ].map((overlay) => overlay.getBoundingClientRect()).filter(({ width, height }) => width > 0 && height > 0);
+        return visibleMapAnchor(
+          { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+          { width: window.innerWidth, height: window.innerHeight },
+          overlays.map((overlay) => ({ x: overlay.left, y: overlay.top, width: overlay.width, height: overlay.height })),
+        );
       };
       camera.current = controller;
       let active = true;
@@ -403,6 +412,15 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
 
     useEffect(() => {
       resizeScene.current?.();
+      const sheet = stage.current?.closest('[data-selected]')?.querySelector('aside');
+      if (!sheet || typeof ResizeObserver === 'undefined') return;
+      let frame = 0;
+      const observer = new ResizeObserver(() => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => resizeScene.current?.());
+      });
+      observer.observe(sheet);
+      return () => { observer.disconnect(); cancelAnimationFrame(frame); };
     }, [props.selected]);
 
     useEffect(() => {

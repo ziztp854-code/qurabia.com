@@ -77,6 +77,88 @@ test.beforeEach(async ({ request }) => {
   expect((await request.post('/__village_test/reset')).ok()).toBeTruthy();
 });
 
+const mobileViewports = [
+  { width: 320, height: 568 },
+  { width: 360, height: 800 },
+  { width: 375, height: 812 },
+  { width: 390, height: 844 },
+  { width: 393, height: 852 },
+  { width: 412, height: 915 },
+  { width: 430, height: 932 },
+  { width: 844, height: 390 },
+  { width: 768, height: 1024 },
+] as const;
+
+for (const size of mobileViewports) {
+  test(`mobile village controls and sheet at ${size.width}x${size.height}`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'iphone', 'Run the device size matrix once with touch emulation.');
+    await page.setViewportSize(size);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+    await expect(page.getByRole('region', { name: 'موارد القرية', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const navigation = page.getByRole('navigation', { name: 'تنقل المملكة', exact: true });
+    if (size.width <= 1000) {
+      await expect(navigation).toBeVisible();
+      for (const control of await navigation.locator('button, a').all()) {
+        const bounds = await control.boundingBox();
+        expect(bounds?.width).toBeGreaterThanOrEqual(44);
+        expect(bounds?.height).toBeGreaterThanOrEqual(44);
+        expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(size.height);
+      }
+      await expect(navigation.getByRole('button', { name: 'انتقل إلى القرية' })).toHaveAttribute('aria-current', 'page');
+      await navigation.getByRole('button', { name: 'انتقل إلى التقارير' }).click();
+      await expect(navigation.getByRole('button', { name: 'انتقل إلى التقارير' })).toHaveAttribute('aria-current', 'page');
+      await navigation.getByRole('button', { name: 'انتقل إلى القرية' }).click();
+    }
+    const scene = village.locator('[data-village-scene]');
+    await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
+    await expectOverview(page);
+    await revealBuilding(page, 'hall');
+    await clickBuilding(page, 'hall');
+    const sheet = page.locator('aside[aria-label="إدارة مباني القرية"]');
+    await expect(page.getByRole('region', { name: 'تفاصيل دار الحكم', exact: true })).toBeVisible();
+    if (size.width <= 1000) {
+      await expect(sheet).toHaveAttribute('data-sheet-snap', 'compact');
+      const handle = sheet.getByRole('button', { name: 'تغيير ارتفاع تفاصيل المبنى', exact: true });
+      await handle.click();
+      await expect(sheet).toHaveAttribute('data-sheet-snap', 'expanded');
+      await expect.poll(async () => {
+        const [building, panel, nav] = await Promise.all([
+          village.locator('[data-building="hall"]').boundingBox(), sheet.boundingBox(), navigation.boundingBox(),
+        ]);
+        if (!building || !panel || !nav) return false;
+        const center = building.y + building.height / 2;
+        return center > 0 && center < panel.y - 8 && panel.y + panel.height <= nav.y;
+      }).toBe(true);
+      if ([320, 768, 844].includes(size.width)) await page.screenshot({ path: testInfo.outputPath(`mobile-${size.width}-expanded.png`), scale: 'css' });
+      await handle.click();
+      await expect(sheet).toHaveAttribute('data-sheet-snap', 'compact');
+      if ([320, 768, 844].includes(size.width)) await page.screenshot({ path: testInfo.outputPath(`mobile-${size.width}-compact.png`), scale: 'css' });
+      const bounds = await handle.boundingBox();
+      expect(bounds).not.toBeNull();
+      const x = bounds!.x + bounds!.width / 2;
+      const y = bounds!.y + bounds!.height / 2;
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 125, id: 1 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect(sheet).toHaveCount(0);
+    } else {
+      await page.screenshot({ path: testInfo.outputPath(`mobile-${size.width}-selected.png`), scale: 'css' });
+      await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
+    }
+    const cameraX = Number(await scene.getAttribute('data-camera-x'));
+    const cameraY = Number(await scene.getAttribute('data-camera-y'));
+    expect(cameraX).toBeGreaterThanOrEqual(0);
+    expect(cameraX).toBeLessThanOrEqual(VILLAGE_WORLD.width);
+    expect(cameraY).toBeGreaterThanOrEqual(0);
+    expect(cameraY).toBeLessThanOrEqual(VILLAGE_WORLD.height);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
 test('level twelve village finishes its real queue after five hours offline', async ({ page, context, request }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const seeded = await request.post('/__village_test/offline-scenario');

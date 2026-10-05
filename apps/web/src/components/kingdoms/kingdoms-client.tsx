@@ -18,7 +18,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Button, ButtonLink, Input, Select } from '@/components/ui';
-import { CommandForm, Empty, date, number } from './shared';
+import { CommandForm, Empty, compactNumber, date, number } from './shared';
 import { useKingdoms } from './use-kingdoms';
 import { VillagePanel, ArmyPanel } from './village-panel';
 import { GlobalMilitaryAlert } from './incoming-alert';
@@ -66,6 +66,21 @@ const resourceNames = {
   gold: 'الذهب',
 };
 type ScopedBuildingSelection = { worldId: string; villageId: string; building: VillageSelection };
+const mobileTabs = [
+  { key: 'village', label: 'القرية' },
+  { key: 'map', label: 'العالم' },
+  { key: 'army', label: 'الجيش' },
+  { key: 'reports', label: 'التقارير' },
+  { key: 'overview', label: 'المملكة' },
+] as const;
+
+function touchFeedback() {
+  if (typeof navigator.vibrate !== 'function' ||
+      !window.matchMedia?.('(pointer: coarse)').matches ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  // Feedback is optional: a browser rejecting vibration must never block navigation.
+  try { navigator.vibrate(8); } catch { /* Unsupported by this device. */ }
+}
 
 export function KingdomsClient({
   canManage = false,
@@ -141,7 +156,7 @@ export function KingdomsClient({
           </div>
         </header>
         {village && (
-          <section aria-label="موارد القرية" className={styles.resources}>
+          <section aria-label="موارد القرية" className={styles.resources} tabIndex={0}>
             {resourceOrder.map((resource) => {
               const cap =
                 view!.config.storageBase +
@@ -157,8 +172,9 @@ export function KingdomsClient({
                 >
                   <ResourceIcon resource={resource} size={32} hud />
                   <span>{resourceNames[resource]}</span>
-                  <strong>
-                    <bdi>{number(village.resources[resource])}</bdi>
+                  <strong role="group" aria-label={`${resourceNames[resource]}: ${number(village.resources[resource])}`}>
+                    <bdi className={styles.resourceExact} aria-hidden="true">{number(village.resources[resource])}</bdi>
+                    <bdi className={styles.resourceCompact} data-compact-value aria-hidden="true">{compactNumber(village.resources[resource])}</bdi>
                   </strong>
                   <span className={styles.resourceCapacity}>من {number(cap)}</span>
                   <em className={styles.capacity} aria-hidden="true" title={`السعة ${number(cap)}`}>
@@ -195,21 +211,20 @@ export function KingdomsClient({
               >
                 <Settings2 size={19} aria-hidden="true" />
               </button>
-              {tab === 'village' && (
-                <button
-                  type="button"
-                  aria-label="إدارة المملكة"
-                  aria-expanded={showManagement}
-                  aria-controls="kingdom-navigation"
-                  onClick={() => {
-                    setShowSettings(false);
-                    setShowResourceDetails(false);
-                    setShowManagement(!showManagement);
-                  }}
-                >
-                  <Menu size={19} aria-hidden="true" />
-                </button>
-              )}
+              <button
+                type="button"
+                className={tab !== 'village' ? styles.mobileManagement : undefined}
+                aria-label="إدارة المملكة"
+                aria-expanded={showManagement}
+                aria-controls="kingdom-navigation"
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowResourceDetails(false);
+                  setShowManagement(!showManagement);
+                }}
+              >
+                <Menu size={19} aria-hidden="true" />
+              </button>
             </>
           )}
         </div>
@@ -381,6 +396,7 @@ export function KingdomsClient({
                   id="kingdom-navigation"
                   aria-label="إدارة المملكة"
                   className={styles.nav}
+                  data-open={showManagement}
                   hidden={tab === 'village' && !showManagement}
                 >
                   {Object.entries(tabs).map(([key, label]) => {
@@ -434,6 +450,7 @@ export function KingdomsClient({
                     <VillagePanel
                       key={`${view.worldId}:${village.id}`}
                       {...props}
+                      hideMobileNavigation
                       onNavigate={navigate}
                       onShowMap={showMap}
                       onRefresh={() => void game.refresh()}
@@ -463,6 +480,24 @@ export function KingdomsClient({
               <p className={`${styles.cost} ${styles.screenMeta}`}>
                 آخر تحديث: {date(view.serverNow)}
               </p>
+              <nav className={styles.mobileNavigation} aria-label="تنقل المملكة">
+                {mobileTabs.map(({ key, label }) => {
+                  const Icon = tabIcons[key];
+                  const content = <><Icon size={22} aria-hidden="true" /><span>{label}</span></>;
+                  if (key === 'map') return (
+                    <Link key={key} href={mapHref} aria-label={`انتقل إلى ${label}`} onClick={touchFeedback}>
+                      {content}
+                    </Link>
+                  );
+                  return (
+                    <button type="button" key={key} aria-label={`انتقل إلى ${label}`}
+                      aria-current={tab === key ? 'page' : undefined}
+                      onClick={() => { touchFeedback(); navigate(key); }}>
+                      {content}
+                    </button>
+                  );
+                })}
+              </nav>
             </>
           )}
         </>

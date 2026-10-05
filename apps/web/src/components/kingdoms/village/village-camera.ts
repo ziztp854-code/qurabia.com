@@ -110,6 +110,17 @@ export class VillageCamera implements VillageSceneHandle {
     this.navigated = true;
     this.animate(zoomCamera(this.camera, factor));
   };
+  zoomTo = (zoom: number, onComplete?: () => void) => {
+    this.navigated = true;
+    const target = clampCamera({ ...this.camera, zoom });
+    const city = getVillagePlacement('hall', this.debug);
+    const anchor = this.getFocusAnchor?.();
+    this.animate(clampCamera({
+      ...target,
+      x: city.focusX - ((anchor?.x ?? target.viewport.width / 2) - target.viewport.width / 2) / target.scale,
+      y: city.focusY - ((anchor?.y ?? target.viewport.height / 2) - target.viewport.height / 2) / target.scale,
+    }), onComplete);
+  };
   zoomAt = (factor: number, anchor: WorldPoint) => {
     this.navigated = true;
     this.cancel();

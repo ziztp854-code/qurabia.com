@@ -18,6 +18,53 @@ test.beforeEach(async ({ request }) => {
   await request.post('/__globe_test/reset');
 });
 
+test('mobile atlas controls remain separate from toolbar and details', async ({ page, isMobile }, testInfo) => {
+  test.skip(!isMobile, 'Compact controls are verified with real touch emulation.');
+  await page.setViewportSize({ width: 320, height: 568 });
+  const { errors } = await openGlobe(page);
+  const toolbar = page.getByRole('group', { name: 'عرض الخريطة', exact: true });
+  const navigation = page.getByRole('group', { name: 'التنقل على الخريطة', exact: true });
+  const panel = page.getByRole('complementary', { name: 'تفاصيل الخريطة', exact: true });
+  const collapsed = page.getByRole('button', { name: 'افتح تفاصيل الخريطة', exact: true });
+  if (await collapsed.isVisible()) await collapsed.click();
+  await expect(panel).toHaveAttribute('data-expanded', 'true');
+  await navigation.scrollIntoViewIfNeeded();
+  const [toolbarBounds, navigationBounds, panelBounds] = await Promise.all([
+    toolbar.boundingBox(), navigation.boundingBox(), panel.boundingBox(),
+  ]);
+  expect(navigationBounds!.y).toBeGreaterThanOrEqual(toolbarBounds!.y + toolbarBounds!.height + 8);
+  expect(navigationBounds!.y + navigationBounds!.height).toBeLessThanOrEqual(panelBounds!.y - 8);
+  for (const button of await navigation.getByRole('button').all()) {
+    const bounds = await button.boundingBox();
+    expect(bounds!.width).toBeGreaterThanOrEqual(44);
+    expect(bounds!.height).toBeGreaterThanOrEqual(44);
+    expect(await button.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return element.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+    })).toBe(true);
+  }
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
+  const menu = page.getByRole('group', { name: 'طبقات الأطلس', exact: true });
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveCSS('overflow-y', 'auto');
+  for (const checkbox of await menu.getByRole('checkbox').all()) {
+    const bounds = await checkbox.locator('..').boundingBox();
+    expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('mobile-320-atlas-controls.png'), scale: 'css' });
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveCSS('overflow-y', 'auto');
+  for (const checkbox of await menu.getByRole('checkbox').all()) {
+    expect((await checkbox.locator('..').boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.screenshot({ path: testInfo.outputPath('mobile-768-atlas-layers.png'), scale: 'css' });
+  expect(errors).toEqual([]);
+});
+
 async function openGlobe(page: Page, referenceOnly = false) {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));

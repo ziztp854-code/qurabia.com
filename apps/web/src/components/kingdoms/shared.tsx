@@ -27,6 +27,10 @@ export type GameProps = {
 };
 export const labels = { wood: 'خشب', stone: 'حجر', iron: 'حديد', food: 'غذاء', gold: 'ذهب' };
 export const number = (value: number) => Math.floor(value).toLocaleString('ar-SA');
+const compactFormatter = new Intl.NumberFormat('ar-SA', {
+  notation: 'compact', maximumFractionDigits: 1,
+});
+export const compactNumber = (value: number) => compactFormatter.format(Math.floor(value));
 /** Hourly production keeps the server fraction. Stock totals stay whole numbers. */
 export const rateAmount = (value: number) =>
   value.toLocaleString('ar-SA', { maximumFractionDigits: 2, minimumFractionDigits: 0 });

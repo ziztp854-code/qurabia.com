@@ -1733,3 +1733,155 @@
     display: none;
   }
 }
+/* The resource amounts stay exact on desktop; mobile uses Arabic compact notation. */
+.resourceCompact,
+.mobileNavigation,
+.hudActions button.mobileManagement {
+  display: none;
+}
+.shell.playing .resources:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1000px) {
+  .shell.playing {
+    padding-block-end: calc(82px + env(safe-area-inset-bottom, 0px));
+  }
+  .shell.playing[data-village-stage='live'] { padding: 0; }
+  .shell.playing .hud {
+    padding-block-start: max(var(--space-1), env(safe-area-inset-top, 0px));
+  }
+  .shell.playing .resources {
+    display: grid;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(118px, 1fr);
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    pointer-events: auto;
+    touch-action: pan-x;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-gold) transparent;
+  }
+  .shell.playing .resource {
+    min-block-size: 56px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0 var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    justify-items: start;
+    text-align: start;
+  }
+  .shell.playing .resource svg {
+    display: block;
+    grid-column: 1;
+    grid-row: 1 / 3;
+    inline-size: 18px;
+    block-size: 18px;
+  }
+  .shell.playing .resource > i[aria-hidden='true'] {
+    display: inline-flex;
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+  .shell.playing .resource span,
+  .shell.playing .resource strong {
+    grid-column: 2;
+    white-space: nowrap;
+    font-size: 0.75rem;
+  }
+  .shell.playing .resource .resourceExact { display: none; }
+  .shell.playing .resource .resourceCompact { display: inline; }
+  .hudActions button.mobileManagement { display: grid; }
+  .shell.playing .gameLayout .nav {
+    display: none;
+  }
+  .shell.playing .gameLayout .nav[data-open='true'] {
+    display: grid;
+    position: fixed;
+    z-index: 52;
+    inset-block-start: auto;
+    inset-block-end: calc(82px + env(safe-area-inset-bottom, 0px));
+    inset-inline-start: auto;
+    inset-inline-end: max(var(--space-2), env(safe-area-inset-right, 0px));
+    inline-size: min(280px, calc(100% - 16px));
+    max-block-size: 60dvh;
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-shadow: var(--shadow-lg);
+  }
+  .shell.playing .gameLayout .nav button,
+  .shell.playing .gameLayout .nav a {
+    min-block-size: 44px;
+  }
+  .mobileNavigation {
+    position: fixed;
+    z-index: 51;
+    inset-block-end: 0;
+    inset-inline: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-1);
+    padding: var(--space-1) max(var(--space-2), env(safe-area-inset-right, 0px));
+    padding-inline-start: max(var(--space-2), env(safe-area-inset-right, 0px));
+    padding-inline-end: max(var(--space-2), env(safe-area-inset-left, 0px));
+    padding-block-end: calc(var(--space-1) + env(safe-area-inset-bottom, 0px));
+    border-block-start: 1px solid var(--border-gold);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+  }
+  .mobileNavigation button,
+  .mobileNavigation a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-inline-size: 44px;
+    min-block-size: 64px;
+    padding: var(--space-1);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 120ms ease, border-color 120ms ease;
+    text-decoration: none;
+  }
+  .mobileNavigation button svg,
+  .mobileNavigation a svg { color: var(--gold); }
+  .mobileNavigation button[aria-current='page'] {
+    border-color: var(--border-gold);
+    background: var(--surface-strong);
+    color: var(--gold);
+  }
+  .mobileNavigation button[aria-current='page'] span {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .mobileNavigation button:active,
+  .mobileNavigation a:active { background: var(--surface-strong); }
+  .mobileNavigation button:focus-visible,
+  .mobileNavigation a:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -2px;
+  }
+}
+@media (max-width: 700px) {
+  .shell.playing[data-village-stage='live'] {
+    --kingdoms-hud-clearance: calc(112px + env(safe-area-inset-top, 0px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobileNavigation button,
+  .mobileNavigation a { transition: none; }
+}

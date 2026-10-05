@@ -102,6 +102,13 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         onReady={onReady}
       />
       <div className={styles.controls} role="group" aria-label="كاميرا القرية">
+        <div className={styles.presets} role="group" aria-label="مستويات عرض المملكة">
+          <button type="button" onClick={() => scene.current?.zoomTo(2.8)}>المدينة</button>
+          <button type="button" onClick={() => scene.current?.zoomTo(1.8)}>القرية</button>
+          <button type="button" onClick={() => onWorldMap ? onWorldMap() : scene.current?.zoomTo(1)}>
+            {onWorldMap ? 'الإقليم' : 'المحيط'}
+          </button>
+        </div>
         <Button
           variant="outline"
           aria-label="تكبير القرية"

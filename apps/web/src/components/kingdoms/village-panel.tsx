@@ -13,6 +13,7 @@ import { ConstructionQueue } from './village/construction-queue';
 import { StablePanel } from './village/stable-panel';
 import { RallyPanel, type RallyMission } from './village/rally-panel';
 import { CommanderPanel } from './commander-panel';
+import { VillageDetailSheet } from './village/village-detail-sheet';
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
 import villageStyles from './village-panel.module.css';
@@ -38,12 +39,14 @@ export function VillagePanel({
   onShowMap,
   onRefresh,
   onCampaign,
+  hideMobileNavigation = false,
 }: GameProps & {
   initialBuilding?: VillageSelection | null;
   onNavigate?: (tab: VillageNavigation) => void;
   onShowMap?: (villageId: string) => void;
   onRefresh?: () => void;
   onCampaign?: (mission: RallyMission) => void;
+  hideMobileNavigation?: boolean;
 }) {
   const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -68,6 +71,7 @@ export function VillagePanel({
       <div
         className={villageStyles.layout}
         data-selected={selected !== null}
+        data-hide-mobile-navigation={hideMobileNavigation}
         data-sheet={selected === null ? undefined : selected === 'rally' ? 'rally' : 'building'}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && selected) close();
@@ -85,11 +89,7 @@ export function VillagePanel({
           />
         </div>
         {selected && (
-          <aside
-            className={villageStyles.rail}
-            aria-label="إدارة مباني القرية"
-            data-panel={selected === 'rally' ? 'rally' : undefined}
-          >
+          <VillageDetailSheet key={selected} onClose={close} panel={selected === 'rally' ? 'rally' : undefined}>
             {selected === 'rally' ? (
               <RallyPanel
                 view={view}
@@ -123,7 +123,7 @@ export function VillagePanel({
                 onNavigate={onNavigate}
               />
             )}
-          </aside>
+          </VillageDetailSheet>
         )}
         <details className={villageStyles.queueDrawer}>
           <summary>

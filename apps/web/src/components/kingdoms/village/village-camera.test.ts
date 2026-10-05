@@ -28,6 +28,34 @@ function animationClock() {
 }
 
 describe('stable camera navigation', () => {
+  it('animates absolute presets, completes once, and clamps invalid zoom values', () => {
+    const advance = animationClock();
+    const camera = new VillageCamera({ width: 768, height: 512 });
+    const complete = vi.fn();
+    camera.zoomTo(2.8, complete);
+    advance(325);
+    expect(camera.getSnapshot().zoom).toBeGreaterThan(1);
+    expect(camera.getSnapshot().zoom).toBeLessThan(2.8);
+    advance(650);
+    expect(camera.getSnapshot().zoom).toBeCloseTo(2.8);
+    expect(complete).toHaveBeenCalledOnce();
+    camera.reducedMotion = true;
+    camera.zoomTo(100);
+    expect(camera.getSnapshot().zoom).toBe(3.5);
+    camera.zoomTo(-1);
+    expect(camera.getSnapshot().zoom).toBe(1);
+    camera.zoomTo(NaN);
+    expect(camera.getSnapshot().zoom).toBe(1);
+    camera.destroy();
+  });
+  it('retains the selected preset through a later portrait layout measurement', () => {
+    const camera = new VillageCamera({ width: 768, height: 512 }, true);
+    camera.reducedMotion = true;
+    camera.zoomTo(1.8);
+    camera.resize({ width: 390, height: 600 });
+    expect(camera.getSnapshot().zoom).toBe(1.8);
+    camera.destroy();
+  });
   it('uses the current portrait policy when resetting after a desktop to mobile resize', () => {
     let portrait = false;
     const camera = new VillageCamera({ width: 1920, height: 1000 }, () => portrait);

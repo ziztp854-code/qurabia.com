@@ -535,7 +535,7 @@ describe('Kingdoms player interface', () => {
       response(String(url).endsWith('/worlds') ? summary : { ...projection(true), paused: true }),
     );
     render(<KingdomsClient />);
-    fireEvent.click(await screen.findByRole('button', { name: 'القرية', hidden: true }));
+    fireEvent.click(await screen.findByRole('button', { name: 'انتقل إلى القرية' }));
     fireEvent.click(screen.getByRole('button', { name: /دار الحكم.*المستوى [١1]/ }));
     const buttons = await screen.findAllByRole(
       'button',

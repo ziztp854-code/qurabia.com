@@ -24,6 +24,7 @@ export type VillagePlacement = WorldRect &
 export type VillageSceneHandle = {
   focusOn: (target: VillageTarget, onComplete?: () => void) => void;
   zoomBy: (factor: number) => void;
+  zoomTo: (zoom: number, onComplete?: () => void) => void;
   reset: () => void;
   panBy: (dx: number, dy: number) => void;
   getSnapshot: () => CameraSnapshot;

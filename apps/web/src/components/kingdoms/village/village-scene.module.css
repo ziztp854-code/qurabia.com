@@ -52,6 +52,10 @@
   border-radius: 4px;
 }
 .controls button { padding: 0; background: transparent; border: 0; }
+.presets { display: flex; border-inline-end: 1px solid var(--border-gold); }
+.presets button { padding-inline: var(--space-2); color: var(--gold); font: inherit; font-size: .8rem; cursor: pointer; touch-action: manipulation; }
+.presets button:hover { background: var(--kingdoms-ui-background); }
+.presets button:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
 .preferences { position: absolute; z-index: 6; inset-inline-start: 12px; inset-block-end: 12px; max-inline-size: min(420px, calc(100% - 24px)); background: var(--kingdoms-ui-surface); border: 1px solid var(--border-gold); border-radius: 4px; }
 .preferences > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 0 12px; min-block-size: 44px; font-size: .75rem; color: var(--gold); }
 .preferences[open] { max-block-size: 62dvh; overflow-y: auto; }
@@ -171,6 +175,7 @@
   }
   .coordinates { display: none; }
   .controls { gap: 0; inset-inline-end: 8px; }
+  .presets { position: absolute; inset-inline-end: 0; inset-block-end: calc(100% + 8px); background: var(--kingdoms-ui-surface); border: 1px solid var(--border-gold); border-radius: var(--radius-sm); }
   .preferences { inset-inline-start: 8px; }
   .preferences > summary span { display: none; }
   .settings {

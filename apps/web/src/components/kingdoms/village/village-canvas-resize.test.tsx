@@ -102,7 +102,7 @@ describe('selected village building on viewport resize', () => {
       showLabels: false,
     };
     await act(async () => {
-      render(<VillageCanvas ref={ref} {...props} />);
+      render(<div data-selected="true"><VillageCanvas ref={ref} {...props} /><aside aria-label="إدارة مباني القرية" /></div>);
     });
     const stage = screen.getByRole('region', { name: /مشهد القرية التفاعلي/ });
     const scrollIntoView = vi.fn();
@@ -125,11 +125,16 @@ describe('selected village building on viewport resize', () => {
     });
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390);
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(844);
+    const sheetTop = 390.64;
+    vi.spyOn(screen.getByLabelText('إدارة مباني القرية'), 'getBoundingClientRect').mockReturnValue({
+      top: sheetTop, bottom: 762, left: 0, right: 390,
+      x: 0, y: sheetTop, width: 390, height: 371.36, toJSON: () => ({}),
+    });
     await act(async () => {
       window.dispatchEvent(new Event('resize'));
     });
     const projected = projectPoint(rectCenter(buildingPlots.hall), ref.current!.getSnapshot());
-    expect(projected.y).toBeCloseTo((844 * .56 - 82 - 230) / 2, 1);
+    expect(projected.y).toBeCloseTo((sheetTop - 230) / 2, 1);
     expect(230 + projected.y).toBeLessThan(507);
     expect(onSelect).not.toHaveBeenCalled();
     expect(scrollIntoView).not.toHaveBeenCalled();

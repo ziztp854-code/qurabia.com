@@ -755,7 +755,7 @@
 .help {
   margin: 0;
 }
-@media (max-width: 760px) {
+@media (max-width: 1000px) {
   .header {
     padding: 16px;
     flex-wrap: wrap;
@@ -822,6 +822,7 @@
   }
   .navigation {
     inset-inline-end: 12px;
+    inset-block-start: 172px;
     display: flex;
     flex-direction: row;
   }
@@ -840,6 +841,7 @@
     padding: 10px 20px max(12px, env(safe-area-inset-bottom));
     border-end-start-radius: 0;
     border-end-end-radius: 0;
+    box-sizing: border-box;
   }
   .selectionArt {
     block-size: 72px;
@@ -875,7 +877,7 @@
     display: none;
   }
   .status {
-    inset-block-start: 180px;
+    inset-block-start: 228px;
     inset-block-end: auto;
     inset-inline-end: auto;
     inset-inline-start: 12px;
@@ -941,4 +943,15 @@
 }
 .layerMenu label:has(input:disabled) {
   opacity: 0.55;
+}
+@media (max-width: 1000px), (pointer: coarse) {
+  .layerMenu {
+    max-block-size: min(420px, 54dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+  }
+  .layerMenu label {
+    min-block-size: 44px;
+  }
 }
