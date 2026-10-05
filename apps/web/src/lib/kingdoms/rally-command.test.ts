@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createWorld, executeCommand, projectWorld } from './engine';
 import { presentRallyCommand } from './rally-command';
+import { emptyTroops } from './simulation';
 import type { IncomingMovementView, Movement } from './types';
 
 const now = 1_800_000_000_000;
@@ -19,7 +20,7 @@ describe('presentRallyCommand', () => {
     const view = world();
     const village = {
       ...view.villages[0],
-      troops: { guard: 4, rider: 1, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 4, rider: 1 },
       training: { unit: 'guard' as const, count: 2, endsAt: now + 10_000 },
     };
     const incoming: IncomingMovementView[] = [
@@ -38,8 +39,8 @@ describe('presentRallyCommand', () => {
     ];
     const command = presentRallyCommand({ ...view, incoming }, village);
     expect(command.availableTotal).toBe(5);
-    expect(command.garrison.map((row) => row.count)).toEqual([4, 1, 0, 0]);
-    expect(command.available.map((row) => row.count)).toEqual([4, 1, 0, 0]);
+    expect(command.garrison.map((row) => row.count)).toEqual([4, 1, 0, 0, 0, 0, 0, 0, 0]);
+    expect(command.available.map((row) => row.count)).toEqual([4, 1, 0, 0, 0, 0, 0, 0, 0]);
     expect(command.readiness).toBe('threatened');
     expect(command.nearestThreat?.id).toBe('later-critical');
     expect(command.attacks.map((row) => row.id)).toEqual(['later-critical', 'sooner-danger']);
@@ -57,7 +58,7 @@ describe('presentRallyCommand', () => {
       targetX: village.x + 3,
       targetY: village.y,
       mission: 'scout',
-      troops: { guard: 0, rider: 0, scout: 2, settler: 0 },
+      troops: { ...emptyTroops(), scout: 2 },
       departedAt: now,
       arrivesAt: now + 50_000,
       travelMs: 50_000,
@@ -70,7 +71,7 @@ describe('presentRallyCommand', () => {
       mission: 'return',
       targetX: village.x,
       targetY: village.y,
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 3 },
       loot: { wood: 0, stone: 0, iron: 0, food: 0, gold: 4 },
     };
     const polluted = {

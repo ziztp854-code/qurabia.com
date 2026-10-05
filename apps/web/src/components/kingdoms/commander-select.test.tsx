@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
@@ -102,7 +103,7 @@ describe('army commander selection', () => {
       ...view.villages[0],
       x: 0,
       y: 0,
-      troops: { guard: 10, rider: 2, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 10, rider: 2, scout: 0, settler: 0 },
     };
     const send = vi.fn();
     render(<GatheringPanel view={view} village={village} busy={false} send={send} site={site} />);
@@ -118,7 +119,7 @@ describe('army commander selection', () => {
       targetY: 2,
       mission: 'gather',
       commanderId: commander.id,
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 3, rider: 0, scout: 0, settler: 0 },
     });
   });
   it('blocks a stale selection after a server refresh while letting the user remove it', () => {
@@ -127,7 +128,7 @@ describe('army commander selection', () => {
       ...view.villages[0],
       x: 0,
       y: 0,
-      troops: { guard: 10, rider: 2, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 10, rider: 2, scout: 0, settler: 0 },
     };
     const send = vi.fn();
     const { rerender } = render(
@@ -157,7 +158,7 @@ describe('army commander selection', () => {
   });
   it('includes the commander on map missions and keeps a stale selector editable', () => {
     const view = { ...fixture(), resourceSites: [] };
-    const village = { ...view.villages[0], troops: { guard: 10, rider: 2, scout: 0, settler: 0 } };
+    const village = { ...view.villages[0], troops: { ...emptyTroops(), guard: 10, rider: 2, scout: 0, settler: 0 } };
     const send = vi.fn();
     const { rerender } = render(
       <MapPanel view={view} village={village} busy={false} send={send} />,
@@ -171,7 +172,7 @@ describe('army commander selection', () => {
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         commanderId: commander.id,
-        troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+        troops: { ...emptyTroops(), guard: 3, rider: 0, scout: 0, settler: 0 },
       }),
     );
     send.mockClear();

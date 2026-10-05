@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
@@ -14,7 +15,7 @@ const village = view.villages[0];
 function movement(id: string, overrides: Partial<Movement> = {}): Movement {
   return {
     id, ownerId: 'p', sourceId: village.id, targetX: village.x + 1, targetY: village.y + 1,
-    mission: 'reinforce', troops: { guard: 1, rider: 0, scout: 0, settler: 0 },
+    mission: 'reinforce', troops: { ...emptyTroops(), guard: 1, rider: 0, scout: 0, settler: 0 },
     departedAt: now, arrivesAt: now + 60000, travelMs: 60000,
     loot: { wood: 0, stone: 0, iron: 0, food: 0, gold: 0 }, ...overrides,
   };
@@ -24,7 +25,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 describe('VillageActivity', () => {
   it('explains idle queues and reports only confirmed troops in the chosen village', () => {
     const onFocus = vi.fn();
-    render(<VillageActivity view={view} village={{ ...village, troops: { guard: 9, rider: 2, scout: 0, settler: 0 } }} onFocus={onFocus} />);
+    render(<VillageActivity view={view} village={{ ...village, troops: { ...emptyTroops(), guard: 9, rider: 2, scout: 0, settler: 0 } }} onFocus={onFocus} />);
     const activity = screen.getByRole('region', { name: 'نشاط القرية' });
     expect(within(activity).getByText('لا بناء قيد التنفيذ')).toBeInTheDocument();
     expect(within(activity).getByText('لا وحدات قيد التدريب')).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe('VillageActivity', () => {
   it('shows actual training quantity separately from available soldiers and focuses rider training', () => {
     const onFocus = vi.fn();
     render(<VillageActivity view={view} village={{ ...village,
-      troops: { guard: 0, rider: 2, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 0, rider: 2, scout: 0, settler: 0 },
       training: { unit: 'rider', count: 6, endsAt: now + 60000 } }} onFocus={onFocus} />);
     expect(screen.getByText(`${number(6)} ${view.config.units.rider.name} قيد التدريب`)).toBeInTheDocument();
     expect(screen.getByText(`${number(2)} وحدة من قواتك في القرية`)).toBeInTheDocument();

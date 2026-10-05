@@ -78,8 +78,12 @@ export function commanderCombatPower(
   stat: 'attack' | 'defense',
   commander?: Commander,
 ): number {
+  const unitPower = (unit: typeof unitKeys[number]) => {
+    const count = troops[unit] ?? 0;
+    return count === 0 ? 0 : count * world.config.units[unit][stat];
+  };
   const base = unitKeys.reduce(
-    (sum, unit) => sum + troops[unit] * world.config.units[unit][stat],
+    (sum, unit) => sum + unitPower(unit),
     0,
   );
   if (!commander) return base;
@@ -94,7 +98,7 @@ export function commanderCombatPower(
           : [];
   const supportedPower = unitKeys
     .filter((unit) => relevant.includes(unit))
-    .reduce((sum, unit) => sum + troops[unit] * world.config.units[unit][stat], 0);
+    .reduce((sum, unit) => sum + unitPower(unit), 0);
   const bonus = Math.min(config.maxBonus, Math.max(0, commander[stat] / 100));
   return base + supportedPower * bonus;
 }

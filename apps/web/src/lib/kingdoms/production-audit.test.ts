@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kingdomsCommandSchema } from './commands';
 import { createWorld, executeCommand, advanceWorld, projectWorld } from './engine';
-import { productionRate, storageCapacity } from './simulation';
+import { emptyTroops, productionRate, storageCapacity } from './simulation';
 import type { KingdomsWorld, Resource, Resources, Village } from './types';
 
 const T0 = 1_800_000_000_000;
@@ -12,7 +12,7 @@ function openWorld(): KingdomsWorld {
   const world = executeCommand(createWorld(T0), 'p', { type: 'found', name: 'تدقيق' }, T0);
   const village = Object.values(world.villages)[0];
   village.resources = { wood: 1000, stone: 1000, iron: 1000, food: 1000, gold: 1000 };
-  village.troops = { guard: 0, rider: 0, scout: 0, settler: 0 };
+  village.troops = { ...emptyTroops(), guard: 0, rider: 0, scout: 0, settler: 0 };
   village.updatedAt = T0;
   world.updatedAt = T0;
   world.config.storageBase = 1_000_000;

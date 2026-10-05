@@ -12,6 +12,7 @@ import {
   kingdomsConfigSchema,
 } from '../../src/lib/kingdoms/engine';
 import { defaultKingdomsConfig } from '../../src/lib/kingdoms/config';
+import { emptyTroops } from '../../src/lib/kingdoms/simulation';
 
 async function main() {
   if (process.env.VILLAGE_SCENE_E2E !== '1')
@@ -80,7 +81,7 @@ async function main() {
           ...world.villages,
           [attackerVillage.id]: {
             ...attackerVillage,
-            troops: { guard: 20, rider: 0, scout: 0, settler: 0 },
+            troops: { ...emptyTroops(), guard: 20, rider: 0, scout: 0, settler: 0 },
           },
         },
       };
@@ -93,7 +94,7 @@ async function main() {
           targetX: defender.x,
           targetY: defender.y,
           mission: 'attack',
-          troops: { guard: 8, rider: 0, scout: 0, settler: 0 },
+          troops: { ...emptyTroops(), guard: 8, rider: 0, scout: 0, settler: 0 },
         },
         at,
       );

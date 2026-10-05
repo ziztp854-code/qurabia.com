@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
-import { storageCapacity } from '@/lib/kingdoms/simulation';
+import { emptyTroops, storageCapacity } from '@/lib/kingdoms/simulation';
 import type { CommanderView, ResourceSiteView } from '@/lib/kingdoms/types';
 import { MapPanel } from './map-panel';
 import { GatheringPanel, ResourceSiteDirectory } from './resource-site-panel';
@@ -59,7 +59,7 @@ function fixture(): GameProps {
     ...view.villages[0],
     x: 0,
     y: 0,
-    troops: { guard: 10, rider: 2, scout: 1, settler: 0 },
+    troops: { ...emptyTroops(), guard: 10, rider: 2, scout: 1, settler: 0 },
   };
   return { view, village, busy: false, send: vi.fn().mockResolvedValue(undefined) };
 }
@@ -238,7 +238,7 @@ describe('resource gathering interface', () => {
       targetX: 2,
       targetY: 2,
       mission: 'gather',
-      troops: { guard: 3, rider: 0, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 3, rider: 0, scout: 0, settler: 0 },
     });
     expect(screen.queryByText('تم إرسال الجيش')).not.toBeInTheDocument();
   });

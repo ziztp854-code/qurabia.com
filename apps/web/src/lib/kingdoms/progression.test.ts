@@ -1,3 +1,4 @@
+import { emptyTroops } from './simulation';
 import { describe, expect, it } from 'vitest';
 import { advanceWorld, createWorld, executeCommand, projectWorld } from './engine';
 import { buildingKeys } from './types';
@@ -108,7 +109,7 @@ describe('Village authoritative progression', () => {
       mission: 'occupy',
       targetX: village.x + 1,
       targetY: village.y,
-      troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 10, rider: 0, scout: 0, settler: 0 },
     } as const;
     world = executeCommand(world, 'alice', intent, now);
     const arrival = world.movements[0].arrivesAt;
@@ -152,11 +153,12 @@ describe('Village authoritative progression', () => {
         mission: 'occupy',
         targetX: village.x + 1,
         targetY: village.y,
-        troops: { guard: 10, rider: 0, scout: 0, settler: 0 },
+        troops: { ...emptyTroops(), guard: 10, rider: 0, scout: 0, settler: 0 },
       },
       now,
     );
     moving.villages[village.id].reinforcements.other = {
+      ...emptyTroops(),
       guard: 100,
       rider: 0,
       scout: 0,

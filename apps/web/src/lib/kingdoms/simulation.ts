@@ -113,7 +113,7 @@ export function deployedTroops(w: KingdomsWorld): Map<string, Troops> {
     const previous = bySource.get(sourceId) ?? emptyTroops();
     bySource.set(
       sourceId,
-      Object.fromEntries(unitKeys.map((k) => [k, previous[k] + troops[k]])) as Troops,
+      Object.fromEntries(unitKeys.map((k) => [k, previous[k] + (troops[k] ?? 0)])) as Troops,
     );
   };
   for (const movement of w.movements) add(movement.sourceId, movement.troops);
@@ -151,7 +151,10 @@ export function netAfterUpkeep(gross: number, upkeep: number) {
 /** إعاشة الغذاء بالساعة لكل القوات في القرية وخارجها. */
 export function foodUpkeep(config: KingdomsConfig, village: Village, away: Troops = emptyTroops()) {
   return unitKeys.reduce(
-    (sum, key) => sum + (village.troops[key] + away[key]) * config.units[key].upkeep,
+    (sum, key) => {
+      const count = (village.troops[key] ?? 0) + (away[key] ?? 0);
+      return count === 0 ? sum : sum + count * config.units[key].upkeep;
+    },
     0,
   );
 }

@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
@@ -83,7 +84,7 @@ describe('village hero', () => {
         ...world.villages,
         [host.id]: {
           ...host,
-          reinforcements: { [source.id]: { guard: 10, rider: 0, scout: 0, settler: 0 } },
+          reinforcements: { [source.id]: { ...emptyTroops(), guard: 10, rider: 0, scout: 0, settler: 0 } },
         },
       },
     };
@@ -100,7 +101,7 @@ describe('village hero', () => {
   });
 
   it('reports food production stopping when upkeep eats the harvest', () => {
-    const view = fixture({ guard: 1000, rider: 0, scout: 0, settler: 0 });
+    const view = fixture({ ...emptyTroops(), guard: 1000, rider: 0, scout: 0, settler: 0 });
     render(<VillageHero view={view} village={view.villages[0]} />);
     const hero = screen.getByRole('region', { name: 'بطاقة القرية' });
     expect(within(hero).getAllByText('لا إنتاج الآن')).toHaveLength(1);

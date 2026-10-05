@@ -11,7 +11,7 @@ function fixture() {
   for (const v of [a, b]) {
     v.buildings.market = 1;
     v.buildings.embassy = 1;
-    v.troops = { guard: 30, rider: 10, scout: 5, settler: 1 };
+    v.troops = { ...emptyTroops(), guard: 30, rider: 10, scout: 5, settler: 1 };
   }
   w.players.alice.protectionUntil = now;
   w.players.bob.protectionUntil = now;

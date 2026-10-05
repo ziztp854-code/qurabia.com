@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { describe, expect, it } from 'vitest';
 import { createWorld, executeCommand } from '../kingdoms/engine';
 import { provisionVillageGeography } from './village-geography';
@@ -83,7 +84,7 @@ describe('one geographic relocation per actual village', () => {
       targetX: village.x,
       targetY: village.y,
       mission: 'attack',
-      troops: { guard: 1, rider: 0, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 1, rider: 0, scout: 0, settler: 0 },
       departedAt: 1000,
       arrivesAt: 5000,
       travelMs: 4000,

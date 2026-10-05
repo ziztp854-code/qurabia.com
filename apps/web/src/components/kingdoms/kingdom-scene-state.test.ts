@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { describe, expect, it } from 'vitest';
 import { defaultKingdomsConfig } from '@/lib/kingdoms/config';
 import { buildingKeys, type Village } from '@/lib/kingdoms/types';
@@ -8,7 +9,7 @@ const village: Village = {
   resources: { wood: 0, stone: 0, iron: 0, food: 0, gold: 0 },
   updatedAt: 0,
   buildings: Object.fromEntries(buildingKeys.map((key) => [key, key === 'hall' ? 2 : 0])) as Village['buildings'],
-  troops: { guard: 0, rider: 0, scout: 0, settler: 0 },
+  troops: { ...emptyTroops(), guard: 0, rider: 0, scout: 0, settler: 0 },
   reinforcements: {},
   build: { building: 'market', level: 1, startedAt: 100, endsAt: 300 },
 };

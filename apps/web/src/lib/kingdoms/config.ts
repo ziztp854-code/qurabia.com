@@ -247,7 +247,7 @@ export const kingdomsConfigSchema = z
       .optional(),
     vision: z
       .object({
-        visionRadiusByBuilding: z.record(z.enum(buildingKeys), z.number().nonnegative()),
+        visionRadiusByBuilding: z.partialRecord(z.enum(buildingKeys), z.number().nonnegative()),
         towerBuildingKey: z.enum(buildingKeys),
         sharedVisionRadius: z.number().nonnegative(),
         visionExpiryMs: positive,

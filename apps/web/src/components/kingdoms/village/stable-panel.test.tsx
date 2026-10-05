@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
@@ -167,7 +168,7 @@ describe('StablePanel cavalry commands', () => {
           targetX: 1,
           targetY: 1,
           mission: 'raid' as const,
-          troops: { guard: 0, rider: 5, scout: 0, settler: 0 },
+          troops: { ...emptyTroops(), guard: 0, rider: 5, scout: 0, settler: 0 },
           departedAt: now,
           arrivesAt: now + 1000,
           travelMs: 1000,

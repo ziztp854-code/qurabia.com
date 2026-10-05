@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { describe, expect, it } from 'vitest';
 import { createWorld, executeCommand } from '../kingdoms/engine';
 import { provisionVillageGeography } from './village-geography';
@@ -19,7 +20,7 @@ function fixture() {
     departedAt: at,
     arrivesAt: 11000,
     travelMs: 10000,
-    troops: { guard: 0, rider: 0, scout: 9876, settler: 0 },
+    troops: { ...emptyTroops(), guard: 0, rider: 0, scout: 9876, settler: 0 },
     loot: { wood: 0, stone: 0, iron: 0, food: 0, gold: 0 },
   };
   return {

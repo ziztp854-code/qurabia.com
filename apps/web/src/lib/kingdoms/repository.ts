@@ -3,7 +3,7 @@ import { Prisma, type DatabaseClient } from '@tahaddi/database';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { isManagerRole } from '@/lib/auth/authorization';
 import { advanceWorld, createWorld, executeCommand, projectWorld } from './engine';
-import { kingdomsCommandSchema } from './commands';
+import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import { KingdomsHttpError, stableFingerprint } from './http';
 import type { KingdomsConfig, KingdomsWorld } from './types';
 import { provisionVillageGeography } from '../mamluk-map/village-geography';
@@ -137,13 +137,24 @@ async function checkReceipt(
   actorId: string,
   key: string,
   fingerprint: string,
+  legacyFingerprint?: string,
 ) {
   const receipt = await tx.kingdomCommand.findUnique({
     where: { worldId_actorId_key: { worldId: row.id, actorId, key } },
   });
-  if (receipt && receipt.fingerprint !== fingerprint)
+  if (receipt && receipt.fingerprint !== fingerprint && receipt.fingerprint !== legacyFingerprint)
     throw new KingdomsHttpError(409, 'مفتاح الطلب مستخدم لأمر مختلف.');
   return receipt;
+}
+
+const expandedUnitKeys = new Set(['archer', 'mounted_archer', 'sultan_guard', 'siege_engineer', 'siege_tower']);
+
+/** Only zero added counts can represent the same command as a historical four-unit receipt. */
+function historicalTroopFingerprint(command: KingdomsCommand): string | undefined {
+  if (command.type !== 'march' && command.type !== 'caravanIntercept') return undefined;
+  if ([...expandedUnitKeys].some((unit) => command.troops[unit as keyof typeof command.troops] !== 0)) return undefined;
+  const troops = Object.fromEntries(Object.entries(command.troops).filter(([unit]) => !expandedUnitKeys.has(unit)));
+  return stableFingerprint({ ...command, troops });
 }
 
 async function receipt(
@@ -172,7 +183,7 @@ export async function commandKingdomWorld(
     // revoked while another command was holding the world.
     await authorize(tx, identity);
     const now = await dbNow(tx);
-    if (await checkReceipt(tx, row, identity.id, key, fingerprint))
+    if (await checkReceipt(tx, row, identity.id, key, fingerprint, historicalTroopFingerprint(command)))
       return view(row, row.state as KingdomsWorld, identity.id, now);
     if (row.paused) throw new KingdomsHttpError(409, 'أوقفت الإدارة استقبال الأوامر مؤقتًا.');
     const recent = await tx.kingdomCommand.count({

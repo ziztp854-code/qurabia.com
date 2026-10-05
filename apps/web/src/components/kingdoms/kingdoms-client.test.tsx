@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { unitKeys } from '@/lib/kingdoms/types';
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { KingdomsClient } from './kingdoms-client';
 import { number, rateAmount, type WorldView } from './shared';
 const navigation = vi.hoisted(() => ({ push: vi.fn() }));
@@ -440,8 +441,16 @@ describe('Kingdoms player interface', () => {
     expect(screen.queryByRole('region', { name: 'القرية المختارة' })).not.toBeInTheDocument();
   });
   it('submits map missions with selected coordinates and troops, without client prices', async () => {
+    const snapshot = projection(true);
+    const ready = {
+      ...snapshot,
+      villages: snapshot.villages.map((village) => ({
+        ...village,
+        troops: { ...village.troops, guard: 5, archer: 2 },
+      })),
+    };
     vi.mocked(fetch).mockImplementation(async (url) =>
-      response(String(url).endsWith('/worlds') ? summary : projection(true)),
+      response(String(url).endsWith('/worlds') ? summary : ready),
     );
     render(<KingdomsClient />);
     fireEvent.click(await screen.findByRole('button', { name: 'إدارة المملكة' }));
@@ -457,6 +466,7 @@ describe('Kingdoms player interface', () => {
     const form = mission.closest('form')!;
     fireEvent.change(mission, { target: { value: 'occupy' } });
     fireEvent.change(within(form).getByLabelText(/حارس .*متاح/), { target: { value: '5' } });
+    fireEvent.change(within(form).getByLabelText(/^رامي \(/), { target: { value: '2' } });
     fireEvent.submit(form);
     await waitFor(() =>
       expect(vi.mocked(fetch).mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true),
@@ -468,7 +478,7 @@ describe('Kingdoms player interface', () => {
       targetX: 0,
       targetY: 0,
       mission: 'occupy',
-      troops: { guard: 5, rider: 0, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 5, archer: 2 },
     });
   }, 20_000);
 

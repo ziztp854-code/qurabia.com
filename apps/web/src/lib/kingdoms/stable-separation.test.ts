@@ -1,3 +1,4 @@
+import { emptyTroops } from './simulation';
 import { describe, expect, it } from 'vitest';
 import { defaultKingdomsConfig } from './config';
 import { advanceWorld, createWorld, executeCommand, projectWorld } from './engine';
@@ -184,7 +185,7 @@ describe('stable server separation', () => {
       targetX: world.villages[id].x + 3,
       targetY: world.villages[id].y,
       mission: 'raid',
-      troops: { guard: 0, rider: 4, scout: 0, settler: 0 },
+      troops: { ...emptyTroops(), guard: 0, rider: 4, scout: 0, settler: 0 },
       departedAt: start,
       arrivesAt: start + 90_000,
       travelMs: 90_000,

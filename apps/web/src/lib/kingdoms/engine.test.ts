@@ -1,10 +1,54 @@
 import { describe, expect, it } from 'vitest';
 import { advanceWorld, createWorld, executeCommand, nextEventAt, projectWorld } from './engine';
 import { defaultKingdomsConfig, resources } from './config';
+import { emptyTroops } from './simulation';
 const start = 1_800_000_000_000;
 const found = () =>
   executeCommand(createWorld(start), 'alice', { type: 'found', name: 'مملكة النور' }, start);
 describe('Kingdoms authoritative simulation', () => {
+  it.each(['caravans', 'sieges', 'both'] as const)(
+    'loads a persisted village predating %s without changing its saved state',
+    (missing) => {
+      const saved = found();
+      const { caravans, sieges, ...legacy } = saved;
+      const restored = JSON.parse(JSON.stringify({
+        ...legacy,
+        ...(missing === 'sieges' ? { caravans } : {}),
+        ...(missing === 'caravans' ? { sieges } : {}),
+      }));
+      const before = structuredClone(restored);
+      const view = projectWorld(restored, 'alice', start + 3600000);
+      expect(view.villages).toHaveLength(1);
+      expect(view.villages[0].resources.wood).toBe(980);
+      expect(view.caravans).toEqual([]);
+      expect(view.sieges).toEqual([]);
+      expect(restored).toEqual(before);
+    },
+  );
+  it('preserves ongoing caravans and sieges when loading an existing village', () => {
+    const original = found();
+    const villageId = Object.keys(original.villages)[0];
+    const saved = {
+      ...original,
+      caravans: [{
+        id: 'caravan1', ownerId: 'alice', originVillageId: villageId, targetVillageId: villageId,
+        resources: resources(10), departsAt: start, arrivesAt: start + 7200000,
+        status: 'traveling' as const, route: [{ x: 0, y: 0 }], exposed: false,
+      }],
+      sieges: { siege1: {
+        id: 'siege1', ownerId: 'alice', sourceId: villageId, targetX: 1, targetY: 1,
+        troops: { ...emptyTroops(), guard: 1 }, stage: 'besieging' as const,
+        supply: 10, startedAt: start, stageStartedAt: start,
+        stageDeadline: start + 7200000, nextTickAt: start + 7200000,
+        wallDamage: 0, buildingDamage: {},
+      } },
+    };
+    const before = structuredClone(saved);
+    const view = projectWorld(saved, 'alice', start + 3600000);
+    expect(view.caravans).toMatchObject([{ id: 'caravan1', status: 'traveling', resources: resources(10) }]);
+    expect(view.sieges).toEqual([saved.sieges.siege1]);
+    expect(saved).toEqual(before);
+  });
   it('selects the earliest queued deadline and handles idle worlds', () => {
     const w = found(),
       id = Object.keys(w.villages)[0];

@@ -27,8 +27,8 @@ function realms() {
   world.players.carol.protectionUntil = now;
   alice.buildings.embassy = 1;
   bob.buildings.embassy = 1;
-  alice.troops = { guard: 30, rider: 10, scout: 8, settler: 1 };
-  bob.troops = { guard: 20, rider: 4, scout: 2, settler: 0 };
+  alice.troops = { ...emptyTroops(), guard: 30, rider: 10, scout: 8, settler: 1 };
+  bob.troops = { ...emptyTroops(), guard: 20, rider: 4, scout: 2 };
   return { world, alice, bob, carol };
 }
 
@@ -214,7 +214,7 @@ describe('Redacted inbound movement projection', () => {
   it('does not change march, arrival, or offline battle outcomes', () => {
     const { world, alice, bob } = realms();
     const sent = march(world, 'alice', alice.id, bob, 'attack');
-    expect(sent.movements[0].troops).toEqual({ guard: 8, rider: 3, scout: 0, settler: 0 });
+    expect(sent.movements[0].troops).toEqual({ ...emptyTroops(), guard: 8, rider: 3 });
     const first = advanceWorld(sent, sent.movements[0].arrivesAt);
     const second = advanceWorld(sent, sent.movements[0].arrivesAt);
     expect(first).toEqual(second);

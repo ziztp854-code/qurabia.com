@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -46,7 +47,7 @@ describe('RallyPanel', () => {
         ownerId: 'bob',
         protectedUntil: 0,
       },
-      troops: { guard: 7777, rider: 1, scout: 1, settler: 1 },
+      troops: { ...emptyTroops(), guard: 7777, rider: 1, scout: 1, settler: 1 },
       commanderId: 'secret-commander',
       combatPower: 8888,
       loot: { gold: 99999 },
@@ -56,7 +57,7 @@ describe('RallyPanel', () => {
         view={{ ...view, incoming: [incoming as IncomingMovementView] }}
         village={{
           ...village,
-          troops: { guard: 6, rider: 0, scout: 0, settler: 0 },
+          troops: { ...emptyTroops(), guard: 6, rider: 0, scout: 0, settler: 0 },
         }}
         busy={false}
         send={vi.fn()}

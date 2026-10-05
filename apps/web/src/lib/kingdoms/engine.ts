@@ -11,6 +11,7 @@ import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config
 import { addCommanderExperience, availableCommander, commanderConfig, createCommander, normalizeCommanders, projectCommanders, setCommander } from './commanders';
 import { commanderTravelFactor } from './commander-movement';
 import { trainingBuilding, trainingDurationMs } from './training';
+import { normalizeWorldState } from './world-compatibility';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
   advanceDraft,
@@ -61,7 +62,6 @@ export class KingdomsError extends Error {
     this.name = 'KingdomsError';
   }
 }
-const clone = <T>(value: T): T => structuredClone(value);
 export function createWorld(
   now: number,
   config: KingdomsConfig = defaultKingdomsConfig,
@@ -94,7 +94,7 @@ export function createWorld(
 }
 export function advanceWorld(state: KingdomsWorld, now: number): KingdomsWorld {
   assertRule(Number.isSafeInteger(now) && now >= 0 && now <= 8e12, 'وقت غير صالح');
-  const w = clone(state);
+  const w = normalizeWorldState(state);
   normalizeCommanders(w);
   advanceDraft(w, Math.max(now, w.updatedAt));
   advanceCaravan(w, Math.max(now, w.updatedAt));

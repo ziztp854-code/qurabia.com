@@ -1,3 +1,4 @@
+import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -168,7 +169,7 @@ describe('commander management', () => {
           targetX: 2,
           targetY: 3,
           mission: 'attack' as const,
-          troops: { guard: 5, rider: 0, scout: 0, settler: 0 },
+          troops: { ...emptyTroops(), guard: 5, rider: 0, scout: 0, settler: 0 },
           departedAt: now,
           arrivesAt: now + 10000,
           travelMs: 10000,

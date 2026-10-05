@@ -155,7 +155,7 @@ export function refreshProgression(w: KingdomsWorld, deployed: Map<string, Troop
     refreshVillageProgression(
       w,
       v,
-      deployed.get(v.id) ?? emptyTroops(),
+      deployed.get(v.id) ?? (Object.fromEntries(unitKeys.map((key) => [key, 0])) as Troops),
       capitals.get(v.ownerId) === v.id ? (territoryCounts.get(v.ownerId) ?? 0) : 0,
     );
   }
