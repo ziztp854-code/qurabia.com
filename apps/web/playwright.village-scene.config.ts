@@ -10,6 +10,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:3310',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   webServer: {
     command: 'node --import tsx e2e/fixtures/village-scene-server.ts',

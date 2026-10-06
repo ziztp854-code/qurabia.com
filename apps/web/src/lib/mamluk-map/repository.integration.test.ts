@@ -821,6 +821,7 @@ describe.skipIf(!databaseUrl)('Mamluk geography PostgreSQL snapshots', () => {
     await db.kingdomWorld.update({
       where: { id: worldId },
       data: { state: JSON.parse(JSON.stringify(large)) },
+      select: { id: true },
     });
     const request = { worldId, bounds: { west: -180, east: 180, south: -90, north: 90 } };
     const payload = await readMapOverview(request, viewer, db);

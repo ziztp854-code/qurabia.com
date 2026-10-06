@@ -13,10 +13,14 @@ import {
 } from '../../src/lib/kingdoms/engine';
 import { defaultKingdomsConfig } from '../../src/lib/kingdoms/config';
 import { emptyTroops } from '../../src/lib/kingdoms/simulation';
+import { gardenReadSchema, gardenSaveSchema, gardenSlotsSchema } from '../../src/lib/kingdoms/palace-garden';
+import { applyWorkshopAction, projectWorkshop, settleWorkshop, workshopReadSchema, workshopRequestSchema, type WorkshopVillage } from '../../src/lib/kingdoms/siege-workshop';
 
 async function main() {
   if (process.env.VILLAGE_SCENE_E2E !== '1')
     throw new Error('This fixture requires VILLAGE_SCENE_E2E=1.');
+  const port = Number(process.env.VILLAGE_SCENE_PORT ?? 3310);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error('Invalid fixture port.');
   const require = createRequire(path.join(process.cwd(), 'package.json'));
   const viteRequire = createRequire(require.resolve('vitest/package.json'));
   const { createServer } = await import(pathToFileURL(viteRequire.resolve('vite')).href);
@@ -47,12 +51,14 @@ async function main() {
     );
   };
   let world = newWorld();
+  let currentPlayer = 'browser-player';
+  let onboardedPlayers: ReadonlySet<string> = new Set(['browser-player', 'browser-player-b']);
   let frozenNow: number | undefined;
   const serverNow = () => frozenNow ?? Date.now();
   const snapshot = () => {
     world = advanceWorld(world, serverNow());
     return {
-      ...projectWorld(world, 'browser-player', serverNow()),
+      ...projectWorld(world, currentPlayer, serverNow()),
       worldId: 'browser-world',
       worldName: 'عالم الاختبار المحلي',
       revision: 0,
@@ -60,7 +66,7 @@ async function main() {
     };
   };
   const middleware = (request: IncomingMessage, response: ServerResponse, next: () => void) => {
-    const url = new URL(request.url ?? '/', 'http://127.0.0.1:3310');
+    const url = new URL(request.url ?? '/', `http://127.0.0.1:${port}`);
     const reply = (data: unknown, status = 200) => {
       response.statusCode = status;
       response.setHeader('Content-Type', 'application/json');
@@ -102,9 +108,108 @@ async function main() {
       return;
     }
     if (url.pathname === '/__village_test/reset' && request.method === 'POST') {
+      currentPlayer = 'browser-player';
+      onboardedPlayers = new Set(['browser-player', 'browser-player-b']);
       frozenNow = undefined;
       world = newWorld();
       reply(true);
+      return;
+    }
+    if (url.pathname === '/__village_test/city-scenario' && request.method === 'POST') {
+      frozenNow = Date.now();
+      const scenarioNow = frozenNow;
+      currentPlayer = 'browser-player';
+      onboardedPlayers = new Set(['browser-player', 'browser-player-b']);
+      world = executeCommand(createWorld(frozenNow, { ...config, storageBase: 100000 }), currentPlayer, { type: 'found', name: 'سلطنة الاختبار' }, frozenNow);
+      world = executeCommand(world, 'browser-player-b', { type: 'found', name: 'سلطنة أخرى' }, frozenNow);
+      world = { ...world,
+        players: Object.fromEntries(Object.entries(world.players).map(([id, player]) => [id, { ...player, protectionUntil: scenarioNow }])),
+        villages: Object.fromEntries(Object.entries(world.villages).map(([id, village]) => [id, { ...village,
+          buildings: { ...village.buildings, hall: 7, barracks: 2, stable: 2, market: 1 },
+          troops: { ...village.troops, guard: 20, rider: 10, scout: 5, archer: 5, mounted_archer: 3, sultan_guard: 2, siege_engineer: 1, siege_tower: 1 },
+          progression: { ...village.progression!, xp: 2175, signature: '' },
+          resources: { wood: 60000, stone: 60000, iron: 60000, food: 60000, gold: 60000 },
+        }])),
+      };
+      reply(snapshot());
+      return;
+    }
+    if (url.pathname === '/__village_test/onboarding-newbie' && request.method === 'POST') {
+      onboardedPlayers = new Set([...onboardedPlayers].filter((id) => id !== currentPlayer));
+      reply(true);
+      return;
+    }
+    if (url.pathname === '/__village_test/player' && request.method === 'POST') {
+      currentPlayer = url.searchParams.get('id') === 'browser-player-b' ? 'browser-player-b' : 'browser-player';
+      reply(snapshot());
+      return;
+    }
+    if (url.pathname === '/__village_test/advance-workshop' && request.method === 'POST' && frozenNow !== undefined) {
+      frozenNow += 2 * 60 * 60 * 1000;
+      reply(snapshot());
+      return;
+    }
+    if (url.pathname === '/__village_test/damaged-workshop' && request.method === 'POST') {
+      const village = Object.values(world.villages).find((item) => item.ownerId === currentPlayer) as WorkshopVillage;
+      if (!village.siegeWorkshop) { reply(null, 400); return; }
+      const updated = { ...village, siegeWorkshop: { ...village.siegeWorkshop, damaged: { ...village.siegeWorkshop.damaged, catapult: 1 } } };
+      world = { ...world, villages: { ...world.villages, [village.id]: updated } };
+      reply(snapshot());
+      return;
+    }
+    if (url.pathname === '/api/kingdoms/siege-workshop') {
+      const workshopReply = (input: unknown, save: boolean) => {
+        try {
+          const data = save ? workshopRequestSchema.parse(input) : workshopReadSchema.parse(input);
+          const village = world.villages[data.villageId] as WorkshopVillage | undefined;
+          if (data.worldId !== 'browser-world' || !village || village.ownerId !== currentPlayer) throw new Error('هذه الورشة ليست ضمن قريتك.');
+          const settled = settleWorkshop(village, serverNow());
+          const updated = 'action' in data ? applyWorkshopAction(settled, data.action, serverNow()) : settled;
+          world = { ...world, villages: { ...world.villages, [village.id]: updated } };
+          reply({ worldId: data.worldId, villageId: data.villageId, playerId: currentPlayer, revision: 0, paused: false, ended: false, ...projectWorkshop(updated, serverNow()) });
+        } catch (error) {
+          response.statusCode = 400;
+          response.setHeader('Content-Type', 'application/json');
+          response.end(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'طلب غير صالح' }));
+        }
+      };
+      if (request.method === 'GET') workshopReply(Object.fromEntries(url.searchParams), false);
+      else if (request.method === 'POST') {
+        let body = '';
+        request.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        request.on('end', () => { try { workshopReply(JSON.parse(body), true); } catch { reply(null, 400); } });
+      } else reply(null, 405);
+      return;
+    }
+    if (url.pathname === '/api/kingdoms/palace-garden') {
+      const gardenReply = (input: unknown, save: boolean) => {
+        try {
+          const data = save ? gardenSaveSchema.parse(input) : gardenReadSchema.parse(input);
+          const village = world.villages[data.villageId];
+          if (data.worldId !== 'browser-world' || !village || village.ownerId !== currentPlayer) {
+            response.statusCode = 403;
+            response.setHeader('Content-Type', 'application/json');
+            response.end(JSON.stringify({ success: false, error: 'هذه الحديقة ليست ضمن قريتك.' }));
+            return;
+          }
+          const slots = 'slots' in data ? gardenSlotsSchema.parse(data.slots) : gardenSlotsSchema.parse((village as typeof village & { palaceGarden?: { slots: unknown } }).palaceGarden?.slots ?? []);
+          if (save) {
+            const decorated = { ...village, palaceGarden: { version: 1 as const, slots } };
+            world = { ...world, villages: { ...world.villages, [village.id]: decorated } };
+          }
+          reply({ worldId: data.worldId, villageId: data.villageId, playerId: currentPlayer, revision: 0, slots });
+        } catch (error) {
+          response.statusCode = 400;
+          response.setHeader('Content-Type', 'application/json');
+          response.end(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'طلب غير صالح' }));
+        }
+      };
+      if (request.method === 'GET') gardenReply(Object.fromEntries(url.searchParams), false);
+      else if (request.method === 'PUT') {
+        let body = '';
+        request.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        request.on('end', () => { try { gardenReply(JSON.parse(body), true); } catch { reply(null, 400); } });
+      } else reply(null, 405);
       return;
     }
     if (url.pathname === '/__village_test/resource-scenario' && request.method === 'POST') {
@@ -149,7 +254,9 @@ async function main() {
       return;
     }
     if (url.pathname === '/api/kingdoms/village-onboarding') {
-      reply({ completed: true, completedAt: '2026-10-02T00:00:00Z' });
+      if (request.method === 'POST') onboardedPlayers = new Set([...onboardedPlayers, currentPlayer]);
+      const completed = onboardedPlayers.has(currentPlayer);
+      reply({ completed, completedAt: completed ? '2026-10-02T00:00:00Z' : null });
       return;
     }
     if (url.pathname === '/api/kingdoms' && request.method === 'GET') {
@@ -165,7 +272,7 @@ async function main() {
         try {
           world = executeCommand(
             world,
-            'browser-player',
+            currentPlayer,
             kingdomsCommandSchema.parse(JSON.parse(body).command),
             serverNow(),
           );
@@ -229,10 +336,15 @@ async function main() {
     define: {
       'process.env': JSON.stringify({
         NODE_ENV: 'development',
-        NEXT_PUBLIC_REALTIME_URL: 'http://127.0.0.1:3310',
+        NEXT_PUBLIC_REALTIME_URL: `http://127.0.0.1:${port}`,
       }),
     },
-    server: { host: '127.0.0.1', port: 3310, strictPort: true },
+    server: { host: '127.0.0.1', port, strictPort: true,
+      watch: { ignored: ['**/.next/**', '**/test-results/**', '**/playwright-report/**'] },
+    },
+  });
+  server.httpServer?.on('connection', (socket: import('node:net').Socket) => {
+    socket.on('error', (error: NodeJS.ErrnoException) => { if (error.code !== 'ECONNRESET') console.error(error); });
   });
   await server.listen();
   const close = () => {

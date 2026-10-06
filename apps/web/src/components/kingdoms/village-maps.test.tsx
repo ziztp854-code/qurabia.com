@@ -65,6 +65,8 @@ describe('village maps', () => {
     expect(
       await screen.findByRole('region', { name: 'تفاصيل دار الحكم' }, { timeout: 3000 }),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'العودة إلى المدينة' }));
+    expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
     fireEvent.click(within(navigation).getByRole('button', { name: 'انتقل إلى الجيش' }));
     expect(onNavigate).toHaveBeenLastCalledWith('army');
     fireEvent.click(within(navigation).getByRole('button', { name: 'افتح التقارير' }));

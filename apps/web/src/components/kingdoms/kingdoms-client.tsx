@@ -454,6 +454,8 @@ export function KingdomsClient({
                       onNavigate={navigate}
                       onShowMap={showMap}
                       onRefresh={() => void game.refresh()}
+                      commandError={game.error}
+                      commandNotice={game.notice}
                       onCampaign={openCampaign}
                       initialBuilding={
                         buildingSelection?.worldId === view.worldId &&

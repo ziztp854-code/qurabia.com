@@ -1,0 +1,69 @@
+.content {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+.content > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+.panel {
+  padding: var(--space-4);
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  min-inline-size: 0;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.panel h3,
+.panel h4 {
+  margin-block: 0 var(--space-2);
+}
+.panel p {
+  margin-block: var(--space-2);
+}
+.unit {
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+.muted {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+.form {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+.form button,
+.form input,
+.form select {
+  min-block-size: 44px;
+}
+.coordinates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.facts {
+  margin: var(--space-2) 0;
+}
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-block-end: 1px solid var(--border);
+  padding-block: var(--space-2);
+}
+.facts dd {
+  margin: 0;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.panel :focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}

@@ -13,6 +13,8 @@ export default defineConfig({
   testIgnore: [
     'globe-scene.spec.ts',
     'village-scene.spec.ts',
+    'kingdoms-city-scenes.spec.ts',
+    'living-city-regression.spec.ts',
     'incoming-attack-ux.spec.ts',
     'mamluk-world-map.spec.ts',
     'mamluk-hd-world-map.spec.ts',

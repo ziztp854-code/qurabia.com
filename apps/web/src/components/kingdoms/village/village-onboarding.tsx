@@ -27,11 +27,13 @@ export function VillageOnboarding({
   ready,
   focus,
   onComplete,
+  replay = false,
 }: {
   accountId: string;
   ready: boolean;
   focus: (target: VillageTarget) => void;
   onComplete?: () => void;
+  replay?: boolean;
 }) {
   const [step, setStep] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -42,7 +44,7 @@ export function VillageOnboarding({
     void readCompletion({ signal: controller.signal })
       .then((completed) => {
         if (!controller.signal.aborted) {
-          setStep(completed ? null : 0);
+          setStep(replay || !completed ? 0 : null);
           setError('');
         }
       })
@@ -51,7 +53,7 @@ export function VillageOnboarding({
           setError('تعذر تحميل جولة القرية. أعد المحاولة عندما يعود الاتصال.');
       });
     return () => controller.abort();
-  }, [accountId, reload]);
+  }, [accountId, reload, replay]);
   useEffect(() => {
     if (ready && step !== null) focus(tour[step].target);
   }, [focus, ready, step]);
