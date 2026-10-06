@@ -520,7 +520,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   key={building}
                   className={styles.hotspot}
                   style={rectStyle(getBuildingRect(building, props.debug))}
-                  aria-label={`${presentation.name}، ${state}، ${sceneStatus}`}
+                  aria-label={`${presentation.name}، ${state}`}
                   aria-describedby={`${descriptionId}-${building}`}
                   aria-pressed={props.selected === building}
                   data-building={building}
@@ -534,7 +534,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   onBlur={() => highlight(null)}
                 >
                   <span id={`${descriptionId}-${building}`} className={styles.visuallyHidden}>
-                    {presentation.description}، {buildingStatusLabels[presentation.status]}
+                    {presentation.description}، {buildingStatusLabels[presentation.status]}، {sceneStatus}
                   </span>
                   <span className={styles.label}>
                     <Icon size={15} aria-hidden="true" />

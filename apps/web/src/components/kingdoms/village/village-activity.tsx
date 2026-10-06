@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { ArrowRightLeft, Eye, Hammer, Pause, Shield, Swords } from 'lucide-react';
 import { unitKeys, type Mission } from '@/lib/kingdoms/types';
+import { trainingBuilding } from '@/lib/kingdoms/training';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import {
   formatCountdown,
@@ -59,7 +60,7 @@ export function VillageActivity({ view, village, onFocus, onShowMap, onRefresh }
     onRefresh();
   }, [incoming, now, onRefresh]);
   const troops = unitKeys.reduce((total, unit) => total + village.troops[unit], 0);
-  const trainingTarget = village.training?.unit === 'rider' ? 'stable' : 'barracks';
+  const trainingTarget = village.training ? trainingBuilding(village.training.unit) : 'barracks';
   const liveIncoming = villageIncoming(presentIncomingThreats(view.incoming ?? [], now), village.id)
     .slice()
     .sort((left, right) => left.arrivesAt - right.arrivesAt || left.id.localeCompare(right.id, 'en'));

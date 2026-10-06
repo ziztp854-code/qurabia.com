@@ -24,7 +24,7 @@ export default defineConfig({
   // The authenticated journey also recruits, assigns and returns a commander
   // using the real server clock; allow its round trip after the existing UI checks.
   timeout: 180000,
-  use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  use: { baseURL, actionTimeout: 30000, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   outputDir: './test-results/kingdoms-authenticated',
   webServer: {
     command: 'node node_modules/next/dist/bin/next start --hostname 127.0.0.1 -p 3000',

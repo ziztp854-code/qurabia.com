@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { createPrismaClient, type DatabaseClient } from '@tahaddi/database';
 import { hashPassword } from '../src/lib/auth/password';
 import { defaultKingdomsConfig, resources } from '../src/lib/kingdoms/config';
@@ -47,6 +47,30 @@ async function signIn(request: APIRequestContext, email: string) {
   expect(result.ok()).toBeTruthy();
   const session = await request.get('/api/auth/session');
   expect((await session.json()).user.email).toBe(email);
+}
+
+async function selectWorld(page: Page, worldId: string) {
+  const worlds = page.getByLabel('العالم والموسم', { exact: true });
+  await worlds.waitFor({ state: 'attached' });
+  if (!(await worlds.isVisible())) {
+    await page.getByRole('button', { name: 'إعدادات العالم والقرية', exact: true }).click();
+  }
+  await worlds.selectOption(worldId);
+  await expect(worlds).toHaveValue(worldId);
+}
+
+async function kingdomNavigation(page: Page) {
+  const navigation = page.getByRole('navigation', { name: 'إدارة المملكة', exact: true });
+  if (!(await navigation.isVisible())) {
+    await page.getByRole('button', { name: 'إدارة المملكة', exact: true }).click();
+  }
+  await expect(navigation).toBeVisible();
+  return navigation;
+}
+
+async function navigate(page: Page, name: string) {
+  const navigation = await kingdomNavigation(page);
+  await navigation.getByRole('button', { name, exact: true }).click();
 }
 
 test('administrator opens a world; a signed-in player builds and trains with persisted results', async ({
@@ -130,7 +154,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await page.locator('input[name="password"]').fill(password);
   await page.getByRole('button', { name: 'دخول بالبريد' }).click();
   await expect(page).toHaveURL(/\/games\/kingdoms\/?$/);
-  await page.getByLabel('العالم والموسم').selectOption(worldId);
+  await selectWorld(page, worldId);
   await page.getByLabel('اسم المملكة').fill('مملكة الرحلة الحقيقية');
   await page.getByRole('button', { name: 'أسّس مملكتي' }).click();
   await expect(page.getByRole('region', { name: 'موارد القرية' })).toBeVisible();
@@ -142,9 +166,14 @@ test('administrator opens a world; a signed-in player builds and trains with per
   const initial = await read();
   expect(initial.villages).toHaveLength(1);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.getByRole('button', { name: 'القرية', exact: true }).click();
+  await navigate(page, 'القرية');
   const villageMap = page.getByRole('region', { name: 'خريطة القرية' });
   await expect(villageMap).toBeVisible();
+  const tour = page.getByRole('region', { name: 'جولة القرية', exact: true });
+  if (await tour.isVisible()) {
+    await tour.getByRole('button', { name: 'إنهاء الجولة', exact: true }).click();
+    await expect(tour).not.toBeVisible();
+  }
   await expect
     .poll(() =>
       villageMap
@@ -167,8 +196,8 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await barracks.getByRole('button', { name: 'طوّر المبنى', exact: true }).click();
   await expect.poll(async () => (await read()).villages[0].buildings.barracks).toBe(1);
   await page.reload();
-  await page.getByLabel('العالم والموسم').selectOption(worldId);
-  await page.getByRole('button', { name: 'الجيش', exact: true }).click();
+  await selectWorld(page, worldId);
+  await navigate(page, 'الجيش');
   await page.getByLabel('عدد حارس').fill('2');
   const guard = page.locator('article').filter({ has: page.getByLabel('عدد حارس') });
   await guard.getByRole('button', { name: 'درّب الوحدات' }).click();
@@ -194,8 +223,8 @@ test('administrator opens a world; a signed-in player builds and trains with per
   await commanders.getByRole('button', { name: 'أخلِ التعيين', exact: true }).click();
   await expect.poll(async () => (await read()).commanders![0].status).toBe('available');
   await page.reload();
-  await page.getByLabel('العالم والموسم').selectOption(worldId);
-  await page.getByRole('button', { name: 'الجيش', exact: true }).click();
+  await selectWorld(page, worldId);
+  await navigate(page, 'الجيش');
   await expect(page.getByRole('heading', { name: 'بيبرس الرحلة', exact: true })).toBeVisible();
   const rejected = await page.request.post('/api/admin/kingdoms', {
     headers: { Origin: baseURL! },
@@ -203,8 +232,8 @@ test('administrator opens a world; a signed-in player builds and trains with per
   });
   expect(rejected.status()).toBe(403);
   await page.reload();
-  await page.getByLabel('العالم والموسم').selectOption(worldId);
-  const kingdomNav = page.getByRole('navigation', { name: 'إدارة المملكة' });
+  await selectWorld(page, worldId);
+  const kingdomNav = await kingdomNavigation(page);
   await expect(kingdomNav).toBeVisible({ timeout: 30_000 });
   await kingdomNav.getByRole('button', { name: 'إرسال حملة', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'إرسال حملة' }).first()).toBeVisible();
@@ -267,7 +296,7 @@ test('administrator opens a world; a signed-in player builds and trains with per
     .poll(async () => (await read()).commanders![0].status, { timeout: 40000 })
     .toBe('available');
   expect((await read()).villages[0].troops.guard).toBe(2);
-  await page.getByRole('button', { name: 'الجيش', exact: true }).click();
+  await navigate(page, 'الجيش');
   // The existing client refreshes every 15 seconds when realtime is unavailable.
   // Verify the displayed state catches up with the authoritative return as well.
   await expect(commanders.getByText('متاح', { exact: true })).toBeVisible({ timeout: 20000 });

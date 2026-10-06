@@ -3,6 +3,7 @@
 import { Binoculars, Flag, Map, ScrollText, Shield, Swords, Users, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui';
+import { trainingBuilding } from '@/lib/kingdoms/training';
 import {
   formatCountdown,
   incomingMissionLabels,
@@ -70,7 +71,7 @@ export function RallyPanel({
   useEffect(() => {
     title.current?.focus({ preventScroll: true });
   }, [village.id]);
-  const trainingTarget = village.training?.unit === 'rider' ? 'stable' : 'barracks';
+  const trainingTarget = village.training ? trainingBuilding(village.training.unit) : 'barracks';
   return (
     <section
       className={styles.panel}

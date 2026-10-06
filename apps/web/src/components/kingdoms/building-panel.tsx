@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { upgradeOffer } from '@/lib/kingdoms/construction';
 import { hourlyYield, netAfterUpkeep, storageCapacity } from '@/lib/kingdoms/simulation';
-import { trainingSpeedDivisor } from '@/lib/kingdoms/training';
+import { trainingBuilding, trainingSpeedDivisor } from '@/lib/kingdoms/training';
 import {
   resourceKeys,
   unitKeys,
@@ -395,7 +395,7 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
           <>
             {military && (
               <dl className={styles.facts}>
-                {(building === 'barracks' ? unitKeys.filter((unit) => unit !== 'rider') : unitKeys).map(
+                {(building === 'wall' ? unitKeys : unitKeys.filter((unit) => trainingBuilding(unit) === building)).map(
                   (unit) => (
                   <div key={unit}>
                     <dt>{view.config.units[unit].name}</dt>
@@ -415,7 +415,7 @@ export function BuildingPanel({ view, village, busy, send, building, onClose, on
             ) : (
               <p>لا تطوير جارٍ لهذا المبنى.</p>
             )}
-            {building === 'barracks' && village.training && village.training.unit !== 'rider' && (
+            {village.training && trainingBuilding(village.training.unit) === building && (
               <p>
                 يتدرب {number(village.training.count)}{' '}
                 {view.config.units[village.training.unit].name} حتى {date(village.training.endsAt)}.

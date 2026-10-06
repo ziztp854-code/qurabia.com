@@ -1,3 +1,4 @@
+import { trainingBuilding } from '../training';
 import {
   resourceKeys,
   type Building,
@@ -99,8 +100,7 @@ export function villageBuildingSceneStatus(building: Building, village: Village)
     return 'في الطابور';
   if (
     village.training &&
-    ((building === 'barracks' && village.training.unit !== 'rider') ||
-      (building === 'stable' && village.training.unit === 'rider'))
+    trainingBuilding(village.training.unit) === building
   )
     return 'تدريب جارٍ';
   return village.buildings[building] > 0 ? 'جاهز' : 'لم يُبنَ';

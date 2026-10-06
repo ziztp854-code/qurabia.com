@@ -255,7 +255,7 @@ export function ArmyPanel({ view, village, busy, send }: GameProps) {
                   هجوم {number(unit.attack)} · دفاع {number(unit.defense)} · حمولة{' '}
                   {number(unit.carry)} · غذاء {number(unit.upkeep)}/ساعة
                 </p>
-                {key === 'rider' ? (
+                {trainingBuilding(key) === 'stable' ? (
                   <p className={kingdomsStyles.muted}>تدريب الفرسان من الإسطبل.</p>
                 ) : (
                   <CommandForm

@@ -496,9 +496,14 @@ export function earliestDeadline(w: KingdomsWorld, fallback = Infinity): number 
       Math.min(earliest, v.build?.endsAt ?? Infinity, v.training?.endsAt ?? Infinity),
     fallback,
   );
-  return w.movements.reduce(
+  const movementDeadline = w.movements.reduce(
     (earliest, movement) => Math.min(earliest, movement.arrivesAt),
     villageDeadline,
+  );
+  return (w.caravans ?? []).reduce(
+    (earliest, caravan) => caravan.status === 'traveling'
+      ? Math.min(earliest, caravan.arrivesAt) : earliest,
+    movementDeadline,
   );
 }
 
@@ -554,6 +559,7 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
       .sort((a, b) => a.id.localeCompare(b.id));
     w.movements = w.movements.filter((m) => m.arrivesAt !== next);
     for (const m of due) arrive(w, m, next);
+    advanceCaravan(w, next);
   }
   accrue(w, end);
   refreshProgression(w, deployedTroops(w));
@@ -595,9 +601,9 @@ export function advanceCaravan(state: KingdomsWorld, now: number) {
       const target = Object.values(state.villages).find(
         (v) => v.id === caravan.targetVillageId,
       );
-      const owner = target?.ownerId === caravan.ownerId ? target : undefined;
-      if (owner) {
-        credit(state, owner, caravan.resources);
+      const recipient = target ?? state.villages[caravan.originVillageId];
+      if (recipient) {
+        credit(state, recipient, caravan.resources);
         caravan.resources = Object.fromEntries(
           resourceKeys.map((k) => [k, 0]),
         ) as Resources;
@@ -659,22 +665,26 @@ export function projectEnemySightings(w: KingdomsWorld, actorId: string, now: nu
   const ownVillages = Object.values(w.villages).filter((v) => v.ownerId === actorId);
   const visionConfig = w.config.vision;
   if (!ownVillages.length || !visionConfig) return [];
-  const visionRadius = computeVillageVision(ownVillages[0], visionConfig);
-  if (!visionRadius) return [];
   return w.movements
-    .filter((m) => m.ownerId !== actorId && isIncomingMission(m.mission))
-    .map((m) => {
-      const distance = Math.hypot(m.targetX - ownVillages[0].x, m.targetY - ownVillages[0].y);
-      if (distance > visionRadius) return null;
+    .filter((m) => m.ownerId !== actorId && isIncomingMission(m.mission)
+      && m.departedAt <= now && now < m.arrivesAt)
+    .flatMap((m) => {
+      const source = w.villages[m.sourceId];
+      if (!source) return [];
+      const progress = Math.min(1, Math.max(0,
+        (now - m.departedAt) / Math.max(1, m.arrivesAt - m.departedAt)));
+      const x = source.x + (m.targetX - source.x) * progress;
+      const y = source.y + (m.targetY - source.y) * progress;
+      if (!ownVillages.some((v) => {
+        const radius = computeVillageVision(v, visionConfig);
+        return radius > 0 && Math.hypot(x - v.x, y - v.y) <= radius;
+      })) return [];
       const targetVillageId = Object.values(w.villages).find((v) => v.x === m.targetX && v.y === m.targetY)?.id;
-      return {
+      return [{
         id: m.id,
         villageId: targetVillageId ?? '',
         seenAt: now,
         expiresAt: now + visionConfig.visionExpiryMs,
-        troops: m.troops,
-        commanderId: m.commanderId,
-      };
-    })
-    .filter(Boolean) as EnemySighting[];
+      }];
+    });
 }

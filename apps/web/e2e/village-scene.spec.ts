@@ -404,8 +404,17 @@ test('new master artwork, camera, real build lifecycle, and world navigation', a
   await setVillageSettings(page, false);
   await setQueues(page, false);
   await page.screenshot({ path: testInfo.outputPath('interactive-village.png'), fullPage: true });
-  await page.getByRole('button', { name: 'انتقل إلى خريطة العالم' }).click();
-  await expect(page).toHaveURL(/\/games\/kingdoms\/world-map\/\?worldId=browser-world&villageId=/);
+  if ((page.viewportSize()?.width ?? 1920) <= 1000) {
+    await page.getByRole('navigation', { name: 'تنقل المملكة', exact: true })
+      .getByRole('link', { name: 'انتقل إلى العالم', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: 'انتقل إلى خريطة العالم' }).click();
+  }
+  await expect(page).toHaveURL((url) =>
+    url.pathname.replace(/\/$/, '') === '/games/kingdoms/world-map' &&
+    url.searchParams.get('worldId') === 'browser-world' &&
+    url.searchParams.get('villageId') === 'v1',
+  );
   // Production navigates to the separate geographic route; this fixture renders the village route.
   await page.goBack();
   await expect(village).toBeVisible();
@@ -635,6 +644,8 @@ test('readable resource cards and independent alpha production buildings use con
   expect(readableCards).toBe(true);
   for (const resource of ['wood', 'stone', 'iron', 'food', 'gold']) {
     const icon = resources.locator(`[data-resource="${resource}"] img`);
+    // The mobile resource row scrolls horizontally; bring each lazy image into view.
+    await icon.scrollIntoViewIfNeeded();
     await expect(icon).toBeVisible();
     await expect.poll(() => icon.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
   }

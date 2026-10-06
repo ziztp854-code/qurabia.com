@@ -576,8 +576,9 @@ function caravanCancel(
   assertRule(caravan && caravan.ownerId === actor, 'القافلة غير متاحة');
   assertRule(caravan.status === 'preparing' || caravan.status === 'traveling', 'لا يمكن إلغاء القافلة في هذه الحالة');
   const v = w.villages[caravan.originVillageId];
-  if (v && caravan.status === 'preparing') {
+  if (v) {
     credit(w, v, caravan.resources);
+    caravan.resources = resources(0);
   }
   caravan.status = 'returned';
   report(w, at, [actor], 'إلغاء القافلة', 'أُلغيت القافلة');
@@ -593,9 +594,8 @@ function caravanIntercept(
   assertRule(carrier && carrier.status === 'traveling', 'القافلة غير متاحة للاعتراض');
   const v = own(w, actor, c.villageId);
   assertRule(total(c.troops) > 0 && unitKeys.every((k) => v.troops[k] >= c.troops[k]), 'القوات غير متاحة');
-  v.troops = Object.fromEntries(
-    unitKeys.map((k) => [k, v.troops[k] - c.troops[k]]),
-  ) as Village['troops'];
+  // Interception resolves immediately and defines no casualties or deployed army.
+  // Keep the participating troops in their garrison after either outcome.
   interceptCaravan(w, c.carrierId, c.villageId, actor, c.troops);
   report(w, at, [actor], 'اعتراض قافلة', 'أُرسلت القوات لاعتراض القافلة');
 }

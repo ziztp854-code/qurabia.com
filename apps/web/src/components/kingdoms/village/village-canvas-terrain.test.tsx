@@ -22,6 +22,16 @@ afterEach(() => {
 });
 
 describe('village terrain and animated overlays', () => {
+  it('exposes one stable accessible building name without repeating its scene status', async () => {
+    const now = 1800000000000;
+    const view = projectWorld(executeCommand(createWorld(now), 'p', { type: 'found', name: 'القرية' }, now), 'p', now);
+    await act(async () => {
+      render(<VillageCanvas view={view} village={view.villages[0]} selected={null}
+        onSelect={vi.fn()} quality="medium" reducedMotion showLabels={false} />);
+    });
+    expect(screen.getByRole('button', { name: 'الثكنة، لم يُبنَ' })).toHaveAccessibleDescription(/لم يُبنَ/);
+  });
+
   it('keeps original terrain separate from hotspots and shares every camera projection after GPU readiness', async () => {
     const now = 1800000000000;
     const view = projectWorld(

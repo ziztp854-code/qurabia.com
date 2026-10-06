@@ -2,9 +2,9 @@
 
 import { Clock, Swords, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Input } from '@/components/ui';
-import { stableUnlockVillageLevel, trainingDurationMs } from '@/lib/kingdoms/training';
-import { resourceKeys, unitKeys } from '@/lib/kingdoms/types';
+import { Button, Input, Select } from '@/components/ui';
+import { stableUnlockVillageLevel, trainingBuilding, trainingDurationMs } from '@/lib/kingdoms/training';
+import { resourceKeys, unitKeys, type Unit } from '@/lib/kingdoms/types';
 import { date, labels, number, type GameProps } from '../shared';
 import type { VillageNavigation } from '../building-panel';
 import styles from '../building-panel.module.css';
@@ -30,9 +30,10 @@ export function StablePanel({
   onNavigate,
 }: StablePanelProps) {
   const [count, setCount] = useState('1');
+  const [selectedUnit, setSelectedUnit] = useState<Unit>('rider');
   const title = useRef<HTMLHeadingElement>(null);
   const amount = Number(count);
-  const unit = view.config.units.rider;
+  const unit = view.config.units[selectedUnit];
   const homeTroops = unitKeys.reduce((sum, key) => sum + village.troops[key], 0);
   const movingTroops = view.movements
     .filter((movement) => movement.sourceId === village.id)
@@ -175,9 +176,12 @@ export function StablePanel({
         </>
       )}
       <p>
-        الفرسان الجاهزون: <bdi aria-label="الفرسان الجاهزون">{number(village.troops.rider)}</bdi>
+        {selectedUnit === 'rider' ? 'الفرسان الجاهزون' : `${unit.name} الجاهزون`}:{' '}
+        <bdi aria-label={selectedUnit === 'rider' ? 'الفرسان الجاهزون' : `${unit.name} الجاهزون`}>
+          {number(village.troops[selectedUnit])}
+        </bdi>
       </p>
-      {village.training?.unit === 'rider' && (
+      {village.training && trainingBuilding(village.training.unit) === 'stable' && (
         <p aria-label="قائمة تدريب القرية">
           يتدرب الآن {number(village.training.count)}{' '}
           {view.config.units[village.training.unit].name}. يكتمل{' '}
@@ -196,11 +200,16 @@ export function StablePanel({
         onSubmit={(event) => {
           event.preventDefault();
           if (disabled) return;
-          void send({ type: 'train', villageId: village.id, unit: 'rider', count: Number(count) });
+          void send({ type: 'train', villageId: village.id, unit: selectedUnit, count: Number(count) });
         }}
       >
+        <Select label="وحدة الإسطبل" value={selectedUnit} onChange={(event) => setSelectedUnit(event.target.value as Unit)}>
+          {unitKeys.filter((key) => trainingBuilding(key) === 'stable').map((key) => (
+            <option key={key} value={key}>{view.config.units[key].name}</option>
+          ))}
+        </Select>
         <Input
-          label="عدد الفرسان"
+          label={selectedUnit === 'rider' ? 'عدد الفرسان' : `عدد ${unit.name}`}
           type="number"
           name="count"
           min="1"
@@ -210,7 +219,7 @@ export function StablePanel({
           required
           dir="ltr"
         />
-        <ul className={styles.costs} aria-label="تكلفة تدريب الفرسان">
+        <ul className={styles.costs} aria-label={selectedUnit === 'rider' ? 'تكلفة تدريب الفرسان' : `تكلفة تدريب ${unit.name}`}>
           {resourceKeys
             .filter((resource) => unit.cost[resource] > 0)
             .map((resource) => {
@@ -228,7 +237,7 @@ export function StablePanel({
           مدة تدريب العدد المختار <bdi dir="ltr">{formatDuration(trainingSeconds)}</bdi>
         </p>
         <Button type="submit" disabled={disabled}>
-          درّب الفرسان
+          {selectedUnit === 'rider' ? 'درّب الفرسان' : `درّب ${unit.name}`}
         </Button>
       </form>
       <p className={styles.hint}>
