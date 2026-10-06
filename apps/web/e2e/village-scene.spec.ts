@@ -8,6 +8,8 @@ async function expectOverview(page: Page) {
     return innerWidth <= 700 && element.clientHeight > element.clientWidth ? Math.min(3.5, cover / fit) : 1;
   }, VILLAGE_WORLD);
   await expect.poll(async () => Number(await viewport.getAttribute('data-zoom'))).toBeCloseTo(expected, 2);
+  await expect.poll(async () => Number(await viewport.getAttribute('data-camera-x'))).toBeCloseTo(VILLAGE_WORLD.width / 2, 2);
+  await expect.poll(async () => Number(await viewport.getAttribute('data-camera-y'))).toBeCloseTo(VILLAGE_WORLD.height / 2, 2);
   if (expected > 1) {
     const [stage, art] = await Promise.all([viewport.boundingBox(), viewport.locator('picture img:not([data-resource-art])').first().boundingBox()]);
     expect(art!.y).toBeLessThanOrEqual(stage!.y + 20);
@@ -39,7 +41,7 @@ async function revealBuilding(page: Page, id: string) {
 }
 async function clickBuilding(page: Page, id: string) {
   const building = page.locator(`[data-building="${id}"]`);
-  const point = await building.evaluate((element) => {
+  const findPoint = () => building.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     for (const y of [.5, .25, .75, .1, .9]) {
       for (const x of [.5, .25, .75, .1, .9]) {
@@ -50,19 +52,27 @@ async function clickBuilding(page: Page, id: string) {
     }
     return null;
   });
-  expect(point, `${id} has an unobscured playable hotspot`).not.toBeNull();
+  let point = await findPoint();
+  await expect.poll(async () => {
+    point = await findPoint();
+    return point;
+  }, { message: `${id} has an unobscured playable hotspot` }).not.toBeNull();
   await page.mouse.click(point!.x, point!.y);
 }
 async function setVillageSettings(page: Page, open = true) {
   const summary = page.locator('summary').filter({ hasText: /^إعدادات القرية$/ });
+  await summary.scrollIntoViewIfNeeded();
   const isOpen = await summary.evaluate((element) => (element.parentElement as HTMLDetailsElement).open);
   if (isOpen !== open) await summary.click();
+  await expect(summary.locator('..')).toHaveJSProperty('open', open);
 }
 
 async function setQueues(page: Page, open = true) {
   const summary = page.locator('summary').filter({ hasText: 'البناء والتدريب' });
+  await summary.scrollIntoViewIfNeeded();
   const isOpen = await summary.evaluate((element) => (element.parentElement as HTMLDetailsElement).open);
   if (isOpen !== open) await summary.click();
+  await expect(summary.locator('..')).toHaveJSProperty('open', open);
 }
 
 async function refreshWorld(page: Page) {
@@ -170,6 +180,7 @@ test('level twelve village finishes its real queue after five hours offline', as
   await expect(page.getByLabel('مستوى القرية', { exact: true })).toContainText('١٢');
   for (const [building, label] of [['hall', 'دار الحكم'], ['wall', 'السور'], ['warehouse', 'المخزن']]) {
     const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+    await setVillageSettings(page);
     await village.getByLabel('اختر مبنى من الخريطة').selectOption(building);
     const panel = page.getByRole('region', { name: `تفاصيل ${label}`, exact: true });
     await panel.getByRole('button', { name: building === 'hall' ? 'طوّر المبنى' : 'أضف إلى قائمة البناء', exact: true }).click();
