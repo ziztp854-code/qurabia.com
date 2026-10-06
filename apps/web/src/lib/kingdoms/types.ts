@@ -88,8 +88,6 @@ export type EnemySighting = {
   villageId: string;
   seenAt: number;
   expiresAt: number;
-  troops: Record<string, number>;
-  commanderId?: string;
 };
 export type VisionConfig = {
   visionRadiusByBuilding: Partial<Record<Building, number>>;

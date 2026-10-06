@@ -40,6 +40,22 @@ const navigation = { onClose: vi.fn() };
 afterEach(cleanup);
 
 describe('StablePanel cavalry commands', () => {
+  it('trains mounted archers through the stable with their own cost and queue', () => {
+    const props = fixture();
+    const { rerender } = render(<StablePanel {...props} {...navigation} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'وحدة الإسطبل' }), {
+      target: { value: 'mounted_archer' },
+    });
+    const unit = props.view.config.units.mounted_archer;
+    fireEvent.change(screen.getByRole('spinbutton', { name: `عدد ${unit.name}` }), {
+      target: { value: '2' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: `درّب ${unit.name}` }));
+    expect(props.send).toHaveBeenCalledWith({ type: 'train', villageId: props.village.id, unit: 'mounted_archer', count: 2 });
+    rerender(<StablePanel {...props} village={{ ...props.village, training: { unit: 'mounted_archer', count: 2, endsAt: now + 100000 } }} {...navigation} />);
+    expect(screen.getByLabelText('قائمة تدريب القرية')).toHaveTextContent(unit.name);
+    expect(screen.getByRole('button', { name: `درّب ${unit.name}` })).toBeDisabled();
+  });
   it('sends the existing rider training command and waits for confirmed troops and levels', () => {
     const props = fixture();
     const { rerender } = render(<StablePanel {...props} {...navigation} />);

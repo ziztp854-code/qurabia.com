@@ -47,6 +47,7 @@ describe('MotionProvider', () => {
   });
 
   it('applies one shared motion policy and animates the route content without adding a wrapper', () => {
+    navigation.pathname = '/games';
     const { container } = render(
       <MotionProvider>
         <main>المحتوى</main>
@@ -63,6 +64,7 @@ describe('MotionProvider', () => {
   });
 
   it('cancels an in-flight entrance before starting the next route entrance', () => {
+    navigation.pathname = '/join';
     const view = render(
       <MotionProvider>
         <main>الرئيسية</main>
@@ -78,6 +80,12 @@ describe('MotionProvider', () => {
 
     expect(cancel).toHaveBeenCalledTimes(1);
     expect(animate).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps homepage text at its full contrast throughout initial hydration', () => {
+    render(<MotionProvider><main>تحالفات ومعارك</main></MotionProvider>);
+    expect(animate).not.toHaveBeenCalled();
+    expect(screen.getByRole('main')).toHaveTextContent('تحالفات ومعارك');
   });
 
   it('does not animate route content when reduced motion is enabled', () => {

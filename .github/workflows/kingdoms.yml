@@ -15,6 +15,9 @@ on:
       - 'apps/web/public/game-art/kingdoms/**'
       - 'apps/web/package.json'
       - 'apps/web/e2e/kingdoms*.spec.ts'
+      - 'apps/web/e2e/village-scene.spec.ts'
+      - 'apps/web/e2e/fixtures/village-scene*'
+      - 'apps/web/playwright.village-scene.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
       - 'apps/web/src/app/api/**/kingdoms/**'
       - 'apps/realtime/src/kingdoms/**'
@@ -38,6 +41,9 @@ on:
       - 'apps/web/public/game-art/kingdoms/**'
       - 'apps/web/package.json'
       - 'apps/web/e2e/kingdoms*.spec.ts'
+      - 'apps/web/e2e/village-scene.spec.ts'
+      - 'apps/web/e2e/fixtures/village-scene*'
+      - 'apps/web/playwright.village-scene.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
       - 'apps/web/src/app/api/**/kingdoms/**'
       - 'apps/realtime/src/kingdoms/**'
@@ -54,7 +60,7 @@ permissions:
 jobs:
   postgres-concurrency:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
@@ -96,8 +102,19 @@ jobs:
         run: NEXTAUTH_URL= AUTH_URL= NEXT_PUBLIC_SITE_URL= pnpm --filter @tahaddi/web test src/lib/kingdoms src/lib/mamluk-map src/components/mamluk-map src/app/games/kingdoms/world-map src/app/api/kingdoms src/app/api/admin/kingdoms --coverage --coverage.include='src/lib/kingdoms/**' --coverage.exclude='**/*.test.ts' --coverage.thresholds.statements=80 --coverage.thresholds.branches=80 --coverage.thresholds.functions=80 --coverage.thresholds.lines=80
       - name: Test geographic domain and MapLibre adapter
         run: pnpm --filter @mamluk/world-map-core test && pnpm --filter @mamluk/maplibre-adapter test
+      - name: Test village panels and training navigation
+        run: pnpm --filter @tahaddi/web test src/components/kingdoms
       - name: Install test browser
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
+      - name: Verify village scene and controls on desktop and touch devices
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
+      - name: Preserve failed village browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kingdoms-village-failures-${{ github.run_attempt }}
+          path: apps/web/test-results/village-scene/
+          retention-days: 7
       - name: Build web application
         run: pnpm --filter @tahaddi/web build
       - name: Verify anonymous boundaries on desktop and mobile

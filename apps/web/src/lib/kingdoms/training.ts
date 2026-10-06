@@ -7,7 +7,7 @@ import type { Building, Unit, Village } from './types';
 export const stableUnlockVillageLevel = 6;
 
 /** One training slot. The building only chooses the requirement and the speed level. */
-export function trainingBuilding(unit: Unit): Building {
+export function trainingBuilding(unit: Unit): Extract<Building, 'stable' | 'barracks'> {
   return unit === 'rider' || unit === 'mounted_archer' ? 'stable' : 'barracks';
 }
 

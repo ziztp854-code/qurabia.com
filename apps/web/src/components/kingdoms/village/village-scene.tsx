@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button, Select } from '@/components/ui';
 import { buildingKeys } from '@/lib/kingdoms/types';
+import { trainingBuilding } from '@/lib/kingdoms/training';
 import type {
   VillageDebugOptions,
   VillageQuality,
@@ -140,7 +141,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         <summary><Settings2 size={18} aria-hidden="true" /><span>إعدادات القرية</span></summary>
         <VillageProgress village={village} config={view.config} now={view.serverNow}
           onOpenConstruction={() => choose(village.build?.building ?? 'hall')}
-          onOpenMilitary={() => choose(village.training?.unit === 'rider' ? 'stable' : 'barracks')}
+          onOpenMilitary={() => choose(village.training ? trainingBuilding(village.training.unit) : 'barracks')}
           onOpenActivity={() => document.querySelector<HTMLElement>('[aria-label="نشاط القرية"]')?.scrollIntoView({ block: 'nearest' })} />
         <details><summary>نشاط القرية</summary><VillageActivity view={view} village={village} onFocus={choose} onShowMap={onShowMap} onRefresh={onRefresh} /></details>
         <details><summary>دليل المباني</summary><VillageDirectory view={view} village={village} selected={selected} onSelect={choose} /></details>

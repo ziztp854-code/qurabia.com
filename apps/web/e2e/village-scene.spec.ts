@@ -8,6 +8,8 @@ async function expectOverview(page: Page) {
     return innerWidth <= 700 && element.clientHeight > element.clientWidth ? Math.min(3.5, cover / fit) : 1;
   }, VILLAGE_WORLD);
   await expect.poll(async () => Number(await viewport.getAttribute('data-zoom'))).toBeCloseTo(expected, 2);
+  await expect.poll(async () => Number(await viewport.getAttribute('data-camera-x'))).toBeCloseTo(VILLAGE_WORLD.width / 2, 2);
+  await expect.poll(async () => Number(await viewport.getAttribute('data-camera-y'))).toBeCloseTo(VILLAGE_WORLD.height / 2, 2);
   if (expected > 1) {
     const [stage, art] = await Promise.all([viewport.boundingBox(), viewport.locator('picture img:not([data-resource-art])').first().boundingBox()]);
     expect(art!.y).toBeLessThanOrEqual(stage!.y + 20);
@@ -39,7 +41,7 @@ async function revealBuilding(page: Page, id: string) {
 }
 async function clickBuilding(page: Page, id: string) {
   const building = page.locator(`[data-building="${id}"]`);
-  const point = await building.evaluate((element) => {
+  const findPoint = () => building.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     for (const y of [.5, .25, .75, .1, .9]) {
       for (const x of [.5, .25, .75, .1, .9]) {
@@ -50,19 +52,27 @@ async function clickBuilding(page: Page, id: string) {
     }
     return null;
   });
-  expect(point, `${id} has an unobscured playable hotspot`).not.toBeNull();
+  let point = await findPoint();
+  await expect.poll(async () => {
+    point = await findPoint();
+    return point;
+  }, { message: `${id} has an unobscured playable hotspot` }).not.toBeNull();
   await page.mouse.click(point!.x, point!.y);
 }
 async function setVillageSettings(page: Page, open = true) {
   const summary = page.locator('summary').filter({ hasText: /^إعدادات القرية$/ });
+  await summary.scrollIntoViewIfNeeded();
   const isOpen = await summary.evaluate((element) => (element.parentElement as HTMLDetailsElement).open);
   if (isOpen !== open) await summary.click();
+  await expect(summary.locator('..')).toHaveJSProperty('open', open);
 }
 
 async function setQueues(page: Page, open = true) {
   const summary = page.locator('summary').filter({ hasText: 'البناء والتدريب' });
+  await summary.scrollIntoViewIfNeeded();
   const isOpen = await summary.evaluate((element) => (element.parentElement as HTMLDetailsElement).open);
   if (isOpen !== open) await summary.click();
+  await expect(summary.locator('..')).toHaveJSProperty('open', open);
 }
 
 async function refreshWorld(page: Page) {
@@ -166,12 +176,15 @@ test('level twelve village finishes its real queue after five hours offline', as
   const before = (await seeded.json()).data.villages[0];
   expect(before.progression.level).toBe(12);
   await page.goto('/');
+  await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
   await setVillageSettings(page);
   await expect(page.getByLabel('مستوى القرية', { exact: true })).toContainText('١٢');
   for (const [building, label] of [['hall', 'دار الحكم'], ['wall', 'السور'], ['warehouse', 'المخزن']]) {
     const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+    await setVillageSettings(page);
     await village.getByLabel('اختر مبنى من الخريطة').selectOption(building);
     const panel = page.getByRole('region', { name: `تفاصيل ${label}`, exact: true });
+    await expect(panel).toBeVisible();
     await panel.getByRole('button', { name: building === 'hall' ? 'طوّر المبنى' : 'أضف إلى قائمة البناء', exact: true }).click();
     await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   }
@@ -404,8 +417,17 @@ test('new master artwork, camera, real build lifecycle, and world navigation', a
   await setVillageSettings(page, false);
   await setQueues(page, false);
   await page.screenshot({ path: testInfo.outputPath('interactive-village.png'), fullPage: true });
-  await page.getByRole('button', { name: 'انتقل إلى خريطة العالم' }).click();
-  await expect(page).toHaveURL(/\/games\/kingdoms\/world-map\/\?worldId=browser-world&villageId=/);
+  if ((page.viewportSize()?.width ?? 1920) <= 1000) {
+    await page.getByRole('navigation', { name: 'تنقل المملكة', exact: true })
+      .getByRole('link', { name: 'انتقل إلى العالم', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: 'انتقل إلى خريطة العالم' }).click();
+  }
+  await expect(page).toHaveURL((url) =>
+    url.pathname.replace(/\/$/, '') === '/games/kingdoms/world-map' &&
+    url.searchParams.get('worldId') === 'browser-world' &&
+    url.searchParams.get('villageId') === 'v1',
+  );
   // Production navigates to the separate geographic route; this fixture renders the village route.
   await page.goBack();
   await expect(village).toBeVisible();
@@ -525,14 +547,22 @@ test('keyboard, drag and pinch preserve bounded world coordinates', async ({ pag
 
 test('main wall, embassy and mine clicks remain separate from gate and auxiliary regions', async ({
   page,
+  isMobile,
 }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  const scene = village.locator('[data-village-scene]');
+  await expect(scene).toHaveAttribute('data-pixi-ready', 'true');
   await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
-  await expectOverview(page);
+  const overviewZoom = await expectOverview(page);
   const read = await page.request.get('/api/kingdoms');
   const config = (await read.json()).data.config;
   for (const building of ['wall', 'embassy', 'mine']) {
+    if (isMobile && overviewZoom > 1 && building === 'mine') {
+      await village.getByRole('button', { name: 'تصغير القرية', exact: true }).click();
+      await expect.poll(async () => Number(await scene.getAttribute('data-zoom'))).toBeLessThan(overviewZoom);
+    }
     await revealBuilding(page, building);
     await clickBuilding(page, building);
     await expect(
@@ -635,6 +665,8 @@ test('readable resource cards and independent alpha production buildings use con
   expect(readableCards).toBe(true);
   for (const resource of ['wood', 'stone', 'iron', 'food', 'gold']) {
     const icon = resources.locator(`[data-resource="${resource}"] img`);
+    // The mobile resource row scrolls horizontally; bring each lazy image into view.
+    await icon.scrollIntoViewIfNeeded();
     await expect(icon).toBeVisible();
     await expect.poll(() => icon.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
   }
