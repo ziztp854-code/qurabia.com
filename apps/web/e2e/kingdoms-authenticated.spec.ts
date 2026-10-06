@@ -52,9 +52,15 @@ async function signIn(request: APIRequestContext, email: string) {
 async function selectWorld(page: Page, worldId: string) {
   const worlds = page.getByLabel('العالم والموسم', { exact: true });
   await worlds.waitFor({ state: 'attached' });
+  // The toolbar is initially visible while the world is loading, then collapses
+  // for a returning player. Wait for that state before deciding whether to open it.
+  await expect(page.getByRole('status').filter({ hasText: 'جارٍ تحميل عالم الممالك…' })).toBeHidden();
   if (!(await worlds.isVisible())) {
-    await page.getByRole('button', { name: 'إعدادات العالم والقرية', exact: true }).click();
+    const settings = page.getByRole('button', { name: 'إعدادات العالم والقرية', exact: true });
+    await settings.click();
+    await expect(settings).toHaveAttribute('aria-expanded', 'true');
   }
+  await expect(worlds).toBeVisible();
   await worlds.selectOption(worldId);
   await expect(worlds).toHaveValue(worldId);
 }
