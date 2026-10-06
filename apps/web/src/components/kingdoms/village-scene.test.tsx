@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
@@ -33,7 +33,18 @@ const levels = (overrides: Partial<Record<Building, number>>) =>
     ...overrides,
   }) as Village['buildings'];
 
-afterEach(cleanup);
+beforeAll(async () => {
+  await Promise.all([
+    import('./village/city-building-scene'),
+    import('./village/facility-scene-content'),
+    import('./village/palace-garden'),
+  ]);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('village scene layout', () => {
   it('places every building inside the artwork with a distinct touch target', () => {
@@ -111,6 +122,21 @@ describe('village effects', () => {
 });
 
 describe('village scene rendering', () => {
+  it('describes mounted archer training on the Living City stable hotspot only', () => {
+    const view = fixture();
+    const village = {
+      ...view.villages[0],
+      buildings: { ...view.villages[0].buildings, barracks: 2, stable: 2 },
+      training: { unit: 'mounted_archer' as const, count: 2, endsAt: now + 60000 },
+    };
+    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} />);
+
+    const stable = screen.getByRole('button', { name: /^الإسطبل، المستوى/ });
+    expect(stable).toHaveAccessibleDescription(/تدريب جارٍ/);
+    expect(stable).not.toHaveAccessibleName(/تدريب جارٍ/);
+    expect(screen.getByRole('button', { name: /^الثكنة/ })).not.toHaveAccessibleDescription(/تدريب جارٍ/);
+  });
+
   it('marks every building with its real state, construction and max level', () => {
     const view = fixture();
     const village = {
@@ -175,29 +201,33 @@ describe('village scene rendering', () => {
     expect(document.body.innerHTML).not.toContain('commanderId');
   });
 
-  it('keeps selected labels and accessible camera controls', () => {
+  it('keeps accessible camera controls in the overview and opens explicit building intent as an independent scene', async () => {
     const view = fixture();
     const { container } = render(
-      <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} initialBuilding="hall" />,
+      <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} />,
     );
     expect(screen.getByRole('button', { name: 'تكبير القرية' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'تصغير القرية' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'عرض القرية بالكامل' })).toBeInTheDocument();
     expect(container.querySelector('[data-village-scene]')).toHaveAttribute('aria-label', 'مشهد القرية التفاعلي، اسحب للتحريك وكبّر بعجلة الفأرة أو بإصبعين');
+    expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'إظهار أسماء المباني' }));
     expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'true');
-    expect(screen.getByRole('button', { name: /^دار الحكم/ })).toHaveAttribute('aria-pressed', 'true');
   });
 });
 
 describe('selected building card', () => {
-  it('shows the next-level cost without zero-cost resources and explains a busy queue', () => {
+  it('shows the next-level cost without zero-cost resources and explains a busy queue', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     const view = fixture();
     const village = {
       ...view.villages[0],
       build: { building: 'farm' as const, level: 1, endsAt: now + 60000 },
     };
-    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} initialBuilding="warehouse" />);
-    const card = screen.getByRole('region', { name: 'تفاصيل المخزن' });
+    await act(async () => {
+      render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} initialBuilding="warehouse" />);
+    });
+    const card = await screen.findByRole('region', { name: 'تفاصيل المخزن' }, { timeout: 3000 });
     const costs = within(card).getByRole('list', { name: 'تكلفة التطوير' });
     const expected = upgradeCost(view.config, 'warehouse', 0);
     expect(within(costs).getAllByRole('listitem')).toHaveLength(
@@ -205,19 +235,19 @@ describe('selected building card', () => {
     );
     expect(within(card).getByText('تُخصم التكلفة الآن ويبدأ التطوير بعد المشاريع السابقة، حتى وأنت خارج اللعبة.')).toBeInTheDocument();
     expect(
-      within(screen.getByRole('region', { name: 'قوائم التنفيذ' })).getByText(/مزارع الغذاء/),
+      within(document.querySelector<HTMLElement>('section[aria-label="قوائم التنفيذ"]')!).getByText(/مزارع الغذاء/),
     ).toBeInTheDocument();
     expect(within(card).getByRole('button', { name: 'أضف إلى قائمة البناء' })).toBeEnabled();
   });
 
-  it('reports the command outcome from the server snapshot', () => {
+  it('reports the command outcome from the server snapshot', async () => {
     const view = fixture();
     const send = vi.fn().mockResolvedValue(undefined);
     const village = view.villages[0];
     const { rerender } = render(
       <VillagePanel view={view} village={village} send={send} busy={false} initialBuilding="hall" />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'طوّر المبنى' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }));
     expect(send).toHaveBeenCalledWith({ type: 'build', villageId: village.id, building: 'hall' });
     const card = screen.getByRole('region', { name: 'تفاصيل دار الحكم' });
     rerender(<VillagePanel view={view} village={village} send={send} busy initialBuilding="hall" />);
@@ -253,6 +283,29 @@ describe('selected building card', () => {
 });
 
 describe('rally point hotspot', () => {
+  it('opens the dedicated stable for queued mounted archers and returns to the retained city', async () => {
+    const view = fixture();
+    const village = {
+      ...view.villages[0],
+      buildings: { ...view.villages[0].buildings, barracks: 2, stable: 2 },
+      training: { unit: 'mounted_archer' as const, count: 2, endsAt: now + 60000 },
+    };
+    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} initialBuilding="rally" />);
+
+    const council = await screen.findByRole('region', { name: 'مشهد مجلس الحرب' });
+    fireEvent.click(within(council).getByRole('button', { name: 'الذهاب إلى التدريب' }));
+    const stable = await screen.findByRole('region', { name: 'مشهد الإسطبل' });
+    expect(within(stable).getByLabelText('قائمة تدريب القرية')).toHaveTextContent(view.config.units.mounted_archer.name);
+    expect(within(stable).getByRole('button', { name: 'درّب الفرسان' })).toBeDisabled();
+    expect(screen.queryByRole('region', { name: 'مشهد مجلس الحرب' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'خريطة القرية' })).not.toBeInTheDocument();
+
+    fireEvent.click(within(stable).getByRole('button', { name: 'العودة إلى المدينة' }));
+    expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'مشهد الإسطبل' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^الإسطبل، المستوى/ })).toHaveAccessibleDescription(/تدريب جارٍ/);
+  });
+
   it('opens the military panel from pointer and keyboard without a second map', async () => {
     const user = userEvent.setup();
     vi.stubGlobal(
@@ -276,12 +329,13 @@ describe('rally point hotspot', () => {
         onCampaign={onCampaign}
       />,
     );
-    const hotspot = screen.getByRole('button', { name: 'نقطة تجمع الجيوش، مركز القيادة العسكرية' });
+    const hotspot = screen.getByRole('button', { name: 'مجلس الحرب' });
     expect(hotspot).toHaveAttribute('data-rally-point', 'true');
     hotspot.focus();
     expect(hotspot).toHaveFocus();
     await user.keyboard('{Enter}');
-    expect(screen.getByRole('region', { name: 'نقطة تجمع الجيوش' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'نقطة تجمع الجيوش' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'مشهد مجلس الحرب' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'إرسال جيش' }));
     expect(onCampaign).toHaveBeenCalledWith('attack');
     expect(screen.queryByTestId('unified-map')).not.toBeInTheDocument();

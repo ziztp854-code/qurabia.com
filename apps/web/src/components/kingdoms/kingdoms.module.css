@@ -1885,3 +1885,54 @@
   .mobileNavigation button,
   .mobileNavigation a { transition: none; }
 }
+
+/* The city keeps its vertical room when a phone turns sideways. */
+.shell[data-village-stage='live']:has([data-city-composition]) .hud {
+  position: relative;
+  inset: auto;
+}
+@media (min-width: 2200px) and (min-height: 1200px) {
+  .shell[data-village-stage='live']:has([data-city-composition]) {
+    max-inline-size: 1698px;
+    block-size: 1120px;
+    max-block-size: 1120px;
+    margin-inline: auto;
+    margin-block: max(0px, calc((100dvh - 1120px) / 2));
+  }
+  .shell[data-village-stage='live']:has([data-city-composition]) .mobileNavigation {
+    position: absolute;
+  }
+  .playing.villageView .hud,
+  .playing.villageView .seasonBar { max-inline-size: 1698px; margin-inline: auto; }
+}
+@media (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
+  .playing.villageView .hud {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    min-block-size: 52px;
+  }
+  .playing.villageView .hero { display: none; }
+  .playing.villageView .resources {
+    display: flex;
+    flex: 1;
+    min-inline-size: 0;
+    gap: var(--space-1);
+    overflow-x: auto;
+    border: 0;
+  }
+  .playing.villageView .resource {
+    flex: 1 0 94px;
+    min-inline-size: 94px;
+    padding: var(--space-1) var(--space-2);
+  }
+  .playing.villageView .hudActions {
+    position: static;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .playing.villageView .seasonBar { margin-block: var(--space-1); }
+}

@@ -55,6 +55,7 @@ import { VillageCamera } from './village-camera';
 import { bindVillageInput } from './village-input';
 import type { VillageRenderer } from './village-renderer';
 import styles from './village-canvas.module.css';
+import { CityHubCanvas } from './city-hub-canvas';
 
 const icons = {
   hall: Castle,
@@ -173,8 +174,8 @@ function deviceQuality(props: VillageCanvasProps, width: number, height?: number
   });
 }
 
-export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
-  function VillageCanvas(props, ref) {
+const ProductionVillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
+  function ProductionVillageCanvas(props, ref) {
     const stage = useRef<HTMLDivElement>(null);
     const terrain = useRef<HTMLDivElement>(null);
     const world = useRef<HTMLDivElement>(null);
@@ -663,3 +664,7 @@ export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     );
   },
 );
+
+export const VillageCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(function VillageCanvas(props, ref) {
+  return props.dedicatedNavigation ? <CityHubCanvas {...props} ref={ref} /> : <ProductionVillageCanvas {...props} ref={ref} />;
+});

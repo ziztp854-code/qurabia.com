@@ -155,14 +155,21 @@ test('administrator opens a world; a signed-in player builds and trains with per
       ? route.continue()
       : route.abort();
   });
-  await page.goto('/auth/sign-in/?next=%2Fgames%2Fkingdoms');
+  const signInPage = await page.goto('/auth/sign-in/?next=%2Fgames%2Fkingdoms');
+  const contentSecurityPolicy = signInPage?.headers()['content-security-policy'];
+  expect(contentSecurityPolicy).toContain('script-src');
+  expect(contentSecurityPolicy).not.toContain("'unsafe-eval'");
   await page.getByLabel('البريد الإلكتروني').fill(playerEmail);
   await page.locator('input[name="password"]').fill(password);
   await page.getByRole('button', { name: 'دخول بالبريد' }).click();
   await expect(page).toHaveURL(/\/games\/kingdoms\/?$/);
   await selectWorld(page, worldId);
   await page.getByLabel('اسم المملكة').fill('مملكة الرحلة الحقيقية');
-  await page.getByRole('button', { name: 'أسّس مملكتي' }).click();
+  const [founded] = await Promise.all([
+    page.waitForResponse((response) => response.request().method() === 'POST' && (response.status() < 300 || response.status() >= 400) && /^\/api\/kingdoms\/?$/.test(new URL(response.url()).pathname)),
+    page.getByRole('button', { name: 'أسّس مملكتي' }).click(),
+  ]);
+  expect(founded.ok(), await founded.text()).toBeTruthy();
   await expect(page.getByRole('region', { name: 'موارد القرية' })).toBeVisible();
   const read = async () => {
     const result = await page.request.get(`/api/kingdoms?worldId=${worldId}`);
@@ -189,9 +196,19 @@ test('administrator opens a world; a signed-in player builds and trains with per
     )
     .toBe(true);
   await expect(villageMap.locator('[data-village-scene]')).toHaveAttribute('data-camera-x', /\d/);
+  const cityStage = villageMap.locator('[data-village-scene]');
+  await expect(cityStage).toHaveAttribute('data-city-composition', /^(desktop|portrait)$/);
+  await expect(cityStage).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
+  expect(await cityStage.locator('picture img').evaluate((image: HTMLImageElement) => image.currentSrc)).toContain('/city-hub/overview-');
   await expect(villageMap.getByRole('button', { name: /^الثكنة، لم يُبنَ$/ })).toHaveCount(1);
   await expect(villageMap.getByRole('button', { name: /^الإسطبل، المستوى / })).toHaveCount(1);
-  await villageMap.locator('[data-building="barracks"]').click();
+  const barracksBounds = await villageMap.locator('[data-building="barracks"]').boundingBox();
+  expect(barracksBounds).not.toBeNull();
+  const barracksPoint = { x: barracksBounds!.x + barracksBounds!.width / 2, y: barracksBounds!.y + barracksBounds!.height / 2 };
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, barracksPoint)).toBe('CANVAS');
+  if (testInfo.project.use.hasTouch) await page.touchscreen.tap(barracksPoint.x, barracksPoint.y);
+  else await page.mouse.click(barracksPoint.x, barracksPoint.y);
+  await expect(page.locator('[data-city-scene="barracks"]')).toHaveAttribute('data-phase', 'active');
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({
     path: testInfo.outputPath('kingdoms-authenticated-village.png'),

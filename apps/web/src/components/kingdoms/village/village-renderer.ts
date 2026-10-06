@@ -1,4 +1,6 @@
-import { Application, Assets, Container, Graphics, type AnimatedSprite, type Texture } from 'pixi.js';
+// Replace generated shader/uniform functions with static implementations for production CSP.
+import 'pixi.js/unsafe-eval';
+import { Application, Assets, Container, Graphics, Rectangle, type FederatedPointerEvent, type AnimatedSprite, type Texture } from 'pixi.js';
 import {
   resolveVillageAssetSrc,
   villageAssetFidelity,
@@ -12,9 +14,13 @@ import type {
   CameraSnapshot,
   VillageCanvasProps,
   VillageSelection,
+  VillageTarget,
   WorldPoint,
   WorldSize,
 } from '@/lib/kingdoms/village/types';
+import { getCityComposition, cityGardenPlacements, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
+import { gardenAsset } from '@/lib/kingdoms/palace-garden';
+import { createCityLifeLayer, cityLifeAssets } from './city-life-layer';
 import { buildingKeys } from '@/lib/kingdoms/types';
 import {
   createArtworkTextureCache,
@@ -34,6 +40,7 @@ export type VillageRenderer = {
   camera: (snapshot: CameraSnapshot) => void;
   update: (props: VillageCanvasProps, quality: QualitySettings) => void;
   hover: (building: VillageSelection | null) => void;
+  targetHover?: (target: VillageTarget | null) => void;
   setVisible: (visible: boolean) => void;
   destroy: () => void;
 };
@@ -43,7 +50,9 @@ export async function createVillageRenderer(
   initial: VillageCanvasProps,
   quality: QualitySettings,
   colors: SceneColors,
+  interaction?: { onSelect: (target: VillageTarget) => void; onHover?: (target: VillageTarget | null) => void },
 ): Promise<VillageRenderer> {
+  if (initial.cityComposition) return createCityHubRenderer(canvas, initial, quality, colors, interaction);
   const app = new Application();
   let viewport: WorldSize = {
     width: canvas.parentElement?.clientWidth || 768,
@@ -299,6 +308,181 @@ export async function createVillageRenderer(
       artwork.destroy();
       approved.clear();
       pending.clear();
+    },
+  };
+}
+
+async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCanvasProps,quality:QualitySettings,colors:SceneColors,interaction?:{onSelect:(target:VillageTarget)=>void;onHover?:(target:VillageTarget|null)=>void}):Promise<VillageRenderer> {
+  const app=new Application();
+  let props=initial, settings=quality, disposed=false, visible=initial.active!==false, elapsed=0;
+  let viewport={width:canvas.parentElement?.clientWidth||768,height:canvas.parentElement?.clientHeight||512};
+  let dpr=settings.dpr;
+  try { await app.init({canvas,width:viewport.width,height:viewport.height,resolution:dpr,backgroundAlpha:0,antialias:true,autoStart:false,sharedTicker:false,powerPreference:quality.mode==='low'?'low-power':'high-performance'}); }
+  catch(error) { if(app.renderer)app.destroy(false,{children:true});throw error; }
+  const world=new Container();
+  world.label='city-hub-world';
+  app.stage.addChild(world);
+  const approved=new Map<string,Texture>();
+  const pending=new Map<string,Promise<Texture>>();
+  const highlight=new Graphics();
+  highlight.label='city-landmark-highlight';
+  const hits=new Container();
+  hits.label='city-landmark-interactions';
+  let hovered:VillageTarget|null=null;
+  let composition=initial.cityComposition as CityCompositionId;
+  let life:ReturnType<typeof createCityLifeLayer>|undefined;
+  let hitScale=1;
+  type Gesture = { x:number; y:number; maximum:number; cancelled:boolean; ended:boolean };
+  const gestures=new Map<number,Gesture>();
+  const beginGesture=(id:number,x:number,y:number)=>{
+    if(gestures.has(id))return;
+    if(gestures.size>=10){gestures.forEach(gesture=>{gesture.cancelled=true;});return;}
+    gestures.set(id,{x,y,maximum:0,cancelled:!visible||disposed,ended:false});
+    if(gestures.size>1)gestures.forEach(gesture=>{gesture.cancelled=true;});
+  };
+  const moveGesture=(id:number,x:number,y:number)=>{
+    const gesture=gestures.get(id);
+    if(!gesture||gesture.ended)return;
+    gesture.maximum=Math.max(gesture.maximum,Math.hypot(x-gesture.x,y-gesture.y));
+    if(gesture.maximum>6)gesture.cancelled=true;
+  };
+  const eventPoint=(event:FederatedPointerEvent)=>{
+    const native=event.nativeEvent;
+    return native && 'clientX' in native ? {x:native.clientX,y:native.clientY} : event.global;
+  };
+  const nativeDown=(event:PointerEvent)=>{
+    if(event.button!==0&&event.pointerType!=='touch')return;
+    if(event.target===canvas||gestures.size)beginGesture(event.pointerId,event.clientX,event.clientY);
+  };
+  const nativeMove=(event:PointerEvent)=>moveGesture(event.pointerId,event.clientX,event.clientY);
+  const nativeEnd=(event:PointerEvent)=>{
+    moveGesture(event.pointerId,event.clientX,event.clientY);
+    const gesture=gestures.get(event.pointerId);
+    if(!gesture)return;
+    gesture.ended=true;
+    if(event.type==='pointercancel'||event.target!==canvas)gesture.cancelled=true;
+    // Pixi emits pointertap synchronously during pointerup; remove abandoned gestures afterwards.
+    queueMicrotask(()=>{if(gestures.get(event.pointerId)===gesture)gestures.delete(event.pointerId);});
+  };
+  document.addEventListener('pointerdown',nativeDown,true);
+  document.addEventListener('pointermove',nativeMove,true);
+  document.addEventListener('pointerup',nativeEnd,true);
+  document.addEventListener('pointercancel',nativeEnd,true);
+  const city=()=>getCityComposition(composition==='portrait'?{width:900,height:1600}:{width:1600,height:900});
+  const paint=()=>{
+    highlight.clear();
+    const landmark=city().landmarks.find(item=>item.target===hovered);
+    if(landmark)highlight.roundRect(landmark.rect.x,landmark.rect.y,landmark.rect.width,landmark.rect.height,8)
+      .fill({color:colors.gold,alpha:.055}).stroke({color:colors.gold,alpha:.75,width:1.7});
+  };
+  const rebuildLife=()=>{
+    life?.destroy();
+    life=createCityLifeLayer(city(),approved,settings,colors,cityGardenPlacements(props.village));
+    world.addChildAt(life.layer,0);
+    life.update(elapsed,false,props.debug?.npcs!==false);
+    canvas.dataset.cityActors=String(life.layer.children.filter(child=>child.label.startsWith('city-actor')).length);
+  };
+  const rebuild=()=>{
+    gestures.clear();
+    hits.removeChildren().forEach(child=>child.destroy());
+    world.addChild(hits,highlight);
+    rebuildLife();
+    for(const landmark of city().landmarks) {
+      if(!landmark.target)continue;
+      const hit=new Container();
+      hit.label=`city-hit-${landmark.id}`;
+      hit.eventMode='static';
+      hit.cursor='pointer';
+      const hitArea=new Rectangle(landmark.rect.x,landmark.rect.y,landmark.rect.width,landmark.rect.height);
+      hit.hitArea=hitArea;
+      hit.on('city-camera-scale',(scale:number)=>{
+        const min=44/Math.max(.001,scale),w=Math.max(min,landmark.rect.width),h=Math.max(min,landmark.rect.height);
+        const size=city().world;
+        hitArea.width=Math.min(size.width,w);hitArea.height=Math.min(size.height,h);
+        hitArea.x=Math.max(0,Math.min(size.width-hitArea.width,landmark.rect.x+landmark.rect.width/2-hitArea.width/2));
+        hitArea.y=Math.max(0,Math.min(size.height-hitArea.height,landmark.rect.y+landmark.rect.height/2-hitArea.height/2));
+      });
+      hit.emit('city-camera-scale',hitScale);
+      hit.on('pointerdown',event=>{const point=eventPoint(event);beginGesture(event.pointerId,point.x,point.y);});
+      hit.on('globalpointermove',event=>{const point=eventPoint(event);moveGesture(event.pointerId,point.x,point.y);});
+      hit.on('pointerupoutside',event=>{const gesture=gestures.get(event.pointerId);if(gesture)gesture.cancelled=true;});
+      hit.on('pointercancel',event=>{const gesture=gestures.get(event.pointerId);if(gesture)gesture.cancelled=true;});
+      hit.on('pointertap',event=>{
+        const point=eventPoint(event);
+        moveGesture(event.pointerId,point.x,point.y);
+        const gesture=gestures.get(event.pointerId);
+        gestures.delete(event.pointerId);
+        if(!visible||disposed||!gesture||gesture.cancelled||gesture.maximum>6)return;
+        interaction?.onSelect(landmark.target!);
+      });
+      hit.on('pointerover',()=>{hovered=landmark.target!;paint();interaction?.onHover?.(hovered);});
+      hit.on('pointerout',()=>{hovered=null;paint();interaction?.onHover?.(null);});
+      hits.addChild(hit);
+    }
+    paint();
+    canvas.dataset.cityInteractions=String(hits.children.length);
+  };
+  const animate=()=>!props.reducedMotion&&props.debug?.animations!==false;
+  const sync=()=>{app.ticker.maxFPS=settings.fps;if(visible&&animate())app.ticker.start();else app.ticker.stop();};
+  const render=()=>{if(!disposed)app.render();};
+  const loadLifeAssets=()=>{
+    const sources=[...new Set([
+      ...city().routes.slice(0,Math.max(0,settings.npcLimit)).map(route=>cityLifeAssets[route.kind]),
+      ...(settings.environment?[cityLifeAssets.palmA,cityLifeAssets.palmB,cityLifeAssets.flags]:[]),
+      ...cityGardenPlacements(props.village).map(item=>gardenAsset(item.itemId,{thumbnail:true})),
+    ])];
+    void Promise.all(sources.map(async src=>{
+      if(approved.has(src))return false;
+      let loading=pending.get(src);
+      if(!loading){loading=Assets.load<Texture>(src);pending.set(src,loading);}
+      try {
+        const texture=await loading;
+        if(disposed)return false;
+        approved.set(src,texture);
+        return true;
+      } catch {return false;} finally {if(pending.get(src)===loading)pending.delete(src);}
+    })).then(changed=>{
+      // Read current props/profile/quality, never the snapshot that started the asset request.
+      if(!disposed&&changed.some(Boolean)){rebuildLife();render();}
+    });
+  };
+  rebuild();
+  loadLifeAssets();
+  app.ticker.add(ticker=>{
+    if(disposed||!visible||!animate())return;
+    elapsed+=Math.min(100,ticker.deltaMS);
+    life?.update(elapsed,true,props.debug?.npcs!==false);
+  });
+  sync();
+  return {
+    camera(snapshot){
+      if(disposed)return;
+      if(viewport.width!==snapshot.viewport.width||viewport.height!==snapshot.viewport.height||dpr!==settings.dpr) {
+        app.renderer.resize(snapshot.viewport.width,snapshot.viewport.height,settings.dpr);viewport=snapshot.viewport;dpr=settings.dpr;
+      }
+      world.scale.set(snapshot.scale);world.position.set(snapshot.viewport.width/2-snapshot.x*snapshot.scale,snapshot.viewport.height/2-snapshot.y*snapshot.scale);render();
+      hitScale=snapshot.scale;
+      hits.children.forEach(hit=>hit.emit('city-camera-scale',hitScale));
+    },
+    update(next,nextSettings){
+      if(disposed)return;
+      const gardenChanged=JSON.stringify(cityGardenPlacements(next.village))!==JSON.stringify(cityGardenPlacements(props.village));
+      const changed=next.cityComposition!==composition||nextSettings.npcLimit!==settings.npcLimit||nextSettings.environment!==settings.environment||gardenChanged;
+      props=next;settings=nextSettings;composition=next.cityComposition??composition;
+      if(changed)rebuild();
+      if(changed)loadLifeAssets();
+      life?.update(elapsed,animate(),props.debug?.npcs!==false);sync();render();
+    },
+    hover(target){hovered=target;paint();render();},
+    targetHover(target){hovered=target;paint();render();},
+    setVisible(next){visible=next;if(!next)gestures.forEach(gesture=>{gesture.cancelled=true;});sync();},
+    destroy(){
+      if(disposed)return;
+      disposed=true;app.ticker.stop();life?.destroy();app.destroy(false,{children:true});approved.clear();pending.clear();gestures.clear();
+      document.removeEventListener('pointerdown',nativeDown,true);
+      document.removeEventListener('pointermove',nativeMove,true);
+      document.removeEventListener('pointerup',nativeEnd,true);
+      document.removeEventListener('pointercancel',nativeEnd,true);
     },
   };
 }

@@ -1,0 +1,373 @@
+.stage {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  block-size: min(76dvh, 900px);
+  min-block-size: 360px;
+  overflow: hidden;
+  background: var(--background);
+  touch-action: none;
+  direction: ltr;
+  cursor: grab;
+  isolation: isolate;
+  --camera-scale: 0.5;
+}
+.stage[data-city-composition] {
+  inline-size: min(100%, 1672px, calc(var(--city-available-height, calc(100dvh - 240px)) * 16 / 9));
+  block-size: auto;
+  min-block-size: 0;
+  aspect-ratio: 1600 / 900;
+  margin-inline: auto;
+  background: var(--kingdoms-ui-background);
+}
+.stage[data-city-composition='portrait'] {
+  inline-size: min(100%, 941px, calc(var(--city-available-height, calc(100dvh - 240px)) * 9 / 16));
+  aspect-ratio: 900 / 1600;
+}
+.stage[data-city-composition][data-pixi-ready='true'] .canvas {
+  z-index: 3;
+  pointer-events: auto;
+}
+.stage[data-city-composition][data-pixi-ready='true'] .world {
+  z-index: 4;
+  pointer-events: none;
+}
+.stage[data-city-composition][data-pixi-ready='true'] .hotspot { pointer-events: none; }
+.stage[data-city-composition] .hotspot:hover { background: transparent; box-shadow: none; }
+.decorativeLandmark { position: absolute; pointer-events: none; }
+.stage[data-camera-state='BUILDING_FOCUS'] .terrain { filter: brightness(1.035); }
+.stage[data-dragging='true'] {
+  cursor: grabbing;
+}
+.stage:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -3px;
+}
+.canvas {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.terrain,
+.world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.terrain {
+  z-index: 0;
+  pointer-events: none;
+}
+.world {
+  z-index: 2;
+}
+.artwork {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+.hotspots {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.hotspot {
+  position: absolute;
+  min-width: calc(44px / var(--camera-scale));
+  min-height: calc(44px / var(--camera-scale));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  direction: rtl;
+  border-radius: 22px;
+}
+.hotspot:hover {
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.hotspot:focus-visible {
+  outline: calc(2px / var(--camera-scale)) solid var(--gold);
+  outline-offset: calc(2px / var(--camera-scale));
+}
+.hotspot[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent);
+}
+.label {
+  position: absolute;
+  left: calc(50% + var(--label-shift-x, 0px));
+  top: calc(20% + var(--label-shift-y, 0px));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 112px;
+  height: 44px;
+  padding: 4px 7px;
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kingdoms-ui-surface) 96%, transparent);
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--background) 60%, transparent);
+  transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center bottom;
+  visibility: hidden;
+  pointer-events: none;
+}
+.label small {
+  display: block;
+  color: var(--gold);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.label > span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.label > svg:last-child:not(:first-child) { display: none; }
+.stage[data-labels='true'] .label,
+.hotspot:hover .label,
+.hotspot:focus-visible .label,
+.hotspot[aria-pressed='true'] .label {
+  visibility: visible;
+}
+.hotspot[data-label-hidden='true'] .label { visibility: hidden; }
+.stage[data-city-composition] .label {
+  width: auto;
+  min-width: 78px;
+  max-width: 118px;
+  height: auto;
+  min-height: 32px;
+  padding: 4px 7px;
+  font-size: 11px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kingdoms-ui-background) 91%, transparent);
+}
+.stage[data-city-composition] .label small { font-size: 10px; }
+.stage[data-city-composition] .label > svg { display: none; }
+.stage[data-city-composition] .hotspot[data-label-active='true'] .label,
+.stage[data-city-composition] .hotspot:focus-visible .label { visibility: visible; }
+.marker {
+  display: none;
+  position: absolute;
+  top: 12%;
+  right: 12%;
+  inline-size: 20px;
+  block-size: 20px;
+  place-items: center;
+  background: var(--surface-strong);
+  color: var(--gold);
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  transform: scale(calc(1 / var(--camera-scale)));
+}
+.hotspot[data-state='construction'] .marker { display: grid; }
+.hotspot[data-state='construction'] .marker {
+  inline-size: 24px;
+  block-size: 24px;
+}
+.region {
+  z-index: 3;
+}
+.region .label {
+  top: calc(20% + var(--label-shift-y, 0px));
+}
+.region:hover {
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+.construction {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  width: 190px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-size: 11px;
+  direction: rtl;
+  transform: translate(-50%, 4px) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center top;
+  pointer-events: none;
+}
+.construction small {
+  display: block;
+  font-size: 9px;
+  color: var(--foreground);
+}
+.construction bdi {
+  font-variant-numeric: tabular-nums;
+  margin-inline-start: auto;
+}
+.progress {
+  inline-size: 100%;
+  block-size: 3px;
+  background: var(--background);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  block-size: 100%;
+  background: var(--gold);
+}
+.loading,
+.error {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  color: var(--foreground);
+  direction: rtl;
+}
+.error button {
+  margin-block-start: 12px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-gold);
+  color: var(--gold);
+  cursor: pointer;
+}
+.coordinates {
+  position: absolute;
+  z-index: 7;
+  inset-inline-start: 8px;
+  bottom: 8px;
+  padding: 6px;
+  color: var(--gold);
+  background: var(--surface-strong);
+  font-size: 10px;
+  pointer-events: none;
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.stage[data-debug-hitboxes='true'] .hotspot {
+  outline: 1px dashed var(--foreground);
+}
+@media (max-width: 700px) {
+  .stage {
+    block-size: 62dvh;
+    min-block-size: 360px;
+  }
+  .label {
+    font-size: 12px;
+  }
+  .stage[data-city-composition] { block-size: auto; min-block-size: 0; }
+}
+@media (orientation: portrait) {
+  .stage[data-city-composition] {
+    inline-size: min(100%, 941px, calc(var(--city-available-height, calc(100dvh - 240px)) * 9 / 16));
+    aspect-ratio: 900 / 1600;
+  }
+}
+@media (orientation: landscape) {
+  .stage[data-city-composition] {
+    inline-size: min(100%, 1672px, calc(var(--city-available-height, calc(100dvh - 240px)) * 16 / 9));
+    aspect-ratio: 1600 / 900;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .terrain,
+  .world {
+    will-change: auto;
+  }
+}
+@media (max-width: 1000px) {
+  .stage[data-focused='true'] {
+    block-size: max(160px, calc(56dvh - 92px - var(--stage-top, 190px)));
+    min-block-size: 160px;
+  }
+}
+
+.rallyBadge {
+  position: absolute;
+  inset-block-start: 8%;
+  inset-inline-end: 8%;
+  z-index: 4;
+  min-inline-size: 1.4rem;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: var(--surface-strong);
+  color: var(--gold);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  pointer-events: none;
+  transform: scale(calc(1 / var(--camera-scale)));
+  transform-origin: top right;
+}
+.rallyBadge[data-severity='CRITICAL'],
+.rallyBadge[data-severity='DANGER'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.rallyBadge[data-severity='WARNING'] {
+  color: var(--warning, var(--gold));
+}
+@keyframes flagSway {
+  from { transform: scale(calc(1 / var(--camera-scale))) rotate(-5deg); }
+  to { transform: scale(calc(1 / var(--camera-scale))) rotate(5deg); }
+}
+.roads {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+.roads path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 18 14;
+  opacity: 0.55;
+}
+.hotspot[data-threat] { outline: 2px solid var(--danger); }
+
+@media (prefers-reduced-motion: reduce) { .rallyMark { animation: none; } }
+
+.threatMarker {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--danger);
+  border-radius: 50%;
+  background: var(--kingdoms-ui-surface);
+  color: var(--danger);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(calc(1 / var(--camera-scale)));
+}
+
+.resourceArtwork {
+  position: absolute;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+}

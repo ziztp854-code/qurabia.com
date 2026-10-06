@@ -1,0 +1,145 @@
+.scene {
+  --garden-reserve: 0px;
+  --background: var(--kingdoms-ui-background);
+  --surface: var(--kingdoms-ui-surface);
+  --surface-strong: var(--kingdoms-ui-surface-strong);
+  --foreground: var(--kingdoms-ui-foreground);
+  --muted-foreground: var(--kingdoms-ui-muted);
+  --gold: var(--kingdoms-ui-gold);
+  --primary: var(--kingdoms-ui-gold);
+  --primary-foreground: var(--kingdoms-ui-background);
+  --border: var(--kingdoms-ui-border);
+  --border-gold: var(--kingdoms-ui-border-gold);
+  --danger: var(--kingdoms-ui-danger);
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(300px, 24rem) minmax(0, 1672px);
+  grid-template-rows: auto minmax(0, 1fr);
+  justify-content: center;
+  gap: var(--space-4);
+  padding: max(var(--space-4), env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) max(var(--space-4), env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(ellipse at 35% 45%, color-mix(in srgb, var(--kingdoms-ui-surface-strong) 76%, var(--kingdoms-ui-background)), var(--kingdoms-ui-background) 78%);
+  color: var(--foreground);
+  animation: arrive 240ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)) both;
+}
+.scene[data-phase='exiting'] { animation: depart 160ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)) both; pointer-events: none; }
+.scene[data-scene='palace'] { --garden-reserve: 76px; }
+.scene[data-scene='palace']:has(:global([data-testid='palace-garden']) select) { --garden-reserve: 290px; }
+.header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+}
+.heading { flex: 1; min-inline-size: 0; }
+.eyebrow { margin: 0 0 var(--space-1); color: var(--gold); font-size: 0.75rem; }
+.title { margin: 0; font-size: clamp(1.25rem, 2vw, 1.9rem); font-weight: 700; line-height: 1.4; text-wrap: balance; }
+.backButton, .retryButton, .manageButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.backButton { flex-shrink: 0; }
+.manageButton { display: none; flex-shrink: 0; }
+.backButton:disabled { opacity: 0.6; }
+.backButton:focus-visible, .retryButton:focus-visible, .manageButton:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.artwork {
+  position: relative;
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  inline-size: min(100%, 1672px, calc((100dvh - 8rem - var(--garden-reserve)) * var(--scene-aspect, 1.777)));
+  aspect-ratio: var(--scene-aspect, 1672 / 941);
+  margin-block-end: var(--garden-reserve);
+  min-inline-size: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 20%, transparent), 0 var(--space-4) var(--space-12) color-mix(in srgb, var(--kingdoms-ui-background) 80%, transparent);
+}
+.artwork picture { display: block; inline-size: 100%; block-size: 100%; }
+.image { display: block; inline-size: 100%; block-size: 100%; object-fit: contain; user-select: none; }
+.image { opacity: 0; transition: opacity 180ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); }
+.scene[data-phase='active'] .image { opacity: 1; }
+.veil { position: absolute; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 30% 45%, color-mix(in srgb, var(--gold) 6%, transparent), transparent 70%); }
+.content {
+  grid-column: 1;
+  grid-row: 2;
+  min-inline-size: 0;
+  min-block-size: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-margin-block-start: 7rem;
+  padding: var(--space-3) var(--space-4);
+  border-inline-end: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--kingdoms-ui-surface) 80%, transparent), transparent);
+}
+.content > * { min-inline-size: 0; }
+.content :global([data-city-resources]) { margin-block-end: var(--space-3); padding-block-end: var(--space-3); border-block-end: 1px solid var(--border); color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.9; }
+.content > section:not(:global([data-city-resources])),
+.content > div > section,
+.content > div > div > section { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.content > div > section + section,
+.content > div > div > section + section { padding-block-start: var(--space-4); border-block-start: 1px solid var(--border); }
+.content button, .content input, .content select { min-block-size: 44px; }
+.content :global([data-city-feedback]) { padding: var(--space-3); margin-block-end: var(--space-3); border: 1px solid var(--border-gold); border-radius: var(--radius-md); background: var(--surface-strong); }
+.feedback, .feedbackError { padding: var(--space-3); margin-block-end: var(--space-3); border: 1px solid var(--border-gold); border-radius: var(--radius-md); background: var(--surface-strong); }
+.feedbackError { color: var(--danger); }
+.status { position: absolute; z-index: 2; inset: 40% 25% auto; display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--surface-strong); border: 1px solid var(--border-gold); border-radius: var(--radius-md); text-align: center; }
+@media (hover: hover) { .backButton:hover:enabled, .retryButton:hover, .manageButton:hover { color: var(--gold); background: var(--surface-strong); } }
+@media (min-width: 2100px) and (min-height: 1200px) {
+  .scene { grid-template-rows: auto minmax(0, calc(941px + var(--garden-reserve))); align-content: center; gap: var(--space-6); }
+  .artwork { align-self: start; }
+}
+@media (max-width: 1000px) {
+  .scene { grid-template-columns: minmax(280px, 34%) minmax(0, 1fr); gap: var(--space-3); padding-inline: max(var(--space-2), env(safe-area-inset-right, 0px)) max(var(--space-2), env(safe-area-inset-left, 0px)); }
+}
+@media (max-width: 700px) {
+  .scene { justify-content: flex-start; }
+  .scene { display: flex; flex-direction: column; gap: var(--space-3); overflow-y: auto; overscroll-behavior: contain; }
+  .header { flex-shrink: 0; gap: var(--space-2); }
+  .header { order: -1; position: sticky; inset-block-start: 0; background: var(--kingdoms-ui-background); }
+  .artwork { order: 0; }
+  .content { order: 1; }
+  .eyebrow { font-size: 0.75rem; }
+  .backButton { padding-inline: var(--space-2); font-size: 0.75rem; }
+  .manageButton { display: inline-flex; padding-inline: var(--space-2); font-size: 0.75rem; }
+  .title { font-size: 1.1rem; }
+  .artwork { flex: 0 0 auto; inline-size: 100%; max-inline-size: none; margin-inline: auto; }
+  .scene[data-scene='palace']:has(:global([data-testid='palace-garden']) select) { --garden-reserve: 310px; }
+  .content { flex: 1 0 250px; min-block-size: 250px; overflow-y: visible; scrollbar-gutter: auto; padding: var(--space-4) var(--space-2); border-inline-end: 0; border-block-start: 1px solid color-mix(in srgb, var(--gold) 22%, transparent); }
+  .status { inset-inline: var(--space-4); inset-block-start: 25%; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .header { position: sticky; inset-block-start: 0; background: var(--kingdoms-ui-background); }
+  .scene { display: grid; grid-template-columns: minmax(260px, 38%) minmax(0, 1fr); gap: var(--space-2); padding-block: var(--space-2); overflow-y: auto; }
+  .header { padding-block-end: var(--space-2); }
+  .eyebrow { display: none; }
+  .artwork { inline-size: 100%; max-inline-size: 1672px; align-self: start; }
+  .scene[data-scene='palace']:has(:global([data-testid='palace-garden']) select) .artwork { margin-block-end: 310px; }
+}
+@media (prefers-reduced-motion: reduce) { .scene, .scene[data-phase='exiting'] { animation: none; } .image { transition: none; } }
+@keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes depart { from { opacity: 1; } to { opacity: 0; } }

@@ -1,19 +1,22 @@
 'use client';
 
 import { Castle, Flag, Hammer, Map, ScrollText, Shield, Swords } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { trainingBuilding, trainingDurationMs } from '@/lib/kingdoms/training';
 import { resourceKeys, unitKeys, type Resources, type Unit } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
-import { BuildingPanel, type VillageNavigation } from './building-panel';
+import { type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
 import { ConstructionQueue } from './village/construction-queue';
-import { StablePanel } from './village/stable-panel';
-import { RallyPanel, type RallyMission } from './village/rally-panel';
+import { type RallyMission } from './village/rally-panel';
 import { CommanderPanel } from './commander-panel';
-import { VillageDetailSheet } from './village/village-detail-sheet';
+import { VillageIncomingAlert } from './incoming-alert';
+import { citySceneForBuilding, prefetchCityScene, type CitySceneKey } from './village/city-scenes';
+const CityBuildingScene = lazy(() => import('./village/city-building-scene').then((module) => ({ default: module.CityBuildingScene })));
+const FacilitySceneContent = lazy(() => import('./village/facility-scene-content').then((module) => ({ default: module.FacilitySceneContent })));
+const PalaceGarden = lazy(() => import('./village/palace-garden').then((module) => ({ default: module.PalaceGarden })));
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
 import villageStyles from './village-panel.module.css';
@@ -40,6 +43,8 @@ export function VillagePanel({
   onRefresh,
   onCampaign,
   hideMobileNavigation = false,
+  commandError = '',
+  commandNotice = '',
 }: GameProps & {
   initialBuilding?: VillageSelection | null;
   onNavigate?: (tab: VillageNavigation) => void;
@@ -47,8 +52,11 @@ export function VillagePanel({
   onRefresh?: () => void;
   onCampaign?: (mission: RallyMission) => void;
   hideMobileNavigation?: boolean;
+  commandError?: string;
+  commandNotice?: string;
 }) {
-  const [selected, setSelected] = useState<VillageSelection | null>(initialBuilding);
+  const [selectedScene, setSelectedScene] = useState<CitySceneKey | null>(initialBuilding ? citySceneForBuilding(initialBuilding) : null);
+  const selected = selectedScene === 'palace' ? 'hall' : selectedScene === 'war-council' ? 'rally' : selectedScene;
   const returnFocus = useRef<HTMLElement | null>(null);
   const pendingBuilds =
     village.constructionQueue?.filter(
@@ -57,75 +65,59 @@ export function VillagePanel({
   const pendingJobs = (pendingBuilds || (village.build ? 1 : 0)) + (village.training ? 1 : 0);
   const select = (building: VillageSelection) => {
     returnFocus.current = document.activeElement as HTMLElement | null;
-    setSelected(building);
+    const scene = citySceneForBuilding(building);
+    prefetchCityScene(scene);
+    setSelectedScene(scene);
   };
   const selectQueuedBuilding = () => {
     if (village.build) select(village.build.building);
   };
   const close = () => {
-    setSelected(null);
-    returnFocus.current?.focus({ preventScroll: true });
+    setSelectedScene(null);
   };
+  const selectScene = (scene: CitySceneKey) => {
+    if (!selectedScene) returnFocus.current = document.activeElement as HTMLElement | null;
+    prefetchCityScene(scene);
+    setSelectedScene(scene);
+  };
+  useEffect(() => { if (!selectedScene) returnFocus.current?.focus({ preventScroll: true }); }, [selectedScene]);
   return (
     <div className={styles.village} data-village-screen="">
       <div
         className={villageStyles.layout}
-        data-selected={selected !== null}
+        data-selected="false"
+        data-dedicated-scene={selectedScene ?? undefined}
         data-hide-mobile-navigation={hideMobileNavigation}
         data-sheet={selected === null ? undefined : selected === 'rally' ? 'rally' : 'building'}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && selected) close();
         }}
       >
-        <div className={villageStyles.scene}>
+        <div className={villageStyles.scene} aria-hidden={selectedScene !== null} inert={selectedScene !== null} data-city-hidden={selectedScene !== null}>
           <VillageMap
             view={view}
             village={village}
-            selected={selected}
+            selected={null}
             onSelect={select}
             onWorldMap={onNavigate ? () => onNavigate('map') : undefined}
             onShowMap={onShowMap}
             onRefresh={onRefresh}
+            dedicatedNavigation
+            active={selectedScene === null}
+            onFacilitySelect={selectScene}
           />
         </div>
-        {selected && (
-          <VillageDetailSheet key={selected} onClose={close} panel={selected === 'rally' ? 'rally' : undefined}>
-            {selected === 'rally' ? (
-              <RallyPanel
-                view={view}
-                village={village}
-                busy={busy}
-                send={send}
-                onClose={close}
-                onCampaign={onCampaign}
-                onOpenTraining={(target) => setSelected(target)}
-                onShowMap={onShowMap}
-                onNavigate={onNavigate}
-              />
-            ) : selected === 'stable' ? (
-              <StablePanel
-                view={view}
-                village={village}
-                busy={busy}
-                send={send}
-                onClose={close}
-                onNavigate={onNavigate}
-              />
-            ) : (
-              <BuildingPanel
-                key={selected}
-                building={selected}
-                view={view}
-                village={village}
-                busy={busy}
-                send={send}
-                onClose={close}
-                onNavigate={onNavigate}
-              />
-            )}
-          </VillageDetailSheet>
-        )}
-        <details className={villageStyles.queueDrawer}>
+        {selectedScene && <Suspense fallback={<div role="status">تجهيز المشهد…</div>}>
+          <CityBuildingScene key={selectedScene} scene={selectedScene} onClose={close}
+            garden={selectedScene === 'palace' && view.player ? <Suspense fallback={null}><PalaceGarden worldId={view.worldId} villageId={village.id} playerId={view.player.id} onSaved={onRefresh} /></Suspense> : undefined}>
+            <VillageIncomingAlert incoming={view.incoming ?? []} village={village} view={view} onShowMap={onShowMap} onRefresh={onRefresh} />
+            <section aria-label="موارد المشهد" data-city-resources=""><ResourceText resources={village.resources} /></section>
+            {commandError && <p role="alert" data-city-feedback="error">{commandError}</p>}
+            {commandNotice && <p role="status" data-city-feedback="notice">{commandNotice}</p>}
+            <Suspense fallback={<p role="status">تجهيز المرافق…</p>}><FacilitySceneContent scene={selectedScene} view={view} village={village} busy={busy} send={send} onClose={close} onSelectScene={selectScene} onNavigate={onNavigate} onRefresh={onRefresh} onShowMap={onShowMap} onCampaign={onCampaign} /></Suspense>
+          </CityBuildingScene>
+        </Suspense>}
+        <details className={villageStyles.queueDrawer} hidden={selectedScene !== null}>
           <summary>
             <Hammer size={16} aria-hidden="true" />
             البناء والتدريب<bdi>{number(pendingJobs)}</bdi>
@@ -174,7 +166,7 @@ export function VillagePanel({
             )}
           </section>
         </details>
-        <nav aria-label="التنقل من القرية" className={villageStyles.navigation}>
+        <nav aria-label="التنقل من القرية" className={villageStyles.navigation} hidden={selectedScene !== null}>
           <button type="button" aria-label="عرض القرية" aria-pressed={!selected} onClick={close}>
             <Castle size={20} aria-hidden="true" />
             <span>القرية</span>

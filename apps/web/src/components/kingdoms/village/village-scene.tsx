@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
   ArrowDown,
   ArrowLeft,
@@ -22,6 +22,7 @@ import type {
   VillageSceneHandle,
   VillageSelection,
   VillageTarget,
+  CameraSnapshot,
 } from '@/lib/kingdoms/village/types';
 import { VillageActivity } from './village-activity';
 import { VillageIncomingAlert } from '../incoming-alert';
@@ -32,6 +33,7 @@ import { VillageDebug } from './village-debug';
 import { VillageOnboarding } from './village-onboarding';
 import { VillageProgress } from './village-progress';
 import type { GameProps } from '../shared';
+import { citySceneForBuilding, prefetchCityScene } from './city-scenes';
 import styles from './village-scene.module.css';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
@@ -46,12 +48,24 @@ export type VillageSceneProps = Pick<GameProps, 'view' | 'village'> & {
   onWorldMap?: () => void;
   onShowMap?: (villageId: string) => void;
   onRefresh?: () => void;
+  dedicatedNavigation?: boolean;
+  active?: boolean;
+  onFacilitySelect?: (scene: 'war-council' | 'siege-workshop') => void;
 };
 
-export function VillageScene({ view, village, selected, onSelect, onWorldMap, onShowMap, onRefresh }: VillageSceneProps) {
+export function VillageScene({ view, village, selected, onSelect, onWorldMap, onShowMap, onRefresh, dedicatedNavigation = false, active = true, onFacilitySelect }: VillageSceneProps) {
   const scene = useRef<VillageSceneHandle>(null);
+  const overview = useRef<CameraSnapshot | null>(null);
+  const captureOverview = useCallback(() => {
+    if (!overview.current) overview.current = scene.current?.getSnapshot() ?? null;
+  }, []);
+  useEffect(() => {
+    if (!active) scene.current?.stop?.();
+    else if (overview.current) { scene.current?.restore?.(overview.current); overview.current = null; }
+  }, [active]);
+  const [tourRequest, setTourRequest] = useState(0);
   const [quality, setQuality] = useState<VillageQuality>('auto');
-  const [labels, setLabels] = useState(true);
+  const [labels, setLabels] = useState(!dedicatedNavigation);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
   const [debug, setDebug] = useState<VillageDebugOptions>({});
@@ -63,10 +77,10 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const options = useMemo(
     () => ({
       ...debug,
-      animations: !paused && debug.animations !== false,
+      animations: active && !paused && debug.animations !== false,
       npcs: debug.npcs !== false,
     }),
-    [debug, paused],
+    [debug, paused, active],
   );
   const focusTour = useCallback((target: VillageTarget) => scene.current?.focusOn(target), []);
   const reset = useCallback(() => scene.current?.reset(), []);
@@ -74,7 +88,10 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const incoming = presentIncomingThreats(view.incoming ?? [], view.serverNow);
   const hostile = hostileThreats(villageIncoming(incoming, village.id));
   const threatSeverity = hostile[0]?.severity === 'CRITICAL' || hostile[0]?.severity === 'DANGER' ? hostile[0].severity : undefined;
-  const choose = (building: VillageSelection) => scene.current?.focusOn(building, () => onSelect(building));
+  const choose = (building: VillageSelection) => {
+    if (dedicatedNavigation) { captureOverview(); prefetchCityScene(citySceneForBuilding(building)); scene.current?.focusForScene?.(building, () => onSelect(building)); }
+    else scene.current?.focusOn(building, () => onSelect(building));
+  };
   return (
     <section className={styles.scene} aria-label="خريطة القرية">
       <div className={styles.incoming}><VillageIncomingAlert incoming={view.incoming ?? []} village={village} view={view} onShowMap={onShowMap} onRefresh={onRefresh} /></div>
@@ -101,10 +118,15 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         threatSeverity={threatSeverity}
         debug={options}
         onReady={onReady}
+        active={active}
+        dedicatedNavigation={dedicatedNavigation}
+        onSelectionStart={dedicatedNavigation ? captureOverview : undefined}
+        onFacilitySelect={onFacilitySelect}
+        onPrefetch={dedicatedNavigation ? (building) => prefetchCityScene(citySceneForBuilding(building)) : undefined}
       />
       <div className={styles.controls} role="group" aria-label="كاميرا القرية">
         <div className={styles.presets} role="group" aria-label="مستويات عرض المملكة">
-          <button type="button" onClick={() => scene.current?.zoomTo(2.8)}>المدينة</button>
+          <button type="button" onClick={() => dedicatedNavigation ? reset() : scene.current?.zoomTo(2.8)}>المدينة</button>
           <button type="button" onClick={() => scene.current?.zoomTo(1.8)}>القرية</button>
           <button type="button" onClick={() => onWorldMap ? onWorldMap() : scene.current?.zoomTo(1)}>
             {onWorldMap ? 'الإقليم' : 'المحيط'}
@@ -139,6 +161,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
       </div>
       <details className={styles.preferences}>
         <summary><Settings2 size={18} aria-hidden="true" /><span>إعدادات القرية</span></summary>
+        {dedicatedNavigation && <Button variant="outline" disabled={!ready} onClick={() => setTourRequest((request) => request + 1)}>جولة في المدينة</Button>}
         <VillageProgress village={village} config={view.config} now={view.serverNow}
           onOpenConstruction={() => choose(village.build?.building ?? 'hall')}
           onOpenMilitary={() => choose(village.training ? trainingBuilding(village.training.unit) : 'barracks')}
@@ -209,6 +232,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           ))}
           <option value="rally">نقطة تجمع الجيوش</option>
         </Select>
+        {onFacilitySelect && <Button variant="outline" onPointerEnter={() => prefetchCityScene('siege-workshop')} onFocus={() => prefetchCityScene('siege-workshop')} onClick={() => { captureOverview(); scene.current?.focusForScene?.('siege', () => onFacilitySelect('siege-workshop')); }}>ورشة الحصار</Button>}
         <Select
           label="جودة المشهد"
           value={quality}
@@ -230,13 +254,14 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           getCamera={() => scene.current?.getSnapshot()} />
       )}
       </details>
-      {view.player && (
+      {view.player && (!dedicatedNavigation || tourRequest > 0) && (
         <VillageOnboarding
-          key={view.player.id}
+          key={`${view.player.id}:${tourRequest}`}
           accountId={view.player.id}
           ready={ready}
           focus={focusTour}
-          onComplete={reset}
+          replay={dedicatedNavigation}
+          onComplete={() => { reset(); setTourRequest(0); }}
         />
       )}
     </section>

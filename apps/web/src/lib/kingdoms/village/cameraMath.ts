@@ -5,12 +5,14 @@ export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 3.5;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-export function createCamera(viewport: WorldSize, fillPortrait = false): CameraSnapshot {
-  const fitScale = Math.min(viewport.width / VILLAGE_WORLD.width, viewport.height / VILLAGE_WORLD.height);
-  const coverScale = Math.max(viewport.width / VILLAGE_WORLD.width, viewport.height / VILLAGE_WORLD.height);
+export function createCamera(viewport: WorldSize, fillPortrait = false, world?: WorldSize): CameraSnapshot {
+  const bounds = world ?? VILLAGE_WORLD;
+  const fitScale = Math.min(viewport.width / bounds.width, viewport.height / bounds.height);
+  const coverScale = Math.max(viewport.width / bounds.width, viewport.height / bounds.height);
   return clampCamera({
-    x: VILLAGE_WORLD.width / 2,
-    y: VILLAGE_WORLD.height / 2,
+    ...(world ? { world } : {}),
+    x: bounds.width / 2,
+    y: bounds.height / 2,
     zoom: fillPortrait ? coverScale / Math.max(fitScale, .001) : 1,
     scale: 1,
     viewport,
@@ -18,20 +20,27 @@ export function createCamera(viewport: WorldSize, fillPortrait = false): CameraS
 }
 
 export function clampCamera(camera: CameraSnapshot): CameraSnapshot {
-  const width = Math.max(1, camera.viewport.width);
-  const height = Math.max(1, camera.viewport.height);
+  const width = finiteSize(camera.viewport.width);
+  const height = finiteSize(camera.viewport.height);
+  const bounds = camera.world
+    ? { width: finiteSize(camera.world.width), height: finiteSize(camera.world.height) }
+    : VILLAGE_WORLD;
   const zoom = clamp(Number.isFinite(camera.zoom) ? camera.zoom : 1, MIN_ZOOM, MAX_ZOOM);
-  const scale = Math.min(width / VILLAGE_WORLD.width, height / VILLAGE_WORLD.height) * zoom;
-  const halfX = Math.min(VILLAGE_WORLD.width / 2, width / scale / 2);
-  const halfY = Math.min(VILLAGE_WORLD.height / 2, height / scale / 2);
+  const scale = Math.min(width / bounds.width, height / bounds.height) * zoom;
+  const halfX = Math.min(bounds.width / 2, width / scale / 2);
+  const halfY = Math.min(bounds.height / 2, height / scale / 2);
   return {
-    x: clamp(camera.x, halfX, VILLAGE_WORLD.width - halfX),
-    y: clamp(camera.y, halfY, VILLAGE_WORLD.height - halfY),
+    ...camera,
+    ...(camera.world ? { world: bounds } : {}),
+    x: clamp(Number.isFinite(camera.x) ? camera.x : bounds.width / 2, halfX, bounds.width - halfX),
+    y: clamp(Number.isFinite(camera.y) ? camera.y : bounds.height / 2, halfY, bounds.height - halfY),
     zoom,
     scale,
     viewport: { width, height },
   };
 }
+
+const finiteSize = (value: number) => Number.isFinite(value) ? Math.max(1, value) : 1;
 
 export function projectPoint(point: WorldPoint, camera: CameraSnapshot): WorldPoint {
   return {

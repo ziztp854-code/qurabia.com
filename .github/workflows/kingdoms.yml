@@ -16,8 +16,12 @@ on:
       - 'apps/web/package.json'
       - 'apps/web/e2e/kingdoms*.spec.ts'
       - 'apps/web/e2e/village-scene.spec.ts'
+      - 'apps/web/e2e/living-city-regression.spec.ts'
+      - 'apps/web/e2e/living-city-regression.spec.ts-snapshots/**'
       - 'apps/web/e2e/fixtures/village-scene*'
       - 'apps/web/playwright.village-scene.config.ts'
+      - 'apps/web/playwright.city-scenes.config.ts'
+      - 'apps/web/playwright.living-city-regression.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
       - 'apps/web/src/app/api/**/kingdoms/**'
       - 'apps/realtime/src/kingdoms/**'
@@ -42,8 +46,12 @@ on:
       - 'apps/web/package.json'
       - 'apps/web/e2e/kingdoms*.spec.ts'
       - 'apps/web/e2e/village-scene.spec.ts'
+      - 'apps/web/e2e/living-city-regression.spec.ts'
+      - 'apps/web/e2e/living-city-regression.spec.ts-snapshots/**'
       - 'apps/web/e2e/fixtures/village-scene*'
       - 'apps/web/playwright.village-scene.config.ts'
+      - 'apps/web/playwright.city-scenes.config.ts'
+      - 'apps/web/playwright.living-city-regression.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
       - 'apps/web/src/app/api/**/kingdoms/**'
       - 'apps/realtime/src/kingdoms/**'
@@ -108,12 +116,17 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
       - name: Verify village scene and controls on desktop and touch devices
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
+      - name: Verify dedicated Living City scenes and all release viewports
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.city-scenes.config.ts
       - name: Preserve failed village browser evidence
         if: failure()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: kingdoms-village-failures-${{ github.run_attempt }}
-          path: apps/web/test-results/village-scene/
+          path: |
+            apps/web/test-results/village-scene/
+            apps/web/test-results/city-scenes/
+            apps/web/playwright-report/city-scenes/
           retention-days: 7
       - name: Build web application
         run: pnpm --filter @tahaddi/web build
@@ -121,3 +134,36 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms.config.ts
       - name: Verify authenticated gameplay on isolated PostgreSQL
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms-authenticated.config.ts
+
+  living-city-visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:bc6ab0d6d44ff4826e4cb8c1e6d801e185bfc42bb0753f8e2a30efc70db054c7
+      options: --ipc=host
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.26.0
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared fixture dependencies
+        run: pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build
+      - name: Compare committed canonical Linux images without updating references
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.living-city-regression.config.ts --update-snapshots=none --repeat-each=10
+      - name: Preserve Living City regression evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: living-city-visual-failures-${{ github.run_attempt }}
+          path: apps/web/test-results/living-city-regression/
+          retention-days: 7

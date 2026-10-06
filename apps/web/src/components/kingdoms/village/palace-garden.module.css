@@ -1,0 +1,37 @@
+.garden { position: absolute; inset: 0; pointer-events: none; container-type: inline-size; }
+.art { position: absolute; inset: 0; }
+.plant { position: absolute; object-fit: contain; object-position: center bottom; transform: translate(-50%, -100%); pointer-events: none; }
+.slot { position: absolute; z-index: 4; transform: translate(-50%, -50%); inline-size: 7.5%; block-size: 6.5%; min-inline-size: 44px; min-block-size: 44px; border: 1px solid var(--gold); border-radius: var(--radius-md); background: color-mix(in srgb, var(--gold) 9%, transparent); color: var(--foreground); pointer-events: auto; cursor: pointer; }
+.slot span { display: inline-grid; place-items: center; min-inline-size: 1.4rem; border-radius: var(--radius-full); background: var(--surface-strong); font-size: 0.7rem; }
+.slot[aria-pressed='true'] { outline: 2px solid var(--gold); outline-offset: 2px; background: color-mix(in srgb, var(--gold) 20%, transparent); }
+.controls { position: absolute; z-index: 5; inset-inline: 0; inset-block-start: calc(100% + var(--space-3)); inline-size: 100%; max-block-size: 274px; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-3); border: 1px solid var(--border-gold); border-radius: var(--radius-md); background: var(--surface-strong); color: var(--foreground); pointer-events: auto; }
+.controls:has(select) { min-block-size: 250px; }
+.controls p { margin: var(--space-2) 0 0; font-size: 0.85rem; }
+.controls p[role='alert'] { color: var(--danger); }
+.controls button, .controls select { min-block-size: 44px; min-inline-size: 44px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--foreground); font: inherit; font-size: 0.85rem; cursor: pointer; touch-action: manipulation; }
+.controls button:disabled { opacity: 0.6; cursor: default; }
+.controls button:focus-visible, .controls select:focus-visible, .slot:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.controls button.primary, .controls button[aria-pressed='true'] { border-color: var(--gold); background: var(--primary); color: var(--primary-foreground); }
+.heading { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; justify-content: space-between; margin-block-end: var(--space-2); }
+.heading span { font-size: 0.75rem; color: var(--muted-foreground); }
+.selector { display: flex; align-items: center; gap: var(--space-2); font-size: 0.8rem; }
+.selector select { flex: 1; min-inline-size: 0; }
+.categories { display: flex; gap: var(--space-2); overflow-x: auto; padding-block: var(--space-2); }
+.categories button { flex-shrink: 0; }
+.catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: var(--space-2); }
+.catalog button { display: grid; padding: var(--space-2); align-content: center; justify-items: center; overflow: hidden; }
+.catalog img { inline-size: 100%; block-size: 3rem; object-fit: contain; }
+.catalog span { line-height: 1.6; }
+.actions { position: sticky; inset-block-end: calc(-1 * var(--space-3)); display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block-start: var(--space-3); padding-block: var(--space-2); background: var(--surface-strong); }
+@container (max-width: 640px) {
+  .slot { display: none; }
+  .controls { inset-inline: 0; inset-block-start: calc(100% + var(--space-3)); inline-size: 100%; max-block-size: 290px; padding: var(--space-2); }
+  .catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .catalog button { padding: var(--space-2); }
+  .catalog img { block-size: 2.5rem; }
+  .catalog span { font-size: 0.8rem; }
+  .heading { align-items: start; }
+  .heading span { font-size: 0.8rem; }
+  .actions { inset-block-end: calc(-1 * var(--space-2)); }
+}
+@media (prefers-reduced-motion: reduce) { .garden * { scroll-behavior: auto; } }

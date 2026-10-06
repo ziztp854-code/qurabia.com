@@ -198,3 +198,7 @@
 .preferences > details { padding: 8px 12px; }
 
 :global([data-village-stage='live']) .header { display: none; }
+
+.scene:has([data-city-composition]) { display: block; background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--gold) 12%, var(--kingdoms-ui-background)), var(--kingdoms-ui-background) 78%); }
+.scene:has([data-city-composition]) .preferences[open] { z-index: 12; max-block-size: min(62dvh, calc(100% - 24px)); overflow-y: auto; }
+.scene:has([data-city-composition]) .preferences[open] > summary { position: sticky; inset-block-start: 0; z-index: 2; background: var(--kingdoms-ui-surface); }

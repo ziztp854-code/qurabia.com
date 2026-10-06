@@ -1,0 +1,393 @@
+{
+  "generatedWith": "built-in image_gen",
+  "date": "2026-10-06",
+  "nativeResolutionLimit": "Landscape1672x941 and portrait941x1672; never upscaled",
+  "assets": [
+    {
+      "id": "banner-flutter-atlas",
+      "url": "/game-art/kingdoms/city-hub/banner-flutter-atlas.webp",
+      "nativeWidth": 1774,
+      "nativeHeight": 887,
+      "width": 1024,
+      "height": 512,
+      "bytes": 252860,
+      "sha256": "f265ba734ee9bd5a3fec8d716f643435f1e5810bdbc519b8be5f075047987cac",
+      "source": "exec-976dd5b2-9527-46b0-9334-2409f7aee3c3.png",
+      "transparent": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "usefulAlphaBounds": [
+        44,
+        24,
+        1012,
+        454
+      ],
+      "frameCount": 4,
+      "columns": 4,
+      "rows": 1,
+      "frameWidth": 256,
+      "frameHeight": 512
+    },
+    {
+      "id": "guard-walk-atlas",
+      "url": "/game-art/kingdoms/city-hub/guard-walk-atlas.webp",
+      "nativeWidth": 1997,
+      "nativeHeight": 787,
+      "width": 1024,
+      "height": 404,
+      "bytes": 215520,
+      "sha256": "a864760fffa4293ee1a8b352b97e8b303dd38cbee9561474c4de67a0d6597db2",
+      "source": "exec-e83981ff-a103-4edd-b3f4-7e474028a482.png",
+      "transparent": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "usefulAlphaBounds": [
+        96,
+        8,
+        957,
+        372
+      ],
+      "frameCount": 4,
+      "columns": 4,
+      "rows": 1,
+      "frameWidth": 256,
+      "frameHeight": 404
+    },
+    {
+      "id": "horse-caravan-atlas",
+      "url": "/game-art/kingdoms/city-hub/horse-caravan-atlas.webp",
+      "nativeWidth": 1942,
+      "nativeHeight": 809,
+      "width": 1024,
+      "height": 427,
+      "bytes": 304952,
+      "sha256": "de8e5b977ad9dcddd97aedac0e380f9bce97edc93c2e763cda07465d848493f5",
+      "source": "exec-2bc848a3-616e-4434-afc7-cfbbc26b5766.png",
+      "transparent": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "usefulAlphaBounds": [
+        19,
+        71,
+        1006,
+        352
+      ],
+      "frameCount": 4,
+      "columns": 4,
+      "rows": 1,
+      "frameWidth": 256,
+      "frameHeight": 427
+    },
+    {
+      "id": "overview-desktop-mobile",
+      "url": "/game-art/kingdoms/city-hub/overview-desktop-mobile.webp",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "width": 960,
+      "height": 540,
+      "bytes": 303140,
+      "sha256": "51e8d6248db8af90089fe362cc3616d877ddfde099e78aa8fc362381fbce317a",
+      "source": "exec-5b05e8f4-a62b-4148-b95a-1090fc7bc5d1.png",
+      "transparent": false
+    },
+    {
+      "id": "overview-desktop",
+      "url": "/game-art/kingdoms/city-hub/overview-desktop.webp",
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "width": 1672,
+      "height": 941,
+      "bytes": 946680,
+      "sha256": "37174017c3ad810fc773dba8c16ecca2de722da8966e3b91eb7d6318a421e204",
+      "source": "exec-5b05e8f4-a62b-4148-b95a-1090fc7bc5d1.png",
+      "transparent": false
+    },
+    {
+      "id": "overview-portrait-mobile",
+      "url": "/game-art/kingdoms/city-hub/overview-portrait-mobile.webp",
+      "nativeWidth": 941,
+      "nativeHeight": 1672,
+      "width": 768,
+      "height": 1365,
+      "bytes": 584676,
+      "sha256": "adb71075a622a87ba221d7da8eee28ca75245d1544acf3194a999d4265d7f1d7",
+      "source": "exec-10c87e5e-6f6f-41fb-b939-8eea581c1457.png",
+      "transparent": false
+    },
+    {
+      "id": "overview-portrait",
+      "url": "/game-art/kingdoms/city-hub/overview-portrait.webp",
+      "nativeWidth": 941,
+      "nativeHeight": 1672,
+      "width": 941,
+      "height": 1672,
+      "bytes": 988772,
+      "sha256": "7c93d5522d4ffdab1fbaaf2aacf25555ad8ea4a9c2edeba459eb5cc8294939e3",
+      "source": "exec-10c87e5e-6f6f-41fb-b939-8eea581c1457.png",
+      "transparent": false
+    },
+    {
+      "id": "palm-cluster-a",
+      "url": "/game-art/kingdoms/city-hub/palm-cluster-a.webp",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "width": 768,
+      "height": 768,
+      "bytes": 704156,
+      "sha256": "9d6277f4df6a18b929e02d8e6a15f6b22a86eba7aadea990c9562ab59c9996b3",
+      "source": "exec-5669a5ee-5f75-49dc-9465-75e6fe888939.png",
+      "transparent": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "usefulAlphaBounds": [
+        36,
+        19,
+        741,
+        742
+      ]
+    },
+    {
+      "id": "palm-cluster-b",
+      "url": "/game-art/kingdoms/city-hub/palm-cluster-b.webp",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "width": 768,
+      "height": 768,
+      "bytes": 763320,
+      "sha256": "b225170609174ebe08b6b2dba9bbdcd2730faa4031a313621e06607f3533c476",
+      "source": "exec-292132e0-7450-4ad3-98b0-3784fe81b503.png",
+      "transparent": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "usefulAlphaBounds": [
+        32,
+        11,
+        744,
+        756
+      ]
+    },
+    {
+      "id": "worker-walk-atlas",
+      "url": "/game-art/kingdoms/city-hub/worker-walk-atlas.webp",
+      "nativeWidth": 1774,
+      "nativeHeight": 887,
+      "width": 1024,
+      "height": 512,
+      "bytes": 349446,
+      "sha256": "faf09f25428426a5b15b43cfc625c7192bbadc04d61cc89b26040159c0a051fd",
+      "source": "exec-11b5fdd4-5832-476d-808f-20dbe384645d.png",
+      "transparent": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "usefulAlphaBounds": [
+        28,
+        18,
+        995,
+        456
+      ],
+      "frameCount": 4,
+      "columns": 4,
+      "rows": 1,
+      "frameWidth": 256,
+      "frameHeight": 512
+    }
+  ],
+  "landmarks": {
+    "desktop": {
+      "nativeWidth": 1672,
+      "nativeHeight": 941,
+      "worldWidth": 1600,
+      "worldHeight": 900,
+      "pixelCenters": {
+        "palace": [
+          880,
+          94
+        ],
+        "garden": [
+          880,
+          193
+        ],
+        "barracks": [
+          447,
+          328
+        ],
+        "stable": [
+          348,
+          467
+        ],
+        "market": [
+          1090,
+          357
+        ],
+        "rally": [
+          882,
+          455
+        ],
+        "siege": [
+          646,
+          535
+        ],
+        "blacksmith": [
+          1240,
+          487
+        ],
+        "warehouse": [
+          1040,
+          554
+        ],
+        "granary": [
+          1153,
+          570
+        ],
+        "academy": [
+          1150,
+          172
+        ],
+        "mosque": [
+          1365,
+          210
+        ],
+        "houses": [
+          1395,
+          390
+        ],
+        "mine": [
+          145,
+          60
+        ],
+        "quarry": [
+          485,
+          90
+        ],
+        "treasury": [
+          1480,
+          65
+        ],
+        "lumber": [
+          158,
+          223
+        ],
+        "farm": [
+          270,
+          793
+        ],
+        "wheat": [
+          750,
+          835
+        ],
+        "gate": [
+          858,
+          685
+        ],
+        "bridge": [
+          238,
+          651
+        ]
+      }
+    },
+    "portrait": {
+      "nativeWidth": 941,
+      "nativeHeight": 1672,
+      "worldWidth": 900,
+      "worldHeight": 1600,
+      "pixelCenters": {
+        "palace": [
+          435,
+          248
+        ],
+        "garden": [
+          438,
+          354
+        ],
+        "barracks": [
+          281,
+          555
+        ],
+        "stable": [
+          280,
+          726
+        ],
+        "market": [
+          592,
+          620
+        ],
+        "rally": [
+          468,
+          814
+        ],
+        "siege": [
+          310,
+          938
+        ],
+        "blacksmith": [
+          650,
+          832
+        ],
+        "warehouse": [
+          562,
+          933
+        ],
+        "granary": [
+          673,
+          1001
+        ],
+        "academy": [
+          750,
+          289
+        ],
+        "mosque": [
+          783,
+          468
+        ],
+        "houses": [
+          793,
+          674
+        ],
+        "quarry": [
+          135,
+          142
+        ],
+        "mine": [
+          746,
+          125
+        ],
+        "treasury": [
+          839,
+          142
+        ],
+        "lumber": [
+          123,
+          393
+        ],
+        "farm": [
+          133,
+          1332
+        ],
+        "wheat": [
+          510,
+          1460
+        ],
+        "gate": [
+          471,
+          1160
+        ],
+        "bridge": [
+          83,
+          825
+        ]
+      }
+    }
+  }
+}

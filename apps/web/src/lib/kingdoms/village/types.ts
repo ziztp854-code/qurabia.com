@@ -10,10 +10,12 @@ export type CameraSnapshot = Readonly<{
   zoom: number;
   scale: number;
   viewport: WorldSize;
+  world?: WorldSize;
+  state?: 'CITY_OVERVIEW' | 'CITY_EXPLORE' | 'BUILDING_FOCUS' | 'BUILDING_SCENE';
 }>;
 export type VillageQuality = 'auto' | 'ultra' | 'high' | 'medium' | 'low';
 export type VillageSelection = Building | 'stable' | 'rally';
-export type VillageTarget = VillageSelection | 'gate';
+export type VillageTarget = VillageSelection | 'gate' | 'siege';
 export type VillagePlacement = WorldRect &
   Readonly<{
     focusX: number;
@@ -28,6 +30,10 @@ export type VillageSceneHandle = {
   reset: () => void;
   panBy: (dx: number, dy: number) => void;
   getSnapshot: () => CameraSnapshot;
+  focusForScene?: (target: VillageTarget, onComplete?: () => void) => void;
+  restore?: (snapshot: CameraSnapshot) => void;
+  stop?: () => void;
+  enterBuildingScene?: () => void;
 };
 export type VillageDebugOptions = Readonly<{
   hitboxes?: boolean;
@@ -55,6 +61,12 @@ export type VillageCanvasProps = Readonly<{
   showLabels: boolean;
   debug?: VillageDebugOptions;
   onReady?: () => void;
+  active?: boolean;
+  cityComposition?: 'desktop' | 'portrait';
+  dedicatedNavigation?: boolean;
+  onSelectionStart?: () => void;
+  onFacilitySelect?: (scene: 'war-council' | 'siege-workshop') => void;
+  onPrefetch?: (building: VillageSelection) => void;
   showThreatMarker?: boolean;
   threatSeverity?: 'DANGER' | 'CRITICAL';
 }>;

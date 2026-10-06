@@ -401,10 +401,10 @@ describe('Kingdoms player interface', () => {
     render(<KingdomsClient initialTab="overview" />);
     const scene = await screen.findByRole('region', { name: 'خريطة القرية' });
     fireEvent.click(within(scene).getByRole('button', { name: /حطّاب المملكة.*لم يُبنَ/ }));
+    expect(await screen.findByRole('region', { name: 'مشهد حطّابو المملكة' }, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'حطّاب المملكة' }, { timeout: 3000 })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'العودة إلى المدينة' }));
     expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
-    expect(
-      await screen.findByRole('heading', { name: 'حطّاب المملكة' }, { timeout: 3000 }),
-    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'إدارة المملكة' }));
     const navigation = screen.getByRole('navigation', { name: 'إدارة المملكة' });
     fireEvent.click(within(navigation).getByRole('button', { name: 'لوحة المملكة' }));
