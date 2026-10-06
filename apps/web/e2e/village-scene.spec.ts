@@ -176,6 +176,7 @@ test('level twelve village finishes its real queue after five hours offline', as
   const before = (await seeded.json()).data.villages[0];
   expect(before.progression.level).toBe(12);
   await page.goto('/');
+  await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
   await setVillageSettings(page);
   await expect(page.getByLabel('مستوى القرية', { exact: true })).toContainText('١٢');
   for (const [building, label] of [['hall', 'دار الحكم'], ['wall', 'السور'], ['warehouse', 'المخزن']]) {
@@ -183,6 +184,7 @@ test('level twelve village finishes its real queue after five hours offline', as
     await setVillageSettings(page);
     await village.getByLabel('اختر مبنى من الخريطة').selectOption(building);
     const panel = page.getByRole('region', { name: `تفاصيل ${label}`, exact: true });
+    await expect(panel).toBeVisible();
     await panel.getByRole('button', { name: building === 'hall' ? 'طوّر المبنى' : 'أضف إلى قائمة البناء', exact: true }).click();
     await page.getByRole('button', { name: 'أغلق تفاصيل المبنى' }).click();
   }
@@ -545,14 +547,22 @@ test('keyboard, drag and pinch preserve bounded world coordinates', async ({ pag
 
 test('main wall, embassy and mine clicks remain separate from gate and auxiliary regions', async ({
   page,
+  isMobile,
 }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   const village = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  const scene = village.locator('[data-village-scene]');
+  await expect(scene).toHaveAttribute('data-pixi-ready', 'true');
   await village.getByRole('button', { name: 'عرض القرية بالكامل', exact: true }).click();
-  await expectOverview(page);
+  const overviewZoom = await expectOverview(page);
   const read = await page.request.get('/api/kingdoms');
   const config = (await read.json()).data.config;
   for (const building of ['wall', 'embassy', 'mine']) {
+    if (isMobile && overviewZoom > 1 && building === 'mine') {
+      await village.getByRole('button', { name: 'تصغير القرية', exact: true }).click();
+      await expect.poll(async () => Number(await scene.getAttribute('data-zoom'))).toBeLessThan(overviewZoom);
+    }
     await revealBuilding(page, building);
     await clickBuilding(page, building);
     await expect(

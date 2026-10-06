@@ -108,6 +108,13 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
       - name: Verify village scene and controls on desktop and touch devices
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
+      - name: Preserve failed village browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kingdoms-village-failures-${{ github.run_attempt }}
+          path: apps/web/test-results/village-scene/
+          retention-days: 7
       - name: Build web application
         run: pnpm --filter @tahaddi/web build
       - name: Verify anonymous boundaries on desktop and mobile
