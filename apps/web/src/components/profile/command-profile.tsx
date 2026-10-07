@@ -69,6 +69,7 @@ const STATUS_LABELS: Readonly<Record<string, string>> = {
 };
 
 const PERMISSION_ORDER: readonly AdminPermission[] = [
+  'platform.users.manage',
   'MANAGE_USERS',
   'MANAGE_CONTENT',
   'MANAGE_ROOMS',
@@ -79,6 +80,7 @@ const PERMISSION_ORDER: readonly AdminPermission[] = [
 ];
 
 const PERMISSION_ICONS: Readonly<Record<AdminPermission, LucideIcon>> = {
+  'platform.users.manage': Users,
   MANAGE_USERS: Users,
   MANAGE_CONTENT: Layers,
   MANAGE_ROOMS: Radio,

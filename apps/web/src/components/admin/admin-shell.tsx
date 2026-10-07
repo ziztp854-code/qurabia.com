@@ -40,7 +40,7 @@ const navigation: readonly {
   { href: '/admin/rooms', label: 'الغرف المباشرة', icon: Radio, permission: 'MANAGE_ROOMS' },
   { href: '/admin/kingdoms', label: 'تحدي الممالك', icon: ShieldCheck, managersOnly: true },
   { href: '/questions', label: 'بنك الأسئلة', icon: Layers },
-  { href: '/admin/users', label: 'المستخدمون', icon: Users, permission: 'MANAGE_USERS' },
+  { href: '/admin/users', label: 'المستخدمون', icon: Users, permission: 'platform.users.manage' },
   { href: '/admin/reports', label: 'التقارير', icon: BarChart3, permission: 'VIEW_REPORTS' },
   { href: '/admin/audit', label: 'سجل النشاط', icon: Activity, permission: 'VIEW_AUDIT' },
   { href: '/architecture', label: 'خريطة البنية', icon: Network, permission: 'VIEW_AUDIT' },

@@ -2,6 +2,7 @@ import { formatNumber } from '@/lib/utils';
 import { AdminVerifiedName, Button } from '@/components/ui';
 import styles from '@/components/admin/admin.module.css';
 import { getPrismaClient } from '@/lib/auth/prisma';
+import { hasPermission } from '@/lib/auth/authorization';
 import { requirePermission } from '@/lib/auth/session';
 import { finishManagedRoom } from './actions';
 
@@ -18,7 +19,8 @@ export default async function AdminRoomsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePermission('MANAGE_ROOMS', '/admin/rooms');
+  const actor = await requirePermission('MANAGE_ROOMS', '/admin/rooms');
+  const canReadAccounts = hasPermission(actor.role, 'platform.users.manage');
   const rawResult = (await searchParams).result;
   const result = typeof rawResult === 'string' ? rawResult : '';
   const rooms = await getPrismaClient().liveSession.findMany({
@@ -32,7 +34,7 @@ export default async function AdminRoomsPage({
       startedAt: true,
       createdAt: true,
       quiz: { select: { title: true } },
-      host: { select: { name: true, email: true, role: true } },
+      host: canReadAccounts ? { select: { name: true, email: true, role: true } } : false,
       _count: { select: { participants: true, answers: true } },
     },
   });
@@ -73,9 +75,9 @@ export default async function AdminRoomsPage({
                   </td>
                   <td data-label="المضيف">
                     <AdminVerifiedName
-                      isManager={room.host.role === 'OWNER' || room.host.role === 'ADMIN'}
+                      isManager={room.host?.role === 'OWNER' || room.host?.role === 'ADMIN'}
                     >
-                      {room.host.name || room.host.email || '—'}
+                      {room.host?.name || room.host?.email || '—'}
                     </AdminVerifiedName>
                   </td>
                   <td data-label="المشاركون">{formatNumber(room._count.participants)}</td>

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { decideUserManagementUpdate, MANAGED_USER_STATUSES } from '@/lib/admin/user-policy';
-import { MANAGED_APP_ROLES, isAppRole } from '@/lib/auth/authorization';
+import { MANAGED_APP_ROLES, hasPermission, isAppRole } from '@/lib/auth/authorization';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { verifyPassword } from '@/lib/auth/password';
@@ -24,7 +24,7 @@ function usersResult(code: string): never {
 }
 
 export async function updateUserAccess(formData: FormData) {
-  const actor = await requirePermission('MANAGE_USERS', '/admin/users');
+  const actor = await requirePermission('platform.users.manage', '/admin/users');
   await requirePermission('MANAGE_ROLES', '/admin/users');
   const prisma = getPrismaClient();
   if (!(await checkRateLimit(`admin-user-update:${actor.id}`))) {
@@ -95,9 +95,9 @@ export async function updateUserAccess(formData: FormData) {
           select: { role: true, status: true, tokenVersion: true },
         });
         if (
-          (currentActor?.role !== 'ADMIN' && currentActor?.role !== 'OWNER') ||
-          currentActor.status !== 'ACTIVE' ||
-          currentActor.tokenVersion !== actor.tokenVersion
+          !hasPermission(currentActor?.role, 'platform.users.manage') ||
+          currentActor?.status !== 'ACTIVE' ||
+          currentActor?.tokenVersion !== actor.tokenVersion
         ) {
           await transaction.auditLog.create({
             data: {
@@ -212,7 +212,7 @@ const grantSubscriptionSchema = z.object({
 });
 
 export async function grantUserSubscription(formData: FormData) {
-  const actor = await requirePermission('MANAGE_USERS', '/admin/users');
+  const actor = await requirePermission('platform.users.manage', '/admin/users');
   const prisma = getPrismaClient();
   if (!(await checkRateLimit(`admin-user-subscription:${actor.id}`))) {
     await prisma.auditLog.create({
@@ -306,7 +306,7 @@ const cancelSubscriptionSchema = z.object({
 });
 
 export async function cancelUserSubscriptionAction(formData: FormData) {
-  const actor = await requirePermission('MANAGE_USERS', '/admin/users');
+  const actor = await requirePermission('platform.users.manage', '/admin/users');
   const prisma = getPrismaClient();
   if (!(await checkRateLimit(`admin-user-subscription:${actor.id}`))) {
     await prisma.auditLog.create({

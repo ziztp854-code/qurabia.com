@@ -2,6 +2,7 @@ import '@xyflow/react/dist/style.css';
 import type { Metadata } from 'next';
 import { ArchitectureMap } from '@/components/architecture';
 import { requirePermission } from '@/lib/auth/session';
+import { hasPermission } from '@/lib/auth/authorization';
 import { getArchitectureLiveData } from '@/lib/architecture/live-data';
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function ArchitecturePage() {
-  await requirePermission('VIEW_AUDIT', '/architecture');
+  const user = await requirePermission('VIEW_AUDIT', '/architecture');
   const liveData = await getArchitectureLiveData();
-  return <ArchitectureMap liveData={liveData} />;
+  return <ArchitectureMap liveData={liveData} canManageUsers={hasPermission(user.role, 'platform.users.manage')} />;
 }
