@@ -19,6 +19,8 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
+import { AbandonedWorldPanel } from '@/components/kingdoms/abandoned/AbandonedWorldPanel';
+import { ABANDONED_ROLLOUT_WORLD_ID } from '@/lib/kingdoms/abandoned-village-policy';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { findSelection, listSelectableFeatures } from './selection';
 import { SelectionPanel } from './selection-panel';
@@ -136,6 +138,8 @@ function WorldScene({
   );
   const {
     container,
+    mapRef,
+    mapStyleReadyRef,
     visibleLayers,
     toggleLayer,
     status,
@@ -738,6 +742,9 @@ function WorldScene({
           }
         />
       </div>
+      {!referenceOnly && mode === 'WORLD' && worldId === ABANDONED_ROLLOUT_WORLD_ID && (
+        <AbandonedWorldPanel key={worldId} worldId={worldId} viewerId={viewerPlayerId} initialVillageId={initialVillageId} mapRef={mapRef} mapStyleReadyRef={mapStyleReadyRef} status={status} onLocate={focusLocation}/>
+      )}
       <footer className={styles.legend} aria-label="مفتاح الخريطة">
         <span>
           <MapPin size={16} aria-hidden="true" />

@@ -6,6 +6,7 @@ import { advanceWorld, createWorld, executeCommand, projectWorld } from './engin
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import { KingdomsHttpError, stableFingerprint } from './http';
 import type { KingdomsConfig, KingdomsWorld } from './types';
+import { abandonedLayout } from './abandoned-villages';
 import { provisionVillageGeography } from '../mamluk-map/village-geography';
 
 export type KingdomIdentity = { id: string; tokenVersion: number };
@@ -64,6 +65,7 @@ async function save(tx: Tx, row: WorldRow, state: KingdomsWorld, paused = row.pa
 }
 
 function view(row: WorldRow, state: KingdomsWorld, actorId: string, now: number) {
+  abandonedLayout(state, row.id);
   return {
     ...projectWorld(state, actorId, now),
     worldId: row.id,
@@ -190,6 +192,13 @@ export async function commandKingdomWorld(
       where: { actorId: identity.id, worldId, createdAt: { gt: new Date(now - 60_000) } },
     });
     if (recent >= 30) throw new KingdomsHttpError(429, 'بلغت حد الأوامر لهذه الدقيقة.');
+    if (command.type === 'gatherAbandoned') {
+      try {
+        if (!abandonedLayout(row.state as KingdomsWorld, row.id)) throw new Error('Missing abandoned layout');
+      } catch {
+        throw new KingdomsHttpError(403, 'القرى المهجورة غير مفعلة في هذا العالم.');
+      }
+    }
     const state = executeCommand(row.state as KingdomsWorld, identity.id, command, now);
     const saved = await save(tx, row, state);
     await receipt(tx, worldId, identity.id, key, fingerprint, saved.revision);

@@ -20,6 +20,8 @@ export default defineConfig({
     'mamluk-hd-world-map.spec.ts',
     'mamluk-map-continuity.spec.ts',
     'kingdoms-authenticated.spec.ts',
+    'kingdoms-abandoned-production.spec.ts',
+    'abandoned-villages.spec.ts',
     'model-viewer.spec.ts',
   ],
   use: { baseURL, trace: 'on-first-retry' },

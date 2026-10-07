@@ -23,6 +23,7 @@ const troops = z
   })
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('gatherAbandoned'), villageId, targetId: id, troops, commanderId: id.optional() }).strict(),
   z.object({ type: z.literal('commanderRecruit'), villageId, name, specialization: z.enum(commanderSpecializations) }).strict(),
   z.object({ type: z.literal('commanderAssign'), villageId, commanderId: id }).strict(),
   z.object({ type: z.literal('commanderUnassign'), commanderId: id }).strict(),

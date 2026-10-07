@@ -1,0 +1,240 @@
+.preview {
+  background: var(--kingdoms-ui-background);
+  color: var(--kingdoms-ui-foreground);
+  min-block-size: 100vh;
+  padding: 24px;
+  font-family: var(--font-arabic);
+}
+.preview * {
+  box-sizing: border-box;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-inline-size: 1440px;
+  margin: 0 auto 24px;
+}
+.header h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 42px);
+  color: var(--kingdoms-ui-gold);
+}
+.header p {
+  margin-block: 4px;
+}
+.eyebrow,
+.muted {
+  color: var(--kingdoms-ui-muted);
+  font-size: 14px;
+}
+.total {
+  display: grid;
+  text-align: center;
+  min-inline-size: 108px;
+  padding: 12px;
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-radius: 12px;
+}
+.total strong {
+  font-size: 36px;
+  color: var(--kingdoms-ui-gold);
+  line-height: 1.2;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+  align-items: start;
+  gap: 20px;
+  max-inline-size: 1440px;
+  margin: auto;
+}
+.mapColumn {
+  min-inline-size: 0;
+}
+.mapFrame {
+  position: relative;
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.map {
+  block-size: 520px;
+  inline-size: 100%;
+  background: var(--map-ocean);
+  direction: ltr;
+}
+.mapFrame :global(.maplibregl-ctrl-group button) {
+  inline-size: 44px;
+  block-size: 44px;
+}
+.mapLegend,
+.mapNotice {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+  padding: 8px 12px;
+  background: var(--kingdoms-ui-surface);
+  border-radius: 8px;
+}
+.mapNotice {
+  inset-block-start: 58px;
+}
+.fit {
+  position: absolute;
+  inset-block-end: 36px;
+  inset-inline-end: 12px;
+}
+.preview button {
+  min-block-size: 44px;
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: 8px;
+  background: var(--kingdoms-ui-surface-strong);
+  color: var(--kingdoms-ui-foreground);
+  font: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.preview button:focus-visible,
+.preview input:focus-visible {
+  outline: 3px solid var(--kingdoms-ui-gold);
+  outline-offset: 2px;
+}
+.preview button[aria-pressed='true'] {
+  background: var(--kingdoms-ui-gold);
+  color: var(--kingdoms-ui-background);
+  border-color: var(--kingdoms-ui-gold);
+}
+.preview button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.preview h2 {
+  font-size: 22px;
+  margin-block: 0 12px;
+}
+.preview h3 {
+  font-size: 18px;
+  margin-block: 16px 10px;
+}
+.panel,
+.catalog {
+  padding: 20px;
+  background: var(--kingdoms-ui-surface);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: 16px;
+}
+.catalog {
+  margin-block-start: 20px;
+}
+.siteList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  max-block-size: 270px;
+  overflow: auto;
+  padding: 3px;
+}
+.stocks {
+  display: grid;
+  gap: 10px;
+  margin-block: 18px;
+}
+.stock {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+}
+.stock strong,
+.rules dd {
+  font-variant-numeric: tabular-nums;
+  color: var(--kingdoms-ui-gold);
+}
+.stock progress {
+  grid-column: 2 / -1;
+  inline-size: 100%;
+  block-size: 8px;
+  accent-color: var(--kingdoms-ui-gold);
+}
+.inputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 88px;
+  align-items: center;
+  gap: 8px;
+  margin-block: 10px;
+}
+.inputRow span {
+  font-size: 13px;
+  color: var(--kingdoms-ui-muted);
+}
+.inputRow input {
+  inline-size: 100%;
+  min-block-size: 44px;
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: 8px;
+  background: var(--kingdoms-ui-background);
+  color: var(--kingdoms-ui-foreground);
+  padding: 8px;
+  font: inherit;
+}
+.rules {
+  border-block: 1px solid var(--kingdoms-ui-border);
+  padding-block: 12px;
+}
+.rules div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block: 4px;
+}
+.rules dd {
+  margin: 0;
+}
+.preview .primary {
+  inline-size: 100%;
+  background: var(--kingdoms-ui-gold);
+  color: var(--kingdoms-ui-background);
+  font-weight: 700;
+}
+.report {
+  border-block-start: 1px solid var(--kingdoms-ui-border);
+  padding-block: 12px;
+}
+.report p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .preview {
+    padding: 12px;
+  }
+  .header {
+    gap: 12px;
+    margin-block-end: 16px;
+  }
+  .header p {
+    font-size: 13px;
+  }
+  .total {
+    min-inline-size: 78px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map {
+    block-size: 350px;
+  }
+  .catalog {
+    padding: 14px;
+  }
+  .siteList {
+    max-block-size: 180px;
+  }
+  .panel {
+    padding: 16px;
+  }
+}

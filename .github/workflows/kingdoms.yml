@@ -134,6 +134,8 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms.config.ts
       - name: Verify authenticated gameplay on isolated PostgreSQL
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms-authenticated.config.ts
+      - name: Verify abandoned villages on the real authenticated player map
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.abandoned-production.config.ts
 
   living-city-visual:
     runs-on: ubuntu-24.04
