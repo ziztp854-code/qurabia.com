@@ -46,7 +46,12 @@ export async function GET(request: Request) {
       playerId = identity.id;
       repository = new PrismaWorldMapRepository(identity);
     }
-    const service = new MamlukViewportService(repository);
+    // This namespace projects only fixed, neutral geographic landmarks. Private
+    // campaigns keep the default span limits and all existing payload budgets.
+    const service = new MamlukViewportService(
+      repository,
+      referenceAtlas ? { maxLongitudeSpan: 360, maxLatitudeSpan: 180 } : {},
+    );
     const result = await service.getViewportResult(viewport, { playerId });
     // Schema v1 clients use a strict allowlist. Negotiate this additive field at
     // the HTTP boundary; the capability grants no extra ownership or visibility.

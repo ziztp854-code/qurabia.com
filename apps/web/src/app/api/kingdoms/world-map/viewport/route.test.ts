@@ -224,4 +224,39 @@ describe('authenticated host map viewport', () => {
     expect((await GET(new Request(`${url}&playerId=enemy`))).status).toBe(400);
     expect(dependencies.read).not.toHaveBeenCalled();
   });
+  it.each([
+    { west: -180, south: -90, east: 180, north: 90, cities: 12 },
+    { west: 170, south: -80, east: -170, north: 80, cities: 0 },
+  ])('serves a bounded public atlas across the globe and date line: $west to $east', async ({ cities, ...bounds }) => {
+    const query = new URLSearchParams({ worldId: PUBLIC_ATLAS_WORLD.id,
+      ...Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, String(value)])) });
+    const response = await GET(new Request(`https://qurabia.com/api/kingdoms/world-map/viewport?${query}`, {
+      headers: { 'X-Mamluk-Village-Buildings': '1' },
+    }));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.bounds).toEqual(bounds);
+    expect(body.layers.cities.features).toHaveLength(cities);
+    for (const city of body.layers.cities.features) {
+      expect(city.properties.ownerPlayerId).toBeNull();
+      expect(city.properties.ownerSultanateId).toBeNull();
+      expect(city.properties).not.toHaveProperty('villageBuildings');
+    }
+    for (const layer of ['armies', 'armyRoutes', 'sieges', 'castles', 'territories', 'sultanateBorders'])
+      expect(body.layers[layer].features).toEqual([]);
+    expect(response.headers.get('x-mamluk-public-settlements')).toBe('1');
+    expect(dependencies.identity).not.toHaveBeenCalled();
+    expect(dependencies.read).not.toHaveBeenCalled();
+  });
+  it('keeps the private campaign span limit and authentication outside the reserved atlas', async () => {
+    const broad = 'west=-180&south=-90&east=180&north=90';
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect((await GET(new Request(`https://qurabia.com/api/kingdoms/world-map/viewport?worldId=world&${broad}`))).status).toBe(503);
+    expect(dependencies.identity).toHaveBeenCalledOnce();
+    dependencies.identity.mockRejectedValue(new KingdomsHttpError(401, 'Login required'));
+    for (const world of ['world', `${PUBLIC_ATLAS_WORLD.id}-private`])
+      expect((await GET(new Request(`https://qurabia.com/api/kingdoms/world-map/viewport?worldId=${world}&${broad}`))).status).toBe(401);
+    expect(dependencies.publicLimit).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
 });

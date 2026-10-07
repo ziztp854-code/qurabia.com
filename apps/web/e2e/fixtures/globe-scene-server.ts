@@ -87,6 +87,26 @@ async function main() {
       const bounds = Object.fromEntries(['west', 'south', 'east', 'north'].map((key) => [
         key, Number(url.searchParams.get(key)),
       ])) as { west: number; south: number; east: number; north: number };
+      if (worldId === 'mamluk-public-geographic-atlas-v1') {
+        // Exercise the actual neutral repository and service, not a single-city
+        // approximation. SSR resolves server-only to the fixture's empty shim.
+        void Promise.all([
+          server.ssrLoadModule('/src/lib/mamluk-map/public-atlas.ts'),
+          server.ssrLoadModule('/src/lib/mamluk-map/viewport-service.ts'),
+        ]).then(async ([atlas, host]) => {
+          const repository = new atlas.PublicAtlasRepository(atlas.PUBLIC_ATLAS_VIEWER_ID);
+          const service = new host.MamlukViewportService(repository, {
+            maxLongitudeSpan: 360, maxLatitudeSpan: 180,
+          });
+          const payload = await service.getViewport({ worldId, bounds }, { playerId: atlas.PUBLIC_ATLAS_VIEWER_ID });
+          response.setHeader('X-Mamluk-Public-Settlements', '1');
+          json(payload);
+        }).catch((error) => {
+          console.error(error);
+          json({ error: 'Public atlas fixture unavailable' }, 503);
+        });
+        return;
+      }
       if (!['world', 'public-atlas'].includes(worldId ?? '') ||
         Object.values(bounds).some((value) => !Number.isFinite(value)) ||
         bounds.west < -180 || bounds.east > 180 || bounds.south < -90 || bounds.north > 90 ||
@@ -172,6 +192,7 @@ async function main() {
     }],
     resolve: { alias: {
       '@': path.join(process.cwd(), 'src'),
+      'server-only': path.join(process.cwd(), 'node_modules/next/dist/compiled/server-only/empty.js'),
       '@mamluk/maplibre-adapter': path.join(process.cwd(), '../../packages/mamluk-maplibre-adapter/src/index.ts'),
       '@mamluk/world-map-core': path.join(process.cwd(), '../../packages/mamluk-world-map-core/src/index.ts'),
     } },

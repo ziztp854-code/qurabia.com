@@ -80,6 +80,71 @@ async function openGlobe(page: Page, referenceOnly = false) {
   return { initialPayload, errors };
 }
 
+test('public atlas opens with every neutral city before interaction and survives repeated zoom and pan', async ({ page }, testInfo) => {
+  const worldId = 'mamluk-public-geographic-atlas-v1';
+  const errors: string[] = [];
+  const requests: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('request', (request) => {
+    if (request.url().includes('/api/kingdoms/world-map/')) requests.push(request.url());
+  });
+  const first = page.waitForResponse((response) => response.url().includes(`/viewport?worldId=${worldId}`) && response.status() === 200);
+  // Match the actual anonymous route: start with the entire globe, without a
+  // Cairo click, camera jump or any movement to trigger the first data request.
+  await page.goto('/globe?mode=atlas');
+  const response = await first;
+  const payload = await response.json() as MapPayload;
+  expect(payload.bounds.east - payload.bounds.west).toBe(360);
+  expect(payload.layers.cities.features).toHaveLength(12);
+  expect(response.headers()['x-mamluk-public-settlements']).toBe('1');
+  for (const feature of payload.layers.cities.features) {
+    expect(feature.properties.ownerPlayerId).toBeNull();
+    expect(feature.properties.ownerSultanateId).toBeNull();
+    expect(feature.properties).not.toHaveProperty('villageBuildings');
+  }
+  for (const layer of ['armies', 'armyRoutes', 'sieges', 'castles', 'territories', 'sultanateBorders'] as const)
+    expect(payload.layers[layer].features).toEqual([]);
+  await expect(page.getByText('مدن الأطلس الجغرافي', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'حدّث الخريطة', exact: true })).toBeEnabled();
+  await expect(page.getByText('١٢', { exact: true })).toBeVisible();
+  // Mobile starts with the canvas below the header. Scrolling makes the SDK's
+  // rendered-feature query observable without changing the map camera.
+  await page.locator('canvas.maplibregl-canvas').scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => {
+    const map = window.__globeFixtureMap!;
+    const layers = ['mamluk-cities', 'mamluk-village-clusters', 'mamluk-village-cluster-count'].filter((id) => map.getLayer(id));
+    return layers.length ? map.queryRenderedFeatures({ layers }).length : 0;
+  })).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__globeFixtureMap!.getLayoutProperty('mamluk-village-cluster-count', 'text-field'))).toEqual([
+    'concat', ['to-string', ['get', 'point_count_abbreviated']], ' مدينة',
+  ]);
+  expect((await camera(page)).zoom).toBeLessThanOrEqual(1.5);
+  await page.screenshot({ path: testInfo.outputPath('public-atlas-initial-globe.png'), scale: 'css' });
+  await page.evaluate(() => {
+    (window as unknown as { originalAtlasMap: unknown }).originalAtlasMap = window.__globeFixtureMap;
+  });
+  for (const [index, zoom] of [5.3, 0.4, 6.5, 1.2, 5.3, 0.4, 6.5, 1.2].entries()) {
+    await page.evaluate(({ index, zoom }) => {
+      const map = window.__globeFixtureMap!;
+      map.jumpTo({ center: [31.24967 + (index % 2 ? 0.03 : 0), 30.06263], zoom });
+      map.panBy([index % 2 ? -20 : 20, 0], { animate: false });
+    }, { index, zoom });
+    await page.waitForTimeout(400);
+    await expect.poll(() => currentCity(page)).toMatchObject({ id: 'cairo' });
+    await expect(page.getByText('جارٍ تحميل الأطلس…', { exact: true })).toHaveCount(0);
+    expect(await page.evaluate(() => window.__globeFixtureMap === (window as unknown as { originalAtlasMap: unknown }).originalAtlasMap)).toBe(true);
+  }
+  await page.getByRole('button', { name: 'عرض الكرة بالكامل', exact: true }).click();
+  await expect(page.getByText('١٢', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'حدّث الخريطة', exact: true })).toBeEnabled();
+  expect(requests.length).toBeGreaterThan(1);
+  expect(requests.every((url) => url.includes('/viewport?'))).toBe(true);
+  expect(await page.evaluate(() => Boolean(window.__globeFixtureMap!.getSource('mamluk-overview')))).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('public-atlas-after-navigation.png'), scale: 'css' });
+});
+
 async function camera(page: Page) {
   return page.evaluate(() => {
     const map = window.__globeFixtureMap!;
