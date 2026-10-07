@@ -68,6 +68,7 @@ function presentationPort(
   retainPublicLayers: () => boolean = () => false,
   ownership?: OwnershipPresentationOptions,
   visibilityFor: (layerId: string) => 'visible' | 'none' | undefined = () => undefined,
+  settlementLabel: 'قرية' | 'مدينة' = 'قرية',
 ) {
   const addLayer = (layer: AddLayerObject, before?: string) => {
     const visibility = isStyleLayer(layer) ? visibilityFor(layer.id) : undefined;
@@ -176,7 +177,7 @@ function presentationPort(
           : owned;
       addLayer(filtered, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
       if (layer.id === 'mamluk-cities')
-        for (const cluster of settlementClusters(palette)) addLayer(cluster);
+        for (const cluster of settlementClusters(palette, settlementLabel)) addLayer(cluster);
       if (layer.id === 'mamluk-territories') {
         if (ownership) {
           for (const border of playerBorderLayers(ownership)) addLayer(border);
@@ -417,6 +418,7 @@ export function createMapSession(
     () => retainPublicLayers,
     ownership,
     visibilityFor,
+    worldId === 'mamluk-public-geographic-atlas-v1' ? 'مدينة' : 'قرية',
   );
   const adapter = new ObservedAdapter(
     presentation.port,
@@ -448,6 +450,11 @@ export function createMapSession(
   adapter.resetSession(worldId);
   adapter.setProjection(projection);
   const loader = new ViewportLoader(map, adapter, {
+    // Only the reserved, neutral reference atlas supports full-globe detail.
+    // Campaign intelligence retains the default 90-degree limit and overview.
+    ...(worldId === 'mamluk-public-geographic-atlas-v1'
+      ? { maxLongitudeSpan: 360, maxLatitudeSpan: 180 }
+      : {}),
     // Only revoked access invalidates what is shown; network and data failures keep the
     // last authorized snapshot until its own expiry and retry with bounded backoff.
     retainOnError: (error) => !(error instanceof MapAuthorizationError),

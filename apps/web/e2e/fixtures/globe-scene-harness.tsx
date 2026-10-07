@@ -14,17 +14,21 @@ const router: AppRouterInstance = {
   replace: (href) => location.replace(href), prefetch: () => {},
   bfcacheId: 'globe-browser-fixture',
 };
-const referenceOnly = new URLSearchParams(location.search).get('mode') === 'public';
+const fixtureMode = new URLSearchParams(location.search).get('mode');
+const publicAtlas = fixtureMode === 'atlas';
+const referenceOnly = publicAtlas || fixtureMode === 'public';
+const worldId = publicAtlas ? 'mamluk-public-geographic-atlas-v1' : referenceOnly ? 'public-atlas' : 'world';
 const ownLocation = { longitude: 31.2357, latitude: 30.0444 };
 function FixtureMap() {
   const [mode, setMode] = useState<MapMode>('WORLD');
   const [target, setTarget] = useState('');
   return <><output aria-label="الهدف المؤكد">{target}</output><MamlukWorldMap
     mode={mode} onModeChange={setMode} onConfirmTarget={setTarget} targetVillageIds={['cairo']}
-    worlds={[{ id: referenceOnly ? 'public-atlas' : 'world', name: 'عالم الاختبار' }]}
-    initialWorldId={referenceOnly ? 'public-atlas' : 'world'}
+    worlds={[{ id: worldId, name: 'عالم الاختبار' }]}
+    initialWorldId={worldId}
     viewerPlayerId={referenceOnly ? 'public-viewer' : 'viewer'}
     referenceOnly={referenceOnly}
+    initialOverview={publicAtlas}
     {...referenceOnly ? {} : { initialLocation: ownLocation, initialVillageId: 'cairo',
       villageLocations: [{ villageId: 'cairo', name: 'القاهرة', ...ownLocation }] }}
   /></>;

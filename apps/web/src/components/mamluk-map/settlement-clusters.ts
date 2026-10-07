@@ -5,7 +5,10 @@ export const CLUSTER_LAYERS = ['mamluk-village-clusters', 'mamluk-village-cluste
 export const UNCLUSTERED = ['!', ['has', 'point_count']] as const;
 
 /** MapLibre's worker clusters the bounded authorized viewport, not a second village store. */
-export function settlementClusters(palette: MapPalette): readonly LayerSpecification[] {
+export function settlementClusters(
+  palette: MapPalette,
+  label: 'قرية' | 'مدينة' = 'قرية',
+): readonly LayerSpecification[] {
   return [
     {
       id: CLUSTER_LAYERS[0],
@@ -25,7 +28,7 @@ export function settlementClusters(palette: MapPalette): readonly LayerSpecifica
       source: 'mamluk-cities',
       filter: ['has', 'point_count'],
       layout: {
-        'text-field': ['concat', ['to-string', ['get', 'point_count_abbreviated']], ' قرية'],
+        'text-field': ['concat', ['to-string', ['get', 'point_count_abbreviated']], ` ${label}`],
         'text-size': 12,
         'text-font': ['Noto Sans Regular'],
         'text-allow-overlap': true,

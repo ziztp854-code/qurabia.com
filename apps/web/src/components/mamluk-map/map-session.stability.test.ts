@@ -18,7 +18,7 @@ afterEach(() => {
 
 it('keeps the anonymous geographic reference at global zoom without requesting private world aggregates', async () => {
   vi.useFakeTimers();
-  const fetch = vi.fn();
+  const fetch = vi.fn().mockImplementation(() => new Promise(() => {}));
   vi.stubGlobal('fetch', fetch);
   const map = new MapSdkFixture();
   map.bounds = { west: -180, east: 180, south: -80, north: 80 };
@@ -30,7 +30,8 @@ it('keeps the anonymous geographic reference at global zoom without requesting p
     { onPayload: vi.fn(), onSelection: vi.fn(), onStatus: vi.fn() },
   );
   await vi.advanceTimersByTimeAsync(1000);
-  expect(fetch).not.toHaveBeenCalled();
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(fetch.mock.calls[0]![0]).toContain('/viewport?worldId=mamluk-public-geographic-atlas-v1');
   session.dispose();
 });
 
