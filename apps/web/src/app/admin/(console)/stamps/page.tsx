@@ -37,7 +37,6 @@ export default async function StampsPage() {
           note: true,
           issuedAt: true,
           redeemedAt: true,
-          redeemedBy: true,
         },
       })
     : [];

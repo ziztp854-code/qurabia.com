@@ -5,6 +5,7 @@ export const MANAGED_APP_ROLES = ['USER', 'CONTENT_EDITOR', 'MODERATOR', 'ADMIN'
 export const QUESTION_MANAGER_ROLES = ['ADMIN', 'OWNER'] as const;
 
 export const ADMIN_PERMISSIONS = [
+  'platform.users.manage',
   'MANAGE_USERS',
   'MANAGE_ROLES',
   'MANAGE_CONTENT',
@@ -19,7 +20,7 @@ const ROLE_PERMISSIONS: Readonly<Record<AppRole, readonly AdminPermission[]>> = 
   USER: [],
   CONTENT_EDITOR: ['MANAGE_CONTENT', 'PUBLISH_CONTENT', 'VIEW_REPORTS'],
   MODERATOR: ['MANAGE_ROOMS', 'VIEW_REPORTS'],
-  ADMIN: ADMIN_PERMISSIONS,
+  ADMIN: ADMIN_PERMISSIONS.filter((permission) => permission !== 'platform.users.manage'),
   OWNER: ADMIN_PERMISSIONS,
 };
 
@@ -32,7 +33,9 @@ export const ROLE_LABELS: Readonly<Record<AppRole, string>> = {
 };
 
 export const PERMISSION_LABELS: Readonly<Record<AdminPermission, string>> = {
-  MANAGE_USERS: 'إدارة المستخدمين',
+  'platform.users.manage': 'إدارة حسابات المستخدمين (المدير فقط)',
+  // Legacy tool capability, retained for stamps and the existing kingdoms console.
+  MANAGE_USERS: 'إدارة أدوات المنصة',
   MANAGE_ROLES: 'تغيير الأدوار',
   MANAGE_CONTENT: 'إدارة المحتوى',
   PUBLISH_CONTENT: 'نشر المحتوى',
@@ -50,6 +53,8 @@ export function isAdminPermission(value: unknown): value is AdminPermission {
 }
 
 export function hasPermission(role: unknown, permission: unknown): boolean {
+  // Reserved capability: general admin grants or future role customization cannot confer it.
+  if (permission === 'platform.users.manage') return role === 'OWNER';
   return (
     isAppRole(role) && isAdminPermission(permission) && ROLE_PERMISSIONS[role].includes(permission)
   );

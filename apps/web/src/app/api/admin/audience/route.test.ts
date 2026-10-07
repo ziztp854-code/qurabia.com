@@ -56,10 +56,10 @@ describe('admin audience route', () => {
     await expect(response.json()).resolves.toMatchObject({ ok: true, presentNow: 2, uniqueToday: 9 });
   });
 
-  it('forbids a moderator', async () => {
+  it.each(['MODERATOR', 'CONTENT_EDITOR', 'USER'])('returns HTTP 403 for %s before fetching the snapshot', async (role) => {
     mocks.findUnique.mockResolvedValue({
       id: 'user-1',
-      role: 'MODERATOR',
+      role,
       status: 'ACTIVE',
       tokenVersion: 1,
     });
@@ -67,6 +67,15 @@ describe('admin audience route', () => {
     const response = await GET();
     expect(response.status).toBe(403);
     expect(mocks.getAudienceSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('keeps aggregate audience metrics accessible to ADMIN without exposing accounts', async () => {
+    mocks.findUnique.mockResolvedValue({ id: 'user-1', role: 'ADMIN', status: 'ACTIVE', tokenVersion: 1 });
+    const response = await GET();
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload).not.toHaveProperty('users');
+    expect(payload).not.toHaveProperty('email');
   });
 
   it('does not expose the snapshot without an authenticated session', async () => {

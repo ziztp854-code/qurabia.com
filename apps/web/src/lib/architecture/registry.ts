@@ -207,7 +207,7 @@ export const ARCHITECTURE_REGISTRY: ArchitectureNodeRecord[] = [
     description: `Prisma Model فعلي: ${label}`, views: ['data' as const], dependencies: dependencies as string[], evidence: [`prisma/schema.prisma: model ${label}`], files: [file('Schema', 'prisma/schema.prisma')],
   })),
   ...[
-    ['admin-users', 'إدارة المستخدمين', '/admin/users', 'MANAGE_USERS', 'apps/web/src/app/admin/(console)/users/page.tsx'],
+    ['admin-users', 'إدارة المستخدمين', '/admin/users', 'platform.users.manage', 'apps/web/src/app/admin/(console)/users/page.tsx'],
     ['admin-content', 'بنك الأسئلة الإداري', '/admin/content', 'MANAGE_CONTENT', 'apps/web/src/app/admin/(console)/content/page.tsx'],
     ['admin-rooms', 'إدارة الغرف', '/admin/rooms', 'MANAGE_ROOMS', 'apps/web/src/app/admin/(console)/rooms/page.tsx'],
     ['admin-reports', 'التقارير', '/admin/reports', 'VIEW_REPORTS', 'apps/web/src/app/admin/(console)/reports/page.tsx'],

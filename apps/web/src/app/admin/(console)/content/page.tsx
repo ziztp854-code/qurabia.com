@@ -5,6 +5,7 @@ import { Button } from '@/components/ui';
 import styles from '@/components/admin/admin.module.css';
 import { QuestionBankFilters } from '@/components/admin/question-bank-filters';
 import { getPrismaClient } from '@/lib/auth/prisma';
+import { hasPermission } from '@/lib/auth/authorization';
 import { requirePermission } from '@/lib/auth/session';
 import {
   buildQuestionBankHref,
@@ -44,7 +45,8 @@ export default async function AdminContentPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePermission('MANAGE_CONTENT', '/admin/content');
+  const actor = await requirePermission('MANAGE_CONTENT', '/admin/content');
+  const canReadAccounts = hasPermission(actor.role, 'platform.users.manage');
   const values = await searchParams;
   const result = valueOf(values.result);
   const filters = parseQuestionBankFilters(values);
@@ -88,7 +90,7 @@ export default async function AdminContentPage({
           gameTypes: true,
           updatedAt: true,
           category: { select: { name: true } },
-          owner: { select: { name: true, email: true } },
+          owner: canReadAccounts ? { select: { name: true, email: true } } : false,
           _count: { select: { options: true } },
         },
       }),
@@ -99,7 +101,7 @@ export default async function AdminContentPage({
           id: true,
           title: true,
           status: true,
-          owner: { select: { name: true, email: true } },
+          owner: canReadAccounts ? { select: { name: true, email: true } } : false,
           _count: { select: { questions: true } },
         },
       }),
@@ -179,7 +181,7 @@ export default async function AdminContentPage({
                         {(filters.page - 1) * PAGE_SIZE + index + 1}. {question.prompt}
                       </Link>
                       <small>
-                        {question.owner.name || question.owner.email || '—'} ·{' '}
+                        {question.owner?.name || question.owner?.email || '—'} ·{' '}
                         {formatNumber(question._count.options)} خيارات
                       </small>
                     </span>
@@ -257,7 +259,7 @@ export default async function AdminContentPage({
             {quizzes.map((quiz) => (
               <tr key={quiz.id}>
                 <td data-label="المسابقة">{quiz.title}</td>
-                <td data-label="المالك">{quiz.owner.name || quiz.owner.email || '—'}</td>
+                <td data-label="المالك">{quiz.owner?.name || quiz.owner?.email || '—'}</td>
                 <td data-label="الحالة">{quiz.status}</td>
                 <td data-label="عدد الأسئلة">{formatNumber(quiz._count.questions)}</td>
                 <td data-label="الإجراء">

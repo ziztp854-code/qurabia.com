@@ -43,7 +43,7 @@ describe('admin authorization', () => {
 
   it.each([
     ['OWNER', ADMIN_PERMISSIONS],
-    ['ADMIN', ADMIN_PERMISSIONS],
+    ['ADMIN', ADMIN_PERMISSIONS.filter((permission) => permission !== 'platform.users.manage')],
     ['CONTENT_EDITOR', ['MANAGE_CONTENT', 'PUBLISH_CONTENT', 'VIEW_REPORTS']],
     ['MODERATOR', ['MANAGE_ROOMS', 'VIEW_REPORTS']],
     ['USER', []],
@@ -71,7 +71,22 @@ describe('admin authorization', () => {
 
   it('يوفّر تسمية عربية لكل صلاحية إدارية', () => {
     expect(Object.keys(PERMISSION_LABELS)).toEqual([...ADMIN_PERMISSIONS]);
-    expect(PERMISSION_LABELS.MANAGE_USERS).toBe('إدارة المستخدمين');
+    expect(PERMISSION_LABELS.MANAGE_USERS).toBe('إدارة أدوات المنصة');
     expect(PERMISSION_LABELS.VIEW_AUDIT).toBe('قراءة سجل النشاط');
   });
+});
+
+ it.each(['ADMIN', 'MODERATOR', 'CONTENT_EDITOR', 'USER', 'SUPER_ADMIN', 'DIRECTOR', '*', undefined])(
+  'reserves account management despite general grants: %s', (role) => {
+    expect(hasPermission(role, 'platform.users.manage')).toBe(false);
+    expect(hasPermission(role, '*')).toBe(false);
+    expect(permissionsForRole(role)).not.toContain('platform.users.manage');
+  },
+);
+ it('keeps the existing director and general admin sections available', () => {
+  expect(hasPermission('OWNER', 'platform.users.manage')).toBe(true);
+  for (const permission of ADMIN_PERMISSIONS.filter((p) => p !== 'platform.users.manage')) {
+    expect(hasPermission('ADMIN', permission)).toBe(true);
+    expect(hasPermission('OWNER', permission)).toBe(true);
+  }
 });

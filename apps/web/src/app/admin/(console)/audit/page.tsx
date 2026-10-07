@@ -1,6 +1,6 @@
 import { formatNumber } from '@/lib/utils';
 import styles from '@/components/admin/admin.module.css';
-import { ROLE_LABELS } from '@/lib/auth/authorization';
+import { ROLE_LABELS, hasPermission } from '@/lib/auth/authorization';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { requirePermission } from '@/lib/auth/session';
 
@@ -11,7 +11,8 @@ export default async function AdminAuditPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePermission('VIEW_AUDIT', '/admin/audit');
+  const actor = await requirePermission('VIEW_AUDIT', '/admin/audit');
+  const canReadAccounts = hasPermission(actor.role, 'platform.users.manage');
   const rawPage = (await searchParams).page;
   const page = Math.max(1, Number.parseInt(typeof rawPage === 'string' ? rawPage : '', 10) || 1);
   const prisma = getPrismaClient();
@@ -24,13 +25,13 @@ export default async function AdminAuditPage({
         id: true,
         action: true,
         resourceType: true,
-        resourceId: true,
+        resourceId: canReadAccounts,
         result: true,
         reasonCode: true,
         actorRole: true,
         createdAt: true,
-        actor: { select: { name: true, email: true } },
-        targetUser: { select: { name: true, email: true } },
+        actor: canReadAccounts ? { select: { name: true, email: true } } : false,
+        targetUser: canReadAccounts ? { select: { name: true, email: true } } : false,
       },
     }),
     prisma.auditLog.count(),

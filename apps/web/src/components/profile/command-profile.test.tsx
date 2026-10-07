@@ -47,7 +47,7 @@ describe('CommandProfile', () => {
     expect(screen.getByRole('link', { name: /بنك الأسئلة/ })).toHaveAttribute('href', '/questions');
     expect(screen.getByRole('link', { name: /إدارة الصفحة/ })).toHaveAttribute('href', '/host');
     expect(screen.getByRole('heading', { name: /صلاحيات الخاص/ })).toBeInTheDocument();
-    expect(screen.getByText('إدارة المستخدمين')).toBeInTheDocument();
+    expect(screen.getByText('إدارة حسابات المستخدمين (المدير فقط)')).toBeInTheDocument();
     expect(screen.getAllByText('Unlocked').length).toBeGreaterThan(0);
     expect(screen.queryByText('أمين المحتوى')).not.toBeInTheDocument();
     expect(screen.queryByText('البريد')).not.toBeInTheDocument();
