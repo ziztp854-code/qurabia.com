@@ -1,0 +1,51 @@
+html,
+body {
+  margin: 0;
+  background: var(--kingdoms-ui-background);
+  color: var(--kingdoms-ui-foreground);
+  font-family: var(--font-arabic);
+}
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-block-end: 1px solid var(--kingdoms-ui-border);
+}
+.preview-toolbar select,
+.preview-toolbar button {
+  min-block-size: 44px;
+  padding: 8px 12px;
+  margin-inline-start: 8px;
+  color: var(--kingdoms-ui-foreground);
+  background: var(--kingdoms-ui-surface);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: 8px;
+  font: inherit;
+}
+.preview-error {
+  padding: 20px;
+  color: var(--kingdoms-ui-danger);
+}
+@media (max-width: 760px) {
+  .preview-toolbar {
+    padding: 8px 12px;
+  }
+}
+@font-face {
+  font-family: 'Cairo Variable';
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url('/maplibre/cairo-arabic-wght-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Cairo Variable';
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url('/maplibre/cairo-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF;
+}

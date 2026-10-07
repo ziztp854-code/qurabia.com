@@ -10,6 +10,8 @@ import {
 import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config';
 import { addCommanderExperience, availableCommander, commanderConfig, createCommander, normalizeCommanders, projectCommanders, setCommander } from './commanders';
 import { commanderTravelFactor } from './commander-movement';
+import { abandonedLayout, abandonedVillage, abandonedVillageSupply, isAbandonedVillageCell, projectAbandonedVillages } from './abandoned-villages';
+import type { AbandonedVillage } from './abandoned-village-types';
 import { trainingBuilding, trainingDurationMs } from './training';
 import { normalizeWorldState } from './world-compatibility';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
@@ -120,7 +122,7 @@ function found(w: KingdomsWorld, actor: string, name: string, at: number) {
         if (
           !occupied.has(`${x},${y}`) &&
           !w.territories[`${x},${y}`] &&
-          !resourceSiteAt(w.config.worldRadius, x, y)
+          !resourceSiteAt(w.config.worldRadius, x, y) && !isAbandonedVillageCell(w, x, y)
         ) {
           point = { x, y };
           break;
@@ -131,7 +133,7 @@ function found(w: KingdomsWorld, actor: string, name: string, at: number) {
         if (
           !occupied.has(`${x},${y}`) &&
           !w.territories[`${x},${y}`] &&
-          !resourceSiteAt(w.config.worldRadius, x, y)
+          !resourceSiteAt(w.config.worldRadius, x, y) && !isAbandonedVillageCell(w, x, y)
         ) {
           point = { x, y };
           break;
@@ -203,6 +205,7 @@ function march(
   actor: string,
   c: Extract<KingdomsCommand, { type: 'march' }>,
   at: number,
+  abandonedTarget?: AbandonedVillage,
 ) {
   const v = own(w, actor, c.villageId),
     p = w.players[actor];
@@ -228,13 +231,15 @@ function march(
   const site = resourceSiteAt(w.config.worldRadius, c.targetX, c.targetY);
   if (c.mission === 'gather') {
     assertRule(
-      site && !target && !w.territories[`${c.targetX},${c.targetY}`],
+      (abandonedTarget || site) && !target && !w.territories[`${c.targetX},${c.targetY}`],
       'اختر موقع موارد متاحًا',
     );
     const preview = gatherPreview(w.config, v, { x: c.targetX, y: c.targetY }, c.troops, commander);
     assertRule(preview.carry > 0, 'تحتاج قوات لها سعة حمل لجمع الموارد');
     assertRule(
-      Math.floor(resourceSiteSupply(w, c.targetX, c.targetY, at)) > 0,
+      abandonedTarget
+        ? resourceKeys.some(key => Math.floor(abandonedVillageSupply(w, abandonedTarget, at)[key]) > 0)
+        : Math.floor(resourceSiteSupply(w, c.targetX, c.targetY, at)) > 0,
       'الموقع مستنزف؛ انتظر تجدّد موارده',
     );
     assertRule(
@@ -261,7 +266,7 @@ function march(
       'التعزيز لقرى المملكة أو التحالف',
     );
   if (c.mission === 'settle' || c.mission === 'occupy') {
-    assertRule(!site, 'هذا موقع موارد؛ لا يمكن تأسيس قرية أو احتلاله');
+    assertRule(!site && !isAbandonedVillageCell(w, c.targetX, c.targetY), 'هذا موقع موارد؛ لا يمكن تأسيس قرية أو احتلاله');
     assertRule(!target, 'الأرض مشغولة');
     const key = `${c.targetX},${c.targetY}`;
     assertRule(!w.territories[key] || w.territories[key] === actor, 'الأرض تابعة لمملكة أخرى');
@@ -307,7 +312,9 @@ function march(
   }
   w.movements.push({
     ...(commander ? { commanderId: commander.id } : {}),
-    ...(c.mission === 'gather' && site
+    ...(abandonedTarget
+      ? { abandonedGather: { targetId: abandonedTarget.id, worldId: abandonedLayout(w)!.worldId } }
+      : c.mission === 'gather' && site
       ? { gather: { siteId: site.id, resource: site.resource } }
       : {}),
     id: nextId(w, 'm'),
@@ -730,6 +737,13 @@ export function executeCommand(
       case 'train':
         train(w, actorId, c, at);
         break;
+      case 'gatherAbandoned': {
+        const target = abandonedVillage(w, c.targetId);
+        assertRule(target, 'القرية المهجورة غير متاحة');
+        march(w, actorId, { type: 'march', villageId: c.villageId, mission: 'gather',
+          targetX: target.x, targetY: target.y, troops: c.troops, commanderId: c.commanderId }, at, target);
+        break;
+      }
       case 'march':
         march(w, actorId, c, at);
         break;
@@ -851,6 +865,9 @@ export function projectWorld(state: KingdomsWorld, actorId: string, now: number)
     commanders: projectCommanders(w, actorId),
     serverNow: now,
     resourceSites: projectResourceSites(w, actorId, Math.max(now, w.updatedAt)),
+    abandonedVillages: w.abandonedVillages && Object.hasOwn(w.players, actorId)
+      ? projectAbandonedVillages(w, actorId, w.abandonedVillages.worldId, Math.max(now, w.updatedAt))
+      : [],
     allianceEvent: projectAllianceEvent(w, actorId, Math.max(now, w.updatedAt)),
     config: w.config,
     season: w.season,

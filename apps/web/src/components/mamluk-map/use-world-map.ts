@@ -76,6 +76,7 @@ export function useWorldMap(
   const [visibleLayers, setVisibleLayers] = useState(initialMapLayers);
   const visibleLayersRef = useRef(visibleLayers);
   const mapRef = useRef<LibreMap | null>(null);
+  const mapStyleReadyRef = useRef(false);
   const sessionRef = useRef<ReturnType<typeof createMapSession> | null>(null);
   useEffect(() => {
     visibleLayersRef.current = visibleLayers;
@@ -187,6 +188,7 @@ export function useWorldMap(
     let session: ReturnType<typeof createMapSession> | null = null;
     let settlements: SettlementPresentation | null = null;
     let styleReady = false;
+    mapStyleReadyRef.current = false;
     let stopRevisions: (() => void) | undefined;
     const artworkController = new AbortController();
     async function initialize() {
@@ -232,6 +234,7 @@ export function useWorldMap(
         map.on('idle', () => map?.getCanvas().setAttribute('data-map-ready', 'true'));
         map.on('style.load', () => {
           styleReady = true;
+          mapStyleReadyRef.current = true;
         });
         map.on('error', () => {
           if (!cancelled) setStatus('error');
@@ -419,6 +422,8 @@ export function useWorldMap(
   }
   return {
     container,
+    mapRef,
+    mapStyleReadyRef,
     visibleLayers,
     toggleLayer: (group: MapLayerGroup) => {
       if (
