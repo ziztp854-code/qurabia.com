@@ -15,12 +15,14 @@ on:
       - 'apps/web/public/game-art/kingdoms/**'
       - 'apps/web/package.json'
       - 'apps/web/e2e/kingdoms*.spec.ts'
+      - 'apps/web/e2e/palace-*.spec.ts'
       - 'apps/web/e2e/village-scene.spec.ts'
       - 'apps/web/e2e/living-city-regression.spec.ts'
       - 'apps/web/e2e/living-city-regression.spec.ts-snapshots/**'
       - 'apps/web/e2e/fixtures/village-scene*'
       - 'apps/web/playwright.village-scene.config.ts'
       - 'apps/web/playwright.city-scenes.config.ts'
+      - 'apps/web/playwright.animation-preview.config.ts'
       - 'apps/web/playwright.living-city-regression.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
       - 'apps/web/src/app/api/**/kingdoms/**'
@@ -45,12 +47,14 @@ on:
       - 'apps/web/public/game-art/kingdoms/**'
       - 'apps/web/package.json'
       - 'apps/web/e2e/kingdoms*.spec.ts'
+      - 'apps/web/e2e/palace-*.spec.ts'
       - 'apps/web/e2e/village-scene.spec.ts'
       - 'apps/web/e2e/living-city-regression.spec.ts'
       - 'apps/web/e2e/living-city-regression.spec.ts-snapshots/**'
       - 'apps/web/e2e/fixtures/village-scene*'
       - 'apps/web/playwright.village-scene.config.ts'
       - 'apps/web/playwright.city-scenes.config.ts'
+      - 'apps/web/playwright.animation-preview.config.ts'
       - 'apps/web/playwright.living-city-regression.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
       - 'apps/web/src/app/api/**/kingdoms/**'
@@ -118,6 +122,8 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
       - name: Verify dedicated Living City scenes and all release viewports
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.city-scenes.config.ts
+      - name: Verify palace motion and pooled-resource cleanup
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.animation-preview.config.ts --workers=1
       - name: Preserve failed village browser evidence
         if: failure()
         uses: actions/upload-artifact@v7.0.1
@@ -126,6 +132,7 @@ jobs:
           path: |
             apps/web/test-results/village-scene/
             apps/web/test-results/city-scenes/
+            apps/web/test-results/animation-preview/
             apps/web/playwright-report/city-scenes/
           retention-days: 7
       - name: Build web application

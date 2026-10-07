@@ -13,10 +13,24 @@ async function enter(page: Page) {
 }
 async function frames(page: Page) { return Number(await page.locator('[data-sultan-palace] canvas').getAttribute('data-palace-frames') ?? 0); }
 const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
+const resourceWarnings = new WeakMap<Page, { text: string; stack: unknown }[]>();
 test.beforeEach(async ({ page, request }) => {
+  const warnings: { text: string; stack: unknown }[] = [];
+  resourceWarnings.set(page, warnings);
+  const diagnostics = await page.context().newCDPSession(page);
+  await diagnostics.send('Runtime.enable');
+  diagnostics.on('Runtime.consoleAPICalled', event => {
+    const text = event.args.map(argument => String(argument.value ?? '')).join(' ');
+    if (text.includes('[BindGroup]')) warnings.push({ text, stack: event.stackTrace });
+  });
   await request.post('/__village_test/city-scenario');
   await page.goto('/');
   await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
+});
+test.afterEach(async ({ page }, info) => {
+  const warnings = resourceWarnings.get(page) ?? [];
+  await info.attach('pixi-resource-warnings', { contentType: 'application/json', body: JSON.stringify(warnings, null, 2) });
+  expect(warnings).toEqual([]);
 });
 test('independent palace camera, grounded garden colours, save and return', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));

@@ -1,5 +1,21 @@
-import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, MaskFilter, Sprite, Texture, TilingSprite } from 'pixi.js';
 import type { WorldSize } from '@/lib/kingdoms/village/types';
+
+/** Pixi's filter input belongs to its temporary texture pool. A second scene
+ * resizing can prune that pool while the previous draw still subscribes to it.
+ * Detach the sampled input after the draw; the authored mask remains shared. */
+class WaterMaskFilter extends MaskFilter {
+  override apply(...args: Parameters<MaskFilter['apply']>) {
+    try { super.apply(...args); }
+    finally {
+      const group = this.groups[0];
+      if (group?.getResource(1) === args[1].source) {
+        group.setResource(Texture.EMPTY.source, 1);
+        group.setResource(Texture.EMPTY.source.style, 2);
+      }
+    }
+  }
+}
 
 /** Two drifting passes share a tiny immutable ripple atlas. The original
  * terrain never moves; only the authored water alpha mask receives highlights. */
@@ -39,7 +55,9 @@ export function createCityWaterLayer(world: WorldSize, maskTexture: Texture) {
     layer.addChild(sprite);
     return sprite;
   }) : [];
-  layer.addChild(mask); layer.mask = mask;
+  mask.renderable = false; layer.addChild(mask);
+  const filter = new WaterMaskFilter({ sprite: mask, resolution: 'inherit', antialias: 'inherit' });
+  layer.filters = [filter];
   let time = 0;
   return {
     layer,
@@ -50,6 +68,6 @@ export function createCityWaterLayer(world: WorldSize, maskTexture: Texture) {
         sprite.tilePosition.set(time * 3.1 * direction + index * 113, time * .48 + index * 49);
       });
     },
-    destroy() { layer.destroy({ children: true }); texture?.destroy(true); },
+    destroy() { layer.filters = null; filter.destroy(); layer.destroy({ children: true }); texture?.destroy(true); },
   };
 }
