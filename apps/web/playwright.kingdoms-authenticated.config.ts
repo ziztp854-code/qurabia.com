@@ -18,7 +18,7 @@ if (
 const baseURL = 'http://127.0.0.1:3000';
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'kingdoms-authenticated.spec.ts',
+  testMatch: ['kingdoms-authenticated.spec.ts', 'kingdoms-palace.spec.ts'],
   fullyParallel: false,
   workers: 1,
   // The authenticated journey also recruits, assigns and returns a commander

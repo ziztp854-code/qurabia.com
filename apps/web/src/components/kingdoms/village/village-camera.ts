@@ -14,6 +14,7 @@ import type {
   VillageSceneHandle,
   VillageTarget,
   WorldPoint,
+  WorldRect,
   WorldSize,
 } from '@/lib/kingdoms/village/types';
 
@@ -147,6 +148,9 @@ export class VillageCamera implements VillageSceneHandle {
     return { ...camera, state: camera.zoom === 1 ? 'CITY_OVERVIEW' : 'CITY_EXPLORE' };
   }
   zoomBy = (factor: number) => this.animate(this.exploring(zoomCamera(this.camera, factor)));
+  focusRect = (rect: WorldRect, preferredZoom?: number) => {
+    this.animate({ ...focusCamera(this.camera, rect, undefined, preferredZoom), state: 'CITY_EXPLORE' });
+  };
   zoomTo = (zoom: number, onComplete?: () => void) => {
     const target = clampCamera({ ...this.camera, zoom });
     const city = this.placement('hall');

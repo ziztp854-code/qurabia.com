@@ -3,6 +3,11 @@ import { cityActorPosition, type getCityComposition } from '@/lib/kingdoms/villa
 import type { QualitySettings } from '@/lib/kingdoms/village/quality';
 import type { SceneColors } from './village-layers';
 import { gardenAsset, type GardenPlacement } from '@/lib/kingdoms/palace-garden';
+import { getGardenProjection } from '@/lib/kingdoms/village/garden-projection';
+import { createCityWaterLayer } from './city-water-layer';
+import { gardenColorTexture } from './garden-color-texture';
+
+export const cityWaterMaskAsset = (profile: 'desktop' | 'portrait') => `/game-art/kingdoms/city-hub/water-mask-${profile}.png`;
 
 export const cityLifeAssets = {
   guard: '/game-art/kingdoms/city-hub/guard-walk-atlas.webp',
@@ -13,23 +18,29 @@ export const cityLifeAssets = {
   flags: '/game-art/kingdoms/city-hub/banner-flutter-atlas.webp',
 } as const;
 
-export function createCityLifeLayer(city: ReturnType<typeof getCityComposition>, assets: ReadonlyMap<string,Texture>, quality: QualitySettings, colors: SceneColors, garden: readonly GardenPlacement[] = []) {
+export function createCityLifeLayer(city: ReturnType<typeof getCityComposition>, assets: ReadonlyMap<string,Texture>, quality: QualitySettings, colors: SceneColors, garden: readonly GardenPlacement[] = [], initialElapsed = 0) {
   const layer=new Container();
   layer.label='city-life';
   layer.sortableChildren=true;
   const owned: Texture[]=[];
+  const ownedColors: Texture[]=[];
   const frames=new Map<string,Texture[]>();
-  const gardenArea=city.landmarks.find(landmark=>landmark.id==='citadel')!.rect;
+  const waterMask=assets.get(cityWaterMaskAsset(city.id));
+  const water=quality.environment && waterMask ? createCityWaterLayer(city.world,waterMask) : undefined;
+  if(water){water.layer.zIndex=-1;layer.addChild(water.layer);}
   for(const placement of garden) {
-    const atlas=assets.get(gardenAsset(placement.itemId,{thumbnail:true}));
-    if(!atlas)continue;
+    const source=assets.get(gardenAsset(placement.itemId,{thumbnail:true}));
+    if(!source)continue;
+    const colored=placement.color ? gardenColorTexture(source,placement.color,placement.itemId) : null;
+    if(colored)ownedColors.push(colored);
+    const atlas=colored ?? source;
     const sprite=new Sprite(atlas);
     sprite.label=`city-owned-garden-${placement.slotId}`;
-    sprite.anchor.set(.5,1);
-    const row=Math.floor(placement.slotId/4),column=placement.slotId%4;
-    sprite.height=placement.itemId==='cypress-tree'?20:13;
-    sprite.scale.x=sprite.scale.y;
-    sprite.position.set(gardenArea.x+gardenArea.width*(.15+column*.23),gardenArea.y+gardenArea.height*(.3+row*.25));
+    const projection=getGardenProjection(placement.itemId,placement.slotId,city.id);
+    sprite.anchor.set(projection.anchorX,projection.anchorY);
+    sprite.width=projection.width*city.world.width;
+    sprite.height=projection.height*city.world.height;
+    sprite.position.set(projection.x*city.world.width,projection.y*city.world.height);
     sprite.zIndex=sprite.y;
     layer.addChild(sprite);
   }
@@ -54,14 +65,20 @@ export function createCityLifeLayer(city: ReturnType<typeof getCityComposition>,
     const sprite=new Sprite(textures[0]);
     sprite.label=`city-actor-${route.kind}-${index}`;
     sprite.anchor.set(.5,1);
-    const height=route.kind==='caravan'?(city.id==='portrait'?27:22):(city.id==='portrait'?18:14);
+    const height=route.height ?? (route.kind==='caravan'?(city.id==='portrait'?27:22):(city.id==='portrait'?18:14));
     const bounds=actorBounds[route.kind][0];
     const scale=height/(bounds[3]-bounds[1]);
     sprite.scale.set(scale);
-    layer.addChild(sprite);
-    return [{sprite,route,textures,scale}];
+    const turn=new Sprite(textures[0]);
+    turn.label=`city-turn-${route.kind}-${index}`;
+    turn.scale.set(scale);turn.alpha=0;
+    const shadow=new Graphics();
+    shadow.ellipse(0,0,height*.23,height*.065).fill({color:colors.dust,alpha:.17});
+    shadow.label=`city-foot-shadow-${index}`;
+    layer.addChild(shadow,sprite,turn);
+    return [{sprite,turn,shadow,route,textures,scale}];
   });
-  const palms=city.palms.flatMap((point,index)=>{
+  city.palms.flatMap((point,index)=>{
     const atlas=assets.get(index===0?cityLifeAssets.palmA:cityLifeAssets.palmB);
     if(!quality.environment||!atlas)return [];
     const sprite=new Sprite(atlas);
@@ -72,7 +89,7 @@ export function createCityLifeLayer(city: ReturnType<typeof getCityComposition>,
     sprite.position.set(point.x*city.world.width,point.y*city.world.height);
     sprite.zIndex=sprite.y;
     layer.addChild(sprite);
-    return [{sprite,index}];
+    return [sprite];
   });
   const environment=(['flags'] as const).flatMap(kind=>{
     if (!quality.environment) return [];
@@ -91,38 +108,42 @@ export function createCityLifeLayer(city: ReturnType<typeof getCityComposition>,
     });
   });
   const glints=new Graphics();
-  glints.label='city-water-and-atmosphere';
+  glints.label='city-atmosphere';
   glints.zIndex=city.world.height+1;
   layer.addChild(glints);
-  let frozenElapsed=0;
+  let frozenElapsed=initialElapsed;
   const update=(elapsed:number,animate:boolean,npcs=true)=>{
     if(animate)frozenElapsed=elapsed;
     const time=frozenElapsed;
     for (const actor of actors) {
-      actor.sprite.visible=npcs;
       const point=cityActorPosition(actor.route,time,city.world);
-      actor.sprite.position.set(point.x,point.y);
-      actor.sprite.scale.x=actor.scale*point.facing;
-      actor.sprite.zIndex=point.y;
-      const frame=Math.floor(time/200)%4;
-      actor.sprite.texture=actor.textures[frame];
+      const frame=Math.floor(point.gait*4)%4;
       const bounds=actorBounds[actor.route.kind][frame];
-      actor.sprite.anchor.set((bounds[0]+bounds[2])/2/actor.sprite.texture.width,bounds[3]/actor.sprite.texture.height);
+      for(const sprite of [actor.sprite,actor.turn]){
+        sprite.visible=npcs;
+        sprite.position.set(point.x,point.y);
+        sprite.zIndex=point.y;
+        sprite.texture=actor.textures[frame];
+        sprite.anchor.set((bounds[0]+bounds[2])/2/sprite.texture.width,bounds[3]/sprite.texture.height);
+      }
+      actor.sprite.scale.x=actor.scale*point.heading;
+      actor.turn.scale.x=-actor.scale*point.heading;
+      actor.sprite.alpha=1-point.turnMix;
+      actor.turn.alpha=point.turnMix;
+      actor.shadow.visible=npcs;
+      actor.shadow.position.set(point.x,point.y);
+      actor.shadow.zIndex=point.y-.01;
     }
     for (const item of environment) item.sprite.texture=item.textures[Math.floor((time+item.offset)/360)%4];
-    for(const palm of palms)palm.sprite.rotation=Math.sin(time/2200+palm.index)*.008;
+    // Palm clusters include their ground; rotating the full raster lifts roots.
+    water?.update(time,animate);
     glints.clear();
     if (!animate || !quality.environment) return;
-    city.canals.forEach((point,index)=>{
-      const x=point.x*city.world.width,y=point.y*city.world.height;
-      const alpha=.045+.07*(1+Math.sin(elapsed/1800+index*1.8))/2;
-      for (let glint=0;glint<3;glint++) glints.moveTo(x+glint*10,y+glint*3).lineTo(x+glint*10+7,y+glint*3+1).stroke({color:colors.light,width:1,alpha});
-    });
     if (quality.particles) for(let index=0;index<5;index++) {
       const phase=(elapsed/15000+index*.173)%1;
       glints.circle((.47+index*.013)*city.world.width,(.61-phase*.025)*city.world.height,1).fill({color:colors.dust,alpha:Math.sin(phase*Math.PI)*.13});
     }
   };
-  update(0,false);
-  return {layer,update,destroy:()=>{layer.destroy({children:true});owned.forEach(texture=>texture.destroy());frames.clear();}};
+  update(initialElapsed,false);
+  return {layer,actorCount:actors.length,update,destroy:()=>{water?.destroy();layer.destroy({children:true});owned.forEach(texture=>texture.destroy());ownedColors.forEach(texture=>texture.destroy(true));frames.clear();}};
 }

@@ -2,9 +2,13 @@
 
 /* eslint-disable @next/next/no-img-element -- Calibrated alpha sprites and pre-generated small thumbnails preserve the artwork projection. */
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useContext, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { PalaceSceneContext } from './palace-scene-context';
+import { getGardenProjection } from '@/lib/kingdoms/village/garden-projection';
+import { PALACE_WORLD, palaceSlotBounds } from '@/lib/kingdoms/village/palace-scene-layout';
 import {
   gardenAsset, gardenCatalog, gardenCategories, gardenSlots, gardenViewSchema,
+  gardenColors, type GardenColor,
   type GardenCategory, type GardenItemId, type GardenPlacement, type PalaceGardenView,
 } from '@/lib/kingdoms/palace-garden';
 import styles from './palace-garden.module.css';
@@ -18,10 +22,11 @@ export function PalaceGarden(props: PalaceGardenProps) {
 }
 
 function GardenEditor({ worldId, villageId, playerId, onSaved }: PalaceGardenProps) {
+  const scene = useContext(PalaceSceneContext);
   const [saved, setSaved] = useState<GardenPlacement[]>([]);
   const [draft, setDraft] = useState<GardenPlacement[]>([]);
-  const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [editing, setEditing] = useState(scene?.selectedSlot != null);
+  const [selected, setSelected] = useState<number | null>(scene?.selectedSlot ?? null);
   const [category, setCategory] = useState<GardenCategory>('roses');
   const [phase, setPhase] = useState<'loading' | 'ready' | 'saving' | 'failed'>('loading');
   const [error, setError] = useState('');
@@ -32,6 +37,16 @@ function GardenEditor({ worldId, villageId, playerId, onSaved }: PalaceGardenPro
   const query = new URLSearchParams({ worldId, villageId }).toString();
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const busy = phase === 'loading' || phase === 'saving';
+  const shown = editing ? draft : saved;
+  const updateSceneGarden = scene?.setGarden, registerSelection = scene?.registerSelection;
+  useEffect(() => { updateSceneGarden?.(shown); }, [shown, updateSceneGarden]);
+  useEffect(() => registerSelection?.(id => {
+    if (phase === 'ready') { setEditing(true); setSelected(id); }
+  }), [registerSelection, phase]);
+  function colorPlant(color: GardenColor) {
+    if (selected === null || busy) return;
+    setDraft(current => current.map(item => item.slotId === selected ? { ...item, color } : item));
+  }
 
   async function requestGarden(init: RequestInit, signal: AbortSignal): Promise<PalaceGardenView> {
     const response = await fetch(`/api/kingdoms/palace-garden${init.method === 'PUT' ? '' : `?${query}`}`, {
@@ -81,6 +96,7 @@ function GardenEditor({ worldId, villageId, playerId, onSaved }: PalaceGardenPro
       const reloaded = await requestGarden({}, controller.signal);
       if (controller.signal.aborted) return;
       setSaved(reloaded.slots); setDraft(reloaded.slots); setEditing(false); setSelected(null);
+      scene?.clearSelection();
       setPhase('ready'); setNotice('حُفظت حديقتك.');
       onSaved?.();
     } catch (cause: unknown) {
@@ -97,18 +113,24 @@ function GardenEditor({ worldId, villageId, playerId, onSaved }: PalaceGardenPro
 
   return <section className={styles.garden} aria-label="حديقة السلطان" dir="rtl" data-testid="palace-garden">
     <div className={styles.art} aria-label="تنسيق الحديقة">
-      {(editing ? draft : saved).map(({ slotId, itemId }) => {
-        const slot = gardenSlots[slotId], item = gardenCatalog.find((entry) => entry.id === itemId)!;
-        const depth = 1 + Math.floor(slotId / 4) * 0.12;
-        return !missingArt.includes(itemId) && <img key={slotId} className={styles.plant}
+      <div className={scene ? styles.gardenWorld : undefined}>
+      {shown.map(({ slotId, itemId }) => {
+        const item = gardenCatalog.find((entry) => entry.id === itemId)!;
+        const projection = getGardenProjection(itemId, slotId);
+        const position = { left: `${projection.x * 100}%`, top: `${projection.y * 100}%`, zIndex: projection.zIndex };
+        return !missingArt.includes(itemId) && <Fragment key={slotId}>
+          <span className={styles.groundShadow} aria-hidden="true" style={{ ...position, width: `${projection.shadowWidth * 100}%`, height: `${projection.shadowHeight * 100}%` }} />
+          <img className={styles.plant}
           src={gardenAsset(itemId, { variation: slotId })} alt={`${item.name} في مساحة ${slotId + 1}`}
-          style={{ left: `${slot.x * 100}%`, top: `${slot.y * 100}%`, width: `${item.width * depth * 100}%`, height: `${item.height * depth * 100}%`, zIndex: 1 + Math.floor(slotId / 4) }}
-          onError={() => artFailed(itemId)} draggable={false} />;
+          style={{ ...position, width: `${projection.width * 100}%`, height: `${projection.height * 100}%`, '--plant-root-x': `${projection.anchorX * 100}%`, '--plant-root-y': `${projection.anchorY * 100}%` } as CSSProperties}
+          onError={() => artFailed(itemId)} draggable={false} />
+        </Fragment>;
       })}
       {editing && gardenSlots.map((slot) => <button key={slot.id} type="button"
         className={styles.slot} aria-label={`مساحة الحديقة ${slot.id + 1}`} aria-pressed={selected === slot.id}
-        disabled={busy} onClick={() => setSelected(slot.id)}
-        style={{ left: `${slot.x * 100}%`, top: `${slot.y * 100}%` }}><span>{slot.id + 1}</span></button>)}
+        disabled={busy} onClick={() => { setSelected(slot.id); scene?.selectSlot(slot.id); }}
+        style={{ left: `${slot.x * 100}%`, top: `${slot.y * 100}%`, width: `${palaceSlotBounds(slot.id).width / PALACE_WORLD.width * 100}%`, height: `${palaceSlotBounds(slot.id).height / PALACE_WORLD.height * 100}%` }}><span>{slot.id + 1}</span></button>)}
+      </div>
     </div>
     <div className={styles.controls}>
       {phase === 'loading' && <p role="status">جارٍ تحميل حديقتك…</p>}
@@ -117,7 +139,10 @@ function GardenEditor({ worldId, villageId, playerId, onSaved }: PalaceGardenPro
       {editing && <>
         <div className={styles.heading}><strong>حديقة السلطان</strong><span>{dirty ? 'تغييرات غير محفوظة' : 'اختر مساحة ثم عنصرًا'}</span></div>
         <label className={styles.selector}>مساحة الحديقة
-          <select aria-label="اختيار مساحة الحديقة" value={selected ?? ''} disabled={busy} onChange={(event) => setSelected(event.target.value === '' ? null : Number(event.target.value))}>
+          <select aria-label="اختيار مساحة الحديقة" value={selected ?? ''} disabled={busy} onChange={(event) => {
+            const id = event.target.value === '' ? null : Number(event.target.value); setSelected(id);
+            if (id === null) scene?.clearSelection(); else scene?.selectSlot(id);
+          }}>
             <option value="">اختر مساحة</option>
             {gardenSlots.map((slot) => <option value={slot.id} key={slot.id}>مساحة {slot.id + 1}</option>)}
           </select>
@@ -134,8 +159,13 @@ function GardenEditor({ worldId, villageId, playerId, onSaved }: PalaceGardenPro
           </button>)}
         </div>
         <div className={styles.actions}>
+          <div className={styles.colors} role="group" aria-label="لون النبات">
+            {gardenColors.map(color => <button type="button" key={color} disabled={selected === null || busy || !draft.some(item => item.slotId === selected)}
+              aria-pressed={draft.some(item => item.slotId === selected && item.color === color)} onClick={() => colorPlant(color)}>
+              {{ red: 'أحمر', yellow: 'أصفر', blue: 'أزرق', green: 'أخضر', orange: 'برتقالي', brown: 'بني' }[color]}</button>)}
+          </div>
           <button type="button" className={styles.primary} disabled={busy || !dirty} onClick={() => void save()}>{phase === 'saving' ? 'جارٍ الحفظ…' : 'حفظ الحديقة'}</button>
-          <button type="button" disabled={busy} onClick={() => { setDraft(saved); setEditing(false); setSelected(null); setError(''); }}>إلغاء التعديل</button>
+          <button type="button" disabled={busy} onClick={() => { setDraft(saved); setEditing(false); setSelected(null); scene?.clearSelection(); setError(''); }}>إلغاء التعديل</button>
           <button type="button" disabled={selected === null || busy || !draft.some((slot) => slot.slotId === selected)} onClick={() => { setDraft((current) => current.filter((slot) => slot.slotId !== selected)); setNotice(''); }}>إفراغ المساحة</button>
         </div>
       </>}

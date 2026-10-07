@@ -1,7 +1,8 @@
 .garden { position: absolute; inset: 0; pointer-events: none; container-type: inline-size; }
-.art { position: absolute; inset: 0; }
-.plant { position: absolute; object-fit: contain; object-position: center bottom; transform: translate(-50%, -100%); pointer-events: none; }
-.slot { position: absolute; z-index: 4; transform: translate(-50%, -50%); inline-size: 7.5%; block-size: 6.5%; min-inline-size: 44px; min-block-size: 44px; border: 1px solid var(--gold); border-radius: var(--radius-md); background: color-mix(in srgb, var(--gold) 9%, transparent); color: var(--foreground); pointer-events: auto; cursor: pointer; }
+.art { position: absolute; inset: 0; isolation: isolate; z-index: 0; }
+.plant { position: absolute; transform: translate(calc(-1 * var(--plant-root-x, 50%)), calc(-1 * var(--plant-root-y, 100%))); pointer-events: none; filter: saturate(.9); }
+.groundShadow { position: absolute; transform: translate(-50%, -45%); border-radius: 50%; background: radial-gradient(ellipse, rgba(28, 24, 16, .25), rgba(28, 24, 16, .08) 42%, transparent 72%); pointer-events: none; }
+.slot { position: absolute; z-index: 20000; transform: translate(-50%, -50%); inline-size: 7.5%; block-size: 6.5%; min-inline-size: 44px; min-block-size: 44px; border: 1px solid var(--gold); border-radius: var(--radius-md); background: color-mix(in srgb, var(--gold) 9%, transparent); color: var(--foreground); pointer-events: auto; cursor: pointer; }
 .slot span { display: inline-grid; place-items: center; min-inline-size: 1.4rem; border-radius: var(--radius-full); background: var(--surface-strong); font-size: 0.7rem; }
 .slot[aria-pressed='true'] { outline: 2px solid var(--gold); outline-offset: 2px; background: color-mix(in srgb, var(--gold) 20%, transparent); }
 .controls { position: absolute; z-index: 5; inset-inline: 0; inset-block-start: calc(100% + var(--space-3)); inline-size: 100%; max-block-size: 274px; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-3); border: 1px solid var(--border-gold); border-radius: var(--radius-md); background: var(--surface-strong); color: var(--foreground); pointer-events: auto; }
@@ -35,3 +36,5 @@
   .actions { inset-block-end: calc(-1 * var(--space-2)); }
 }
 @media (prefers-reduced-motion: reduce) { .garden * { scroll-behavior: auto; } }
+
+.gardenWorld { position: absolute; left: 0; top: 0; inline-size: 1670px; block-size: 942px; transform: var(--palace-camera-transform); transform-origin: 0 0; } .art { overflow: hidden; } :global([data-pixi-garden="true"]) .plant, :global([data-pixi-garden="true"]) .groundShadow { opacity: 0; } .colors { display: flex; flex-wrap: wrap; gap: var(--space-1); }

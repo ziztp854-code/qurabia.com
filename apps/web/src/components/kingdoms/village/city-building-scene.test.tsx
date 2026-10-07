@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { CityBuildingScene } from './city-building-scene';
+import type { ReactNode } from 'react';
+
+// The facility shell contract is independent of GPU setup. The actual palace
+// renderer, camera, garden and cleanup are exercised by the browser suite.
+vi.mock('./sultan-palace-scene', () => ({ SultanPalaceScene: ({ children, garden }: { children: ReactNode; garden?: ReactNode }) => <div data-sultan-palace="">{children}{garden}</div> }));
 
 afterEach(cleanup);
 

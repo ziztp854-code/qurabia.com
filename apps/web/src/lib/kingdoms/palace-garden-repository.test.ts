@@ -32,11 +32,11 @@ describe('Owned palace garden persistence', () => {
     const founded = executeCommand(createWorld(now), 'alice', { type: 'found', name: 'حديقة الاختبار' }, now);
     const id = Object.keys(founded.villages)[0];
     const withGarden = { ...founded, villages: { ...founded.villages, [id]: {
-      ...founded.villages[id], palaceGarden: { version: 1, slots: [{ slotId: 3, itemId: 'white-roses' }] },
+      ...founded.villages[id], palaceGarden: { version: 1, slots: [{ slotId: 3, itemId: 'white-roses', color: 'orange' }] },
     } } };
     const building = executeCommand(withGarden, 'alice', { type: 'build', villageId: id, building: 'farm' }, now);
     const completed = advanceWorld(building, now + 120_000);
-    expect(completed.villages[id]).toMatchObject({ palaceGarden: { version: 1, slots: [{ slotId: 3, itemId: 'white-roses' }] } });
+    expect(completed.villages[id]).toMatchObject({ palaceGarden: { version: 1, slots: [{ slotId: 3, itemId: 'white-roses', color: 'orange' }] } });
     expect(completed.villages[id].buildings.farm).toBe(1);
   });
   it('saves and reloads Alice garden without changing Bob garden or gameplay', async () => {

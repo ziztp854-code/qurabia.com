@@ -42,11 +42,11 @@ function account(id: 'alice' | 'bob') {
 describe('Palace garden authenticated API', () => {
   beforeEach(() => { vi.clearAllMocks(); boundary.reset(); account('alice'); boundary.limit.mockResolvedValue(true); });
   it('saves and reloads Alice garden while Bob receives only his own garden', async () => {
-    const saved = await PUT(write({ worldId: 'world', villageId: 'a', slots: [{ slotId: 0, itemId: 'red-roses' }] }));
+    const saved = await PUT(write({ worldId: 'world', villageId: 'a', slots: [{ slotId: 0, itemId: 'red-roses', color: 'blue' }] }));
     expect(saved.status).toBe(200);
     const loaded = await GET(read());
     expect(loaded.headers.get('cache-control')).toBe('no-store');
-    expect(await loaded.json()).toMatchObject({ success: true, data: { playerId: 'alice', slots: [{ slotId: 0, itemId: 'red-roses' }] } });
+    expect(await loaded.json()).toMatchObject({ success: true, data: { playerId: 'alice', slots: [{ slotId: 0, itemId: 'red-roses', color: 'blue' }] } });
     account('bob');
     expect((await GET(read())).status).toBe(403);
     expect((await PUT(write({ worldId: 'world', villageId: 'a', slots: [] }))).status).toBe(403);
@@ -72,6 +72,7 @@ describe('Palace garden authenticated API', () => {
     { worldId: 'world', villageId: 'a', slots: [], playerId: 'bob' },
     { worldId: 'world', villageId: 'a', slots: [{ slotId: 12, itemId: 'red-roses' }] },
     { worldId: 'world', villageId: 'a', slots: [{ slotId: 0, itemId: 'missing' }] },
+    { worldId: 'world', villageId: 'a', slots: [{ slotId: 0, itemId: 'red-roses', color: 'purple' }] },
     { worldId: 'world', villageId: 'a', slots: [{ slotId: 1, itemId: 'red-roses' }, { slotId: 1, itemId: 'bench' }] },
   ])('rejects unsafe or forged catalog requests %j', async (body) => {
     expect((await PUT(write(body))).status).toBe(400);
