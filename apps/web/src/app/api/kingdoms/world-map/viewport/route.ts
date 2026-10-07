@@ -14,7 +14,10 @@ import { checkRateLimit } from '@/lib/auth/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const headers = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
+const headers = {
+  'Cache-Control': 'private, no-store',
+  Vary: 'Cookie, Authorization, X-Mamluk-Village-Buildings',
+};
 
 export async function GET(request: Request) {
   try {
@@ -45,7 +48,30 @@ export async function GET(request: Request) {
     }
     const service = new MamlukViewportService(repository);
     const result = await service.getViewportResult(viewport, { playerId });
-    return NextResponse.json(result.payload, {
+    // Schema v1 clients use a strict allowlist. Negotiate this additive field at
+    // the HTTP boundary; the capability grants no extra ownership or visibility.
+    const buildingsRequested = request.headers.get('X-Mamluk-Village-Buildings') === '1';
+    const payload = {
+      ...result.payload,
+      layers: {
+        ...result.payload.layers,
+        cities: {
+          ...result.payload.layers.cities,
+          features: result.payload.layers.cities.features.map((feature) => {
+            if (
+              buildingsRequested &&
+              !referenceAtlas &&
+              feature.properties.ownerPlayerId === playerId
+            )
+              return feature;
+            const properties = { ...feature.properties };
+            delete properties.villageBuildings;
+            return { ...feature, properties };
+          }),
+        },
+      },
+    };
+    return NextResponse.json(payload, {
       headers: {
         ...headers,
         // The read-only atlas contains public geographic landmarks only.

@@ -12,6 +12,7 @@ interface SelectionPanelProps {
   readonly selection: SelectionDetails | null;
   readonly selectedKey?: SelectionKey | null;
   readonly features: readonly (SelectionKey & { readonly label: string })[];
+  readonly overviewVillageCount?: number;
   readonly onSelect: (key: SelectionKey) => void;
   readonly onClose: () => void;
   readonly referenceOnly?: boolean;
@@ -32,6 +33,7 @@ export function SelectionPanel({
   selection,
   selectedKey,
   features,
+  overviewVillageCount,
   onSelect,
   onClose,
   referenceOnly = false,
@@ -115,22 +117,35 @@ export function SelectionPanel({
         )}
       </button>
       <div id={contentId} className={styles.panelContent}>
-        {targetSelection && <section className={styles.targetSelection} aria-label="اختيار هدف الحملة">
-          <p className={styles.eyebrow}>{targetSelection.title}</p>
-          <p>اختر قرية ثم أكّد هدفك للعودة إلى إعداد الحملة.</p>
-          <p>تظهر المسافة ومدة الوصول في معاينة الحملة عند توفرها.</p>
-          <button type="button" className={`${styles.control} ${styles.confirmTarget}`}
-            disabled={!targetSelection.canConfirm} onClick={targetSelection.onConfirm}>تأكيد الهدف</button>
-          {targetSelection.onCancel && <button type="button" className={styles.control}
-            onClick={targetSelection.onCancel}>إلغاء اختيار الهدف</button>}
-        </section>}
+        {targetSelection && (
+          <section className={styles.targetSelection} aria-label="اختيار هدف الحملة">
+            <p className={styles.eyebrow}>{targetSelection.title}</p>
+            <p>اختر قرية ثم أكّد هدفك للعودة إلى إعداد الحملة.</p>
+            <p>تظهر المسافة ومدة الوصول في معاينة الحملة عند توفرها.</p>
+            <button
+              type="button"
+              className={`${styles.control} ${styles.confirmTarget}`}
+              disabled={!targetSelection.canConfirm}
+              onClick={targetSelection.onConfirm}
+            >
+              تأكيد الهدف
+            </button>
+            {targetSelection.onCancel && (
+              <button type="button" className={styles.control} onClick={targetSelection.onCancel}>
+                إلغاء اختيار الهدف
+              </button>
+            )}
+          </section>
+        )}
         {selection ? (
           <>
             <header className={styles.selectionHeader}>
               <Icon size={24} aria-hidden="true" />
               <div>
                 <p className={styles.eyebrow}>{selection.kind}</p>
-                <h2 ref={title} tabIndex={-1} aria-label={accessibleName}>{selection.title}</h2>
+                <h2 ref={title} tabIndex={-1} aria-label={accessibleName}>
+                  {selection.title}
+                </h2>
               </div>
               <button
                 type="button"
@@ -205,8 +220,16 @@ export function SelectionPanel({
         <section className={styles.visibleLocations} aria-label="المواقع المتاحة في المشهد">
           <div className={styles.locationsHeading}>
             <h3>المواقع في المشهد</h3>
-            <span>{new Intl.NumberFormat('ar').format(features.length)}</span>
+            <span>
+              {new Intl.NumberFormat('ar').format(features.length || overviewVillageCount || 0)}
+            </span>
           </div>
+          {overviewVillageCount !== undefined && (
+            <p>
+              العرض العام يضم {new Intl.NumberFormat('ar').format(overviewVillageCount)} قرية مجمعة؛
+              قرّب الخريطة لعرض تفاصيلها.
+            </p>
+          )}
           {(features.length > 1 || Boolean(query)) && (
             <div className={styles.locationSearch}>
               <label htmlFor={searchId}>ابحث في المواقع الظاهرة</label>

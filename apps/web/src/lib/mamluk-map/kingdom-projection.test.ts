@@ -39,6 +39,17 @@ function fixture() {
   };
 }
 describe('live geographic gameplay projection', () => {
+  it('projects only the viewer building levels, without troops or an invented layout', () => {
+    const { own, enemy, state } = fixture();
+    const projection = new KingdomMapProjection(state, 'world', 'viewer', at);
+    const city = (id: string) =>
+      state.geography!.cities.find((entry) => entry.value.id === id)!.value;
+    const ownCity = projection.city(city(own.id))!;
+    expect(JSON.parse(ownCity.villageBuildings!)).toEqual(state.villages[own.id]!.buildings);
+    expect(projection.city(city(enemy.id))!.villageBuildings).toBeNull();
+    expect(ownCity.villageBuildings).not.toContain('troops');
+    expect(ownCity.villageBuildings).not.toContain('layout');
+  });
   it('keeps far-away public villages while hiding their forces and private fortifications', () => {
     const { enemy, state } = fixture();
     const far = {
@@ -138,7 +149,10 @@ it('publishes stored village level for every visible settlement and keeps privat
     ...state,
     villages: {
       ...state.villages,
-      [own.id]: { ...own, progression: own.progression ? { ...own.progression, level: 20 } : undefined },
+      [own.id]: {
+        ...own,
+        progression: own.progression ? { ...own.progression, level: 20 } : undefined,
+      },
       [enemy.id]: {
         ...enemy,
         progression: enemy.progression ? { ...enemy.progression, level: 50, xp: 1 } : undefined,
@@ -173,7 +187,15 @@ it('publishes stored village level for every visible settlement and keeps privat
   expect(typeof ownCity?.villagePower).toBe('number');
   expect(secondCity).toMatchObject({ villageLevel: 14, villagePower: null, villageRank: null });
   const serialized = JSON.stringify(enemyCity);
-  for (const secret of ['"xp"', '"troops"', '"resources"', '"training"', '"signature"', '"requirements"', '999999'])
+  for (const secret of [
+    '"xp"',
+    '"troops"',
+    '"resources"',
+    '"training"',
+    '"signature"',
+    '"requirements"',
+    '999999',
+  ])
     expect(serialized).not.toContain(secret);
   expect(enemyCity?.villagePower).toBeNull();
   const missing = {
@@ -182,7 +204,11 @@ it('publishes stored village level for every visible settlement and keeps privat
       ...geography.villages,
       [enemy.id]: { ...geography.villages[enemy.id]!, progression: undefined },
       legacy: { ...enemy, id: 'legacy', progression: { ...enemy.progression!, level: 0 } },
-      fractional: { ...enemy, id: 'fractional', progression: { ...enemy.progression!, level: 1.5 } },
+      fractional: {
+        ...enemy,
+        id: 'fractional',
+        progression: { ...enemy.progression!, level: 1.5 },
+      },
       overflow: { ...enemy, id: 'overflow', progression: { ...enemy.progression!, level: 51 } },
     },
   };

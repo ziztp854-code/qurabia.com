@@ -14,6 +14,42 @@ afterEach(() => {
   MapSdkFixture.instances = [];
 });
 
+it('loads authorized villages before slow settlement artwork and upgrades only their layers afterwards', async () => {
+  const pending: ((value: unknown) => void)[] = [];
+  const images = vi
+    .spyOn(MapSdkFixture.prototype, 'loadImage')
+    .mockImplementation(
+      () => new Promise((resolve) => pending.push(resolve as (value: unknown) => void)),
+    );
+  const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() });
+  vi.stubGlobal('fetch', fetch);
+  function Scene() {
+    const { container, status } = useWorldMap('world', 'viewer');
+    return (
+      <>
+        <div ref={container} />
+        <output>{status}</output>
+      </>
+    );
+  }
+  const view = render(<Scene />);
+  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  await screen.findByText('ready');
+  const map = MapSdkFixture.instances[0]!;
+  const source = map.sources.get('mamluk-cities');
+  expect(source?.data).toMatchObject({ features: [{ id: 'cairo' }] });
+  await act(async () =>
+    pending.forEach((resolve) =>
+      resolve({ data: { width: 1, height: 1, data: new Uint8Array([255, 255, 255, 255]) } }),
+    ),
+  );
+  await waitFor(() => expect(map.layers.get('mamluk-cities')).toMatchObject({ type: 'symbol' }));
+  expect(map.sources.get('mamluk-cities')).toBe(source);
+  expect(MapSdkFixture.instances).toHaveLength(1);
+  view.unmount();
+  images.mockRestore();
+});
+
 it('queues a server-resolved distant location before async SDK creation without remounting', async () => {
   vi.stubGlobal(
     'fetch',

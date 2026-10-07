@@ -4,14 +4,18 @@ export class RetryableMapRequestError extends Error {}
 export class MapAuthorizationError extends Error {}
 
 /** Transport outages do not revoke an already-authorized snapshot; its own expiry still does. */
-export async function mapRequest(url: string, signal: AbortSignal): Promise<Response> {
+export async function mapRequest(
+  url: string,
+  signal: AbortSignal,
+  headers: Record<string, string> = {},
+): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(url, {
       signal,
       credentials: 'same-origin',
       cache: 'no-store',
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', ...headers },
     });
   } catch (error) {
     if (signal.aborted) throw error;

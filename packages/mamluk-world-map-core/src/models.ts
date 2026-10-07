@@ -33,6 +33,8 @@ export interface Territory extends Ownership {
   readonly geometry: AreaGeometry;
 }
 export interface VillageMapDetails {
+  /** Owner-only, current building levels. Visual placement is illustrative, never a saved layout. */
+  readonly villageBuildings?: string | null;
   readonly villageLevel?: number | null;
   readonly villageRank?: string | null;
   readonly villagePower?: number | null;

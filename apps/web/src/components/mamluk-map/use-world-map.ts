@@ -6,6 +6,7 @@ import type { MapPayload, MapProjection } from '@mamluk/world-map-core';
 import type { Map as LibreMap } from 'maplibre-gl';
 import { createMapSession } from './map-session';
 import { watchMapRevisions } from './map-revisions';
+import type { Overview } from './world-overview';
 import type { SelectionKey } from './selection';
 import { createHistoricalBasemap, readMapColors } from './historical-basemap';
 import { initialMapLayers, type MapLayerGroup } from './map-layer-controls';
@@ -93,6 +94,12 @@ export function useWorldMap(
   } | null>(null);
   const payload = snapshot?.sessionKey === sessionKey ? snapshot.payload : null;
   const publicPayload = publicSnapshot?.sessionKey === sessionKey ? publicSnapshot.payload : null;
+  const [overviewSnapshot, setOverviewSnapshot] = useState<{
+    sessionKey: string;
+    payload: Overview | null;
+  } | null>(null);
+  const overviewPayload =
+    overviewSnapshot?.sessionKey === sessionKey ? overviewSnapshot.payload : null;
   const [selected, setSelectedState] = useState<SelectionKey | null>(null);
   const selectedRef = useRef<SelectionKey | null>(null);
   const [destinationDraft, setDestinationDraft] = useState<DestinationDraft | null>(null);
@@ -232,14 +239,24 @@ export function useWorldMap(
         const colors = readMapColors(container.current);
         settlements = createSettlementPresentation(
           map,
-          { label: colors.ink, halo: colors.land },
+          {
+            label: colors.ink,
+            halo: colors.land,
+            miniature: {
+              stone: colors.land,
+              sand: colors.sand,
+              roof: colors.gold,
+              leaf: colors.forest,
+              water: colors.water,
+              ink: colors.ink,
+            },
+          },
           artworkController.signal,
+          () => session?.refreshSettlementPresentation(),
         );
         // The SDK loads the provider style. Its geographic sources and credits
         // remain intact; the host changes presentation only.
         map.setStyle(createHistoricalBasemap(colors));
-        await settlements.ready;
-        if (cancelled) return;
         session = createMapSession(
           map,
           worldId,
@@ -266,6 +283,7 @@ export function useWorldMap(
                 payload: nextPayload,
               }),
             onSelection: receiveSelection,
+            onOverview: (nextPayload) => setOverviewSnapshot({ sessionKey, payload: nextPayload }),
             onDestination: (destination) => updateDestination(destination, true, false),
             layerPreferences: () => visibleLayersRef.current,
             onStatus: setStatus,
@@ -276,6 +294,15 @@ export function useWorldMap(
           ownershipPalette(container.current, viewerPlayerId),
         );
         sessionRef.current = session;
+        // Static artwork must not delay the authenticated viewport request.
+        // Approved circle markers render immediately; sprites upgrade in place.
+        void settlements.ready
+          .then(() => {
+            if (!cancelled) session?.refreshSettlementPresentation();
+          })
+          .catch(() => {
+            if (!cancelled) setStatus('error');
+          });
         stopRevisions = watchMapRevisions(worldId, () => session?.loader.requestRefresh());
       } catch {
         if (!cancelled) setStatus('error');
@@ -294,7 +321,15 @@ export function useWorldMap(
       destinationRef.current = null;
       setDestinationDraft(null);
     };
-  }, [worldId, viewerPlayerId, attempt, receiveSelection, updateDestination, initialOverview]);
+  }, [
+    worldId,
+    viewerPlayerId,
+    sessionKey,
+    attempt,
+    receiveSelection,
+    updateDestination,
+    initialOverview,
+  ]);
   function startPickingDestination() {
     updateDestination(activeDraft?.destination ?? null, true, false);
     container.current?.scrollIntoView?.({ block: 'center', behavior: 'instant' });
@@ -398,6 +433,7 @@ export function useWorldMap(
     refreshing,
     payload,
     publicPayload,
+    overviewPayload,
     selected,
     setSelected,
     focusSelection,

@@ -30,10 +30,81 @@ const worlds = [
 ];
 
 describe('strategic world map controls', () => {
+  it('counts the authorized public globe aggregate before individual village details are loaded', async () => {
+    const bounds = vi.spyOn(MapSdkFixture.prototype, 'getBounds').mockReturnValue({
+      getWest: () => -180,
+      getEast: () => 180,
+      getSouth: () => -80,
+      getNorth: () => 80,
+    });
+    let deliver!: (value: unknown) => void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            deliver = resolve;
+          }),
+      ),
+    );
+    const view = render(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        initialOverview
+      />,
+    );
+    await waitFor(() => expect(deliver).toBeDefined());
+    expect(view.container.querySelector('[role="status"]')).toHaveAttribute(
+      'data-state',
+      'loading',
+    );
+    await act(async () =>
+      deliver({
+        ok: true,
+        json: async () => ({
+          worldId: 'world',
+          revision: '1',
+          serverTime: 1000,
+          cells: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                id: 'cell:14:8',
+                geometry: { type: 'Point', coordinates: [31, 30] },
+                properties: { count: 42, targetVillageId: null },
+              },
+            ],
+          },
+        }),
+      }),
+    );
+    expect(
+      await screen.findByText(
+        `العرض العام يضم ${new Intl.NumberFormat('ar').format(42)} قرية مجمعة؛ قرّب الخريطة لعرض تفاصيلها.`,
+      ),
+    ).toBeInTheDocument();
+    expect(MapSdkFixture.instances[0]?.sources.get('mamluk-overview')?.data).toMatchObject({
+      features: [{ properties: { count: 42 } }],
+    });
+    view.unmount();
+    bounds.mockRestore();
+  });
   it('changes target mode without replacing the map or camera and confirms only a permitted village ID', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+    );
     const confirm = vi.fn();
-    const props = { worlds, initialWorldId: 'world', viewerPlayerId: 'viewer', onConfirmTarget: confirm, targetVillageIds: ['cairo'] };
+    const props = {
+      worlds,
+      initialWorldId: 'world',
+      viewerPlayerId: 'viewer',
+      onConfirmTarget: confirm,
+      targetVillageIds: ['cairo'],
+    };
     const view = render(<MamlukWorldMap {...props} mode="WORLD" />);
     fireEvent.click(await screen.findByRole('button', { name: 'القاهرة' }));
     const map = MapSdkFixture.instances[0]!;
@@ -49,35 +120,78 @@ describe('strategic world map controls', () => {
     expect(screen.getByText(/اختيار أرض الاستيطان/)).toBeInTheDocument();
     expect(MapSdkFixture.instances).toHaveLength(1);
     expect(map.lastCamera).toEqual(camera);
-    fireEvent.keyDown(screen.getByRole('region', { name: 'خريطة حروب المماليك' }), { key: 'Escape' });
+    fireEvent.keyDown(screen.getByRole('region', { name: 'خريطة حروب المماليك' }), {
+      key: 'Escape',
+    });
     expect(screen.getByRole('region', { name: 'الخريطة الاستراتيجية' })).toHaveFocus();
   });
   it('focuses a requested village after its approved coordinates arrive without mounting another map', async () => {
     let deliver: ((value: unknown) => void) | undefined;
-    vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => { deliver = resolve; })));
-    const view = render(<MamlukWorldMap worlds={worlds} initialWorldId="world" viewerPlayerId="viewer" focusVillageId="cairo" />);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            deliver = resolve;
+          }),
+      ),
+    );
+    const view = render(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        focusVillageId="cairo"
+      />,
+    );
     await waitFor(() => expect(deliver).toBeDefined());
-    await act(async () => { deliver?.({ ok: true, json: async () => approvedPayload() }); });
+    await act(async () => {
+      deliver?.({ ok: true, json: async () => approvedPayload() });
+    });
     await screen.findByRole('heading', { name: 'القاهرة', level: 2 });
     expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({ center: [31.2357, 30.0444] });
     const camera = MapSdkFixture.instances[0]?.lastCamera;
-    view.rerender(<MamlukWorldMap worlds={worlds} initialWorldId="world" viewerPlayerId="viewer" focusVillageId="unavailable" />);
+    view.rerender(
+      <MamlukWorldMap
+        worlds={worlds}
+        initialWorldId="world"
+        viewerPlayerId="viewer"
+        focusVillageId="unavailable"
+      />,
+    );
     expect(MapSdkFixture.instances).toHaveLength(1);
     expect(MapSdkFixture.instances[0]?.lastCamera).toEqual(camera);
   });
   it('ignores a stale distant-village lookup after another target was requested', async () => {
     const pending = new Map<string, (value: unknown) => void>();
-    vi.stubGlobal('fetch', vi.fn((url: string) => url.includes('/location?')
-      ? new Promise((resolve) => { pending.set(new URL(url, 'https://test').searchParams.get('villageId')!, resolve); })
-      : Promise.resolve({ ok: true, json: async () => approvedPayload() })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/location?')
+          ? new Promise((resolve) => {
+              pending.set(new URL(url, 'https://test').searchParams.get('villageId')!, resolve);
+            })
+          : Promise.resolve({ ok: true, json: async () => approvedPayload() }),
+      ),
+    );
     const props = { worlds, initialWorldId: 'world', viewerPlayerId: 'viewer' };
     const view = render(<MamlukWorldMap {...props} focusVillageId="far-a" />);
     await waitFor(() => expect(pending.has('far-a')).toBe(true));
     view.rerender(<MamlukWorldMap {...props} focusVillageId="far-b" />);
     await waitFor(() => expect(pending.has('far-b')).toBe(true));
-    await act(async () => { pending.get('far-b')?.({ ok: true, json: async () => ({ worldId: 'world', villageId: 'far-b', longitude: 44, latitude: 25 }) }); });
+    await act(async () => {
+      pending.get('far-b')?.({
+        ok: true,
+        json: async () => ({ worldId: 'world', villageId: 'far-b', longitude: 44, latitude: 25 }),
+      });
+    });
     expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({ center: [44, 25] });
-    await act(async () => { pending.get('far-a')?.({ ok: true, json: async () => ({ worldId: 'world', villageId: 'far-a', longitude: 12, latitude: 20 }) }); });
+    await act(async () => {
+      pending.get('far-a')?.({
+        ok: true,
+        json: async () => ({ worldId: 'world', villageId: 'far-a', longitude: 12, latitude: 20 }),
+      });
+    });
     expect(MapSdkFixture.instances[0]?.lastCamera).toMatchObject({ center: [44, 25] });
     expect(MapSdkFixture.instances).toHaveLength(1);
   });
@@ -157,7 +271,9 @@ describe('strategic world map controls', () => {
     );
     render(<MamlukWorldMap worlds={worlds} initialWorldId="world" viewerPlayerId="viewer" />);
     const boundaries = await screen.findByRole('region', { name: 'حدود الممالك' });
-    const own = await within(boundaries).findByRole('button', { name: 'استكشف حدود مملكتك: القاهرة' });
+    const own = await within(boundaries).findByRole('button', {
+      name: 'استكشف حدود مملكتك: القاهرة',
+    });
     const other = within(boundaries).getByRole('button', { name: 'استكشف حدود قرى الإسكندرية' });
     expect(boundaries).not.toHaveTextContent('other-player');
     expect(own).toHaveAttribute('aria-pressed', 'false');
@@ -201,7 +317,9 @@ describe('strategic world map controls', () => {
     expect(screen.getByText('جارٍ تحديث تفاصيل الموقع…')).toBeInTheDocument();
     expect(screen.getByText('التحصين')).toBeInTheDocument();
     expect(screen.getByText('جارٍ تحديث المشهد…')).toBeInTheDocument();
-    await act(async () => { await vi.advanceTimersByTimeAsync(3001); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3001);
+    });
     expect(screen.queryByText('التحصين')).not.toBeInTheDocument();
   });
 
@@ -303,9 +421,12 @@ describe('strategic world map controls', () => {
     expect(screen.getByRole('button', { name: 'راجع الوجهة' })).toBeDisabled();
     expect(screen.queryByRole('complementary', { name: 'تفاصيل الخريطة' })).not.toBeInTheDocument();
     const map = MapSdkFixture.instances[0];
-    await act(async () => map.fire('click', {
-      point: { x: 1, y: 1 }, lngLat: { lng: 35, lat: 32 },
-    }));
+    await act(async () =>
+      map.fire('click', {
+        point: { x: 1, y: 1 },
+        lngLat: { lng: 35, lat: 32 },
+      }),
+    );
     expect(screen.getByText('معاينة الوجهة')).toBeInTheDocument();
     expect(fetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0);
     expect(map.sources.get('mamluk-cities')?.data).toMatchObject({
