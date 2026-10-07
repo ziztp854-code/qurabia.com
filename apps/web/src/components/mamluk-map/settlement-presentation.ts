@@ -1,20 +1,47 @@
 import { registerMapMarkerImages } from '@mamluk/maplibre-adapter';
 import type { ExpressionSpecification, LayerSpecification, Map as LibreMap } from 'maplibre-gl';
+import type { FeatureCollection } from '@mamluk/world-map-core';
+import {
+  MAX_OWN_MINIATURES,
+  MINIATURE_RATIO,
+  PUBLIC_MINIATURES,
+  miniatureTier,
+  ownedMiniature,
+  rasterizeMiniature,
+  villageMiniatureSvg,
+  type MiniaturePalette,
+} from './settlement-miniatures';
 
 export type SettlementMap = Pick<
   LibreMap,
   'loadImage' | 'addImage' | 'hasImage' | 'on' | 'off' | 'isStyleLoaded'
 > &
-  Partial<Pick<LibreMap, 'getLayer' | 'setLayoutProperty'>>;
+  Partial<Pick<LibreMap, 'getLayer' | 'setLayoutProperty' | 'removeImage'>>;
 export interface SettlementColors {
   readonly label: string;
   readonly halo: string;
+  readonly miniature?: MiniaturePalette;
 }
 export interface SettlementPresentation {
   readonly ready: Promise<boolean>;
   readonly layer: (layer: LayerSpecification) => LayerSpecification;
   readonly dispose: () => void;
+  readonly prepareCities?: (data: FeatureCollection, viewerId?: string) => FeatureCollection;
+  readonly clearPrivate?: () => void;
 }
+const publicMiniatureId: ExpressionSpecification = [
+  'concat',
+  'mamluk-village-mini-',
+  [
+    'to-string',
+    ['step', ['coalesce', ['get', 'villageLevel'], 1], 1, 6, 2, 11, 3, 21, 4, 31, 5, 41, 6],
+  ],
+];
+const miniatureIcon: ExpressionSpecification = [
+  'coalesce',
+  ['image', ['coalesce', ['get', 'villageThumbnail'], publicMiniatureId]],
+  ['image', publicMiniatureId],
+];
 const tierIcon: ExpressionSpecification = [
   'case',
   ['>=', ['coalesce', ['get', 'villageLevel'], 0], 50],
@@ -32,11 +59,15 @@ class SettlementArtwork implements SettlementPresentation {
   private usable = false;
   private hdReady = false;
   private artwork: readonly Artwork[] = [];
+  private miniReady = false;
+  private miniatureAssets: { id: string; data: ImageData }[] = [];
+  private readonly ownAssets = new Map<string, { data?: ImageData }>();
 
   constructor(
     private readonly map: SettlementMap,
     private readonly colors: SettlementColors,
     private readonly signal: AbortSignal,
+    private readonly changed: () => void = () => {},
   ) {
     this.active = !signal.aborted;
     this.styleReady = Boolean(map.isStyleLoaded());
@@ -49,8 +80,106 @@ class SettlementArtwork implements SettlementPresentation {
     }
     map.on('style.load', this.onStyle);
     signal.addEventListener('abort', this.dispose, { once: true });
+    void this.loadMiniatures();
     void this.load();
   }
+
+  private get miniaturePalette(): MiniaturePalette {
+    return (
+      this.colors.miniature ?? {
+        stone: this.colors.halo,
+        sand: this.colors.halo,
+        roof: this.colors.label,
+        leaf: this.colors.label,
+        water: this.colors.halo,
+        ink: this.colors.label,
+      }
+    );
+  }
+
+  private async loadMiniatures() {
+    try {
+      const assets = await Promise.all(
+        PUBLIC_MINIATURES.map(async (tier) => ({
+          id: `mamluk-village-mini-${tier}`,
+          data: await rasterizeMiniature(villageMiniatureSvg(tier, this.miniaturePalette)),
+        })),
+      );
+      if (!this.active) return;
+      this.miniatureAssets = assets;
+      this.registerMiniatures();
+    } catch {
+      /* Data and the circle fallback remain usable without artwork. */
+    }
+  }
+
+  private registerMiniatures() {
+    if (!this.active || !this.styleReady || !this.miniatureAssets.length) return;
+    try {
+      for (const asset of this.miniatureAssets)
+        if (!this.map.hasImage(asset.id))
+          this.map.addImage(asset.id, asset.data, { pixelRatio: MINIATURE_RATIO });
+      for (const [id, asset] of this.ownAssets)
+        if (asset.data && !this.map.hasImage(id))
+          this.map.addImage(id, asset.data, { pixelRatio: MINIATURE_RATIO });
+      this.miniReady = true;
+      this.finish(true);
+      this.changed();
+    } catch {
+      this.miniReady = false;
+    }
+  }
+
+  readonly clearPrivate = () => {
+    for (const id of this.ownAssets.keys()) {
+      try {
+        if (this.map.hasImage(id)) this.map.removeImage?.(id);
+      } catch {
+        /* Style is being replaced. */
+      }
+    }
+    this.ownAssets.clear();
+  };
+
+  readonly prepareCities = (data: FeatureCollection, viewerId?: string): FeatureCollection => {
+    const desired = new Set<string>();
+    const features = data.features.map((feature) => {
+      const own = ownedMiniature(feature.properties, viewerId);
+      if (!own) return feature;
+      if (!this.ownAssets.has(own.id) && this.ownAssets.size >= MAX_OWN_MINIATURES) return feature;
+      desired.add(own.id);
+      if (!this.ownAssets.has(own.id)) {
+        const asset: { data?: ImageData } = {};
+        this.ownAssets.set(own.id, asset);
+        void rasterizeMiniature(
+          villageMiniatureSvg(
+            miniatureTier(feature.properties.villageLevel),
+            this.miniaturePalette,
+            own.levels,
+          ),
+        )
+          .then((image) => {
+            if (!this.active || this.ownAssets.get(own.id) !== asset) return;
+            asset.data = image;
+            this.registerMiniatures();
+          })
+          .catch(() => {
+            if (this.ownAssets.get(own.id) === asset) this.ownAssets.delete(own.id);
+          });
+      }
+      return { ...feature, properties: { ...feature.properties, villageThumbnail: own.id } };
+    });
+    for (const id of this.ownAssets.keys()) {
+      if (desired.has(id)) continue;
+      try {
+        if (this.map.hasImage(id)) this.map.removeImage?.(id);
+      } catch {
+        /* Source update is in progress. */
+      }
+      this.ownAssets.delete(id);
+    }
+    return { ...data, features };
+  };
 
   private async load(): Promise<void> {
     try {
@@ -63,6 +192,7 @@ class SettlementArtwork implements SettlementPresentation {
       if (!this.active) return;
       this.artwork = artwork;
       const registered = this.register();
+      this.changed();
       if (this.styleReady) await this.registerHd();
       this.finish(registered);
     } catch {
@@ -99,7 +229,7 @@ class SettlementArtwork implements SettlementPresentation {
       });
       if (this.active) {
         this.hdReady = true;
-        for (const id of ['mamluk-cities', 'mamluk-castles']) {
+        for (const id of ['mamluk-castles']) {
           const current = this.map.getLayer?.(id);
           if (current?.type !== 'symbol') continue;
           this.map.setLayoutProperty?.(
@@ -131,6 +261,8 @@ class SettlementArtwork implements SettlementPresentation {
     this.styleReady = true;
     this.hdReady = false;
     this.register();
+    this.miniReady = false;
+    this.registerMiniatures();
     void this.registerHd();
   };
 
@@ -139,12 +271,40 @@ class SettlementArtwork implements SettlementPresentation {
     this.active = false;
     this.usable = false;
     this.artwork = [];
+    this.clearPrivate();
+    this.miniatureAssets = [];
     this.map.off('style.load', this.onStyle);
     this.signal.removeEventListener('abort', this.dispose);
     this.finish(false); // Teardown never waits for SDK image requests.
   };
 
   readonly layer = (layer: LayerSpecification): LayerSpecification => {
+    if (
+      this.active &&
+      this.miniReady &&
+      layer.id === 'mamluk-cities' &&
+      layer.type === 'circle' &&
+      layer.source === layer.id
+    ) {
+      const miniature = settlementLayer(layer, 'mamluk-village-mini-1', this.colors);
+      if (miniature.type === 'symbol')
+        return {
+          ...miniature,
+          layout: {
+            ...miniature.layout,
+            'icon-image': miniatureIcon,
+            'icon-anchor': 'center',
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.85, 8, 1.3, 14, 1.8],
+            'text-offset': [0, 2],
+            'text-field': [
+              'case',
+              ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+              ['concat', ['get', 'name'], ' · ', ['to-string', ['get', 'villageLevel']]],
+              ['get', 'name'],
+            ],
+          },
+        };
+    }
     const image =
       layer.id === 'mamluk-cities' ? images[0] : layer.id === 'mamluk-castles' ? images[1] : null;
     if (
@@ -236,6 +396,7 @@ export function createSettlementPresentation(
   map: SettlementMap,
   colors: SettlementColors,
   signal: AbortSignal,
+  changed: () => void = () => {},
 ): SettlementPresentation {
-  return new SettlementArtwork(map, colors, signal);
+  return new SettlementArtwork(map, colors, signal, changed);
 }

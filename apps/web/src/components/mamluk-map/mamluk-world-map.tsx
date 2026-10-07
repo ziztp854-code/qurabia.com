@@ -142,6 +142,7 @@ function WorldScene({
     refreshing,
     payload,
     publicPayload,
+    overviewPayload,
     selected,
     setSelected,
     projection,
@@ -161,6 +162,10 @@ function WorldScene({
     requestManualDestination,
   } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId, initialOverview);
   const scenePayload = payload ?? publicPayload;
+  const overviewVillageCount = overviewPayload?.cells.features.reduce(
+    (sum, cell) => sum + cell.properties.count,
+    0,
+  );
   const lastFocused = useRef<string | undefined>(undefined);
   const [locationFailure, setLocationFailure] = useState<string | null>(null);
   const [locationAttempt, setLocationAttempt] = useState(0);
@@ -461,14 +466,18 @@ function WorldScene({
       <div className={styles.sceneOverview} aria-label="المشهد الحالي">
         <div className={styles.sceneCount}>
           <MapPin size={16} aria-hidden="true" />
-          <span>{number(scenePayload?.layers.cities.features.length ?? 0)}</span>
+          <span>
+            {number(overviewVillageCount ?? scenePayload?.layers.cities.features.length ?? 0)}
+          </span>
           {referenceOnly ? 'مدينة في المشهد' : 'قرية في المشهد'}
         </div>
         {!referenceOnly && (
           <div className={styles.sceneCount}>
             <Flag size={16} aria-hidden="true" />
             <span>
-              {number(ownerGroups.filter((owner) => owner.ownerPlayerId !== null).length)}
+              {overviewPayload && !scenePayload
+                ? '—'
+                : number(ownerGroups.filter((owner) => owner.ownerPlayerId !== null).length)}
             </span>
             ممالك ظاهرة
           </div>
@@ -695,6 +704,7 @@ function WorldScene({
           loading={(refreshing || status === 'loading') && Boolean(selected)}
           pendingTitle={typeof pendingTitle === 'string' ? pendingTitle : undefined}
           features={features}
+          overviewVillageCount={overviewVillageCount}
           onSelect={focusSelection}
           onClose={closeSelection}
           targetSelection={

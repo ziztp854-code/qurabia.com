@@ -96,6 +96,67 @@ const cityProps = (map: MapSdkFixture) =>
   (map.sources.get('mamluk-cities')?.data as { features: { properties: object }[] }).features[0]!
     .properties as Record<string, unknown>;
 
+it('keeps accepted public villages visible across globe, rapid zoom and pan with delayed requests', async () => {
+  const pending: { url: string; resolve: (value: unknown) => void }[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(ok(snapshot({})))
+      .mockImplementation(
+        (url: string) => new Promise((resolve) => pending.push({ url, resolve })),
+      ),
+  );
+  const { map, callbacks, session } = open();
+  await vi.advanceTimersByTimeAsync(0);
+  const cities = map.sources.get('mamluk-cities');
+  const visible = () =>
+    expect(map.layers.get('mamluk-cities')).toMatchObject({ layout: { visibility: 'visible' } });
+  visible();
+  map.bounds = { west: -120, east: 120, south: -50, north: 50 };
+  map.fire('moveend');
+  await vi.advanceTimersByTimeAsync(150);
+  pending[0]!.resolve({
+    ok: true,
+    json: async () => ({
+      worldId: 'world',
+      revision: '2',
+      serverTime: 3000,
+      cells: { type: 'FeatureCollection', features: [] },
+    }),
+  });
+  await vi.advanceTimersByTimeAsync(0);
+  visible();
+  expect(cityProps(map)).not.toHaveProperty('fortificationLevel');
+  expect(callbacks.onPayload).toHaveBeenLastCalledWith(null);
+  for (const bounds of [
+    { west: 30, east: 34, south: 29, north: 33 },
+    { west: 30.5, east: 33, south: 29.5, north: 32 },
+    { west: 30, east: 35, south: 29, north: 33 },
+  ]) {
+    map.bounds = bounds;
+    map.fire('moveend');
+    await vi.advanceTimersByTimeAsync(150);
+    visible();
+    expect(map.sources.get('mamluk-cities')).toBe(cities);
+  }
+  await vi.advanceTimersByTimeAsync(4000);
+  visible();
+  pending[1]!.resolve(
+    ok(
+      snapshot({
+        revision: '99',
+        cities: [],
+        bounds: { west: 30, east: 34, south: 29, north: 33 },
+      }),
+    ),
+  );
+  await vi.advanceTimersByTimeAsync(0);
+  visible();
+  expect(cities?.data).toMatchObject({ features: [{ id: 'cairo' }] });
+  session.dispose();
+});
+
 it('stops polling in a hidden tab without clearing, and refreshes immediately when visible', async () => {
   const fetchMock = vi.fn().mockResolvedValue(ok(snapshot({})));
   vi.stubGlobal('fetch', fetchMock);

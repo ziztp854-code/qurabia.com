@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Route, type APIResponse } from '@playwright/test';
 import type { GeoJSONSource, Map as LibreMap } from 'maplibre-gl';
 import type {} from './fixtures/globe-map-probe';
 
@@ -9,6 +9,7 @@ declare global {
     __anomalies?: string[];
     __samples?: number;
     __requests?: { kind: string; at: number }[];
+    __savedCities?: GeoJSONSource;
   }
 }
 
@@ -112,6 +113,157 @@ async function finish(page: Page, errors: string[]) {
   expect(await page.evaluate(() => window.__anomalies!)).toEqual([]);
   expect(errors).toEqual([]);
 }
+
+test('approved village miniatures render before slow legacy artwork without replacing their source', async ({
+  page,
+}, testInfo) => {
+  let releaseArtwork!: () => void;
+  const artworkGate = new Promise<void>((resolve) => {
+    releaseArtwork = resolve;
+  });
+  await page.route(/\/game-art\/mamluk-map\/(village|castle)\.png$/, async (route) => {
+    await artworkGate;
+    await route.continue();
+  });
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  try {
+    const first = page.waitForResponse(
+      (response) => response.url().includes('/world-map/viewport?') && response.status() === 200,
+    );
+    await page.goto('/globe');
+    await first;
+    await expect
+      .poll(() => cairo(page))
+      .toMatchObject({ villageLevel: 12, villageVisualTier: OWN_TIER });
+    await expect
+      .poll(() => page.evaluate(() => window.__globeFixtureMap!.getLayer('mamluk-cities')?.type))
+      .toBe('symbol');
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window
+            .__globeFixtureMap!.queryRenderedFeatures({ layers: ['mamluk-cities'] })
+            .some((feature) => feature.id === 'cairo'),
+        ),
+      )
+      .toBe(true);
+    await page.evaluate(() => {
+      window.__savedCities = window.__globeFixtureMap!.getSource<GeoJSONSource>('mamluk-cities');
+    });
+    await page
+      .getByRole('region', { name: 'الخريطة الاستراتيجية' })
+      .screenshot({ path: testInfo.outputPath('villages-before-artwork.png') });
+    releaseArtwork();
+    await expect
+      .poll(() => page.evaluate(() => window.__globeFixtureMap!.getLayer('mamluk-cities')?.type))
+      .toBe('symbol');
+    expect(
+      await page.evaluate(
+        () => window.__savedCities === window.__globeFixtureMap!.getSource('mamluk-cities'),
+      ),
+    ).toBe(true);
+    // A changed style layer is attached before its worker buckets are rendered.
+    // Query the visible symbol only once the actual SDK reports the frame loaded.
+    await expect.poll(() => page.evaluate(() => window.__globeFixtureMap!.loaded())).toBe(true);
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window
+            .__globeFixtureMap!.queryRenderedFeatures({ layers: ['mamluk-cities'] })
+            .some((feature) => feature.id === 'cairo'),
+        ),
+      )
+      .toBe(true);
+    await page
+      .getByRole('region', { name: 'الخريطة الاستراتيجية' })
+      .screenshot({ path: testInfo.outputPath('villages-after-artwork.png') });
+    expect(errors).toEqual([]);
+  } finally {
+    releaseArtwork();
+  }
+});
+
+test('villages stay visible through overview and rapid pan while the newest response wins', async ({
+  page,
+  request,
+}, testInfo) => {
+  await control(request, { ttlMs: 60000 });
+  const { errors } = await open(page);
+  await page.locator('summary', { hasText: 'عرض الخريطة' }).click();
+  await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__savedMap!.getProjection().type))
+    .toBe('mercator');
+  const visibleVillage = () =>
+    page.evaluate(() =>
+      window
+        .__savedMap!.queryRenderedFeatures({ layers: ['mamluk-cities'] })
+        .some((feature) => feature.id === 'cairo'),
+    );
+  await expect.poll(visibleVillage).toBe(true);
+  await page.evaluate(() => {
+    window.__savedCities = window.__savedMap!.getSource<GeoJSONSource>('mamluk-cities');
+  });
+  const broad = page.waitForResponse(
+    (response) => response.url().includes('/world-map/overview?') && response.status() === 200,
+  );
+  await setSpan(page, 120);
+  await broad;
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.__savedMap!.getLayoutProperty('mamluk-cities', 'visibility')),
+    )
+    .toBe('visible');
+  await expect.poll(visibleVillage).toBe(true);
+  expect((await cairo(page))?.fortificationLevel).toBeUndefined();
+  await page
+    .getByRole('region', { name: 'الخريطة الاستراتيجية' })
+    .screenshot({ path: testInfo.outputPath('villages-at-overview.png') });
+
+  const pending: { route: Route; response: APIResponse; level: number }[] = [];
+  await page.route(/\/world-map\/viewport\?/, async (route) => {
+    const response = await route.fetch();
+    const payload = await response.json();
+    const city = payload.layers.cities.features.find(
+      (feature: { id: string }) => feature.id === 'cairo',
+    );
+    pending.push({ route, response, level: city?.properties.villageLevel });
+  });
+  await setSpan(page, 60);
+  await expect.poll(() => pending.length).toBe(1);
+  for (const longitude of [31.4, 31.1, 31.3]) {
+    await page.evaluate((lng) => window.__savedMap!.jumpTo({ center: [lng, 30] }), longitude);
+    await expect.poll(visibleVillage).toBe(true);
+  }
+  await control(request, { level: 13 });
+  await page.evaluate(() => window.__savedMap!.jumpTo({ center: [31.2, 30] }));
+  // Intermediate pans may already have queued an old response. Identify the
+  // updated server snapshot, rather than assuming the second arrival is newest.
+  await expect.poll(() => pending.some((entry) => entry.level === 13)).toBe(true);
+  const latest = pending.find((entry) => entry.level === 13)!;
+  await latest.route.fulfill({ response: latest.response });
+  await expect.poll(() => cairo(page)).toMatchObject({ villageLevel: 13 });
+  // The obsolete fetch was aborted by the real browser; delivering its old response
+  // must not resurrect the superseded snapshot.
+  for (const obsolete of pending.filter((entry) => entry !== latest)) {
+    await obsolete.route.fulfill({ response: obsolete.response });
+    await obsolete.response.dispose();
+  }
+  await latest.response.dispose();
+  await page.unrouteAll({ behavior: 'wait' });
+  await expect.poll(() => cairo(page)).toMatchObject({ villageLevel: 13 });
+  expect(
+    await page.evaluate(
+      () => window.__savedCities === window.__savedMap!.getSource('mamluk-cities'),
+    ),
+  ).toBe(true);
+  await expect.poll(visibleVillage).toBe(true);
+  await page
+    .getByRole('region', { name: 'الخريطة الاستراتيجية' })
+    .screenshot({ path: testInfo.outputPath('villages-after-rapid-pan.png') });
+  await finish(page, errors);
+});
 
 test('village and camera survive background refresh, failure and recovery', async ({
   page,

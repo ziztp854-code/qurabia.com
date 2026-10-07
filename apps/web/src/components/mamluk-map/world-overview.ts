@@ -6,7 +6,7 @@ import { SDK_FEATURE_ID, withFeatureIdentity } from './source-identity';
 
 const sourceId = 'mamluk-overview';
 const layerIds = ['mamluk-overview-cells', 'mamluk-overview-count'] as const;
-interface Overview {
+export interface Overview {
   worldId: string;
   revision: string;
   serverTime: number;
@@ -85,6 +85,7 @@ export function createWorldOverview(
   worldId: string,
   palette: MapPalette,
   visibilityFor: (layerId: string) => 'visible' | 'none' | undefined = () => undefined,
+  onPayload: (payload: Overview | null) => void = () => {},
 ) {
   let generation = 0,
     disposed = false;
@@ -94,6 +95,7 @@ export function createWorldOverview(
     for (const id of [...layerIds].reverse()) if (map.getLayer(id)) map.removeLayer(id);
     if (map.getSource(sourceId)) map.removeSource(sourceId);
     signature = '';
+    onPayload(null);
   };
   return {
     hide() {
@@ -178,6 +180,7 @@ export function createWorldOverview(
           },
           paint: { 'text-color': palette.fog },
         });
+      onPayload(next);
       return true;
     },
     click(event: MapMouseEvent): boolean {

@@ -57,7 +57,10 @@ export class MapSdkFixture {
     if (layer) layer.layout = { ...layer.layout, [name]: value };
   }
   getLayer(id: string) {
-    return this.layers.get(id);
+    const layer = this.layers.get(id);
+    return layer && typeof layer === 'object'
+      ? { ...layer, serialize: () => structuredClone(layer) }
+      : undefined;
   }
   addSource(id: string, source: { data: unknown; type: string }) {
     this.sources.set(id, {

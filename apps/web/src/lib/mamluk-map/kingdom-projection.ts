@@ -9,6 +9,7 @@ import {
 import { projectWorld } from '../kingdoms/engine';
 import { progressionConfig } from '../kingdoms/progression';
 import type { KingdomsWorld, Village } from '../kingdoms/types';
+import { buildingKeys } from '../kingdoms/types';
 import type { MamlukMapState } from './storage';
 
 /** Authoritative stored level only. Never recomputed for the map. */
@@ -142,6 +143,9 @@ export class KingdomMapProjection {
     return {
       ...city,
       name: village.name,
+      villageBuildings: own
+        ? JSON.stringify(Object.fromEntries(buildingKeys.map((key) => [key, own.buildings[key]])))
+        : null,
       villageLevel: this.publicLevels.get(village.id) ?? null,
       villageRank: own?.progression?.rank ?? null,
       villagePower: own?.progression?.power.total ?? null,

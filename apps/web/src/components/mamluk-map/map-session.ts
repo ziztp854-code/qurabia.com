@@ -25,7 +25,7 @@ import {
 import { SDK_FEATURE_ID, withFeatureIdentity, withSourceIdentity } from './source-identity';
 import type { SettlementPresentation } from './settlement-presentation';
 import { CLUSTER_LAYERS, settlementClusters } from './settlement-clusters';
-import { createWorldOverview } from './world-overview';
+import { createWorldOverview, type Overview } from './world-overview';
 import {
   allLayersVisible,
   layerVisibility,
@@ -49,6 +49,7 @@ export interface MapSessionCallbacks {
   readonly onStatus: (status: 'loading' | 'ready' | 'zoom' | 'error') => void;
   readonly onDestination?: (destination: RelocationDestination) => void;
   readonly onRefreshing?: (refreshing: boolean) => void;
+  readonly onOverview?: (payload: Overview | null) => void;
   readonly onPresentation?: (local: boolean) => void;
   /** The UI session's layer choices; authoritative whenever a layer is added or shown. */
   readonly layerPreferences?: () => LayerPreferences;
@@ -62,7 +63,7 @@ function isStyleLayer(layer: AddLayerObject): layer is LayerSpecification {
 function presentationPort(
   map: LibreMap,
   palette: MapPalette,
-  settlements?: Pick<SettlementPresentation, 'layer'>,
+  settlements?: Pick<SettlementPresentation, 'layer' | 'prepareCities' | 'clearPrivate'>,
   initialStyleReady?: boolean,
   retainPublicLayers: () => boolean = () => false,
   ownership?: OwnershipPresentationOptions,
@@ -89,7 +90,16 @@ function presentationPort(
   const sourceCopies = new WeakMap<Source, string>();
   const isPublicSource = (id: string) => id === 'mamluk-cities' || id === 'mamluk-territories';
   const presentedData = (_id: string, data: Parameters<GeoJSONSource['setData']>[0]) => {
-    const presented = data;
+    const presented =
+      _id === 'mamluk-cities' &&
+      typeof data === 'object' &&
+      data?.type === 'FeatureCollection' &&
+      settlements?.prepareCities
+        ? (settlements.prepareCities(
+            data as unknown as import('@mamluk/world-map-core').FeatureCollection,
+            ownership?.viewerPlayerId,
+          ) as unknown as typeof data)
+        : data;
     return ownership ? withPlayerOwnership(presented, ownership) : presented;
   };
   const removeCompanions = (id: string) => {
@@ -354,7 +364,7 @@ export function createMapSession(
   projection: MapProjection,
   palette: MapPalette,
   callbacks: MapSessionCallbacks,
-  settlements?: Pick<SettlementPresentation, 'layer'>,
+  settlements?: Pick<SettlementPresentation, 'layer' | 'prepareCities' | 'clearPrivate'>,
   initialStyleReady?: boolean,
   ownership?: OwnershipPresentationOptions,
 ) {
@@ -369,8 +379,24 @@ export function createMapSession(
   let destinationPreview: RelocationDestination | null = null;
   const publicPayloads = new WeakSet<MapPayload>();
   const preferences = () => callbacks.layerPreferences?.() ?? allLayersVisible;
-  const visibilityFor = (id: string) => layerVisibility(id, preferences(), localPresentation);
-  const overview = createWorldOverview(map, worldId, palette, visibilityFor);
+  const visibilityFor = (id: string) => {
+    // An overview clears private intelligence, but its public city/plot sources
+    // keep the same authorized markers while the next viewport is loading.
+    const retainedSettlement =
+      retainPublicLayers &&
+      (id === 'mamluk-cities' ||
+        id === 'mamluk-cities-owner-markers' ||
+        CLUSTER_LAYERS.includes(id as (typeof CLUSTER_LAYERS)[number]) ||
+        id === 'mamluk-territories' ||
+        id === 'mamluk-village-borders' ||
+        id === 'mamluk-village-border-halo');
+    return layerVisibility(id, preferences(), localPresentation || retainedSettlement);
+  };
+  let currentOverview: Overview | null = null;
+  const overview = createWorldOverview(map, worldId, palette, visibilityFor, (payload) => {
+    currentOverview = payload;
+    if (!disposed) callbacks.onOverview?.(payload);
+  });
   /** The UI preference stays authoritative: presentation never re-shows a hidden group. */
   const applyLayerVisibility = () => {
     if (typeof map.setLayoutProperty !== 'function') return;
@@ -413,6 +439,7 @@ export function createMapSession(
       retainPublicLayers = retain;
     },
     (payload) => {
+      if (!payload) settlements?.clearPrivate?.();
       if (!disposed) callbacks.onPublicPayload?.(payload);
     },
     () => viewport.loader?.requestRefresh(),
@@ -449,7 +476,10 @@ export function createMapSession(
         worldId,
         ...Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, String(value)])),
       });
-      const response = await mapRequest(`/api/kingdoms/world-map/viewport?${query}`, signal);
+      const response = await mapRequest(`/api/kingdoms/world-map/viewport?${query}`, signal, {
+        // Older hosts ignore this header; older clients receive their original DTO.
+        'X-Mamluk-Village-Buildings': '1',
+      });
       const payload = parseMapPayload(await response.json());
       if (response.headers?.get('X-Mamluk-Public-Settlements') === '1') publicPayloads.add(payload);
       return payload;
@@ -479,11 +509,13 @@ export function createMapSession(
     }
     applySelection();
     callbacks.onStatus(
-      loader.isBroad(adapter.getViewportBounds())
-        ? 'zoom'
-        : currentPayload || adapter.publicPayload
-          ? 'ready'
-          : 'loading',
+      !currentPayload && !adapter.publicPayload && !currentOverview
+        ? 'loading'
+        : loader.isBroad(adapter.getViewportBounds())
+          ? 'zoom'
+          : currentPayload || adapter.publicPayload
+            ? 'ready'
+            : 'loading',
     );
   };
   const onClick = (event: MapMouseEvent) => {
@@ -575,6 +607,32 @@ export function createMapSession(
     adapter,
     loader,
     applyLayerVisibility,
+    refreshSettlementPresentation: () => {
+      if (disposed || !settlements) return;
+      // Artwork may arrive after the data. Replace only the presentation layer;
+      // the GeoJSON source, its worker clusters and approved features stay put.
+      for (const id of ['mamluk-cities', 'mamluk-castles']) {
+        const current = map.getLayer(id)?.serialize();
+        if (current?.type !== 'circle') continue;
+        const next = settlements.layer(current);
+        if (next.type !== 'symbol') continue;
+        const owned = ownership ? playerOwnershipLayer(next, ownership) : next;
+        if (owned.type !== 'symbol') continue;
+        map.removeLayer(id);
+        try {
+          map.addLayer({
+            ...owned,
+            ...(id === 'mamluk-cities'
+              ? { filter: ['!', ['has', 'point_count']] as FilterSpecification }
+              : {}),
+            layout: { ...owned.layout, visibility: visibilityFor(id) ?? 'visible' },
+          });
+        } catch {
+          // A rejected sprite must leave the already approved circle marker usable.
+          if (!map.getLayer(id)) map.addLayer(current);
+        }
+      }
+    },
     setDestinationPicking: (picking: boolean) => {
       destinationPicking = picking;
       map.getCanvas().style.cursor = picking ? 'crosshair' : '';

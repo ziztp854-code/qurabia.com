@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { WorldMapReadSession } from '@mamluk/world-map-core/server';
+import type { SpatialQuery, WorldMapReadSession } from '@mamluk/world-map-core/server';
 import { createGeographicCampaign } from '@/lib/mamluk-map/data';
 import { KingdomsHttpError } from '@/lib/kingdoms/http';
 import { PUBLIC_ATLAS_WORLD } from '@/lib/mamluk-map/public-atlas';
@@ -75,6 +75,50 @@ describe('authenticated host map viewport', () => {
       'cairo-guard',
     ]);
     expect(dependencies.limit).toHaveBeenCalledWith('alice', false);
+  });
+  it('preserves the legacy DTO and sends architecture only to an opted-in owner', async () => {
+    const originalRead = dependencies.read.getMockImplementation()!;
+    dependencies.read.mockImplementation((_world, _viewer, read) =>
+      originalRead(_world, _viewer, (session: WorldMapReadSession) =>
+        read({
+          ...session,
+          getCitiesInBounds: async (query: SpatialQuery) =>
+            (await session.getCitiesInBounds(query)).map((city) => ({
+              ...city,
+              villageBuildings: JSON.stringify({ hall: 12, wall: 4 }),
+            })),
+        }),
+      ),
+    );
+    const legacy = await GET(request());
+    const legacyBody = await legacy.json();
+    expect(legacy.status).toBe(200);
+    expect(legacyBody.layers.cities.features.length).toBeGreaterThan(0);
+    expect(JSON.stringify(legacyBody)).not.toContain('villageBuildings');
+    const modernRequest = new Request(request().url, {
+      headers: { 'X-Mamluk-Village-Buildings': '1' },
+    });
+    const modern = await GET(modernRequest);
+    const modernBody = await modern.json();
+    const own = modernBody.layers.cities.features.filter(
+      (city: { properties: { ownerPlayerId: string } }) =>
+        city.properties.ownerPlayerId === 'alice',
+    );
+    expect(own.length).toBeGreaterThan(0);
+    for (const city of modernBody.layers.cities.features) {
+      if (city.properties.ownerPlayerId === 'alice')
+        expect(JSON.parse(city.properties.villageBuildings)).toEqual({ hall: 12, wall: 4 });
+      else expect(city.properties).not.toHaveProperty('villageBuildings');
+    }
+    expect(modern.headers.get('vary')).toContain('X-Mamluk-Village-Buildings');
+    const unknown = await GET(
+      new Request(request().url, {
+        headers: { 'X-Mamluk-Village-Buildings': '2' },
+      }),
+    );
+    expect(JSON.stringify(await unknown.json())).not.toContain('villageBuildings');
+    dependencies.identity.mockRejectedValue(new KingdomsHttpError(401, 'Login required'));
+    expect((await GET(modernRequest)).status).toBe(401);
   });
   it('rejects forged viewer IDs, duplicate fields and invalid coordinates before repository access', async () => {
     expect((await GET(request('&playerId=enemy'))).status).toBe(400);
