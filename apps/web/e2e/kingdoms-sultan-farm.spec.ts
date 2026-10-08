@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -99,4 +100,66 @@ test('farm: enter, select, plant, offline growth, harvest, reload and return wit
   }));
   expect(after).toEqual(before);
   expect(errors).toEqual([]);
+});
+
+async function openFarm(page: Page, request: APIRequestContext) {
+  expect((await request.post('/__village_test/farm-scenario')).ok()).toBe(true);
+  await page.goto('/');
+  await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true', {
+    timeout: 30000,
+  });
+  const city = page.getByRole('region', { name: 'خريطة القرية', exact: true });
+  await city
+    .locator('summary')
+    .filter({ hasText: /^إعدادات القرية$/ })
+    .click();
+  await city.getByLabel('اختر مبنى من الخريطة').selectOption('farm');
+  const scene = page.locator('[data-city-scene="farm"]');
+  await expect(scene.locator('[data-sultan-farm]')).toHaveAttribute('data-pixi-farm', 'true');
+  return {
+    scene,
+    farm: page.getByRole('region', { name: 'أحواض مزرعة السلطان' }),
+    canvas: scene.locator('canvas'),
+  };
+}
+
+test('farm: motion and visibility stop only cosmetic animation', async ({ page, request }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const { scene, farm, canvas } = await openFarm(page, request);
+  await expect(canvas).toHaveAttribute('data-farm-running', 'true');
+  await scene.getByRole('button', { name: 'إيقاف الحركة', exact: true }).click();
+  await expect(canvas).toHaveAttribute('data-farm-running', 'false');
+  await expect(farm).toHaveAttribute('data-farm-motion', 'quiet');
+  await scene.getByRole('button', { name: 'تشغيل الحركة', exact: true }).click();
+  await expect(canvas).toHaveAttribute('data-farm-running', 'true');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(canvas).toHaveAttribute('data-farm-running', 'false');
+  await expect(farm).toHaveAttribute('data-farm-motion', 'quiet');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(canvas).toHaveAttribute('data-farm-running', 'true');
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(canvas).toHaveAttribute('data-farm-running', 'false');
+  await expect(farm).toHaveAttribute('data-farm-motion', 'quiet');
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(canvas).toHaveAttribute('data-farm-running', 'true');
+});
+
+test('farm: low quality stays static when the player toggles motion', async ({ page, request }) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, 'deviceMemory', { configurable: true, value: 2 }),
+  );
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const { scene, farm, canvas } = await openFarm(page, request);
+  await expect(canvas).toHaveAttribute('data-farm-quality', 'low');
+  await expect(farm).toHaveAttribute('data-farm-quality', 'low');
+  await expect(canvas).toHaveAttribute('data-farm-running', 'false');
+  await scene.getByRole('button', { name: 'إيقاف الحركة', exact: true }).click();
+  await scene.getByRole('button', { name: 'تشغيل الحركة', exact: true }).click();
+  await expect(canvas).toHaveAttribute('data-farm-running', 'false');
 });

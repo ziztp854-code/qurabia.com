@@ -86,7 +86,7 @@ export function FarmPlantVisual({
               d="M0 0 Q-4-22 0-54 M0-16 Q-26-18-19-33 Q-2-31 0-16 M0-30 Q22-29 20-43 Q5-44 0-30"
               className={styles.stem}
             />
-            {plant.crop === 'wheat' ? (
+            {plant.crop === 'wheat' && growth && growth.progress >= 0.35 ? (
               <g className={styles.grain}>
                 {[0, 1, 2, 3, 4].slice(0, detail ? 5 : 3).map((i) => (
                   <path key={i} d={`M0 ${-46 - i * 5}q-11-2-8-7q8 0 8 7q11-2 8-7q-8 0-8 7`} />
