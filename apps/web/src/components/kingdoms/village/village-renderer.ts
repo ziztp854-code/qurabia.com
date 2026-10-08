@@ -20,7 +20,7 @@ import type {
 } from '@/lib/kingdoms/village/types';
 import { getCityComposition, cityGardenPlacements, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
 import { gardenAsset } from '@/lib/kingdoms/palace-garden';
-import { createCityLifeLayer, cityLifeAssets } from './city-life-layer';
+import { createCityLifeLayer, cityLifeAssets, cityWaterMaskAsset } from './city-life-layer';
 import { buildingKeys } from '@/lib/kingdoms/types';
 import {
   createArtworkTextureCache,
@@ -377,10 +377,10 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
   };
   const rebuildLife=()=>{
     life?.destroy();
-    life=createCityLifeLayer(city(),approved,settings,colors,cityGardenPlacements(props.village));
+    life=createCityLifeLayer(city(),approved,settings,colors,cityGardenPlacements(props.village),elapsed);
     world.addChildAt(life.layer,0);
     life.update(elapsed,false,props.debug?.npcs!==false);
-    canvas.dataset.cityActors=String(life.layer.children.filter(child=>child.label.startsWith('city-actor')).length);
+    canvas.dataset.cityActors=String(life.actorCount);
   };
   const rebuild=()=>{
     gestures.clear();
@@ -428,7 +428,7 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
   const loadLifeAssets=()=>{
     const sources=[...new Set([
       ...city().routes.slice(0,Math.max(0,settings.npcLimit)).map(route=>cityLifeAssets[route.kind]),
-      ...(settings.environment?[cityLifeAssets.palmA,cityLifeAssets.palmB,cityLifeAssets.flags]:[]),
+      ...(settings.environment?[cityLifeAssets.palmA,cityLifeAssets.palmB,cityLifeAssets.flags,cityWaterMaskAsset(city().id)]:[]),
       ...cityGardenPlacements(props.village).map(item=>gardenAsset(item.itemId,{thumbnail:true})),
     ])];
     void Promise.all(sources.map(async src=>{
@@ -478,7 +478,7 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
     setVisible(next){visible=next;if(!next)gestures.forEach(gesture=>{gesture.cancelled=true;});sync();},
     destroy(){
       if(disposed)return;
-      disposed=true;app.ticker.stop();life?.destroy();app.destroy(false,{children:true});approved.clear();pending.clear();gestures.clear();
+        disposed=true;app.ticker.stop();app.destroy(false,{children:false});life?.destroy();world.destroy({children:true});approved.clear();pending.clear();gestures.clear();
       document.removeEventListener('pointerdown',nativeDown,true);
       document.removeEventListener('pointermove',nativeMove,true);
       document.removeEventListener('pointerup',nativeEnd,true);

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { DatabaseClient, Prisma } from '@tahaddi/database';
 import { createWorld, executeCommand } from './engine';
 import { readPalaceGarden, savePalaceGarden } from './palace-garden-repository';
+import { emptyTroops } from './simulation';
 
 const databaseUrl = process.env.KINGDOMS_TEST_DATABASE_URL;
 describe.skipIf(!databaseUrl)('Palace garden isolated PostgreSQL persistence', () => {
@@ -24,6 +25,41 @@ describe.skipIf(!databaseUrl)('Palace garden isolated PostgreSQL persistence', (
       await db.kingdomWorld.deleteMany({ where: { id: { in: worlds } } });
       await db.user.deleteMany({ where: { id: { in: users } } });
     } finally { await db.$disconnect(); }
+  });
+  it('preserves depleted abandoned stock and a pending expedition when saving a garden colour', async () => {
+    const identity = { id: `garden_test_${randomUUID()}`, tokenVersion: 0 };
+    users.push(identity.id);
+    await db.user.create({ data: { ...identity, name: 'Garden conservation', status: 'ACTIVE', role: 'USER' } });
+    const now = Date.now(), worldId = `kw_palace_test_${randomUUID().replaceAll('-', '')}`;
+    worlds.push(worldId);
+    let state = executeCommand(createWorld(now), identity.id, { type: 'found', name: 'Conservation village' }, now);
+    const home = Object.values(state.villages)[0]!;
+    home.troops = { ...emptyTroops(), guard: 4 };
+    home.resources.food = 60000;
+    state.abandonedVillages = { version: 1, scope: 'kingdom-world', worldId,
+      seed: 'palace_conservation_20261008', domainVersion: 'saved-fixture-v1', generatedAt: now - 3600000,
+      villages: { 'saved-egypt': { id: 'saved-egypt', name: 'Saved Egyptian village', region: 'egypt', countryCode: 'EG',
+        longitude: 31.2357, latitude: 30.0444, x: 180, y: 180,
+        stock: { wood: 0, stone: 7, iron: 13, food: 23, gold: 43 }, stockUpdatedAt: now } } };
+    state = executeCommand(state, identity.id, { type: 'gatherAbandoned', villageId: home.id,
+      targetId: 'saved-egypt', troops: { ...emptyTroops(), guard: 1 } }, now);
+    expect(state.movements).toHaveLength(1);
+    expect(state.movements[0].abandonedGather).toEqual({ targetId: 'saved-egypt', worldId });
+    const nextEventAt = new Date(state.movements[0].arrivesAt);
+    const before = await db.kingdomWorld.create({ data: { id: worldId, name: 'Garden conservation',
+      state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue, revision: 17, paused: false, nextEventAt } });
+    await savePalaceGarden(worldId, home.id, identity, [{ slotId: 0, itemId: 'red-roses', color: 'blue' }], db);
+    expect((await readPalaceGarden(worldId, home.id, identity, db)).slots)
+      .toEqual([{ slotId: 0, itemId: 'red-roses', color: 'blue' }]);
+    const after = await db.kingdomWorld.findUniqueOrThrow({ where: { id: worldId } });
+    const previousState = JSON.parse(JSON.stringify(before.state)), savedState = JSON.parse(JSON.stringify(after.state));
+    delete previousState.villages[home.id].palaceGarden; delete savedState.villages[home.id].palaceGarden;
+    expect(savedState).toEqual(previousState);
+    expect(savedState.abandonedVillages.villages['saved-egypt'].stock.wood).toBe(0);
+    expect(savedState.movements).toEqual(state.movements);
+    expect(after.nextEventAt).toEqual(before.nextEventAt);
+    expect(after.paused).toBe(before.paused);
+    expect(after.revision).toBe(before.revision + 1);
   });
   it('serializes Alice and Bob saves without losing either garden or gameplay', async () => {
     const identities = await Promise.all(['alice', 'bob'].map(async (name) => {

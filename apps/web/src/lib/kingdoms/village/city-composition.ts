@@ -1,11 +1,12 @@
 import { getCityCameraProfile, CITY_DESKTOP_PROFILE, CITY_PORTRAIT_PROFILE } from './city-camera-profile';
 import type { VillageBuildingId } from './buildingRegistry';
-import type { VillageDebugOptions, VillagePlacement, VillageTarget, WorldPoint, WorldRect, WorldSize } from './types';
+import type { VillageDebugOptions, VillagePlacement, VillageTarget, WorldRect, WorldSize } from './types';
 import { gardenSlotsSchema } from '../palace-garden';
+import { sampleCityRoute, type CityActorRoute } from './city-motion';
+export type { CityActorRoute } from './city-motion';
 
 export type CityCompositionId = 'desktop' | 'portrait';
 export type CityLandmark = Readonly<{ id: VillageBuildingId; name: string; rect: WorldRect; classification: 'existing' | 'shared' | 'decoration'; target?: VillageTarget }>;
-export type CityActorRoute = Readonly<{ kind: 'guard' | 'worker' | 'caravan'; points: readonly WorldPoint[]; duration: number; offset: number }>;
 
 // Calibrated against the two independently authored rasters, not persisted player plots.
 const centers = {
@@ -45,17 +46,19 @@ export function getCityComposition(viewport: WorldSize) {
   const garden = profile.id === 'desktop' ? {x:.418,y:.16,width:.22,height:.105} : {x:.28,y:.186,width:.37,height:.064};
   landmarks.push({id:'citadel',name:'حدائق السلطان',classification:'shared',target:'hall',rect:{x:garden.x*profile.world.width,y:garden.y*profile.world.height,width:garden.width*profile.world.width,height:garden.height*profile.world.height}});
   const routes: CityActorRoute[] = profile.id === 'desktop' ? [
-    {kind:'guard',points:[{x:.485,y:.59},{x:.485,y:.65},{x:.485,y:.74}],duration:42000,offset:0},
-    {kind:'guard',points:[{x:.535,y:.59},{x:.535,y:.65},{x:.535,y:.74}],duration:42000,offset:18000},
-    {kind:'worker',points:[{x:.58,y:.455},{x:.72,y:.455},{x:.74,y:.515}],duration:33000,offset:8000},
-    {kind:'worker',points:[{x:.31,y:.64},{x:.38,y:.64},{x:.46,y:.645}],duration:36000,offset:0},
-    {kind:'caravan',points:[{x:.41,y:.96},{x:.48,y:.87},{x:.51,y:.78}],duration:40000,offset:10000},
+    // Side-view atlases patrol visible, nearly lateral ground corridors. In
+    // particular neither gate tower is a walkable continuation of the avenue.
+    {kind:'guard',points:[{x:.502,y:.617},{x:.536,y:.617}],duration:42000,offset:0,speed:8,height:13},
+    {kind:'guard',points:[{x:.233,y:.401},{x:.316,y:.401}],duration:42000,offset:7200,speed:8,height:12},
+    {kind:'worker',points:[{x:.62,y:.669},{x:.652,y:.669}],duration:33000,offset:3400,speed:12,height:13},
+    {kind:'worker',points:[{x:.35,y:.625},{x:.42,y:.625}],duration:36000,offset:8100,speed:11,height:13},
+    {kind:'caravan',points:[{x:.563,y:.88},{x:.60,y:.88}],duration:40000,offset:2700,speed:16,height:21,pause:1200},
   ] : [
-    {kind:'guard',points:[{x:.475,y:.245},{x:.475,y:.41},{x:.475,y:.46}],duration:38000,offset:0},
-    {kind:'guard',points:[{x:.53,y:.515},{x:.53,y:.58},{x:.53,y:.66}],duration:36000,offset:12000},
-    {kind:'worker',points:[{x:.57,y:.435},{x:.68,y:.44},{x:.78,y:.445}],duration:30000,offset:6000},
-    {kind:'worker',points:[{x:.255,y:.60},{x:.34,y:.615},{x:.44,y:.62}],duration:31000,offset:0},
-    {kind:'caravan',points:[{x:.55,y:.83},{x:.49,y:.785},{x:.49,y:.745}],duration:36000,offset:5000},
+    {kind:'guard',points:[{x:.23,y:.344},{x:.375,y:.344}],duration:38000,offset:4100,speed:9,height:15},
+    {kind:'guard',points:[{x:.485,y:.625},{x:.538,y:.625}],duration:36000,offset:0,speed:10,height:17},
+    {kind:'worker',points:[{x:.47,y:.553},{x:.53,y:.553}],duration:30000,offset:5600,speed:13,height:16},
+    {kind:'worker',points:[{x:.46,y:.625},{x:.52,y:.625}],duration:31000,offset:1700,speed:13,height:16},
+    {kind:'caravan',points:[{x:.48,y:.79},{x:.55,y:.79}],duration:36000,offset:3600,speed:18,height:25,pause:1200},
   ];
   return { ...profile, landmarks, routes, asset:`/game-art/kingdoms/city-hub/overview-${profile.id}.webp`, mobileAsset:`/game-art/kingdoms/city-hub/overview-${profile.id}-mobile.webp`,
     canals: profile.id==='desktop' ? [{x:.30,y:.748},{x:.40,y:.775},{x:.64,y:.80},{x:.83,y:.745}] : [{x:.05,y:.43},{x:.05,y:.57},{x:.33,y:.745},{x:.75,y:.747}],
@@ -80,9 +83,5 @@ export function getCityPlacement(id: VillageBuildingId, composition: CityComposi
 }
 
 export function cityActorPosition(route: CityActorRoute, elapsed: number, world: WorldSize) {
-  const cycle = ((elapsed+route.offset)%route.duration)/route.duration;
-  const progress = (cycle < .5 ? cycle*2 : (1-cycle)*2)*(route.points.length-1);
-  const index = Math.min(route.points.length-2,Math.floor(progress));
-  const start=route.points[index],end=route.points[index+1],fraction=progress-index;
-  return { x:(start.x+(end.x-start.x)*fraction)*world.width, y:(start.y+(end.y-start.y)*fraction)*world.height, facing:(end.x>=start.x ? 1 : -1)*(cycle<.5 ? 1 : -1) };
+  return sampleCityRoute(route, elapsed, world);
 }

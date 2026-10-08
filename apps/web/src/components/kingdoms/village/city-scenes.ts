@@ -22,7 +22,7 @@ export const cityScenes: Record<CitySceneKey, { title: string; asset: string; ta
 export const citySceneForBuilding = (building: VillageSelection): CitySceneKey => building === 'hall' ? 'palace' : building === 'rally' ? 'war-council' : building;
 const portraitAssets = new Set(['barracks', 'stable', 'market', 'war-council', 'siege-workshop', 'farm', 'mine']);
 export const citySceneAsset = (scene: CitySceneKey, mobile = false) => {
-  const asset = cityScenes[scene].asset;
+  const asset = scene === 'palace' ? 'palace-courtyard-user' : cityScenes[scene].asset;
   const suffix = mobile ? portraitAssets.has(asset) ? '-portrait' : '-mobile' : '';
   return `/game-art/kingdoms/city-scenes/${asset}${suffix}.webp`;
 };

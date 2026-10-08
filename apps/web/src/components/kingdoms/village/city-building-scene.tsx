@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type 
 import { ArrowRight } from 'lucide-react';
 import { citySceneAsset, cityScenes, type CitySceneKey } from './city-scenes';
 import styles from './city-building-scene.module.css';
+import { SultanPalaceScene } from './sultan-palace-scene';
 
 export function CityBuildingScene({ scene, onClose, children, garden }: {
   scene: CitySceneKey;
@@ -14,7 +15,7 @@ export function CityBuildingScene({ scene, onClose, children, garden }: {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [aspect, setAspect] = useState(1672 / 941);
+  const [aspect, setAspect] = useState(scene === 'palace' ? 1670 / 942 : 1672 / 941);
   const [exiting, setExiting] = useState(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const surface = useRef<HTMLElement>(null);
@@ -62,7 +63,13 @@ export function CityBuildingScene({ scene, onClose, children, garden }: {
       else if (!event.shiftKey && document.activeElement === last && first) { event.preventDefault(); first.focus(); }
     }}>
       <div className={styles.artwork} style={{ '--scene-aspect': aspect } as CSSProperties}>
-        <picture>
+        {scene === 'palace' ? <SultanPalaceScene garden={loaded ? garden : undefined}>
+          <picture>
+            <source media="(max-width: 700px)" srcSet={citySceneAsset(scene, true)} type="image/webp" />
+            <img key={retry} className={styles.image} src={citySceneAsset(scene)} alt="" draggable={false} decoding="async" fetchPriority="high"
+              onLoad={() => { setLoaded(true); setFailed(false); }} onError={() => { setFailed(true); setLoaded(false); }} />
+          </picture>
+        </SultanPalaceScene> : <><picture>
           <source media="(max-width: 700px)" srcSet={citySceneAsset(scene, true)} type="image/webp" />
           {/* Scene artwork is independent of the overview texture. */}
           <img key={retry} className={styles.image} src={citySceneAsset(scene)} alt="" draggable={false} decoding="async" fetchPriority="high" onLoad={(event) => {
@@ -72,7 +79,7 @@ export function CityBuildingScene({ scene, onClose, children, garden }: {
             setFailed(false);
           }} onError={() => { setFailed(true); setLoaded(false); }} />
         </picture>
-        {loaded && garden}
+        {loaded && garden}</>}
       </div>
       <div className={styles.veil} aria-hidden="true" />
       <header className={styles.header}>

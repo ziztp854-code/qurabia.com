@@ -1,5 +1,6 @@
 import { expect, test as base, type Page, type TestInfo } from '@playwright/test';
 import { createHash } from 'node:crypto';
+import { writeFile } from 'node:fs/promises';
 
 const test = base.extend<{ diagnostics: void }>({
   diagnostics: [async ({ page }, use, testInfo) => {
@@ -51,7 +52,20 @@ async function enterPhysical(page: Page, scene: Scene, touch = false) {
   return active;
 }
 
-const pixelHash = async (page: Page) => createHash('sha256').update(await page.locator('[data-village-scene] canvas').screenshot()).digest('hex');
+const pixelFrame = async (page: Page) => {
+  // Capture the full canvas bounds without repeated locator stability/scroll work.
+  const clip = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-village-scene] canvas');
+    if (!(canvas instanceof HTMLCanvasElement)) throw new Error('Village canvas is unavailable');
+    const rect = canvas.getBoundingClientRect();
+    // Enclose every canvas pixel on an integer grid; fractional clips resample static colours.
+    const x = Math.floor(rect.x), y = Math.floor(rect.y);
+    return { x, y, width: Math.ceil(rect.right) - x, height: Math.ceil(rect.bottom) - y };
+  });
+  return page.screenshot({ clip });
+};
+const frameHash = (buffer: Buffer) => createHash('sha256').update(buffer).digest('hex');
+const pixelHash = async (page: Page) => frameHash(await pixelFrame(page));
 async function frameBarrier(page: Page) {
   await page.evaluate(() => new Promise<void>((resolve) => {
     let frames = 0;
@@ -217,10 +231,15 @@ test('living Pixi actors animate and freeze for pause and reduced motion; NPC vi
   await page.emulateMedia({ reducedMotion: 'no-preference' }); await page.goto('/');
   const stage = await readyHub(page); await page.mouse.move(0, 0);
   expect(Number(await stage.locator('canvas').getAttribute('data-city-actors'))).toBe(5);
-  const live = await pixelHash(page);
-  await stage.locator('canvas').screenshot({ path: testInfo.outputPath('city-life-frame-a.png') });
-  await expect.poll(() => pixelHash(page)).not.toBe(live);
-  await stage.locator('canvas').screenshot({ path: testInfo.outputPath('city-life-frame-b.png') });
+  const liveFrame = await pixelFrame(page), live = frameHash(liveFrame);
+  await writeFile(testInfo.outputPath('city-life-frame-a.png'), liveFrame);
+  let changedFrame: Buffer | undefined;
+  await expect.poll(async () => {
+    changedFrame = await pixelFrame(page);
+    return frameHash(changedFrame);
+  }).not.toBe(live);
+  expect(changedFrame).toBeDefined();
+  await writeFile(testInfo.outputPath('city-life-frame-b.png'), changedFrame!);
   await page.locator('summary').filter({ hasText: /^إعدادات القرية$/ }).click();
   await page.getByRole('button', { name: 'إيقاف الحركة', exact: true }).click();
   await page.locator('summary').filter({ hasText: /^إعدادات القرية$/ }).click(); await page.mouse.move(0, 0);
@@ -261,8 +280,12 @@ test('camera covers four states, clamps pan and zoom, and retains context across
   await page.setViewportSize({ width: 1920, height: 1080 }); await expect(stage).toHaveAttribute('data-city-composition', 'desktop');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const target = stage.getByRole('button', { name: /^الثكنة،/ }); const bounds = await target.boundingBox();
-  await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
-  await expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_FOCUS'); await expect(page.locator('[data-city-scene="barracks"]')).toBeVisible();
+  // Observe the 180ms focus state while input is dispatched, before click settles.
+  await Promise.all([
+    expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_FOCUS'),
+    page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2),
+  ]);
+  await expect(page.locator('[data-city-scene="barracks"]')).toBeVisible();
   await expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_SCENE'); await back(page);
   await expect(stage).toHaveAttribute('data-camera-state', 'CITY_OVERVIEW');
 });

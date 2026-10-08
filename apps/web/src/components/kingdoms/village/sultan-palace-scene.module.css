@@ -1,0 +1,12 @@
+.frame { position: relative; inline-size: 100%; block-size: 100%; --palace-camera-transform: none; }
+.viewport { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
+.world { position: absolute; left: 0; top: 0; inline-size: 1670px; block-size: 942px; transform: var(--palace-camera-transform); transform-origin: 0 0; pointer-events: none; }
+.canvas { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; pointer-events: none; }
+.tools { position: absolute; z-index: 8; inset-block-start: var(--space-2); inset-inline-end: var(--space-2); display: flex; flex-wrap: wrap; gap: var(--space-1); max-inline-size: calc(100% - var(--space-4)); }
+.tools button, .tools select { min-block-size: 44px; min-inline-size: 44px; padding: var(--space-2); border: 1px solid var(--border-gold); border-radius: var(--radius-md); background: var(--surface-strong); color: var(--foreground); font: inherit; font-size: .75rem; cursor: pointer; }
+.tools button:focus-visible, .tools select:focus-visible, .viewport:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.status { position: absolute; inset-inline: var(--space-3); inset-block-end: var(--space-3); pointer-events: none; color: var(--foreground); background: var(--surface-strong); padding: var(--space-2); }
+@media (max-width: 700px) { .tools { gap: 2px; } .tools button, .tools select { font-size: .65rem; padding: var(--space-1); } }
+
+.tools select { inline-size: auto; max-inline-size: 9rem; }
+@media (max-width: 700px) { .tools { inset-inline: 4px; max-inline-size: none; } .tools select { max-inline-size: 7rem; } .tools select[aria-label="جودة القصر"] { max-inline-size: 66px; } }

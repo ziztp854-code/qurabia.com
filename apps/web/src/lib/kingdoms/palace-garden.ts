@@ -32,14 +32,19 @@ export const gardenAsset = (id: GardenItemId, options: { thumbnail?: boolean; va
   const alternate = !options.thumbnail && (id === 'red-roses' || id === 'green-shrub') && (options.variation ?? 0) % 2 === 1;
   return `${art}${id}${alternate ? '-b' : ''}${options.thumbnail ? '-thumb' : ''}.webp`;
 };
-// Calibrated against the actual 1672×941 palace master, including its perspective.
+// Stable saved slot IDs, projected onto the user's 1670×942 empty courtyard.
 export const gardenSlots = [
-  [568, 532], [704, 550], [883, 565], [1029, 582],
-  [427, 612], [559, 637], [795, 669], [956, 694],
-  [356, 685], [487, 715], [760, 749], [931, 779],
-].map(([x, y], id) => ({ id, x: x / 1672, y: y / 941 }));
+  [622, 427], [690, 427], [980, 427], [1048, 427],
+  [595, 480], [680, 480], [992, 480], [1078, 480],
+  [597, 590], [1079, 590], [562, 706], [1129, 706],
+].map(([x, y], id) => ({ id, x: x / 1670, y: y / 942 }));
 const itemId = z.enum(gardenCatalog.map((item) => item.id));
-export const gardenSlotsSchema = z.array(z.object({ slotId: z.number().int().min(0).max(11), itemId }).strict())
+export const gardenColors = ['red', 'yellow', 'blue', 'green', 'orange', 'brown'] as const;
+export type GardenColor = (typeof gardenColors)[number];
+export const gardenColorTint: Record<GardenColor, number> = {
+  red: 0xff7e78, yellow: 0xffeb90, blue: 0x9cc7ff, green: 0xb4d49a, orange: 0xffbe8a, brown: 0xd1b49a,
+};
+export const gardenSlotsSchema = z.array(z.object({ slotId: z.number().int().min(0).max(11), itemId, color: z.enum(gardenColors).optional() }).strict())
   .max(12).refine((slots) => new Set(slots.map((slot) => slot.slotId)).size === slots.length, 'Duplicate garden slot');
 export type GardenPlacement = z.infer<typeof gardenSlotsSchema>[number];
 export const gardenReadSchema = z.object({ worldId: worldIdSchema, villageId: worldIdSchema }).strict();
