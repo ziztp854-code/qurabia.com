@@ -8,6 +8,8 @@ const id = z
   .regex(/^[a-zA-Z0-9_-]+$/)
   .refine((v) => !['__proto__', 'constructor', 'prototype'].includes(v));
 const villageId = id;
+const plotId = z.number().int().min(0).max(11);
+const expectedVersion = z.number().int().min(0).max(2147483647);
 const name = z.string().trim().min(2).max(40);
 const troops = z
   .object({
@@ -23,6 +25,8 @@ const troops = z
   })
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('farmPlant'), villageId, plotId, expectedVersion, crop: z.enum(['wheat', 'beans', 'pomegranate']), expectedQuote: z.string().min(1).max(160) }).strict(),
+  z.object({ type: z.literal('farmHarvest'), villageId, plotId, expectedVersion }).strict(),
   z.object({ type: z.literal('gatherAbandoned'), villageId, targetId: id, troops, commanderId: id.optional() }).strict(),
   z.object({ type: z.literal('commanderRecruit'), villageId, name, specialization: z.enum(commanderSpecializations) }).strict(),
   z.object({ type: z.literal('commanderAssign'), villageId, commanderId: id }).strict(),

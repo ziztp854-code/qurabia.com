@@ -22,6 +22,7 @@ on:
       - 'apps/web/e2e/fixtures/village-scene*'
       - 'apps/web/playwright.village-scene.config.ts'
       - 'apps/web/playwright.city-scenes.config.ts'
+      - 'apps/web/playwright.sultan-farm.config.ts'
       - 'apps/web/playwright.animation-preview.config.ts'
       - 'apps/web/playwright.living-city-regression.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
@@ -54,6 +55,7 @@ on:
       - 'apps/web/e2e/fixtures/village-scene*'
       - 'apps/web/playwright.village-scene.config.ts'
       - 'apps/web/playwright.city-scenes.config.ts'
+      - 'apps/web/playwright.sultan-farm.config.ts'
       - 'apps/web/playwright.animation-preview.config.ts'
       - 'apps/web/playwright.living-city-regression.config.ts'
       - 'apps/web/playwright.kingdoms*.config.ts'
@@ -122,6 +124,8 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
       - name: Verify dedicated Living City scenes and all release viewports
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.city-scenes.config.ts
+      - name: Verify Sultan Farm on desktop and mobile
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.sultan-farm.config.ts --workers=1
       - name: Verify palace motion and pooled-resource cleanup
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.animation-preview.config.ts --workers=1
       - name: Preserve failed village browser evidence
@@ -133,6 +137,7 @@ jobs:
             apps/web/test-results/village-scene/
             apps/web/test-results/city-scenes/
             apps/web/test-results/animation-preview/
+            apps/web/test-results/sultan-farm/
             apps/web/playwright-report/city-scenes/
           retention-days: 7
       - name: Build web application
