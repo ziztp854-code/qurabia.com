@@ -13,6 +13,14 @@ async function enter(page: Page) {
 }
 async function frames(page: Page) { return Number(await page.locator('[data-sultan-palace] canvas').getAttribute('data-palace-frames') ?? 0); }
 const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
+async function pixelFrame(page: Page) {
+  const clip = await page.locator('[data-sultan-palace] canvas').evaluate((canvas) => {
+    const rect = canvas.getBoundingClientRect(), x = Math.floor(rect.x), y = Math.floor(rect.y);
+    // Keep the complete canvas on an integer grid instead of resampling a fractional clip.
+    return { x, y, width: Math.ceil(rect.right) - x, height: Math.ceil(rect.bottom) - y };
+  });
+  return page.screenshot({ clip });
+}
 const resourceWarnings = new WeakMap<Page, { text: string; stack: unknown }[]>();
 test.beforeEach(async ({ page, request }) => {
   const warnings: { text: string; stack: unknown }[] = [];
@@ -63,25 +71,55 @@ test('motion stops for pause and reduced motion, quality budgets and cleanup', a
   await expect.poll(() => frames(page)).toBeGreaterThan(30);
   await scene.getByRole('button', { name: 'إيقاف الحركة', exact: true }).click();
   await expect(canvas).toHaveAttribute('data-palace-running', 'false');
-  const frozen = hash(await canvas.screenshot());
-  await page.waitForTimeout(650); expect(hash(await canvas.screenshot())).toBe(frozen);
+  const frozen = hash(await pixelFrame(page));
+  await page.waitForTimeout(650); expect(hash(await pixelFrame(page))).toBe(frozen);
   await scene.getByRole('button', { name: 'تشغيل الحركة', exact: true }).click();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(canvas).toHaveAttribute('data-palace-running', 'false');
-  const reduced = hash(await canvas.screenshot()); await page.waitForTimeout(650); expect(hash(await canvas.screenshot())).toBe(reduced);
+  const reduced = hash(await pixelFrame(page)); await page.waitForTimeout(650); expect(hash(await pixelFrame(page))).toBe(reduced);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const measurements = [];
-  for (const [quality, target] of [['high', 60], ['medium', 30], ['low', 20]] as const) {
-    await scene.getByLabel('جودة القصر', { exact: true }).selectOption(quality);
-    await expect(scene.locator('[data-sultan-palace]')).toHaveAttribute('data-pixi-garden', 'true');
-    await expect(canvas).toHaveAttribute('data-palace-target-fps', String(target));
-    const before = await frames(page), at = Date.now(); await page.waitForTimeout(3100);
-    const fps = (await frames(page) - before) / ((Date.now() - at) / 1000);
-    measurements.push({ quality, target, observedFps: fps, updateMs: await canvas.getAttribute('data-palace-update-ms') });
-    console.log(JSON.stringify({ quality, before, after: await frames(page), state: await canvas.evaluate((element: HTMLCanvasElement) => ({ ...element.dataset, hidden: document.hidden })) }));
-    expect(fps).toBeGreaterThan(target * .45); expect(fps).toBeLessThanOrEqual(target + 5);
+  const measurements: unknown[] = [];
+  try {
+    for (const [quality, target] of [['high', 60], ['medium', 30], ['low', 20]] as const) {
+      const oldCanvas = await canvas.elementHandle(); expect(oldCanvas).not.toBeNull();
+      await scene.getByLabel("جودة القصر", { exact: true }).selectOption(quality);
+      // AUTO can resolve to HIGH too; require the new renderer instance.
+      await expect.poll(() => oldCanvas!.evaluate(element => element.isConnected)).toBe(false);
+      await expect(scene.locator('[data-sultan-palace]')).toHaveAttribute('data-pixi-garden', 'true');
+      await expect(canvas).toHaveAttribute('data-palace-target-fps', String(target));
+      await expect(canvas).toHaveAttribute('data-palace-ambient', 'ready');
+      const sample = await canvas.evaluate(async element => {
+        type Snapshot = { frames: number; at: number; activeMs: number; initializedAt: number; ambientReadyAt: number | null };
+        const surface = element as HTMLCanvasElement & { getPalaceFrameStats?: () => Snapshot };
+        const readStats = surface.getPalaceFrameStats;
+        if (!readStats) throw new Error('Per-canvas palace frame stats are unavailable');
+        const read = () => ({ ...readStats(), connected: surface.isConnected,
+          sameStatsOwner: surface.getPalaceFrameStats === readStats, hidden: document.hidden,
+          quality: surface.dataset.palaceQuality, running: surface.dataset.palaceRunning === 'true',
+          targetFps: Number(surface.dataset.palaceTargetFps), ambient: surface.dataset.palaceAmbient });
+        const start = read(); await new Promise<void>(resolve => setTimeout(resolve, 3100));
+        return { start, end: read() };
+      });
+      const elapsedMs = sample.end.at - sample.start.at;
+      const fps = (sample.end.frames - sample.start.frames) * 1000 / elapsedMs;
+      const measurement = { quality, target, observedFps: fps, elapsedMs,
+        ambientStartupMs: sample.start.ambientReadyAt! - sample.start.initializedAt,
+        activeMs: sample.end.activeMs - sample.start.activeMs, sample,
+        updateMs: await canvas.getAttribute('data-palace-update-ms') };
+      measurements.push(measurement); console.log(JSON.stringify(measurement));
+      for (const snapshot of [sample.start, sample.end]) {
+        expect(snapshot.connected).toBe(true); expect(snapshot.sameStatsOwner).toBe(true);
+        expect(snapshot.hidden).toBe(false); expect(snapshot.running).toBe(true);
+        expect(snapshot.quality).toBe(quality); expect(snapshot.targetFps).toBe(target);
+        expect(snapshot.ambient).toBe('ready');
+      }
+      // Keep the entire elapsed interval, including any stopped time, in FPS.
+      expect(measurement.activeMs).toBeGreaterThanOrEqual(elapsedMs - 100);
+      expect(fps).toBeGreaterThan(target * .45); expect(fps).toBeLessThanOrEqual(target + 5);
+    }
+  } finally {
+    await info.attach('quality-measurements', { body: JSON.stringify(measurements), contentType: 'application/json' });
   }
-  await info.attach('quality-measurements', { body: JSON.stringify(measurements), contentType: 'application/json' });
   await page.screenshot({ path: info.outputPath('palace-quality-low.png'), fullPage: true });
   const cdp = await page.context().newCDPSession(page);
   await page.getByRole('button', { name: 'العودة إلى المدينة', exact: true }).click();

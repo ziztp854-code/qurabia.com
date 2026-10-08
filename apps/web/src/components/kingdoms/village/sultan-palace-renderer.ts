@@ -11,6 +11,9 @@ import { createPalaceFlagsLayer } from './palace-flags-layer';
 import { createPalaceAtmosphereLayer } from './palace-atmosphere-layer';
 
 export async function createSultanPalaceRenderer(canvas: HTMLCanvasElement, host: HTMLElement, camera: VillageCamera, quality: QualitySettings, initialElapsed = 0) {
+  const initializedAt = performance.now();
+  let ambientReadyAt: number | null = null;
+  canvas.dataset.palaceAmbient = 'loading';
   const app = new Application();
   canvas.dataset.palaceFrames = '0';
   canvas.dataset.palaceUpdateMs = '0';
@@ -45,6 +48,12 @@ export async function createSultanPalaceRenderer(canvas: HTMLCanvasElement, host
   };
   app.ticker.maxFPS = quality.fps;
   let frames = 0, renderTotal = 0;
+  const getFrameStats = () => {
+    const at = performance.now();
+    return { frames, at, activeMs: activeTotal + (activeSince === null ? 0 : at - activeSince), initializedAt, ambientReadyAt };
+  };
+  type StatsCanvas = HTMLCanvasElement & { getPalaceFrameStats?: typeof getFrameStats };
+  Object.defineProperty(canvas, 'getPalaceFrameStats', { configurable: true, value: getFrameStats });
   app.ticker.add(ticker => {
     if (disposed || !motion || !visible || document.hidden) return;
     const started = performance.now(); time += Math.min(100, ticker.deltaMS);
@@ -71,7 +80,7 @@ export async function createSultanPalaceRenderer(canvas: HTMLCanvasElement, host
     garden?.destroy(); garden = createPalaceGardenLayer(placements, assets, quality.environment);
     world.addChild(garden.layer); garden.update(time); render();
   }
-  void (async () => {
+  const ambientReady = (async () => {
     try {
       const horse = quality.mode === 'high' || quality.mode === 'ultra';
       const sources = [cityLifeAssets.guard, ...(horse ? [cityLifeAssets.caravan] : [])];
@@ -94,15 +103,16 @@ export async function createSultanPalaceRenderer(canvas: HTMLCanvasElement, host
         water.update(time, true); flags.update(time);
       }
       render();
+      ambientReadyAt = performance.now(); canvas.dataset.palaceAmbient = 'ready';
     } catch { canvas.dataset.palaceAmbient = 'unavailable'; }
   })();
   atmosphere.update(time); sync();
-  return { updateGarden, getElapsed: () => time,
-    getFrameStats: () => ({ frames, at: performance.now(), activeMs: activeTotal + (activeSince === null ? 0 : performance.now() - activeSince) }),
+  return { updateGarden, ambientReady, getElapsed: () => time, getFrameStats,
     setMotion(value: boolean) { motion = value; if (!value) camera.stop(); sync(); },
     resize(width: number, height: number) { app.renderer.resize(width, height); camera.resize({ width, height }, PALACE_WORLD); render(); },
     destroy() {
       if (disposed) return; disposed = true; gardenRevision++;
+      delete (canvas as StatsCanvas).getPalaceFrameStats;
       unsubscribe(); intersection.disconnect(); document.removeEventListener('visibilitychange', visibility);
       app.ticker.stop();
       // Release renderer bind groups before disposing the scene-owned texture sources.

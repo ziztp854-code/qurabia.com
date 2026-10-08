@@ -72,7 +72,7 @@ export function SultanPalaceScene({ children, garden }: { children: ReactNode; g
     if (resize) resize.observe(element); else window.addEventListener('resize', updateSize);
     void import('./sultan-palace-renderer').then(module => module.createSultanPalaceRenderer(surface, element, instance, settings, retainedTime.current)).then(async runtime => {
       if (disposed) { runtime.destroy(); return; }
-      renderer.current = runtime; runtime.resize(Math.max(1, element.clientWidth), Math.max(1, element.clientHeight)); updateMotion(); await runtime.updateGarden(placements.current);
+      renderer.current = runtime; runtime.resize(Math.max(1, element.clientWidth), Math.max(1, element.clientHeight)); updateMotion(); await runtime.updateGarden(placements.current); await runtime.ambientReady;
       if (!disposed) { setReady(true); surface.dataset.palaceQuality = settings.mode; surface.dataset.palaceTargetFps = String(settings.fps); }
       if (!disposed && quality === 'auto') {
         const monitor = createPalaceQualityMonitor(settings.mode);
