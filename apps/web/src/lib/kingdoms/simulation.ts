@@ -9,6 +9,7 @@ import {
   resourceSiteSupply,
 } from './resource-sites';
 import { defaultKingdomsConfig, resources } from './config';
+import { abandonedLayout, abandonedResourceNames, abandonedVillage, collectAbandonedResources } from './abandoned-villages';
 import { awardBattleExperience, commanderCombatPower, releaseCommander, setCommander } from './commanders';
 import {
   buildingKeys,
@@ -333,10 +334,17 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
     const home = w.villages[m.sourceId];
     if (home?.ownerId === m.ownerId) {
       const before = m.gather ? home.resources[m.gather.resource] : 0;
+      const beforeAbandoned = m.abandonedGather ? { ...home.resources } : undefined;
       home.troops = Object.fromEntries(
         unitKeys.map((k) => [k, home.troops[k] + m.troops[k]]),
       ) as Troops;
       credit(w, home, m.loot);
+      if (beforeAbandoned) {
+        const received = resourceKeys.map(key => `${gatherAmountLabel(home.resources[key] - beforeAbandoned[key])} ${abandonedResourceNames[key]}`).join('، ');
+        const overflow = resourceKeys.reduce((sum, key) => sum + m.loot[key] - (home.resources[key] - beforeAbandoned[key]), 0);
+        report(w, at, [m.ownerId], 'عودة بعثة القرية المهجورة',
+          `عادت القوات إلى ${home.name}؛ وصلت ${received}${overflow > 0 ? `؛ فائض سعة المخزن ${gatherAmountLabel(overflow)}` : ''}`);
+      }
       if (m.gather) {
         const received = home.resources[m.gather.resource] - before;
         const overflow = m.loot[m.gather.resource] - received;
@@ -349,7 +357,7 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
           `عادت القوات إلى ${home.name}؛ استلمت ${gatherAmountLabel(received)} ${resourceName}${overflow > 0 ? `؛ لم يتسع المخزن لـ ${gatherAmountLabel(overflow)} ${resourceName}` : ''}`,
         );
       }
-    } else if (m.gather) {
+    } else if (m.gather || m.abandonedGather) {
       report(
         w,
         at,
@@ -358,6 +366,21 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
         'القرية الأصلية لم تعد تابعة لمملكتك؛ لم تُسلّم الموارد إلى مملكة أخرى',
       );
     }
+    return;
+  }
+  if (m.mission === 'gather' && m.abandonedGather) {
+    const site = abandonedVillage(w, m.abandonedGather.targetId);
+    if (!site || abandonedLayout(w)?.worldId !== m.abandonedGather.worldId ||
+      site.x !== m.targetX || site.y !== m.targetY || target || w.territories[`${m.targetX},${m.targetY}`]) {
+      report(w, at, [m.ownerId], 'تعذر جمع موارد القرية المهجورة', 'الهدف لم يعد متاحًا؛ تعود القوات دون موارد');
+      returnMovement(w, { ...m, loot: resources() }, at);
+      return;
+    }
+    const carry = gatherPreview(w.config, site, site, m.troops).carry;
+    const loot = collectAbandonedResources(w, site.id, at, carry);
+    const collected = resourceKeys.map(key => `${loot[key]} ${abandonedResourceNames[key]}`).join('، ');
+    report(w, at, [m.ownerId], 'جمع موارد القرية المهجورة', `${site.name}: جُمعت ${collected}؛ القوات في طريق العودة`);
+    returnMovement(w, { ...m, loot }, at);
     return;
   }
   if (m.mission === 'gather') {

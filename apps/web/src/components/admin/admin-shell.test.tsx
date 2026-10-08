@@ -8,7 +8,7 @@ vi.mock('@/components/layout', () => ({
 }));
 
 describe('AdminShell navigation', () => {
-  it('shows the full console to administrators', () => {
+  it('keeps the general console available to administrators', () => {
     render(<AdminShell role="ADMIN">المحتوى</AdminShell>);
 
     expect(screen.getByRole('link', { name: 'رادار الجمهور' })).toHaveAttribute(
@@ -19,7 +19,7 @@ describe('AdminShell navigation', () => {
       'href',
       '/admin/monitor',
     );
-    expect(screen.getByRole('link', { name: 'المستخدمون' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'المستخدمون' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'سجل النشاط' })).toBeInTheDocument();
     expect(screen.getByText('أدمن')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الملف الشخصي' })).toHaveAttribute('href', '/profile');

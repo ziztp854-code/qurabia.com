@@ -261,8 +261,12 @@ test('camera covers four states, clamps pan and zoom, and retains context across
   await page.setViewportSize({ width: 1920, height: 1080 }); await expect(stage).toHaveAttribute('data-city-composition', 'desktop');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const target = stage.getByRole('button', { name: /^الثكنة،/ }); const bounds = await target.boundingBox();
-  await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
-  await expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_FOCUS'); await expect(page.locator('[data-city-scene="barracks"]')).toBeVisible();
+  // Observe the 180ms focus state while input is dispatched, before click settles.
+  await Promise.all([
+    expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_FOCUS'),
+    page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2),
+  ]);
+  await expect(page.locator('[data-city-scene="barracks"]')).toBeVisible();
   await expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_SCENE'); await back(page);
   await expect(stage).toHaveAttribute('data-camera-state', 'CITY_OVERVIEW');
 });

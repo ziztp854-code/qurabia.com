@@ -1,3 +1,5 @@
+import type { AbandonedVillageLayout } from './abandoned-village-types';
+
 export const resourceKeys = ['wood', 'stone', 'iron', 'food', 'gold'] as const;
 export type Resource = (typeof resourceKeys)[number];
 export type Resources = Record<Resource, number>;
@@ -274,6 +276,7 @@ export type KingdomPlayer = {
   throne: number;
 };
 export type Movement = {
+  abandonedGather?: { targetId: string; worldId: string };
   commanderId?: string;
   gather?: { siteId: string; resource: ResourceSiteKind };
   id: string;
@@ -366,6 +369,8 @@ export type CaravanIntercept = {
 };
 export type CaravanView = Pick<Caravan, 'id' | 'ownerId' | 'originVillageId' | 'targetVillageId' | 'resources' | 'departsAt' | 'arrivesAt' | 'status' | 'route'>;
 export type KingdomsWorld = {
+  /** Optional, explicitly provisioned world registry; reads never generate or reset it. */
+  abandonedVillages?: AbandonedVillageLayout;
   commanders?: Record<string, Commander>;
   commanderAwards?: CommanderAward[];
   resourceSiteStocks?: Record<string, { available: number; updatedAt: number }>;
@@ -393,6 +398,7 @@ export type KingdomsWorld = {
   };
 };
 export type KingdomsView = {
+  abandonedVillages?: import('./abandoned-village-types').AbandonedVillageView[];
   commanders?: CommanderView[];
   resourceSites?: ResourceSiteView[];
   allianceEvent?: AllianceEventView | null;

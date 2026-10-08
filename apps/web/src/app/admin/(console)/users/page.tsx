@@ -3,7 +3,7 @@ import { AdminVerifiedName, Button } from '@/components/ui';
 import styles from '@/components/admin/admin.module.css';
 import { MANAGED_APP_ROLES, ROLE_LABELS } from '@/lib/auth/authorization';
 import { isPlanCode, planDefinition } from '@tahaddi/domain';
-import { getPrismaClient } from '@/lib/auth/prisma';
+import { listManagedUsers } from '@/lib/admin/users';
 import { requirePermission } from '@/lib/auth/session';
 import { updateUserAccess, grantUserSubscription, cancelUserSubscriptionAction } from './actions';
 
@@ -37,48 +37,12 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requirePermission('MANAGE_USERS', '/admin/users');
+  await requirePermission('platform.users.manage', '/admin/users');
   const params = await searchParams;
   const query = singleValue(params.q).trim().slice(0, 80);
   const page = Math.max(1, Number.parseInt(singleValue(params.page), 10) || 1);
   const result = singleValue(params.result);
-  const where = {
-    status: { not: 'DELETED' as const },
-    ...(query
-      ? {
-          OR: [
-            { name: { contains: query, mode: 'insensitive' as const } },
-            { email: { contains: query, mode: 'insensitive' as const } },
-          ],
-        }
-      : {}),
-  };
-  const prisma = getPrismaClient();
-  const now = new Date();
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        status: true,
-        tokenVersion: true,
-        lastLoginAt: true,
-        createdAt: true,
-        subscriptions: {
-          where: { status: 'ACTIVE', expiresAt: { gt: now } },
-          orderBy: { expiresAt: 'desc' },
-          select: { id: true, planCode: true, source: true, expiresAt: true },
-        },
-      },
-    }),
-    prisma.user.count({ where }),
-  ]);
+  const { users, total } = await listManagedUsers(query, page);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (

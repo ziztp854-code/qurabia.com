@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ArchitectureLiveData } from '@/lib/architecture/types';
@@ -35,6 +35,12 @@ const liveData: ArchitectureLiveData = {
 };
 
 describe('ArchitectureMap', () => {
+  it.each([false, true])('shows the users route only with director capability: %s', (canManageUsers) => {
+    const { container } = render(<ArchitectureMap liveData={liveData} canManageUsers={canManageUsers} />);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'طبقات الخريطة' })).getByRole('button', { name: 'الإدارة' }));
+    fireEvent.click(screen.getByRole('button', { name: 'إدارة المستخدمين' }));
+    expect(Boolean(container.querySelector('a[href="/admin/users"]'))).toBe(canManageUsers);
+  });
   it('switches to the questions layer and exposes live category data', () => {
     render(<ArchitectureMap liveData={liveData} />);
     fireEvent.click(screen.getByRole('button', { name: 'الأسئلة' }));

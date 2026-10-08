@@ -57,6 +57,9 @@ export function createCityWaterLayer(world: WorldSize, maskTexture: Texture) {
   }) : [];
   mask.renderable = false; layer.addChild(mask);
   const filter = new WaterMaskFilter({ sprite: mask, resolution: 'inherit', antialias: 'inherit' });
+  // MaskFilter forces clipping off in its constructor. Bound the intermediate
+  // water render to the viewport after construction, including when zoomed.
+  filter.clipToViewport = true;
   layer.filters = [filter];
   let time = 0;
   return {

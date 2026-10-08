@@ -11,6 +11,7 @@ import { getAudienceSnapshot } from '@/lib/presence/audience';
 
 export default async function AdminOverviewPage() {
   const user = await requireAdminConsole('/admin');
+  const canReadAccounts = hasPermission(user.role, 'platform.users.manage');
   const prisma = getPrismaClient();
   const audience = canManageQuestions(user.role)
     ? await getAudienceSnapshot().catch(() => null)
@@ -30,7 +31,7 @@ export default async function AdminOverviewPage() {
             result: true,
             actorRole: true,
             createdAt: true,
-            actor: { select: { name: true, email: true } },
+            actor: canReadAccounts ? { select: { name: true, email: true } } : false,
           },
         })
       : Promise.resolve([]),

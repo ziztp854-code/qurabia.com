@@ -42,6 +42,10 @@ vi.mock('@/lib/auth/prisma', () => ({
   hasDatabaseUrl: () => true,
 }));
 
+vi.mock('@/lib/auth/session', () => ({
+  requirePermission: vi.fn(async () => ({ id: 'admin-1', role: 'OWNER' })),
+}));
+
 describe('subscription entitlements', () => {
   beforeEach(() => {
     vi.useFakeTimers();

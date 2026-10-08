@@ -12,6 +12,7 @@ import {
   type PlanCode,
 } from '@tahaddi/domain';
 export { limitFor };
+import { requirePermission } from '@/lib/auth/session';
 import { hasPermission } from '@/lib/auth/authorization';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 export type QuotaKey = 'maxQuestionsPerMonth' | 'maxLiveRoomsPerMonth' | 'aiQuestionsPerMonth';
@@ -401,6 +402,8 @@ const GRANTED_PLAN_CODES: readonly PlanCode[] = ['KNIGHT', 'PRINCE', 'SULTAN'];
 export async function grantSubscription(
   input: GrantSubscriptionInput,
 ): Promise<GrantSubscriptionResult> {
+  const actor = await requirePermission('platform.users.manage', '/admin/users');
+  if (input.grantedBy !== actor.id) throw new Error('Invalid subscription actor');
   if (!isPlanCode(input.planCode) || !GRANTED_PLAN_CODES.includes(input.planCode)) {
     return { ok: false, message: 'رتبة غير قابلة للمنح.' };
   }
@@ -460,6 +463,7 @@ export async function cancelUserSubscription(
   userId: string,
   subscriptionId: string,
 ): Promise<boolean> {
+  await requirePermission('platform.users.manage', '/admin/users');
   const result = await getPrismaClient().userSubscription.updateMany({
     where: { id: subscriptionId, userId, status: 'ACTIVE' },
     data: { status: 'CANCELLED', cancelledAt: new Date() },

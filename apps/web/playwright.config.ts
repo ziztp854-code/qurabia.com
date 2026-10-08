@@ -23,6 +23,8 @@ export default defineConfig({
     'kingdoms-palace.spec.ts',
     'palace-animation.spec.ts',
     'palace-review.spec.ts',
+    'kingdoms-abandoned-production.spec.ts',
+    'abandoned-villages.spec.ts',
     'model-viewer.spec.ts',
   ],
   use: { baseURL, trace: 'on-first-retry' },

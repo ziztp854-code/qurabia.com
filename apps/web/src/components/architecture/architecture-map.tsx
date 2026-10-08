@@ -58,7 +58,7 @@ function searchable(node: ArchitectureNodeData, query: string) {
   return haystack.includes(query.trim().toLocaleLowerCase('ar'));
 }
 
-function MapCanvas({ liveData }: { liveData: ArchitectureLiveData }) {
+function MapCanvas({ liveData, canManageUsers }: { liveData: ArchitectureLiveData; canManageUsers: boolean }) {
   const [view, setView] = useState<ArchitectureView>('overview');
   const [selectedId, setSelectedId] = useState<string>('qurabia');
   const [query, setQuery] = useState('');
@@ -194,7 +194,7 @@ function MapCanvas({ liveData }: { liveData: ArchitectureLiveData }) {
               </div>
               <h2>{selected.label}</h2>
               <p>{selected.description}</p>
-              {selected.route && (
+              {selected.route && (selected.route !== '/admin/users' || canManageUsers) && (
                 <Link href={selected.route} className={styles.routeLink}>
                   فتح المسار <ExternalLink aria-hidden="true" />
                 </Link>
@@ -268,6 +268,6 @@ function MapCanvas({ liveData }: { liveData: ArchitectureLiveData }) {
   );
 }
 
-export function ArchitectureMap({ liveData }: { liveData: ArchitectureLiveData }) {
-  return <ReactFlowProvider><MapCanvas liveData={liveData} /></ReactFlowProvider>;
+export function ArchitectureMap({ liveData, canManageUsers = false }: { liveData: ArchitectureLiveData; canManageUsers?: boolean }) {
+  return <ReactFlowProvider><MapCanvas liveData={liveData} canManageUsers={canManageUsers} /></ReactFlowProvider>;
 }

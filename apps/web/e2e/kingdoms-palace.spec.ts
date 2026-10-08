@@ -3,10 +3,11 @@ import { createPrismaClient } from '@tahaddi/database';
 import { randomUUID } from 'node:crypto';
 import { createWorld, executeCommand } from '../src/lib/kingdoms/engine';
 import { hashPassword } from '../src/lib/auth/password';
+import { emptyTroops } from '../src/lib/kingdoms/simulation';
 const base = 'http://127.0.0.1:3000';
 const dbUrl = process.env.KINGDOMS_TEST_DATABASE_URL ?? '';
 test.skip(!dbUrl, 'Requires an explicitly isolated local Kingdoms test database.');
-const suffix = randomUUID(), worldId = `palace-test-${suffix}`, alice = `palace-alice-${suffix}`, bob = `palace-bob-${suffix}`;
+const suffix = randomUUID(), worldId = `kw_palace_test_${suffix.replaceAll('-', '')}`, alice = `palace-alice-${suffix}`, bob = `palace-bob-${suffix}`;
 const password = randomUUID() + 'Aa42!';
 const data = (slots: unknown[]) => ({ worldId, villageId: 'v1', slots });
 async function signIn(request: APIRequestContext, player: string) {
@@ -43,7 +44,25 @@ test('real Next session, garden colour persistence, ownership and village conser
   initial = { ...initial, villages: { ...initial.villages, [owned.id]: { ...owned,
     buildings: { ...owned.buildings, hall: 7, barracks: 2, stable: 2, market: 1 },
     resources: { wood: 60000, stone: 60000, iron: 60000, food: 60000, gold: 60000 },
+    troops: { ...owned.troops, guard: 4 },
     progression: { ...owned.progression!, xp: 2175, signature: '' } } } };
+  // A persisted registry with depleted stock and an outbound expedition makes
+  // cosmetic conservation cover the currently published abandoned-village data.
+  initial.abandonedVillages = { version: 1, scope: 'kingdom-world', worldId,
+    seed: 'palace_conservation_20261008', domainVersion: 'saved-fixture-v1', generatedAt: now - 3600000,
+    villages: {
+      'saved-egypt': { id: 'saved-egypt', name: 'Saved Egyptian village', region: 'egypt', countryCode: 'EG',
+        longitude: 31.2357, latitude: 30.0444, x: 180, y: 180,
+        stock: { wood: 0, stone: 7, iron: 13, food: 23, gold: 43 }, stockUpdatedAt: now },
+      'saved-levant': { id: 'saved-levant', name: 'Saved Levant village', region: 'levant', countryCode: 'SY',
+        longitude: 36.2765, latitude: 33.5138, x: -180, y: -180,
+        stock: { wood: 11, stone: 17, iron: 29, food: 31, gold: 47 }, stockUpdatedAt: now },
+    } };
+  initial = executeCommand(initial, alice, { type: 'gatherAbandoned', villageId: owned.id,
+    targetId: 'saved-egypt', troops: { ...emptyTroops(), guard: 1 } }, now);
+  expect(initial.movements).toHaveLength(1);
+  expect(initial.movements[0].abandonedGather).toEqual({ targetId: 'saved-egypt', worldId });
+  expect(initial.movements[0].arrivesAt).toBeGreaterThan(now + 180000);
   expect(owned.id).toBe('v1');
   await db.kingdomWorld.create({ data: { id: worldId, name: 'عالم اختبار القصر', state: JSON.parse(JSON.stringify(initial)),
     revision: 1, paused: false, nextEventAt: new Date(now + 86400000) } });
@@ -69,6 +88,9 @@ test('real Next session, garden colour persistence, ownership and village conser
     const cosmeticState = JSON.parse(JSON.stringify(afterCosmetic.state));
     delete beforeState.villages.v1.palaceGarden; delete cosmeticState.villages.v1.palaceGarden;
     expect(cosmeticState).toEqual(beforeState); expect(afterCosmetic.paused).toBe(before.paused);
+    expect(cosmeticState.abandonedVillages).toEqual(beforeState.abandonedVillages);
+    expect(cosmeticState.abandonedVillages.villages['saved-egypt'].stock.wood).toBe(0);
+    expect(cosmeticState.movements).toEqual(beforeState.movements);
     expect(afterCosmetic.nextEventAt).toEqual(before.nextEventAt);
     await page.goto(`/games/kingdoms?worldId=${worldId}&villageId=v1&tab=village`);
     await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
@@ -121,13 +143,16 @@ test('real Next session, garden colour persistence, ownership and village conser
     }
     const bobVillage = Object.values(beforeState.villages).find((v: unknown) => (v as { ownerId: string }).ownerId === bob) as { id: string };
     expect(afterState.villages[bobVillage.id].palaceGarden).toEqual(beforeState.villages[bobVillage.id].palaceGarden);
+    expect(afterState.abandonedVillages).toEqual(beforeState.abandonedVillages);
+    expect(afterState.movements).toEqual(beforeState.movements);
     expect(after.paused).toBe(before.paused);
     expect((await db.kingdomCommand.count({ where: { worldId } }))).toBe(0);
     expect(errors).toEqual([]); expect(missingAssets).toEqual([]);
     await info.attach('real-next-integration', { contentType: 'application/json', body: JSON.stringify({
       realNext: true, realPostgres: true, port: checked.port, credentialSignIn: true, colourReload: true,
       ownership403: true, anonymous401: true, origin403: true, invalidColour400: true,
-      preservedGameplayState: true, persistedCommandCount: 0, errors, missingAssets, project: info.project.name }) });
+      preservedGameplayState: true, abandonedRegistryPreserved: true, depletedStockPreserved: true,
+      pendingGatheringPreserved: true, persistedCommandCount: 0, errors, missingAssets, project: info.project.name }) });
   } finally { await bobRequest.dispose(); await anonymous.dispose();
     await db.kingdomWorld.deleteMany({ where: { id: worldId } });
     await db.user.deleteMany({ where: { id: { in: [alice, bob] } } }); await db.$disconnect(); }
