@@ -24,19 +24,24 @@ export async function createSultanFarmRenderer(
     autoStart: false,
   });
   const textures = new Map<string, Texture>();
-  await Promise.all(
-    ['wheat', 'beans', 'pomegranate'].flatMap((crop) =>
-      ['young', 'flowering', 'ripe'].map(async (stage) => {
-        const key = `${crop}-${stage}`;
-        textures.set(
-          key,
-          await Assets.load<Texture>(
-            `/game-art/kingdoms/city-scenes/sultan-farm-plants/${key}.webp`,
-          ),
-        );
-      }),
-    ),
-  );
+  try {
+    await Promise.all(
+      ['wheat', 'beans', 'pomegranate'].flatMap((crop) =>
+        ['young', 'flowering', 'ripe'].map(async (stage) => {
+          const key = `${crop}-${stage}`;
+          textures.set(
+            key,
+            await Assets.load<Texture>(
+              `/game-art/kingdoms/city-scenes/sultan-farm-plants/${key}.webp`,
+            ),
+          );
+        }),
+      ),
+    );
+  } catch (error) {
+    app.destroy(false, { children: true });
+    throw error;
+  }
   const world = new Container();
   app.stage.addChild(world);
   let disposed = false,

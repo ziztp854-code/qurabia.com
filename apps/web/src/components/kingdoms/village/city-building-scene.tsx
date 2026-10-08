@@ -23,10 +23,11 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
   const [exiting, setExiting] = useState(false);
   const [managingFarm, setManagingFarm] = useState(false);
   const [farmSelected, setFarmSelected] = useState(0);
+  const [farmQuiet, setFarmQuiet] = useState(false);
   const farmFocus = useRef(new Set<(id: number) => void>());
   const registerFarmFocus = useCallback((listener: (id: number) => void) => { farmFocus.current.add(listener); return () => { farmFocus.current.delete(listener); }; }, []);
   const selectFarm = useCallback((id: number) => { setFarmSelected(id); }, []);
-  const farmContext = useMemo(() => ({ selected: farmSelected, select: selectFarm, registerFocus: registerFarmFocus }), [farmSelected, selectFarm, registerFarmFocus]);
+  const farmContext = useMemo(() => ({ selected: farmSelected, select: selectFarm, registerFocus: registerFarmFocus, motionPaused: farmQuiet, setMotionPaused: setFarmQuiet }), [farmSelected, selectFarm, registerFarmFocus, farmQuiet]);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const surface = useRef<HTMLElement>(null);
   const content = useRef<HTMLDivElement>(null);

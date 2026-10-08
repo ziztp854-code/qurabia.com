@@ -156,7 +156,7 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
       className={styles.farm}
       dir="rtl"
       aria-label="أحواض مزرعة السلطان"
-      data-farm-motion={view.paused || motion.startsWith('quiet') ? 'quiet' : 'moving'}
+      data-farm-motion={view.paused || scene?.motionPaused || motion.startsWith('quiet') ? 'quiet' : 'moving'}
       data-farm-quality={motion.split(':')[1]}
     >
       <header className={styles.heading}>

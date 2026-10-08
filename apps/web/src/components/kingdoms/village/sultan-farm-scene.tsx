@@ -26,7 +26,9 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
     selected = context?.selected ?? 0;
   const [ready, setReady] = useState(false),
     [failed, setFailed] = useState(false),
-    [quiet, setQuiet] = useState(false);
+    [localQuiet, setLocalQuiet] = useState(false);
+  const quiet = context?.motionPaused ?? localQuiet,
+    setQuiet = context?.setMotionPaused ?? setLocalQuiet;
   const farm = farmState(village),
     latest = useRef(farm),
     latestNow = useRef(view.serverNow);
@@ -40,8 +42,10 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
   const choose = context?.select;
   const registerFocus = context?.registerFocus;
   useEffect(() => {
-    latest.current = farm; latestNow.current = now;
-    paused.current = view.paused || quiet; select.current = choose;
+    latest.current = farm;
+    latestNow.current = now;
+    paused.current = view.paused || quiet;
+    select.current = choose;
   }, [farm, now, view.paused, quiet, choose]);
   useEffect(() => {
     const element = host.current,
@@ -83,10 +87,10 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
     motion.addEventListener('change', updateMotion);
     updateMotion();
     const offFocus = registerFocus?.((id) => instance.focusRect(farmBedBounds(id), 3));
-    const resize = new ResizeObserver(() =>
-      renderer.current?.resize(element.clientWidth, element.clientHeight),
-    );
-    resize.observe(element);
+    const updateSize = () => renderer.current?.resize(element.clientWidth, element.clientHeight);
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
+    if (resize) resize.observe(element);
+    else window.addEventListener('resize', updateSize);
     void import('./sultan-farm-renderer')
       .then((m) => m.createSultanFarmRenderer(surface, element, instance, quality))
       .then((runtime) => {
@@ -175,7 +179,8 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
     element.addEventListener('wheel', wheel, { passive: false });
     return () => {
       disposed = true;
-      resize.disconnect();
+      resize?.disconnect();
+      window.removeEventListener('resize', updateSize);
       motion.removeEventListener('change', updateMotion);
       offFocus?.();
       unsubscribe();
@@ -284,7 +289,7 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
         >
           −
         </button>
-        <button type="button" aria-pressed={quiet} onClick={() => setQuiet((v) => !v)}>
+        <button type="button" aria-pressed={quiet} onClick={() => setQuiet(!quiet)}>
           {quiet ? 'تشغيل الحركة' : 'إيقاف الحركة'}
         </button>
       </div>
