@@ -3,7 +3,7 @@
 import { trainingBuilding, trainingDurationMs } from '@/lib/kingdoms/training';
 import { CommanderPanel } from '../commander-panel';
 import { RallyPanel, type RallyMission } from './rally-panel';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import {
   resourceKeys,
@@ -18,6 +18,8 @@ import { StablePanel } from './stable-panel';
 import { SiegeWorkshopPanel } from './siege-workshop-panel';
 import type { CitySceneKey } from './city-scenes';
 import styles from './facility-scene-content.module.css';
+
+const SultanFarmPanel = lazy(() => import('./sultan-farm-panel').then(module => ({ default: module.SultanFarmPanel })));
 
 export type FacilitySceneContentProps = GameProps & {
   scene: CitySceneKey;
@@ -35,6 +37,7 @@ export function FacilitySceneContent(props: FacilitySceneContentProps) {
     ...props,
     busy: props.busy || props.view.paused || props.view.season.status === 'ended',
   };
+  if (scene === 'farm') return <><Suspense fallback={<p role="status">تجهيز الأحواض…</p>}><SultanFarmPanel key={props.village.id} {...gameplay} /></Suspense><BuildingPanel {...gameplay} building="farm" onClose={onClose} onNavigate={onNavigate} /></>;
   if (scene === 'stable')
     return (
       <StablePanel

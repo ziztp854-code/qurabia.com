@@ -240,6 +240,7 @@ export type ConstructionItem = {
   refundedCost?: Resources;
 };
 export type Village = {
+  sultanFarm?: import('./sultan-farm').FarmState;
   progression?: VillageProgression;
   constructionQueue?: ConstructionItem[];
   commanderId?: string;

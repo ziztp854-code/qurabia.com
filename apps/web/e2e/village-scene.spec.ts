@@ -585,7 +585,7 @@ test('readable resources and production buildings retain confirmed tiers in Livi
     expect(state.buildings[building]).toBe(3);
     const scene = await enterBuilding(page, building);
     await expect(scene.getByRole('region', { name: 'موارد المشهد', exact: true })).toBeVisible();
-    await expect(scene.locator('[aria-label^="تفاصيل"]')).toContainText('٣');
+    await expect(scene.locator('[data-village-building-sheet]')).toContainText('٣');
     await back(page);
     await expect(stage.locator('picture img')).toHaveAttribute('src', source!);
   }

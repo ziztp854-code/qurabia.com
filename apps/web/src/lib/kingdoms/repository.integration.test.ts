@@ -133,6 +133,50 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     return { ...fixtureData, state };
   }
 
+  it('farm: serializes distinct simultaneous planting keys on the same plot', async () => {
+    const { worldId, identities: [actor], state } = await fixture();
+    const village = Object.values(state.villages)[0];
+    state.config.baseProduction.food = 100;
+    village.buildings.farm = 1;
+    await db.kingdomWorld.update({ where: { id: worldId }, data: { state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue } });
+    const { farmQuote } = await import('./sultan-farm');
+    const command = { type: 'farmPlant', villageId: village.id, plotId: 0, expectedVersion: 0, crop: 'wheat', expectedQuote: farmQuote(state.config, 1, 'wheat').quoteKey };
+    const results = await Promise.allSettled([repository.commandKingdomWorld(worldId, actor, key(), command, db), repository.commandKingdomWorld(worldId, actor, key(), command, db)]);
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    const saved = await stateOf(worldId);
+    expect(saved.state.villages[village.id].sultanFarm!.plots[0].version).toBe(1);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
+  });
+
+  it('farm: concurrent harvest retries credit once and a receipt survives replanting', async () => {
+    const { worldId, identities: [actor], state } = await fixture();
+    const village = Object.values(state.villages)[0];
+    const { plantFarm } = await import('./sultan-farm');
+    state.config.baseProduction.food = 100;
+    village.buildings.farm = 1;
+    plantFarm(state.config, village, 0, 0, 'wheat', Date.now() - 7200000);
+    const plant = village.sultanFarm!.plots[0].plant!;
+    // Freeze passive production in this test to isolate the harvest credit.
+    state.config.baseProduction.food = 0;
+    await db.kingdomWorld.update({ where: { id: worldId }, data: { state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue } });
+    const idempotencyKey = key();
+    const command = { type: 'farmHarvest', villageId: village.id, plotId: 0, expectedVersion: 1 };
+    await Promise.all([repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db), repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db)]);
+    const saved = await stateOf(worldId);
+    expect(saved.state.villages[village.id].resources.food).toBeCloseTo(village.resources.food + plant.harvestFood);
+    expect(saved.state.villages[village.id].sultanFarm!.plots[0].version).toBe(2);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
+    const updated = saved.state;
+    updated.config.baseProduction.food = 100;
+    plantFarm(updated.config, updated.villages[village.id], 0, 2, 'wheat', Date.now());
+    await db.kingdomWorld.update({ where: { id: worldId }, data: { state: JSON.parse(JSON.stringify(updated)) as Prisma.InputJsonValue } });
+    await repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db);
+    const replayed = await stateOf(worldId);
+    expect(replayed.state.villages[village.id].sultanFarm!.plots[0].version).toBe(3);
+    expect(replayed.state.villages[village.id].sultanFarm!.plots[0].plant).toBeDefined();
+    await expect(repository.commandKingdomWorld(worldId, actor, key(), command, db)).rejects.toThrow('تغير');
+  });
+
   it('charges once and creates one commander for concurrent identical recruitment requests', async () => {
     const {
       worldId,

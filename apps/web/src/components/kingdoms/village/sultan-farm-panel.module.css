@@ -1,0 +1,308 @@
+.farm {
+  color: var(--kingdoms-ui-foreground);
+  min-inline-size: 0;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--kingdoms-ui-gold);
+}
+.heading p {
+  font-size: 0.75rem;
+  margin: 0 0 var(--space-1);
+  color: var(--kingdoms-ui-muted);
+}
+.heading h3 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+  line-height: 1.4;
+  max-inline-size: 100%;
+}
+.summary {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  padding-block: var(--space-3);
+  border-block-end: 1px solid var(--kingdoms-ui-border);
+}
+.hint,
+.footnote {
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.8rem;
+  line-height: 1.9;
+}
+.plots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+.plot {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-inline-size: 0;
+  min-block-size: 90px;
+  padding: var(--space-1);
+  border: 1px solid var(--kingdoms-ui-border);
+  background: var(--kingdoms-ui-surface);
+  border-radius: var(--radius-md);
+  color: var(--kingdoms-ui-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    border-color 180ms,
+    background 180ms;
+}
+.plot[aria-pressed='true'] {
+  border-color: var(--kingdoms-ui-gold);
+  background: var(--kingdoms-ui-surface-strong);
+  color: var(--kingdoms-ui-foreground);
+  box-shadow: inset 0 0 0 1px var(--kingdoms-ui-gold);
+}
+.plot[data-ready='true'] {
+  color: var(--kingdoms-ui-success);
+}
+.plotNumber {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-start: 6px;
+  font-size: 0.65rem;
+}
+.plot .visual {
+  inline-size: 100%;
+  max-block-size: 62px;
+}
+.plot:focus-visible,
+.seedOption:focus-visible {
+  outline: 2px solid var(--kingdoms-ui-gold);
+  outline-offset: 3px;
+}
+.selected {
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--kingdoms-ui-border-gold);
+}
+.preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.preview .visual {
+  inline-size: 110px;
+  flex: 0 0 110px;
+}
+.preview h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+.preview p {
+  color: var(--kingdoms-ui-gold);
+  margin-block: var(--space-1);
+  font-size: 0.8rem;
+}
+.visual {
+  display: block;
+  overflow: visible;
+  color: var(--kingdoms-ui-success);
+}
+.soil {
+  fill: var(--kingdoms-ui-background);
+  stroke: var(--kingdoms-ui-border-gold);
+}
+.furrow {
+  fill: none;
+  stroke: var(--kingdoms-ui-border-gold);
+  stroke-width: 0.8;
+}
+.emptyMark {
+  fill: none;
+  stroke: var(--kingdoms-ui-muted);
+  stroke-width: 1;
+}
+.seed {
+  fill: var(--kingdoms-ui-gold);
+}
+.stem {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.leaves {
+  fill: currentColor;
+  stroke: var(--kingdoms-ui-background);
+  stroke-width: 0.5;
+}
+.grain {
+  fill: var(--kingdoms-ui-gold);
+  stroke: var(--kingdoms-ui-gold);
+}
+.fruit {
+  fill: var(--kingdoms-ui-danger);
+  stroke: var(--kingdoms-ui-gold);
+  stroke-width: 0.8;
+}
+.visual[data-crop='beans'] .fruit {
+  fill: var(--kingdoms-ui-success);
+}
+.canopy {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: sway 7s ease-in-out infinite alternate;
+}
+.plot .canopy {
+  animation: none;
+}
+.farm[data-farm-motion='quiet'] .canopy,
+.farm[data-farm-quality='low'] .canopy {
+  animation: none;
+}
+.stage {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: var(--space-3) var(--space-2);
+  font-size: 0.8rem;
+}
+.stage strong {
+  color: var(--kingdoms-ui-success);
+}
+.progress {
+  display: block;
+  inline-size: 100%;
+  block-size: 5px;
+  border: 0;
+  accent-color: var(--kingdoms-ui-success);
+  background: var(--kingdoms-ui-surface-strong);
+}
+.progress::-webkit-progress-bar {
+  background: var(--kingdoms-ui-surface-strong);
+  border-radius: var(--radius-full);
+}
+.progress::-webkit-progress-value {
+  background: var(--kingdoms-ui-success);
+  border-radius: var(--radius-full);
+}
+.reward,
+.storage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+.storage {
+  align-items: flex-start;
+  color: var(--kingdoms-ui-gold);
+}
+.storage svg {
+  flex-shrink: 0;
+  margin-block-start: 4px;
+}
+.rotation {
+  font-size: 0.75rem;
+  line-height: 1.8;
+  color: var(--kingdoms-ui-success);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--kingdoms-ui-success);
+}
+.seeds {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin-block: var(--space-4);
+  border: 0;
+}
+.seeds legend {
+  padding: 0;
+  margin-block-end: var(--space-2);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.seedOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface);
+  color: var(--kingdoms-ui-foreground);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.seedOption small {
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.7rem;
+}
+.seedOption[aria-pressed='true'] {
+  border-color: var(--kingdoms-ui-gold);
+  background: var(--kingdoms-ui-surface-strong);
+}
+.seedOption:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.quote {
+  margin-block: var(--space-4);
+  font-size: 0.8rem;
+}
+.quote > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--kingdoms-ui-border);
+}
+.quote dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--kingdoms-ui-muted);
+}
+.quote dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.selected > button {
+  inline-size: 100%;
+}
+@keyframes sway {
+  from {
+    transform: rotate(-1deg);
+  }
+  to {
+    transform: rotate(1deg);
+  }
+}
+@media (hover: hover) {
+  .plot:hover,
+  .seedOption:hover:enabled {
+    border-color: var(--kingdoms-ui-gold);
+    background: var(--kingdoms-ui-surface-strong);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canopy {
+    animation: none;
+  }
+  .plot {
+    transition: none;
+  }
+}
+@media (max-width: 400px) {
+  .plots {
+    gap: var(--space-1);
+  }
+  .plot {
+    min-block-size: 82px;
+  }
+}

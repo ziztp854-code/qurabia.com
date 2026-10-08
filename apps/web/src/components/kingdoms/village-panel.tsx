@@ -109,6 +109,7 @@ export function VillagePanel({
         </div>
         {selectedScene && <Suspense fallback={<div role="status">تجهيز المشهد…</div>}>
           <CityBuildingScene key={selectedScene} scene={selectedScene} onClose={close}
+            farm={selectedScene === 'farm' ? { view, village, busy, send } : undefined}
             garden={selectedScene === 'palace' && view.player ? <Suspense fallback={null}><PalaceGarden worldId={view.worldId} villageId={village.id} playerId={view.player.id} onSaved={onRefresh} /></Suspense> : undefined}>
             <VillageIncomingAlert incoming={view.incoming ?? []} village={village} view={view} onShowMap={onShowMap} onRefresh={onRefresh} />
             <section aria-label="موارد المشهد" data-city-resources=""><ResourceText resources={village.resources} /></section>

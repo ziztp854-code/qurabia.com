@@ -14,6 +14,7 @@ export default defineConfig({
     'globe-scene.spec.ts',
     'village-scene.spec.ts',
     'kingdoms-city-scenes.spec.ts',
+    'kingdoms-sultan-farm.spec.ts',
     'living-city-regression.spec.ts',
     'incoming-attack-ux.spec.ts',
     'mamluk-world-map.spec.ts',

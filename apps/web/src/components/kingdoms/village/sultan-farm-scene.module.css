@@ -1,0 +1,16 @@
+.frame { position: relative; inline-size: 100%; color: var(--kingdoms-ui-foreground); }
+.viewport { position: relative; inline-size: 100%; aspect-ratio: 2048 / 1143; overflow: hidden; touch-action: none; background: var(--kingdoms-ui-background); }
+.world { position: absolute; left: 0; top: 0; width: 2048px; height: 1143px; transform-origin: 0 0; will-change: transform; }
+.world picture { width: 2048px; height: 1143px; }
+.canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.selection { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.selection polygon { fill: transparent; stroke: transparent; stroke-width: 4px; }
+.selection g[data-selected='true'] polygon { fill: color-mix(in srgb, var(--kingdoms-ui-gold) 8%, transparent); stroke: var(--kingdoms-ui-gold); }
+.selection circle { fill: var(--kingdoms-ui-background); stroke: var(--kingdoms-ui-border-gold); stroke-width: 2px; }
+.selection text { fill: var(--kingdoms-ui-foreground); font-family: inherit; font-size: 18px; text-anchor: middle; }
+.selection g[data-ready='true'] circle { stroke: var(--kingdoms-ui-success); stroke-width: 3px; }
+.tools { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-block: var(--space-3); }
+.tools button { min-width: 44px; min-height: 44px; border: 1px solid var(--kingdoms-ui-border-gold); border-radius: var(--radius-md); background: var(--kingdoms-ui-surface); color: inherit; font: inherit; font-size: .8rem; cursor: pointer; padding: var(--space-2) var(--space-3); }
+.tools button:focus-visible, .viewport:focus-visible { outline: 2px solid var(--kingdoms-ui-gold); outline-offset: 2px; }
+.caption { margin: 0; color: var(--kingdoms-ui-muted); font-size: .8rem; line-height: 1.8; }
+@media (max-width: 700px) { .viewport { aspect-ratio: auto; height: clamp(260px, 42dvh, 380px); } .tools { gap: var(--space-1); } .tools button { padding-inline: var(--space-2); font-size: .75rem; } }
