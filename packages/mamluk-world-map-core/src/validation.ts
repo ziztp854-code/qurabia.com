@@ -1,3 +1,4 @@
+import { armyMissions } from './models';
 import { villageDetails } from './village-details';
 import type { Army, ArmyPosition, ArmyRoute, Castle, City, Ownership, Territory } from './models';
 import { freezeDto } from './immutable';
@@ -66,12 +67,15 @@ export function createArmyRoute(value: ArmyRoute): ArmyRoute {
     throw new RangeError('Invalid route distance');
   if (value.distanceUnit !== undefined && !['metres', 'tiles'].includes(value.distanceUnit))
     throw new RangeError('Invalid route distance unit');
+  if (value.mission !== undefined && !armyMissions.includes(value.mission))
+    throw new RangeError('Invalid army mission');
   const waypoints = value.waypoints.map((point) => coordinates(point.longitude, point.latitude));
   return Object.freeze({
     origin: coordinates(value.origin.longitude, value.origin.latitude),
     destination: coordinates(value.destination.longitude, value.destination.latitude),
     waypoints: Object.freeze(waypoints),
     distance: value.distance,
+    ...(value.mission === undefined ? {} : { mission: value.mission }),
     ...(value.distanceUnit === undefined ? {} : { distanceUnit: value.distanceUnit }),
     departureTime: value.departureTime,
     arrivalTime: value.arrivalTime,

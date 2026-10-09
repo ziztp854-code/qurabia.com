@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { Castle } from 'lucide-react';
 import { Input, Select, Button } from '@/components/ui';
-import { unitKeys } from '@/lib/kingdoms/types';
+import { unitKeys, type Troops } from '@/lib/kingdoms/types';
+import { emptyTroops } from '@/lib/kingdoms/simulation';
+import { marchTravelDurationMs } from '@/lib/kingdoms/commander-movement';
 import type { KingdomsCommand } from '@/lib/kingdoms/commands';
 import { CommandForm, Empty, date, number, value, type GameProps } from './shared';
 import styles from './kingdoms.module.css';
@@ -44,6 +46,7 @@ export function MapPanel({
   const [query, setQuery] = useState('');
   const [gatherFocus, setGatherFocus] = useState(false);
   const [commanderId, setCommanderId] = useState('');
+  const [troops, setTroops] = useState<Troops>(emptyTroops);
   const [mission, setMission] = useState<March['mission']>(initialMission ?? 'attack');
   const mode: MapMode = mission === 'scout' ? 'SELECT_SCOUT_TARGET'
     : mission === 'reinforce' ? 'SELECT_REINFORCEMENT_TARGET'
@@ -67,6 +70,9 @@ export function MapPanel({
     setTarget({ x: point.x, y: point.y });
     setGatherFocus(resourceSites.some((site) => site.x === point.x && site.y === point.y));
   };
+  const hasGeographicAnchor = (x: number, y: number) =>
+    view.map.some((item) => item.x === x && item.y === y) ||
+    (view.abandonedVillages ?? []).some((item) => item.x === x && item.y === y);
   const radius = view.config.worldRadius;
   const chosen = view.map.find((item) => item.x === target.x && item.y === target.y);
   const tileOwner = view.territories[`${target.x},${target.y}`];
@@ -74,6 +80,16 @@ export function MapPanel({
     !chosen && !tileOwner
       ? resourceSites.find((site) => site.x === target.x && site.y === target.y)
       : undefined;
+  const commander = commanderAvailable
+    ? view.commanders?.find((item) => item.id === commanderId)
+    : undefined;
+  const travelMs = commanderAvailable
+    ? marchTravelDurationMs(view.config, village, target, troops, commander)
+    : null;
+  const travelSeconds = Math.ceil((travelMs ?? 0) / 1000);
+  const slowestUnit = unitKeys.filter((unit) => troops[unit] > 0).toSorted(
+    (a, b) => view.config.units[a].speed - view.config.units[b].speed,
+  )[0];
   return (
     <div className={mapStyles.commandDeck}>
       <section className={mapStyles.mapSurface}>
@@ -189,6 +205,7 @@ export function MapPanel({
                       {item.kingdomName}
                       {item.ownerId === view.player?.id ? ' · قريتك' : ''}
                     </small>
+
                   </span>
                   <bdi dir="ltr">
                     {item.x}, {item.y}
@@ -276,12 +293,33 @@ export function MapPanel({
                       type="number"
                       min="0"
                       max={village.troops[unit]}
-                      defaultValue="0"
+                      value={troops[unit]}
+                      onChange={(event) => setTroops((current) => ({
+                        ...current,
+                        [unit]: Number(event.target.value) || 0,
+                      }))}
                       required
                       dir="ltr"
                     />
                   ))}
                 </div>
+                <section aria-label="معاينة رحلة الجيش" className={styles.selectedTile}>
+                  {travelMs === null ? (
+                    <p>اختر القوات لعرض مدة الرحلة.</p>
+                  ) : (
+                    <>
+                      <p>
+                        مدة الرحلة: <output aria-label="مدة الرحلة المتوقعة" data-duration-ms={travelMs}>
+                          {number(Math.floor(travelSeconds / 3600))} س{' '}
+                          {number(Math.floor(travelSeconds / 60) % 60)} د{' '}
+                          {number(travelSeconds % 60)} ث
+                        </output>
+                      </p>
+                      <p>أبطأ وحدة: {view.config.units[slowestUnit!].name}. تُحسب المسافة بخانات اللعبة؛ قرب القرى في الرسم الجغرافي لا يغيّرها.</p>
+                      <p className={styles.muted}>هذه معاينة للذهاب فقط. يبدأ الجيش بعد قبول الخادم، ويثبت موعد الوصول عند الإرسال.</p>
+                    </>
+                  )}
+                </section>
                 <p className={styles.cost}>
                   الوجهة:{' '}
                   <bdi dir="ltr">
@@ -324,6 +362,18 @@ export function MapPanel({
                         </>
                       )}
                     </small>
+                    {(!hasGeographicAnchor(movement.targetX, movement.targetY) ||
+                      (movement.originX !== undefined && movement.originY !== undefined &&
+                        !hasGeographicAnchor(movement.originX, movement.originY)) ||
+                      (movement.mission === 'return' &&
+                        (movement.originX === undefined || movement.originY === undefined))) && (
+                      <>
+                        <br />
+                        <small className={styles.muted}>
+                          رحلة بإحداثيات اللعبة؛ لا يتوفر مسار جغرافي موثوق. تابع الوجهة وموعد الوصول هنا.
+                        </small>
+                      </>
+                    )}
                   </span>
                   <time dateTime={new Date(movement.arrivesAt).toISOString()}>
                     {date(movement.arrivesAt)}

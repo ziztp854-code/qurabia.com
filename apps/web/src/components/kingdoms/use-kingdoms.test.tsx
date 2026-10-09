@@ -154,3 +154,132 @@ describe('production world selection compatibility', () => {
     ]);
   });
 });
+
+describe('accepted command map synchronization', () => {
+  it('announces accepted state only after the server responds and prevents a concurrent duplicate', async () => {
+    const accepted = vi.fn();
+    window.addEventListener('mamluk:command-accepted', accepted);
+    try {
+      const { result } = renderHook(() => useKingdoms());
+      await waitFor(() => expect(result.current.view?.revision).toBe(1));
+      const receipt = deferredResponse();
+      vi.mocked(fetch).mockImplementationOnce(() => receipt.promise);
+      let send!: Promise<void>;
+      act(() => { send = result.current.send({ type: 'found', name: 'مملكتي' }); });
+      await act(() => result.current.send({ type: 'found', name: 'مملكتي' }));
+      expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
+      expect(accepted).not.toHaveBeenCalled();
+      await act(async () => {
+        receipt.resolve(response(snapshot(8, now + 20)));
+        await send;
+      });
+      expect(accepted).toHaveBeenCalledOnce();
+      expect((accepted.mock.calls[0][0] as CustomEvent).detail).toEqual({ worldId: 'world-1', revision: 8 });
+    } finally {
+      window.removeEventListener('mamluk:command-accepted', accepted);
+    }
+  });
+
+  it('never announces a rejected command or replaces state with an optimistic result', async () => {
+    const accepted = vi.fn();
+    window.addEventListener('mamluk:command-accepted', accepted);
+    try {
+      const { result } = renderHook(() => useKingdoms());
+      await waitFor(() => expect(result.current.view?.revision).toBe(1));
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ success: false, error: 'قوات غير كافية' }), { status: 409 }));
+      await act(() => result.current.send({ type: 'found', name: 'مملكتي' }));
+      expect(result.current.error).toBe('قوات غير كافية');
+      expect(result.current.view?.revision).toBe(1);
+      expect(accepted).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('mamluk:command-accepted', accepted);
+    }
+  });
+
+  it('ignores a delayed receipt after switching worlds while allowing the new world to load', async () => {
+    const accepted = vi.fn();
+    window.addEventListener('mamluk:command-accepted', accepted);
+    try {
+      const { result } = renderHook(() => useKingdoms());
+      await waitFor(() => expect(result.current.view?.revision).toBe(1));
+      const receipt = deferredResponse();
+      vi.mocked(fetch)
+        .mockImplementationOnce(() => receipt.promise)
+        .mockResolvedValue(response({ ...snapshot(2, now + 10), worldId: 'world-2' }));
+      let send!: Promise<void>;
+      act(() => { send = result.current.send({ type: 'found', name: 'مملكتي' }); });
+      act(() => result.current.setWorldId('world-2'));
+      await waitFor(() => expect(result.current.view?.worldId).toBe('world-2'));
+      await act(async () => {
+        receipt.resolve(response(snapshot(99, now + 20)));
+        await send;
+      });
+      expect(result.current.view).toMatchObject({ worldId: 'world-2', revision: 2 });
+      expect(result.current.notice).toBe('');
+      expect(accepted).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('mamluk:command-accepted', accepted);
+    }
+  });
+});
+
+
+describe('revision heartbeat request bounds', () => {
+  it('ignores duplicate, old, foreign and malformed invalidations', async () => {
+    const { result } = renderHook(() => useKingdoms());
+    await waitFor(() => expect(result.current.view?.revision).toBe(1));
+    const revision = socket.handlers.get('kingdoms:revision') as unknown as (event: unknown) => void;
+    const baseline = vi.mocked(fetch).mock.calls.length;
+    act(() => {
+      for (let i = 0; i < 60; i++) revision({ worldId: 'world-1', revision: 1 });
+      revision({ worldId: 'world-1', revision: 0 });
+      revision({ worldId: 'world-2', revision: 99 });
+      revision({ worldId: 'world-1', revision: Number.MAX_SAFE_INTEGER + 1 });
+      revision({ worldId: 'world-1' });
+    });
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(baseline);
+    const first = deferredResponse();
+    vi.mocked(fetch).mockImplementationOnce(() => first.promise).mockResolvedValue(response(snapshot(8, now + 20)));
+    act(() => {
+      revision({ worldId: 'world-1', revision: 2 });
+      for (let i = 3; i <= 8; i++) revision({ worldId: 'world-1', revision: i });
+    });
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(baseline + 1);
+    await act(async () => {
+      first.resolve(response(snapshot(2, now + 10)));
+      await first.promise;
+    });
+    await waitFor(() => expect(result.current.view?.revision).toBe(8));
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(baseline + 2);
+  });
+});
+
+
+it('retries an unresolved remote revision after its first GET was skipped during a local command', async () => {
+  const { result } = renderHook(() => useKingdoms());
+  await waitFor(() => expect(result.current.view?.revision).toBe(1));
+  const revision = socket.handlers.get('kingdoms:revision') as unknown as (event: unknown) => void;
+  const receipt = deferredResponse();
+  vi.mocked(fetch).mockImplementationOnce(() => receipt.promise).mockResolvedValue(response(snapshot(9, now + 30)));
+  let sending!: Promise<void>;
+  act(() => { sending = result.current.send({ type: 'found', name: 'Local village' }); });
+  await act(async () => revision({ worldId: 'world-1', revision: 9 }));
+  await act(async () => { receipt.resolve(response(snapshot(8, now + 20))); await sending; });
+  expect(result.current.view?.revision).toBe(8);
+  await act(async () => revision({ worldId: 'world-1', revision: 9 }));
+  await waitFor(() => expect(result.current.view?.revision).toBe(9));
+});
+
+it('retries a failed revision GET on the next heartbeat without starting a tight loop', async () => {
+  const { result } = renderHook(() => useKingdoms());
+  await waitFor(() => expect(result.current.view?.revision).toBe(1));
+  const revision = socket.handlers.get('kingdoms:revision') as unknown as (event: unknown) => void;
+  const baseline = vi.mocked(fetch).mock.calls.length;
+  vi.mocked(fetch).mockRejectedValueOnce(new Error('offline')).mockResolvedValue(response(snapshot(9, now + 30)));
+  await act(async () => revision({ worldId: 'world-1', revision: 9 }));
+  expect(vi.mocked(fetch).mock.calls).toHaveLength(baseline + 1);
+  expect(result.current.view?.revision).toBe(1);
+  await act(async () => revision({ worldId: 'world-1', revision: 9 }));
+  await waitFor(() => expect(result.current.view?.revision).toBe(9));
+  expect(vi.mocked(fetch).mock.calls).toHaveLength(baseline + 2);
+});

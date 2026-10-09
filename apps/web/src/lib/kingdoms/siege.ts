@@ -1,4 +1,5 @@
 import { unitKeys } from './types';
+import { marchTravelDurationMs } from './commander-movement';
 import { type Building, type KingdomsWorld, type Movement, type Siege, type SiegeConfig, type SiegeView, type Village } from './types';
 
 export function createSiege(w: KingdomsWorld, m: Movement, at: number): Siege {
@@ -72,9 +73,6 @@ export function applySiegeDamage(siege: Siege, village: Village, config: SiegeCo
 }
 
 export function withdrawSiege(w: KingdomsWorld, siege: Siege, at: number): void {
-  const speed = Math.min(
-    ...unitKeys.filter((k) => siege.troops[k] > 0).map((k) => w.config.units[k].speed),
-  );
   const home = w.villages[siege.sourceId];
   const source = home?.ownerId === siege.ownerId ? home : Object.values(w.villages).find((v) => v.ownerId === siege.ownerId);
   if (!source || !unitKeys.some((k) => siege.troops[k] > 0)) {
@@ -82,13 +80,19 @@ export function withdrawSiege(w: KingdomsWorld, siege: Siege, at: number): void 
     delete w.sieges[siege.id];
     return;
   }
-  const travelMs = Math.max(1000, Math.ceil(
-    (Math.hypot(source.x - siege.targetX, source.y - siege.targetY) * w.config.secondsPerTile * 1000) / speed,
-  ));
+  // Withdrawal creates a new journey; no existing movement deadline is recalculated.
+  const travelMs = marchTravelDurationMs(
+    w.config,
+    { x: siege.targetX, y: siege.targetY },
+    source,
+    siege.troops,
+  )!;
   w.movements.push({
     id: `m${w.nextId}`,
     ownerId: siege.ownerId,
     sourceId: source.id,
+    originX: siege.targetX,
+    originY: siege.targetY,
     targetX: source.x,
     targetY: source.y,
     mission: 'return',

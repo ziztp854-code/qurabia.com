@@ -63,7 +63,7 @@ it('queues a server-resolved distant location before async SDK creation without 
     return <div ref={container} />;
   }
   const view = render(<Scene />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0]!;
   expect(map.initialCamera).toMatchObject({ center: [42, 25], zoom: 9 });
   view.rerender(<Scene />);
@@ -94,7 +94,7 @@ it.each([
       );
     }
     const view = render(<Scene />);
-    await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+    await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
     const map = MapSdkFixture.instances[0]!;
     Object.defineProperties(map.canvas, {
       clientWidth: { value: width },
@@ -145,7 +145,7 @@ it.each([false, true])(
       );
     }
     const view = render(<Scene />);
-    await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+    await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
     fireEvent.click(screen.getByText('home'));
     expect(MapSdkFixture.instances[0]!.lastCamera).toMatchObject({
       center: [31.6, 30.3],
@@ -165,7 +165,7 @@ it('marks the SDK canvas ready only after idle and clears readiness when movemen
     return <div ref={map.container} />;
   }
   const view = render(<Scene />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0]!;
   expect(map.canvas).not.toHaveAttribute('data-map-ready');
   act(() => map.fire('idle'));
@@ -196,7 +196,7 @@ it('reviews a temporary map destination without relocating or rebuilding the can
     );
   }
   const view = render(<Scene />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0];
   fireEvent.click(screen.getByText('pick'));
   await screen.findByText('picking');
@@ -260,7 +260,7 @@ it('offers map-center keyboard picking and manual review while keeping the same 
     );
   }
   const view = render(<Scene />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0];
   Object.defineProperties(map.canvas, { clientWidth: { value: 102 }, clientHeight: { value: 50 } });
   fireEvent.click(screen.getByText('pick'));
@@ -295,7 +295,7 @@ it('keeps one map and its accepted settlement sources when equal initial coordin
     return <div ref={container} />;
   }
   const view = render(<Scene location={{ longitude: 31.2, latitude: 30 }} />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0]!;
   const cities = map.sources.get('mamluk-cities');
   await act(async () => view.rerender(<Scene location={{ longitude: 31.2, latitude: 30 }} />));
@@ -315,7 +315,7 @@ it('moves the existing camera to changed authoritative coordinates without repla
     return <div ref={container} />;
   }
   const view = render(<Scene longitude={31.2} />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0]!;
   await act(async () => view.rerender(<Scene longitude={31.5} />));
   expect(MapSdkFixture.instances).toHaveLength(1);
@@ -372,7 +372,7 @@ it('hides a selected layer and its directory state without recreating the map', 
     );
   }
   const view = render(<Scene />);
-  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(9));
+  await waitFor(() => expect(MapSdkFixture.instances[0]?.sources.size).toBe(10));
   const map = MapSdkFixture.instances[0]!;
   fireEvent.click(screen.getByText('select'));
   fireEvent.click(screen.getByText('cities'));
@@ -441,7 +441,7 @@ it('keeps one map instance, camera and hidden layer through poll, retry, lifecyc
   await settle(0);
   await settle(0);
   const map = MapSdkFixture.instances[0]!;
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   fireEvent.click(screen.getByText('cities'));
   const cities = () => map.layers.get('mamluk-cities') as { layout?: { visibility?: string } };
   expect(cities().layout?.visibility).toBe('none');
@@ -484,4 +484,140 @@ it('keeps one map instance, camera and hidden layer through poll, retry, lifecyc
   view.unmount();
   vi.useRealTimers();
   vi.restoreAllMocks();
+});
+
+it('requests a new authenticated viewport immediately on accepted commands for this world only', async () => {
+  const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() });
+  vi.stubGlobal('fetch', fetch);
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return (
+      <>
+        <div ref={map.container} />
+        <output>{map.status}</output>
+      </>
+    );
+  }
+  const view = render(<Scene />);
+  await screen.findByText('ready');
+  const count = fetch.mock.calls.length;
+  await act(async () =>
+    window.dispatchEvent(
+      new CustomEvent('mamluk:command-accepted', { detail: { worldId: 'other', revision: 2 } }),
+    ),
+  );
+  expect(fetch.mock.calls).toHaveLength(count);
+  await act(async () =>
+    window.dispatchEvent(
+      new CustomEvent('mamluk:command-accepted', { detail: { worldId: 'world', revision: 2 } }),
+    ),
+  );
+  await waitFor(() => expect(fetch.mock.calls.length).toBeGreaterThan(count));
+  expect(fetch.mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true);
+  expect(MapSdkFixture.instances).toHaveLength(1);
+  view.unmount();
+  const disposedCount = fetch.mock.calls.length;
+  await act(async () =>
+    window.dispatchEvent(
+      new CustomEvent('mamluk:command-accepted', { detail: { worldId: 'world', revision: 3 } }),
+    ),
+  );
+  expect(fetch.mock.calls).toHaveLength(disposedCount);
+});
+
+it('coalesces acceptance during an older viewport fetch and never creates optimistic army state', async () => {
+  const pending: ((response: unknown) => void)[] = [];
+  const base = approvedPayload();
+  const accepted = {
+    ...base,
+    revision: '2',
+    serverTime: 2500,
+    layers: {
+      ...base.layers,
+      armies: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'approved-march',
+            geometry: { type: 'Point', coordinates: [31.2357, 30.0444] },
+            properties: {
+              armyId: 'approved-march',
+              own: true,
+              ownerPlayerId: 'viewer',
+              ownerSultanateId: null,
+              status: 'moving',
+            },
+          },
+        ],
+      },
+      armyRoutes: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'approved-march',
+            geometry: {
+              type: 'LineString',
+              coordinates: [
+                [31.2357, 30.0444],
+                [31.35, 30.12],
+              ],
+            },
+            properties: {
+              armyId: 'approved-march',
+              mission: 'attack',
+              distance: 1,
+              departureTime: 2500,
+              arrivalTime: 8000,
+            },
+          },
+        ],
+      },
+    },
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => base })
+      .mockImplementation(() => new Promise((resolve) => pending.push(resolve))),
+  );
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return (
+      <>
+        <div ref={map.container} />
+        <button onClick={map.refresh}>refresh army</button>
+        <output>{map.status}</output>
+        <output>{map.payload?.layers.armies.features.length ?? 0} armies</output>
+      </>
+    );
+  }
+  const view = render(<Scene />);
+  await screen.findByText('ready');
+  fireEvent.click(screen.getByText('refresh army'));
+  await waitFor(() => expect(pending).toHaveLength(1));
+  expect(screen.getByText('0 armies')).toBeInTheDocument();
+  await act(async () =>
+    window.dispatchEvent(
+      new CustomEvent('mamluk:command-accepted', { detail: { worldId: 'world', revision: 2 } }),
+    ),
+  );
+  expect(pending).toHaveLength(1);
+  expect(screen.getByText('0 armies')).toBeInTheDocument();
+  await act(async () => pending[0]!({ ok: true, json: async () => base }));
+  await waitFor(() => expect(pending).toHaveLength(2));
+  expect(screen.getByText('0 armies')).toBeInTheDocument();
+  await act(async () => pending[1]!({ ok: true, json: async () => accepted }));
+  await screen.findByText('1 armies');
+  await act(async () =>
+    window.dispatchEvent(
+      new CustomEvent('mamluk:command-accepted', { detail: { worldId: 'world', revision: 2 } }),
+    ),
+  );
+  expect(pending).toHaveLength(2);
+  expect(screen.getByText('1 armies')).toBeInTheDocument();
+  expect(MapSdkFixture.instances).toHaveLength(1);
+  view.unmount();
 });

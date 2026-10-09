@@ -13,7 +13,14 @@ export const LAYER_GROUP_IDS: Readonly<Record<MapLayerGroup, readonly string[]>>
     'mamluk-overview-count',
   ],
   castles: ['mamluk-castles', 'mamluk-castles-owner-markers'],
-  armies: ['mamluk-armies', 'mamluk-armyRoutes', 'mamluk-sieges'],
+  armies: [
+    'mamluk-armies',
+    'mamluk-armyRoutes',
+    'mamluk-sieges',
+    'mamluk-army-missions',
+    'mamluk-army-direction',
+    'mamluk-army-timers',
+  ],
   territories: [
     'mamluk-territories',
     'mamluk-sultanateBorders',

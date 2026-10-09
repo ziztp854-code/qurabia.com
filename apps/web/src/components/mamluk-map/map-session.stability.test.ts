@@ -407,7 +407,7 @@ it.each(['pan', 'zoom', 'projection'] as const)(
     expect(cities?.data).toMatchObject({
       features: [{ id: 'cairo', geometry: territoryPayload().layers.cities.features[0]?.geometry }],
     });
-    expect(map.sources.size).toBe(9);
+    expect(map.sources.size).toBe(10);
     expect(callbacks.onPayload).toHaveBeenLastCalledWith(territoryPayload());
     await vi.advanceTimersByTimeAsync(150);
     expect(map.sources.get('mamluk-cities')).toBe(cities);

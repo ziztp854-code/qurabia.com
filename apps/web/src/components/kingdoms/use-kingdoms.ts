@@ -55,7 +55,12 @@ export function useKingdoms(initialWorldId = '') {
     idempotencyKey: string;
   } | null>(null);
   const mutating = useRef(false);
+  const mutationWorld = useRef<string | null>(null);
   const generation = useRef(0);
+  const viewRevision = useRef<{ worldId: string; revision: number } | null>(null);
+  useEffect(() => {
+    viewRevision.current = view ? { worldId: view.worldId, revision: view.revision } : null;
+  }, [view]);
   const setWorldId = useCallback((id: string) => {
     generation.current += 1;
     setView(null);
@@ -108,13 +113,15 @@ export function useKingdoms(initialWorldId = '') {
     };
   }, [initialWorldId]);
   const refresh = useCallback(async () => {
-    if (!worldId || mutating.current) return;
+    if (!worldId || mutationWorld.current === worldId) return;
     const version = generation.current;
     try {
       const result = await request<WorldView>(
         `/api/kingdoms?worldId=${encodeURIComponent(worldId)}`,
       );
-      if (version === generation.current && !mutating.current) {
+      if (version === generation.current && mutationWorld.current !== worldId) {
+        const known = viewRevision.current;
+        viewRevision.current = { worldId: result.worldId, revision: Math.max(result.revision, known?.worldId === result.worldId ? known.revision : -1) };
         setView((current) => latestView(current, result));
         setError('');
       }
@@ -129,7 +136,7 @@ export function useKingdoms(initialWorldId = '') {
     const version = generation.current;
     void request<WorldView>(`/api/kingdoms?worldId=${encodeURIComponent(worldId)}`)
       .then((result) => {
-        if (version === generation.current && !mutating.current) {
+        if (version === generation.current && mutationWorld.current !== worldId) {
           setView((current) => latestView(current, result));
           setError('');
         }
@@ -170,10 +177,37 @@ export function useKingdoms(initialWorldId = '') {
       socket.emit('kingdoms:watch', { worldId });
       void refresh();
     });
-    socket.on('kingdoms:revision', (event: { worldId: string }) => {
-      if (event.worldId === worldId) void refresh();
+    let current = true;
+    let pendingRevision = -1;
+    let handledRevision = -1;
+    let refreshingRevision = false;
+    const flushRevision = async () => {
+      if (refreshingRevision) return;
+      refreshingRevision = true;
+      try {
+        while (current && pendingRevision > handledRevision) {
+          const demanded = pendingRevision;
+          await refresh();
+          const applied = viewRevision.current?.worldId === worldId ? viewRevision.current.revision : -1;
+          // A skipped/failed/lagging GET has not acknowledged this revision. The next
+          // heartbeat or authorization poll retries it without a synchronous loop.
+          if (applied < demanded) break;
+          handledRevision = Math.max(handledRevision, applied);
+        }
+      } finally { refreshingRevision = false; }
+    };
+    socket.on('kingdoms:revision', (event: unknown) => {
+      if (!current || !event || typeof event !== 'object' || !('worldId' in event) ||
+        event.worldId !== worldId || !('revision' in event) ||
+        typeof event.revision !== 'number' || !Number.isSafeInteger(event.revision) || event.revision < 0) return;
+      const known = viewRevision.current?.worldId === worldId ? viewRevision.current.revision : -1;
+      // New heartbeats carry duplicate revisions. They must not create panel GET storms.
+      if (event.revision <= Math.max(known, refreshingRevision ? pendingRevision : handledRevision)) return;
+      pendingRevision = event.revision;
+      void flushRevision();
     });
     return () => {
+      current = false;
       socket.disconnect();
     };
   }, [refresh, worldId]);
@@ -181,7 +215,9 @@ export function useKingdoms(initialWorldId = '') {
     async (command: KingdomsCommand) => {
       if (mutating.current) return;
       mutating.current = true;
+      mutationWorld.current = worldId;
       generation.current += 1;
+      const version = generation.current;
       setBusy(true);
       setError('');
       setNotice('');
@@ -198,13 +234,18 @@ export function useKingdoms(initialWorldId = '') {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
+        if (version !== generation.current) return;
         setView((current) => latestView(current, result));
         pending.current = null;
         setNotice('تم تنفيذ أمرك.');
+        window.dispatchEvent(new CustomEvent('mamluk:command-accepted', {
+          detail: { worldId: body.worldId, revision: result.revision },
+        }));
       } catch (failure) {
-        setError((failure as Error).message);
+        if (version === generation.current) setError((failure as Error).message);
       } finally {
         mutating.current = false;
+        mutationWorld.current = null;
         setBusy(false);
       }
     },

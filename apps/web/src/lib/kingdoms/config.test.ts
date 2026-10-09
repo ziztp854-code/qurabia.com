@@ -16,3 +16,19 @@ describe('Kingdoms village vision configuration', () => {
     ).toBe(false);
   });
 });
+
+describe('Army travel review policy configuration', () => {
+  it.each([0.45, 1])('accepts the reviewed and historical time factor %s', (armyTravelTimeFactor) => {
+    expect(kingdomsConfigSchema.parse({ ...defaultKingdomsConfig, armyTravelTimeFactor })
+      .armyTravelTimeFactor).toBe(armyTravelTimeFactor);
+  });
+  it.each([0, -1, 1.01, NaN, Infinity])('rejects an invalid factor %s', (armyTravelTimeFactor) => {
+    expect(kingdomsConfigSchema.safeParse({ ...defaultKingdomsConfig, armyTravelTimeFactor })
+      .success).toBe(false);
+  });
+  it('still accepts a persisted configuration that predates the factor', () => {
+    const legacy = structuredClone(defaultKingdomsConfig);
+    delete legacy.armyTravelTimeFactor;
+    expect(kingdomsConfigSchema.parse(legacy).armyTravelTimeFactor).toBeUndefined();
+  });
+});

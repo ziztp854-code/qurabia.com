@@ -219,3 +219,171 @@ it('publishes stored village level for every visible settlement and keeps privat
   expect(probe('fractional')).toBeNull();
   expect(probe('overflow')).toBeNull();
 });
+
+it('renders a saved return origin toward home, preserving ETA and never inventing legacy origins', () => {
+  const { own, enemy, state } = fixture();
+  const original = state.movements[0]!;
+  const returning = {
+    ...state,
+    movements: [
+      {
+        ...original,
+        id: 'return-mapped',
+        mission: 'return' as const,
+        originX: enemy.x,
+        originY: enemy.y,
+        targetX: own.x,
+        targetY: own.y,
+      },
+      {
+        ...original,
+        id: 'legacy-return',
+        mission: 'return' as const,
+        targetX: own.x,
+        targetY: own.y,
+      },
+    ],
+  };
+  const projection = new KingdomMapProjection(returning, 'world', 'viewer', 6000);
+  expect(projection.armies.map((army) => army.id)).toEqual([`garrison:${own.id}`, 'return-mapped']);
+  const route = projection.armies.find((army) => army.id === 'return-mapped')!;
+  const anchor = (id: string) => {
+    const city = state.geography!.cities.find((record) => record.value.id === id)!.value;
+    return { longitude: city.longitude, latitude: city.latitude };
+  };
+  expect(route).toMatchObject({
+    route: {
+      mission: 'return',
+      origin: anchor(enemy.id),
+      destination: anchor(own.id),
+      departureTime: 1000,
+      arrivalTime: 11000,
+    },
+    position: { status: 'retreating' },
+  });
+});
+
+it('projects only traveling owner transports with their saved timetable and no resource details', () => {
+  const { own, enemy, state } = fixture();
+  const caravan = {
+    id: 'transport',
+    ownerId: 'viewer',
+    originVillageId: own.id,
+    targetVillageId: enemy.id,
+    resources: { wood: 654321, stone: 0, iron: 0, food: 0, gold: 0 },
+    departsAt: 1000,
+    arrivesAt: 11000,
+    status: 'traveling' as const,
+    route: [
+      { x: own.x, y: own.y },
+      { x: enemy.x, y: enemy.y },
+    ],
+    exposed: true,
+  };
+  const traveling = {
+    ...state,
+    caravans: [
+      caravan,
+      { ...caravan, id: 'hidden', ownerId: 'enemy' },
+      { ...caravan, id: 'cancelled', status: 'returned' as const },
+    ],
+  };
+  const result = new KingdomMapProjection(traveling, 'world', 'viewer', 6000);
+  const marker = result.armies.find((army) => army.id === 'caravan:transport')!;
+  expect(marker.route).toMatchObject({
+    mission: 'transport',
+    departureTime: 1000,
+    arrivalTime: 11000,
+    distanceUnit: 'tiles',
+  });
+  expect(
+    result.armies.some((army) => army.id === 'caravan:hidden' || army.id === 'caravan:cancelled'),
+  ).toBe(false);
+  expect(JSON.stringify(result.armies)).not.toContain('654321');
+});
+
+
+it('maps authorized abandoned gathering and its saved return origin without publishing cargo or enemies', () => {
+  const { own, state } = fixture();
+  const worldId = 'kw_map_gather';
+  const site = { id: 'saved-egypt', name: 'Saved village', region: 'egypt' as const, countryCode: 'EG', longitude: 31.2357, latitude: 30.0444,
+    x: 180, y: 180, stock: { wood: 100, stone: 100, iron: 100, food: 100, gold: 100 }, stockUpdatedAt: at };
+  const movement = { ...state.movements[0]!, id: 'gather-saved', mission: 'gather' as const, originX: own.x, originY: own.y,
+    targetX: site.x, targetY: site.y, troops: { ...emptyTroops(), guard: 1 }, abandonedGather: { targetId: site.id, worldId } };
+  const gathering = { ...state, movements: [movement, { ...movement, id: 'hidden-gather', ownerId: 'enemy' }],
+    abandonedVillages: { version: 1 as const, scope: 'kingdom-world' as const, worldId, seed: 'saved-map-gather', domainVersion: 'saved-fixture-v1', generatedAt: at, villages: { [site.id]: site } } };
+  const before = structuredClone(gathering);
+  const projected = new KingdomMapProjection(gathering, worldId, 'viewer', 6000);
+  const outward = projected.armies.find((army) => army.id === movement.id)!;
+  const home = state.geography!.cities.find((record) => record.value.id === own.id)!.value;
+  expect(outward.route).toMatchObject({ mission: 'gather', destination: { longitude: site.longitude, latitude: site.latitude }, distance: Math.hypot(site.x - own.x, site.y - own.y), arrivalTime: 11000 });
+  expect(outward.position.latitude).toBeCloseTo((home.latitude + site.latitude) / 2);
+  expect(projected.armies.some((army) => army.id === 'hidden-gather')).toBe(false);
+  const returned = new KingdomMapProjection(gathering, worldId, 'viewer', 11001).armies.find((army) => army.route?.mission === 'return')!;
+  expect(returned.route).toMatchObject({ origin: { longitude: site.longitude, latitude: site.latitude }, destination: { longitude: home.longitude, latitude: home.latitude }, departureTime: 11000, arrivalTime: 21000 });
+  expect(gathering).toEqual(before);
+  for (const forbidden of ['troops', 'loot', 'stock', 'available']) expect(JSON.stringify(projected.armies)).not.toContain(forbidden);
+  const wrongWorld = { ...gathering, movements: [{ ...movement, abandonedGather: { targetId: site.id, worldId: 'kw_wrong' } }] };
+  expect(new KingdomMapProjection(wrongWorld, worldId, 'viewer', 6000).armies.some((army) => army.id === movement.id)).toBe(false);
+});
+
+
+describe('stationed support visibility', () => {
+  it('publishes only support from owned sources without exposing troop counts', () => {
+    const { own, enemy, state } = fixture();
+    state.villages[enemy.id].reinforcements = {
+      [own.id]: { ...emptyTroops(), guard: 1234 },
+      [enemy.id]: { ...emptyTroops(), guard: 9876 },
+      missing: { ...emptyTroops(), guard: 7654 },
+    };
+    const before = structuredClone(state);
+    const result = new KingdomMapProjection(state, 'world', 'viewer', at);
+    const support = result.armies.filter((army) => army.id.startsWith('reinforcement:'));
+    expect(support).toHaveLength(1);
+    expect(support[0]).toMatchObject({
+      id: expect.stringMatching(/^reinforcement:[a-f0-9]{24}$/),
+      ownerPlayerId: 'viewer',
+      route: null,
+      position: { status: 'stationed', arrivalTime: null },
+    });
+    const host = state.geography!.cities.find(({ value }) => value.id === enemy.id)!.value;
+    expect(support[0].position).toMatchObject({ longitude: host.longitude, latitude: host.latitude });
+    expect(JSON.stringify(result.armies)).not.toMatch(/1234|9876|7654|troops/);
+    expect(state).toEqual(before);
+    state.villages[own.id].ownerId = 'enemy';
+    expect(new KingdomMapProjection(state, 'world', 'viewer', at).armies).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: support[0].id })]),
+    );
+  });
+
+  it('shows support at the exact arrival and replaces it with a return on recall', () => {
+    const { own, enemy, state } = fixture();
+    state.movements = [];
+    state.players.viewer.allianceId = 'allies';
+    state.players.enemy.allianceId = 'allies';
+    state.villages[own.id].troops = { ...emptyTroops(), guard: 5 };
+    const sent = provisionVillageGeography('world', executeCommand(state, 'viewer', {
+      type: 'march', villageId: own.id, mission: 'reinforce',
+      targetX: enemy.x, targetY: enemy.y, troops: { ...emptyTroops(), guard: 5 },
+    }, at));
+    const movement = sent.movements[0];
+    const before = structuredClone(sent);
+    const arriving = new KingdomMapProjection(sent, 'world', 'viewer', movement.arrivesAt - 1);
+    expect(arriving.armies.map(({ id }) => id)).toContain(movement.id);
+    const arrived = new KingdomMapProjection(sent, 'world', 'viewer', movement.arrivesAt);
+    expect(arrived.armies).toHaveLength(1);
+    const supportId = arrived.armies[0].id;
+    expect(supportId).toMatch(/^reinforcement:[a-f0-9]{24}$/);
+    expect(sent).toEqual(before);
+    const recalled = provisionVillageGeography('world', executeCommand(sent, 'viewer', {
+      type: 'recall', villageId: own.id, hostVillageId: enemy.id,
+    }, movement.arrivesAt));
+    const returning = new KingdomMapProjection(recalled, 'world', 'viewer', movement.arrivesAt);
+    expect(returning.armies.map(({ id }) => id)).not.toContain(supportId);
+    expect(returning.armies).toHaveLength(1);
+    expect(returning.armies[0]).toMatchObject({
+      id: recalled.movements[0].id,
+      position: { status: 'retreating' }, route: { mission: 'return' },
+    });
+  });
+});

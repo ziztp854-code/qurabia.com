@@ -1,3 +1,4 @@
+import { armyMissions } from './models';
 import { villageDetailRules } from './village-details';
 import type { Geometry, Position, Feature, FeatureCollection, JsonValue } from './geojson';
 import type { BoundingBox } from './models';
@@ -131,6 +132,11 @@ function decodeFeature(value: unknown, layer: keyof MapLayers, budget: DecodeBud
     feature.properties !== null &&
     typeof feature.properties === 'object' &&
     Object.hasOwn(feature.properties, 'distanceUnit');
+  const hasMission =
+    layer === 'armyRoutes' &&
+    feature.properties !== null &&
+    typeof feature.properties === 'object' &&
+    Object.hasOwn(feature.properties, 'mission');
   const optionalVillageRules =
     layer === 'cities' && feature.properties && typeof feature.properties === 'object'
       ? Object.fromEntries(
@@ -143,6 +149,7 @@ function decodeFeature(value: unknown, layer: keyof MapLayers, budget: DecodeBud
     ...layerRules[layer],
     ...optionalVillageRules,
     ...(hasDistanceUnit ? { distanceUnit: oneOf('metres', 'tiles') } : {}),
+    ...(hasMission ? { mission: oneOf(...armyMissions) } : {}),
   };
   const fields = record(feature.properties, Object.keys(rules));
   if (Object.entries(rules).some(([key, rule]) => !rule(fields[key]))) return invalid();

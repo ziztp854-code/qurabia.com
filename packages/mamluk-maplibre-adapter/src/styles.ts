@@ -68,14 +68,15 @@ export function mapLayer(name: keyof MapLayers, palette: MapPalette): LayerSpeci
     return {
       ...base,
       type: 'line',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color':
           name === 'armyRoutes'
-            ? palette.route
+            ? ['coalesce', ['get', '__mamlukMissionColor'], palette.route]
             : ['coalesce', ['get', '__mamlukOwnerColor'], palette.border],
         'line-width':
           name === 'armyRoutes'
-            ? 1.25
+            ? 2.25
             : ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1.5],
       },
     };
@@ -90,7 +91,10 @@ export function mapLayer(name: keyof MapLayers, palette: MapPalette): LayerSpeci
     ...base,
     type: 'circle',
     paint: {
-      'circle-color': colors[name],
+      'circle-color':
+        name === 'armies'
+          ? ['coalesce', ['get', '__mamlukMissionColor'], colors[name]]
+          : colors[name],
       'circle-radius': [
         'interpolate',
         ['linear'],
@@ -142,9 +146,17 @@ export function overlayLayers(
   palette: MapPalette,
   symbols = false,
   arabic = false,
+  armyDetails = false,
 ): LayerSpecification[] {
   const layers = LAYER_NAMES.map((name) => mapLayer(name, palette));
-  if (!symbols) return layers;
+  if (!symbols)
+    return armyDetails
+      ? [
+          ...layers.filter((layer) => layer.id !== 'mamluk-fog'),
+          ...armyDetailLayers(palette),
+          mapLayer('fog', palette),
+        ]
+      : layers;
   return [
     ...layers.filter(
       (layer) =>
@@ -247,6 +259,7 @@ export function overlayLayers(
         'line-opacity': 0.6,
       },
     },
+    ...(armyDetails ? armyDetailLayers(palette) : []),
     mapLayer('fog', palette),
   ];
 }
@@ -330,4 +343,63 @@ function markerLayer(
     },
     paint: { 'text-color': palette.city, 'text-halo-color': palette.fog, 'text-halo-width': 1.5 },
   };
+}
+
+/** Details share the army source, camera, authorization and expiry lifecycle. */
+function armyDetailLayers(palette: MapPalette): LayerSpecification[] {
+  const base = {
+    source: 'mamluk-armies',
+    type: 'symbol' as const,
+    filter: ['==', ['get', '__mamlukTraveling'], true] as FilterSpecification,
+    minzoom: 4,
+  };
+  return [
+    {
+      ...base,
+      id: 'mamluk-army-missions',
+      layout: {
+        'text-field': ['get', '__mamlukMissionSymbol'],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 15,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: { 'text-color': palette.fog },
+    },
+    {
+      ...base,
+      id: 'mamluk-army-direction',
+      layout: {
+        'text-field': '▲',
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 12,
+        'text-offset': [0, -1.7],
+        'text-rotate': ['get', '__mamlukBearing'],
+        'text-rotation-alignment': 'map',
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-color': ['coalesce', ['get', '__mamlukMissionColor'], palette.army],
+        'text-halo-color': palette.fog,
+        'text-halo-width': 1,
+      },
+    },
+    {
+      ...base,
+      id: 'mamluk-army-timers',
+      source: 'mamluk-army-timer-labels',
+      minzoom: 6,
+      layout: {
+        'text-field': ['get', '__mamlukEta'],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 11,
+        'text-variable-anchor': ['left', 'right', 'top', 'bottom'],
+        'text-radial-offset': 2,
+        'text-allow-overlap': false,
+        'text-ignore-placement': false,
+      },
+      paint: { 'text-color': palette.city, 'text-halo-color': palette.fog, 'text-halo-width': 2 },
+    },
+  ];
 }

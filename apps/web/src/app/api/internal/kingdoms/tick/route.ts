@@ -1,6 +1,12 @@
+import { z } from 'zod';
 import { timingSafeEqual } from 'node:crypto';
 import { jsonFailure, jsonSuccess, KingdomsHttpError } from '@/lib/kingdoms/http';
 import { tickKingdomWorlds } from '@/lib/kingdoms/repository';
+import { kingdomsRealtimeCapability } from '@/lib/kingdoms/realtime-notifications';
+const tickInput = z.object({
+  limit: z.number().int().min(1).max(10).optional(),
+  watchedWorldIds: z.array(z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/)).max(512).optional(),
+}).strict();
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -15,7 +21,13 @@ export async function POST(request: Request) {
       !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
     )
       throw new KingdomsHttpError(401, 'غير مصرح.');
-    return jsonSuccess(await tickKingdomWorlds());
+    const body = await request.text();
+    let decoded: unknown;
+    try { decoded = body ? JSON.parse(body) : {}; }
+    catch { throw new KingdomsHttpError(400, 'Invalid tick body.'); }
+    const input = tickInput.parse(decoded);
+    const result = await tickKingdomWorlds(undefined, input.watchedWorldIds);
+    return jsonSuccess({ ...result, realtime: await kingdomsRealtimeCapability() });
   } catch (error) {
     return jsonFailure(error);
   }

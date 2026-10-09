@@ -219,6 +219,9 @@ export function returnMovement(w: KingdomsWorld, m: Movement, at: number) {
     ...m,
     id: nextId(w, 'm'),
     mission: 'return',
+    // A recalled army already carries its host point. Automatic returns leave the outbound target.
+    originX: m.mission === 'return' ? m.originX : m.targetX,
+    originY: m.mission === 'return' ? m.originY : m.targetY,
     departedAt: at,
     arrivesAt: at + m.travelMs,
     targetX: home.x,

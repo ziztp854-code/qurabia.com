@@ -193,3 +193,31 @@ it('preserves authorized village details through city validation and viewport de
     expect(() => parseMapPayload(bad)).toThrow();
   }
 });
+
+it('round-trips an owner mission, leaves legacy routes compatible and never discloses enemy missions', async () => {
+  const own = army('own');
+  const enemy = army('enemy', 31, 30, 'enemy');
+  const payload = await new WorldMapService(
+    repository({
+      getVisibleArmiesInBounds: async () => [
+        { ...own, route: { ...own.route!, mission: 'return' } },
+        { ...enemy, route: { ...enemy.route!, mission: 'attack' } },
+        army('legacy'),
+      ],
+    }),
+  ).getViewport({ worldId: 'world', bounds }, { playerId: 'p1' });
+  const decoded = parseMapPayload(JSON.parse(JSON.stringify(payload)));
+  expect(
+    decoded.layers.armyRoutes.features.find((route) => route.id === 'own')?.properties.mission,
+  ).toBe('return');
+  expect(
+    decoded.layers.armyRoutes.features.find((route) => route.id === 'legacy')?.properties,
+  ).not.toHaveProperty('mission');
+  expect(decoded.layers.armyRoutes.features.some((route) => route.id === 'enemy')).toBe(false);
+  expect(
+    decoded.layers.armies.features.find((marker) => marker.id === 'enemy')?.properties,
+  ).not.toHaveProperty('mission');
+  const invalid = structuredClone(payload);
+  Object.assign(invalid.layers.armyRoutes.features[0]!.properties, { mission: 'secret' });
+  expect(() => parseMapPayload(invalid)).toThrow();
+});

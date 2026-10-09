@@ -66,7 +66,32 @@ export interface ArmyPosition extends Coordinates {
   readonly arrivalTime: number | null;
   readonly status: ArmyStatus;
 }
+export type ArmyMission =
+  | 'attack'
+  | 'raid'
+  | 'scout'
+  | 'reinforce'
+  | 'settle'
+  | 'occupy'
+  | 'gather'
+  | 'intercept'
+  | 'return'
+  | 'transport';
+export const armyMissions: readonly ArmyMission[] = [
+  'attack',
+  'raid',
+  'scout',
+  'reinforce',
+  'settle',
+  'occupy',
+  'gather',
+  'intercept',
+  'return',
+  'transport',
+];
 export interface ArmyRoute {
+  /** Owner-authorized mission; omitted by legacy records. */
+  readonly mission?: ArmyMission;
   readonly origin: Coordinates;
   readonly destination: Coordinates;
   readonly waypoints: readonly Coordinates[];

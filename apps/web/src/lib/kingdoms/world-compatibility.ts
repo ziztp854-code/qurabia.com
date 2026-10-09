@@ -17,6 +17,8 @@ export function normalizeWorldState(state: KingdomsWorld): KingdomsWorld {
     ...saved,
     config: {
       ...saved.config,
+      // Approved policy for new departures only; saved movement schedules are never rebuilt.
+      armyTravelTimeFactor: saved.config.armyTravelTimeFactor ?? defaultKingdomsConfig.armyTravelTimeFactor,
       units: { ...structuredClone(defaultKingdomsConfig.units), ...saved.config.units },
       ...(progression
         ? {

@@ -11,6 +11,7 @@ import type {
   MapProjection,
   MapProjectionAdapter,
 } from '@mamluk/world-map-core';
+import { presentArmies, presentArmyRoutes } from './army-motion';
 import { DEFAULT_PALETTE, LAYER_NAMES, overlayLayers, type MapPalette } from './styles';
 
 /** Concrete SDK boundary; a MapLibre Map satisfies this type without a wrapper. */
@@ -40,6 +41,10 @@ export interface AdapterOptions {
   readonly now?: () => number;
   readonly schedule?: (task: () => void, delay: number) => () => void;
   readonly onExpire?: () => void;
+  /** Opt-in owner-only travel presentation; does not update game state or authorization. */
+  readonly animateArmies?: boolean;
+  readonly reducedMotion?: () => boolean;
+  readonly requestFrame?: (task: () => void) => () => void;
 }
 
 export interface AdapterRenderMetrics {
@@ -71,12 +76,33 @@ export class MapLibreAdapter implements MapProjectionAdapter {
   private deadline = 0;
   private disposed = false;
   private cancelExpiry: (() => void) | undefined;
+  private cancelAnimation: (() => void) | undefined;
+  private pendingArmyUpload: Promise<void> | undefined;
+  private armyUploadQueued = false;
+  private pendingTimerUpload: Promise<void> | undefined;
+  private timerUploadQueued = false;
+  private lastTimerFrame = 0;
+  private receivedAt = 0;
+  private lastArmyFrame = 0;
+  private readonly onVisibility = () => {
+    this.cancelAnimation?.();
+    this.cancelAnimation = undefined;
+    if (typeof document === 'undefined' || document.visibilityState !== 'hidden') {
+      this.updateArmyPresentation();
+      this.updateTimerPresentation(true);
+      this.animate();
+    }
+  };
   private readonly sourceSignatures = new Map<string, string>();
   private readonly now: () => number;
   private readonly schedule: (task: () => void, delay: number) => () => void;
   private readonly palette: MapPalette;
   private readonly onStyleLoad = () => {
     if (this.disposed || !this.map.isStyleLoaded()) return;
+    this.pendingArmyUpload = undefined;
+    this.armyUploadQueued = false;
+    this.pendingTimerUpload = undefined;
+    this.timerUploadQueued = false;
     this.map.setProjection({ type: this.projection });
     this.restore();
   };
@@ -94,6 +120,8 @@ export class MapLibreAdapter implements MapProjectionAdapter {
       });
     this.palette = options.palette ?? DEFAULT_PALETTE;
     map.on('style.load', this.onStyleLoad);
+    if (options.animateArmies && typeof document !== 'undefined')
+      document.addEventListener('visibilitychange', this.onVisibility);
   }
 
   /** Call on login/world changes, after aborting requests from the previous session. */
@@ -175,6 +203,8 @@ export class MapLibreAdapter implements MapProjectionAdapter {
     }
     this.cancelExpiry?.();
     this.snapshot = structuredClone(payload);
+    if (payload.serverTime !== this.serverTime) this.receivedAt = this.now();
+    this.lastArmyFrame = this.receivedAt;
     this.revision = revision;
     this.serverTime = payload.serverTime;
     this.deadline = this.now() + ttl;
@@ -191,6 +221,7 @@ export class MapLibreAdapter implements MapProjectionAdapter {
       this.clear();
       throw error;
     }
+    this.animate();
     this.metrics = {
       payloadBytes,
       featureCount,
@@ -217,6 +248,12 @@ export class MapLibreAdapter implements MapProjectionAdapter {
   }
 
   clear(): void {
+    this.pendingArmyUpload = undefined;
+    this.armyUploadQueued = false;
+    this.pendingTimerUpload = undefined;
+    this.timerUploadQueued = false;
+    this.cancelAnimation?.();
+    this.cancelAnimation = undefined;
     this.cancelExpiry?.();
     this.cancelExpiry = undefined;
     this.snapshot = undefined;
@@ -226,7 +263,7 @@ export class MapLibreAdapter implements MapProjectionAdapter {
     for (const layer of this.layers().reverse()) {
       if (this.map.getLayer(layer.id)) this.map.removeLayer(layer.id);
     }
-    for (const name of [...LAYER_NAMES, 'capitals', 'trade-routes']) {
+    for (const name of [...LAYER_NAMES, 'capitals', 'trade-routes', 'army-timer-labels']) {
       if (this.source(name)) this.map.removeSource('mamluk-' + name);
     }
   }
@@ -252,12 +289,19 @@ export class MapLibreAdapter implements MapProjectionAdapter {
     }
   }
   private layers() {
-    return overlayLayers(this.palette, this.options.symbolMarkers, this.options.arabicLabels);
+    return overlayLayers(
+      this.palette,
+      this.options.symbolMarkers,
+      this.options.arabicLabels,
+      this.options.animateArmies,
+    );
   }
   dispose(): void {
     if (this.disposed) return;
     this.clear();
     this.map.off('style.load', this.onStyleLoad);
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', this.onVisibility);
     if (this.map.isStyleLoaded()) {
       for (const name of [...LAYER_NAMES].reverse()) {
         const id = `mamluk-${name}`;
@@ -278,6 +322,11 @@ export class MapLibreAdapter implements MapProjectionAdapter {
       const signature = JSON.stringify(data);
       const source = this.source(name);
       if (source) {
+        if (name === 'armies' && this.options.animateArmies) {
+          if (this.sourceSignatures.get(name) !== signature || this.pendingArmyUpload)
+            this.submitArmyPresentation(source, data, signature);
+          continue;
+        }
         if (this.sourceSignatures.get(name) !== signature) source.setData(data);
       } else
         this.map.addSource(id, {
@@ -295,6 +344,16 @@ export class MapLibreAdapter implements MapProjectionAdapter {
             : {}),
         });
       this.sourceSignatures.set(name, signature);
+    }
+    if (this.options.animateArmies) {
+      const source = this.source('army-timer-labels');
+      if (source) this.updateTimerPresentation(true);
+      else {
+        const data = this.timerPresentationData();
+        this.map.addSource('mamluk-army-timer-labels', { type: 'geojson', data });
+        this.sourceSignatures.set('army-timer-labels', JSON.stringify(data));
+        this.lastTimerFrame = this.now();
+      }
     }
     if (this.options.symbolMarkers) {
       const capitals = this.snapshot
@@ -325,6 +384,10 @@ export class MapLibreAdapter implements MapProjectionAdapter {
   }
   private presentationData(name: keyof MapPayload['layers']): MapPayload['layers']['cities'] {
     const data = this.snapshot!.layers[name];
+    if (this.options.animateArmies && name === 'armies')
+      return presentArmies(this.snapshot!, this.presentationTime(), this.palette);
+    if (this.options.animateArmies && name === 'armyRoutes')
+      return presentArmyRoutes(this.snapshot!, this.palette);
     if (name === 'cities' && this.options.symbolMarkers)
       return {
         ...data,
@@ -355,6 +418,139 @@ export class MapLibreAdapter implements MapProjectionAdapter {
         };
       }),
     };
+  }
+  private presentationTime(): number {
+    return this.snapshot!.serverTime + Math.max(0, this.now() - this.receivedAt);
+  }
+  private updateArmyPresentation(flushSnapshot = false): void {
+    if (!this.snapshot || this.disposed) return;
+    if (this.now() >= this.deadline) {
+      this.expire();
+      return;
+    }
+    if (!this.map.isStyleLoaded() || this.pendingArmyUpload) return;
+    const source = this.source('armies');
+    if (!source || (!flushSnapshot && typeof source.loaded === 'function' && !source.loaded()))
+      return;
+    const data = this.copyData(this.presentationData('armies'));
+    const signature = JSON.stringify(data);
+    if (signature === this.sourceSignatures.get('armies')) return;
+    this.submitArmyPresentation(source, data, signature);
+  }
+  private submitArmyPresentation(
+    source: GeoJSONSource,
+    data: GeoJSONSourceSpecification['data'],
+    signature: string,
+  ): void {
+    if (this.pendingArmyUpload) {
+      this.armyUploadQueued = true;
+      return;
+    }
+    const upload = source.setData(data);
+    // SDK 6 rebuilds GeoJSON asynchronously. Keep frames and incoming snapshots serialized.
+    if (upload && typeof upload.then === 'function') {
+      this.pendingArmyUpload = upload;
+      void upload
+        .then(
+          () => {
+            if (this.pendingArmyUpload === upload) this.sourceSignatures.set('armies', signature);
+          },
+          () => undefined,
+        )
+        .finally(() => {
+          if (this.pendingArmyUpload !== upload) return;
+          this.pendingArmyUpload = undefined;
+          if (this.armyUploadQueued) {
+            this.armyUploadQueued = false;
+            this.updateArmyPresentation(true);
+          }
+        })
+        .catch(() => undefined);
+    } else this.sourceSignatures.set('armies', signature);
+  }
+  private timerPresentationData(): GeoJSONSourceSpecification['data'] {
+    if (!this.snapshot) return empty();
+    const armies = this.presentationData('armies');
+    return this.copyData({
+      ...armies,
+      features: armies.features.filter((army) => army.properties.__mamlukTraveling === true),
+    });
+  }
+  /** A separate annotation source lets MapLibre finish collision fades between second ticks. */
+  private updateTimerPresentation(flushSnapshot = false): void {
+    if (!this.snapshot || this.disposed) return;
+    if (this.now() >= this.deadline) {
+      this.expire();
+      return;
+    }
+    if (!this.map.isStyleLoaded()) return;
+    if (this.pendingTimerUpload) {
+      if (flushSnapshot) this.timerUploadQueued = true;
+      return;
+    }
+    if (!flushSnapshot && this.now() - this.lastTimerFrame < 1000) return;
+    const source = this.source('army-timer-labels');
+    if (!source || (!flushSnapshot && typeof source.loaded === 'function' && !source.loaded()))
+      return;
+    const data = this.timerPresentationData();
+    const signature = JSON.stringify(data);
+    if (signature === this.sourceSignatures.get('army-timer-labels')) return;
+    this.lastTimerFrame = this.now();
+    const upload = source.setData(data);
+    if (upload && typeof upload.then === 'function') {
+      this.pendingTimerUpload = upload;
+      void upload
+        .then(
+          () => {
+            if (this.pendingTimerUpload === upload)
+              this.sourceSignatures.set('army-timer-labels', signature);
+          },
+          () => undefined,
+        )
+        .finally(() => {
+          if (this.pendingTimerUpload !== upload) return;
+          this.pendingTimerUpload = undefined;
+          if (this.timerUploadQueued) {
+            this.timerUploadQueued = false;
+            this.updateTimerPresentation(true);
+          }
+        })
+        .catch(() => undefined);
+    } else this.sourceSignatures.set('army-timer-labels', signature);
+  }
+  private animate(): void {
+    this.cancelAnimation?.();
+    this.cancelAnimation = undefined;
+    if (
+      !this.options.animateArmies ||
+      !this.snapshot ||
+      this.disposed ||
+      (typeof document !== 'undefined' && document.visibilityState === 'hidden') ||
+      !this.snapshot.layers.armyRoutes.features.length
+    )
+      return;
+    const reduced =
+      this.options.reducedMotion?.() ??
+      (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const tick = () => {
+      this.cancelAnimation = undefined;
+      if (this.now() - this.lastArmyFrame >= (reduced ? 1000 : 50)) {
+        this.lastArmyFrame = this.now();
+        this.updateArmyPresentation();
+      }
+      this.updateTimerPresentation();
+      this.animate();
+    };
+    this.cancelAnimation = reduced
+      ? this.schedule(tick, 1000)
+      : this.options.requestFrame
+        ? this.options.requestFrame(tick)
+        : typeof requestAnimationFrame !== 'undefined'
+          ? (() => {
+              const frame = requestAnimationFrame(tick);
+              return () => cancelAnimationFrame(frame);
+            })()
+          : this.schedule(tick, 50);
   }
   private copyData(data: MapPayload['layers']['cities']): GeoJSONSourceSpecification['data'] {
     // JSON cloning bridges our immutable RFC 7946 contracts to the SDK's mutable types.

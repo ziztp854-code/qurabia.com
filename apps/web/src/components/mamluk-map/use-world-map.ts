@@ -190,6 +190,19 @@ export function useWorldMap(
     let styleReady = false;
     mapStyleReadyRef.current = false;
     let stopRevisions: (() => void) | undefined;
+    const onCommandAccepted = (event: Event) => {
+      const detail = (event as CustomEvent<{ worldId?: unknown; revision?: unknown }>).detail;
+      if (cancelled || detail?.worldId !== worldId) return;
+      // Accepted HTTP and Socket.IO may announce the same revision. Keep one authorized fetch.
+      const revision =
+        typeof detail.revision === 'number' &&
+        Number.isSafeInteger(detail.revision) &&
+        detail.revision >= 0
+          ? detail.revision
+          : undefined;
+      session?.loader.requestRevision(revision);
+    };
+    window.addEventListener('mamluk:command-accepted', onCommandAccepted);
     const artworkController = new AbortController();
     async function initialize() {
       try {
@@ -306,7 +319,14 @@ export function useWorldMap(
           .catch(() => {
             if (!cancelled) setStatus('error');
           });
-        stopRevisions = watchMapRevisions(worldId, () => session?.loader.requestRefresh());
+        stopRevisions = watchMapRevisions(
+          worldId,
+          (revision) => session?.loader.requestRevision(revision),
+          {
+            currentRevision: () => session?.loader.currentRevision,
+            onHealth: (healthy) => session?.loader.setRealtimeHealth(healthy),
+          },
+        );
       } catch {
         if (!cancelled) setStatus('error');
       }
@@ -314,6 +334,7 @@ export function useWorldMap(
     void initialize();
     return () => {
       cancelled = true;
+      window.removeEventListener('mamluk:command-accepted', onCommandAccepted);
       artworkController.abort();
       stopRevisions?.();
       session?.dispose();

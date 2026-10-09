@@ -9,7 +9,7 @@ import {
 } from './resource-sites';
 import { defaultKingdomsConfig, kingdomsConfigSchema, resources } from './config';
 import { addCommanderExperience, availableCommander, commanderConfig, createCommander, normalizeCommanders, projectCommanders, setCommander } from './commanders';
-import { commanderTravelFactor } from './commander-movement';
+import { marchTravelDurationMs } from './commander-movement';
 import { abandonedLayout, abandonedVillage, abandonedVillageSupply, isAbandonedVillageCell, projectAbandonedVillages } from './abandoned-villages';
 import type { AbandonedVillage } from './abandoned-village-types';
 import { trainingBuilding, trainingDurationMs } from './training';
@@ -294,15 +294,9 @@ function march(
       'بلغت الحد الأعلى للأراضي',
     );
   }
-  const speed = Math.min(
-    ...unitKeys.filter((k) => c.troops[k] > 0).map((k) => w.config.units[k].speed),
-  );
-  const travelMs = Math.max(
-    1000,
-    Math.ceil(
-      (Math.hypot(c.targetX - v.x, c.targetY - v.y) * w.config.secondsPerTile * 1000) / (speed * commanderTravelFactor(w.config, commander)),
-    ),
-  );
+  const travelMs = marchTravelDurationMs(
+    w.config, v, { x: c.targetX, y: c.targetY }, c.troops, commander,
+  )!;
   deadline(at, travelMs);
   v.troops = Object.fromEntries(
     unitKeys.map((k) => [k, v.troops[k] - c.troops[k]]),
@@ -321,6 +315,8 @@ function march(
     id: nextId(w, 'm'),
     ownerId: actor,
     sourceId: v.id,
+    originX: v.x,
+    originY: v.y,
     targetX: c.targetX,
     targetY: c.targetY,
     mission: c.mission,
@@ -645,15 +641,7 @@ function recall(
   assertRule(troops && total(troops) > 0, 'لا توجد تعزيزات قابلة للاستدعاء');
   const recalledCommanderId = host.reinforcementCommanders?.[home.id];
   const recalledCommander = recalledCommanderId ? w.commanders?.[recalledCommanderId] : undefined;
-  const speed = Math.min(
-    ...unitKeys.filter((k) => troops[k] > 0).map((k) => w.config.units[k].speed),
-  );
-  const travelMs = Math.max(
-    1000,
-    Math.ceil(
-      (Math.hypot(home.x - host.x, home.y - host.y) * w.config.secondsPerTile * 1000) / (speed * commanderTravelFactor(w.config, recalledCommander)),
-    ),
-  );
+  const travelMs = marchTravelDurationMs(w.config, host, home, troops, recalledCommander)!;
   deadline(at, travelMs);
   returnMovement(
     w,
@@ -661,6 +649,8 @@ function recall(
       id: '',
       ownerId: actor,
       sourceId: home.id,
+      originX: host.x,
+      originY: host.y,
       targetX: home.x,
       targetY: home.y,
       mission: 'return',
@@ -860,7 +850,20 @@ export function projectIncoming(w: KingdomsWorld, actorId: string): IncomingMove
   );
 }
 export function projectWorld(state: KingdomsWorld, actorId: string, now: number): KingdomsView {
-  const w = advanceWorld(state, now);
+  return projectWorldSnapshot(state, actorId, now).view;
+}
+
+/** Server projection only. The private world must never be serialized into the client response. */
+export function projectWorldSnapshot(
+  state: KingdomsWorld,
+  actorId: string,
+  now: number,
+): { world: KingdomsWorld; view: KingdomsView } {
+  const world = advanceWorld(state, now);
+  return { world, view: projectAdvancedWorld(world, actorId, now) };
+}
+
+function projectAdvancedWorld(w: KingdomsWorld, actorId: string, now: number): KingdomsView {
   const villages = Object.values(w.villages);
   const ownVillages = villages.filter((v) => v.ownerId === actorId);
   const away = deployedTroops(w);

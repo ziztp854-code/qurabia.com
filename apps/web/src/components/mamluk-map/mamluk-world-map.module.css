@@ -955,3 +955,30 @@
     min-block-size: 44px;
   }
 }
+
+.armyLegend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--map-success);
+  font-size: 0.875rem;
+}
+.armyLegend [data-mission='attack'] {
+  color: var(--map-danger);
+}
+.armyLegend [data-mission='scout'] {
+  color: var(--map-bronze);
+}
+.armyLegend [data-mission='gather'] {
+  color: var(--map-city);
+}
+.armyLegend [data-mission='return'] {
+  color: var(--map-success);
+}
+.armyLegend p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--map-muted);
+}
