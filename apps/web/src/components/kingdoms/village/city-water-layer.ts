@@ -1,5 +1,6 @@
-import { Container, MaskFilter, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, MaskFilter, Sprite, Texture, TilingSprite, type Rectangle } from 'pixi.js';
 import type { WorldSize } from '@/lib/kingdoms/village/types';
+import { createMaskedWaterMesh } from './masked-water-mesh';
 
 /** Pixi's filter input belongs to its temporary texture pool. A second scene
  * resizing can prune that pool while the previous draw still subscribes to it.
@@ -42,10 +43,11 @@ function rippleTexture() {
   return Texture.from(canvas);
 }
 
-export function createCityWaterLayer(world: WorldSize, maskTexture: Texture) {
+export function createCityWaterLayer(world: WorldSize, maskTexture: Texture, directMaskBounds?: Rectangle) {
   const layer = new Container();
   layer.label = 'city-water'; layer.eventMode = 'none';
   const texture = rippleTexture();
+  if (texture && directMaskBounds) return createMaskedWaterMesh(layer, world, maskTexture, texture, directMaskBounds);
   const mask = new Sprite(maskTexture);
   mask.width = world.width; mask.height = world.height;
   const passes = texture ? [0, 1].map(index => {

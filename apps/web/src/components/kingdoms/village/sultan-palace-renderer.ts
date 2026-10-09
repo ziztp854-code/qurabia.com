@@ -1,4 +1,4 @@
-import { Application, Assets, Container, Rectangle, type Texture } from 'pixi.js';
+import { Application, Assets, Container, Rectangle, RendererType, type Texture } from 'pixi.js';
 import { gardenAsset, type GardenPlacement } from '@/lib/kingdoms/palace-garden';
 import { getCityComposition } from '@/lib/kingdoms/village/city-composition';
 import { PALACE_WORLD } from '@/lib/kingdoms/village/palace-scene-layout';
@@ -98,11 +98,12 @@ export async function createSultanPalaceRenderer(canvas: HTMLCanvasElement, host
       if (quality.environment) {
         const [mask, plate] = await Promise.all([load('/game-art/kingdoms/city-scenes/palace-user-water-mask.png'), load('/game-art/kingdoms/city-scenes/palace-courtyard-user.webp')]);
         if (disposed) return;
-        water = createCityWaterLayer(PALACE_WORLD, mask);
+        const waterBounds = new Rectangle(0, 149, 1585, 478);
+        water = createCityWaterLayer(PALACE_WORLD, mask, app.renderer.type === RendererType.WEBGL ? waterBounds : undefined);
         // Authored mask alpha occupies [0,150,1584,626); retain one texel for
         // linear sampling. Pixi transforms this local area with the camera,
         // then clips it to the viewport; the ripple coordinates stay unchanged.
-        water.layer.filterArea = new Rectangle(0, 149, 1585, 478);
+        water.layer.filterArea = waterBounds;
         world.addChildAt(water.layer, 0);
         flags = createPalaceFlagsLayer(plate); world.addChild(flags.layer);
         water.update(time, true); flags.update(time);
