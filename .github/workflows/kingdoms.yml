@@ -120,10 +120,6 @@ jobs:
         run: pnpm --filter @tahaddi/web test src/components/kingdoms
       - name: Install test browser
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
-      - name: Verify village scene and controls on desktop and touch devices
-        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
-      - name: Verify dedicated Living City scenes and all release viewports
-        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.city-scenes.config.ts
       - name: Verify Sultan Farm on desktop and mobile
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.sultan-farm.config.ts --workers=1
       - name: Verify palace motion and pooled-resource cleanup
@@ -134,11 +130,8 @@ jobs:
         with:
           name: kingdoms-village-failures-${{ github.run_attempt }}
           path: |
-            apps/web/test-results/village-scene/
-            apps/web/test-results/city-scenes/
             apps/web/test-results/animation-preview/
             apps/web/test-results/sultan-farm/
-            apps/web/playwright-report/city-scenes/
           retention-days: 7
       - name: Build web application
         run: pnpm --filter @tahaddi/web build
@@ -148,6 +141,63 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms-authenticated.config.ts
       - name: Verify abandoned villages on the real authenticated player map
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.abandoned-production.config.ts
+
+  village-city-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+      KINGDOMS_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+      AUTH_SECRET: ci-only-kingdoms-integration-secret
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: kingdoms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d kingdoms_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.26.0
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared libraries and generate Prisma client
+        run: pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build
+      - name: Migrate isolated test database
+        run: pnpm exec prisma migrate deploy
+      - name: Install test browser
+        run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
+      - name: Verify village scene and controls on desktop and touch devices
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.village-scene.config.ts
+      - name: Verify dedicated Living City scenes and all release viewports
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.city-scenes.config.ts
+      - name: Preserve failed village and city browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kingdoms-village-city-failures-${{ github.run_attempt }}
+          path: |
+            apps/web/test-results/village-scene/
+            apps/web/test-results/city-scenes/
+            apps/web/playwright-report/city-scenes/
+          retention-days: 7
 
   living-city-visual:
     runs-on: ubuntu-24.04
