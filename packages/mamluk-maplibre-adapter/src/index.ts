@@ -15,3 +15,5 @@ export {
   type ViewportRetryPolicy,
 } from './viewport-loader';
 export { markerSvgs, registerMapMarkerImages } from './markers';
+
+export { armyEta, ARMY_MISSION_LABELS } from './army-motion';

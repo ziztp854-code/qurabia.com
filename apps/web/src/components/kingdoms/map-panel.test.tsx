@@ -19,6 +19,24 @@ function fixture() {
   return { view, village: view.villages[0], busy: false, send: vi.fn() };
 }
 describe('unified campaign map', () => {
+  it.each(['legacy', 'unmapped-origin'] as const)('keeps the server arrival visible when a %s return has no atlas anchor', (kind) => {
+    const props = fixture();
+    const arrival = props.view.serverNow + 60000;
+    props.view.movements = [{
+      id: 'return-without-atlas', ownerId: 'alice', sourceId: props.village.id,
+      targetX: props.village.x, targetY: props.village.y, mission: 'return',
+      ...(kind === 'unmapped-origin' ? { originX: props.village.x + 1, originY: props.village.y } : {}),
+      troops: { ...props.village.troops },
+      departedAt: props.view.serverNow, arrivesAt: arrival, travelMs: 60000,
+      loot: { stone: 0, wood: 0, iron: 0, food: 0, gold: 0 },
+    }];
+    render(<MapPanel {...props} />);
+    expect(screen.getByText(/لا يتوفر مسار جغرافي موثوق/)).toBeVisible();
+    expect(document.querySelector(`time[datetime="${new Date(arrival).toISOString()}"]`)).toBeVisible();
+    expect(screen.getByTestId('unified-map')).toBeVisible();
+    expect(props.send).not.toHaveBeenCalled();
+  });
+
   it('uses the same geographic component for every mission without replacing its element', () => {
     render(<MapPanel {...fixture()} />);
     const element = screen.getByTestId('unified-map');
@@ -49,5 +67,19 @@ describe('unified campaign map', () => {
     expect(screen.getByTestId('unified-map')).toHaveAttribute('data-mode', 'SELECT_SCOUT_TARGET');
     expect(screen.getByLabelText('نوع الحملة')).toHaveValue('scout');
     expect(screen.queryByRole('region', { name: 'نقطة تجمع الجيوش' })).not.toBeInTheDocument();
+  });
+
+  it('previews the approved duration and the slowest unit before sending without creating an army', () => {
+    const props = fixture();
+    props.view.config.armyTravelTimeFactor = 0.45;
+    props.view.config.secondsPerTile = 90;
+    props.village.troops.siege_tower = 1;
+    render(<MapPanel {...props} initialSelection={{ center: props.village, target: { x: props.village.x + 20, y: props.village.y } }} />);
+    expect(screen.queryByLabelText('مدة الرحلة المتوقعة')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('spinbutton', { name: /حارس/ }), { target: { value: '1' } });
+    expect(screen.getByLabelText('مدة الرحلة المتوقعة')).toHaveAttribute('data-duration-ms', '810000');
+    fireEvent.change(screen.getByRole('spinbutton', { name: /برج/ }), { target: { value: '1' } });
+    expect(screen.getByLabelText('مدة الرحلة المتوقعة')).toHaveAttribute('data-duration-ms', '2025000');
+    expect(props.send).not.toHaveBeenCalled();
   });
 });

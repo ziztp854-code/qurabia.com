@@ -291,7 +291,7 @@ it.each([401, 403, 404])(
     vi.stubGlobal('fetch', fetchMock);
     const { map, callbacks, session } = open();
     await vi.advanceTimersByTimeAsync(0);
-    expect(map.sources.size).toBe(9);
+    expect(map.sources.size).toBe(10);
     fetchMock.mockResolvedValue({ ok: false, status });
     await vi.advanceTimersByTimeAsync(5000);
     expect(map.sources.size).toBe(0);
@@ -303,7 +303,7 @@ it.each([401, 403, 404])(
     map.fire('moveend');
     await vi.advanceTimersByTimeAsync(150);
     expect(fetchMock).toHaveBeenCalledTimes(calls + 1);
-    expect(map.sources.size).toBe(9);
+    expect(map.sources.size).toBe(10);
     session.dispose();
   },
 );
@@ -325,7 +325,7 @@ it.each([
   const failed = fetchMock.mock.calls.length;
   expect(failed).toBeGreaterThanOrEqual(2);
   expect(map.sources.get('mamluk-cities')).toBe(cities);
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   await vi.advanceTimersByTimeAsync(3000);
   expect(fetchMock.mock.calls.length).toBeGreaterThan(failed);
   session.dispose();

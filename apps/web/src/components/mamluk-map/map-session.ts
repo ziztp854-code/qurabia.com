@@ -240,7 +240,7 @@ class ObservedAdapter extends MapLibreAdapter {
     onExpire?: () => void,
     private readonly viewerPlayerId?: string,
   ) {
-    super(port, { palette, ...(onExpire ? { onExpire } : {}) });
+    super(port, { palette, animateArmies: true, ...(onExpire ? { onExpire } : {}) });
   }
   override render(payload: MapPayload, deliveryAgeMs = 0): void {
     const stale =
@@ -450,6 +450,7 @@ export function createMapSession(
   adapter.resetSession(worldId);
   adapter.setProjection(projection);
   const loader = new ViewportLoader(map, adapter, {
+    refreshAtArmyArrivals: true,
     // Only the reserved, neutral reference atlas supports full-globe detail.
     // Campaign intelligence retains the default 90-degree limit and overview.
     ...(worldId === 'mamluk-public-geographic-atlas-v1'
@@ -486,6 +487,7 @@ export function createMapSession(
       const response = await mapRequest(`/api/kingdoms/world-map/viewport?${query}`, signal, {
         // Older hosts ignore this header; older clients receive their original DTO.
         'X-Mamluk-Village-Buildings': '1',
+        'X-Mamluk-Army-Missions': '1',
       });
       const payload = parseMapPayload(await response.json());
       if (response.headers?.get('X-Mamluk-Public-Settlements') === '1') publicPayloads.add(payload);

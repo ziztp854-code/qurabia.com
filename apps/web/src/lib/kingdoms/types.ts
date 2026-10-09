@@ -160,6 +160,8 @@ export type KingdomsConfig = {
   storagePerLevel: number;
   productionPerLevel: number;
   secondsPerTile: number;
+  /** New army departures only; persisted movements retain their stored travelMs. */
+  armyTravelTimeFactor?: number;
   expansionCost: Resources;
   maxVillages: number;
   throneUnlockFraction: number;
@@ -277,6 +279,9 @@ export type KingdomPlayer = {
   throne: number;
 };
 export type Movement = {
+  /** Server-owned game-grid departure point. Optional for persisted legacy movements. */
+  originX?: number;
+  originY?: number;
   abandonedGather?: { targetId: string; worldId: string };
   commanderId?: string;
   gather?: { siteId: string; resource: ResourceSiteKind };

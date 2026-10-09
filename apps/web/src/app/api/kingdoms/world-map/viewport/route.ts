@@ -16,7 +16,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const headers = {
   'Cache-Control': 'private, no-store',
-  Vary: 'Cookie, Authorization, X-Mamluk-Village-Buildings',
+  Vary: 'Cookie, Authorization, X-Mamluk-Village-Buildings, X-Mamluk-Army-Missions',
 };
 
 export async function GET(request: Request) {
@@ -56,10 +56,21 @@ export async function GET(request: Request) {
     // Schema v1 clients use a strict allowlist. Negotiate this additive field at
     // the HTTP boundary; the capability grants no extra ownership or visibility.
     const buildingsRequested = request.headers.get('X-Mamluk-Village-Buildings') === '1';
+    const missionsRequested = request.headers.get('X-Mamluk-Army-Missions') === '1';
+    const ownedArmies = new Set(result.payload.layers.armies.features.filter((army) => army.properties.own === true).map((army) => army.id));
     const payload = {
       ...result.payload,
       layers: {
         ...result.payload.layers,
+        armyRoutes: {
+          ...result.payload.layers.armyRoutes,
+          features: result.payload.layers.armyRoutes.features.map((feature) => {
+            if (missionsRequested && !referenceAtlas && ownedArmies.has(feature.id)) return feature;
+            const properties = { ...feature.properties };
+            delete properties.mission;
+            return { ...feature, properties };
+          }),
+        },
         cities: {
           ...result.payload.layers.cities,
           features: result.payload.layers.cities.features.map((feature) => {

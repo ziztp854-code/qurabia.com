@@ -423,7 +423,7 @@ it('keeps illustrated settlement clicks tied to approved IDs and removes every s
     source: 'mamluk-cities',
     layout: { 'icon-anchor': 'bottom' },
   });
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   expect(map.sources.get('mamluk-cities')).toMatchObject({
     promoteId: '__mamlukFeatureId',
     data: { features: [{ properties: { __mamlukFeatureId: 'cairo' } }] },
@@ -472,7 +472,7 @@ it('loads approved overlays when the style event preceded sprite loading and bas
     true,
   );
   await vi.advanceTimersByTimeAsync(0);
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   session.dispose();
 });
 
@@ -487,7 +487,7 @@ it('keeps approved settlement markers and gold borders above fog without adding 
     source: 'mamluk-territories',
     paint: { 'line-color': DEFAULT_PALETTE.city, 'line-width': 2.5, 'line-opacity': 0.9 },
   });
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   expect(map.sources.get('mamluk-territories')?.data).toMatchObject(payload.layers.territories);
   expect(payload.layers.territories.features[0]?.properties).not.toHaveProperty(
     '__mamlukFeatureId',
@@ -533,7 +533,7 @@ it('removes the outline before its source and restores it safely through movemen
   map.fire('moveend');
   expect(map.layers.has('mamluk-village-borders')).toBe(true);
   expect(map.layers.has('mamluk-fog')).toBe(true);
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   await vi.advanceTimersByTimeAsync(150);
   expect(map.layers.has('mamluk-village-borders')).toBe(true);
   map.sources.clear();
@@ -597,7 +597,7 @@ it('requests a fresh viewport after a transient network failure and resets backo
   await vi.advanceTimersByTimeAsync(5000);
   expect(fetchMock).toHaveBeenCalledTimes(3);
   // The failed poll keeps the authorized snapshot until its own expiry.
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetchMock).toHaveBeenCalledTimes(4);
   expect(callbacks.onPayload.mock.lastCall?.[0]?.revision).toBe('2');
@@ -624,7 +624,7 @@ it('rejects a delayed successful response beyond its TTL and recovers only from 
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetchMock).toHaveBeenCalledTimes(2);
   expect(callbacks.onPayload.mock.lastCall?.[0]?.revision).toBe('2');
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   session.dispose();
 });
 
@@ -732,7 +732,7 @@ it('keeps overlays when the SDK emits moveend for a redundant projection update'
     onStatus,
   });
   await vi.advanceTimersByTimeAsync(1000);
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   expect(map.sources.get('mamluk-cities')?.data).toMatchObject(approvedPayload().layers.cities);
   expect(onStatus).toHaveBeenLastCalledWith('ready');
   expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -778,12 +778,12 @@ it('clears, replaces, and expires approved sources while basemap tiles are still
     onStatus: vi.fn(),
   });
   await vi.advanceTimersByTimeAsync(0);
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   map.styleLoaded = false;
   map.fire('moveend');
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   await vi.advanceTimersByTimeAsync(150);
-  expect(map.sources.size).toBe(9);
+  expect(map.sources.size).toBe(10);
   session.loader.dispose();
   await vi.advanceTimersByTimeAsync(8000);
   expect(map.sources.size).toBe(0);
@@ -848,4 +848,16 @@ it('rejects malformed network data, aborts requests on teardown, and never sends
   session.dispose();
   expect(request.signal.aborted).toBe(true);
   void pending;
+});
+
+it('negotiates optional village and own army mission fields without changing the v1 DTO contract', async () => {
+  vi.useFakeTimers();
+  const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() });
+  vi.stubGlobal('fetch', fetch);
+  const { session } = retrySession();
+  await vi.advanceTimersByTimeAsync(0);
+  const headers = new Headers(fetch.mock.calls[0]![1]?.headers);
+  expect(headers.get('X-Mamluk-Village-Buildings')).toBe('1');
+  expect(headers.get('X-Mamluk-Army-Missions')).toBe('1');
+  session.dispose();
 });

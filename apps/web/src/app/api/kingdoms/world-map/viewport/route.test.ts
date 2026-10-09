@@ -120,6 +120,27 @@ describe('authenticated host map viewport', () => {
     dependencies.identity.mockRejectedValue(new KingdomsHttpError(401, 'Login required'));
     expect((await GET(modernRequest)).status).toBe(401);
   });
+  it('negotiates own-route missions without breaking strict legacy schema v1 clients', async () => {
+    const originalRead = dependencies.read.getMockImplementation()!;
+    dependencies.read.mockImplementation((_world, _viewer, read) =>
+      originalRead(_world, _viewer, (session: WorldMapReadSession) => read({
+        ...session,
+        getVisibleArmiesInBounds: async (query: SpatialQuery) => (await session.getVisibleArmiesInBounds(query)).map((army) => ({
+          ...army, route: army.route ? { ...army.route, mission: 'scout' } : null,
+        })),
+      })),
+    );
+    const legacy = await GET(request());
+    expect(JSON.stringify((await legacy.json()).layers.armyRoutes)).not.toContain('mission');
+    const modern = await GET(new Request(request().url, { headers: { 'X-Mamluk-Army-Missions': '1' } }));
+    expect(modern.status).toBe(200);
+    const routes = (await modern.json()).layers.armyRoutes.features;
+    expect(routes).toHaveLength(1);
+    expect(routes[0].properties.mission).toBe('scout');
+    expect(modern.headers.get('vary')).toContain('X-Mamluk-Army-Missions');
+    const unsupported = await GET(new Request(request().url, { headers: { 'X-Mamluk-Army-Missions': '2' } }));
+    expect(JSON.stringify((await unsupported.json()).layers.armyRoutes)).not.toContain('mission');
+  });
   it('rejects forged viewer IDs, duplicate fields and invalid coordinates before repository access', async () => {
     expect((await GET(request('&playerId=enemy'))).status).toBe(400);
     expect((await GET(request('&west=26'))).status).toBe(400);

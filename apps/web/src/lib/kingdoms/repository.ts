@@ -8,6 +8,7 @@ import { KingdomsHttpError, stableFingerprint } from './http';
 import type { KingdomsConfig, KingdomsWorld } from './types';
 import { abandonedLayout } from './abandoned-villages';
 import { provisionVillageGeography } from '../mamluk-map/village-geography';
+import { queueKingdomsNotification, type KingdomsNotification } from './realtime-notifications';
 
 export type KingdomIdentity = { id: string; tokenVersion: number };
 type WorldRow = { id: string; name: string; state: unknown; revision: number; paused: boolean };
@@ -86,6 +87,17 @@ export function kingdomTransaction<T>(
     maxWait: 5_000,
     timeout: 15_000,
   });
+}
+
+/** Collect inside the transaction, publish only once its commit has completed. */
+async function kingdomMutationTransaction<T>(
+  work: (tx: Tx, notify: (change: KingdomsNotification) => void) => Promise<T>,
+  db?: DatabaseClient,
+) {
+  const notifications: KingdomsNotification[] = [];
+  const result = await kingdomTransaction((tx) => work(tx, (change) => notifications.push(change)), db);
+  for (const notification of notifications) queueKingdomsNotification(notification);
+  return result;
 }
 
 export async function listKingdomWorlds(db: DatabaseClient = getPrismaClient()) {
@@ -179,7 +191,7 @@ export async function commandKingdomWorld(
 ) {
   const command = kingdomsCommandSchema.parse(input);
   const fingerprint = stableFingerprint(command);
-  return kingdomTransaction(async (tx) => {
+  return kingdomMutationTransaction(async (tx, notify) => {
     const row = await lockWorld(tx, worldId);
     // Validate after any lock wait so a queued command cannot use a session
     // revoked while another command was holding the world.
@@ -202,6 +214,7 @@ export async function commandKingdomWorld(
     const state = executeCommand(row.state as KingdomsWorld, identity.id, command, now);
     const saved = await save(tx, row, state);
     await receipt(tx, worldId, identity.id, key, fingerprint, saved.revision);
+    notify({ worldId, revision: saved.revision, nextEventAt: nextDeadline(state)?.getTime() ?? null });
     return view(saved, state, identity.id, now);
   }, db);
 }
@@ -215,7 +228,7 @@ export async function createKingdomWorld(
 ) {
   const fingerprint = stableFingerprint({ name, config: config ?? null });
   const id = `kw_${stableFingerprint({ actorId: identity.id, key }).slice(0, 40)}`;
-  return kingdomTransaction(async (tx) => {
+  return kingdomMutationTransaction(async (tx, notify) => {
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${id}, 0))::text`;
     const actor = await authorize(tx, identity, true);
     const existing = await tx.kingdomWorld.findUnique({ where: { id } });
@@ -240,6 +253,7 @@ export async function createKingdomWorld(
         after: json({ name, config: state.config }),
       },
     });
+    notify({ worldId: id, revision: 0, nextEventAt: nextDeadline(state)?.getTime() ?? null });
     return { id, name, revision: 0 };
   }, db);
 }
@@ -259,7 +273,7 @@ export async function editKingdomWorld(
   db?: DatabaseClient,
 ) {
   const fingerprint = stableFingerprint(change);
-  return kingdomTransaction(async (tx) => {
+  return kingdomMutationTransaction(async (tx, notify) => {
     const row = await lockWorld(tx, worldId);
     const actor = await authorize(tx, identity, true);
     const now = await dbNow(tx);
@@ -283,11 +297,15 @@ export async function editKingdomWorld(
         after: json(change),
       },
     });
+    notify({ worldId, revision: saved.revision, nextEventAt: nextDeadline(state)?.getTime() ?? null });
     return { id: row.id, name: row.name, revision: saved.revision };
   }, db);
 }
 
-export async function tickKingdomWorlds(db: DatabaseClient = getPrismaClient()) {
+export async function tickKingdomWorlds(
+  db: DatabaseClient = getPrismaClient(),
+  watchedWorldIds: readonly string[] = [],
+) {
   const due = await db.$queryRaw<
     { id: string }[]
   >`SELECT id FROM "KingdomWorld" WHERE "nextEventAt" <= clock_timestamp() ORDER BY "nextEventAt" LIMIT 10`;
@@ -321,5 +339,17 @@ export async function tickKingdomWorlds(db: DatabaseClient = getPrismaClient()) 
       );
     }
   }
-  return { worlds };
+  const next = await db.kingdomWorld.findFirst({
+    where: { nextEventAt: { not: null } },
+    orderBy: { nextEventAt: 'asc' },
+    select: { nextEventAt: true },
+  });
+  // One bounded metadata query per central tick recovers a lost after-commit POST.
+  // Never query once per subscriber and never include private world state.
+  const revisions = watchedWorldIds.length ? await db.kingdomWorld.findMany({
+    where: { id: { in: [...new Set(watchedWorldIds)].slice(0, 512) } },
+    select: { id: true, revision: true },
+    take: 512,
+  }) : [];
+  return { worlds, revisions, nextEventAt: next?.nextEventAt?.getTime() ?? null };
 }

@@ -78,15 +78,15 @@ describe('Commander authoritative commands', () => {
     const command = { type: 'march' as const, villageId: attacker.id, targetX: 10, targetY: 0,
       mission: 'attack' as const, troops: { ...emptyTroops(), guard: 100, rider: 0, scout: 0, settler: 0 } };
     const baseline = executeCommand(world, 'alice', command, now);
-    expect(baseline.movements[0].travelMs).toBe(900000);
+    expect(baseline.movements[0].travelMs).toBe(405000);
     const march = executeCommand(world, 'alice', { ...command, commanderId }, now);
-    expect(march.movements[0].travelMs).toBe(857143);
+    expect(march.movements[0].travelMs).toBe(385715);
     const arrived = advanceWorld(march, march.movements[0].arrivesAt);
     expect(arrived.commanders![commanderId].mobility).toBe(6);
-    expect(arrived.movements[0].travelMs).toBe(857143);
-    expect(arrived.movements[0].arrivesAt).toBe(now + 1714286);
+    expect(arrived.movements[0].travelMs).toBe(385715);
+    expect(arrived.movements[0].arrivesAt).toBe(now + 771430);
     world.commanders![commanderId].mobility = 100000;
-    expect(executeCommand(world, 'alice', { ...command, commanderId }, now).movements[0].travelMs).toBe(782609);
+    expect(executeCommand(world, 'alice', { ...command, commanderId }, now).movements[0].travelMs).toBe(352174);
   });
   it('accepts a gathering mission near season end when its real commander ETA fits', () => {
     let world = founded();

@@ -1,3 +1,4 @@
+import { armyEta, ARMY_MISSION_LABELS } from '@mamluk/maplibre-adapter';
 import type { Feature, MapPayload } from '@mamluk/world-map-core';
 
 export type SelectableLayer = 'cities' | 'castles' | 'armies' | 'sieges';
@@ -42,12 +43,21 @@ function villageDetails(properties: Feature['properties'], viewerPlayerId: strin
     field('المملكة', String(properties.kingdomName)),
     field('التحالف', typeof properties.allianceName === 'string' ? properties.allianceName : '—'),
     field('المستوى', numeric(properties.villageLevel)),
-    field('الرتبة', own && typeof properties.villageRank === 'string' ? properties.villageRank : 'غير متوفر'),
+    field(
+      'الرتبة',
+      own && typeof properties.villageRank === 'string' ? properties.villageRank : 'غير متوفر',
+    ),
     field('القوة', own ? numeric(properties.villagePower) : 'غير متوفر'),
     // POPULATION_DATA_NOT_AVAILABLE: no population rule exists in Kingdom World.
     field('السكان', 'غير متوفر'),
-    field('الحالة', own && properties.constructionStatus === 'BUILDING'
-      ? 'بناء قيد التنفيذ' : own && properties.constructionStatus === 'IDLE' ? 'لا بناء جارٍ' : 'غير متوفر'),
+    field(
+      'الحالة',
+      own && properties.constructionStatus === 'BUILDING'
+        ? 'بناء قيد التنفيذ'
+        : own && properties.constructionStatus === 'IDLE'
+          ? 'لا بناء جارٍ'
+          : 'غير متوفر',
+    ),
   ];
 }
 
@@ -73,6 +83,7 @@ export function findSelection(
   key: SelectionKey | null,
   viewerPlayerId: string,
   referenceOnly = false,
+  serverTime?: number,
 ): SelectionDetails | null {
   if (!payload || !key) return null;
   if (referenceOnly && key.layer !== 'cities') return null;
@@ -90,8 +101,9 @@ export function findSelection(
       details: [],
     };
   }
-  const details = isVillage ? villageDetails(properties, viewerPlayerId) :
-    key.layer === 'cities' || key.layer === 'castles'
+  const details = isVillage
+    ? villageDetails(properties, viewerPlayerId)
+    : key.layer === 'cities' || key.layer === 'castles'
       ? [
           field(
             'الملكية',
@@ -111,6 +123,13 @@ export function findSelection(
       : undefined;
   const routeDetails = route
     ? [
+        field('المهمة', ARMY_MISSION_LABELS[String(route.properties.mission)] ?? 'مسير'),
+        field(
+          'الوصول خلال',
+          Number(route.properties.arrivalTime) <= (serverTime ?? payload.serverTime)
+            ? 'بانتظار تأكيد الوصول'
+            : armyEta(Number(route.properties.arrivalTime), serverTime ?? payload.serverTime),
+        ),
         field(
           'المسافة',
           route.properties.distanceUnit === 'tiles'
@@ -129,7 +148,7 @@ export function findSelection(
     : [];
   return {
     ...key,
-    title: title(feature, key.layer),
+    title: route?.properties.mission === 'transport' ? 'قافلتي' : title(feature, key.layer),
     kind: isVillage ? 'قرية' : names[key.layer],
     coordinates: `${longitude.toFixed(4)} / ${latitude.toFixed(4)}`,
     details: [...details, ...routeDetails],

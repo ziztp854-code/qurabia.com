@@ -89,6 +89,8 @@ describe('resource gathering interface', () => {
       commanders: [commander],
       config: {
         ...props.view.config,
+        // Isolate the commander/season boundary from the new default travel policy.
+        armyTravelTimeFactor: 1,
         secondsPerTile: 100,
         units: {
           ...props.view.config.units,

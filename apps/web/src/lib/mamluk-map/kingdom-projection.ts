@@ -1,4 +1,5 @@
 import 'server-only';
+import { createHash } from 'node:crypto';
 import {
   unionAreas,
   type Army,
@@ -6,9 +7,9 @@ import {
   type MapReadSnapshot,
   type SultanateTerritory,
 } from '@mamluk/world-map-core/server';
-import { projectWorld } from '../kingdoms/engine';
+import { projectWorldSnapshot } from '../kingdoms/engine';
 import { progressionConfig } from '../kingdoms/progression';
-import type { KingdomsWorld, Village } from '../kingdoms/types';
+import type { KingdomsView, KingdomsWorld, Village } from '../kingdoms/types';
 import { buildingKeys } from '../kingdoms/types';
 import type { MamlukMapState } from './storage';
 
@@ -24,7 +25,7 @@ function publishedVillageLevel(village: Village | undefined, maxLevel: number): 
 export class KingdomMapProjection {
   readonly armies: readonly Army[];
   readonly borders: readonly SultanateTerritory[];
-  private readonly view: ReturnType<typeof projectWorld>;
+  private readonly view: KingdomsView;
   private readonly publicLevels: ReadonlyMap<string, number>;
   constructor(
     state: KingdomsWorld & { geography?: MamlukMapState },
@@ -32,7 +33,8 @@ export class KingdomMapProjection {
     private readonly viewerId: string,
     serverTime: number,
   ) {
-    this.view = projectWorld(state, viewerId, serverTime);
+    const { world: advanced, view } = projectWorldSnapshot(state, viewerId, serverTime);
+    this.view = view;
     const maxLevel = progressionConfig(state).maxLevel;
     this.publicLevels = new Map(
       Object.values(state.villages).flatMap((village) => {
@@ -69,15 +71,63 @@ export class KingdomMapProjection {
         },
       ];
     });
+    const ownSources = new Set(this.view.villages.map((village) => village.id));
+    const visibleHosts = new Set(this.view.map.map((village) => village.id));
+    const supporting: Army[] = Object.values(advanced.villages).flatMap((host) => {
+      const location = visibleHosts.has(host.id) ? point(host.id) : null;
+      if (!location) return [];
+      return Object.entries(host.reinforcements).flatMap(([sourceId, troops]) => {
+        // Ownership is verified on the server. Never publish other players' forces or counts.
+        if (!ownSources.has(sourceId) || !Object.values(troops).some((count) => count > 0))
+          return [];
+        const id = `reinforcement:${createHash('sha256')
+          .update(JSON.stringify([worldId, sourceId, host.id]))
+          .digest('hex').slice(0, 24)}`;
+        return [{
+          id,
+          worldId,
+          ownerPlayerId: viewerId,
+          ownerSultanateId,
+          route: null,
+          position: {
+            armyId: id,
+            ...location,
+            status: 'stationed' as const,
+            origin: null,
+            destination: null,
+            departureTime: null,
+            arrivalTime: null,
+          },
+        }];
+      });
+    });
     const moving: Army[] = this.view.movements.flatMap((movement) => {
-      // Legacy return origins and empty-grid targets have no authoritative atlas anchor.
-      if (movement.mission === 'return') return [];
-      const source = this.view.map.find((v) => v.id === movement.sourceId);
-      const target = this.view.map.find(
-        (v) => v.x === movement.targetX && v.y === movement.targetY,
-      );
-      const origin = source && point(source.id),
-        destination = target && point(target.id);
+      // Grid and atlas coordinates are independent. Never invent a geographic endpoint.
+      // Legacy returns without a saved origin cannot be mapped safely.
+      if (
+        movement.mission === 'return' &&
+        (movement.originX === undefined || movement.originY === undefined)
+      )
+        return [];
+      const endpoint = (x: number, y: number, abandoned: boolean) => {
+        if (abandoned) {
+          const site = movement.abandonedGather?.worldId === worldId
+            ? this.view.abandonedVillages?.find((entry) => entry.id === movement.abandonedGather?.targetId && entry.x === x && entry.y === y)
+            : undefined;
+          if (!site || !Number.isFinite(site.longitude) || !Number.isFinite(site.latitude) ||
+            Math.abs(site.longitude) > 180 || Math.abs(site.latitude) > 90) return null;
+          return { x: site.x, y: site.y, location: { longitude: site.longitude, latitude: site.latitude } };
+        }
+        const village = this.view.map.find((entry) => entry.x === x && entry.y === y);
+        const location = village && point(village.id);
+        return village && location ? { x: village.x, y: village.y, location } : null;
+      };
+      const home = this.view.map.find((entry) => entry.id === movement.sourceId);
+      const source = movement.originX !== undefined && movement.originY !== undefined
+        ? endpoint(movement.originX, movement.originY, movement.mission === 'return' && Boolean(movement.abandonedGather))
+        : home ? endpoint(home.x, home.y, false) : null;
+      const target = endpoint(movement.targetX, movement.targetY, movement.mission !== 'return' && Boolean(movement.abandonedGather));
+      const origin = source?.location, destination = target?.location;
       if (!source || !origin || !destination) return [];
       const departureTime = movement.departedAt,
         arrivalTime = movement.arrivesAt;
@@ -95,6 +145,7 @@ export class KingdomMapProjection {
           ownerPlayerId: viewerId,
           ownerSultanateId,
           route: {
+            mission: movement.mission,
             origin,
             destination,
             waypoints: [],
@@ -105,7 +156,7 @@ export class KingdomMapProjection {
           },
           position: {
             armyId: movement.id,
-            status: 'moving',
+            status: movement.mission === 'return' ? 'retreating' : 'moving',
             origin,
             destination,
             departureTime,
@@ -116,7 +167,51 @@ export class KingdomMapProjection {
         },
       ];
     });
-    this.armies = [...stationed, ...moving].sort((a, b) => a.id.localeCompare(b.id));
+    const transports: Army[] = this.view.caravans.flatMap((caravan) => {
+      if (caravan.status !== 'traveling') return [];
+      const source = this.view.map.find((village) => village.id === caravan.originVillageId);
+      const target = this.view.map.find((village) => village.id === caravan.targetVillageId);
+      const origin = source && point(source.id),
+        destination = target && point(target.id);
+      if (!source || !target || !origin || !destination) return [];
+      const departureTime = caravan.departsAt,
+        arrivalTime = caravan.arrivesAt;
+      const progress = Math.max(
+        0,
+        Math.min(1, (serverTime - departureTime) / (arrivalTime - departureTime)),
+      );
+      const delta = ((destination.longitude - origin.longitude + 540) % 360) - 180;
+      const id = `caravan:${caravan.id}`;
+      return [
+        {
+          id,
+          worldId,
+          ownerPlayerId: viewerId,
+          ownerSultanateId,
+          route: {
+            mission: 'transport',
+            origin,
+            destination,
+            waypoints: [],
+            distanceUnit: 'tiles',
+            distance: Math.hypot(target.x - source.x, target.y - source.y),
+            departureTime,
+            arrivalTime,
+          },
+          position: {
+            armyId: id,
+            status: 'moving',
+            origin,
+            destination,
+            departureTime,
+            arrivalTime,
+            longitude: ((origin.longitude + delta * progress + 540) % 360) - 180,
+            latitude: origin.latitude + (destination.latitude - origin.latitude) * progress,
+          },
+        },
+      ];
+    });
+    this.armies = [...stationed, ...supporting, ...moving, ...transports].sort((a, b) => a.id.localeCompare(b.id));
     const ownIds = new Set(this.view.villages.map((v) => v.id));
     const ownPlots = state.geography?.territories.filter(({ value }) => ownIds.has(value.id)) ?? [];
     const geometry = ownerSultanateId

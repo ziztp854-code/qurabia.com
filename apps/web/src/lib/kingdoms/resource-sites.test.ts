@@ -21,7 +21,7 @@ it('previews empty armies safely and uses the slowest unit with combined cargo c
         rider: 1,
       },
     ),
-  ).toEqual({ carry: 140, travelMs: 450000, roundTripMs: 900000 });
+  ).toEqual({ carry: 140, travelMs: 202500, roundTripMs: 405000 });
 });
 function fixture() {
   const w = executeCommand(createWorld(now), 'alice', { type: 'found', name: 'مملكة النور' }, now);
@@ -331,6 +331,8 @@ it('does not deliver gathered resources or troops into a changed-owner source vi
 });
 it('preserves fractional regeneration left after integer harvesting', () => {
   const { w, villageId } = fixture();
+  // Keep this fractional-stock regression at its historical arrival time.
+  w.config.armyTravelTimeFactor = 1;
   w.resourceSiteStocks = { '2,2': { available: 0, updatedAt: now } };
   const depart = now + 36000;
   const sent = executeCommand(

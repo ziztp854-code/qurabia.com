@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Route, type APIResponse } from '@playwright/test';
 import type { GeoJSONSource, Map as LibreMap } from 'maplibre-gl';
 import type {} from './fixtures/globe-map-probe';
+import type { Feature } from '@mamluk/world-map-core';
 
 // Real browser, real MapLibre, deterministic local API: only the transport is controlled.
 declare global {
@@ -522,4 +523,192 @@ test('a hidden layer stays hidden through refresh, expiry, recovery and overview
   await expect.poll(visibility).toBe('visible');
   expect(await page.evaluate(() => window.__savedMap === window.__globeFixtureMap)).toBe(true);
   await finish(page, errors);
+});
+
+test.use({ video: 'on' });
+
+test.describe('army journeys on the existing map', () => {
+  async function military(page: Page, state: { accepted: boolean; fail: boolean }) {
+    const departure = Date.now() - 20000;
+    await page.route(/\/world-map\/viewport\?/, async (route) => {
+      if (state.fail) {
+        await route.fulfill({ status: 503, json: { error: 'Isolated network failure' } });
+        return;
+      }
+      const response = await route.fetch();
+      const payload = await response.json();
+      const missions = ['attack', 'raid', 'reinforce', 'scout', 'gather', 'transport', 'return'];
+      const armies: unknown[] = [],
+        routes: unknown[] = [];
+      if (state.accepted)
+        missions.forEach((mission, index) => {
+          const id = `fixture-${mission}`;
+          const origin = [31.12, 29.985 + index * 0.022];
+          const destination = [31.37, 30.055 + index * 0.022];
+          if (mission === 'return') {
+            const old = origin.slice();
+            origin.splice(0, 2, ...destination);
+            destination.splice(0, 2, ...old);
+          }
+          const arrives = departure + 100000;
+          const progress = Math.max(0, Math.min(1, (payload.serverTime - departure) / 100000));
+          armies.push({
+            type: 'Feature',
+            id,
+            geometry: {
+              type: 'Point',
+              coordinates: [
+                origin[0]! + (destination[0]! - origin[0]!) * progress,
+                origin[1]! + (destination[1]! - origin[1]!) * progress,
+              ],
+            },
+            properties: {
+              armyId: id,
+              ownerPlayerId: 'viewer',
+              ownerSultanateId: null,
+              status: mission === 'return' ? 'retreating' : 'moving',
+              own: true,
+            },
+          });
+          routes.push({
+            type: 'Feature',
+            id,
+            geometry: { type: 'LineString', coordinates: [origin, destination] },
+            properties: {
+              armyId: id,
+              mission,
+              distance: 4,
+              distanceUnit: 'tiles',
+              departureTime: departure,
+              arrivalTime: arrives,
+            },
+          });
+        });
+      payload.layers.armies = { type: 'FeatureCollection', features: armies };
+      payload.layers.armyRoutes = { type: 'FeatureCollection', features: routes };
+      payload.revision = state.accepted ? '2' : '1';
+      await route.fulfill({ response, json: payload });
+    });
+  }
+
+  const militaryData = (page: Page) =>
+    page.evaluate(() => {
+      const data = window.__globeFixtureMap
+        ?.getSource<GeoJSONSource>('mamluk-armies')
+        ?.serialize().data;
+      return (typeof data === 'object' && data?.type === 'FeatureCollection'
+        ? data.features
+        : []) as unknown as readonly Feature[];
+    });
+
+  test('accepted armies move with direction and ETA without rebuilding the camera on desktop/mobile', async ({
+    page,
+  }, testInfo) => {
+    const state = { accepted: false, fail: false };
+    await military(page, state);
+    const { errors } = await open(page);
+    expect(await militaryData(page)).toEqual([]);
+    await page.evaluate(() => {
+      window.__savedMap!.jumpTo({ center: [31.2357, 30.06], zoom: 9.5 });
+    });
+    state.accepted = true;
+    await page.evaluate(() =>
+      window.dispatchEvent(
+        new CustomEvent('mamluk:command-accepted', { detail: { worldId: 'world', revision: 2 } }),
+      ),
+    );
+    await expect.poll(async () => (await militaryData(page)).length).toBe(7);
+    const first = (await militaryData(page))[0]!;
+    await page.evaluate(() => {
+      (window as unknown as { __armySource?: GeoJSONSource }).__armySource =
+        window.__savedMap!.getSource<GeoJSONSource>('mamluk-armies');
+    });
+    await expect
+      .poll(async () => (await militaryData(page))[0]?.geometry)
+      .not.toEqual(first.geometry);
+    await expect(page.getByLabel('دليل مهام الجيش')).toBeVisible();
+    expect(
+      await page.evaluate(() => window.__savedMap!.getLayer('mamluk-army-direction')?.type),
+    ).toBe('symbol');
+    expect(
+      (await militaryData(page)).every(
+        (army) => army.properties?.__mamlukEta && army.properties?.__mamlukMissionSymbol,
+      ),
+    ).toBe(true);
+    expect((await militaryData(page)).some((army) => army.id === 'hidden-enemy')).toBe(false);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            window.__savedMap!.queryRenderedFeatures(undefined, { layers: ['mamluk-armies'] })
+              .length,
+        ),
+      )
+      .toBe(7);
+    await expect(page.locator('canvas.maplibregl-canvas[data-map-ready="true"]')).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            window.__savedMap!.queryRenderedFeatures(undefined, { layers: ['mamluk-army-timers'] })
+              .length,
+        ),
+      )
+      .toBe(7);
+    await page.screenshot({ path: testInfo.outputPath('army-journeys.png'), fullPage: true });
+    await testInfo.attach('army journeys', {
+      path: testInfo.outputPath('army-journeys.png'),
+      contentType: 'image/png',
+    });
+    await page.evaluate(() =>
+      window.__savedMap!.easeTo({ center: [31.26, 30.06], zoom: 10, duration: 150 }),
+    );
+    await expect
+      .poll(() => page.evaluate(() => window.__savedMap === window.__globeFixtureMap))
+      .toBe(true);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __armySource?: GeoJSONSource }).__armySource ===
+            window.__savedMap!.getSource('mamluk-armies'),
+        ),
+      )
+      .toBe(true);
+    await expect.poll(async () => (await militaryData(page)).length).toBe(7);
+    await page.getByRole('button', { name: 'جيشك', exact: true }).first().click();
+    await expect(page.getByText('الوصول خلال', { exact: true })).toBeVisible();
+    await expect(page.getByText('المهمة', { exact: true })).toBeVisible();
+    await finish(page, errors);
+  });
+
+  test('reduced motion, expired offline data and reconnect keep authority and source cleanup', async ({
+    page,
+    request,
+  }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await control(request, { ttlMs: 3000 });
+    const state = { accepted: true, fail: false };
+    await military(page, state);
+    const { errors } = await open(page);
+    await expect.poll(async () => (await militaryData(page)).length).toBe(7);
+    const initial = (await militaryData(page))[0]!.geometry;
+    await expect.poll(async () => (await militaryData(page))[0]?.geometry).not.toEqual(initial);
+    state.fail = true;
+    await page.context().setOffline(true);
+    await expect.poll(async () => (await militaryData(page)).length, { timeout: 10000 }).toBe(0);
+    expect(
+      await page.evaluate(() => window.__savedMap!.getLayer('mamluk-army-timers')),
+    ).toBeUndefined();
+    state.fail = false;
+    await page.context().setOffline(false);
+    await expect.poll(async () => (await militaryData(page)).length).toBe(7);
+    await page.screenshot({ path: testInfo.outputPath('army-reconnected.png'), fullPage: true });
+    await testInfo.attach('army reconnected', {
+      path: testInfo.outputPath('army-reconnected.png'),
+      contentType: 'image/png',
+    });
+    expect(await page.evaluate(() => window.__savedMap === window.__globeFixtureMap)).toBe(true);
+    expect(errors).toEqual([]);
+  });
 });

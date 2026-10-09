@@ -18,6 +18,7 @@ import {
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useViewClock } from '@/components/kingdoms/use-view-clock';
 import { geographicMapHref, villageManagementHref } from '@/components/kingdoms/map-links';
 import { AbandonedWorldPanel } from '@/components/kingdoms/abandoned/AbandonedWorldPanel';
 import { ABANDONED_ROLLOUT_WORLD_ID } from '@/lib/kingdoms/abandoned-village-policy';
@@ -166,6 +167,11 @@ function WorldScene({
     requestManualDestination,
   } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId, initialOverview);
   const scenePayload = payload ?? publicPayload;
+  const serverTime = useViewClock(
+    { serverNow: payload?.serverTime ?? 0 },
+    payload?.expiresAt ?? 0,
+    `${worldId}:${viewerPlayerId}`,
+  );
   const overviewVillageCount = overviewPayload?.cells.features.reduce(
     (sum, cell) => sum + cell.properties.count,
     0,
@@ -239,7 +245,7 @@ function WorldScene({
     container.current?.focus({ preventScroll: true });
   };
   const selection = useMemo(() => {
-    const current = findSelection(payload, selected, viewerPlayerId, referenceOnly);
+    const current = findSelection(payload, selected, viewerPlayerId, referenceOnly, serverTime);
     if (current) return current;
     if (!referenceOnly) {
       const retained = findSelection(publicPayload, selected, viewerPlayerId, false);
@@ -266,7 +272,7 @@ function WorldScene({
             },
           ],
     };
-  }, [payload, publicPayload, selected, viewerPlayerId, referenceOnly]);
+  }, [payload, publicPayload, selected, viewerPlayerId, referenceOnly, serverTime]);
   const features = useMemo(
     () =>
       listSelectableFeatures(scenePayload, referenceOnly).filter(
@@ -743,7 +749,26 @@ function WorldScene({
         />
       </div>
       {!referenceOnly && mode === 'WORLD' && worldId === ABANDONED_ROLLOUT_WORLD_ID && (
-        <AbandonedWorldPanel key={worldId} worldId={worldId} viewerId={viewerPlayerId} initialVillageId={initialVillageId} mapRef={mapRef} mapStyleReadyRef={mapStyleReadyRef} status={status} onLocate={focusLocation}/>
+        <AbandonedWorldPanel
+          key={worldId}
+          worldId={worldId}
+          viewerId={viewerPlayerId}
+          initialVillageId={initialVillageId}
+          mapRef={mapRef}
+          mapStyleReadyRef={mapStyleReadyRef}
+          status={status}
+          onLocate={focusLocation}
+        />
+      )}
+      {!referenceOnly && (
+        <div className={styles.armyLegend} aria-label="دليل مهام الجيش">
+          <span data-mission="attack">× هجوم · » غارة</span>
+          <span data-mission="reinforce">+ دعم</span>
+          <span data-mission="scout">◇ استطلاع</span>
+          <span data-mission="gather">◆ جمع · □ نقل · △ توسّع</span>
+          <span data-mission="return">{'<'} عودة</span>
+          <p>السهم يبيّن الاتجاه والعداد وقت الوصول. افتح الجيش لعرض مهمته.</p>
+        </div>
       )}
       <footer className={styles.legend} aria-label="مفتاح الخريطة">
         <span>
