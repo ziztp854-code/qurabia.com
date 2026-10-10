@@ -75,7 +75,8 @@ jobs:
         run: pnpm typecheck
 
       - name: Test
-        run: pnpm test
+        # Unit requests use fixed origins; runtime URLs remain set for browser tests.
+        run: NEXTAUTH_URL= AUTH_URL= NEXT_PUBLIC_SITE_URL= pnpm test
 
       - name: Test deployment migration connection
         run: node --test scripts/deploy-migrations.test.mjs

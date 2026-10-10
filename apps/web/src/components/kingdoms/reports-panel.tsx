@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui';
 import { unitKeys } from '@/lib/kingdoms/types';
+import { gardenMilestones } from '@/lib/kingdoms/sultan-farm';
 import { ResourceText, Empty, date, number, type GameProps } from './shared';
 import styles from './kingdoms.module.css';
 
@@ -114,7 +115,7 @@ export function ReportsPanel({ view, busy, send }: GameProps) {
           <ul>
             {view.player.achievements.map((achievement) => (
               <li key={achievement}>
-                {quests.find((quest) => quest.id === achievement)?.name ?? achievement}
+                {quests.find((quest) => quest.id === achievement)?.name ?? gardenMilestones.find((goal) => goal.id === achievement)?.name ?? achievement}
               </li>
             ))}
           </ul>

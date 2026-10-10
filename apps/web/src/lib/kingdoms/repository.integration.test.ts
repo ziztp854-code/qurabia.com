@@ -165,6 +165,8 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     const saved = await stateOf(worldId);
     expect(saved.state.villages[village.id].resources.food).toBeCloseTo(village.resources.food + plant.harvestFood);
     expect(saved.state.villages[village.id].sultanFarm!.plots[0].version).toBe(2);
+    expect(saved.state.villages[village.id].sultanFarm!.garden!.harvests).toBe(1);
+    expect(saved.state.players[actor.id].achievements.filter(id => id === 'garden:first-bloom')).toHaveLength(1);
     expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
     const updated = saved.state;
     updated.config.baseProduction.food = 100;
@@ -175,6 +177,43 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     expect(replayed.state.villages[village.id].sultanFarm!.plots[0].version).toBe(3);
     expect(replayed.state.villages[village.id].sultanFarm!.plots[0].plant).toBeDefined();
     await expect(repository.commandKingdomWorld(worldId, actor, key(), command, db)).rejects.toThrow('تغير');
+  });
+
+  it.each([1, 2])('farm: policy %i distinct concurrent harvest keys credit one frozen contract', async (policyVersion) => {
+    const { worldId, identities: [actor], state } = await fixture();
+    const village = Object.values(state.villages)[0];
+    const { farmState } = await import('./sultan-farm');
+    const farm = farmState(village);
+    farm.plots[0] = { version: 27, plant: {
+      crop: 'wheat', plantedAt: Date.now() - 600000, readyAt: Date.now() - 300000,
+      seedFood: policyVersion === 1 ? 10.125 : 0, harvestFood: policyVersion === 1 ? 42.375 : 0,
+      rotated: false, policyVersion,
+    } } as typeof farm.plots[number];
+    village.sultanFarm = farm;
+    const originalFood = village.resources.food;
+    await db.kingdomWorld.update({ where: { id: worldId }, data: { state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue } });
+    const receipt = key(), otherReceipt = key();
+    const command = { type: 'farmHarvest', villageId: village.id, plotId: 0, expectedVersion: 27 };
+    const results = await Promise.allSettled([
+      repository.commandKingdomWorld(worldId, actor, receipt, command, db),
+      repository.commandKingdomWorld(worldId, actor, otherReceipt, command, db),
+    ]);
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+    const saved = await stateOf(worldId);
+    expect(saved.state.villages[village.id].sultanFarm!.plots[0]).toEqual({ version: 28, previousFamily: 'grain' });
+    expect(saved.state.villages[village.id].resources).toEqual({ ...village.resources, food: originalFood + (policyVersion === 1 ? 42.375 : 0) });
+    expect(saved.state.villages[village.id].sultanFarm!.garden?.harvests ?? 0).toBe(policyVersion === 1 ? 0 : 1);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
+    const completed = results[0].status === 'fulfilled' ? receipt : otherReceipt;
+    if (completed) {
+      await repository.commandKingdomWorld(worldId, actor, completed, command, db);
+      expect((await stateOf(worldId)).row.revision).toBe(saved.row.revision);
+    }
+    const { plantFarm } = await import('./sultan-farm');
+    plantFarm(saved.state.config, saved.state.villages[village.id], 0, 28, 'wheat', Date.now());
+    expect(saved.state.villages[village.id].sultanFarm!.plots[0].plant!.policyVersion).toBe(2);
+    expect(saved.state.villages[village.id].sultanFarm!.plots[0].plant!.seedFood).toBe(0);
+    expect(saved.state.villages[village.id].resources.food).toBe(originalFood + (policyVersion === 1 ? 42.375 : 0));
   });
 
   it('charges once and creates one commander for concurrent identical recruitment requests', async () => {

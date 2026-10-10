@@ -1,0 +1,81 @@
+.entrance {
+  position: absolute;
+  z-index: 6;
+  min-width: calc(48px / var(--camera-scale));
+  min-height: calc(48px / var(--camera-scale));
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  direction: rtl;
+  pointer-events: auto;
+}
+.entrance:focus-visible {
+  outline: calc(2px / var(--camera-scale)) solid var(--kingdoms-ui-gold);
+  outline-offset: calc(2px / var(--camera-scale));
+}
+.gate {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  display: grid;
+  justify-items: center;
+  width: 164px;
+  transform: translateX(-50%) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center bottom;
+  pointer-events: none;
+}
+.gate > svg {
+  width: 164px;
+  height: 50px;
+  filter: drop-shadow(0 1px 2px var(--kingdoms-ui-background));
+}
+.stone {
+  fill: none;
+  stroke: var(--kingdoms-ui-gold);
+  stroke-width: 3;
+}
+.stem {
+  fill: none;
+  stroke: var(--kingdoms-ui-success);
+  stroke-width: 2;
+}
+.rose {
+  fill: var(--kingdoms-ui-danger);
+}
+.violet {
+  fill: var(--kingdoms-garden-violet);
+}
+.ivory {
+  fill: var(--brand-ivory);
+}
+.gate > span {
+  display: grid;
+  grid-template-columns: 16px auto;
+  column-gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-gold);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kingdoms-ui-background) 94%, transparent);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--background) 60%, transparent);
+}
+.gate small {
+  grid-column: 2;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--gold);
+}
+.entrance:hover .stone {
+  stroke: var(--brand-ivory);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gate {
+    will-change: auto;
+  }
+}

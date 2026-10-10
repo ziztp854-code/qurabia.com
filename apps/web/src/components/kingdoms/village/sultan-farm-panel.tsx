@@ -1,7 +1,7 @@
 'use client';
 
-import { useContext, useState, useSyncExternalStore } from 'react';
-import { Sprout, Wheat, Timer, Warehouse } from 'lucide-react';
+import { useContext, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { Sprout, Timer, Warehouse, Award } from 'lucide-react';
 import { Button } from '@/components/ui';
 import {
   cropKeys,
@@ -10,9 +10,15 @@ import {
   farmQuote,
   farmStageNames,
   farmState,
+  gardenProgress,
+  gardenGoals,
+  gardenHarvestPreview,
+  gardenStyles,
+  gardenStyleKeys,
   type CropKey,
   type FarmPlant,
 } from '@/lib/kingdoms/sultan-farm';
+import { farmPlantShapes } from '@/lib/kingdoms/village/farm-plant-shapes';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import { number, rateAmount, type GameProps } from '../shared';
@@ -21,7 +27,6 @@ import styles from './sultan-farm-panel.module.css';
 import { FarmSceneContext } from './farm-scene-context';
 
 const farmAmount = (value: number) => value.toLocaleString('ar-SA', { maximumFractionDigits: 3 });
-
 const motionQuery = '(prefers-reduced-motion: reduce)';
 function subscribeEnvironment(listener: () => void) {
   const query = window.matchMedia(motionQuery);
@@ -52,67 +57,74 @@ export function farmDuration(ms: number) {
   const minutes = Math.ceil(ms / 60000);
   return minutes >= 60 ? `${rateAmount(minutes / 60)} ساعة` : `${number(minutes)} دقيقة`;
 }
-
-/** An original, lightweight growth illustration; the main scene uses the calibrated photographic projection. */
+const bloomTokens = {
+  gold: '--kingdoms-ui-gold',
+  green: '--kingdoms-ui-success',
+  red: '--kingdoms-ui-danger',
+  ivory: '--brand-ivory',
+  violet: '--kingdoms-garden-violet',
+} as const;
 export function FarmPlantVisual({
   plant,
   now,
   detail = true,
+  previewCrop,
 }: {
   plant?: FarmPlant;
+  previewCrop?: CropKey;
   now: number;
   detail?: boolean;
 }) {
   const growth = plant ? farmGrowth(plant, now) : null;
-  const height = growth ? 0.18 + 0.82 * growth.progress : 0;
+  const crop = plant?.crop ?? previewCrop;
+  const shapes = crop ? farmPlantShapes(crop, growth?.progress ?? 1) : [];
+  const color = crop ? `var(${bloomTokens[farmCrops[crop].color]})` : 'currentColor';
   return (
     <svg
       className={styles.visual}
       viewBox="0 0 120 96"
       aria-hidden="true"
-      data-crop={plant?.crop ?? 'empty'}
-      data-stage={growth?.stage ?? 'empty'}
+      data-crop={crop ?? 'empty'}
+      data-stage={growth?.stage ?? (previewCrop ? 'preview' : 'empty')}
+      data-detail={detail}
+      style={{ '--garden-bloom': color } as CSSProperties}
     >
       <ellipse cx="60" cy="81" rx="48" ry="10" className={styles.soil} />
       <path d="M17 82 Q60 92 103 82 M30 76 Q60 85 90 76" className={styles.furrow} />
-      {!plant ? (
+      {!crop ? (
         <path d="M52 80h16m-8-8v16" className={styles.emptyMark} />
       ) : growth?.stage === 'seed' ? (
         <ellipse cx="60" cy="78" rx="3" ry="2" className={styles.seed} />
       ) : (
-        <g style={{ transform: `translate(60px,80px) scale(1,${height})` }}>
+        <g transform={`translate(60 80) scale(${0.35 + 0.65 * (growth?.progress ?? 1)})`}>
           <g className={styles.canopy}>
-            <path
-              d="M0 0 Q-4-22 0-54 M0-16 Q-26-18-19-33 Q-2-31 0-16 M0-30 Q22-29 20-43 Q5-44 0-30"
-              className={styles.stem}
-            />
-            {plant.crop === 'wheat' && growth && growth.progress >= 0.35 ? (
-              <g className={styles.grain}>
-                {[0, 1, 2, 3, 4].slice(0, detail ? 5 : 3).map((i) => (
-                  <path key={i} d={`M0 ${-46 - i * 5}q-11-2-8-7q8 0 8 7q11-2 8-7q-8 0-8 7`} />
-                ))}
-              </g>
-            ) : (
-              <path
-                d="M0-48 Q-23-46-18-60 Q-7-64 0-48 Q8-67 24-56 Q25-44 0-48"
-                className={styles.leaves}
-              />
-            )}
-            {growth && growth.progress >= 0.75 && plant.crop !== 'wheat' && (
-              <g className={styles.fruit}>
-                {plant.crop === 'beans' ? (
-                  <>
-                    <path d="M-15-38q-8 15-2 20q8-10 2-20M15-47q8 13 3 19q-7-6-3-19" />
-                    {detail && <path d="M-7-53q-5 12 1 18q5-9-1-18" />}
-                  </>
-                ) : (
-                  <>
-                    <circle cx="-15" cy="-39" r="6" />
-                    <circle cx="17" cy="-49" r="6" />
-                    {detail && <circle cx="-7" cy="-56" r="5" />}
-                  </>
-                )}
-              </g>
+            {shapes.map((shape, i) =>
+              shape.kind === 'line' ? (
+                <line
+                  key={i}
+                  x1={shape.x1}
+                  y1={shape.y1}
+                  x2={shape.x2}
+                  y2={shape.y2}
+                  className={styles.artStem}
+                />
+              ) : (
+                <ellipse
+                  key={i}
+                  cx={shape.x}
+                  cy={shape.y}
+                  rx={shape.rx}
+                  ry={shape.ry}
+                  transform={`rotate(${shape.angle} ${shape.x} ${shape.y})`}
+                  className={
+                    shape.paint === 'leaf'
+                      ? styles.artLeaf
+                      : shape.paint === 'center'
+                        ? styles.artCenter
+                        : styles.artBloom
+                  }
+                />
+              ),
             )}
           </g>
         </g>
@@ -128,56 +140,61 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
   const selected = scene?.selected ?? localSelected,
     setSelected = scene?.select ?? setLocalSelected;
   const farm = farmState(village),
+    progress = gardenProgress(farm),
     plot = farm.plots[selected];
   const deadline = Math.max(view.serverNow, ...farm.plots.map((item) => item.plant?.readyAt ?? 0));
   const now = useViewClock(view, deadline, `farm:${view.worldId}:${village.id}`);
   const motion = useSyncExternalStore(subscribeEnvironment, environment, fallbackEnvironment);
-  const detail = !motion.endsWith(':low');
   const growth = plot.plant ? farmGrowth(plot.plant, now) : null;
-  const level = village.buildings.farm;
-  let quote: ReturnType<typeof farmQuote> | null = null;
-  try {
-    quote = farmQuote(view.config, level, seed, plot.previousFamily);
-  } catch {
-    /* A disabled custom economy cannot quote a viable seed. */
-  }
+  const quote = farmQuote(view.config, village.buildings.farm, seed, plot.previousFamily);
+  const legacy = plot.plant?.policyVersion === 1;
   const full = Boolean(
+    legacy &&
     plot.plant &&
     village.resources.food + plot.plant.harvestFood > storageCapacity(view.config, village),
   );
-  const locked = level < farmCrops[seed].minLevel;
-  const shortage = Boolean(quote && village.resources.food < quote.seedFood);
+  const locked = progress.harvests < farmCrops[seed].unlockHarvests;
   const disabled = busy || view.paused || view.season.status === 'ended';
   const ready = farm.plots.filter(
     (item) => item.plant && farmGrowth(item.plant, now).stage === 'ripe',
   ).length;
+  const preview = gardenHarvestPreview(farm, plot.plant?.crop ?? seed, view.player?.achievements);
+  const reward = (
+    <p className={styles.reward}>
+      <Award size={18} aria-hidden="true" />
+      <span>
+        الجمع يمنح حصادًا واحدًا للحديقة؛ يصبح المجموع {number(preview.harvests)}.
+        {preview.rewards.length > 0 && <strong> {preview.rewards.join('، ')}.</strong>}
+      </span>
+    </p>
+  );
   return (
     <section
       className={styles.farm}
       dir="rtl"
-      aria-label="أحواض مزرعة السلطان"
-      data-farm-motion={view.paused || scene?.motionPaused || motion.startsWith('quiet') ? 'quiet' : 'moving'}
+      aria-label="مزرعة السلطان"
+      data-garden-style={progress.style}
+      data-farm-motion={
+        view.paused || scene?.motionPaused || motion.startsWith('quiet') ? 'quiet' : 'moving'
+      }
       data-farm-quality={motion.split(':')[1]}
     >
       <header className={styles.heading}>
         <div>
-          <p>من البذرة إلى الحصاد</p>
-          <h3>أحواض السلطان</h3>
+          <p>ازرع، شاهد النمو، واجمع الأوسمة</p>
+          <h3>مزرعة السلطان</h3>
         </div>
         <Sprout size={28} aria-hidden="true" />
       </header>
       <div className={styles.summary}>
-        <span>
-          مستوى المزرعة <bdi>{number(level)}</bdi>
-        </span>
-        <span>
-          <bdi>{number(ready)}</bdi> جاهز للحصاد
-        </span>
+        <span>{number(progress.harvests)} حصاد تجميلي</span>
+        <span>{number(ready)} جاهز للجمع</span>
       </div>
       <p className={styles.hint}>
-        اختر حوضًا، ثم بذرة. يستمر النمو أثناء غيابك؛ المحصول الناضج ينتظرك.
+        البذور مجانية وتتجدد بعد كل جمع. تنمو النباتات أثناء غيابك وتبقى ناضجة حتى تعود. المكافآت
+        نباتات وأوسمة وزينة للحديقة.
       </p>
-      <div className={styles.plots} role="group" aria-label="اختيار الحوض">
+      <div className={styles.plots} role="group" aria-label="أحواض المزرعة">
         {farm.plots.map((item, index) => {
           const state = item.plant ? farmGrowth(item.plant, now) : null;
           return (
@@ -201,12 +218,19 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
       </div>
       <div className={styles.selected} aria-label={`تفاصيل الحوض ${selected + 1}`}>
         <div className={styles.preview}>
-          <FarmPlantVisual plant={plot.plant} now={now} detail={detail} />
+          <FarmPlantVisual
+            plant={plot.plant}
+            previewCrop={plot.plant ? undefined : seed}
+            now={now}
+            detail={!motion.endsWith(':low')}
+          />
           <div>
             <h4>
               الحوض <bdi>{number(selected + 1)}</bdi>
             </h4>
-            <p>{plot.plant ? farmCrops[plot.plant.crop].name : 'جاهز لبذرة جديدة'}</p>
+            <p>
+              {plot.plant ? farmCrops[plot.plant.crop].name : `${farmCrops[seed].name} — شكل النضج`}
+            </p>
           </div>
         </div>
         {plot.plant && growth ? (
@@ -214,28 +238,27 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
             <div className={styles.stage}>
               <strong>{farmStageNames[growth.stage]}</strong>
               <span>
-                {growth.remainingMs
-                  ? `متبقٍ ${farmDuration(growth.remainingMs)}`
-                  : 'حان وقت الحصاد'}
+                {growth.remainingMs ? `متبقي ${farmDuration(growth.remainingMs)}` : 'جاهز للجمع'}
               </span>
             </div>
             <progress
               className={styles.progress}
               value={growth.progress}
               max={1}
-              aria-label="تقدم نمو المحصول"
+              aria-label="تقدم نمو النبات"
             />
-            <p className={styles.reward}>
-              <Wheat size={18} aria-hidden="true" />
-              عائد الحصاد <bdi>{farmAmount(plot.plant.harvestFood)}</bdi> غذاء للقرية
-            </p>
-            {plot.plant.rotated && (
-              <p className={styles.rotation}>تناوب المحاصيل: مدة نمو أقصر بنسبة ٥٪</p>
+            {legacy ? (
+              <p className={styles.reward}>
+                محصول قديم مدفوع: {farmAmount(plot.plant.harvestFood)} غذاء عند الحصاد وفق العقد
+                المحفوظ. الزراعة التالية مجانية وتجميلية.
+              </p>
+            ) : (
+              reward
             )}
             {full && (
               <p role="status" className={styles.storage}>
                 <Warehouse size={18} aria-hidden="true" />
-                المخزن لا يتسع للمحصول. أفرغ مساحة أو طوّر المخزن؛ يبقى المحصول محفوظًا.
+                المخزن لا يسع المحصول القديم؛ وفر مساحة، والمحصول محفوظ.
               </p>
             )}
             <Button
@@ -249,64 +272,55 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
                 })
               }
             >
-              حصاد الحوض {number(selected + 1)}
+              {legacy ? 'احصد' : 'اجمع'} الحوض {number(selected + 1)}
             </Button>
           </>
         ) : (
           <>
             <fieldset className={styles.seeds}>
-              <legend>اختر البذرة</legend>
-              {cropKeys.map((crop) => (
-                <button
-                  type="button"
-                  key={crop}
-                  className={styles.seedOption}
-                  aria-pressed={seed === crop}
-                  disabled={level < farmCrops[crop].minLevel}
-                  onClick={() => setSeed(crop)}
-                >
-                  <span>{farmCrops[crop].name}</span>
-                  <small>
-                    {level < farmCrops[crop].minLevel
-                      ? `يفتح في المستوى ${number(farmCrops[crop].minLevel)}`
-                      : 'متاح'}
-                  </small>
-                </button>
-              ))}
+              <legend>اختر النبات — البذور مجانية</legend>
+              {cropKeys.map((crop) => {
+                const remaining = Math.max(0, farmCrops[crop].unlockHarvests - progress.harvests);
+                return (
+                  <button
+                    type="button"
+                    key={crop}
+                    className={styles.seedOption}
+                    aria-pressed={seed === crop}
+                    aria-disabled={remaining > 0}
+                    onClick={() => setSeed(crop)}
+                  >
+                    <span>{farmCrops[crop].name}</span>
+                    <small>
+                      {remaining > 0 ? `متبقي ${number(remaining)} حصاد لفتحه` : 'متاح مجانًا'}
+                    </small>
+                  </button>
+                );
+              })}
             </fieldset>
-            {quote ? (
-              <dl className={styles.quote}>
-                <div>
-                  <dt>
-                    <Timer size={16} aria-hidden="true" />
-                    مدة النمو
-                  </dt>
-                  <dd>{farmDuration(quote.growMs)}</dd>
-                </div>
-                <div>
-                  <dt>تكلفة البذرة</dt>
-                  <dd>
-                    <bdi>{farmAmount(quote.seedFood)}</bdi> غذاء
-                  </dd>
-                </div>
-                <div>
-                  <dt>عائد الحصاد</dt>
-                  <dd>
-                    <bdi>{farmAmount(quote.harvestFood)}</bdi> غذاء
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p role="status">إعدادات العالم لا تتيح هذا المحصول حاليًا.</p>
-            )}
-            {quote?.rotated && (
-              <p className={styles.rotation}>
-                اختيار عائلة مختلفة يمنح نموًا أسرع بنسبة ٥٪ لهذه الزرعة.
+            <dl className={styles.quote}>
+              <div>
+                <dt>
+                  <Timer size={16} aria-hidden="true" />
+                  مدة النمو
+                </dt>
+                <dd>{farmDuration(quote.growMs)}</dd>
+              </div>
+              <div>
+                <dt>دورة البذور</dt>
+                <dd>مجانية بعد كل جمع</dd>
+              </div>
+            </dl>
+            {reward}
+            {locked && (
+              <p role="status" className={styles.hint}>
+                لفتح {farmCrops[seed].name}: المكتسب {number(progress.harvests)} من{' '}
+                {number(farmCrops[seed].unlockHarvests)} حصاد؛ المتبقي{' '}
+                {number(farmCrops[seed].unlockHarvests - progress.harvests)}.
               </p>
             )}
-            {shortage && <p className={styles.storage}>غذاء القرية غير كافٍ لهذه البذرة.</p>}
             <Button
-              disabled={disabled || locked || shortage || !quote}
+              disabled={disabled || locked}
               onClick={() =>
                 void send({
                   type: 'farmPlant',
@@ -314,17 +328,65 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
                   plotId: selected,
                   expectedVersion: plot.version,
                   crop: seed,
-                  expectedQuote: quote!.quoteKey,
+                  expectedQuote: quote.quoteKey,
                 })
               }
             >
-              زرع {farmCrops[seed].name}
+              ازرع {farmCrops[seed].name}
             </Button>
           </>
         )}
       </div>
+      <details className={styles.goals}>
+        <summary>
+          <Award size={18} aria-hidden="true" />
+          أوسمة الحديقة — المكتسب والأهداف
+        </summary>
+        <ul>
+          {gardenGoals(farm).map((goal) => (
+            <li key={goal.id} data-earned={view.player?.achievements.includes(goal.id)}>
+              <strong>
+                {goal.name}
+                {view.player?.achievements.includes(goal.id) ? ' — مكتسب' : ''}
+              </strong>
+              <span>
+                {view.player?.achievements.includes(goal.id)
+                  ? 'وسام مكتسب لحسابك'
+                  : `${number(Math.min(goal.value, goal.target))} / ${number(goal.target)} ${goal.metric === 'variety' ? 'أنواع مختلفة' : 'حصادات'}؛ متبقي ${number(goal.remaining)}`}
+              </span>
+              <small>المكافأة: {goal.reward}</small>
+            </li>
+          ))}
+        </ul>
+      </details>
+      <fieldset className={styles.seeds}>
+        <legend>زينة الأحواض</legend>
+        {gardenStyleKeys.map((style) => {
+          const remaining = Math.max(0, gardenStyles[style].unlockHarvests - progress.harvests);
+          return (
+            <button
+              key={style}
+              type="button"
+              className={styles.seedOption}
+              aria-pressed={progress.style === style}
+              disabled={disabled || remaining > 0}
+              onClick={() => void send({ type: 'farmStyle', villageId: village.id, style })}
+            >
+              <span>{gardenStyles[style].name}</span>
+              <small>
+                {remaining
+                  ? `متبقي ${number(remaining)} حصاد`
+                  : progress.style === style
+                    ? 'مطبّق'
+                    : 'طبّق مجانًا'}
+              </small>
+            </button>
+          );
+        })}
+      </fieldset>
       <p className={styles.footnote}>
-        تغيير عائلة المحصول بعد حصاده يقلل مدة الزرعة التالية ٥٪. لا يذبل المحصول عند الغياب.
+        بذرة ← برعم ← نمو ← إزهار ← نضج. كل جمع يقدّم الحديقة فقط؛ إنتاج الغذاء من مبنى المزرعة
+        يستمر كالمعتاد.
       </p>
     </section>
   );

@@ -110,6 +110,64 @@
   overflow: visible;
   color: var(--kingdoms-ui-success);
 }
+.artStem {
+  stroke: var(--kingdoms-ui-success);
+  stroke-width: 2;
+}
+.artLeaf {
+  fill: var(--kingdoms-ui-success);
+}
+.artBloom {
+  fill: var(--garden-bloom);
+}
+.artCenter {
+  fill: var(--kingdoms-ui-gold);
+}
+.farm[data-garden-style='ivory'] .plot {
+  border-color: var(--brand-ivory);
+}
+.farm[data-garden-style='gold'] .plot {
+  border-color: var(--kingdoms-ui-gold);
+}
+.goals {
+  border-block: 1px solid var(--kingdoms-ui-border);
+  padding-block: var(--space-3);
+}
+.goals summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  cursor: pointer;
+  color: var(--kingdoms-ui-gold);
+}
+.goals summary:focus-visible {
+  outline: 2px solid var(--kingdoms-ui-gold);
+  outline-offset: 3px;
+}
+.goals ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.goals li {
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-3);
+  font-size: 0.8rem;
+  border-block-end: 1px solid var(--kingdoms-ui-border);
+}
+.goals li span,
+.goals li small {
+  color: var(--kingdoms-ui-muted);
+  line-height: 1.8;
+}
+.goals li[data-earned='true'] strong {
+  color: var(--kingdoms-ui-success);
+}
+.seedOption[aria-disabled='true'] small {
+  color: var(--kingdoms-ui-gold);
+}
 .soil {
   fill: var(--kingdoms-ui-background);
   stroke: var(--kingdoms-ui-border-gold);
@@ -213,6 +271,7 @@
 }
 .seeds {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
   padding: 0;
   margin-block: var(--space-4);
@@ -225,7 +284,8 @@
   font-weight: 700;
 }
 .seedOption {
-  display: flex;
+  display: grid;
+  min-inline-size: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);

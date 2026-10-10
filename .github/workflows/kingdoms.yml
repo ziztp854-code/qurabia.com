@@ -67,12 +67,18 @@ on:
       - 'pnpm-lock.yaml'
       - '.github/workflows/kingdoms.yml'
   workflow_dispatch:
+    inputs:
+      capture_garden_overview:
+        description: 'Capture intentional garden entrance overview references; this is not a release validation run'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   postgres-concurrency:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.capture_garden_overview }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -141,8 +147,19 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms-authenticated.config.ts
       - name: Verify abandoned villages on the real authenticated player map
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.abandoned-production.config.ts
+      - name: Preserve failed production-player browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kingdoms-production-player-failures-${{ github.run_attempt }}
+          path: |
+            apps/web/test-results/kingdoms/
+            apps/web/test-results/kingdoms-authenticated/
+            apps/web/test-results/abandoned-production/
+          retention-days: 7
 
   village-city-browser:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.capture_garden_overview }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -200,6 +217,7 @@ jobs:
           retention-days: 7
 
   living-city-visual:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.capture_garden_overview }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     container:
@@ -230,4 +248,37 @@ jobs:
         with:
           name: living-city-visual-failures-${{ github.run_attempt }}
           path: apps/web/test-results/living-city-regression/
+          retention-days: 7
+
+  garden-overview-capture:
+    if: github.event_name == 'workflow_dispatch' && inputs.capture_garden_overview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:bc6ab0d6d44ff4826e4cb8c1e6d801e185bfc42bb0753f8e2a30efc70db054c7
+      options: --ipc=host
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kingdoms_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.26.0
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared fixture dependencies
+        run: pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build
+      - name: Capture only intentional overview changes on one worker
+        run: pnpm --filter @tahaddi/web exec playwright test --config playwright.living-city-regression.config.ts --grep 'canonical Living City overview' --workers=1 --repeat-each=1 --update-snapshots=all
+      - name: Preserve candidates for review before committing references
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: garden-overview-candidates
+          path: apps/web/e2e/living-city-regression.spec.ts-snapshots/**/overview-*.png
           retention-days: 7

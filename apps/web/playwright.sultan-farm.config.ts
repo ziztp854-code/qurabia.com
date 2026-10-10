@@ -8,7 +8,7 @@ export default defineConfig({
   outputDir: './test-results/sultan-farm',
   use: { baseURL, trace: 'retain-on-failure' },
   webServer: {
-    command: 'pnpm exec tsx e2e/fixtures/village-scene-server.ts',
+    command: 'node ../../node_modules/tsx/dist/cli.mjs e2e/fixtures/village-scene-server.ts',
     url: baseURL,
     reuseExistingServer: false,
     timeout: 60000,

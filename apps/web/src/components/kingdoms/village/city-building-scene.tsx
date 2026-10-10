@@ -65,7 +65,7 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
     exitTimer.current = setTimeout(onClose, 160);
   }
   return (
-    <FarmSceneContext.Provider value={farm ? farmContext : null}><section ref={surface} className={styles.scene} aria-label={`مشهد ${cityScenes[scene].title}`} data-city-scene={scene} data-scene={scene} data-farm-managing={scene === 'farm' ? managingFarm : undefined} data-phase={exiting ? 'exiting' : loaded ? 'active' : 'entering'} dir="rtl" onKeyDown={(event) => {
+    <FarmSceneContext.Provider value={farm ? farmContext : null}><section ref={surface} className={styles.scene} aria-label={`مشهد ${cityScenes[scene].title}`} data-city-scene={scene} data-scene={scene} data-farm-managing={scene === 'sultan-garden' ? managingFarm : undefined} data-phase={exiting ? 'exiting' : loaded ? 'active' : 'entering'} dir="rtl" onKeyDown={(event) => {
       if (event.key !== 'Tab') return;
       const controls = Array.from(surface.current?.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? [])
         .filter((element) => !element.closest('[inert]') && element.getClientRects().length > 0);
@@ -80,7 +80,7 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
             <img key={retry} className={styles.image} src={citySceneAsset(scene)} alt="" draggable={false} decoding="async" fetchPriority="high"
               onLoad={() => { setLoaded(true); setFailed(false); }} onError={() => { setFailed(true); setLoaded(false); }} />
           </picture>
-        </SultanPalaceScene> : scene === 'farm' && farm ? <SultanFarmScene {...farm}><picture>
+        </SultanPalaceScene> : scene === 'sultan-garden' && farm ? <SultanFarmScene {...farm}><picture>
           <source media="(max-width: 700px)" srcSet={citySceneAsset(scene, true)} type="image/webp" />
           <img key={retry} className={styles.image} src={citySceneAsset(scene)} alt="" draggable={false} decoding="async" fetchPriority="high"
             onLoad={() => { setAspect(2048 / 1143); setLoaded(true); setFailed(false); }} onError={() => { setFailed(true); setLoaded(false); }} />
@@ -99,12 +99,12 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
       <div className={styles.veil} aria-hidden="true" />
       <header className={styles.header}>
         <div className={styles.heading}><p className={styles.eyebrow}>مدينة السلطان</p><h2 className={styles.title}>{cityScenes[scene].title}</h2></div>
-        <button type="button" className={styles.manageButton} aria-pressed={scene === 'farm' ? managingFarm : undefined} onClick={() => {
-          if (scene === 'farm') {
+        <button type="button" className={styles.manageButton} aria-pressed={scene === 'sultan-garden' ? managingFarm : undefined} onClick={() => {
+          if (scene === 'sultan-garden') {
             setManagingFarm(value => !value);
             surface.current?.scrollTo({ top: 0, behavior: 'auto' });
           } else content.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        }}>{scene === 'farm' && managingFarm ? 'عرض المزرعة' : 'إدارة المرفق'}</button>
+        }}>{scene === 'sultan-garden' && managingFarm ? 'عرض المزرعة' : 'إدارة المرفق'}</button>
         <button ref={back} type="button" className={styles.backButton} disabled={exiting} onClick={returnToCity}><ArrowRight size={20} aria-hidden="true" />العودة إلى المدينة</button>
       </header>
       {!loaded && <div className={styles.status} role={failed ? 'alert' : 'status'}>

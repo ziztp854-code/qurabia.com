@@ -13,7 +13,7 @@ import {
 } from '../../src/lib/kingdoms/engine';
 import { defaultKingdomsConfig } from '../../src/lib/kingdoms/config';
 import { emptyTroops } from '../../src/lib/kingdoms/simulation';
-import { farmQuote, plantFarm, type CropKey } from '../../src/lib/kingdoms/sultan-farm';
+import { farmQuote, plantFarm, farmState, cropKeys } from '../../src/lib/kingdoms/sultan-farm';
 import { gardenReadSchema, gardenSaveSchema, gardenSlotsSchema } from '../../src/lib/kingdoms/palace-garden';
 import { applyWorkshopAction, projectWorkshop, settleWorkshop, workshopReadSchema, workshopRequestSchema, type WorkshopVillage } from '../../src/lib/kingdoms/siege-workshop';
 
@@ -114,8 +114,10 @@ async function main() {
       world = executeCommand(createWorld(frozenNow, defaultKingdomsConfig), currentPlayer, { type: 'found', name: 'سلطنة الاختبار' }, frozenNow);
       const village = Object.values(world.villages)[0];
       village.buildings.farm = 5;
-      const crops: CropKey[] = ['wheat', 'beans', 'pomegranate', 'wheat', 'beans', 'pomegranate'];
-      const progress = [0.02, 0.15, 0.5, 0.85, 1, 1];
+      village.sultanFarm = { ...farmState(village), garden: { version: 1, harvests: 12, collected: { wheat: 4, beans: 4, rose: 4 }, style: 'ivory' } };
+      world.players[currentPlayer].achievements.push('garden:first-bloom', 'garden:variety', 'garden:caretaker', 'garden:royal-garden');
+      const crops = cropKeys;
+      const progress = [.02, .15, .5, 1, .85, 1, 1, 1, 1];
       crops.forEach((crop, index) => {
         const quote = farmQuote(world.config, 5, crop);
         plantFarm(world.config, village, index + 1, 0, crop, Math.round(frozenNow! - quote.growMs * progress[index]));
@@ -124,7 +126,7 @@ async function main() {
       return;
     }
     if (url.pathname === '/__village_test/advance-farm' && request.method === 'POST' && frozenNow !== undefined) {
-      frozenNow += 13 * 3600000;
+      frozenNow += 30 * 60000;
       reply(snapshot());
       return;
     }

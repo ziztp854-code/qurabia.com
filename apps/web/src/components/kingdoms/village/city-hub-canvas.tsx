@@ -57,6 +57,8 @@ import { VillageCamera } from './village-camera';
 import { bindVillageInput } from './village-input';
 import type { VillageRenderer } from './village-renderer';
 import styles from './city-hub-canvas.module.css';
+import { SultanGardenEntrance } from './sultan-garden-entrance';
+import { prefetchCityScene } from './city-scenes';
 
 const icons = {
   hall: Castle,
@@ -525,6 +527,8 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           style={cityEnabled ? city.world : { width: VILLAGE_WORLD.width, height: VILLAGE_WORLD.height }}
         >
           <div className={styles.hotspots}>
+            {cityEnabled && props.onFacilitySelect && <SultanGardenEntrance composition={composition} view={props.view} village={props.village}
+              onOpen={() => { current.current.onSelectionStart?.(); prefetchCityScene('sultan-garden'); current.current.onFacilitySelect?.('sultan-garden'); }} />}
             {buildingKeys.filter((building) => building !== 'stable').map((building) => {
               const presentation = getBuildingPresentation(
                 building,

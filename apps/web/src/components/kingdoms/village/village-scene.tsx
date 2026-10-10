@@ -18,6 +18,7 @@ import { buildingKeys } from '@/lib/kingdoms/types';
 import { trainingBuilding } from '@/lib/kingdoms/training';
 import type {
   VillageDebugOptions,
+  VillageCanvasProps,
   VillageQuality,
   VillageSceneHandle,
   VillageSelection,
@@ -50,7 +51,7 @@ export type VillageSceneProps = Pick<GameProps, 'view' | 'village'> & {
   onRefresh?: () => void;
   dedicatedNavigation?: boolean;
   active?: boolean;
-  onFacilitySelect?: (scene: 'war-council' | 'siege-workshop') => void;
+  onFacilitySelect?: VillageCanvasProps['onFacilitySelect'];
 };
 
 export function VillageScene({ view, village, selected, onSelect, onWorldMap, onShowMap, onRefresh, dedicatedNavigation = false, active = true, onFacilitySelect }: VillageSceneProps) {
