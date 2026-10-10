@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { citySceneAsset, citySceneForBuilding } from './city-scenes';
+import { getCityPlacement } from '@/lib/kingdoms/village/city-composition';
 import { SultanGardenEntrance, sultanGardenEntranceRect } from './sultan-garden-entrance';
 
 describe('Independent palace garden entrance', () => {
@@ -35,7 +36,9 @@ describe('Independent palace garden entrance', () => {
     expect(citySceneAsset('sultan-garden', true)).toContain('/sultan-farm-user-mobile.webp');
     for (const composition of ['desktop', 'portrait'] as const) {
       const rect = sultanGardenEntranceRect(composition);
-      expect(rect.width).toBeGreaterThan(300);
+      expect(rect.width).toBeGreaterThan(200);
+      // Browser touch adjustment must not redirect an embassy tap to the garden.
+      expect(rect.x - getCityPlacement('embassy', composition).focusX).toBeGreaterThan(40);
       expect(rect.height).toBeGreaterThan(70);
     }
   });

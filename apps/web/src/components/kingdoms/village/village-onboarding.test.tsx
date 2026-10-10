@@ -22,7 +22,7 @@ describe('account village tour', () => {
     const focus = vi.fn();
     render(<VillageOnboarding ready focus={focus} accountId="player-1" />);
     await screen.findByText('هذه عاصمتك، ومن هنا تدير المملكة.');
-    expect(focus).toHaveBeenLastCalledWith('hall');
+    await waitFor(() => expect(focus).toHaveBeenLastCalledWith('hall'));
     fireEvent.click(screen.getByRole('button', { name: 'التالي' }));
     expect(focus).toHaveBeenLastCalledWith('farm');
     fireEvent.click(screen.getByRole('button', { name: 'التالي' }));

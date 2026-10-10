@@ -14,7 +14,8 @@ import styles from './sultan-garden-entrance.module.css';
 export function sultanGardenEntranceRect(composition: CityCompositionId) {
   return composition === 'desktop'
     ? { x: 0.418 * 1600, y: 0.18 * 900, width: 0.22 * 1600, height: 0.085 * 900 }
-    : { x: 0.28 * 900, y: 0.199 * 1600, width: 0.37 * 900, height: 0.058 * 1600 };
+    // Keep the gate center fixed while leaving a gutter for the embassy touch target.
+    : { x: 0.325 * 900, y: 0.199 * 1600, width: 0.28 * 900, height: 0.058 * 1600 };
 }
 
 export function SultanGardenEntrance({
