@@ -80,6 +80,11 @@ test('real sign-in, world map marker and five-resource collection use the produc
       nextEventAt: new Date(state.season.endsAt),
     },
   });
+  // Log phase names only: CI traces contain the detailed isolated-player evidence.
+  const startedAt = Date.now();
+  const phase = (name: string) =>
+    console.info(`[abandoned-player:${testInfo.project.name}] ${name} +${Date.now() - startedAt}ms`);
+  phase('seed complete');
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -102,7 +107,9 @@ test('real sign-in, world map marker and five-resource collection use the produc
       return body.data;
     }, ABANDONED_ROLLOUT_WORLD_ID)) as WorldView;
   };
+  phase('sign-in verified');
   const initial = await read();
+  phase('initial state read');
   expect(initial.abandonedVillages).toHaveLength(48);
   await page.goto(
     `/games/kingdoms/world-map/?worldId=${ABANDONED_ROLLOUT_WORLD_ID}&villageId=${home.id}`,
@@ -111,18 +118,23 @@ test('real sign-in, world map marker and five-resource collection use the produc
   await expect(panel.getByRole('heading', { name: 'القرى المهجورة · ٤٨' })).toBeVisible();
   const directory = panel.getByRole('group', { name: 'دليل القرى المهجورة' });
   const row = directory.getByRole('button').first();
+  phase('map directory ready');
   await row.click();
   const gather = panel.getByRole('region', { name: 'جمع موارد القرية المهجورة' });
   await expect(gather).toBeVisible();
+  phase('directory selection visible');
   await page.screenshot({ path: testInfo.outputPath('real-player-selected.png'), fullPage: true });
+  phase('selected screenshot complete');
   await panel.getByRole('button', { name: 'إغلاق تفاصيل القرية' }).click();
   await expect(gather).toBeHidden();
+  phase('selection cleared');
   const canvas = page.locator('.maplibregl-canvas');
   await canvas.scrollIntoViewIfNeeded();
   const bounds = await canvas.boundingBox();
   expect(bounds).not.toBeNull();
   await canvas.click({ position: { x: bounds!.width / 2, y: bounds!.height / 2 } });
   await expect(gather).toBeVisible();
+  phase('canvas selection visible');
   await gather
     .getByRole('spinbutton', { name: new RegExp(state.config.units.guard.name) })
     .fill('10');
@@ -135,6 +147,7 @@ test('real sign-in, world map marker and five-resource collection use the produc
     ),
     gather.getByRole('button', { name: 'إرسال بعثة جمع' }).click(),
   ]);
+  phase('collection response received');
   expect(commandResponse.ok(), await commandResponse.text()).toBeTruthy();
   const body = commandResponse.request().postDataJSON();
   expect(body.worldId).toBe(ABANDONED_ROLLOUT_WORLD_ID);
@@ -154,6 +167,7 @@ test('real sign-in, world map marker and five-resource collection use the produc
       { timeout: 15000 },
     )
     .toEqual({ movements: 0, resources: resources(80, 80, 80, 80, 80), troops: 20 });
+  phase('collection persisted');
   const returned = await read();
   expect(
     returned.abandonedVillages!.map((site) => ({
@@ -170,7 +184,10 @@ test('real sign-in, world map marker and five-resource collection use the produc
   );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
+  phase('state and browser assertions complete');
   await page.reload();
   await expect(panel.getByRole('heading', { name: 'القرى المهجورة · ٤٨' })).toBeVisible();
+  phase('reloaded map ready');
   await page.screenshot({ path: testInfo.outputPath('real-player-returned.png'), fullPage: true });
+  phase('returned screenshot complete');
 });

@@ -147,6 +147,16 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.kingdoms-authenticated.config.ts
       - name: Verify abandoned villages on the real authenticated player map
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.abandoned-production.config.ts
+      - name: Preserve failed production-player browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kingdoms-production-player-failures-${{ github.run_attempt }}
+          path: |
+            apps/web/test-results/kingdoms/
+            apps/web/test-results/kingdoms-authenticated/
+            apps/web/test-results/abandoned-production/
+          retention-days: 7
 
   village-city-browser:
     if: ${{ github.event_name != 'workflow_dispatch' || !inputs.capture_garden_overview }}
