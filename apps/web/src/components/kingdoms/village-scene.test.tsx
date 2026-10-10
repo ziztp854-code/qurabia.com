@@ -1,5 +1,5 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeAll, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
@@ -8,6 +8,8 @@ import { number, rateAmount, type WorldView } from './shared';
 import { buildingEffect, duration, upgradeCost } from './village-effects';
 import { boundsOf, hitBox, plotState, villageArt, villagePlots } from './village-layout';
 import { VillagePanel } from './village-panel';
+import type { VillageSceneProps } from './village/village-scene';
+import type { VillageCanvasProps } from '@/lib/kingdoms/village/types';
 
 const now = 1800000000000;
 
@@ -122,6 +124,19 @@ describe('village effects', () => {
 });
 
 describe('village scene rendering', () => {
+  it('routes the cosmetic garden entrance through the shared scene callback without a game command', async () => {
+    // This equality is enforced by release TypeScript; runtime navigation alone cannot catch a narrowed callback.
+    expectTypeOf<VillageSceneProps['onFacilitySelect']>().toEqualTypeOf<VillageCanvasProps['onFacilitySelect']>();
+    const view = fixture();
+    const send = vi.fn();
+    const { container } = render(<VillagePanel view={view} village={view.villages[0]} send={send} busy={false} />);
+    fireEvent.click(screen.getByRole('button', { name: /افتح حديقة السلطان/ }));
+    await waitFor(() => {
+      expect(container.querySelector('[data-city-scene="sultan-garden"]')).toBeInTheDocument();
+    });
+    expect(container.querySelector('[data-city-scene="sultan-garden"]')).toHaveTextContent('حديقة السلطان');
+    expect(send).not.toHaveBeenCalled();
+  });
   it('describes mounted archer training on the Living City stable hotspot only', () => {
     const view = fixture();
     const village = {
