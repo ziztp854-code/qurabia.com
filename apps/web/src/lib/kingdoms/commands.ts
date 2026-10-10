@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { buildingKeys, unitKeys, commanderSpecializations } from './types';
 import { resourcesSchema } from './config';
+import { cropKeys, gardenStyleKeys } from './sultan-farm';
 const id = z
   .string()
   .min(1)
@@ -25,8 +26,9 @@ const troops = z
   })
   .strict();
 export const kingdomsCommandSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('farmPlant'), villageId, plotId, expectedVersion, crop: z.enum(['wheat', 'beans', 'pomegranate']), expectedQuote: z.string().min(1).max(160) }).strict(),
+  z.object({ type: z.literal('farmPlant'), villageId, plotId, expectedVersion, crop: z.enum(cropKeys), expectedQuote: z.string().min(1).max(160) }).strict(),
   z.object({ type: z.literal('farmHarvest'), villageId, plotId, expectedVersion }).strict(),
+  z.object({ type: z.literal('farmStyle'), villageId, style: z.enum(gardenStyleKeys) }).strict(),
   z.object({ type: z.literal('gatherAbandoned'), villageId, targetId: id, troops, commanderId: id.optional() }).strict(),
   z.object({ type: z.literal('commanderRecruit'), villageId, name, specialization: z.enum(commanderSpecializations) }).strict(),
   z.object({ type: z.literal('commanderAssign'), villageId, commanderId: id }).strict(),

@@ -133,8 +133,8 @@
   .status { inset-inline: var(--space-4); inset-block-start: 25%; }
 }
 @media (max-width: 700px) {
-  .scene[data-scene='farm'][data-farm-managing='true'] .artwork { display: none; }
-  .scene[data-scene='farm'][data-farm-managing='true'] .content { flex: 1 0 auto; }
+  .scene[data-scene='sultan-garden'][data-farm-managing='true'] .artwork { display: none; }
+  .scene[data-scene='sultan-garden'][data-farm-managing='true'] .content { flex: 1 0 auto; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .header { position: sticky; inset-block-start: 0; background: var(--kingdoms-ui-background); }
@@ -148,5 +148,5 @@
 @keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
 @keyframes depart { from { opacity: 1; } to { opacity: 0; } }
 
-.scene[data-scene='farm'] { --garden-reserve: 110px; }
-@media (max-width: 700px) { .scene[data-scene='farm'] .artwork { aspect-ratio: auto; margin-block-end: 0; } }
+.scene[data-scene='sultan-garden'] { --garden-reserve: 110px; }
+@media (max-width: 700px) { .scene[data-scene='sultan-garden'] .artwork { aspect-ratio: auto; margin-block-end: 0; } }

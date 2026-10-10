@@ -1,20 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
-import { plantFarm, farmQuote } from '@/lib/kingdoms/sultan-farm';
-import { SultanFarmPanel } from './sultan-farm-panel';
+import { plantFarm, farmQuote, farmState } from '@/lib/kingdoms/sultan-farm';
+import { SultanFarmPanel, FarmPlantVisual } from './sultan-farm-panel';
 import type { GameProps } from '../shared';
 
 const at = 1700000000000;
-function props(level = 1, ripe = false): GameProps {
+function props(ripe = false, legacy = false): GameProps {
   const world = executeCommand(
     createWorld(at),
     'owner',
-    { type: 'found', name: 'مملكة الاختبار' },
+    { type: 'found', name: 'Test garden' },
     at,
   );
   const village = Object.values(world.villages)[0];
-  village.buildings.farm = level;
   if (ripe)
     plantFarm(
       world.config,
@@ -22,13 +21,29 @@ function props(level = 1, ripe = false): GameProps {
       2,
       0,
       'wheat',
-      at - farmQuote(world.config, level, 'wheat').growMs,
+      at - farmQuote(world.config, 0, 'wheat').growMs,
     );
+  if (legacy) {
+    const state = farmState(village);
+    state.plots[2] = {
+      version: 9,
+      plant: {
+        crop: 'beans',
+        plantedAt: at - 100000,
+        readyAt: at - 1,
+        seedFood: 10,
+        harvestFood: 40,
+        rotated: false,
+        policyVersion: 1,
+      },
+    };
+    village.sultanFarm = state;
+  }
   return {
     view: {
       ...projectWorld(world, 'owner', at),
       worldId: 'test',
-      worldName: 'اختبار',
+      worldName: 'Test',
       revision: 1,
       paused: false,
     },
@@ -37,37 +52,50 @@ function props(level = 1, ripe = false): GameProps {
     send: vi.fn().mockResolvedValue(undefined),
   };
 }
-describe('Sultan farm RTL workflow', () => {
-  it('renders twelve accessible plots and shows duration, seed cost and yield before planting', () => {
+describe('Sultan garden RTL interaction', () => {
+  it('shows a badge earned in another village and never promises the same award again', () => {
     const p = props();
+    p.view.player!.achievements.push('garden:first-bloom');
     render(<SultanFarmPanel {...p} />);
-    expect(screen.getByRole('region', { name: 'أحواض مزرعة السلطان' })).toHaveAttribute(
-      'dir',
-      'rtl',
-    );
+    fireEvent.click(screen.getByText('أوسمة الحديقة — المكتسب والأهداف'));
+    expect(screen.getByText('أول حصاد — مكتسب')).toBeInTheDocument();
+    expect(screen.getByText('وسام مكتسب لحسابك')).toBeInTheDocument();
+    const preview = document.querySelector('[class*="reward"]')!;
+    expect(preview.textContent).not.toContain('وسام أول حصاد');
+  });
+  it('shows 12 plots, nine plant choices, free duration and expected rewards before planting', () => {
+    const p = props();
+    p.village.resources.food = 0;
+    render(<SultanFarmPanel {...p} />);
+    expect(screen.getByRole('region', { name: 'مزرعة السلطان' })).toHaveAttribute('dir', 'rtl');
     expect(
-      screen.getByRole('group', { name: 'اختيار الحوض' }).querySelectorAll('button'),
+      screen.getByRole('group', { name: 'أحواض المزرعة' }).querySelectorAll('button'),
     ).toHaveLength(12);
     expect(screen.getByText('مدة النمو')).toBeInTheDocument();
-    expect(screen.getByText('تكلفة البذرة')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /فاصوليا/ })).toBeDisabled();
+    expect(screen.getByText(/الجمع يمنح حصادًا واحدًا/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'الحوض 4، فارغ' }));
-    fireEvent.click(screen.getByRole('button', { name: 'زرع قمح' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ازرع القمح' }));
     expect(p.send).toHaveBeenCalledWith({
       type: 'farmPlant',
       villageId: p.village.id,
       plotId: 3,
       expectedVersion: 0,
       crop: 'wheat',
-      expectedQuote: farmQuote(p.view.config, 1, 'wheat').quoteKey,
+      expectedQuote: farmQuote(p.view.config, 0, 'wheat').quoteKey,
     });
+    fireEvent.click(screen.getByRole('button', { name: /السوسن.*متبقي/ }));
+    expect(screen.getByRole('button', { name: 'ازرع السوسن' })).toBeDisabled();
+    expect(screen.getByText(/لفتح السوسن: المكتسب/)).toBeInTheDocument();
   });
-  it('offers an explicit harvest with the current plot generation; no timer awards resources', () => {
-    const p = props(5, true);
+  it('collects explicitly with version, even at full storage; the timer sends no commands', () => {
+    const p = props(true);
+    p.village.resources.food = 999999;
     render(<SultanFarmPanel {...p} />);
     expect(p.send).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'الحوض 3، قمح، ناضج' }));
-    fireEvent.click(screen.getByRole('button', { name: /حصاد الحوض/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'الحوض 3، القمح، ناضج' }));
+    const collect = screen.getByRole('button', { name: /اجمع الحوض/ });
+    expect(collect).toBeEnabled();
+    fireEvent.click(collect);
     expect(p.send).toHaveBeenCalledWith({
       type: 'farmHarvest',
       villageId: p.village.id,
@@ -75,19 +103,66 @@ describe('Sultan farm RTL workflow', () => {
       expectedVersion: 1,
     });
   });
-  it('explains full storage and disables harvest without discarding the crop', () => {
-    const p = props(5, true);
+  it('discloses the frozen paid old reward and keeps it when storage is full', () => {
+    const p = props(false, true);
     p.village.resources.food = 999999;
     render(<SultanFarmPanel {...p} />);
-    fireEvent.click(screen.getByRole('button', { name: 'الحوض 3، قمح، ناضج' }));
-    expect(screen.getByText(/المخزن لا يتسع/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /حصاد الحوض/ })).toBeDisabled();
-    expect(p.send).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'الحوض 3، الفاصوليا، ناضج' }));
+    expect(screen.getByText(/محصول قديم مدفوع/)).toBeInTheDocument();
+    expect(screen.getByText(/المخزن لا يسع المحصول القديم/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /احصد الحوض/ })).toBeDisabled();
   });
-  it('prevents planting in paused worlds and explains non-viable custom settings', () => {
+  it('shows earned and remaining badge goals, and locked decoration without a price', () => {
+    const p = props();
+    p.village.sultanFarm = {
+      ...farmState(p.village),
+      garden: {
+        version: 1,
+        harvests: 5,
+        collected: { wheat: 2, beans: 2, rose: 1 },
+        style: 'natural',
+      },
+    };
+    p.view.player!.achievements = [
+      'merchant',
+      'garden:first-bloom',
+      'garden:variety',
+      'garden:caretaker',
+    ];
+    render(<SultanFarmPanel {...p} />);
+    fireEvent.click(screen.getByText('أوسمة الحديقة — المكتسب والأهداف'));
+    expect(screen.getByText('راعي الحديقة — مكتسب')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /إطار عاجي.*طبّق/ }));
+    expect(p.send).toHaveBeenCalledWith({
+      type: 'farmStyle',
+      villageId: p.village.id,
+      style: 'ivory',
+    });
+    expect(screen.getByRole('button', { name: /إطار ذهبي.*متبقي/ })).toBeDisabled();
+  });
+  it('disables planting, collecting and decoration while paused, busy or ended', () => {
     const p = props();
     p.view.paused = true;
     render(<SultanFarmPanel {...p} />);
-    expect(screen.getByRole('button', { name: 'زرع قمح' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'ازرع القمح' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /أحواض طبيعية/ })).toBeDisabled();
+  });
+  it('renders distinct vector shapes for the new flowers with declared ripe/seed stages', () => {
+    const make = (crop: 'rose' | 'jasmine' | 'iris') => ({
+      crop,
+      plantedAt: at - 60000,
+      readyAt: at,
+      seedFood: 0 as const,
+      harvestFood: 0 as const,
+      rotated: false as const,
+      policyVersion: 2 as const,
+    });
+    const { container, rerender } = render(<FarmPlantVisual plant={make('rose')} now={at} />);
+    const rose = container.innerHTML;
+    rerender(<FarmPlantVisual plant={make('jasmine')} now={at} />);
+    expect(container.innerHTML).not.toEqual(rose);
+    expect(container.querySelector('svg')).toHaveAttribute('data-stage', 'ripe');
+    rerender(<FarmPlantVisual plant={make('iris')} now={at - 60000} />);
+    expect(container.querySelector('svg')).toHaveAttribute('data-stage', 'seed');
   });
 });

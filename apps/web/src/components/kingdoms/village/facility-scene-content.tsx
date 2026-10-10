@@ -37,7 +37,7 @@ export function FacilitySceneContent(props: FacilitySceneContentProps) {
     ...props,
     busy: props.busy || props.view.paused || props.view.season.status === 'ended',
   };
-  if (scene === 'farm') return <><Suspense fallback={<p role="status">تجهيز الأحواض…</p>}><SultanFarmPanel key={props.village.id} {...gameplay} /></Suspense><BuildingPanel {...gameplay} building="farm" onClose={onClose} onNavigate={onNavigate} /></>;
+  if (scene === 'sultan-garden') return <><Suspense fallback={<p role="status">تجهيز الأحواض…</p>}><SultanFarmPanel key={props.village.id} {...gameplay} /></Suspense></>;
   if (scene === 'stable')
     return (
       <StablePanel

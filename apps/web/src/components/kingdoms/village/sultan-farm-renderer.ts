@@ -1,5 +1,6 @@
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { farmGrowth, type FarmState } from '@/lib/kingdoms/sultan-farm';
+import { farmCrops, farmGrowth, gardenProgress, type FarmState } from '@/lib/kingdoms/sultan-farm';
+import { farmPlantShapes } from '@/lib/kingdoms/village/farm-plant-shapes';
 import { farmBedPoint, FARM_WORLD } from '@/lib/kingdoms/village/farm-scene-layout';
 import type { QualitySettings } from '@/lib/kingdoms/village/quality';
 import { VillageCamera } from './village-camera';
@@ -43,6 +44,15 @@ export async function createSultanFarmRenderer(
     throw error;
   }
   const world = new Container();
+  const style = getComputedStyle(host);
+  const token = (name: string) => style.getPropertyValue(name).trim();
+  const colors = {
+    green: token('--kingdoms-ui-success'),
+    red: token('--kingdoms-ui-danger'),
+    gold: token('--kingdoms-ui-gold'),
+    ivory: token('--brand-ivory'),
+    violet: token('--kingdoms-garden-violet'),
+  };
   app.stage.addChild(world);
   let disposed = false,
     moving = false,
@@ -88,13 +98,16 @@ export async function createSultanFarmRenderer(
   });
   intersection.observe(host);
   function update(farm: FarmState, now: number) {
-    const next = farm.plots
-      .map((p) =>
-        p.plant
-          ? `${p.version}:${Math.floor(farmGrowth(p.plant, now).progress * 80)}`
-          : `${p.version}:empty`,
-      )
-      .join('|');
+    const next =
+      gardenProgress(farm).style +
+      ':' +
+      farm.plots
+        .map((p) =>
+          p.plant
+            ? `${p.version}:${Math.floor(farmGrowth(p.plant, now).progress * 80)}`
+            : `${p.version}:empty`,
+        )
+        .join('|');
     if (signature === next) return;
     signature = next;
     for (const child of world.removeChildren()) child.destroy({ children: true });
@@ -104,6 +117,23 @@ export async function createSultanFarmRenderer(
       .map((plot, id) => ({ plot, id, y: farmBedPoint(id).y }))
       .sort((a, b) => a.y - b.y);
     for (const { plot, id } of ordered) {
+      const decoration = gardenProgress(farm).style;
+      if (decoration !== 'natural') {
+        const corners = [
+          [0.08, 0.08],
+          [0.92, 0.08],
+          [0.92, 0.92],
+          [0.08, 0.92],
+        ];
+        const border = new Graphics();
+        corners.forEach(([u, v], index) => {
+          const point = farmBedPoint(id, u, v);
+          if (index === 0) border.moveTo(point.x, point.y);
+          else border.lineTo(point.x, point.y);
+        });
+        border.closePath().stroke({ color: colors[decoration], width: 3, alpha: 0.85 });
+        world.addChild(border);
+      }
       const plant = plot.plant;
       if (!plant) continue;
       const growth = farmGrowth(plant, now),
@@ -129,6 +159,33 @@ export async function createSultanFarmRenderer(
           const canopy = new Container();
           canopy.position.set(root.x, root.y);
           world.addChild(canopy);
+          if (!['wheat', 'beans', 'pomegranate'].includes(plant.crop)) {
+            const botanical = new Container();
+            botanical.scale.set(0.35 + 0.65 * progress);
+            canopy.addChild(botanical);
+            for (const shape of farmPlantShapes(plant.crop, progress)) {
+              const art = new Graphics();
+              const paint =
+                shape.paint === 'leaf'
+                  ? colors.green
+                  : shape.paint === 'center'
+                    ? colors.gold
+                    : colors[farmCrops[plant.crop].color];
+              if (shape.kind === 'line')
+                art
+                  .moveTo(shape.x1, shape.y1)
+                  .lineTo(shape.x2, shape.y2)
+                  .stroke({ color: paint, width: 2 });
+              else {
+                art.ellipse(0, 0, shape.rx, shape.ry).fill(paint);
+                art.position.set(shape.x, shape.y);
+                art.rotation = (shape.angle * Math.PI) / 180;
+              }
+              botanical.addChild(art);
+            }
+            canopies.push({ node: canopy, phase: row * 2 + col * 0.7 + id });
+            continue;
+          }
           const height =
             (plant.crop === 'pomegranate' ? 91 : plant.crop === 'wheat' ? 60 : 49) *
             (0.17 + 0.83 * progress);

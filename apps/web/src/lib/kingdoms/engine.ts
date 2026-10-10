@@ -13,7 +13,7 @@ import { marchTravelDurationMs } from './commander-movement';
 import { abandonedLayout, abandonedVillage, abandonedVillageSupply, isAbandonedVillageCell, projectAbandonedVillages } from './abandoned-villages';
 import type { AbandonedVillage } from './abandoned-village-types';
 import { trainingBuilding, trainingDurationMs } from './training';
-import { plantFarm, harvestFarm } from './sultan-farm';
+import { plantFarm, harvestFarm, styleFarm } from './sultan-farm';
 import { normalizeWorldState } from './world-compatibility';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
@@ -695,10 +695,15 @@ export function executeCommand(
     switch (c.type) {
       case 'farmPlant':
         plantFarm(w.config, own(w, actorId, c.villageId), c.plotId, c.expectedVersion, c.crop, at, c.expectedQuote);
-        break;
-      case 'farmHarvest':
-        harvestFarm(w.config, own(w, actorId, c.villageId), c.plotId, c.expectedVersion, at);
-        break;
+        return w;
+      case 'farmHarvest': {
+        const badges = harvestFarm(w.config, own(w, actorId, c.villageId), c.plotId, c.expectedVersion, at);
+        w.players[actorId].achievements = [...new Set([...w.players[actorId].achievements, ...badges])];
+        return w;
+      }
+      case 'farmStyle':
+        styleFarm(own(w, actorId, c.villageId), c.style);
+        return w;
       case 'commanderRecruit': {
         const village = own(w, actorId, c.villageId);
         const config = commanderConfig(w);

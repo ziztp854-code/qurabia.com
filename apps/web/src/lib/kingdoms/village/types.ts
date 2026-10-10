@@ -65,7 +65,7 @@ export type VillageCanvasProps = Readonly<{
   cityComposition?: 'desktop' | 'portrait';
   dedicatedNavigation?: boolean;
   onSelectionStart?: () => void;
-  onFacilitySelect?: (scene: 'war-council' | 'siege-workshop') => void;
+  onFacilitySelect?: (scene: 'war-council' | 'siege-workshop' | 'sultan-garden') => void;
   onPrefetch?: (building: VillageSelection) => void;
   showThreatMarker?: boolean;
   threatSeverity?: 'DANGER' | 'CRITICAL';

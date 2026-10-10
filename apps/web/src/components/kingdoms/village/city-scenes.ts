@@ -1,6 +1,6 @@
 import type { VillageSelection, VillageTarget } from '@/lib/kingdoms/village/types';
 
-export type CitySceneKey = 'palace' | 'barracks' | 'stable' | 'market' | 'war-council' | 'siege-workshop' | 'farm' | 'mine' | 'lumber' | 'quarry' | 'treasury' | 'warehouse' | 'wall' | 'embassy';
+export type CitySceneKey = 'palace' | 'barracks' | 'stable' | 'market' | 'war-council' | 'siege-workshop' | 'farm' | 'sultan-garden' | 'mine' | 'lumber' | 'quarry' | 'treasury' | 'warehouse' | 'wall' | 'embassy';
 
 export const cityScenes: Record<CitySceneKey, { title: string; asset: string; target: VillageTarget }> = {
   palace: { title: 'قصر السلطان', asset: 'palace', target: 'hall' },
@@ -9,7 +9,8 @@ export const cityScenes: Record<CitySceneKey, { title: string; asset: string; ta
   market: { title: 'السوق', asset: 'market', target: 'market' },
   'war-council': { title: 'مجلس الحرب', asset: 'war-council', target: 'rally' },
   'siege-workshop': { title: 'ورشة الحصار', asset: 'siege-workshop', target: 'siege' },
-  farm: { title: 'مزرعة السلطان', asset: 'farm', target: 'farm' },
+  farm: { title: 'مزارع الغذاء', asset: 'farm', target: 'farm' },
+  'sultan-garden': { title: 'حديقة السلطان', asset: 'farm', target: 'hall' },
   mine: { title: 'مناجم الحديد', asset: 'mine', target: 'mine' },
   lumber: { title: 'حطّابو المملكة', asset: 'farm', target: 'lumber' },
   quarry: { title: 'محاجر الحجر', asset: 'mine', target: 'quarry' },
@@ -22,7 +23,7 @@ export const cityScenes: Record<CitySceneKey, { title: string; asset: string; ta
 export const citySceneForBuilding = (building: VillageSelection): CitySceneKey => building === 'hall' ? 'palace' : building === 'rally' ? 'war-council' : building;
 const portraitAssets = new Set(['barracks', 'stable', 'market', 'war-council', 'siege-workshop', 'farm', 'mine']);
 export const citySceneAsset = (scene: CitySceneKey, mobile = false) => {
-  if (scene === 'farm') return `/game-art/kingdoms/city-scenes/sultan-farm-user${mobile ? '-mobile' : ''}.webp`;
+  if (scene === 'sultan-garden') return `/game-art/kingdoms/city-scenes/sultan-farm-user${mobile ? '-mobile' : ''}.webp`;
   const asset = scene === 'palace' ? 'palace-courtyard-user' : cityScenes[scene].asset;
   const suffix = mobile ? portraitAssets.has(asset) ? '-portrait' : '-mobile' : '';
   return `/game-art/kingdoms/city-scenes/${asset}${suffix}.webp`;

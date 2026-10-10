@@ -56,7 +56,7 @@ export function VillagePanel({
   commandNotice?: string;
 }) {
   const [selectedScene, setSelectedScene] = useState<CitySceneKey | null>(initialBuilding ? citySceneForBuilding(initialBuilding) : null);
-  const selected = selectedScene === 'palace' ? 'hall' : selectedScene === 'war-council' ? 'rally' : selectedScene;
+  const selected = selectedScene === 'sultan-garden' ? null : selectedScene === 'palace' ? 'hall' : selectedScene === 'war-council' ? 'rally' : selectedScene;
   const returnFocus = useRef<HTMLElement | null>(null);
   const pendingBuilds =
     village.constructionQueue?.filter(
@@ -90,7 +90,7 @@ export function VillagePanel({
         data-hide-mobile-navigation={hideMobileNavigation}
         data-sheet={selected === null ? undefined : selected === 'rally' ? 'rally' : 'building'}
         onKeyDown={(event) => {
-          if (event.key === 'Escape' && selected) close();
+          if (event.key === 'Escape' && selectedScene) close();
         }}
       >
         <div className={villageStyles.scene} aria-hidden={selectedScene !== null} inert={selectedScene !== null} data-city-hidden={selectedScene !== null}>
@@ -109,10 +109,10 @@ export function VillagePanel({
         </div>
         {selectedScene && <Suspense fallback={<div role="status">تجهيز المشهد…</div>}>
           <CityBuildingScene key={selectedScene} scene={selectedScene} onClose={close}
-            farm={selectedScene === 'farm' ? { view, village, busy, send } : undefined}
+            farm={selectedScene === 'sultan-garden' ? { view, village, busy, send } : undefined}
             garden={selectedScene === 'palace' && view.player ? <Suspense fallback={null}><PalaceGarden worldId={view.worldId} villageId={village.id} playerId={view.player.id} onSaved={onRefresh} /></Suspense> : undefined}>
             <VillageIncomingAlert incoming={view.incoming ?? []} village={village} view={view} onShowMap={onShowMap} onRefresh={onRefresh} />
-            <section aria-label="موارد المشهد" data-city-resources=""><ResourceText resources={village.resources} /></section>
+            {selectedScene !== 'sultan-garden' && <section aria-label="موارد المشهد" data-city-resources=""><ResourceText resources={village.resources} /></section>}
             {commandError && <p role="alert" data-city-feedback="error">{commandError}</p>}
             {commandNotice && <p role="status" data-city-feedback="notice">{commandNotice}</p>}
             <Suspense fallback={<p role="status">تجهيز المرافق…</p>}><FacilitySceneContent scene={selectedScene} view={view} village={village} busy={busy} send={send} onClose={close} onSelectScene={selectScene} onNavigate={onNavigate} onRefresh={onRefresh} onShowMap={onShowMap} onCampaign={onCampaign} /></Suspense>
