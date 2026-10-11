@@ -11,6 +11,7 @@ export const cropKeys = [
   'lavender',
   'sunflower',
   'iris',
+  'lotus',
 ] as const;
 export type CropKey = (typeof cropKeys)[number];
 export const farmPolicy = Object.freeze({ version: 2, plotCount: 12 });
@@ -88,6 +89,14 @@ export const farmCrops = {
     form: 'iris',
     color: 'violet',
   },
+  lotus: {
+    name: 'اللوتس',
+    family: 'flower',
+    growMinutes: 14,
+    unlockHarvests: 0,
+    form: 'lotus',
+    color: 'red',
+  },
 } as const;
 const bounded = z.number().finite().min(0).max(1e9);
 const timestamp = z.number().int().min(0).max(8e12);
@@ -162,6 +171,14 @@ export const gardenMilestones = [
     reward: 'وسام أول حصاد',
   },
   {
+    id: 'garden:lotus-bloom',
+    name: 'زهرة اللوتس',
+    metric: 'crop',
+    crop: 'lotus',
+    target: 1,
+    reward: 'وسام زهرة اللوتس',
+  },
+  {
     id: 'garden:variety',
     name: 'حديقة متنوعة',
     metric: 'variety',
@@ -200,7 +217,12 @@ export function gardenGoals(farm: FarmState) {
   const progress = gardenProgress(farm);
   const variety = Object.values(progress.collected).filter((value) => value && value > 0).length;
   return gardenMilestones.map((goal) => {
-    const value = goal.metric === 'harvests' ? progress.harvests : variety;
+    const value =
+      goal.metric === 'harvests'
+        ? progress.harvests
+        : goal.metric === 'variety'
+          ? variety
+          : progress.collected[goal.crop] ?? 0;
     return {
       ...goal,
       value,

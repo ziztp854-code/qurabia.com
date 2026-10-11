@@ -18,7 +18,7 @@ import {
   type CropKey,
   type FarmPlant,
 } from '@/lib/kingdoms/sultan-farm';
-import { farmPlantShapes } from '@/lib/kingdoms/village/farm-plant-shapes';
+import { farmPlantAsset, farmVisualStage } from '@/lib/kingdoms/village/farm-plant-visual';
 import { storageCapacity } from '@/lib/kingdoms/simulation';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import { number, rateAmount, type GameProps } from '../shared';
@@ -60,13 +60,6 @@ export function farmDuration(ms: number) {
     ? copy.duration.hours(rateAmount(minutes / 60))
     : copy.duration.minutes(number(minutes));
 }
-const bloomTokens = {
-  gold: '--kingdoms-ui-gold',
-  green: '--kingdoms-ui-success',
-  red: '--kingdoms-ui-danger',
-  ivory: '--brand-ivory',
-  violet: '--kingdoms-garden-violet',
-} as const;
 const growthStageKeys = ['seed', 'sprout', 'growing', 'fruiting', 'ripe'] as const;
 export function FarmPlantVisual({
   plant,
@@ -81,17 +74,19 @@ export function FarmPlantVisual({
 }) {
   const growth = plant ? farmGrowth(plant, now) : null;
   const crop = plant?.crop ?? previewCrop;
-  const shapes = crop ? farmPlantShapes(crop, growth?.progress ?? 1) : [];
-  const color = crop ? `var(${bloomTokens[farmCrops[crop].color]})` : 'currentColor';
+  const stage = growth?.stage ?? (previewCrop ? 'preview' : 'empty');
+  const asset =
+    crop && stage !== 'seed' && stage !== 'empty'
+      ? farmPlantAsset(crop, farmVisualStage(stage))
+      : null;
   return (
     <svg
       className={styles.visual}
       viewBox="0 0 120 96"
       aria-hidden="true"
       data-crop={crop ?? 'empty'}
-      data-stage={growth?.stage ?? (previewCrop ? 'preview' : 'empty')}
+      data-stage={stage}
       data-detail={detail}
-      style={{ '--garden-bloom': color } as CSSProperties}
     >
       <ellipse cx="60" cy="81" rx="48" ry="10" className={styles.soil} />
       <path d="M17 82 Q60 92 103 82 M30 76 Q60 85 90 76" className={styles.furrow} />
@@ -99,40 +94,24 @@ export function FarmPlantVisual({
         <path d="M52 80h16m-8-8v16" className={styles.emptyMark} />
       ) : growth?.stage === 'seed' ? (
         <ellipse cx="60" cy="78" rx="3" ry="2" className={styles.seed} />
-      ) : (
-        <g transform={`translate(60 80) scale(${0.35 + 0.65 * (growth?.progress ?? 1)})`}>
+      ) : asset ? (
+        <g
+          className={styles.canopyScale}
+          transform={`translate(60 82) scale(${0.45 + 0.55 * (growth?.progress ?? 1)}) translate(-60 -82)`}
+        >
           <g className={styles.canopy}>
-            {shapes.map((shape, i) =>
-              shape.kind === 'line' ? (
-                <line
-                  key={i}
-                  x1={shape.x1}
-                  y1={shape.y1}
-                  x2={shape.x2}
-                  y2={shape.y2}
-                  className={styles.artStem}
-                />
-              ) : (
-                <ellipse
-                  key={i}
-                  cx={shape.x}
-                  cy={shape.y}
-                  rx={shape.rx}
-                  ry={shape.ry}
-                  transform={`rotate(${shape.angle} ${shape.x} ${shape.y})`}
-                  className={
-                    shape.paint === 'leaf'
-                      ? styles.artLeaf
-                      : shape.paint === 'center'
-                        ? styles.artCenter
-                        : styles.artBloom
-                  }
-                />
-              ),
-            )}
+            <image
+              href={asset}
+              x="10"
+              y="2"
+              width="100"
+              height="80"
+              preserveAspectRatio="xMidYMax meet"
+              className={styles.photoCanopy}
+            />
           </g>
         </g>
-      )}
+      ) : null}
     </svg>
   );
 }
@@ -163,8 +142,7 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
   const counts = farm.plots.reduce(
     (total, item) => {
       if (!item.plant) return { ...total, empty: total.empty + 1 };
-      if (farmGrowth(item.plant, now).stage === 'ripe')
-        return { ...total, ready: total.ready + 1 };
+      if (farmGrowth(item.plant, now).stage === 'ripe') return { ...total, ready: total.ready + 1 };
       return { ...total, growing: total.growing + 1 };
     },
     { empty: 0, growing: 0, ready: 0 },
@@ -420,9 +398,7 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
                   : copy.goals.progress(
                       number(Math.min(goal.value, goal.target)),
                       number(goal.target),
-                      goal.metric === 'variety'
-                        ? copy.goals.varietyUnit
-                        : copy.goals.harvestUnit,
+                      goal.metric === 'variety' ? copy.goals.varietyUnit : copy.goals.harvestUnit,
                       number(goal.remaining),
                     )}
               </span>

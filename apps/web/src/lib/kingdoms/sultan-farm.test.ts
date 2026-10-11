@@ -68,8 +68,18 @@ describe('Sultan garden authority and cosmetic isolation', () => {
       ]).rewards,
     ).toEqual(['فتح إطار ذهبي', 'فتح السوسن']);
   });
-  it('quotes nine free plants independent of village level/config/rotation; declares deterministic unlocks', () => {
-    expect(cropKeys).toHaveLength(9);
+  it('awards a cosmetic lotus badge once without changing the village economy', () => {
+    const { world, village } = fixture();
+    const before = structuredClone(village.resources);
+    plantFarm(world.config, village, 0, 0, 'lotus', at);
+    const readyAt = village.sultanFarm!.plots[0].plant!.readyAt;
+    expect(harvestFarm(world.config, village, 0, 1, readyAt)).toContain('garden:lotus-bloom');
+    expect(village.resources).toEqual(before);
+    expect(gardenProgress(farmState(village)).collected.lotus).toBe(1);
+  });
+  it('quotes ten free plants including lotus independent of village level/config/rotation', () => {
+    expect(cropKeys).toHaveLength(10);
+    expect(cropKeys).toContain('lotus');
     for (const crop of cropKeys) {
       const q = farmQuote(defaultKingdomsConfig, 0, crop);
       expect(q).toMatchObject({ seedFood: 0, harvestFood: 0, policyVersion: 2, rotated: false });
@@ -182,7 +192,7 @@ describe('Sultan garden authority and cosmetic isolation', () => {
     const { world, village } = fixture();
     let now = at;
     for (let i = 0; i < 12; i++) {
-      const crop = (['wheat', 'beans', 'rose'] as const)[i % 3];
+      const crop = (['wheat', 'beans', 'lotus'] as const)[i % 3];
       plantFarm(world.config, village, 0, i * 2, crop, now);
       now = village.sultanFarm!.plots[0].plant!.readyAt;
       const ids = harvestFarm(world.config, village, 0, i * 2 + 1, now);

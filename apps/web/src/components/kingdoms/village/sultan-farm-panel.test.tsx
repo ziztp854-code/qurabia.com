@@ -63,7 +63,7 @@ describe('Sultan garden RTL interaction', () => {
     const preview = document.querySelector('[class*="reward"]')!;
     expect(preview.textContent).not.toContain('وسام أول حصاد');
   });
-  it('shows 12 plots, nine plant choices, free duration and expected rewards before planting', () => {
+  it('shows 12 plots, ten plant choices including lotus, and free planting details', () => {
     const p = props();
     p.village.resources.food = 0;
     render(<SultanFarmPanel {...p} />);
@@ -75,9 +75,12 @@ describe('Sultan garden RTL interaction', () => {
       within(screen.getByRole('group', { name: 'اختر النبات — البذور مجانية' })).getAllByRole(
         'button',
       ),
-    ).toHaveLength(9);
+    ).toHaveLength(10);
     expect(screen.getByText('مدة النمو')).toBeInTheDocument();
     expect(screen.getByText(/الجمع يمنح حصادًا واحدًا/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /اللوتس.*متاح/ }));
+    expect(screen.getByRole('button', { name: 'ازرع اللوتس' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /القمح.*متاح/ }));
     fireEvent.click(screen.getByRole('button', { name: 'الحوض 4، فارغ' }));
     fireEvent.click(screen.getByRole('button', { name: 'ازرع القمح' }));
     expect(p.send).toHaveBeenCalledWith({
@@ -100,10 +103,7 @@ describe('Sultan garden RTL interaction', () => {
     fireEvent.click(screen.getByRole('button', { name: 'الحوض 3، القمح، ناضج' }));
     const stages = screen.getByRole('list', { name: 'مراحل النمو' });
     expect(within(stages).getAllByRole('listitem')).toHaveLength(5);
-    expect(within(stages).getByText('ناضج').closest('li')).toHaveAttribute(
-      'aria-current',
-      'step',
-    );
+    expect(within(stages).getByText('ناضج').closest('li')).toHaveAttribute('aria-current', 'step');
   });
   it('collects explicitly with version, even at full storage; the timer sends no commands', () => {
     const p = props(true);
@@ -193,8 +193,8 @@ describe('Sultan garden RTL interaction', () => {
     expect(screen.getByRole('button', { name: 'ازرع القمح' })).toBeDisabled();
     expect(screen.getByRole('button', { name: /أحواض طبيعية/ })).toBeDisabled();
   });
-  it('renders distinct vector shapes for the new flowers with declared ripe/seed stages', () => {
-    const make = (crop: 'rose' | 'jasmine' | 'iris') => ({
+  it('renders photographic crop assets with declared ripe/seed stages', () => {
+    const make = (crop: 'rose' | 'jasmine' | 'lotus') => ({
       crop,
       plantedAt: at - 60000,
       readyAt: at,
@@ -204,11 +204,20 @@ describe('Sultan garden RTL interaction', () => {
       policyVersion: 2 as const,
     });
     const { container, rerender } = render(<FarmPlantVisual plant={make('rose')} now={at} />);
-    const rose = container.innerHTML;
+    expect(container.querySelector('image')).toHaveAttribute(
+      'href',
+      expect.stringContaining('rose-ripe.webp'),
+    );
+    expect(container.querySelector('g[transform]')).toHaveAttribute('transform');
+    expect(container.querySelector('g[transform] > g > image')).toBeInTheDocument();
     rerender(<FarmPlantVisual plant={make('jasmine')} now={at} />);
-    expect(container.innerHTML).not.toEqual(rose);
+    expect(container.querySelector('image')).toHaveAttribute(
+      'href',
+      expect.stringContaining('jasmine-ripe.webp'),
+    );
     expect(container.querySelector('svg')).toHaveAttribute('data-stage', 'ripe');
-    rerender(<FarmPlantVisual plant={make('iris')} now={at - 60000} />);
+    rerender(<FarmPlantVisual plant={make('lotus')} now={at - 60000} />);
     expect(container.querySelector('svg')).toHaveAttribute('data-stage', 'seed');
+    expect(container.querySelector('image')).not.toBeInTheDocument();
   });
 });
