@@ -148,8 +148,8 @@ export class VillageCamera implements VillageSceneHandle {
     return { ...camera, state: camera.zoom === 1 ? 'CITY_OVERVIEW' : 'CITY_EXPLORE' };
   }
   zoomBy = (factor: number) => this.animate(this.exploring(zoomCamera(this.camera, factor)));
-  focusRect = (rect: WorldRect, preferredZoom?: number) => {
-    this.animate({ ...focusCamera(this.camera, rect, undefined, preferredZoom), state: 'CITY_EXPLORE' });
+  focusRect = (rect: WorldRect, preferredZoom?: number, anchor?: WorldPoint) => {
+    this.animate({ ...focusCamera(this.camera, rect, anchor, preferredZoom), state: 'CITY_EXPLORE' });
   };
   zoomTo = (zoom: number, onComplete?: () => void) => {
     const target = clampCamera({ ...this.camera, zoom });

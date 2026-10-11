@@ -24,6 +24,7 @@ import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import { number, rateAmount, type GameProps } from '../shared';
 import { useViewClock } from '../use-view-clock';
 import styles from './sultan-farm-panel.module.css';
+import { sultanFarmCopy as copy } from './sultan-farm-copy';
 import { FarmSceneContext } from './farm-scene-context';
 
 const farmAmount = (value: number) => value.toLocaleString('ar-SA', { maximumFractionDigits: 3 });
@@ -55,7 +56,9 @@ function environment() {
 const fallbackEnvironment = () => 'quiet:low';
 export function farmDuration(ms: number) {
   const minutes = Math.ceil(ms / 60000);
-  return minutes >= 60 ? `${rateAmount(minutes / 60)} ساعة` : `${number(minutes)} دقيقة`;
+  return minutes >= 60
+    ? copy.duration.hours(rateAmount(minutes / 60))
+    : copy.duration.minutes(number(minutes));
 }
 const bloomTokens = {
   gold: '--kingdoms-ui-gold',
@@ -64,6 +67,7 @@ const bloomTokens = {
   ivory: '--brand-ivory',
   violet: '--kingdoms-garden-violet',
 } as const;
+const growthStageKeys = ['seed', 'sprout', 'growing', 'fruiting', 'ripe'] as const;
 export function FarmPlantVisual({
   plant,
   now,
@@ -146,6 +150,7 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
   const now = useViewClock(view, deadline, `farm:${view.worldId}:${village.id}`);
   const motion = useSyncExternalStore(subscribeEnvironment, environment, fallbackEnvironment);
   const growth = plot.plant ? farmGrowth(plot.plant, now) : null;
+  const growthStageIndex = growth ? growthStageKeys.indexOf(growth.stage) : -1;
   const quote = farmQuote(view.config, village.buildings.farm, seed, plot.previousFamily);
   const legacy = plot.plant?.policyVersion === 1;
   const full = Boolean(
@@ -155,15 +160,21 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
   );
   const locked = progress.harvests < farmCrops[seed].unlockHarvests;
   const disabled = busy || view.paused || view.season.status === 'ended';
-  const ready = farm.plots.filter(
-    (item) => item.plant && farmGrowth(item.plant, now).stage === 'ripe',
-  ).length;
+  const counts = farm.plots.reduce(
+    (total, item) => {
+      if (!item.plant) return { ...total, empty: total.empty + 1 };
+      if (farmGrowth(item.plant, now).stage === 'ripe')
+        return { ...total, ready: total.ready + 1 };
+      return { ...total, growing: total.growing + 1 };
+    },
+    { empty: 0, growing: 0, ready: 0 },
+  );
   const preview = gardenHarvestPreview(farm, plot.plant?.crop ?? seed, view.player?.achievements);
   const reward = (
     <p className={styles.reward}>
       <Award size={18} aria-hidden="true" />
       <span>
-        الجمع يمنح حصادًا واحدًا للحديقة؛ يصبح المجموع {number(preview.harvests)}.
+        {copy.reward.preview(number(preview.harvests))}
         {preview.rewards.length > 0 && <strong> {preview.rewards.join('، ')}.</strong>}
       </span>
     </p>
@@ -172,7 +183,7 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
     <section
       className={styles.farm}
       dir="rtl"
-      aria-label="مزرعة السلطان"
+      aria-label={copy.aria.farm}
       data-garden-style={progress.style}
       data-farm-motion={
         view.paused || scene?.motionPaused || motion.startsWith('quiet') ? 'quiet' : 'moving'
@@ -181,22 +192,27 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
     >
       <header className={styles.heading}>
         <div>
-          <p>ازرع، شاهد النمو، واجمع الأوسمة</p>
-          <h3>مزرعة السلطان</h3>
+          <p>{copy.header.eyebrow}</p>
+          <h3>{copy.header.title}</h3>
+          <span>{copy.header.intro}</span>
         </div>
-        <Sprout size={28} aria-hidden="true" />
+        <span className={styles.headingMark} aria-hidden="true">
+          <Sprout size={28} />
+        </span>
       </header>
-      <div className={styles.summary}>
-        <span>{number(progress.harvests)} حصاد تجميلي</span>
-        <span>{number(ready)} جاهز للجمع</span>
+      <div className={styles.summary} aria-label={copy.aria.summary}>
+        <span>{copy.header.harvests(number(progress.harvests))}</span>
+        <span>{copy.header.growing(number(counts.growing))}</span>
+        <span data-ready={counts.ready > 0}>{copy.header.ripe(number(counts.ready))}</span>
+        <span>{copy.header.empty(number(counts.empty))}</span>
       </div>
-      <p className={styles.hint}>
-        البذور مجانية وتتجدد بعد كل جمع. تنمو النباتات أثناء غيابك وتبقى ناضجة حتى تعود. المكافآت
-        نباتات وأوسمة وزينة للحديقة.
-      </p>
-      <div className={styles.plots} role="group" aria-label="أحواض المزرعة">
+      <p className={styles.hint}>{copy.guidance}</p>
+      <div className={styles.plots} role="group" aria-label={copy.aria.plots}>
         {farm.plots.map((item, index) => {
           const state = item.plant ? farmGrowth(item.plant, now) : null;
+          const plotState = item.plant
+            ? `${farmCrops[item.plant.crop].name}، ${farmStageNames[state!.stage]}`
+            : copy.plot.empty;
           return (
             <button
               key={index}
@@ -204,19 +220,39 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
               className={styles.plot}
               aria-pressed={selected === index}
               data-ready={state?.stage === 'ripe'}
-              aria-label={`الحوض ${index + 1}، ${item.plant ? farmCrops[item.plant.crop].name + '، ' + farmStageNames[state!.stage] : 'فارغ'}`}
+              data-legacy={item.plant?.policyVersion === 1}
+              aria-label={copy.aria.plot(String(index + 1), plotState)}
               onClick={() => setSelected(index)}
             >
               <span className={styles.plotNumber}>
                 <bdi>{number(index + 1)}</bdi>
               </span>
-              <FarmPlantVisual plant={item.plant} now={now} detail={false} />
-              <span>{state ? farmStageNames[state.stage] : 'فارغ'}</span>
+              <span className={styles.plotVisual}>
+                <FarmPlantVisual plant={item.plant} now={now} detail={false} />
+              </span>
+              <span className={styles.plotMeta}>
+                <strong>{item.plant ? farmCrops[item.plant.crop].name : copy.plot.empty}</strong>
+                <small>
+                  {state
+                    ? state.stage === 'ripe'
+                      ? copy.plot.ready
+                      : `${farmStageNames[state.stage]} · ${copy.plot.remaining(farmDuration(state.remainingMs))}`
+                    : copy.plot.freeCosmetic}
+                </small>
+              </span>
+              {item.plant?.policyVersion === 1 && (
+                <span className={styles.legacyTag}>{copy.plot.legacy}</span>
+              )}
+              {state && state.stage !== 'ripe' && (
+                <span className={styles.plotProgress} aria-hidden="true">
+                  <i style={{ '--plot-progress': `${state.progress * 100}%` } as CSSProperties} />
+                </span>
+              )}
             </button>
           );
         })}
       </div>
-      <div className={styles.selected} aria-label={`تفاصيل الحوض ${selected + 1}`}>
+      <div className={styles.selected} aria-label={copy.aria.details(String(selected + 1))}>
         <div className={styles.preview}>
           <FarmPlantVisual
             plant={plot.plant}
@@ -225,11 +261,12 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
             detail={!motion.endsWith(':low')}
           />
           <div>
-            <h4>
-              الحوض <bdi>{number(selected + 1)}</bdi>
-            </h4>
+            <span className={styles.detailEyebrow}>{copy.detail.eyebrow}</span>
+            <h4>{copy.detail.title(number(selected + 1))}</h4>
             <p>
-              {plot.plant ? farmCrops[plot.plant.crop].name : `${farmCrops[seed].name} — شكل النضج`}
+              {plot.plant
+                ? farmCrops[plot.plant.crop].name
+                : copy.detail.maturePreview(farmCrops[seed].name)}
             </p>
           </div>
         </div>
@@ -238,19 +275,34 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
             <div className={styles.stage}>
               <strong>{farmStageNames[growth.stage]}</strong>
               <span>
-                {growth.remainingMs ? `متبقي ${farmDuration(growth.remainingMs)}` : 'جاهز للجمع'}
+                {growth.remainingMs
+                  ? copy.plot.remaining(farmDuration(growth.remainingMs))
+                  : copy.plot.ready}
               </span>
             </div>
+            <ol className={styles.stageTrack} aria-label={copy.aria.growth}>
+              {growthStageKeys.map((stage, index) => {
+                return (
+                  <li
+                    key={stage}
+                    data-complete={index < growthStageIndex}
+                    aria-current={stage === growth.stage ? 'step' : undefined}
+                  >
+                    <i aria-hidden="true" />
+                    <span>{farmStageNames[stage]}</span>
+                  </li>
+                );
+              })}
+            </ol>
             <progress
               className={styles.progress}
               value={growth.progress}
               max={1}
-              aria-label="تقدم نمو النبات"
+              aria-label={copy.aria.progress}
             />
             {legacy ? (
               <p className={styles.reward}>
-                محصول قديم مدفوع: {farmAmount(plot.plant.harvestFood)} غذاء عند الحصاد وفق العقد
-                المحفوظ. الزراعة التالية مجانية وتجميلية.
+                {copy.reward.legacy(farmAmount(plot.plant.harvestFood))}
               </p>
             ) : (
               reward
@@ -258,10 +310,13 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
             {full && (
               <p role="status" className={styles.storage}>
                 <Warehouse size={18} aria-hidden="true" />
-                المخزن لا يسع المحصول القديم؛ وفر مساحة، والمحصول محفوظ.
+                {copy.reward.storageFull}
               </p>
             )}
             <Button
+              variant="gold"
+              fullWidth
+              loading={busy}
               disabled={disabled || growth.stage !== 'ripe' || full}
               onClick={() =>
                 void send({
@@ -272,13 +327,15 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
                 })
               }
             >
-              {legacy ? 'احصد' : 'اجمع'} الحوض {number(selected + 1)}
+              {legacy
+                ? copy.actions.legacyHarvest(number(selected + 1))
+                : copy.actions.collect(number(selected + 1))}
             </Button>
           </>
         ) : (
           <>
             <fieldset className={styles.seeds}>
-              <legend>اختر النبات — البذور مجانية</legend>
+              <legend>{copy.picker.legend}</legend>
               {cropKeys.map((crop) => {
                 const remaining = Math.max(0, farmCrops[crop].unlockHarvests - progress.harvests);
                 return (
@@ -292,7 +349,9 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
                   >
                     <span>{farmCrops[crop].name}</span>
                     <small>
-                      {remaining > 0 ? `متبقي ${number(remaining)} حصاد لفتحه` : 'متاح مجانًا'}
+                      {remaining > 0
+                        ? copy.picker.locked(number(remaining))
+                        : copy.picker.available}
                     </small>
                   </button>
                 );
@@ -302,24 +361,30 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
               <div>
                 <dt>
                   <Timer size={16} aria-hidden="true" />
-                  مدة النمو
+                  {copy.picker.duration}
                 </dt>
                 <dd>{farmDuration(quote.growMs)}</dd>
               </div>
               <div>
-                <dt>دورة البذور</dt>
-                <dd>مجانية بعد كل جمع</dd>
+                <dt>{copy.picker.cycle}</dt>
+                <dd>{copy.picker.cycleValue}</dd>
               </div>
             </dl>
             {reward}
             {locked && (
               <p role="status" className={styles.hint}>
-                لفتح {farmCrops[seed].name}: المكتسب {number(progress.harvests)} من{' '}
-                {number(farmCrops[seed].unlockHarvests)} حصاد؛ المتبقي{' '}
-                {number(farmCrops[seed].unlockHarvests - progress.harvests)}.
+                {copy.picker.unlock(
+                  farmCrops[seed].name,
+                  number(progress.harvests),
+                  number(farmCrops[seed].unlockHarvests),
+                  number(farmCrops[seed].unlockHarvests - progress.harvests),
+                )}
               </p>
             )}
             <Button
+              variant="gold"
+              fullWidth
+              loading={busy}
               disabled={disabled || locked}
               onClick={() =>
                 void send({
@@ -332,7 +397,7 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
                 })
               }
             >
-              ازرع {farmCrops[seed].name}
+              {copy.actions.plant(farmCrops[seed].name)}
             </Button>
           </>
         )}
@@ -340,27 +405,34 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
       <details className={styles.goals}>
         <summary>
           <Award size={18} aria-hidden="true" />
-          أوسمة الحديقة — المكتسب والأهداف
+          {copy.goals.summary}
         </summary>
         <ul>
           {gardenGoals(farm).map((goal) => (
             <li key={goal.id} data-earned={view.player?.achievements.includes(goal.id)}>
               <strong>
                 {goal.name}
-                {view.player?.achievements.includes(goal.id) ? ' — مكتسب' : ''}
+                {view.player?.achievements.includes(goal.id) ? copy.goals.earnedSuffix : ''}
               </strong>
               <span>
                 {view.player?.achievements.includes(goal.id)
-                  ? 'وسام مكتسب لحسابك'
-                  : `${number(Math.min(goal.value, goal.target))} / ${number(goal.target)} ${goal.metric === 'variety' ? 'أنواع مختلفة' : 'حصادات'}؛ متبقي ${number(goal.remaining)}`}
+                  ? copy.goals.earned
+                  : copy.goals.progress(
+                      number(Math.min(goal.value, goal.target)),
+                      number(goal.target),
+                      goal.metric === 'variety'
+                        ? copy.goals.varietyUnit
+                        : copy.goals.harvestUnit,
+                      number(goal.remaining),
+                    )}
               </span>
-              <small>المكافأة: {goal.reward}</small>
+              <small>{copy.goals.reward(goal.reward)}</small>
             </li>
           ))}
         </ul>
       </details>
-      <fieldset className={styles.seeds}>
-        <legend>زينة الأحواض</legend>
+      <fieldset className={`${styles.seeds} ${styles.decor}`}>
+        <legend>{copy.decor.legend}</legend>
         {gardenStyleKeys.map((style) => {
           const remaining = Math.max(0, gardenStyles[style].unlockHarvests - progress.harvests);
           return (
@@ -375,19 +447,16 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
               <span>{gardenStyles[style].name}</span>
               <small>
                 {remaining
-                  ? `متبقي ${number(remaining)} حصاد`
+                  ? copy.decor.locked(number(remaining))
                   : progress.style === style
-                    ? 'مطبّق'
-                    : 'طبّق مجانًا'}
+                    ? copy.decor.applied
+                    : copy.decor.apply}
               </small>
             </button>
           );
         })}
       </fieldset>
-      <p className={styles.footnote}>
-        بذرة ← برعم ← نمو ← إزهار ← نضج. كل جمع يقدّم الحديقة فقط؛ إنتاج الغذاء من مبنى المزرعة
-        يستمر كالمعتاد.
-      </p>
+      <p className={styles.footnote}>{copy.footnote}</p>
     </section>
   );
 }

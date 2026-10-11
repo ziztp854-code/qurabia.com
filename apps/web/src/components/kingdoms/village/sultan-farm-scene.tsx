@@ -7,14 +7,29 @@ import {
   farmBedBounds,
   FARM_WORLD,
 } from '@/lib/kingdoms/village/farm-scene-layout';
+import {
+  classifyFarmPointerMovement,
+  findFarmBedAtPoint,
+} from '@/lib/kingdoms/village/sultan-farm-input';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import { unprojectPoint } from '@/lib/kingdoms/village/cameraMath';
 import type { GameProps } from '../shared';
 import { useViewClock } from '../use-view-clock';
 import { VillageCamera } from './village-camera';
 import { FarmSceneContext } from './farm-scene-context';
+import { sultanFarmCopy as copy } from './sultan-farm-copy';
 import type { createSultanFarmRenderer } from './sultan-farm-renderer';
 import styles from './sultan-farm-scene.module.css';
+
+type FarmSelect = (id: number, options?: { focus?: boolean }) => void;
+
+function focusFarmBed(camera: VillageCamera, id: number) {
+  const { viewport } = camera.getSnapshot();
+  const anchor = viewport.width <= 700
+    ? { x: viewport.width / 2, y: Math.max(80, viewport.height * 0.24) }
+    : undefined;
+  camera.focusRect(farmBedBounds(id), 3, anchor);
+}
 
 export function SultanFarmScene({ children, view, village }: GameProps & { children: ReactNode }) {
   const host = useRef<HTMLDivElement>(null),
@@ -38,8 +53,8 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
     `farm-art:${view.worldId}:${village.id}`,
   );
   const paused = useRef(view.paused || quiet);
-  const select = useRef(context?.select);
-  const choose = context?.select;
+  const select = useRef<FarmSelect | undefined>(context?.select);
+  const choose: FarmSelect | undefined = context?.select;
   const registerFocus = context?.registerFocus;
   useEffect(() => {
     latest.current = farm;
@@ -86,7 +101,7 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
     };
     motion.addEventListener('change', updateMotion);
     updateMotion();
-    const offFocus = registerFocus?.((id) => instance.focusRect(farmBedBounds(id), 3));
+    const offFocus = registerFocus?.((id) => focusFarmBed(instance, id));
     const updateSize = () => renderer.current?.resize(element.clientWidth, element.clientHeight);
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateSize);
     if (resize) resize.observe(element);
@@ -133,7 +148,7 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
       const p = local(e),
         before = distance();
       points.set(e.pointerId, p);
-      if (origin && Math.hypot(p.x - origin.x, p.y - origin.y) > 5) dragged = true;
+      if (origin && classifyFarmPointerMovement(origin, p) === 'drag') dragged = true;
       if (points.size === 2) {
         const [a, b] = [...points.values()],
           after = distance();
@@ -141,28 +156,15 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
       } else if (dragged) instance.panBy(p.x - prev.x, p.y - prev.y);
     };
     const up = (e: PointerEvent) => {
-      const p = points.get(e.pointerId);
-      if (!p) return;
+      const tracked = points.get(e.pointerId);
+      if (!tracked) return;
+      const p = local(e);
+      if (origin && classifyFarmPointerMovement(origin, p) === 'drag') dragged = true;
       points.delete(e.pointerId);
       if (e.type === 'pointerup' && !dragged) {
         const w = unprojectPoint(p, instance.getSnapshot());
-        for (let id = 0; id < 12; id++) {
-          const polygon = farmBeds[id];
-          let inside = false;
-          for (let i = 0, j = 3; i < 4; j = i++) {
-            const a = polygon[i],
-              b = polygon[j];
-            if (
-              a[1] > w.y !== b[1] > w.y &&
-              w.x < ((b[0] - a[0]) * (w.y - a[1])) / (b[1] - a[1]) + a[0]
-            )
-              inside = !inside;
-          }
-          if (inside) {
-            select.current?.(id);
-            break;
-          }
-        }
+        const id = findFarmBedAtPoint(w);
+        if (id !== null) select.current?.(id, { focus: false });
       }
       if (element.hasPointerCapture(e.pointerId)) element.releasePointerCapture(e.pointerId);
       if (!points.size) origin = null;
@@ -216,7 +218,7 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
         ref={host}
         className={styles.viewport}
         role="application"
-        aria-label="مشهد مزرعة السلطان، اسحب أو كبّر لاستكشاف الأحواض"
+        aria-label={copy.scene.aria}
         tabIndex={0}
         onKeyDown={(e) => {
           const c = camera.current;
@@ -268,39 +270,40 @@ export function SultanFarmScene({ children, view, village }: GameProps & { child
         </div>
         <div ref={mount} className={styles.canvas} aria-hidden="true" />
       </div>
-      <div className={styles.tools} role="group" aria-label="استكشاف المزرعة">
+      <div className={styles.tools} role="group" aria-label={copy.scene.tools}>
         <button type="button" onClick={() => camera.current?.reset()}>
-          المزرعة كاملة
+          {copy.scene.fit}
         </button>
-        <button type="button" onClick={() => camera.current?.focusRect(farmBedBounds(selected), 3)}>
-          تقريب الحوض {selected + 1}
+        <button type="button" onClick={() => camera.current && focusFarmBed(camera.current, selected)}>
+          {copy.scene.focus((selected + 1).toLocaleString('ar-SA'))}
         </button>
         <button
           type="button"
-          aria-label="تكبير المزرعة"
+          aria-label={copy.scene.zoomIn}
           onClick={() => camera.current?.zoomBy(1.2)}
         >
           +
         </button>
         <button
           type="button"
-          aria-label="تصغير المزرعة"
+          aria-label={copy.scene.zoomOut}
           onClick={() => camera.current?.zoomBy(0.8)}
         >
           −
         </button>
         <button type="button" aria-pressed={quiet} onClick={() => setQuiet(!quiet)}>
-          {quiet ? 'تشغيل الحركة' : 'إيقاف الحركة'}
+          {quiet ? copy.scene.motionOn : copy.scene.motionOff}
         </button>
       </div>
       <p className={styles.caption}>
-        الحوض {selected + 1} ·{' '}
-        {current.plant
-          ? `${farmCrops[current.plant.crop].name} · ${farmStageNames[growth!.stage]}`
-          : 'جاهز لبذرة جديدة'}{' '}
-        · اختر الحوض من الصورة أو لوحة الزراعة
+        {copy.scene.caption(
+          (selected + 1).toLocaleString('ar-SA'),
+          current.plant
+            ? `${farmCrops[current.plant.crop].name} · ${farmStageNames[growth!.stage]}`
+            : copy.scene.empty,
+        )}
       </p>
-      {failed && <p role="status">تعذر رسم النباتات؛ تابع حالة النمو والزراعة من اللوحة.</p>}
+      {failed && <p role="status">{copy.scene.renderFailure}</p>}
     </div>
   );
 }

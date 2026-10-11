@@ -159,7 +159,7 @@ async function enter(page: Page, scene: Scene) {
 }
 
 async function back(page: Page) {
-  await page.getByRole('button', { name: 'العودة إلى المدينة', exact: true }).click();
+  await page.getByRole('button', { name: /العودة إلى (?:المدينة|القرية)/ }).click();
   await expect(page.locator('[data-city-scene]')).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'خريطة القرية', exact: true })).toBeVisible();
 }

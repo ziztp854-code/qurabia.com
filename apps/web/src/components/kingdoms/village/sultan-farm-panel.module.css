@@ -1,60 +1,117 @@
 .farm {
-  color: var(--kingdoms-ui-foreground);
+  display: grid;
+  gap: var(--space-3);
   min-inline-size: 0;
+  color: var(--kingdoms-ui-foreground);
 }
 .heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  color: var(--kingdoms-ui-gold);
+  padding: var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-inline-start-width: 3px;
+  border-radius: var(--radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--kingdoms-ui-surface-strong) 86%,
+    var(--kingdoms-ui-background)
+  );
+}
+.heading > div {
+  min-inline-size: 0;
+}
+.heading p,
+.heading span {
+  margin: 0;
 }
 .heading p {
-  font-size: 0.75rem;
-  margin: 0 0 var(--space-1);
-  color: var(--kingdoms-ui-muted);
+  color: var(--kingdoms-ui-gold);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .heading h3 {
-  margin: 0;
-  font-size: clamp(1.2rem, 2vw, 1.65rem);
-  line-height: 1.4;
   max-inline-size: 100%;
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.heading > div > span {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.headingMark {
+  display: grid;
+  flex: 0 0 48px;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-radius: var(--radius-full);
+  background: var(--kingdoms-ui-surface);
+  color: var(--kingdoms-ui-gold);
 }
 .summary {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-2);
-  font-size: 0.8rem;
-  padding-block: var(--space-3);
-  border-block-end: 1px solid var(--kingdoms-ui-border);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid var(--kingdoms-ui-border);
+}
+.summary span {
+  min-inline-size: 0;
+  padding: var(--space-2) var(--space-1);
+  border-inline-start: 1px solid var(--kingdoms-ui-border);
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+.summary span:first-child {
+  border-inline-start: 0;
+}
+.summary span[data-ready='true'] {
+  color: var(--kingdoms-ui-success);
+  font-weight: 700;
 }
 .hint,
 .footnote {
+  margin: 0;
   color: var(--kingdoms-ui-muted);
-  font-size: 0.8rem;
-  line-height: 1.9;
+  font-size: 0.78rem;
+  line-height: 1.8;
+}
+.hint {
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--kingdoms-ui-border-gold);
 }
 .plots {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-flow: dense;
-  gap: var(--space-2);
-  margin-block: var(--space-4);
+  gap: 6px;
 }
 .plot {
   position: relative;
   display: grid;
-  justify-items: center;
+  grid-template-columns: 30px 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
   min-inline-size: 0;
-  min-block-size: 90px;
-  padding: var(--space-1);
+  min-block-size: 62px;
+  padding: 5px var(--space-2) 7px;
+  overflow: hidden;
   border: 1px solid var(--kingdoms-ui-border);
-  background: var(--kingdoms-ui-surface);
   border-radius: var(--radius-md);
-  color: var(--kingdoms-ui-muted);
+  background: var(--kingdoms-ui-surface);
+  color: var(--kingdoms-ui-foreground);
   font: inherit;
-  font-size: 0.75rem;
+  text-align: start;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     border-color 180ms,
     background 180ms;
@@ -62,48 +119,134 @@
 .plot[aria-pressed='true'] {
   border-color: var(--kingdoms-ui-gold);
   background: var(--kingdoms-ui-surface-strong);
-  color: var(--kingdoms-ui-foreground);
-  box-shadow: inset 0 0 0 1px var(--kingdoms-ui-gold);
+}
+.plot[aria-pressed='true']::before {
+  position: absolute;
+  inset-block: 6px;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  border-radius: var(--radius-full);
+  background: var(--kingdoms-ui-gold);
+  content: '';
 }
 .plot[data-ready='true'] {
-  color: var(--kingdoms-ui-success);
+  border-color: var(--kingdoms-ui-success);
+}
+.plot[data-legacy='true'] {
+  border-style: double;
+  border-color: var(--kingdoms-ui-border-gold);
 }
 .plotNumber {
-  position: absolute;
-  inset-block-start: 4px;
-  inset-inline-start: 6px;
-  font-size: 0.65rem;
+  display: grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-full);
+  background: var(--kingdoms-ui-surface-strong);
+  color: var(--kingdoms-ui-gold);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.plotVisual {
+  display: grid;
+  place-items: center;
+  inline-size: 52px;
+  block-size: 48px;
 }
 .plot .visual {
-  inline-size: 100%;
-  max-block-size: 62px;
+  inline-size: 56px;
+  max-block-size: 50px;
+}
+.plotMeta {
+  display: grid;
+  min-inline-size: 0;
+  gap: 2px;
+}
+.plotMeta strong,
+.plotMeta small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plotMeta strong {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.plotMeta small {
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+.plot[data-ready='true'] .plotMeta small {
+  color: var(--kingdoms-ui-success);
+  font-weight: 700;
+}
+.legacyTag {
+  align-self: start;
+  padding: 2px 6px;
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-radius: var(--radius-full);
+  color: var(--kingdoms-ui-gold);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+.plotProgress {
+  position: absolute;
+  inset: auto 0 0;
+  block-size: 3px;
+  background: var(--kingdoms-ui-surface-soft);
+}
+.plotProgress i {
+  display: block;
+  inline-size: var(--plot-progress);
+  block-size: 100%;
+  background: var(--kingdoms-ui-gold);
 }
 .plot:focus-visible,
-.seedOption:focus-visible {
+.seedOption:focus-visible,
+.goals summary:focus-visible {
   outline: 2px solid var(--kingdoms-ui-gold);
   outline-offset: 3px;
 }
 .selected {
-  padding-block: var(--space-3);
-  border-block-start: 1px solid var(--kingdoms-ui-border-gold);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--kingdoms-ui-surface) 84%, transparent);
 }
 .preview {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-inline-size: 0;
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid var(--kingdoms-ui-border);
 }
 .preview .visual {
-  inline-size: 110px;
-  flex: 0 0 110px;
+  flex: 0 0 92px;
+  inline-size: 92px;
+}
+.preview > div {
+  min-inline-size: 0;
+}
+.detailEyebrow {
+  display: block;
+  margin-block-end: 2px;
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.68rem;
 }
 .preview h4 {
   margin: 0;
   font-size: 1rem;
 }
 .preview p {
+  margin: var(--space-1) 0 0;
   color: var(--kingdoms-ui-gold);
-  margin-block: var(--space-1);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 .visual {
   display: block;
@@ -123,51 +266,6 @@
 .artCenter {
   fill: var(--kingdoms-ui-gold);
 }
-.farm[data-garden-style='ivory'] .plot {
-  border-color: var(--brand-ivory);
-}
-.farm[data-garden-style='gold'] .plot {
-  border-color: var(--kingdoms-ui-gold);
-}
-.goals {
-  border-block: 1px solid var(--kingdoms-ui-border);
-  padding-block: var(--space-3);
-}
-.goals summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-block-size: 44px;
-  cursor: pointer;
-  color: var(--kingdoms-ui-gold);
-}
-.goals summary:focus-visible {
-  outline: 2px solid var(--kingdoms-ui-gold);
-  outline-offset: 3px;
-}
-.goals ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.goals li {
-  display: grid;
-  gap: var(--space-1);
-  padding-block: var(--space-3);
-  font-size: 0.8rem;
-  border-block-end: 1px solid var(--kingdoms-ui-border);
-}
-.goals li span,
-.goals li small {
-  color: var(--kingdoms-ui-muted);
-  line-height: 1.8;
-}
-.goals li[data-earned='true'] strong {
-  color: var(--kingdoms-ui-success);
-}
-.seedOption[aria-disabled='true'] small {
-  color: var(--kingdoms-ui-gold);
-}
 .soil {
   fill: var(--kingdoms-ui-background);
   stroke: var(--kingdoms-ui-border-gold);
@@ -185,135 +283,187 @@
 .seed {
   fill: var(--kingdoms-ui-gold);
 }
-.stem {
-  fill: currentColor;
-  stroke: currentColor;
-  stroke-width: 1.4;
-}
-.leaves {
-  fill: currentColor;
-  stroke: var(--kingdoms-ui-background);
-  stroke-width: 0.5;
-}
-.grain {
-  fill: var(--kingdoms-ui-gold);
-  stroke: var(--kingdoms-ui-gold);
-}
-.fruit {
-  fill: var(--kingdoms-ui-danger);
-  stroke: var(--kingdoms-ui-gold);
-  stroke-width: 0.8;
-}
-.visual[data-crop='beans'] .fruit {
-  fill: var(--kingdoms-ui-success);
-}
 .canopy {
   transform-box: view-box;
   transform-origin: 0 0;
   animation: sway 7s ease-in-out infinite alternate;
 }
-.plot .canopy {
-  animation: none;
-}
+.plot .canopy,
 .farm[data-farm-motion='quiet'] .canopy,
 .farm[data-farm-quality='low'] .canopy {
   animation: none;
 }
+.farm[data-garden-style='ivory'] .plot {
+  border-color: var(--brand-ivory);
+}
+.farm[data-garden-style='gold'] .plot {
+  border-color: var(--kingdoms-ui-gold);
+}
 .stage {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
-  margin-block: var(--space-3) var(--space-2);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 .stage strong {
   color: var(--kingdoms-ui-success);
 }
+.stageTrack {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stageTrack::before {
+  position: absolute;
+  inset-block-start: 9px;
+  inset-inline: 8%;
+  block-size: 1px;
+  background: var(--kingdoms-ui-border);
+  content: '';
+}
+.stageTrack li {
+  z-index: 1;
+  display: grid;
+  min-inline-size: 0;
+  justify-items: center;
+  gap: 5px;
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.62rem;
+  text-align: center;
+}
+.stageTrack i {
+  inline-size: 18px;
+  block-size: 18px;
+  border: 2px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-full);
+  background: var(--kingdoms-ui-surface);
+}
+.stageTrack li[data-complete='true'] {
+  color: var(--kingdoms-ui-success);
+}
+.stageTrack li[data-complete='true'] i {
+  border-color: var(--kingdoms-ui-success);
+  background: var(--kingdoms-ui-success);
+}
+.stageTrack li[aria-current='step'] {
+  color: var(--kingdoms-ui-foreground);
+  font-weight: 700;
+}
+.stageTrack li[aria-current='step'] i {
+  border-color: var(--kingdoms-ui-gold);
+  background: var(--kingdoms-ui-gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--kingdoms-ui-gold) 22%, transparent);
+}
 .progress {
   display: block;
   inline-size: 100%;
-  block-size: 5px;
+  block-size: 6px;
   border: 0;
   accent-color: var(--kingdoms-ui-success);
   background: var(--kingdoms-ui-surface-strong);
 }
 .progress::-webkit-progress-bar {
-  background: var(--kingdoms-ui-surface-strong);
   border-radius: var(--radius-full);
+  background: var(--kingdoms-ui-surface-strong);
 }
 .progress::-webkit-progress-value {
-  background: var(--kingdoms-ui-success);
   border-radius: var(--radius-full);
+  background: var(--kingdoms-ui-success);
 }
 .reward,
 .storage {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.8rem;
-  line-height: 1.8;
-}
-.storage {
   align-items: flex-start;
-  color: var(--kingdoms-ui-gold);
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface-soft);
+  font-size: 0.76rem;
+  line-height: 1.75;
 }
+.reward svg,
 .storage svg {
   flex-shrink: 0;
-  margin-block-start: 4px;
+  margin-block-start: 3px;
 }
-.rotation {
-  font-size: 0.75rem;
-  line-height: 1.8;
-  color: var(--kingdoms-ui-success);
-  padding-inline-start: var(--space-3);
-  border-inline-start: 2px solid var(--kingdoms-ui-success);
+.reward svg,
+.reward strong {
+  color: var(--kingdoms-ui-gold);
+}
+.storage {
+  border-color: var(--kingdoms-ui-border-gold);
+  color: var(--kingdoms-ui-gold);
 }
 .seeds {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
   padding: 0;
-  margin-block: var(--space-4);
   border: 0;
 }
 .seeds legend {
-  padding: 0;
   margin-block-end: var(--space-2);
-  font-size: 0.85rem;
+  padding: 0;
+  color: var(--kingdoms-ui-gold);
+  font-size: 0.82rem;
   font-weight: 700;
 }
 .seedOption {
   display: grid;
   min-inline-size: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-block-size: 44px;
-  padding: var(--space-2) var(--space-3);
+  min-block-size: 64px;
+  align-content: center;
+  gap: 3px;
+  padding: var(--space-2);
   border: 1px solid var(--kingdoms-ui-border);
   border-radius: var(--radius-md);
   background: var(--kingdoms-ui-surface);
   color: var(--kingdoms-ui-foreground);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.76rem;
   cursor: pointer;
+  touch-action: manipulation;
+}
+.seedOption span,
+.seedOption small {
+  overflow-wrap: anywhere;
 }
 .seedOption small {
   color: var(--kingdoms-ui-muted);
-  font-size: 0.7rem;
+  font-size: 0.64rem;
+  line-height: 1.45;
 }
 .seedOption[aria-pressed='true'] {
   border-color: var(--kingdoms-ui-gold);
   background: var(--kingdoms-ui-surface-strong);
+  box-shadow: inset 0 0 0 1px var(--kingdoms-ui-gold);
+}
+.seedOption[aria-disabled='true'] small {
+  color: var(--kingdoms-ui-gold);
 }
 .seedOption:disabled {
-  opacity: 0.6;
   cursor: default;
+  opacity: 0.58;
+}
+.decor .seedOption {
+  min-block-size: 54px;
 }
 .quote {
-  margin-block: var(--space-4);
-  font-size: 0.8rem;
+  margin: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface-soft);
+  font-size: 0.76rem;
 }
 .quote > div {
   display: flex;
@@ -321,6 +471,9 @@
   gap: var(--space-3);
   padding-block: var(--space-2);
   border-block-end: 1px solid var(--kingdoms-ui-border);
+}
+.quote > div:last-child {
+  border-block-end: 0;
 }
 .quote dt {
   display: flex;
@@ -332,8 +485,56 @@
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
-.selected > button {
-  inline-size: 100%;
+.goals {
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-lg);
+  background: var(--kingdoms-ui-surface-soft);
+}
+.goals summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 48px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--kingdoms-ui-gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.goals ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-3);
+  list-style: none;
+}
+.goals li {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface);
+  font-size: 0.75rem;
+}
+.goals li span,
+.goals li small {
+  color: var(--kingdoms-ui-muted);
+  line-height: 1.65;
+}
+.goals li small {
+  color: var(--kingdoms-ui-gold);
+}
+.goals li[data-earned='true'] {
+  border-color: var(--kingdoms-ui-success);
+}
+.goals li[data-earned='true'] strong {
+  color: var(--kingdoms-ui-success);
+}
+.footnote {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--kingdoms-ui-border);
 }
 @keyframes sway {
   from {
@@ -350,19 +551,51 @@
     background: var(--kingdoms-ui-surface-strong);
   }
 }
+@media (max-width: 700px) {
+  .farm {
+    max-inline-size: 640px;
+    margin-inline: auto;
+  }
+  .heading {
+    padding: var(--space-3) var(--space-4);
+  }
+  .plot {
+    min-block-size: 66px;
+  }
+}
+@media (max-width: 390px) {
+  .headingMark {
+    flex-basis: 44px;
+    inline-size: 44px;
+    block-size: 44px;
+  }
+  .summary span {
+    font-size: 0.64rem;
+  }
+  .plot {
+    grid-template-columns: 28px 46px minmax(0, 1fr) auto;
+    gap: var(--space-1);
+  }
+  .plotVisual,
+  .plot .visual {
+    inline-size: 46px;
+  }
+  .stageTrack li {
+    font-size: 0.58rem;
+  }
+  .seeds {
+    gap: var(--space-1);
+  }
+  .seedOption {
+    padding-inline: var(--space-1);
+    font-size: 0.7rem;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .canopy {
     animation: none;
   }
   .plot {
     transition: none;
-  }
-}
-@media (max-width: 400px) {
-  .plots {
-    gap: var(--space-1);
-  }
-  .plot {
-    min-block-size: 82px;
   }
 }

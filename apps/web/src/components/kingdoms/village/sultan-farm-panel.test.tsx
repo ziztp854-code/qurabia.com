@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
 import { plantFarm, farmQuote, farmState } from '@/lib/kingdoms/sultan-farm';
@@ -71,6 +71,11 @@ describe('Sultan garden RTL interaction', () => {
     expect(
       screen.getByRole('group', { name: 'أحواض المزرعة' }).querySelectorAll('button'),
     ).toHaveLength(12);
+    expect(
+      within(screen.getByRole('group', { name: 'اختر النبات — البذور مجانية' })).getAllByRole(
+        'button',
+      ),
+    ).toHaveLength(9);
     expect(screen.getByText('مدة النمو')).toBeInTheDocument();
     expect(screen.getByText(/الجمع يمنح حصادًا واحدًا/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'الحوض 4، فارغ' }));
@@ -86,6 +91,19 @@ describe('Sultan garden RTL interaction', () => {
     fireEvent.click(screen.getByRole('button', { name: /السوسن.*متبقي/ }));
     expect(screen.getByRole('button', { name: 'ازرع السوسن' })).toBeDisabled();
     expect(screen.getByText(/لفتح السوسن: المكتسب/)).toBeInTheDocument();
+  });
+  it('summarizes the 12 real beds and exposes all five growth stages in the selected detail', () => {
+    const p = props(true);
+    render(<SultanFarmPanel {...p} />);
+    expect(screen.getByText('١١ فارغ')).toBeInTheDocument();
+    expect(screen.getByText('١ ناضج')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'الحوض 3، القمح، ناضج' }));
+    const stages = screen.getByRole('list', { name: 'مراحل النمو' });
+    expect(within(stages).getAllByRole('listitem')).toHaveLength(5);
+    expect(within(stages).getByText('ناضج').closest('li')).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
   });
   it('collects explicitly with version, even at full storage; the timer sends no commands', () => {
     const p = props(true);
@@ -139,6 +157,34 @@ describe('Sultan garden RTL interaction', () => {
       style: 'ivory',
     });
     expect(screen.getByRole('button', { name: /إطار ذهبي.*متبقي/ })).toBeDisabled();
+  });
+  it('renders the saved frame and preserves a new bed draft across an older request completion', () => {
+    const p = props();
+    p.village.sultanFarm = {
+      ...farmState(p.village),
+      garden: { version: 1, harvests: 12, collected: { wheat: 12 }, style: 'ivory' },
+    };
+    const rendered = render(<SultanFarmPanel {...p} />);
+    const farm = screen.getByRole('region', { name: 'مزرعة السلطان' });
+    expect(farm).toHaveAttribute('data-garden-style', 'ivory');
+    expect(screen.getByRole('button', { name: /إطار عاجي.*مطبّق/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /إطار ذهبي.*طبّق/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'الحوض 5، فارغ' }));
+    fireEvent.click(screen.getByRole('button', { name: /دوار الشمس.*متاح/ }));
+    expect(screen.getByRole('button', { name: 'ازرع دوار الشمس' })).toBeEnabled();
+    rendered.rerender(<SultanFarmPanel {...p} busy />);
+    expect(screen.getByRole('button', { name: 'الحوض 5، فارغ' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'ازرع دوار الشمس' })).toBeDisabled();
   });
   it('disables planting, collecting and decoration while paused, busy or ended', () => {
     const p = props();

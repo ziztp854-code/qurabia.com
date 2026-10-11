@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { FARM_WORLD, farmBeds, farmBedBounds, farmBedPoint } from './farm-scene-layout';
+import {
+  FARM_WORLD,
+  farmBeds,
+  farmBedBounds,
+  farmBedHitPolygon,
+  farmBedPoint,
+} from './farm-scene-layout';
 describe('photographic farm projection', () => {
   it('keeps all 12 bed polygons and root samples within the selected image', () => {
     expect(farmBeds).toHaveLength(12);
@@ -21,5 +27,18 @@ describe('photographic farm projection', () => {
         }
       expect(farmBedBounds(id).height).toBeGreaterThan(120);
     }
+  });
+
+  it('extends only the rear hit edge 60px above the photographed soil', () => {
+    const [rearLeft, rearRight, frontRight, frontLeft] = farmBeds[0];
+
+    expect(farmBedHitPolygon(0)).toEqual([
+      frontLeft,
+      rearLeft,
+      [rearLeft[0], rearLeft[1] - 60],
+      [rearRight[0], rearRight[1] - 60],
+      rearRight,
+      frontRight,
+    ]);
   });
 });
