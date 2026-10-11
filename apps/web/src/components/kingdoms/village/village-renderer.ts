@@ -18,7 +18,7 @@ import type {
   WorldPoint,
   WorldSize,
 } from '@/lib/kingdoms/village/types';
-import { getCityComposition, cityGardenPlacements, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
+import { getCityComposition, cityGardenPlacements, cityPointInReservedSite, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
 import { gardenAsset } from '@/lib/kingdoms/palace-garden';
 import { createCityLifeLayer, cityLifeAssets, cityWaterMaskAsset } from './city-life-layer';
 import { buildingKeys } from '@/lib/kingdoms/types';
@@ -394,6 +394,7 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
       hit.eventMode='static';
       hit.cursor='pointer';
       const hitArea=new Rectangle(landmark.rect.x,landmark.rect.y,landmark.rect.width,landmark.rect.height);
+      hitArea.contains = (x, y) => Rectangle.prototype.contains.call(hitArea, x, y) && !cityPointInReservedSite({ x, y }, composition);
       hit.hitArea=hitArea;
       hit.on('city-camera-scale',(scale:number)=>{
         const min=44/Math.max(.001,scale),w=Math.max(min,landmark.rect.width),h=Math.max(min,landmark.rect.height);

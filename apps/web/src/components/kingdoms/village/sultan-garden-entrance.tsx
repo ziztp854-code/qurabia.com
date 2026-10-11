@@ -40,7 +40,7 @@ export function SultanGardenEntrance({
     <button
       type="button"
       className={styles.entrance}
-      style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height } as CSSProperties}
+      style={{ left: rect.x, top: rect.y + rect.height / 2, width: rect.width, height: rect.height, '--garden-height': `${rect.height}px` } as CSSProperties}
       data-sultan-garden-entrance
       aria-label={`افتح حديقة السلطان، ${ready} أحواض جاهزة للجمع`}
       onClick={onOpen}

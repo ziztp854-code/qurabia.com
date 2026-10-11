@@ -65,6 +65,51 @@ const pixelFrame = async (page: Page) => {
   return page.screenshot({ clip });
 };
 const frameHash = (buffer: Buffer) => createHash('sha256').update(buffer).digest('hex');
+
+for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as const) {
+  test(`vacant academy and blacksmith courtyards preserve touch navigation and progress at ${width}x${height}`, async ({ browser, request }, testInfo) => {
+    const context = await browser.newContext({ viewport: {width,height}, hasTouch: true, reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const before = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
+    await page.goto('/');
+    const stage = await readyHub(page);
+    const overview = await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}));
+    for (const id of ['knowledge','blacksmith']) {
+      const site = stage.locator(`[data-reserved-site="${id}"]`);
+      await expect(site).toBeVisible();
+      await expect(stage.locator(`[data-building-region="${id}"]`)).toHaveCount(0);
+      const box = (await site.boundingBox())!;
+      for (const [dx,dy] of [[.1,.1],[.5,.5],[.9,.9]]) {
+        // Separate single taps from the existing 320ms double-tap zoom gesture
+        // and the browser's synthesized dblclick; this tests vacant-site hits.
+        await page.waitForTimeout(550);
+        await page.touchscreen.tap(box.x+box.width*dx,box.y+box.height*dy);
+        await expect(page.locator('[data-city-scene]')).toHaveCount(0);
+        expect(await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}))).toEqual(overview);
+      }
+    }
+    const embassyBox = (await stage.locator('[data-building="embassy"]').boundingBox())!;
+    await page.touchscreen.tap(embassyBox.x+embassyBox.width/2,embassyBox.y+embassyBox.height/2);
+    await expect(page.locator('[data-city-scene="embassy"]')).toBeVisible();
+    await back(page);
+    const gardenBox = (await stage.locator('[data-sultan-garden-entrance]').boundingBox())!;
+    await page.touchscreen.tap(gardenBox.x+gardenBox.width/2,gardenBox.y+gardenBox.height/2);
+    await expect(page.locator('[data-city-scene="sultan-garden"]')).toBeVisible();
+    await back(page);
+    await enterPhysical(page,'barracks',true); await back(page);
+    await page.getByRole('button', {name:'تكبير القرية',exact:true}).click();
+    await expect(stage).not.toHaveAttribute('data-zoom','1.000');
+    await page.getByRole('button', {name:'عرض القرية بالكامل',exact:true}).click();
+    await expect(stage).toHaveAttribute('data-zoom','1.000');
+    const after = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
+    for (const key of ['buildings','troops','resources','progression','palaceGarden','sultanFarm']) expect(after[key]).toEqual(before[key]);
+    expect(errors).toEqual([]);
+    await page.screenshot({path:testInfo.outputPath(`organized-village-${width}x${height}.png`)});
+    await context.close();
+  });
+}
 const pixelHash = async (page: Page) => frameHash(await pixelFrame(page));
 async function frameBarrier(page: Page) {
   await page.evaluate(() => new Promise<void>((resolve) => {
@@ -343,6 +388,11 @@ test('complete canvas backend failure preserves native image and HTML keyboard a
   const stage = page.locator('[data-village-scene]');
   await expect(stage).toHaveAttribute('aria-busy', 'false'); await expect(stage.locator('canvas')).toBeHidden();
   await expect(stage).toHaveAttribute('data-pixi-ready', 'false');
+  for (const id of ['knowledge','blacksmith']) {
+    const box=(await stage.locator(`[data-reserved-site="${id}"]`).boundingBox())!;
+    await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+    await expect(page.locator('[data-city-scene]')).toHaveCount(0);
+  }
   await stage.getByRole('button', { name: /^دار الحكم،/ }).press('Enter'); await expect(page.locator('[data-city-scene="palace"]')).toBeVisible(); await back(page);
   await stage.getByRole('button', { name: /^السوق،/ }).click(); await expect(page.locator('[data-city-scene="market"]')).toBeVisible();
 });
@@ -353,17 +403,16 @@ test('missing optional actor atlas never blocks genuine Pixi interactions', asyn
   await enterPhysical(page, 'market'); await back(page);
 });
 
-test('shared blacksmith and granary landmarks open real facilities and civic landmarks are labelled decoration', async ({ page }) => {
+test('granary opens its real facility and vacant sites remain presentation only', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await page.goto('/'); const stage = await readyHub(page);
-  for (const [name, destination] of [['دار الحدادة', 'siege-workshop'], ['مخزن الغلال', 'warehouse']]) {
-    const area = await stage.getByRole('button', { name, exact: true }).boundingBox();
-    const point = { x: area!.x + area!.width / 2, y: area!.y + area!.height / 2 };
-    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, point)).toBe('CANVAS');
-    await page.mouse.click(point.x, point.y); await expect(page.locator(`[data-city-scene="${destination}"]`)).toBeVisible(); await back(page);
-  }
-  for (const name of ['دار المعرفة · معلم حضاري', 'جامع المدينة · معلم حضاري', 'الحي السكني · معلم حضاري']) {
-    await expect(stage.getByRole('img', { name, exact: true })).toHaveCount(1);
-    await expect(stage.getByRole('button', { name, exact: true })).toHaveCount(0);
+  const box=(await stage.locator('[data-building-region="granary"]').boundingBox())!;
+  await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+  await expect(page.locator('[data-city-scene="warehouse"]')).toBeVisible(); await back(page);
+  await expect(stage.locator('[data-reserved-site]')).toHaveCount(2);
+  for(const id of ['knowledge','blacksmith']) await expect(stage.locator('[data-building-region="'+id+'"]')).toHaveCount(0);
+  for(const name of ['جامع المدينة · معلم حضاري','الحي السكني · معلم حضاري']) {
+    await expect(stage.getByRole('img',{name,exact:true})).toHaveCount(1);
+    await expect(stage.getByRole('button',{name,exact:true})).toHaveCount(0);
   }
 });
 

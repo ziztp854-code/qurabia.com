@@ -1,12 +1,19 @@
 import { getCityCameraProfile, CITY_DESKTOP_PROFILE, CITY_PORTRAIT_PROFILE } from './city-camera-profile';
 import type { VillageBuildingId } from './buildingRegistry';
-import type { VillageDebugOptions, VillagePlacement, VillageTarget, WorldRect, WorldSize } from './types';
+import type { VillageDebugOptions, VillagePlacement, VillageTarget, WorldPoint, WorldRect, WorldSize } from './types';
 import { gardenSlotsSchema } from '../palace-garden';
 import { sampleCityRoute, type CityActorRoute } from './city-motion';
 export type { CityActorRoute } from './city-motion';
 
 export type CityCompositionId = 'desktop' | 'portrait';
-export type CityLandmark = Readonly<{ id: VillageBuildingId; name: string; rect: WorldRect; classification: 'existing' | 'shared' | 'decoration'; target?: VillageTarget }>;
+export type CityLandmark = Readonly<{ id: VillageBuildingId; name: string; rect: WorldRect; classification: 'existing' | 'shared' | 'decoration' | 'reserved'; target?: VillageTarget }>;
+
+// Presentation-only sites calibrated inside the cleared courtyards in each raster.
+// They never enter the building registry, saved plots or the command contract.
+const reservedSiteRects = {
+  desktop: { knowledge: { x: 1112, y: 190, width: 120, height: 36 }, blacksmith: { x: 1182, y: 467, width: 134, height: 49 } },
+  portrait: { knowledge: { x: 678, y: 298, width: 100, height: 42 }, blacksmith: { x: 636, y: 824, width: 109, height: 52 } },
+} as const;
 
 // Calibrated against the two independently authored rasters, not persisted player plots.
 const centers = {
@@ -18,13 +25,13 @@ const entries = [
   ['hall','قصر السلطان','existing','hall',.22,.15], ['barracks','الثكنة','existing','barracks',.23,.14],
   ['stable','الإسطبل','shared','stable',.22,.16], ['market','السوق','existing','market',.23,.15],
   ['rally','مجلس الحرب','shared','rally',.105,.12], ['siege','ورشة الحصار','shared','siege',.15,.12],
-  ['blacksmith','دار الحدادة','shared','siege',.095,.10], ['warehouse','المخازن','existing','warehouse',.12,.09],
+  ['blacksmith','مساحة الحداد','reserved',undefined,.095,.10], ['warehouse','المخازن','existing','warehouse',.12,.09],
   ['granary','مخزن الغلال','shared','warehouse',.09,.07], ['farm','المزارع والحقول','existing','farm',.82,.28],
   ['mine','مناجم الحديد','existing','mine',.14,.10], ['quarry','محاجر الحجر','existing','quarry',.17,.10],
   ['treasury','خزانة الذهب','existing','treasury',.115,.095], ['lumber','معسكر الأخشاب','existing','lumber',.16,.12],
   ['embassy','دار السفارة','existing','embassy',.075,.085], ['wall','أسوار المملكة','existing','wall',.14,.065],
   ['gate','بوابة المملكة','shared','gate',.09,.12], ['tower','أبراج الحراسة','shared','wall',.065,.105],
-  ['knowledge','دار المعرفة · معلم حضاري','decoration',undefined,.095,.07],
+  ['knowledge','مساحة الأكاديمية','reserved',undefined,.095,.07],
   ['mosque','جامع المدينة · معلم حضاري','decoration',undefined,.11,.105],
   ['residential','الحي السكني · معلم حضاري','decoration',undefined,.14,.12],
 ] as const;
@@ -32,6 +39,11 @@ const entries = [
 function landmarkRect(id: VillageBuildingId, composition: CityCompositionId, width: number, height: number): WorldRect {
   const world = composition === 'desktop' ? CITY_DESKTOP_PROFILE.world : CITY_PORTRAIT_PROFILE.world;
   const native = composition === 'desktop' ? { width:1672,height:941 } : { width:941,height:1672 };
+  if (id === 'knowledge' || id === 'blacksmith') {
+    const rect = reservedSiteRects[composition][id];
+    return { x: rect.x / native.width * world.width, y: rect.y / native.height * world.height,
+      width: rect.width / native.width * world.width, height: rect.height / native.height * world.height };
+  }
   const [cx,cy] = centers[composition][id];
   const w = width * world.width;
   const h = height * world.height;
@@ -60,7 +72,7 @@ export function getCityComposition(viewport: WorldSize) {
     {kind:'worker',points:[{x:.46,y:.625},{x:.52,y:.625}],duration:31000,offset:1700,speed:13,height:16},
     {kind:'caravan',points:[{x:.48,y:.79},{x:.55,y:.79}],duration:36000,offset:3600,speed:18,height:25,pause:1200},
   ];
-  return { ...profile, landmarks, routes, asset:`/game-art/kingdoms/city-hub/overview-${profile.id}.webp`, mobileAsset:`/game-art/kingdoms/city-hub/overview-${profile.id}-mobile.webp`,
+  return { ...profile, landmarks, routes, asset:`/game-art/kingdoms/city-hub/overview-${profile.id}-planned.webp`, mobileAsset:`/game-art/kingdoms/city-hub/overview-${profile.id}-planned-mobile.webp`,
     canals: profile.id==='desktop' ? [{x:.30,y:.748},{x:.40,y:.775},{x:.64,y:.80},{x:.83,y:.745}] : [{x:.05,y:.43},{x:.05,y:.57},{x:.33,y:.745},{x:.75,y:.747}],
     palms: profile.id==='desktop' ? [{x:.42,y:.90},{x:.67,y:.90}] : [{x:.275,y:.905},{x:.715,y:.83}],
     flags: profile.id==='desktop' ? [{x:.477,y:.64},{x:.57,y:.64}] : [{x:.416,y:.674},{x:.585,y:.674}],
@@ -84,4 +96,12 @@ export function getCityPlacement(id: VillageBuildingId, composition: CityComposi
 
 export function cityActorPosition(route: CityActorRoute, elapsed: number, world: WorldSize) {
   return sampleCityRoute(route, elapsed, world);
+}
+
+// Keep enlarged touch targets out of the vacant sites at compact overview scales.
+export function cityPointInReservedSite(point: WorldPoint, composition: CityCompositionId) {
+  return (['knowledge', 'blacksmith'] as const).some(id => {
+    const rect = landmarkRect(id, composition, 0, 0);
+    return point.x >= rect.x && point.x <= rect.x + rect.width && point.y >= rect.y && point.y <= rect.y + rect.height;
+  });
 }
