@@ -62,14 +62,18 @@ export function bindVillageInput(element: HTMLElement, camera: VillageCamera) {
   };
   const end = (event: PointerEvent) => {
     if (!pointers.has(event.pointerId)) return;
-    if (!moved && event.type === 'pointerup' && event.pointerType === 'touch') {
+    // Pixi can open a reduced-motion facility before this native pointerup bubbles.
+    // Its overview is then hidden; never zoom it or compare against its zero bounds.
+    if (camera.getSnapshot().state === 'BUILDING_SCENE') lastTap = undefined;
+    else if (!moved && event.type === 'pointerup' && event.pointerType === 'touch') {
       const next = point(event);
+      const client = { x: event.clientX, y: event.clientY };
       const at = performance.now();
-      if (lastTap && at - lastTap.at < 320 && distance(lastTap.point, next) < 28) {
+      if (lastTap && at - lastTap.at < 320 && distance(lastTap.point, client) < 28) {
         camera.zoomAt(1.55, next);
         suppressClick = true;
         lastTap = undefined;
-      } else lastTap = { at, point: next };
+      } else lastTap = { at, point: client };
     }
     pointers.delete(event.pointerId);
     if (!pointers.size) {

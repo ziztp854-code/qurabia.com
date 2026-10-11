@@ -15,6 +15,37 @@ const pointer = (type: string, id: number, x: number, y: number, kind = 'touch')
 };
 
 describe('village gesture controls', () => {
+  it('compares double taps in stable client coordinates across a layout change', () => {
+    const element=document.createElement('div');
+    const camera=new VillageCamera({width:768,height:512});
+    const bounds=vi.spyOn(element,'getBoundingClientRect').mockReturnValue({left:56,top:113} as DOMRect);
+    const cleanup=bindVillageInput(element,camera);
+    element.dispatchEvent(pointer('pointerdown',1,218,306));
+    element.dispatchEvent(pointer('pointerup',1,218,306));
+    element.dispatchEvent(pointer('pointerdown',2,152,168));
+    bounds.mockReturnValue({left:0,top:0} as DOMRect);
+    element.dispatchEvent(pointer('pointerup',2,152,168));
+    expect(camera.getSnapshot().zoom).toBe(1);
+    element.dispatchEvent(pointer('pointerdown',3,152,168));
+    element.dispatchEvent(pointer('pointerup',3,152,168));
+    expect(camera.getSnapshot().zoom).toBeCloseTo(1.55);
+    cleanup(); camera.destroy();
+  });
+
+  it('does not turn a completed facility selection back into exploration on pointerup', () => {
+    const element=document.createElement('div');
+    const camera=new VillageCamera({width:768,height:512});
+    const cleanup=bindVillageInput(element,camera);
+    element.dispatchEvent(pointer('pointerdown',1,250,200));
+    element.dispatchEvent(pointer('pointerup',1,250,200));
+    element.dispatchEvent(pointer('pointerdown',2,251,201));
+    camera.enterBuildingScene();
+    element.dispatchEvent(pointer('pointerup',2,251,201));
+    expect(camera.getSnapshot().state).toBe('BUILDING_SCENE');
+    expect(camera.getSnapshot().zoom).toBe(1);
+    cleanup(); camera.destroy();
+  });
+
   it('zooms with two fingers, suppresses the synthetic click and releases all listeners', () => {
     const element = document.createElement('div');
     const camera = new VillageCamera({ width: 768, height: 512 });

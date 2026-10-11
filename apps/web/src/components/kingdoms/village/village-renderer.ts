@@ -18,7 +18,7 @@ import type {
   WorldPoint,
   WorldSize,
 } from '@/lib/kingdoms/village/types';
-import { getCityComposition, cityGardenPlacements, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
+import { getCityComposition, cityGardenPlacements, cityPointInReservedSite, sultanGardenEntranceRect, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
 import { gardenAsset } from '@/lib/kingdoms/palace-garden';
 import { createCityLifeLayer, cityLifeAssets, cityWaterMaskAsset } from './city-life-layer';
 import { buildingKeys } from '@/lib/kingdoms/types';
@@ -44,13 +44,19 @@ export type VillageRenderer = {
   setVisible: (visible: boolean) => void;
   destroy: () => void;
 };
+type CityHubInteraction = {
+  onSelect: (target: VillageTarget) => void;
+  onHover?: (target: VillageTarget | null) => void;
+  // A facility callback, never a VillageTarget/economic building discriminant.
+  onGardenSelect?: () => void;
+};
 
 export async function createVillageRenderer(
   canvas: HTMLCanvasElement,
   initial: VillageCanvasProps,
   quality: QualitySettings,
   colors: SceneColors,
-  interaction?: { onSelect: (target: VillageTarget) => void; onHover?: (target: VillageTarget | null) => void },
+  interaction?: CityHubInteraction,
 ): Promise<VillageRenderer> {
   if (initial.cityComposition) return createCityHubRenderer(canvas, initial, quality, colors, interaction);
   const app = new Application();
@@ -312,7 +318,7 @@ export async function createVillageRenderer(
   };
 }
 
-async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCanvasProps,quality:QualitySettings,colors:SceneColors,interaction?:{onSelect:(target:VillageTarget)=>void;onHover?:(target:VillageTarget|null)=>void}):Promise<VillageRenderer> {
+async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCanvasProps,quality:QualitySettings,colors:SceneColors,interaction?:CityHubInteraction):Promise<VillageRenderer> {
   const app=new Application();
   let props=initial, settings=quality, disposed=false, visible=initial.active!==false, elapsed=0;
   let viewport={width:canvas.parentElement?.clientWidth||768,height:canvas.parentElement?.clientHeight||512};
@@ -382,6 +388,20 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
     life.update(elapsed,false,props.debug?.npcs!==false);
     canvas.dataset.cityActors=String(life.actorCount);
   };
+  const bindHitGesture = (hit: Container, select: () => void) => {
+    hit.on('pointerdown', event => { const point=eventPoint(event); beginGesture(event.pointerId,point.x,point.y); });
+    hit.on('globalpointermove', event => { const point=eventPoint(event); moveGesture(event.pointerId,point.x,point.y); });
+    hit.on('pointerupoutside', event => { const gesture=gestures.get(event.pointerId); if(gesture)gesture.cancelled=true; });
+    hit.on('pointercancel', event => { const gesture=gestures.get(event.pointerId); if(gesture)gesture.cancelled=true; });
+    hit.on('pointertap', event => {
+      const point=eventPoint(event);
+      moveGesture(event.pointerId,point.x,point.y);
+      const gesture=gestures.get(event.pointerId);
+      gestures.delete(event.pointerId);
+      if(!visible||disposed||!gesture||gesture.cancelled||gesture.maximum>6)return;
+      select();
+    });
+  };
   const rebuild=()=>{
     gestures.clear();
     hits.removeChildren().forEach(child=>child.destroy());
@@ -394,6 +414,7 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
       hit.eventMode='static';
       hit.cursor='pointer';
       const hitArea=new Rectangle(landmark.rect.x,landmark.rect.y,landmark.rect.width,landmark.rect.height);
+      hitArea.contains = (x, y) => Rectangle.prototype.contains.call(hitArea, x, y) && !cityPointInReservedSite({ x, y }, composition);
       hit.hitArea=hitArea;
       hit.on('city-camera-scale',(scale:number)=>{
         const min=44/Math.max(.001,scale),w=Math.max(min,landmark.rect.width),h=Math.max(min,landmark.rect.height);
@@ -403,20 +424,31 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
         hitArea.y=Math.max(0,Math.min(size.height-hitArea.height,landmark.rect.y+landmark.rect.height/2-hitArea.height/2));
       });
       hit.emit('city-camera-scale',hitScale);
-      hit.on('pointerdown',event=>{const point=eventPoint(event);beginGesture(event.pointerId,point.x,point.y);});
-      hit.on('globalpointermove',event=>{const point=eventPoint(event);moveGesture(event.pointerId,point.x,point.y);});
-      hit.on('pointerupoutside',event=>{const gesture=gestures.get(event.pointerId);if(gesture)gesture.cancelled=true;});
-      hit.on('pointercancel',event=>{const gesture=gestures.get(event.pointerId);if(gesture)gesture.cancelled=true;});
-      hit.on('pointertap',event=>{
-        const point=eventPoint(event);
-        moveGesture(event.pointerId,point.x,point.y);
-        const gesture=gestures.get(event.pointerId);
-        gestures.delete(event.pointerId);
-        if(!visible||disposed||!gesture||gesture.cancelled||gesture.maximum>6)return;
-        interaction?.onSelect(landmark.target!);
-      });
+      bindHitGesture(hit, () => interaction?.onSelect(landmark.target!));
       hit.on('pointerover',()=>{hovered=landmark.target!;paint();interaction?.onHover?.(hovered);});
       hit.on('pointerout',()=>{hovered=null;paint();interaction?.onHover?.(null);});
+      hits.addChild(hit);
+    }
+    if (props.onFacilitySelect && interaction?.onGardenSelect) {
+      const rect = sultanGardenEntranceRect(composition);
+      const buildings = city().landmarks.filter(landmark => landmark.target && landmark.id !== 'citadel');
+      const hit = new Container();
+      hit.label = 'city-hit-sultan-garden';
+      hit.eventMode = 'static';
+      hit.cursor = 'pointer';
+      const area = new Rectangle(rect.x, rect.y, rect.width, rect.height);
+      area.contains = (x, y) => Rectangle.prototype.contains.call(area, x, y) && !cityPointInReservedSite({ x, y }, composition) &&
+        !buildings.some(({ rect: building }) => x >= building.x && x <= building.x + building.width && y >= building.y && y <= building.y + building.height);
+      hit.hitArea = area;
+      hit.on('city-camera-scale', (scale: number) => {
+        const min = 48 / Math.max(.001, scale), size = city().world;
+        area.width = Math.min(size.width, Math.max(min, rect.width));
+        area.height = Math.min(size.height, Math.max(min, rect.height));
+        area.x = Math.max(0, Math.min(size.width - area.width, rect.x + rect.width / 2 - area.width / 2));
+        area.y = Math.max(0, Math.min(size.height - area.height, rect.y + rect.height / 2 - area.height / 2));
+      });
+      hit.emit('city-camera-scale', hitScale);
+      bindHitGesture(hit, () => interaction?.onGardenSelect?.());
       hits.addChild(hit);
     }
     paint();
@@ -467,7 +499,7 @@ async function createCityHubRenderer(canvas:HTMLCanvasElement,initial:VillageCan
     update(next,nextSettings){
       if(disposed)return;
       const gardenChanged=JSON.stringify(cityGardenPlacements(next.village))!==JSON.stringify(cityGardenPlacements(props.village));
-      const changed=next.cityComposition!==composition||nextSettings.npcLimit!==settings.npcLimit||nextSettings.environment!==settings.environment||gardenChanged;
+      const changed=next.cityComposition!==composition||nextSettings.npcLimit!==settings.npcLimit||nextSettings.environment!==settings.environment||gardenChanged||Boolean(next.onFacilitySelect)!==Boolean(props.onFacilitySelect);
       props=next;settings=nextSettings;composition=next.cityComposition??composition;
       if(changed)rebuild();
       if(changed)loadLifeAssets();

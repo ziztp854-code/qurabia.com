@@ -6,17 +6,10 @@ import { farmGrowth, farmState } from '@/lib/kingdoms/sultan-farm';
 import type { Village } from '@/lib/kingdoms/types';
 import { useViewClock } from '../use-view-clock';
 import type { KingdomsView } from '@/lib/kingdoms/types';
-import type { CityCompositionId } from '@/lib/kingdoms/village/city-composition';
+import { sultanGardenEntranceRect, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
 import styles from './sultan-garden-entrance.module.css';
 
-// Match the existing palace courtyard in each independently authored raster.
-// This entrance is not an economic building and never shifts building placements.
-export function sultanGardenEntranceRect(composition: CityCompositionId) {
-  return composition === 'desktop'
-    ? { x: 0.418 * 1600, y: 0.18 * 900, width: 0.22 * 1600, height: 0.085 * 900 }
-    // Keep the gate center fixed while leaving a gutter for the embassy touch target.
-    : { x: 0.325 * 900, y: 0.199 * 1600, width: 0.28 * 900, height: 0.058 * 1600 };
-}
+export { sultanGardenEntranceRect } from '@/lib/kingdoms/village/city-composition';
 
 export function SultanGardenEntrance({
   composition,
@@ -40,7 +33,7 @@ export function SultanGardenEntrance({
     <button
       type="button"
       className={styles.entrance}
-      style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height } as CSSProperties}
+      style={{ left: rect.x, top: rect.y + rect.height / 2, width: rect.width, height: rect.height, '--garden-height': `${rect.height}px` } as CSSProperties}
       data-sultan-garden-entrance
       aria-label={`افتح حديقة السلطان، ${ready} أحواض جاهزة للجمع`}
       onClick={onOpen}

@@ -194,6 +194,11 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       current.current.onSelectionStart?.();
       camera.current?.focusForScene(facility === 'war-council' ? 'rally' : 'siege', () => current.current.onFacilitySelect?.(facility));
     },[]);
+    const openSultanGarden = useCallback(() => {
+      current.current.onSelectionStart?.();
+      prefetchCityScene('sultan-garden');
+      current.current.onFacilitySelect?.('sultan-garden');
+    }, []);
     const selectTarget = useCallback((target: VillageTarget) => {
       if (target==='rally'||target==='siege') chooseFacility(target==='rally'?'war-council':'siege-workshop');
       else if(target==='gate')camera.current?.focusForScene('gate',()=>current.current.onWorldMap?.());
@@ -384,6 +389,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             colors,
             cityEnabled ? {
               onSelect: (target) => selectTarget(target),
+              onGardenSelect: openSultanGarden,
               onHover: (target) => {
                 element.dataset.hoveredLandmark=target ?? '';
                 if (controller)syncLabels(controller.getSnapshot(),target);
@@ -424,7 +430,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         resizeScene.current = null;
         syncRendererVisibility.current = null;
       };
-    }, [retry, cityEnabled, selectTarget, syncLabels]);
+    }, [retry, cityEnabled, selectTarget, openSultanGarden, syncLabels]);
 
     useEffect(() => {
       resizeScene.current?.();
@@ -487,6 +493,16 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         data-labels={props.showLabels}
         data-focused={props.selected !== null}
         data-debug-hitboxes={process.env.NODE_ENV === 'development' && props.debug?.hitboxes}
+        onClickCapture={(event) => {
+          // The native HTML fallback observes the same vacant-site boundary as Pixi.
+          // Keyboard activation has no pointer position and keeps its named target.
+          if (!cityEnabled || !event.detail) return;
+          const vacant = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[data-reserved-site]')).some(site => {
+            const box = site.getBoundingClientRect();
+            return event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+          });
+          if (vacant) event.stopPropagation();
+        }}
       >
         <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
         <div
@@ -496,9 +512,9 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         >
           <picture>
             {cityEnabled ? <>
-              <source media="(orientation: portrait) and (max-width: 700px)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-portrait-mobile.webp" />
-              <source media="(orientation: portrait)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-portrait.webp" />
-              <source media="(max-width: 700px)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-desktop-mobile.webp" />
+              <source media="(orientation: portrait) and (max-width: 700px)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-portrait-planned-mobile.webp" />
+              <source media="(orientation: portrait)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-portrait-planned.webp" />
+              <source media="(max-width: 700px)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-desktop-planned-mobile.webp" />
             </> : <>
               <source type="image/avif" srcSet={villageArtRenditions.map((art) => `${art.avif} ${art.width}w`).join(', ')} sizes="(max-width: 700px) 1280px, 1672px" />
               <source type="image/webp" srcSet={villageArtRenditions.map((art) => `${art.webp} ${art.width}w`).join(', ')} sizes="(max-width: 700px) 1280px, 1672px" />
@@ -528,7 +544,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         >
           <div className={styles.hotspots}>
             {cityEnabled && props.onFacilitySelect && <SultanGardenEntrance composition={composition} view={props.view} village={props.village}
-              onOpen={() => { current.current.onSelectionStart?.(); prefetchCityScene('sultan-garden'); current.current.onFacilitySelect?.('sultan-garden'); }} />}
+              onOpen={openSultanGarden} />}
             {buildingKeys.filter((building) => building !== 'stable').map((building) => {
               const presentation = getBuildingPresentation(
                 building,
@@ -629,7 +645,16 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                 <span className={styles.label}><Swords size={15} aria-hidden="true" />ورشة الحصار</span>
               </button>
             </>}
-            {cityEnabled && city.landmarks.filter(landmark=>landmark.id==='blacksmith'||landmark.id==='granary').map(landmark=><button key={landmark.id} type="button" className={`${styles.hotspot} ${styles.region}`} style={rectStyle(landmark.rect)} aria-label={landmark.name} data-building-region={landmark.id} data-label-id={landmark.id} onClick={()=>selectTarget(landmark.target!)}><span className={styles.label}>{landmark.name}</span></button>)}
+            {cityEnabled && city.landmarks.filter(landmark=>landmark.id==='granary').map(landmark=><button key={landmark.id} type="button" className={`${styles.hotspot} ${styles.region}`} style={rectStyle(landmark.rect)} aria-label={landmark.name} data-building-region={landmark.id} data-label-id={landmark.id} onClick={()=>selectTarget(landmark.target!)}><span className={styles.label}>{landmark.name}</span></button>)}
+            {cityEnabled && city.landmarks.filter(landmark=>landmark.classification==='reserved').map(landmark=>(
+              <span key={landmark.id} role="img" aria-label={`${landmark.name}، مهيأة داخل القرية`} className={styles.reservedSite}
+                data-reserved-site={landmark.id} style={{ left: landmark.rect.x, top: landmark.rect.y, width: landmark.rect.width, height: landmark.rect.height }}>
+                <span className={styles.siteLabel} dir="rtl">
+                  <strong>{landmark.id === 'knowledge' ? 'الأكاديمية' : 'الحداد'}</strong>
+                  <small>مساحة مهيأة</small>
+                </span>
+              </span>
+            ))}
             {cityEnabled && city.landmarks.filter(landmark=>landmark.classification==='decoration').map(landmark=><span key={landmark.id} role="img" aria-label={landmark.name} className={styles.decorativeLandmark} style={rectStyle(landmark.rect)} title={landmark.name} />)}
             <button
               type="button"

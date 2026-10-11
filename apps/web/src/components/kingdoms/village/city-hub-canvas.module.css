@@ -33,8 +33,50 @@
   pointer-events: none;
 }
 .stage[data-city-composition][data-pixi-ready='true'] .hotspot { pointer-events: none; }
+.stage[data-city-composition][data-pixi-ready='true'] [data-sultan-garden-entrance] { pointer-events: none; }
 .stage[data-city-composition] .hotspot:hover { background: transparent; box-shadow: none; }
 .decorativeLandmark { position: absolute; pointer-events: none; }
+.reservedSite { position: absolute; pointer-events: none; }
+.siteLabel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  inline-size: max-content;
+  padding: 3px 8px;
+  border: 1px solid var(--kingdoms-ui-gold);
+  border-radius: 4px;
+  background: var(--kingdoms-ui-background);
+  color: var(--kingdoms-ui-foreground);
+  font-family: var(--font-arabic), sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  transform: translate(-50%, -50%) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center;
+  pointer-events: none;
+}
+.siteLabel strong { color: var(--kingdoms-ui-gold); font-weight: 700; }
+.siteLabel small { font-size: 10px; }
+@media (orientation: landscape) and (max-height: 450px) {
+  .stage[data-city-composition='desktop'] .reservedSite[data-reserved-site='knowledge'] .siteLabel {
+    margin-left: calc(24px / var(--camera-scale));
+  }
+}
+@media (max-width: 360px) {
+  .stage[data-city-composition='portrait'] .reservedSite[data-reserved-site='knowledge'] .siteLabel {
+    margin-top: calc(48px / var(--camera-scale));
+  }
+  .stage[data-city-composition='portrait'] .reservedSite[data-reserved-site='knowledge'] .siteLabel::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    width: 1px;
+    height: 28px;
+    background: var(--kingdoms-ui-gold);
+  }
+}
 .stage[data-camera-state='BUILDING_FOCUS'] .terrain { filter: brightness(1.035); }
 .stage[data-dragging='true'] {
   cursor: grabbing;
