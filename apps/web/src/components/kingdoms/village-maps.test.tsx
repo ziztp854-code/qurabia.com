@@ -47,6 +47,17 @@ afterEach(() => {
 });
 
 describe('village maps', () => {
+  it('opens the accessible building-scene shell synchronously when motion is reduced', () => {
+    const view = fixture();
+    render(
+      <VillagePanel view={view} village={view.villages[0]} send={vi.fn()} busy={false} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^دار الحكم/ }));
+
+    expect(screen.getByRole('region', { name: 'مشهد قصر السلطان' })).toBeInTheDocument();
+  });
+
   it('keeps construction, army, tasks and world navigation available within the village', async () => {
     const view = fixture();
     const onNavigate = vi.fn();

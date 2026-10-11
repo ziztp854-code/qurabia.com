@@ -31,5 +31,21 @@ describe('AppController', () => {
         status: 'ok',
       });
     });
+
+    it('reports the Vercel production commit and ignores malformed metadata', () => {
+      jest.replaceProperty(process, 'env', {
+        ...process.env,
+        VERCEL_GIT_COMMIT_SHA: '2701987abcdeffedcba0123456789abcdef01234',
+        RENDER_GIT_COMMIT: '800e94f3ed7121640602027af5a15e524f1e515b',
+      });
+      expect(appController.getHealth().commit).toBe('2701987a');
+
+      jest.replaceProperty(process, 'env', {
+        ...process.env,
+        VERCEL_GIT_COMMIT_SHA: 'not-a-commit',
+        RENDER_GIT_COMMIT: undefined,
+      });
+      expect(appController.getHealth().commit).toBeNull();
+    });
   });
 });

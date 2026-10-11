@@ -31,6 +31,16 @@ interface DestinationDraft {
   readonly manual: boolean;
 }
 
+function isFatalMapRuntimeError(event: unknown) {
+  const message =
+    event && typeof event === 'object' && 'error' in event
+      ? String((event as { error?: { message?: unknown } }).error?.message ?? '')
+      : '';
+  const optionalResource = /glyph|sprite|tile|image/i.test(message);
+  const unavailableResource = /404|not found|failed to load/i.test(message);
+  return !(optionalResource && unavailableResource);
+}
+
 function palette(container: HTMLElement): MapPalette {
   const tokens = getComputedStyle(container);
   const color = (token: string) => tokens.getPropertyValue(token).trim();
@@ -206,9 +216,9 @@ export function useWorldMap(
     const artworkController = new AbortController();
     async function initialize() {
       try {
-        const { Map, setWorkerUrl } = await import('maplibre-gl');
+        const { Map, getVersion, setWorkerUrl } = await import('maplibre-gl');
         if (cancelled || !container.current) return;
-        setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
+        setWorkerUrl(`/maplibre/maplibre-gl-worker.mjs?v=${encodeURIComponent(getVersion())}`);
         const camera = cameraRef.current;
         const hasLocation = camera.longitude !== undefined && camera.latitude !== undefined;
         map = new Map({
@@ -249,8 +259,8 @@ export function useWorldMap(
           styleReady = true;
           mapStyleReadyRef.current = true;
         });
-        map.on('error', () => {
-          if (!cancelled) setStatus('error');
+        map.on('error', (event) => {
+          if (!cancelled && isFatalMapRuntimeError(event)) setStatus('error');
         });
         const colors = readMapColors(container.current);
         settlements = createSettlementPresentation(
@@ -317,7 +327,7 @@ export function useWorldMap(
             if (!cancelled) session?.refreshSettlementPresentation();
           })
           .catch(() => {
-            if (!cancelled) setStatus('error');
+            // Approved circle markers remain usable when optional artwork cannot load.
           });
         stopRevisions = watchMapRevisions(
           worldId,

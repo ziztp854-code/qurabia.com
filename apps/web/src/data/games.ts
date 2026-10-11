@@ -24,7 +24,7 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     imageAlt: 'قلعة ذهبية أصلية على خريطة أراض تصل بين قرى تحدي الممالك',
   },
   'quote-master': {
-    image: '/game-art/catalog-v2/quote-master.png',
+    image: '/game-art/catalog-v2/quote-master.webp',
     imageAlt: 'بطاقات شعراء ذهبية تحت شعار «من القائل؟» في مجلس أدبي فاخر',
   },
   'knowledge-tower': {

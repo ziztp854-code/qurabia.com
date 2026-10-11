@@ -34,19 +34,19 @@ function fillCredentials() {
 describe('SignInForm Google button', () => {
   it('disables Google login when OAuth env keys are missing', () => {
     render(<SignInForm googleEnabled={false} />);
-    expect(screen.getByRole('button', { name: 'دخول المضيف عبر Google' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'الدخول عبر Google' })).toBeDisabled();
     expect(screen.getByText(/لم يتم إعداد Google OAuth بعد/)).toBeInTheDocument();
   });
 
   it('enables Google login when OAuth is configured', () => {
     render(<SignInForm googleEnabled />);
-    expect(screen.getByRole('button', { name: 'دخول المضيف عبر Google' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'الدخول عبر Google' })).toBeEnabled();
   });
 
   it('shows only password login on the stamp holder entry', () => {
     render(<SignInForm showGoogle={false} defaultNext="/orders" />);
     expect(
-      screen.queryByRole('button', { name: 'دخول المضيف عبر Google' }),
+      screen.queryByRole('button', { name: 'الدخول عبر Google' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'دخول بالبريد' })).toBeEnabled();
   });
@@ -106,7 +106,7 @@ describe('SignInForm Google button', () => {
     mocks.query = 'next=%2Forders%3Fpage%3D2';
     render(<SignInForm googleEnabled />);
     fillCredentials();
-    const google = screen.getByRole('button', { name: 'دخول المضيف عبر Google' });
+    const google = screen.getByRole('button', { name: 'الدخول عبر Google' });
     const password = screen.getByRole('button', { name: 'دخول بالبريد' });
     fireEvent.click(google);
     expect(google).toBeDisabled();
@@ -128,15 +128,15 @@ describe('SignInForm Google button', () => {
     mocks.signIn.mockRejectedValueOnce(new Error(exceptionMarker));
     mocks.query = 'error=OAuthAccountNotLinked&next=https%3A%2F%2Fexample.invalid';
     render(<SignInForm googleEnabled />);
-    fireEvent.click(screen.getByRole('button', { name: 'دخول المضيف عبر Google' }));
+    fireEvent.click(screen.getByRole('button', { name: 'الدخول عبر Google' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(googleMessage));
     expect(screen.getByRole('alert')).not.toHaveTextContent(exceptionMarker);
     expect(screen.getByRole('alert')).not.toHaveTextContent('طريقة تسجيل الدخول الأصلية');
     expect(mocks.signIn).toHaveBeenCalledWith('google', { callbackUrl: '/dashboard' });
-    expect(screen.getByRole('button', { name: 'دخول المضيف عبر Google' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'الدخول عبر Google' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'دخول بالبريد' })).toBeEnabled();
     mocks.signIn.mockResolvedValueOnce(undefined);
-    fireEvent.click(screen.getByRole('button', { name: 'دخول المضيف عبر Google' }));
+    fireEvent.click(screen.getByRole('button', { name: 'الدخول عبر Google' }));
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(mocks.signIn).toHaveBeenCalledTimes(2);
   });
@@ -147,7 +147,7 @@ describe('SignInForm Google button', () => {
     render(<SignInForm googleEnabled />);
     fillCredentials();
     const password = screen.getByRole('button', { name: 'دخول بالبريد' });
-    const google = screen.getByRole('button', { name: 'دخول المضيف عبر Google' });
+    const google = screen.getByRole('button', { name: 'الدخول عبر Google' });
     fireEvent.submit(password.closest('form')!);
     expect(password).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('status')).toHaveTextContent('جارٍ تسجيل الدخول');

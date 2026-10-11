@@ -51,7 +51,7 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
       </div>
       <div className={styles.trophyLayer} aria-hidden="true" data-layer="trophy">
         <Image
-          src="/home/tahaddi-trophy-ornate-transparent.png"
+          src="/home/tahaddi-trophy-ornate-transparent.webp"
           alt=""
           width={1024}
           height={1536}

@@ -9,6 +9,7 @@ vi.mock('maplibre-gl', async () => {
   const { MapSdkFixture } = await import('./map-fixture');
   return {
     Map: MapSdkFixture,
+    getVersion: () => '6.11.2',
     setWorkerUrl: (url: string) => {
       MapSdkFixture.workerUrl = url;
     },
@@ -655,7 +656,7 @@ describe('strategic world map controls', () => {
     );
     await screen.findByRole('button', { name: 'القاهرة' });
     expect(MapSdkFixture.instances[0]?.workerUrlAtCreation).toBe(
-      '/maplibre/maplibre-gl-worker.mjs',
+      '/maplibre/maplibre-gl-worker.mjs?v=6.11.2',
     );
     expect(screen.getByRole('heading', { level: 1, name: 'خريطة العالم' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'حدود الممالك' })).toBeInTheDocument();

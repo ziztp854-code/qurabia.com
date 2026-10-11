@@ -6,12 +6,36 @@ import { useWorldMap } from './use-world-map';
 
 vi.mock('maplibre-gl', async () => {
   const { MapSdkFixture } = await import('./map-fixture');
-  return { Map: MapSdkFixture, setWorkerUrl: vi.fn() };
+  return { Map: MapSdkFixture, getVersion: () => '6.11.2', setWorkerUrl: vi.fn() };
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   MapSdkFixture.instances = [];
+});
+
+it('keeps a valid map ready when an optional glyph request fails but surfaces worker failure', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => approvedPayload() }),
+  );
+  function Scene() {
+    const map = useWorldMap('world', 'viewer');
+    return (
+      <>
+        <div ref={map.container} />
+        <output>{map.status}</output>
+      </>
+    );
+  }
+  const view = render(<Scene />);
+  await screen.findByText('ready');
+  const map = MapSdkFixture.instances[0]!;
+  act(() => map.fire('error', { error: new Error('Glyph range 1536-1791 failed to load') }));
+  expect(screen.getByText('ready')).toBeInTheDocument();
+  act(() => map.fire('error', { error: new Error('maplibre-gl-worker.mjs returned HTTP 404') }));
+  expect(screen.getByText('error')).toBeInTheDocument();
+  view.unmount();
 });
 
 it('loads authorized villages before slow settlement artwork and upgrades only their layers afterwards', async () => {

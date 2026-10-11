@@ -33,6 +33,7 @@ import {
   type LayerPreferences,
 } from './layer-visibility';
 import { mapRequest, MapAuthorizationError } from './map-request';
+import { startMapTiming } from './map-diagnostics';
 import {
   playerBorderLayers,
   playerOwnershipLayer,
@@ -465,33 +466,48 @@ export function createMapSession(
       worldId === 'mamluk-public-geographic-atlas-v1'
         ? undefined
         : async (bounds, signal) => {
+            const finishTiming = startMapTiming('overview');
             callbacks.onRefreshing?.(true);
-            const accepted = await overview.load(bounds, signal);
-            if (!signal.aborted && !disposed) {
-              if (accepted) {
-                showLocal(false);
-                callbacks.onPresentation?.(false);
+            try {
+              const accepted = await overview.load(bounds, signal);
+              if (!signal.aborted && !disposed) {
+                if (accepted) {
+                  showLocal(false);
+                  callbacks.onPresentation?.(false);
+                }
+                callbacks.onRefreshing?.(false);
+                callbacks.onStatus('ready');
               }
-              callbacks.onRefreshing?.(false);
-              callbacks.onStatus('ready');
+              finishTiming(signal.aborted ? 'aborted' : 'succeeded');
+              return accepted;
+            } catch (error) {
+              finishTiming(signal.aborted ? 'aborted' : 'failed');
+              throw error;
             }
-            return accepted;
           },
     load: async (bounds, signal) => {
+      const finishTiming = startMapTiming('viewport');
       callbacks.onRefreshing?.(true);
       if (!currentPayload && !adapter.publicPayload) callbacks.onStatus('loading');
-      const query = new URLSearchParams({
-        worldId,
-        ...Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, String(value)])),
-      });
-      const response = await mapRequest(`/api/kingdoms/world-map/viewport?${query}`, signal, {
-        // Older hosts ignore this header; older clients receive their original DTO.
-        'X-Mamluk-Village-Buildings': '1',
-        'X-Mamluk-Army-Missions': '1',
-      });
-      const payload = parseMapPayload(await response.json());
-      if (response.headers?.get('X-Mamluk-Public-Settlements') === '1') publicPayloads.add(payload);
-      return payload;
+      try {
+        const query = new URLSearchParams({
+          worldId,
+          ...Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, String(value)])),
+        });
+        const response = await mapRequest(`/api/kingdoms/world-map/viewport?${query}`, signal, {
+          // Older hosts ignore this header; older clients receive their original DTO.
+          'X-Mamluk-Village-Buildings': '1',
+          'X-Mamluk-Army-Missions': '1',
+        });
+        const payload = parseMapPayload(await response.json());
+        if (response.headers?.get('X-Mamluk-Public-Settlements') === '1')
+          publicPayloads.add(payload);
+        finishTiming(signal.aborted ? 'aborted' : 'succeeded');
+        return payload;
+      } catch (error) {
+        finishTiming(signal.aborted ? 'aborted' : 'failed');
+        throw error;
+      }
     },
     onError: (error) => {
       if (disposed) return;
@@ -500,7 +516,10 @@ export function createMapSession(
         overview.hide();
         adapter.clearPublic();
       }
-      callbacks.onStatus('error');
+      const retained = currentPayload || adapter.publicPayload || currentOverview;
+      callbacks.onStatus(
+        retained ? (loader.isBroad(adapter.getViewportBounds()) ? 'zoom' : 'ready') : 'error',
+      );
     },
   });
   viewport.loader = loader;

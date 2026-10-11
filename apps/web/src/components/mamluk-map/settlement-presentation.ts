@@ -374,7 +374,7 @@ function settlementLayer(
           ['get', 'name'],
         ],
       ],
-      'text-font': ['Cairo'],
+      'text-font': ['Noto Sans Regular'],
       'text-size': ['interpolate', ['linear'], ['zoom'], 3, 11, 10, 14],
       'text-anchor': 'top',
       'text-pitch-alignment': 'viewport',

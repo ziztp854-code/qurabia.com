@@ -166,7 +166,7 @@ export function RoyalHostLobby({
           <strong>المعرفة</strong>
           <b>المتعة</b>
           <Image
-            src="/home/tahaddi-trophy-ornate-transparent.png"
+            src="/home/tahaddi-trophy-ornate-transparent.webp"
             alt="كأس تحدّي الملكي"
             width={180}
             height={180}

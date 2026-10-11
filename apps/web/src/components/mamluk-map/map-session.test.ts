@@ -598,6 +598,7 @@ it('requests a fresh viewport after a transient network failure and resets backo
   expect(fetchMock).toHaveBeenCalledTimes(3);
   // The failed poll keeps the authorized snapshot until its own expiry.
   expect(map.sources.size).toBe(10);
+  expect(callbacks.onStatus).toHaveBeenLastCalledWith('ready');
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetchMock).toHaveBeenCalledTimes(4);
   expect(callbacks.onPayload.mock.lastCall?.[0]?.revision).toBe('2');

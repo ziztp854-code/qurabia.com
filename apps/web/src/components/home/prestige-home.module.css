@@ -243,8 +243,8 @@
   background-position: 150% 0;
   background-size: 250% 100%;
   z-index: 2;
-  -webkit-mask: url('/home/tahaddi-trophy-ornate-transparent.png') center / contain no-repeat;
-  mask: url('/home/tahaddi-trophy-ornate-transparent.png') center / contain no-repeat;
+  -webkit-mask: url('/home/tahaddi-trophy-ornate-transparent.webp') center / contain no-repeat;
+  mask: url('/home/tahaddi-trophy-ornate-transparent.webp') center / contain no-repeat;
   animation: trophyShine 6.2s ease-in-out infinite;
 }
 

@@ -1481,6 +1481,16 @@ summary:focus-visible {
   align-items: center;
   gap: var(--space-3);
 }
+.header-actions {
+  position: relative;
+  z-index: 2;
+}
+@media (min-width: 1025px) {
+  .logo,
+  .header-actions {
+    flex: 0 0 auto;
+  }
+}
 .desktop-nav a {
   padding: 0.55rem 0.8rem;
   color: var(--muted-foreground);
@@ -6070,15 +6080,15 @@ tr:last-child td {
   .desktop-nav {
     display: none;
   }
-  .hide-tablet {
-    display: none;
-  }
   .mobile-menu-button {
     display: inline-flex;
   }
   .mobile-nav {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+  }
+  .hide-tablet {
+    display: none;
   }
   .hero-arena {
     grid-template-columns: 1fr;
