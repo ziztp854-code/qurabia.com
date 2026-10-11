@@ -7,7 +7,10 @@ import styles from './city-building-scene.module.css';
 import { SultanPalaceScene } from './sultan-palace-scene';
 import { SultanFarmScene } from './sultan-farm-scene';
 import { FarmSceneContext } from './farm-scene-context';
+import { sultanFarmCopy } from './sultan-farm-copy';
 import type { GameProps } from '../shared';
+
+type FarmSheetState = 'closed' | 'half' | 'full';
 
 export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
   scene: CitySceneKey;
@@ -21,17 +24,25 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
   const [retry, setRetry] = useState(0);
   const [aspect, setAspect] = useState(scene === 'palace' ? 1670 / 942 : 1672 / 941);
   const [exiting, setExiting] = useState(false);
-  const [managingFarm, setManagingFarm] = useState(false);
+  const [farmSheet, setFarmSheet] = useState<FarmSheetState>('closed');
+  const managingFarm = farmSheet !== 'closed';
   const [farmSelected, setFarmSelected] = useState(0);
   const [farmQuiet, setFarmQuiet] = useState(false);
   const farmFocus = useRef(new Set<(id: number) => void>());
   const registerFarmFocus = useCallback((listener: (id: number) => void) => { farmFocus.current.add(listener); return () => { farmFocus.current.delete(listener); }; }, []);
-  const selectFarm = useCallback((id: number) => { setFarmSelected(id); }, []);
+  const selectFarm = useCallback((id: number, options?: { focus?: boolean }) => {
+    setFarmSelected(id);
+    if (options?.focus !== false) {
+      if (scene === 'sultan-garden') setFarmSheet((value) => value === 'full' ? 'half' : value);
+      farmFocus.current.forEach((listener) => listener(id));
+    }
+  }, [scene]);
   const farmContext = useMemo(() => ({ selected: farmSelected, select: selectFarm, registerFocus: registerFarmFocus, motionPaused: farmQuiet, setMotionPaused: setFarmQuiet }), [farmSelected, selectFarm, registerFarmFocus, farmQuiet]);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const surface = useRef<HTMLElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const back = useRef<HTMLButtonElement>(null);
+  const manage = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     // Disable only sibling branches, preserving the retained city and its camera.
     const covered: HTMLElement[] = [];
@@ -65,7 +76,17 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
     exitTimer.current = setTimeout(onClose, 160);
   }
   return (
-    <FarmSceneContext.Provider value={farm ? farmContext : null}><section ref={surface} className={styles.scene} aria-label={`مشهد ${cityScenes[scene].title}`} data-city-scene={scene} data-scene={scene} data-farm-managing={scene === 'sultan-garden' ? managingFarm : undefined} data-phase={exiting ? 'exiting' : loaded ? 'active' : 'entering'} dir="rtl" onKeyDown={(event) => {
+    <FarmSceneContext.Provider value={farm ? farmContext : null}><section ref={surface} className={styles.scene} aria-label={`مشهد ${cityScenes[scene].title}`} data-city-scene={scene} data-scene={scene} data-farm-managing={scene === 'sultan-garden' ? managingFarm : undefined} data-farm-sheet={scene === 'sultan-garden' ? farmSheet : undefined} data-phase={exiting ? 'exiting' : loaded ? 'active' : 'entering'} dir="rtl" onKeyDown={(event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        if (scene === 'sultan-garden' && managingFarm) {
+          setFarmSheet('closed');
+          manage.current?.focus({ preventScroll: true });
+        }
+        else onClose();
+        return;
+      }
       if (event.key !== 'Tab') return;
       const controls = Array.from(surface.current?.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? [])
         .filter((element) => !element.closest('[inert]') && element.getClientRects().length > 0);
@@ -99,19 +120,25 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
       <div className={styles.veil} aria-hidden="true" />
       <header className={styles.header}>
         <div className={styles.heading}><p className={styles.eyebrow}>مدينة السلطان</p><h2 className={styles.title}>{cityScenes[scene].title}</h2></div>
-        <button type="button" className={styles.manageButton} aria-pressed={scene === 'sultan-garden' ? managingFarm : undefined} onClick={() => {
+        <button ref={manage} type="button" className={styles.manageButton} aria-expanded={scene === 'sultan-garden' ? managingFarm : undefined} aria-controls={scene === 'sultan-garden' ? 'sultan-farm-management' : undefined} onClick={() => {
           if (scene === 'sultan-garden') {
-            setManagingFarm(value => !value);
-            surface.current?.scrollTo({ top: 0, behavior: 'auto' });
-          } else content.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        }}>{scene === 'sultan-garden' && managingFarm ? 'عرض المزرعة' : 'إدارة المرفق'}</button>
-        <button ref={back} type="button" className={styles.backButton} disabled={exiting} onClick={returnToCity}><ArrowRight size={20} aria-hidden="true" />العودة إلى المدينة</button>
+            setFarmSheet(value => value === 'closed' ? 'half' : 'closed');
+            surface.current?.scrollTo?.({ top: 0, behavior: 'auto' });
+          } else content.current?.scrollIntoView?.({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        }}>{scene === 'sultan-garden' && managingFarm ? sultanFarmCopy.shell.close : scene === 'sultan-garden' ? sultanFarmCopy.shell.manage : 'إدارة المرفق'}</button>
+        <button ref={back} type="button" className={styles.backButton} disabled={exiting} onClick={returnToCity}><ArrowRight size={20} aria-hidden="true" />{scene === 'sultan-garden' ? sultanFarmCopy.shell.back : 'العودة إلى المدينة'}</button>
       </header>
       {!loaded && <div className={styles.status} role={failed ? 'alert' : 'status'}>
         {failed ? 'تعذر تحميل المشهد.' : 'تجهيز المشهد…'}
         {failed && <button className={styles.retryButton} type="button" onClick={() => { setFailed(false); setRetry((value) => value + 1); }}>إعادة المحاولة</button>}
       </div>}
-      <div ref={content} className={styles.content}>{children}</div>
+      <div ref={content} id={scene === 'sultan-garden' ? 'sultan-farm-management' : undefined} className={styles.content}>
+        {scene === 'sultan-garden' && <button type="button" className={styles.sheetHandle} aria-expanded={farmSheet === 'full'} onClick={() => setFarmSheet(value => value === 'full' ? 'half' : 'full')}>
+          <span aria-hidden="true" />
+          {farmSheet === 'full' ? sultanFarmCopy.shell.collapse : sultanFarmCopy.shell.expand}
+        </button>}
+        {children}
+      </div>
     </section></FarmSceneContext.Provider>
   );
 }

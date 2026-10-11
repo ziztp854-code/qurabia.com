@@ -1,6 +1,7 @@
 /** Soil corners measured from the user-selected 2048 × 1143 photograph.
  * Rows run southwest, columns southeast. No mobile crop changes this projection. */
 export const FARM_WORLD = { width: 2048, height: 1143 };
+const FARM_BED_REAR_HIT_LIFT = 60;
 export const farmBeds = [
   [
     [820, 262],
@@ -75,6 +76,17 @@ export const farmBeds = [
     [1137, 1008],
   ],
 ] as const;
+export function farmBedHitPolygon(id: number) {
+  const [rearLeft, rearRight, frontRight, frontLeft] = farmBeds[id];
+  return [
+    frontLeft,
+    rearLeft,
+    [rearLeft[0], rearLeft[1] - FARM_BED_REAR_HIT_LIFT],
+    [rearRight[0], rearRight[1] - FARM_BED_REAR_HIT_LIFT],
+    rearRight,
+    frontRight,
+  ] as const;
+}
 export function farmBedPoint(id: number, u = 0.5, v = 0.5) {
   const [a, b, c, d] = farmBeds[id];
   return {

@@ -1,11 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { CityBuildingScene } from './city-building-scene';
-import type { ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
+import type { GameProps } from '../shared';
+import { FarmSceneContext } from './farm-scene-context';
 
 // The facility shell contract is independent of GPU setup. The actual palace
 // renderer, camera, garden and cleanup are exercised by the browser suite.
 vi.mock('./sultan-palace-scene', () => ({ SultanPalaceScene: ({ children, garden }: { children: ReactNode; garden?: ReactNode }) => <div data-sultan-palace="">{children}{garden}</div> }));
+vi.mock('./sultan-farm-scene', () => ({ SultanFarmScene: ({ children }: { children: ReactNode }) => <div data-sultan-farm-scene="">{children}</div> }));
+
+function FarmContextProbe() {
+  const farm = useContext(FarmSceneContext);
+  const [focused, setFocused] = useState<number | null>(null);
+  useEffect(() => farm?.registerFocus(setFocused), [farm]);
+  return <><button type="button" onClick={() => farm?.select(4)}>اختر الحوض الخامس</button><output aria-label="الحوض المركّز">{focused}</output></>;
+}
 
 afterEach(cleanup);
 
@@ -45,5 +55,39 @@ describe('independent city facility scenes', () => {
     fireEvent.load(image);
     expect(screen.getByRole('button', { name: 'تعديل الحديقة' })).toBeInTheDocument();
     expect(image.closest('picture')?.parentElement).toContainElement(screen.getByRole('button', { name: 'تعديل الحديقة' }));
+  });
+
+  it('keeps the garden artwork mounted while its mobile management sheet opens and closes', () => {
+    const onClose = vi.fn();
+    const rendered = render(<CityBuildingScene scene="sultan-garden" onClose={onClose} farm={{} as GameProps}><FarmContextProbe /></CityBuildingScene>);
+    const scene = screen.getByRole('region', { name: 'مشهد حديقة السلطان' });
+    const image = rendered.container.querySelector('img')!;
+    fireEvent.load(image);
+
+    expect(screen.getByRole('button', { name: 'العودة إلى القرية' })).toHaveFocus();
+    const manage = screen.getByRole('button', { name: 'إدارة الحديقة' });
+    expect(manage).toHaveAttribute('aria-expanded', 'false');
+    expect(manage).toHaveAttribute('aria-controls', 'sultan-farm-management');
+    fireEvent.click(manage);
+    expect(scene).toHaveAttribute('data-farm-managing', 'true');
+    expect(scene).toHaveAttribute('data-farm-sheet', 'half');
+    expect(manage).toHaveAttribute('aria-expanded', 'true');
+    expect(rendered.container.querySelector('[data-sultan-farm-scene]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'توسيع لوحة الحديقة' }));
+    expect(scene).toHaveAttribute('data-farm-sheet', 'full');
+
+    fireEvent.click(screen.getByRole('button', { name: 'اختر الحوض الخامس' }));
+    expect(screen.getByRole('status', { name: 'الحوض المركّز' })).toHaveTextContent('4');
+    expect(scene).toHaveAttribute('data-farm-sheet', 'half');
+
+    screen.getByRole('button', { name: 'اختر الحوض الخامس' }).focus();
+    fireEvent.keyDown(scene, { key: 'Escape' });
+    expect(scene).toHaveAttribute('data-farm-managing', 'false');
+    expect(scene).toHaveAttribute('data-farm-sheet', 'closed');
+    expect(manage).toHaveFocus();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(scene, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });

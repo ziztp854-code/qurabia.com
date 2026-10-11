@@ -97,6 +97,7 @@
   background: linear-gradient(to bottom, color-mix(in srgb, var(--kingdoms-ui-surface) 80%, transparent), transparent);
 }
 .content > * { min-inline-size: 0; }
+.sheetHandle { display: none; }
 .content :global([data-city-resources]) { margin-block-end: var(--space-3); padding-block-end: var(--space-3); border-block-end: 1px solid var(--border); color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.9; }
 .content > section:not(:global([data-city-resources])),
 .content > div > section,
@@ -133,8 +134,102 @@
   .status { inset-inline: var(--space-4); inset-block-start: 25%; }
 }
 @media (max-width: 700px) {
-  .scene[data-scene='sultan-garden'][data-farm-managing='true'] .artwork { display: none; }
-  .scene[data-scene='sultan-garden'][data-farm-managing='true'] .content { flex: 1 0 auto; }
+  .scene[data-scene='sultan-garden'] {
+    display: grid;
+    grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .scene[data-scene='sultan-garden'] .header {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    grid-area: 1 / 1;
+    order: initial;
+  }
+  .scene[data-scene='sultan-garden'] .heading {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .scene[data-scene='sultan-garden'] .manageButton {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .scene[data-scene='sultan-garden'] .backButton {
+    grid-column: 2;
+    grid-row: 2;
+    white-space: nowrap;
+  }
+  .scene[data-scene='sultan-garden'] .manageButton,
+  .scene[data-scene='sultan-garden'] .backButton {
+    inline-size: 100%;
+    min-inline-size: 0;
+    font-size: 0.8rem;
+  }
+  .scene[data-scene='sultan-garden'] .artwork {
+    grid-area: 2 / 1;
+    order: initial;
+    align-self: start;
+    max-block-size: 100%;
+  }
+  .scene[data-scene='sultan-garden'] .content {
+    position: absolute;
+    z-index: 5;
+    inset-inline: max(var(--space-2), env(safe-area-inset-left, 0px)) max(var(--space-2), env(safe-area-inset-right, 0px));
+    inset-block-end: 0;
+    order: initial;
+    max-block-size: min(52dvh, 32rem);
+    min-block-size: 0;
+    padding: var(--space-4) var(--space-3) max(var(--space-5), env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+    border-block-end: 0;
+    border-radius: var(--radius-xl, 1.5rem) var(--radius-xl, 1.5rem) 0 0;
+    background: color-mix(in srgb, var(--kingdoms-ui-background) 96%, transparent);
+    box-shadow: 0 -1rem 3rem color-mix(in srgb, #000 42%, transparent);
+    transform: translateY(calc(100% + var(--space-4)));
+    visibility: hidden;
+    transition: transform 220ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)), visibility 0s linear 220ms;
+  }
+  .scene[data-scene='sultan-garden'][data-farm-managing='true'] .content {
+    transform: translateY(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .scene[data-scene='sultan-garden'][data-farm-sheet='full'] .content {
+    max-block-size: min(82dvh, 48rem);
+  }
+  .scene[data-scene='sultan-garden'] .sheetHandle {
+    position: sticky;
+    z-index: 2;
+    inset-block-start: calc(var(--space-4) * -1);
+    display: grid;
+    min-block-size: 48px;
+    inline-size: 100%;
+    place-items: center;
+    gap: 3px;
+    margin-block: calc(var(--space-4) * -1) var(--space-2);
+    padding: var(--space-2);
+    border: 0;
+    border-block-end: 1px solid var(--kingdoms-ui-border);
+    background: var(--kingdoms-ui-background);
+    color: var(--muted-foreground);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .scene[data-scene='sultan-garden'] .sheetHandle > span {
+    inline-size: 44px;
+    block-size: 4px;
+    border-radius: var(--radius-full);
+    background: var(--kingdoms-ui-border-gold);
+  }
+  .scene[data-scene='sultan-garden'] .sheetHandle:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -4px;
+  }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .header { position: sticky; inset-block-start: 0; background: var(--kingdoms-ui-background); }
@@ -144,7 +239,7 @@
   .artwork { inline-size: 100%; max-inline-size: 1672px; align-self: start; }
   .scene[data-scene='palace']:has(:global([data-testid='palace-garden']) select) .artwork { margin-block-end: 310px; }
 }
-@media (prefers-reduced-motion: reduce) { .scene, .scene[data-phase='exiting'] { animation: none; } .image { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .scene, .scene[data-phase='exiting'] { animation: none; } .image, .scene[data-scene='sultan-garden'] .content { transition: none; } }
 @keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
 @keyframes depart { from { opacity: 1; } to { opacity: 0; } }
 
