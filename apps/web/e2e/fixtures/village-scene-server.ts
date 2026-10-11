@@ -117,7 +117,7 @@ async function main() {
       village.sultanFarm = { ...farmState(village), garden: { version: 1, harvests: 12, collected: { wheat: 4, beans: 4, rose: 4 }, style: 'ivory' } };
       world.players[currentPlayer].achievements.push('garden:first-bloom', 'garden:variety', 'garden:caretaker', 'garden:royal-garden');
       const crops = cropKeys;
-      const progress = [.02, .15, .5, 1, .85, 1, 1, 1, 1];
+      const progress = [.02, .15, .5, 1, .85, 1, 1, 1, 1, .85];
       crops.forEach((crop, index) => {
         const quote = farmQuote(world.config, 5, crop);
         plantFarm(world.config, village, index + 1, 0, crop, Math.round(frozenNow! - quote.growMs * progress[index]));

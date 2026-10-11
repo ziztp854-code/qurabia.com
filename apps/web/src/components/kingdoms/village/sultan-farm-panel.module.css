@@ -253,18 +253,9 @@
   overflow: visible;
   color: var(--kingdoms-ui-success);
 }
-.artStem {
-  stroke: var(--kingdoms-ui-success);
-  stroke-width: 2;
-}
-.artLeaf {
-  fill: var(--kingdoms-ui-success);
-}
-.artBloom {
-  fill: var(--garden-bloom);
-}
-.artCenter {
-  fill: var(--kingdoms-ui-gold);
+.photoCanopy {
+  image-rendering: auto;
+  filter: saturate(0.94) contrast(1.02);
 }
 .soil {
   fill: var(--kingdoms-ui-background);
@@ -283,10 +274,13 @@
 .seed {
   fill: var(--kingdoms-ui-gold);
 }
+.canopyScale,
 .canopy {
   transform-box: view-box;
-  transform-origin: 0 0;
-  animation: sway 7s ease-in-out infinite alternate;
+  transform-origin: 50% 84%;
+}
+.canopy {
+  animation: sway 6.8s ease-in-out infinite alternate;
 }
 .plot .canopy,
 .farm[data-farm-motion='quiet'] .canopy,

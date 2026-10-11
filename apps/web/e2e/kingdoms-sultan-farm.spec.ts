@@ -179,9 +179,9 @@ test('garden: a delayed command cannot replace a newer plot draft and rapid acti
   const plant = farm.getByRole('button', { name: 'ازرع القمح' });
   await plant.evaluate((button: HTMLButtonElement) => { button.click(); button.click(); });
   await requestStarted;
-  await plots.nth(10).click();
+  await plots.nth(11).click();
   await farm.getByRole('button', { name: /الفاصوليا.*متاح مجانًا/ }).click();
-  await expect(plots.nth(10)).toHaveAttribute('aria-pressed', 'true');
+  await expect(plots.nth(11)).toHaveAttribute('aria-pressed', 'true');
   release();
   await expect(farm.getByRole('button', { name: 'ازرع الفاصوليا' })).toBeEnabled();
   expect(farmPosts).toBe(1);
