@@ -76,6 +76,18 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
     await page.goto('/');
     const stage = await readyHub(page);
     const overview = await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}));
+      const academyLabel = (await stage.locator('[data-reserved-site="knowledge"] > span').boundingBox())!;
+      const gardenLabel = (await stage.locator('[data-sultan-garden-entrance] > span > span').boundingBox())!;
+      const stageBox = (await stage.boundingBox())!;
+      expect(academyLabel.x).toBeGreaterThanOrEqual(stageBox.x);
+      expect(academyLabel.x + academyLabel.width).toBeLessThanOrEqual(stageBox.x + stageBox.width);
+      expect(academyLabel.y).toBeGreaterThanOrEqual(stageBox.y);
+      expect(academyLabel.y + academyLabel.height).toBeLessThanOrEqual(stageBox.y + stageBox.height);
+      expect(academyLabel.x >= gardenLabel.x + gardenLabel.width || academyLabel.y >= gardenLabel.y + gardenLabel.height ||
+        academyLabel.x + academyLabel.width <= gardenLabel.x || academyLabel.y + academyLabel.height <= gardenLabel.y).toBe(true);
+      const smithLabel = (await stage.locator('[data-reserved-site="blacksmith"] > span').boundingBox())!;
+      expect(academyLabel.x >= smithLabel.x + smithLabel.width || academyLabel.y >= smithLabel.y + smithLabel.height ||
+        academyLabel.x + academyLabel.width <= smithLabel.x || academyLabel.y + academyLabel.height <= smithLabel.y).toBe(true);
     for (const id of ['knowledge','blacksmith']) {
       const site = stage.locator(`[data-reserved-site="${id}"]`);
       await expect(site).toBeVisible();

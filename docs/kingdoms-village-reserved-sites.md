@@ -8,7 +8,7 @@ The new versioned `overview-*-planned*.webp` assets retain the original raster d
 
 Each vacant-site footprint is calibrated separately in `city-composition.ts`. Pixi excludes those footprints from all enlarged touch targets even at compact overview scales. The native HTML fallback checks the same visible footprints before pointer activation. Labels have no pointer handler and never intercept pan/pinch. Keyboard activation of named buildings remains available.
 
-On compact phones the garden's minimum 48px touch height now expands around its authored center, with its gate anchored to the authored courtyard edge. It previously expanded downward toward the fixed barracks, allowing Chromium touch adjustment to redirect a barracks-center tap to the garden at 320px. The physical-touch regression covers embassy, garden and barracks in sequence.
+On compact phones the garden's minimum 48px touch height now expands around its authored center, with its gate anchored to the authored courtyard edge. It previously expanded downward toward the fixed barracks; a physical Chromium barracks-center tap opened the garden at 320px. The physical-touch regression covers embassy, garden and barracks in sequence. At 360px and below, the academy label sits below the garden label with a line pointing to the empty courtyard; short landscape screens give it a horizontal gutter. Its footprint and interaction boundary stay fixed.
 
 No building keys, server commands, player plots, resources, military progression, garden contracts or legacy crop entitlements change. No migration is required.
 
