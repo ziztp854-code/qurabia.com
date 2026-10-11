@@ -194,3 +194,36 @@ test('سطح الألعاب يحافظ على الاستجابة والاتجا�
   await expect(gameLink).toBeFocused();
   await expect(gameLink).toHaveCSS('outline-style', 'solid');
 });
+
+test('زر الانضمام في الرأس يملك كامل مساحة النقر ولا يتداخل مع الحساب', async ({ page }) => {
+  for (const width of [1280, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/games/');
+    const join = page.locator('.site-header a[href^="/join"]').first();
+    await expect(join).toBeVisible();
+    const box = await join.boundingBox();
+    expect(box).not.toBeNull();
+    const points = [
+      [box!.x + box!.width / 2, box!.y + box!.height / 2],
+      [box!.x + 4, box!.y + box!.height / 2],
+      [box!.x + box!.width - 4, box!.y + box!.height / 2],
+    ];
+    for (const [x, y] of points) {
+      const href = await page.evaluate(
+        ([pointX, pointY]) =>
+          document.elementFromPoint(pointX, pointY)?.closest('a')?.getAttribute('href'),
+        [x, y],
+      );
+      expect(href).toMatch(/^\/join\/?$/);
+    }
+    await page.mouse.click(points[0]![0], points[0]![1]);
+    await expect(page).toHaveURL(/\/join\/?$/);
+  }
+
+  for (const width of [390, 430]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/games/');
+    await expect(page.locator('html')).not.toHaveCSS('overflow-x', 'scroll');
+    await expect(page.getByRole('button', { name: 'فتح القائمة' })).toBeVisible();
+  }
+});

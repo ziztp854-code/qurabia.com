@@ -124,12 +124,12 @@ export function SignInForm({
           onClick={onGoogleSignIn}
         >
           {pending === 'google' ? <Spinner label="جارٍ تسجيل الدخول عبر Google" /> : <KeyRound />}
-          دخول المضيف عبر Google
+          الدخول عبر Google
         </Button>
       )}
       {showGoogle && !googleEnabled && (
         <p className="field-message">
-          لم يتم إعداد Google OAuth بعد. يمكن للمضيف استخدام البريد وكلمة المرور مؤقتًا.
+          لم يتم إعداد Google OAuth بعد. يمكنك استخدام البريد وكلمة المرور مؤقتًا.
         </p>
       )}
       <Input label="البريد الإلكتروني" name="email" type="email" autoComplete="email" required />

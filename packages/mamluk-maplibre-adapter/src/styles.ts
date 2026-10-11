@@ -206,7 +206,7 @@ export function overlayLayers(
               ]
             : '',
         ],
-        'text-font': [arabic ? 'Cairo' : 'Noto Sans Regular'],
+        'text-font': ['Noto Sans Regular'],
         'text-size': 12,
         'text-allow-overlap': false,
       },
@@ -331,7 +331,7 @@ function markerLayer(
             ],
           ]
         : ['to-string', ['coalesce', ['get', '__mamlukFeatureNumber'], '']],
-      'text-font': [arabic ? 'Cairo' : 'Noto Sans Regular'],
+      'text-font': ['Noto Sans Regular'],
       'text-size': ['interpolate', ['linear'], ['zoom'], 4, 11, 12, 14],
       'text-anchor': 'top',
       'text-offset': [0, 1.7],

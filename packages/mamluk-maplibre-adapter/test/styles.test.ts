@@ -35,6 +35,8 @@ it('reveals major cities at regional zoom and real level labels only at local zo
   )!;
   if (count.type !== 'symbol') throw new Error('Expected cluster count');
   expect(JSON.stringify(count.layout?.['text-field'])).toContain(' موقع');
+  expect(city.layout?.['text-font']).toEqual(['Noto Sans Regular']);
+  expect(count.layout?.['text-font']).toEqual(['Noto Sans Regular']);
 });
 
 it('preserves public geography beneath fog while keeping fog on top of entities', () => {

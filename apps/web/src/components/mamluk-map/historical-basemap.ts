@@ -5,8 +5,6 @@ export const MAP_ASSETS = {
   geography: 'https://tiles.openfreemap.org/planet',
   relief: 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png',
   naturalEarth: 'https://tiles.openfreemap.org/natural_earth/ne2sr/{z}/{x}/{y}.png',
-  arabicFont: '/maplibre/cairo-arabic-wght-normal.woff2',
-  latinFont: '/maplibre/cairo-latin-wght-normal.woff2',
 } as const;
 
 const colorNames = [
@@ -61,7 +59,7 @@ function labels(
       : {}),
     layout: {
       'text-field': arabicName,
-      'text-font': ['Cairo'],
+      'text-font': ['Noto Sans Regular'],
       'text-size': size,
       'text-max-width': 9,
       'text-padding': 12,
@@ -79,22 +77,6 @@ export function createHistoricalBasemap(c: MapColors): StyleSpecification {
     version: 8,
     name: 'أطلس المماليك',
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-    'font-faces': {
-      Cairo: [
-        {
-          url: MAP_ASSETS.arabicFont,
-          'unicode-range': [
-            'U+600-6FF',
-            'U+750-77F',
-            'U+8A0-8FF',
-            'U+200C-200E',
-            'U+FB50-FDFF',
-            'U+FE70-FEFF',
-          ],
-        },
-        { url: MAP_ASSETS.latinFont },
-      ],
-    },
     sources: {
       geography: {
         type: 'vector',

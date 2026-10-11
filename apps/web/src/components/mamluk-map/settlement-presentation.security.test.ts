@@ -325,7 +325,7 @@ describe('settlement artwork security boundary', () => {
   });
 });
 
-it('labels approved local levels with Cairo and leaves missing levels unnamed', async () => {
+it('labels approved local levels with the provider-backed Arabic font and leaves missing levels unnamed', async () => {
   const fixture = sdkFixture();
   const presentation = createSettlementPresentation(
     fixture.map,
@@ -337,7 +337,7 @@ it('labels approved local levels with Cairo and leaves missing levels unnamed', 
   const layer = presentation.layer(circle());
   expect(layer.type).toBe('symbol');
   if (layer.type !== 'symbol') throw new Error('Expected symbol');
-  expect(layer.layout?.['text-font']).toEqual(['Cairo']);
+  expect(layer.layout?.['text-font']).toEqual(['Noto Sans Regular']);
   expect(layer.layout?.['text-field']).toEqual([
     'step',
     ['zoom'],

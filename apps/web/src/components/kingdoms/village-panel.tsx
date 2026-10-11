@@ -11,11 +11,11 @@ import { type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
 import { ConstructionQueue } from './village/construction-queue';
 import { type RallyMission } from './village/rally-panel';
+import { CityBuildingScene } from './village/city-building-scene';
+import { FacilitySceneContent } from './village/facility-scene-content';
 import { CommanderPanel } from './commander-panel';
 import { VillageIncomingAlert } from './incoming-alert';
 import { citySceneForBuilding, prefetchCityScene, type CitySceneKey } from './village/city-scenes';
-const CityBuildingScene = lazy(() => import('./village/city-building-scene').then((module) => ({ default: module.CityBuildingScene })));
-const FacilitySceneContent = lazy(() => import('./village/facility-scene-content').then((module) => ({ default: module.FacilitySceneContent })));
 const PalaceGarden = lazy(() => import('./village/palace-garden').then((module) => ({ default: module.PalaceGarden })));
 import kingdomsStyles from './kingdoms.module.css';
 import styles from './village.module.css';
@@ -107,7 +107,7 @@ export function VillagePanel({
             onFacilitySelect={selectScene}
           />
         </div>
-        {selectedScene && <Suspense fallback={<div role="status">تجهيز المشهد…</div>}>
+        {selectedScene &&
           <CityBuildingScene key={selectedScene} scene={selectedScene} onClose={close}
             farm={selectedScene === 'sultan-garden' ? { view, village, busy, send } : undefined}
             garden={selectedScene === 'palace' && view.player ? <Suspense fallback={null}><PalaceGarden worldId={view.worldId} villageId={village.id} playerId={view.player.id} onSaved={onRefresh} /></Suspense> : undefined}>
@@ -115,9 +115,9 @@ export function VillagePanel({
             {selectedScene !== 'sultan-garden' && <section aria-label="موارد المشهد" data-city-resources=""><ResourceText resources={village.resources} /></section>}
             {commandError && <p role="alert" data-city-feedback="error">{commandError}</p>}
             {commandNotice && <p role="status" data-city-feedback="notice">{commandNotice}</p>}
-            <Suspense fallback={<p role="status">تجهيز المرافق…</p>}><FacilitySceneContent scene={selectedScene} view={view} village={village} busy={busy} send={send} onClose={close} onSelectScene={selectScene} onNavigate={onNavigate} onRefresh={onRefresh} onShowMap={onShowMap} onCampaign={onCampaign} /></Suspense>
+            <FacilitySceneContent scene={selectedScene} view={view} village={village} busy={busy} send={send} onClose={close} onSelectScene={selectScene} onNavigate={onNavigate} onRefresh={onRefresh} onShowMap={onShowMap} onCampaign={onCampaign} />
           </CityBuildingScene>
-        </Suspense>}
+        }
         <details className={villageStyles.queueDrawer} hidden={selectedScene !== null}>
           <summary>
             <Hammer size={16} aria-hidden="true" />

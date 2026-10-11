@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createHistoricalBasemap, readMapColors } from './historical-basemap';
 
 describe('historical geographic basemap', () => {
-  it('uses tiled geography, existing Cairo, and bounded relief beneath labels', () => {
+  it('uses tiled geography, a provider font with Arabic glyphs, and bounded relief beneath labels', () => {
     const style = createHistoricalBasemap(readMapColors(document.createElement('div')));
     expect(style.sources.geography.type).toBe('vector');
     expect(style.sources.relief).toMatchObject({
@@ -10,7 +10,11 @@ describe('historical geographic basemap', () => {
       maxzoom: 12,
       encoding: 'terrarium',
     });
-    expect(style['font-faces']).toHaveProperty('Cairo');
+    expect(style.glyphs).toBe('https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf');
+    expect(style['font-faces']).toBeUndefined();
+    for (const layer of style.layers.filter((layer) => layer.type === 'symbol')) {
+      expect(layer.layout?.['text-font']).toEqual(['Noto Sans Regular']);
+    }
     expect(style.layers.findIndex((layer) => layer.id === 'atlas-relief')).toBeLessThan(
       style.layers.findIndex((layer) => layer.id === 'atlas-regions'),
     );

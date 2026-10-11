@@ -52,7 +52,7 @@ describe('HomePage', () => {
 
     expect(sources).toEqual(expect.arrayContaining([
       '/home/tahaddi-hero-background-3344x1882.webp',
-      '/home/tahaddi-trophy-ornate-transparent.png',
+      '/home/tahaddi-trophy-ornate-transparent.webp',
       '/home/tahaddi-lion-transparent-1322x1190.webp',
       '/home/tahaddi-crown-transparent-1024x683.webp',
     ]));
