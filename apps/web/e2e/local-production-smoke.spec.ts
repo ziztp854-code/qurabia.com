@@ -60,7 +60,7 @@ test('the built public atlas loads its versioned worker and provider glyphs', as
 
   await page.goto('/games/kingdoms/world-map/');
   await expect.poll(() => fulfilledViewports).toBeGreaterThan(0);
-  await expect(page.getByRole('button', { name: 'القاهرة', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'انتقل إلى القاهرة' })).toBeVisible();
   await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();
   await expect
     .poll(
