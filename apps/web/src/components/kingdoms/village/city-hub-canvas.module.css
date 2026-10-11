@@ -33,6 +33,7 @@
   pointer-events: none;
 }
 .stage[data-city-composition][data-pixi-ready='true'] .hotspot { pointer-events: none; }
+.stage[data-city-composition][data-pixi-ready='true'] [data-sultan-garden-entrance] { pointer-events: none; }
 .stage[data-city-composition] .hotspot:hover { background: transparent; box-shadow: none; }
 .decorativeLandmark { position: absolute; pointer-events: none; }
 .reservedSite { position: absolute; pointer-events: none; }

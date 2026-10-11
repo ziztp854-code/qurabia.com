@@ -194,6 +194,11 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       current.current.onSelectionStart?.();
       camera.current?.focusForScene(facility === 'war-council' ? 'rally' : 'siege', () => current.current.onFacilitySelect?.(facility));
     },[]);
+    const openSultanGarden = useCallback(() => {
+      current.current.onSelectionStart?.();
+      prefetchCityScene('sultan-garden');
+      current.current.onFacilitySelect?.('sultan-garden');
+    }, []);
     const selectTarget = useCallback((target: VillageTarget) => {
       if (target==='rally'||target==='siege') chooseFacility(target==='rally'?'war-council':'siege-workshop');
       else if(target==='gate')camera.current?.focusForScene('gate',()=>current.current.onWorldMap?.());
@@ -384,6 +389,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             colors,
             cityEnabled ? {
               onSelect: (target) => selectTarget(target),
+              onGardenSelect: openSultanGarden,
               onHover: (target) => {
                 element.dataset.hoveredLandmark=target ?? '';
                 if (controller)syncLabels(controller.getSnapshot(),target);
@@ -424,7 +430,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         resizeScene.current = null;
         syncRendererVisibility.current = null;
       };
-    }, [retry, cityEnabled, selectTarget, syncLabels]);
+    }, [retry, cityEnabled, selectTarget, openSultanGarden, syncLabels]);
 
     useEffect(() => {
       resizeScene.current?.();
@@ -538,7 +544,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         >
           <div className={styles.hotspots}>
             {cityEnabled && props.onFacilitySelect && <SultanGardenEntrance composition={composition} view={props.view} village={props.village}
-              onOpen={() => { current.current.onSelectionStart?.(); prefetchCityScene('sultan-garden'); current.current.onFacilitySelect?.('sultan-garden'); }} />}
+              onOpen={openSultanGarden} />}
             {buildingKeys.filter((building) => building !== 'stable').map((building) => {
               const presentation = getBuildingPresentation(
                 building,

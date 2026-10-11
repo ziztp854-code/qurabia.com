@@ -68,7 +68,7 @@ const frameHash = (buffer: Buffer) => createHash('sha256').update(buffer).digest
 
 for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as const) {
   test(`vacant academy and blacksmith courtyards preserve touch navigation and progress at ${width}x${height}`, async ({ browser, request }, testInfo) => {
-    const context = await browser.newContext({ viewport: {width,height}, hasTouch: true, reducedMotion: 'reduce' });
+    const context = await browser.newContext({ viewport: {width,height}, hasTouch: true, isMobile: width < 1000, deviceScaleFactor: 3, reducedMotion: 'reduce' });
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -102,6 +102,7 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
         expect(await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}))).toEqual(overview);
       }
     }
+    await enterPhysical(page,'palace',true); await back(page);
     const embassyBox = (await stage.locator('[data-building="embassy"]').boundingBox())!;
     await page.touchscreen.tap(embassyBox.x+embassyBox.width/2,embassyBox.y+embassyBox.height/2);
     await expect(page.locator('[data-city-scene="embassy"]')).toBeVisible();
@@ -111,6 +112,14 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
     await expect(page.locator('[data-city-scene="sultan-garden"]')).toBeVisible();
     await back(page);
     await enterPhysical(page,'barracks',true); await back(page);
+    const empty = (await stage.locator('[data-reserved-site="blacksmith"]').boundingBox())!;
+    await page.waitForTimeout(550);
+    await page.touchscreen.tap(empty.x+empty.width/2,empty.y+empty.height/2);
+    await page.touchscreen.tap(empty.x+empty.width/2,empty.y+empty.height/2);
+    await expect(stage).not.toHaveAttribute('data-zoom','1.000');
+    await expect(page.locator('[data-city-scene]')).toHaveCount(0);
+    await page.getByRole('button', {name:'عرض القرية بالكامل',exact:true}).click();
+    await expect(stage).toHaveAttribute('data-zoom','1.000');
     await page.getByRole('button', {name:'تكبير القرية',exact:true}).click();
     await expect(stage).not.toHaveAttribute('data-zoom','1.000');
     await page.getByRole('button', {name:'عرض القرية بالكامل',exact:true}).click();
@@ -118,7 +127,7 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
     const after = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
     for (const key of ['buildings','troops','resources','progression','palaceGarden','sultanFarm']) expect(after[key]).toEqual(before[key]);
     expect(errors).toEqual([]);
-    await page.screenshot({path:testInfo.outputPath(`organized-village-${width}x${height}.png`)});
+    await page.screenshot({path:testInfo.outputPath(`organized-village-${width}x${height}.png`),scale:'css'});
     await context.close();
   });
 }
@@ -407,6 +416,34 @@ test('complete canvas backend failure preserves native image and HTML keyboard a
   }
   await stage.getByRole('button', { name: /^دار الحكم،/ }).press('Enter'); await expect(page.locator('[data-city-scene="palace"]')).toBeVisible(); await back(page);
   await stage.getByRole('button', { name: /^السوق،/ }).click(); await expect(page.locator('[data-city-scene="market"]')).toBeVisible();
+});
+
+test('phone HTML fallback keeps vacant sites and palace embassy garden barracks targets distinct', async ({ browser }) => {
+  const context = await browser.newContext({ viewport:{width:320,height:568},hasTouch:true,isMobile:true,deviceScaleFactor:3,reducedMotion:'reduce' });
+  const page = await context.newPage();
+  await page.addInitScript(() => Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { value: () => null }));
+  await page.goto('/');
+  const stage = page.locator('[data-village-scene]');
+  await expect(stage).toHaveAttribute('aria-busy','false');
+  await expect(stage).toHaveAttribute('data-pixi-ready','false');
+  for(const id of ['knowledge','blacksmith']) {
+    const box=(await stage.locator(`[data-reserved-site="${id}"]`).boundingBox())!;
+    await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
+    await expect(page.locator('[data-city-scene]')).toHaveCount(0);
+  }
+  for(const [id,scene] of [['hall','palace'],['embassy','embassy'],['barracks','barracks']]) {
+    const box=(await stage.locator(`[data-building="${id}"]`).boundingBox())!;
+    await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
+    await expect(page.locator(`[data-city-scene="${scene}"]`)).toBeVisible();
+    await back(page);
+  }
+  const garden=stage.locator('[data-sultan-garden-entrance]');
+  const box=(await garden.boundingBox())!;
+  await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
+  await expect(page.locator('[data-city-scene="sultan-garden"]')).toBeVisible(); await back(page);
+  await garden.press('Enter');
+  await expect(page.locator('[data-city-scene="sultan-garden"]')).toBeVisible();
+  await context.close();
 });
 
 test('missing optional actor atlas never blocks genuine Pixi interactions', async ({ page }) => {

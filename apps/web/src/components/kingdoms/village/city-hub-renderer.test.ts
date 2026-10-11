@@ -5,7 +5,7 @@ import { createCamera } from '@/lib/kingdoms/village/cameraMath';
 import { resolveVillageQuality } from '@/lib/kingdoms/village/quality';
 import type { VillageCanvasProps } from '@/lib/kingdoms/village/types';
 import { createVillageRenderer } from './village-renderer';
-import { getCityComposition } from '@/lib/kingdoms/village/city-composition';
+import { getCityComposition, sultanGardenEntranceRect } from '@/lib/kingdoms/village/city-composition';
 
 const gpu=vi.hoisted(()=>({stage:null as Container|null,tickerStart:vi.fn(),tickerStop:vi.fn()}));
 vi.mock('pixi.js',async(importOriginal)=>{
@@ -31,8 +31,8 @@ const colors={gold:'gold',light:'white',water:'white',dust:'gold'};
 
 describe('Pixi city hub interaction',()=>{
   it.each(['desktop','portrait'] as const)('excludes vacant %s courtyards from enlarged touch targets at every camera scale',async composition=>{
-    const props={...fixture(),cityComposition:composition};
-    const renderer=await createVillageRenderer(document.createElement('canvas'),props,resolveVillageQuality('low',{width:320,dpr:1}),colors);
+    const props={...fixture(),cityComposition:composition,onFacilitySelect:vi.fn()};
+    const renderer=await createVillageRenderer(document.createElement('canvas'),props,resolveVillageQuality('low',{width:320,dpr:1}),colors,{onSelect:vi.fn(),onGardenSelect:vi.fn()});
     const city=getCityComposition(composition==='desktop'?{width:1600,height:900}:{width:900,height:1600});
     const hits=gpu.stage!.children[0].children.find(child=>child.label==='city-landmark-interactions') as Container;
     for(const scale of [.12,.2,.3,.5,1,2]) {
@@ -43,6 +43,34 @@ describe('Pixi city hub interaction',()=>{
         }
       }
     }
+    renderer.destroy();
+  });
+  it.each(['desktop','portrait'] as const)('routes the %s garden as a facility while preserving building centers and gesture cancellation',async composition=>{
+    const onSelect=vi.fn(), onGardenSelect=vi.fn();
+    const props={...fixture(),cityComposition:composition,onFacilitySelect:vi.fn()};
+    const renderer=await createVillageRenderer(document.createElement('canvas'),props,resolveVillageQuality('low',{width:320,dpr:1}),colors,{onSelect,onGardenSelect});
+    const city=getCityComposition(composition==='desktop'?{width:1600,height:900}:{width:900,height:1600});
+    const hits=gpu.stage!.children[0].children.find(child=>child.label==='city-landmark-interactions') as Container;
+    const garden=hits.children.find(hit=>hit.label==='city-hit-sultan-garden')!;
+    const rect=sultanGardenEntranceRect(composition);
+    for(const scale of [.12,.2,.3,.5,1,2]) {
+      garden.emit('city-camera-scale',scale);
+      const area=garden.hitArea as Rectangle;
+      expect(area.width*scale).toBeGreaterThanOrEqual(48);
+      expect(area.height*scale).toBeGreaterThanOrEqual(48);
+      expect(area.contains(rect.x+rect.width/2,rect.y+rect.height/2)).toBe(true);
+      for(const building of city.landmarks.filter(item=>item.target&&item.id!=='citadel')) {
+        expect(area.contains(building.rect.x+building.rect.width/2,building.rect.y+building.rect.height/2)).toBe(false);
+      }
+    }
+    garden.emit('pointerdown',pointer(100,100)); garden.emit('pointertap',pointer(101,100));
+    expect(onGardenSelect).toHaveBeenCalledOnce();
+    expect(onSelect).not.toHaveBeenCalled();
+    garden.emit('pointerdown',pointer(100,100)); garden.emit('globalpointermove',pointer(130,100)); garden.emit('pointertap',pointer(100,100));
+    expect(onGardenSelect).toHaveBeenCalledOnce();
+    garden.emit('pointerdown',pointer(100,100,2)); garden.emit('pointerdown',pointer(101,100,3));
+    garden.emit('pointertap',pointer(100,100,2)); garden.emit('pointertap',pointer(101,100,3));
+    expect(onGardenSelect).toHaveBeenCalledOnce();
     renderer.destroy();
   });
   it('selects palace from native Pixi hit areas, suppresses drags and preserves accessible touch size',async()=>{

@@ -6,6 +6,12 @@ import { sampleCityRoute, type CityActorRoute } from './city-motion';
 export type { CityActorRoute } from './city-motion';
 
 export type CityCompositionId = 'desktop' | 'portrait';
+// Existing decorative garden gate; shared by native fallback and Pixi facility input.
+export function sultanGardenEntranceRect(composition: CityCompositionId) {
+  return composition === 'desktop'
+    ? { x: 0.418 * 1600, y: 0.18 * 900, width: 0.22 * 1600, height: 0.085 * 900 }
+    : { x: 0.325 * 900, y: 0.199 * 1600, width: 0.28 * 900, height: 0.058 * 1600 };
+}
 export type CityLandmark = Readonly<{ id: VillageBuildingId; name: string; rect: WorldRect; classification: 'existing' | 'shared' | 'decoration' | 'reserved'; target?: VillageTarget }>;
 
 // Presentation-only sites calibrated inside the cleared courtyards in each raster.

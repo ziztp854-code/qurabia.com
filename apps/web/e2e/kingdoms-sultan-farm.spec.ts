@@ -3,6 +3,15 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
+async function clickGardenEntrance(page: Page) {
+  const entrance = page.locator('[data-sultan-garden-entrance]');
+  const box = (await entrance.boundingBox())!;
+  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  expect(await page.evaluate(({x,y}) => document.elementFromPoint(x,y)?.tagName, point)).toBe('CANVAS');
+  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) await page.touchscreen.tap(point.x, point.y);
+  else await page.mouse.click(point.x, point.y);
+}
+
 async function openGarden(page: Page, request: APIRequestContext) {
   expect((await request.post('/__village_test/farm-scenario')).ok()).toBe(true);
   await page.goto('/');
@@ -35,7 +44,7 @@ test('garden: visible courtyard entry, free planting, cosmetic collection, persi
   expect(target!.width).toBeGreaterThanOrEqual(44);
   expect(target!.height).toBeGreaterThanOrEqual(44);
   await page.screenshot({ path: path.join(out, `${prefix}-village-entry.png`), fullPage: true });
-  await entrance.click();
+  await clickGardenEntrance(page);
   const scene = page.locator('[data-city-scene="sultan-garden"]');
   const farm = page.getByRole('region', { name: 'مزرعة السلطان', exact: true });
   await expect(scene).toHaveAttribute('data-phase', 'active');
@@ -81,13 +90,13 @@ test('garden: visible courtyard entry, free planting, cosmetic collection, persi
   });
   await page.reload();
   await expect(stage).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
-  await page.getByRole('button', { name: /افتح حديقة السلطان/ }).click();
+  await clickGardenEntrance(page);
   if (prefix.includes('mobile')) await scene.getByRole('button', { name: 'إدارة المرفق' }).click();
   await expect(farm.getByRole('button', { name: 'الحوض 5، السوسن، بذرة' })).toBeVisible();
   expect((await request.post('/__village_test/advance-farm')).ok()).toBe(true);
   await page.reload();
   await expect(stage).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
-  await page.getByRole('button', { name: /افتح حديقة السلطان/ }).click();
+  await clickGardenEntrance(page);
   if (prefix.includes('mobile')) await scene.getByRole('button', { name: 'إدارة المرفق' }).click();
   await expect(farm.getByRole('button', { name: 'الحوض 5، السوسن، ناضج' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -117,8 +126,8 @@ test('garden: reduced motion and visibility stop animation without sending garde
   request,
 }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const { entrance } = await openGarden(page, request);
-  await entrance.click();
+  await openGarden(page, request);
+  await clickGardenEntrance(page);
   const scene = page.locator('[data-city-scene="sultan-garden"]');
   const canvas = scene.locator('canvas');
   await expect(scene.locator('[data-sultan-farm]')).toHaveAttribute('data-pixi-farm', 'true');
