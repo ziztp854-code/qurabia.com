@@ -158,6 +158,32 @@ test('anchors, route changes and browser back do not multiply the runtime', asyn
   }
 });
 
+test('a same-turn catalogue update preserves a native anchor jump', async ({ page }, testInfo) => {
+  if (testInfo.project.name !== 'mobile') await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/games');
+  await expect(runtime(page)).toHaveAttribute('data-scroll-runtime', 'active');
+  await expect(page.locator('a[href="#gc-results"]')).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(250); // Let initial scroll-cache setup finish before the same-turn update.
+  await page.evaluate(() => {
+    const results = document.getElementById('gc-results')!;
+    // A filter/lazy-render commit can land before the browser dispatches scroll.
+    results.scrollIntoView({ behavior: 'instant' });
+    const update = document.createElement('i');
+    update.setAttribute('aria-hidden', 'true');
+    update.id = 'motion-anchor-update';
+    results.append(update);
+  });
+  await expect
+    .poll(() =>
+      page
+        .locator('#gc-results')
+        .evaluate((element) => Math.abs(element.getBoundingClientRect().top)),
+    )
+    .toBeLessThan(160);
+  await page.locator('#motion-anchor-update').evaluate((element) => element.remove());
+});
+
 test('dialogs suspend the ticker, scroll internally and resume after closing', async ({ page }) => {
   await page.goto('/games');
   await expect(runtime(page)).toHaveAttribute('data-scroll-ticker', '1');

@@ -111,7 +111,10 @@ export function startScrollRuntime(root: HTMLElement) {
       owned.set(element, context);
     });
     lenis.resize();
-    ScrollTrigger.refresh();
+    // Native hash/navigation scroll can happen before its scroll event is sent.
+    // A synchronous refresh can then restore an old cached position. Let GSAP
+    // refresh after the browser's render/scroll phase instead of rewinding it.
+    ScrollTrigger.refresh(true);
   };
   const onMutation = (records: MutationRecord[]) => {
     syncAvailability();
