@@ -4,6 +4,8 @@ import { MotionConfig, useReducedMotion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useLayoutEffect } from 'react';
 import { getRouteEntranceMotion } from '@/lib/motion';
+import { ScrollEnhancement } from './scroll-enhancement';
+import { supportsSmoothScroll } from './scroll-policy';
 
 function RouteEntranceObserver() {
   const pathname = usePathname();
@@ -12,7 +14,7 @@ function RouteEntranceObserver() {
   useLayoutEffect(() => {
     // Keep the homepage's text contrast intact while hydration runs.
     // Fading the entire main element also fades its foreground against the page background.
-    if (pathname === '/') return;
+    if (supportsSmoothScroll(pathname)) return;
     const entrance = getRouteEntranceMotion(Boolean(reduceMotion));
     const content = document.querySelector('main');
     if (!content || !entrance || typeof content.animate !== 'function') return;
@@ -28,6 +30,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       <RouteEntranceObserver />
+      <ScrollEnhancement />
       {children}
     </MotionConfig>
   );

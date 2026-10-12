@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Users, Wifi, Zap } from 'lucide-react';
 import type { CatalogGame } from '@/data/games';
 import { formatNumber } from '@/lib/utils';
+import { Magnet } from '@/components/react-bits/magnet';
 
 const KIND_LABEL: Record<CatalogGame['kind'], string> = {
   room: 'جماعية',
@@ -30,6 +31,7 @@ export function GameCard({
   return (
     <article
       className="gc-card"
+      data-scroll-reveal
       data-kind={game.kind}
       data-mode={game.mode}
       data-view={view}
@@ -95,8 +97,15 @@ export function GameCard({
 
       <div className="gc-card-foot">
         <span className="gc-card-year">
-          {isDisabled ? 'قريبًا في تحدّي' : (
-            <>الصعوبة <bdi dir="ltr">{formatNumber(game.difficulty)} / {formatNumber(5)}</bdi></>
+          {isDisabled ? (
+            'قريبًا في تحدّي'
+          ) : (
+            <>
+              الصعوبة{' '}
+              <bdi dir="ltr">
+                {formatNumber(game.difficulty)} / {formatNumber(5)}
+              </bdi>
+            </>
           )}
         </span>
         {isDisabled ? (
@@ -107,8 +116,10 @@ export function GameCard({
             prefetch={prefetch ?? false}
             aria-labelledby={`gc-title-${game.id}`}
           >
-            {cta}
-            <ArrowLeft aria-hidden="true" size={14} />
+            <Magnet>
+              {cta}
+              <ArrowLeft aria-hidden="true" size={14} />
+            </Magnet>
           </Link>
         )}
       </div>
