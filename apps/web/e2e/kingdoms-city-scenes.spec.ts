@@ -76,18 +76,8 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
     await page.goto('/');
     const stage = await readyHub(page);
     const overview = await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}));
-      const academyLabel = (await stage.locator('[data-reserved-site="knowledge"] > span').boundingBox())!;
-      const gardenLabel = (await stage.locator('[data-sultan-garden-entrance] > span > span').boundingBox())!;
-      const stageBox = (await stage.boundingBox())!;
-      expect(academyLabel.x).toBeGreaterThanOrEqual(stageBox.x);
-      expect(academyLabel.x + academyLabel.width).toBeLessThanOrEqual(stageBox.x + stageBox.width);
-      expect(academyLabel.y).toBeGreaterThanOrEqual(stageBox.y);
-      expect(academyLabel.y + academyLabel.height).toBeLessThanOrEqual(stageBox.y + stageBox.height);
-      expect(academyLabel.x >= gardenLabel.x + gardenLabel.width || academyLabel.y >= gardenLabel.y + gardenLabel.height ||
-        academyLabel.x + academyLabel.width <= gardenLabel.x || academyLabel.y + academyLabel.height <= gardenLabel.y).toBe(true);
-      const smithLabel = (await stage.locator('[data-reserved-site="blacksmith"] > span').boundingBox())!;
-      expect(academyLabel.x >= smithLabel.x + smithLabel.width || academyLabel.y >= smithLabel.y + smithLabel.height ||
-        academyLabel.x + academyLabel.width <= smithLabel.x || academyLabel.y + academyLabel.height <= smithLabel.y).toBe(true);
+      await expect(stage.locator('[data-reserved-site] > span')).toHaveCount(0);
+      await expect(stage.locator('[data-sultan-garden-entrance] > *')).toHaveCount(0);
     for (const id of ['knowledge','blacksmith']) {
       const site = stage.locator(`[data-reserved-site="${id}"]`);
       await expect(site).toBeVisible();
@@ -566,9 +556,13 @@ test('production war council recruits and assigns a real commander then opens th
 for (const [width, height] of viewports) test(`@visual matrix ${width}x${height}`, async ({ browser }, testInfo: TestInfo) => {
   const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL, viewport: { width, height }, isMobile: width < 900, hasTouch: width < 900, reducedMotion: 'reduce', recordVideo: { dir: testInfo.outputPath('videos') } });
   const page = await context.newPage(); const errors: string[] = [], consoleLog: string[] = [], networkLog: string[] = [];
+  const overviewRequests = new Set<string>();
   let failed = false;
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => consoleLog.push(`${message.type()}: ${message.text()}`));
+  page.on('request', (request) => {
+    if (/\/overview-(desktop|portrait)-gemini-hd\.(avif|webp)$/.test(new URL(request.url()).pathname)) overviewRequests.add(request.url());
+  });
   page.on('response', (response) => networkLog.push(`${response.status()} ${response.request().method()} ${response.url()}`));
   page.on('requestfailed', (request) => networkLog.push(`failed ${request.url()} ${request.failure()?.errorText}`));
   try {
@@ -580,6 +574,15 @@ for (const [width, height] of viewports) test(`@visual matrix ${width}x${height}
     await expect(stage).toHaveAttribute('data-world-width', composition === 'portrait' ? '900' : '1600');
     await expect(stage).toHaveAttribute('data-world-height', composition === 'portrait' ? '1600' : '900');
     expect(cityImage.src).toContain(`/city-hub/overview-${composition}`);
+    if (composition === 'desktop') {
+      expect(cityImage.src).toContain('/city-hub/overview-desktop-gemini-hd.avif');
+      expect(cityImage).toMatchObject({ width: 2730, height: 1536 });
+    } else {
+      expect(cityImage.src).toContain('/city-hub/overview-portrait-gemini-hd.avif');
+      expect(cityImage).toMatchObject({ width: 1536, height: 2752 });
+    }
+    expect(overviewRequests.size).toBe(1);
+    expect(overviewRequests.has(cityImage.src)).toBe(true);
     expect(Number(await stage.locator('canvas').getAttribute('data-city-interactions'))).toBeGreaterThanOrEqual(18);
     if (width <= 1000) {
       const nav = page.getByRole('navigation', { name: 'تنقل المملكة', exact: true });

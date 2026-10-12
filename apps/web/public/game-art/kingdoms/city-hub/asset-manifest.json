@@ -1,8 +1,56 @@
 {
   "generatedWith": "built-in image_gen",
   "date": "2026-10-06",
-  "nativeResolutionLimit": "Landscape1672x941 and portrait941x1672; never upscaled",
+  "nativeResolutionLimit": "Landscape2730x1536 and portrait1536x2752; never upscaled",
   "assets": [
+    {
+      "id": "overview-desktop-gemini-hd-avif",
+      "url": "/game-art/kingdoms/city-hub/overview-desktop-gemini-hd.avif",
+      "nativeWidth": 2730,
+      "nativeHeight": 1536,
+      "width": 2730,
+      "height": 1536,
+      "bytes": 903116,
+      "sha256": "97b65b8aca2d147b10c57eae3458e6ff32964337d704dc355c354cf04c0f4e75",
+      "source": "Gemini_Generated_Image_kxjkrskxjkrskxjk.jpg",
+      "transparent": false
+    },
+    {
+      "id": "overview-desktop-gemini-hd-webp",
+      "url": "/game-art/kingdoms/city-hub/overview-desktop-gemini-hd.webp",
+      "nativeWidth": 2730,
+      "nativeHeight": 1536,
+      "width": 2730,
+      "height": 1536,
+      "bytes": 1304250,
+      "sha256": "d2d0cefacff3298e14ca86f5f1e6b139a819c1515f257f416cf23403cab8babc",
+      "source": "Gemini_Generated_Image_kxjkrskxjkrskxjk.jpg",
+      "transparent": false
+    },
+    {
+      "id": "overview-portrait-gemini-hd-avif",
+      "url": "/game-art/kingdoms/city-hub/overview-portrait-gemini-hd.avif",
+      "nativeWidth": 1536,
+      "nativeHeight": 2752,
+      "width": 1536,
+      "height": 2752,
+      "bytes": 971761,
+      "sha256": "67e9f2a72848a125470606814a5e3c7657992253cc20747b8f8892843a81a6e6",
+      "source": "Gemini_Generated_Image_sth4fksth4fksth4.jpg",
+      "transparent": false
+    },
+    {
+      "id": "overview-portrait-gemini-hd-webp",
+      "url": "/game-art/kingdoms/city-hub/overview-portrait-gemini-hd.webp",
+      "nativeWidth": 1536,
+      "nativeHeight": 2752,
+      "width": 1536,
+      "height": 2752,
+      "bytes": 1392512,
+      "sha256": "2c09d7e914332353a7b4ac0bbbaff4a46f2ad44c69c47f69f1238768de12e457",
+      "source": "Gemini_Generated_Image_sth4fksth4fksth4.jpg",
+      "transparent": false
+    },
     {
       "id": "banner-flutter-atlas",
       "url": "/game-art/kingdoms/city-hub/banner-flutter-atlas.webp",

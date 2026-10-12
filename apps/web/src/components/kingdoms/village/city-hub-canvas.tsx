@@ -33,7 +33,7 @@ import { presentRallyCommand } from '@/lib/kingdoms/rally-command';
 import { useViewClock } from '../use-view-clock';
 import { buildingKeys } from '@/lib/kingdoms/types';
 import { villageAssets, villageArtRenditions } from '@/lib/kingdoms/village/assetManifest';
-import { getCityComposition, getCityPlacement, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
+import { cityAssets, getCityComposition, getCityPlacement, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
 import { getVillageLabelDensity, villageLabelPoint, visibleVillageLabels, type VillageLabelDensity } from '@/lib/kingdoms/village/labelLayout';
 import {
   buildingGroups,
@@ -512,9 +512,10 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         >
           <picture>
             {cityEnabled ? <>
-              <source media="(orientation: portrait) and (max-width: 700px)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-portrait-planned-mobile.webp" />
-              <source media="(orientation: portrait)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-portrait-planned.webp" />
-              <source media="(max-width: 700px)" type="image/webp" srcSet="/game-art/kingdoms/city-hub/overview-desktop-planned-mobile.webp" />
+              <source media="(orientation: portrait)" type="image/avif" srcSet={cityAssets.portrait.avifAsset} />
+              <source media="(orientation: portrait)" type="image/webp" srcSet={cityAssets.portrait.asset} />
+              <source type="image/avif" srcSet={cityAssets.desktop.avifAsset} />
+              <source type="image/webp" srcSet={cityAssets.desktop.asset} />
             </> : <>
               <source type="image/avif" srcSet={villageArtRenditions.map((art) => `${art.avif} ${art.width}w`).join(', ')} sizes="(max-width: 700px) 1280px, 1672px" />
               <source type="image/webp" srcSet={villageArtRenditions.map((art) => `${art.webp} ${art.width}w`).join(', ')} sizes="(max-width: 700px) 1280px, 1672px" />
@@ -647,13 +648,8 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             </>}
             {cityEnabled && city.landmarks.filter(landmark=>landmark.id==='granary').map(landmark=><button key={landmark.id} type="button" className={`${styles.hotspot} ${styles.region}`} style={rectStyle(landmark.rect)} aria-label={landmark.name} data-building-region={landmark.id} data-label-id={landmark.id} onClick={()=>selectTarget(landmark.target!)}><span className={styles.label}>{landmark.name}</span></button>)}
             {cityEnabled && city.landmarks.filter(landmark=>landmark.classification==='reserved').map(landmark=>(
-              <span key={landmark.id} role="img" aria-label={`${landmark.name}، مهيأة داخل القرية`} className={styles.reservedSite}
-                data-reserved-site={landmark.id} style={{ left: landmark.rect.x, top: landmark.rect.y, width: landmark.rect.width, height: landmark.rect.height }}>
-                <span className={styles.siteLabel} dir="rtl">
-                  <strong>{landmark.id === 'knowledge' ? 'الأكاديمية' : 'الحداد'}</strong>
-                  <small>مساحة مهيأة</small>
-                </span>
-              </span>
+              <span key={landmark.id} role="img" aria-label={`${landmark.name}، موقع محجوز داخل القرية`} className={styles.reservedSite}
+                data-reserved-site={landmark.id} style={{ left: landmark.rect.x, top: landmark.rect.y, width: landmark.rect.width, height: landmark.rect.height }} />
             ))}
             {cityEnabled && city.landmarks.filter(landmark=>landmark.classification==='decoration').map(landmark=><span key={landmark.id} role="img" aria-label={landmark.name} className={styles.decorativeLandmark} style={rectStyle(landmark.rect)} title={landmark.name} />)}
             <button

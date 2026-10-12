@@ -27,7 +27,13 @@ describe('Independent palace garden entrance', () => {
     );
     const entrance = screen.getByRole('button', { name: /افتح حديقة السلطان/ });
     const rect = sultanGardenEntranceRect('desktop');
-    expect(entrance).toHaveStyle({ left: `${rect.x}px`, top: `${rect.y + rect.height / 2}px`, '--garden-height': `${rect.height}px` });
+    expect(entrance).toHaveStyle({
+      left: `${rect.x}px`,
+      top: `${rect.y + rect.height / 2}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+    });
+    expect(entrance).toBeEmptyDOMElement();
     fireEvent.click(entrance);
     expect(open).toHaveBeenCalledTimes(1);
     expect(citySceneForBuilding('farm')).toBe('farm');
