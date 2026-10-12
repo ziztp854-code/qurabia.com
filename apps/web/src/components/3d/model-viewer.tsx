@@ -123,7 +123,8 @@ export const ModelViewer = forwardRef<ModelAnimationControls, ModelViewerProps>(
   const [retry, setRetry] = useState(0);
   const [looping, setLooping] = useState(true);
   const [selected, setSelected] = useState('');
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
+  const [activated, setActivated] = useState(false);
   const element = useRef<HTMLElement>(null);
   const { mobile: deviceMobile, reducedMotion } = useAdaptive3d();
   const mobile = deviceMobile || model.quality === 'low';
@@ -132,9 +133,24 @@ export const ModelViewer = forwardRef<ModelAnimationControls, ModelViewerProps>(
   useEffect(() => { controls.current?.setLoop(looping); }, [ready, looping]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { rootMargin: '80px' });
+    let inView = false;
+    const syncVisibility = () => {
+      const active = inView && !document.hidden;
+      setVisible(active);
+      // Delay the WebGL context/environment until first visibility. Keep it
+      // mounted afterward to preserve pose and controls while rendering pauses.
+      if (active) setActivated(true);
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      syncVisibility();
+    }, { rootMargin: '0px' });
     if (element.current) observer.observe(element.current);
-    return () => observer.disconnect();
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', syncVisibility);
+    };
   }, []);
 
   useImperativeHandle(forwardedRef, () => ({
@@ -210,7 +226,7 @@ export const ModelViewer = forwardRef<ModelAnimationControls, ModelViewerProps>(
           event.preventDefault();
         }}
       >
-        {!error && src && (
+        {activated && !error && src && (
           <CanvasBoundary key={`${src}:${retry}`} onError={handleError}>
           <Canvas
             aria-hidden="true"

@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 const runtime = (page: Page) => page.locator('html');
+test.use({ trace: 'retain-on-failure' });
 
 test('Arabic content, decorations and click targets stay usable', async ({ page }, testInfo) => {
   const errors: string[] = [];
@@ -197,6 +198,15 @@ test('a late preview import preserves the catalogue anchor position', async ({
   });
   expect(Math.abs(after.previewHeight - before.previewHeight)).toBeLessThan(1);
   await expect.poll(async () => Math.abs((await geometry()).top)).toBeLessThan(160);
+  await expect(page.locator('.gc-hero-preview section[aria-label^="عارض"]')).toHaveAttribute(
+    'data-model-src',
+    /.+/,
+  );
+  await expect(page.locator('.gc-hero-preview canvas')).toHaveCount(0);
+  await page
+    .locator('.gc-hero-preview')
+    .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }));
+  await expect(page.locator('.gc-hero-preview canvas')).toHaveCount(1);
 });
 
 test('a same-turn catalogue update preserves a native anchor jump', async ({ page }, testInfo) => {

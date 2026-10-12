@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   add: vi.fn(),
   remove: vi.fn(),
   refresh: vi.fn(),
+  triggerRefresh: vi.fn(),
   update: vi.fn(),
   revert: vi.fn(),
   destroy: vi.fn(),
@@ -62,7 +63,11 @@ vi.mock('gsap', () => ({
   },
 }));
 vi.mock('gsap/ScrollTrigger', () => ({
-  ScrollTrigger: { create: vi.fn(), refresh: state.refresh, update: state.update },
+  ScrollTrigger: {
+    create: vi.fn(() => ({ refresh: state.triggerRefresh })),
+    refresh: state.refresh,
+    update: state.update,
+  },
 }));
 
 describe('owned scroll runtime', () => {
@@ -113,13 +118,16 @@ describe('owned scroll runtime', () => {
   it('does not recursively refresh when ScrollTrigger writes temporary body styles', async () => {
     cleanup = startScrollRuntime(document.documentElement);
     state.refresh.mockClear();
+    state.triggerRefresh.mockClear();
     state.mutation?.([{ type: 'attributes', target: document.body }]);
     state.mutation?.([{ type: 'childList', target: document.body }]);
     await Promise.resolve();
     expect(state.refresh).not.toHaveBeenCalled();
+    expect(state.triggerRefresh).not.toHaveBeenCalled();
     state.mutation?.([{ type: 'childList', target: document.querySelector('main')! }]);
     await Promise.resolve();
-    expect(state.refresh).toHaveBeenCalledTimes(1);
+    expect(state.triggerRefresh).toHaveBeenCalledTimes(1);
+    expect(state.refresh).not.toHaveBeenCalled();
   });
 
   it('suspends one owned clock for dialogs and hidden tabs and resumes without duplicates', () => {
