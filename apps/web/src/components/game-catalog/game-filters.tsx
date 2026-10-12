@@ -3,13 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, X as CloseIcon } from 'lucide-react';
 import type { UseGameCatalogReturn } from './use-game-catalog';
-import type { DifficultyValue, GameKind, PlatformValue } from './game-catalog-types';
-
-const KIND_META: Record<GameKind, { label: string; icon: string }> = {
-  room: { label: 'جماعية', icon: '👥' },
-  instant: { label: 'فورية', icon: '⚡' },
-  upcoming: { label: 'قريبًا', icon: '✨' },
-};
+import { GAME_PLAY_MODE_LABELS, type DifficultyValue, type GamePlayMode, type PlatformValue } from './game-catalog-types';
 
 const PLATFORM_META: Record<PlatformValue, { label: string; icon: string }> = {
   web: { label: 'متصفح', icon: '🌐' },
@@ -167,7 +161,7 @@ export function GameFilters({
     allCategories,
     allTags,
     allYears,
-    toggleKind,
+    togglePlayMode,
     toggleCategory,
     togglePlatform,
     toggleYear,
@@ -221,11 +215,11 @@ export function GameFilters({
       </div>
 
       <Section id="gc-filter-kind" title="نوع اللعب">
-        <Chips<GameKind>
-          items={(['room', 'instant', 'upcoming'] as const)}
-          active={filters.kinds}
-          onToggle={toggleKind}
-          labelOf={(k) => KIND_META[k]}
+        <Chips<GamePlayMode>
+          items={(['group', 'solo'] as const)}
+          active={filters.playModes}
+          onToggle={togglePlayMode}
+          labelOf={(mode) => ({ label: GAME_PLAY_MODE_LABELS[mode] })}
           legend="نوع اللعب"
         />
       </Section>

@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { Check, CircleHelp, Eye, EyeOff, FastForward, X } from 'lucide-react';
+import { Check, CircleHelp, Eye, EyeOff, FastForward, RefreshCw, X } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import type { HistoryResult, LetterQuestion, TeamId } from '@/lib/letter-game/types';
 import styles from './letter-game.module.css';
@@ -10,12 +10,16 @@ export function QuestionPanel({
   team,
   feedback,
   onJudge,
+  onReplace,
+  canReplace = false,
 }: {
   question: LetterQuestion | null;
   timer: number;
   team: TeamId;
   feedback: HistoryResult | null;
   onJudge: (result: 'correct' | 'wrong' | 'skipped') => void;
+  onReplace?: () => void;
+  canReplace?: boolean;
 }) {
   const [isHostRevealRequested, setIsHostRevealRequested] = useState(false);
 
@@ -69,6 +73,25 @@ export function QuestionPanel({
       </div>
       <span className={styles.questionLabel}>السؤال</span>
       <h2 id="active-question-title">{question.prompt}</h2>
+      {onReplace ? (
+        <div className={styles.replaceQuestion}>
+          <button
+            type="button"
+            className={styles.answerRevealButton}
+            onClick={onReplace}
+            disabled={!canReplace || timer <= 0 || feedback !== null}
+            aria-describedby="letter-replace-hint"
+          >
+            <RefreshCw aria-hidden="true" />
+            تغيير السؤال
+          </button>
+          <small id="letter-replace-hint">
+            {canReplace
+              ? 'سؤال آخر للحرف نفسه مع بدء الوقت من جديد.'
+              : 'لا يوجد سؤال بديل لهذا الحرف في الحزمة الحالية.'}
+          </small>
+        </div>
+      ) : null}
 
       <div
         className={styles.answerSlot}

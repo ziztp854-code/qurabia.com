@@ -1,5 +1,7 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
@@ -108,11 +110,13 @@ export function EliminationRoom({
   role = 'player',
   hostIdentity,
   hostName,
+  quizId,
 }: {
   initialRoomCode?: string;
   role?: 'player' | 'host';
   hostIdentity?: HostIdentity;
   hostName?: string;
+  quizId?: string;
 }) {
   const meta = INSTANT_GAME_META['elimination-live'];
   const reduceMotion = useReducedMotion();
@@ -184,6 +188,7 @@ export function EliminationRoom({
   const remaining = useCountdown(room?.remainingSeconds ?? null);
   const currentQuestion = room?.currentQuestion ?? null;
   const lastResult = room?.lastRoundResult ?? null;
+  useAiGameQuestions('elimination-live', [currentQuestion?.prompt, lastResult?.prompt].filter((prompt): prompt is string => Boolean(prompt)));
 
   useEffect(() => {
     const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -206,6 +211,7 @@ export function EliminationRoom({
     socketRef.current.emit('elimination:host', {
       totalRounds,
       roundTimeLimit,
+      ...(quizId ? { quizId } : {}),
     });
   };
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { verifyAiGameDraftToken } from '@tahaddi/contracts';
 
 const AUTH_SECRET = 'test-only-auth-secret-32-characters';
@@ -44,6 +44,7 @@ vi.mock('@/lib/ai/game-content-generation', async (importOriginal) => ({
 import { POST } from './route';
 
 describe('AI game generation route', () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasDatabaseUrl.mockReturnValue(true);
@@ -70,6 +71,7 @@ describe('AI game generation route', () => {
       },
     });
     process.env.AUTH_SECRET = AUTH_SECRET;
+    vi.stubEnv('NEXTAUTH_URL', 'http://localhost');
   });
 
   it('rejects an oversized chunked body without trusting content-length', async () => {

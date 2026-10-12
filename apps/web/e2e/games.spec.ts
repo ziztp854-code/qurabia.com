@@ -19,9 +19,9 @@ import {
 test('الكتالوج والمسارات والبنوك مشتقة من قوائم الألعاب الثلاث', async ({ page, request }) => {
   await page.goto('/games/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('ساحة الألعاب');
-  await expect(page.getByText(/اختر لعبتك المفضلة وابدأ جولة مباشرة مع أصدقائك/)).toBeVisible();
+  await expect(page.getByText(/اختر لعبة جماعية مع أصدقائك/)).toBeVisible();
   await expect(page.getByRole('list', { name: 'الألعاب الجماعية' })).toBeVisible();
-  await expect(page.getByRole('list', { name: 'الألعاب الفورية' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'الألعاب الفردية' })).toBeVisible();
 
   const cards = page.getByRole('article').filter({ has: page.getByRole('heading', { level: 3 }) });
   await expect(cards).toHaveCount(INJECTED_GAME_CATALOG.length);

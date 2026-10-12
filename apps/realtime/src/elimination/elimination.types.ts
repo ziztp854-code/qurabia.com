@@ -35,6 +35,7 @@ export {
 };
 
 export type EliminationRoomRuntime = EliminationRoom & {
+  quizId?: string;
   stopReason?: { code: string; message: string };
 };
 

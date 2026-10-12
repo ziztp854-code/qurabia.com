@@ -1,5 +1,7 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Play, Swords, Trophy, CircleDot, Circle, Copy, Check, UserPlus } from 'lucide-react';
@@ -216,6 +218,7 @@ export function LadderRoom({
   };
 
   const currentQuestion = room?.currentQuestion;
+  useAiGameQuestions('ladder', currentQuestion ? [currentQuestion.questionText] : []);
   const selectedOption =
     currentQuestion && answerSelection?.questionId === currentQuestion.id
       ? answerSelection.optionId

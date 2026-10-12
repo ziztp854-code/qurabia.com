@@ -410,6 +410,14 @@
   gap: 0.35rem;
 }
 
+.gc-play-modes {
+  margin-block-end: var(--space-4);
+}
+
+.gc-play-modes .gc-chip {
+  min-block-size: 44px;
+}
+
 .gc-chip {
   display: inline-flex;
   align-items: center;

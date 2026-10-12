@@ -1,7 +1,59 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialLetterGameState, letterGameReducer } from './state';
+import { LETTER_QUESTION_POOL } from './questions';
 
 describe('letter challenge state', () => {
+  const alternative = LETTER_QUESTION_POOL.find((question) => question.id === 'alternative-أ')!;
+  function selectAlif() {
+    return letterGameReducer(createInitialLetterGameState(), {
+      type: 'select-cell',
+      cellId: '0:0',
+      now: 1_000,
+    });
+  }
+
+  it('replaces a question without changing the cell, team, board, or score history', () => {
+    const selected = selectAlif();
+    const changed = letterGameReducer(selected, {
+      type: 'replace-question',
+      question: alternative,
+      now: 5_000,
+    });
+    expect(changed.currentQuestion).toBe(alternative);
+    expect(changed.selectedCell).toBe(selected.selectedCell);
+    expect(changed.currentTeam).toBe(selected.currentTeam);
+    expect(changed.board).toBe(selected.board);
+    expect(changed.history).toEqual([]);
+    expect(changed.round).toBe(1);
+    expect(changed.timer).toBe(15);
+    expect(changed.expiresAt).toBe(20_000);
+    expect(changed.usedQuestionIds).toEqual([selected.currentQuestion!.id, alternative.id]);
+  });
+
+  it('rejects replacement with the same question or another letter and outside a question', () => {
+    const selected = selectAlif();
+    for (const question of [selected.currentQuestion!, { ...alternative, letter: 'ب' }]) {
+      expect(letterGameReducer(selected, { type: 'replace-question', question, now: 5_000 })).toBe(
+        selected,
+      );
+    }
+    const initial = createInitialLetterGameState();
+    expect(
+      letterGameReducer(initial, { type: 'replace-question', question: alternative, now: 5_000 }),
+    ).toBe(initial);
+  });
+
+  it('treats an expired replacement request as a timeout before the next tick', () => {
+    const changed = letterGameReducer(selectAlif(), {
+      type: 'replace-question',
+      question: alternative,
+      now: 16_000,
+    });
+    expect(changed.gameStatus).toBe('playing');
+    expect(changed.history[0]?.result).toBe('timeout');
+    expect(changed.currentTeam).toBe('orange');
+    expect(changed.board.cells[0]?.owner).toBeNull();
+  });
   it('opens the matching question for an available cell', () => {
     const state = createInitialLetterGameState();
     const next = letterGameReducer(state, { type: 'select-cell', cellId: '0:0', now: 1_000 });

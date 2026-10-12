@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { SiteLayout } from '@/components/layout';
 import { GamePackPicker } from '@/components/games/game-pack-picker';
@@ -60,7 +61,7 @@ export default async function CategoryBoardPage({
           selectedQuizId={adaptedLibrary && adaptedLibrary.length >= 6 ? quizId : null}
         />
       ) : null}
-      <CategoryBoardRoom library={library} />
+      <AiGameQuestionRefresh game="category-board"><CategoryBoardRoom library={library} /></AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

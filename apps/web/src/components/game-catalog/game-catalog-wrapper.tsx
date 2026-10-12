@@ -13,6 +13,7 @@ import { formatNumber } from '@/lib/utils';
 import { ButtonLink } from '@/components/ui';
 import type { CatalogGame } from '@/data/games';
 import { GradientText } from '@/components/react-bits/gradient-text';
+import { getGamePlayMode } from './game-catalog-types';
 
 type GameCatalogWrapperProps = {
   sessionUserName: string | null;
@@ -65,7 +66,7 @@ function GameCatalogShell({
               <GradientText>ساحة الألعاب</GradientText>
             </HeroHeading>
             <p className="gc-hero-desc">
-              اختر لعبتك المفضلة وابدأ جولة مباشرة مع أصدقائك، أو اختبر سرعتك وتركيزك في ألعاب فورية
+              اختر لعبة جماعية مع أصدقائك، أو اختبر سرعتك وتركيزك في ألعاب فردية
               مصممة لتبقى المنافسة ممتعة.
             </p>
             {!embedded && (
@@ -98,6 +99,24 @@ function GameCatalogShell({
       </section>
 
       <section className="container gc-catalog-body">
+        <div className="gc-chips gc-play-modes" role="group" aria-label="تصفح حسب نوع اللعب">
+          {([
+            { label: 'جميع الألعاب', modes: [] },
+            { label: 'الألعاب الجماعية', modes: ['group'] },
+            { label: 'الألعاب الفردية', modes: ['solo'] },
+          ] as const).map(({ label, modes }) => (
+            <button
+              key={label}
+              type="button"
+              className="gc-chip"
+              aria-pressed={catalog.filters.playModes.length === modes.length && modes.every((mode) => catalog.filters.playModes.includes(mode))}
+              data-active={catalog.filters.playModes.length === modes.length && modes.every((mode) => catalog.filters.playModes.includes(mode))}
+              onClick={() => catalog.setFilterPatch({ playModes: [...modes] })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <GameSortBar
           ref={filtersTriggerRef}
           catalog={catalog}
@@ -116,14 +135,16 @@ function GameCatalogShell({
               </div>
             ) : (
               <>
-                {(['room', 'instant', 'upcoming'] as const).map((kind) => {
-                  const group = catalog.visibleGames.filter((g) => g.kind === kind);
+                {(['group', 'solo', 'upcoming'] as const).map((kind) => {
+                  const group = catalog.visibleGames.filter((game) =>
+                    kind === 'upcoming' ? game.kind === 'upcoming' : game.kind !== 'upcoming' && getGamePlayMode(game) === kind,
+                  );
                   if (!group.length) return null;
                   const label =
-                    kind === 'room'
+                    kind === 'group'
                       ? 'الألعاب الجماعية'
-                      : kind === 'instant'
-                        ? 'الألعاب الفورية'
+                      : kind === 'solo'
+                        ? 'الألعاب الفردية'
                         : 'الألعاب القادمة';
                   return (
                     <section key={kind} className="gc-game-section">

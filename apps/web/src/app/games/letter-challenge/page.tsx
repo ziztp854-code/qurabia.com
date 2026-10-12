@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { LetterGame } from '@/components/letter-game';
 import { GamePackPicker } from '@/components/games/game-pack-picker';
@@ -54,7 +55,7 @@ export default async function LetterChallengePage({
           selectedQuizId={quizId ?? null}
         />
       ) : null}
-      <LetterGame questions={questions} />
+      <AiGameQuestionRefresh game="letter-challenge"><LetterGame questions={questions} /></AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

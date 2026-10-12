@@ -1,6 +1,6 @@
 import { formatNumber } from '@/lib/utils';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameSearch, GameFilters, GameSortBar, GameCard, GameCatalogWrapper } from './index';
 import type { UseGameCatalogReturn } from './use-game-catalog';
@@ -23,6 +23,7 @@ function makeCatalog(partial: Partial<UseGameCatalogReturn> = {}): UseGameCatalo
     filters: { ...DEFAULT_FILTER_STATE },
     setFilterPatch: () => {},
     toggleKind: () => {},
+    togglePlayMode: () => {},
     toggleCategory: () => {},
     togglePlatform: () => {},
     toggleYear: () => {},
@@ -61,6 +62,22 @@ describe('GameCatalog UI', () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('groups shared-screen games with multiplayer games and filters individual games', async () => {
+    const user = userEvent.setup();
+    render(<GameCatalogWrapper sessionUserName={null} initialGames={catalogSample} />);
+    const group = screen.getByRole('list', { name: 'الألعاب الجماعية' });
+    for (const name of ['تحدي الحروف', 'لوحة الفئات', 'البلوت']) {
+      expect(within(group).getByRole('heading', { name })).toBeInTheDocument();
+    }
+    const solo = screen.getByRole('list', { name: 'الألعاب الفردية' });
+    expect(within(solo).getByRole('heading', { name: 'من سيربح المليون؟' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'الألعاب الفردية' }));
+    expect(screen.queryByRole('list', { name: 'الألعاب الجماعية' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'الألعاب الفردية' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'جميع الألعاب' }));
+    expect(screen.getByRole('list', { name: 'الألعاب الجماعية' })).toBeInTheDocument();
   });
 
   it('assigns a unique generated cover to every catalog game', () => {
@@ -179,14 +196,14 @@ describe('GameCatalog UI', () => {
   });
 
   it('GameFilters panel renders sections, chips aria-pressed, and sliders with accessible names', () => {
-    const toggleKind = vi.fn();
-    const catalog = makeCatalog({ toggleKind });
+    const togglePlayMode = vi.fn();
+    const catalog = makeCatalog({ togglePlayMode });
     render(<GameFilters catalog={catalog} open={true} onClose={() => {}} />);
     const sections = screen.getAllByRole('region') as HTMLElement[];
     expect(sections.length).toBeGreaterThanOrEqual(5);
     const kindChip = screen
       .getAllByRole('button')
-      .find((el) => /جماعية|فورية|قريبًا/.test(el.textContent ?? ''));
+      .find((el) => /جماعية|فردية/.test(el.textContent ?? ''));
     expect(kindChip).toBeDefined();
     expect(kindChip).toHaveAttribute('aria-pressed');
     const diffMinLabel = screen.getByLabelText('الصعوبة الدنيا');

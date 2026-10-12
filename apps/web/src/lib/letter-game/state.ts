@@ -4,6 +4,7 @@ import type { HistoryResult, LetterGameState, LetterQuestion } from './types';
 
 export type LetterGameAction =
   | { type: 'select-cell'; cellId: string; now: number; question?: LetterQuestion }
+  | { type: 'replace-question'; question: LetterQuestion; now: number }
   | { type: 'judge'; result: Exclude<HistoryResult, 'timeout'>; now: number }
   | { type: 'tick'; now: number }
   | { type: 'reset' };
@@ -14,6 +15,7 @@ export function createInitialLetterGameState(): LetterGameState {
     board: createLetterBoard(BOARD_LETTERS),
     selectedCell: null,
     currentQuestion: null,
+    usedQuestionIds: [],
     timer: 15,
     expiresAt: null,
     winner: null,
@@ -85,13 +87,35 @@ export function letterGameReducer(
       if (state.gameStatus !== 'playing') return state;
       const cell = getCell(state.board, action.cellId);
       if (!cell || cell.owner) return state;
+      const question = action.question ?? getQuestionForLetter(cell.letter);
+      if (question.letter !== cell.letter) return state;
       return {
         ...state,
         selectedCell: cell.id,
-        currentQuestion: action.question ?? getQuestionForLetter(cell.letter),
+        currentQuestion: question,
+        usedQuestionIds: [...state.usedQuestionIds, question.id],
         timer: 15,
         expiresAt: action.now + 15_000,
         gameStatus: 'question',
+      };
+    }
+    case 'replace-question': {
+      if (state.gameStatus !== 'question' || !state.currentQuestion) return state;
+      if (state.expiresAt !== null && action.now >= state.expiresAt) {
+        return finishQuestion(state, 'timeout');
+      }
+      if (
+        action.question.letter !== state.currentQuestion.letter ||
+        action.question.id === state.currentQuestion.id ||
+        action.question.prompt === state.currentQuestion.prompt
+      )
+        return state;
+      return {
+        ...state,
+        currentQuestion: action.question,
+        usedQuestionIds: [...state.usedQuestionIds, action.question.id],
+        timer: 15,
+        expiresAt: action.now + 15_000,
       };
     }
     case 'judge':

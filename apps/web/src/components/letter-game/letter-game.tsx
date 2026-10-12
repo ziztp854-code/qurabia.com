@@ -2,7 +2,7 @@
 
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { Blocks, Sparkles } from 'lucide-react';
-import { getQuestionForLetter, LETTER_QUESTIONS } from '@/lib/letter-game/questions';
+import { getNextQuestionForLetter, LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 import { createInitialLetterGameState, letterGameReducer } from '@/lib/letter-game/state';
 import type { HistoryResult, LetterQuestion } from '@/lib/letter-game/types';
 import { GameHistory } from './game-history';
@@ -13,12 +13,17 @@ import { TeamCard } from './team-card';
 import { TurnIndicator } from './turn-indicator';
 import { VictoryOverlay } from './victory-overlay';
 import styles from './letter-game.module.css';
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+import { toGameQuestionFeed } from '@/lib/ai/game-question-refresh-contract';
+import { adaptFeedToLetterQuestions } from '@/lib/questions/feed/adapters/to-letter';
 
 export function LetterGame({
-  questions = LETTER_QUESTIONS,
+  questions: initialQuestions = LETTER_QUESTION_POOL,
 }: {
   questions?: readonly LetterQuestion[];
 }) {
+  const generated = useAiGameQuestions('letter-challenge', initialQuestions.map((question) => question.prompt));
+  const questions = generated?.questions ? adaptFeedToLetterQuestions(toGameQuestionFeed(generated.questions, generated.batchId), () => 0) : initialQuestions;
   const [state, dispatch] = useReducer(letterGameReducer, undefined, createInitialLetterGameState);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [feedback, setFeedback] = useState<HistoryResult | null>(null);
@@ -69,7 +74,7 @@ export function LetterGame({
 
   function handleSelect(cellId: string) {
     const letter = state.board.cells.find((cell) => cell.id === cellId)?.letter;
-    const question = letter ? getQuestionForLetter(letter, questions) : undefined;
+    const question = letter ? getNextQuestionForLetter(letter, questions, state.usedQuestionIds) : undefined;
     dispatch({ type: 'select-cell', cellId, now: Date.now(), question });
     window.requestAnimationFrame(() => {
       const panel = document.getElementById('letter-question-panel');
@@ -82,6 +87,18 @@ export function LetterGame({
         });
       }
     });
+  }
+
+  const replacementQuestion = state.currentQuestion
+    ? getNextQuestionForLetter(state.currentQuestion.letter, questions, state.usedQuestionIds, state.currentQuestion)
+    : undefined;
+
+  function handleReplaceQuestion() {
+    if (!replacementQuestion) return;
+    dispatch({ type: 'replace-question', question: replacementQuestion, now: Date.now() });
+    window.requestAnimationFrame(() =>
+      document.getElementById('letter-question-panel')?.focus({ preventScroll: true }),
+    );
   }
 
   function handleJudge(result: 'correct' | 'wrong' | 'skipped') {
@@ -165,12 +182,14 @@ export function LetterGame({
 
         <aside className={styles.questionRail} aria-label="لوحة السؤال والتحكم">
           <QuestionPanel
-            key={state.round}
+            key={`${state.round}-${state.currentQuestion?.id ?? 'empty'}`}
             question={state.currentQuestion}
             timer={state.timer}
             team={state.currentTeam}
             feedback={feedback}
             onJudge={handleJudge}
+            onReplace={handleReplaceQuestion}
+            canReplace={Boolean(replacementQuestion)}
           />
         </aside>
       </div>

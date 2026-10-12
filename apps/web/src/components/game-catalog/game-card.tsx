@@ -2,16 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Users, Wifi, Zap } from 'lucide-react';
+import { ArrowLeft, UserRound, Users, Wifi } from 'lucide-react';
+import { GAME_PLAY_MODE_LABELS, getGamePlayMode } from './game-catalog-types';
 import type { CatalogGame } from '@/data/games';
 import { formatNumber } from '@/lib/utils';
 import { Magnet } from '@/components/react-bits/magnet';
-
-const KIND_LABEL: Record<CatalogGame['kind'], string> = {
-  room: 'جماعية',
-  instant: 'فورية',
-  upcoming: 'قريبًا',
-};
 
 export function GameCard({
   game,
@@ -27,6 +22,7 @@ export function GameCard({
   earlyAccess?: boolean;
 }) {
   const isDisabled = !game.href || (game.kind === 'upcoming' && !earlyAccess);
+  const playMode = getGamePlayMode(game);
   const cta = isDisabled ? 'قريبًا' : game.kind === 'upcoming' ? 'لعب مبكرًا' : 'العب الآن';
   return (
     <article
@@ -47,12 +43,12 @@ export function GameCard({
           {String(index + 1).padStart(2, '0')}
         </span>
         <span className="gc-card-kind" data-kind={game.kind}>
-          {game.kind === 'room' ? (
+          {playMode === 'group' ? (
             <Users aria-hidden="true" size={12} />
-          ) : game.kind === 'instant' ? (
-            <Zap aria-hidden="true" size={12} />
-          ) : null}
-          {KIND_LABEL[game.kind]}
+          ) : (
+            <UserRound aria-hidden="true" size={12} />
+          )}
+          {GAME_PLAY_MODE_LABELS[playMode]}
         </span>
       </div>
 

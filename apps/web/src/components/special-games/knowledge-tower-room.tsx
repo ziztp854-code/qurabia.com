@@ -1,5 +1,8 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+import { KNOWLEDGE_TOWER_BANK } from './knowledge-tower-bank';
+
 import { Building2, Heart, RotateCcw, ShieldCheck, Sparkles, Timer, Trophy } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui';
@@ -28,6 +31,7 @@ function getSafeFloor(cleared: number) {
 }
 
 export function KnowledgeTowerRoom() {
+  const generated = useAiGameQuestions('knowledge-tower', KNOWLEDGE_TOWER_BANK.map((question) => question.prompt));
   const [run, setRun] = useState<KnowledgeTowerQuestion[]>([]);
   const [floorIndex, setFloorIndex] = useState(0);
   const [lives, setLives] = useState(KNOWLEDGE_TOWER_LIVES);
@@ -97,7 +101,10 @@ export function KnowledgeTowerRoom() {
   }, [phase, floorIndex]);
 
   const startRun = () => {
-    setRun(buildKnowledgeTowerRun());
+    setRun(generated?.questions ? [...generated.questions].sort((a, b) => a.slot - b.slot).map((question, index): KnowledgeTowerQuestion => ({
+      id: `${generated.batchId}-${index}`, floor: question.slot, category: question.category, difficulty: question.difficulty,
+      prompt: question.prompt, options: question.options as [string, string, string, string], answerIndex: question.answerIndex as 0 | 1 | 2 | 3, explanation: question.explanation,
+    })) : buildKnowledgeTowerRun());
     setFloorIndex(0);
     setLives(KNOWLEDGE_TOWER_LIVES);
     setScore(0);

@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { SiteLayout } from '@/components/layout';
 import { QuoteMasterRoom } from '@/components/special-games';
@@ -14,7 +15,7 @@ export default async function QuoteMasterPage() {
 
   return (
     <SiteLayout user={session?.user ? { name: session.user.name } : null}>
-      <QuoteMasterRoom />
+      <AiGameQuestionRefresh game="quote-master"><QuoteMasterRoom /></AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

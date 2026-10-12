@@ -60,6 +60,7 @@ export const createEliminationRoomPayloadSchema = z
   .object({
     totalRounds: z.number().int().min(3).max(8).default(5),
     roundTimeLimit: z.number().int().min(10).max(90).default(20),
+    quizId: z.string().trim().min(1).max(64).optional(),
   })
   .strict();
 
@@ -85,15 +86,9 @@ export const eliminationRoomCodePayloadSchema = z
   })
   .strict();
 
-export type CreateEliminationRoomPayload = z.output<
-  typeof createEliminationRoomPayloadSchema
->;
-export type JoinEliminationRoomPayload = z.output<
-  typeof joinEliminationRoomPayloadSchema
->;
-export type EliminationAnswerSubmitPayload = z.output<
-  typeof eliminationAnswerSubmitPayloadSchema
->;
+export type CreateEliminationRoomPayload = z.output<typeof createEliminationRoomPayloadSchema>;
+export type JoinEliminationRoomPayload = z.output<typeof joinEliminationRoomPayloadSchema>;
+export type EliminationAnswerSubmitPayload = z.output<typeof eliminationAnswerSubmitPayloadSchema>;
 
 export type EliminationAnswerAcceptedPayload = {
   submissionId: string;
@@ -118,9 +113,7 @@ export type ClientToServerEliminationEvents = {
   'elimination:host': (payload: CreateEliminationRoomPayload) => void;
   'elimination:join': (payload: JoinEliminationRoomPayload) => void;
   'elimination:start': (payload: { roomCode?: string }) => void;
-  'elimination:answer:submit': (
-    payload: EliminationAnswerSubmitPayload,
-  ) => void;
+  'elimination:answer:submit': (payload: EliminationAnswerSubmitPayload) => void;
   'elimination:next': (payload: { roomCode?: string }) => void;
   'elimination:round:end': (payload: { roomCode?: string }) => void;
   'elimination:game:finish': (payload: { roomCode?: string }) => void;
@@ -133,9 +126,7 @@ export type ServerToClientEliminationEvents = {
   'elimination:room:state': (payload: EliminationRoomSnapshot) => void;
   'elimination:error': (payload: { code: string; message: string }) => void;
   'elimination:countdown': (payload: { remaining: number }) => void;
-  'elimination:answer:accepted': (
-    payload: EliminationAnswerAcceptedPayload,
-  ) => void;
+  'elimination:answer:accepted': (payload: EliminationAnswerAcceptedPayload) => void;
   'elimination:answer:rejected': (payload: {
     submissionId: string;
     code: string;

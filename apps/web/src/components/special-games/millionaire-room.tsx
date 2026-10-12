@@ -1,5 +1,9 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+import { toGameQuestionFeed } from '@/lib/ai/game-question-refresh-contract';
+import { adaptFeedToMillionaireQuestions } from '@/lib/questions/feed/adapters/to-millionaire';
+
 import {
   ArrowLeft,
   Check,
@@ -119,10 +123,12 @@ export function MillionaireRoom({
 }: {
   preferredQuestions?: readonly MillionaireQuestion[] | null;
 }) {
+  const generated = useAiGameQuestions('millionaire', [...MILLIONAIRE_QUESTION_BANK, ...(preferredQuestions ?? [])].map((question) => question.prompt));
+  const generatedQuestions = useMemo(() => generated?.questions ? adaptFeedToMillionaireQuestions(toGameQuestionFeed(generated.questions, generated.batchId)) : null, [generated]);
   const [seed, setSeed] = useState(0);
   const questions = useMemo(
-    () => buildMillionaireRun(seed, preferredQuestions ?? []),
-    [preferredQuestions, seed],
+    () => buildMillionaireRun(seed, generatedQuestions ?? preferredQuestions ?? []),
+    [preferredQuestions, generatedQuestions, seed],
   );
   const [phase, setPhase] = useState<GamePhase>('intro');
   const [levelIndex, setLevelIndex] = useState(0);

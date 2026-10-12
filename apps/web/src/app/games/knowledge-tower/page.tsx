@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { SiteLayout } from '@/components/layout';
 import { KnowledgeTowerRoom } from '@/components/special-games';
@@ -14,7 +15,7 @@ export default async function KnowledgeTowerPage() {
 
   return (
     <SiteLayout user={session?.user ? { name: session.user.name } : null}>
-      <KnowledgeTowerRoom />
+      <AiGameQuestionRefresh game="knowledge-tower"><KnowledgeTowerRoom /></AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

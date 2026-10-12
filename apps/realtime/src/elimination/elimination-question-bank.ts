@@ -22,6 +22,7 @@ type QuestionRow = {
 
 export async function loadEliminationQuestions(
   database: DatabaseService,
+  pack?: { quizId: string; ownerId: string },
 ): Promise<EliminationQuestion[]> {
   const rows = await database.client.question.findMany({
     where: {
@@ -29,6 +30,22 @@ export async function loadEliminationQuestions(
       type: 'MULTIPLE_CHOICE',
       archivedAt: null,
       gameTypes: { has: 'QUIZ' },
+      ...(pack
+        ? {
+            quizzes: {
+              some: {
+                quizId: pack.quizId,
+                quiz: {
+                  ownerId: pack.ownerId,
+                  status: 'ACTIVE',
+                  gameMode: 'QUIZ',
+                },
+              },
+            },
+          }
+        : {
+            OR: [{ source: null }, { source: { not: 'AI_GAME_PRIVATE' } }],
+          }),
     },
     select: {
       id: true,

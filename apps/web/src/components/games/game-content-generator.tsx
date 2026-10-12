@@ -3,6 +3,7 @@
 import { Check, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Button, Input } from '@/components/ui';
+import { PARALLEL_WORLD_BANK, REVERSE_TIME_BANK } from '@tahaddi/domain';
 
 export type AiGame = 'parallel-world' | 'reverse-time' | 'infiltrator' | 'mafia';
 export type MafiaAiContent = {
@@ -31,6 +32,7 @@ export function GameContentGenerator({
   const [approvedToken, setApprovedToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [excludedAnswers, setExcludedAnswers] = useState<string[]>(() => game === 'reverse-time' ? REVERSE_TIME_BANK.map((round) => round.answer) : game === 'mafia' ? [] : PARALLEL_WORLD_BANK.map((round) => round.answer));
 
   const generate = async () => {
     if (topic.trim().length < 3) {
@@ -43,7 +45,7 @@ export function GameContentGenerator({
       const response = await fetch('/api/ai/games/generate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ game, topic, roundCount: 3 }),
+        body: JSON.stringify({ game, topic, roundCount: 3, excludeAnswers: excludedAnswers.slice(-24) }),
       });
       const payload = (await response.json()) as {
         ok: boolean;
@@ -54,6 +56,10 @@ export function GameContentGenerator({
       if (!response.ok || !payload.ok || !payload.draft || !payload.approvalToken)
         throw new Error(payload.message || 'تعذّر التوليد.');
       setDraft(payload.draft);
+      if (payload.draft.game !== 'mafia') {
+        const answers = payload.draft.content.rounds.map((round) => String(round.answer ?? ''));
+        setExcludedAnswers((previous) => [...previous, ...answers]);
+      }
       setDraftToken(payload.approvalToken);
       setApprovedToken('');
       onApprove?.(undefined);
@@ -82,7 +88,7 @@ export function GameContentGenerator({
       />
       <Button type="button" variant="outline" loading={loading} onClick={generate}>
         <Sparkles aria-hidden="true" />
-        ولّد مسودة للمراجعة
+        جلب محتوى جديد بالذكاء الاصطناعي
       </Button>
       {error && (
         <p className="special-error" role="alert">

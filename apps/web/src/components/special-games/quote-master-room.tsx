@@ -1,5 +1,7 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -56,6 +58,8 @@ const COVER_ROLES = [
 ] as const;
 
 export function QuoteMasterRoom() {
+  const originalQuestions = useMemo(() => buildQuoteMasterRun(1000), []);
+  const generated = useAiGameQuestions('quote-master', originalQuestions.map((question) => question.quote));
   const [run, setRun] = useState<QuoteQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [lives, setLives] = useState(QUOTE_MASTER_LIVES);
@@ -125,7 +129,10 @@ export function QuoteMasterRoom() {
   }
 
   function startGame() {
-    setRun(buildQuoteMasterRun());
+    setRun(generated?.questions ? generated.questions.map((question, index): QuoteQuestion => ({
+      id: `${generated.batchId}-${index}`, quote: question.prompt, category: question.category,
+      options: question.options as [string, string, string, string], answerIndex: question.answerIndex, explanation: question.explanation,
+    })) : buildQuoteMasterRun());
     setIndex(0);
     setLives(QUOTE_MASTER_LIVES);
     setScore(0);

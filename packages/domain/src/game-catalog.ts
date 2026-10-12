@@ -186,6 +186,17 @@ export const INSTANT_GAME_ORDER: InstantGameMode[] = [
 
 export type GameKind = 'room' | 'instant' | 'upcoming';
 
+export type GamePlayMode = 'group' | 'solo';
+
+export function getGamePlayMode(game: Pick<EnhancedGameMeta, 'maximumPlayers'>): GamePlayMode {
+  return game.maximumPlayers === 1 ? 'solo' : 'group';
+}
+
+export const GAME_PLAY_MODE_LABELS: Record<GamePlayMode, string> = {
+  group: 'جماعية',
+  solo: 'فردية',
+};
+
 export type DifficultyValue = 1 | 2 | 3 | 4 | 5;
 
 export type PlatformValue = 'web' | 'mobile' | 'pwa';
@@ -220,6 +231,7 @@ export type GameSortKey = 'popular' | 'newest' | 'oldest' | 'players' | 'manual'
 export interface GameFilterState {
   query: string;
   kinds: GameKind[];
+  playModes: GamePlayMode[];
   categories: GameCategory[];
   difficultyMin: DifficultyValue;
   difficultyMax: DifficultyValue;
@@ -731,6 +743,7 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
 export const DEFAULT_FILTER_STATE: GameFilterState = {
   query: '',
   kinds: [],
+  playModes: [],
   categories: [],
   difficultyMin: 1,
   difficultyMax: 5,
@@ -766,6 +779,7 @@ export function normalizeCatalogFilters(filters: GameFilterState): GameFilterSta
 export function gameMatchesFilters(game: EnhancedGameMeta, filters: GameFilterState): boolean {
   const f = normalizeCatalogFilters(filters);
   if (f.kinds.length > 0 && !f.kinds.includes(game.kind)) return false;
+  if (f.playModes.length > 0 && !f.playModes.includes(getGamePlayMode(game))) return false;
   if (f.categories.length > 0 && !game.categories.some((c) => f.categories.includes(c))) {
     return false;
   }
@@ -859,7 +873,7 @@ export function buildSearchSuggestions(
         id: `game:${game.id}`,
         type: 'game',
         label: game.title,
-        match: `${game.kind === 'room' ? 'جماعية' : game.kind === 'instant' ? 'فورية' : 'قريبًا'} · ${game.categories[0] ?? ''}`,
+        match: `${game.kind === 'upcoming' ? 'قريبًا' : GAME_PLAY_MODE_LABELS[getGamePlayMode(game)]} · ${game.categories[0] ?? ''}`,
       });
       if (results.length >= limit) return results;
     }

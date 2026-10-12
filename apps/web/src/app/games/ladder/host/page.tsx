@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { SiteLayout } from '@/components/layout';
 import { GamePackPicker } from '@/components/games/game-pack-picker';
@@ -41,6 +42,7 @@ export default async function LadderHostPage({
   return (
     <SiteLayout user={{ name: user.name, role: user.role }}>
       <GamePackPicker gameMode="LADDER" packs={packs} selectedQuizId={resolvedQuizId} />
+      <AiGameQuestionRefresh game="ladder">
       <LadderRoom
         role="host"
         quizId={resolvedQuizId}
@@ -51,6 +53,7 @@ export default async function LadderHostPage({
         }}
         hostName={user.name ?? 'المضيف'}
       />
+      </AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

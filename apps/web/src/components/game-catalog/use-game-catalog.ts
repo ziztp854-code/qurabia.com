@@ -12,6 +12,7 @@ import {
   type DifficultyValue,
   type GameFilterState,
   type GameKind,
+  type GamePlayMode,
   type GameSearchSuggestion,
   type GameSortKey,
   type PlatformValue,
@@ -92,6 +93,10 @@ export function useGameCatalog(initialGames: readonly CatalogGame[]) {
     (kind: GameKind) => toggleArray<GameKind>('kinds', kind),
     [toggleArray],
   );
+  const togglePlayMode = useCallback(
+    (mode: GamePlayMode) => toggleArray<GamePlayMode>('playModes', mode),
+    [toggleArray],
+  );
   const toggleCategory = useCallback(
     (category: string) => toggleArray<string>('categories', category as never),
     [toggleArray],
@@ -164,6 +169,7 @@ export function useGameCatalog(initialGames: readonly CatalogGame[]) {
   const activeFiltersCount = useMemo(() => {
     let n = 0;
     if (effectiveFilters.kinds.length) n += effectiveFilters.kinds.length;
+    if (effectiveFilters.playModes.length) n += effectiveFilters.playModes.length;
     if (effectiveFilters.categories.length) n += effectiveFilters.categories.length;
     if (effectiveFilters.platforms.length) n += effectiveFilters.platforms.length;
     if (effectiveFilters.years.length) n += effectiveFilters.years.length;
@@ -237,6 +243,7 @@ export function useGameCatalog(initialGames: readonly CatalogGame[]) {
     filters,
     setFilterPatch,
     toggleKind,
+    togglePlayMode,
     toggleCategory,
     togglePlatform,
     toggleYear,
