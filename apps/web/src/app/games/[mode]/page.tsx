@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
@@ -67,7 +68,9 @@ export default async function SpecialGamePage({
           initialPin={query.join?.replace(/\D/g, '').slice(0, 6) ?? ''}
         />
       ) : (
-        <InstantGameRoom mode={mode} />
+        mode === 'word-code' || mode === 'question-word' ? (
+          <AiGameQuestionRefresh game={mode}><InstantGameRoom mode={mode} /></AiGameQuestionRefresh>
+        ) : <InstantGameRoom mode={mode} />
       )}
     </SiteLayout>
   );

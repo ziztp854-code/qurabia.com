@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'الألعاب | تحدّي',
-  description: 'كتالوج ألعاب عربية جماعية وفورية مع بحث حسب الاسم والتصنيف وسعة اللاعبين.',
+  description: 'كتالوج ألعاب عربية جماعية وفردية مع بحث حسب الاسم والتصنيف وسعة اللاعبين.',
   alternates: { canonical: '/games' },
   openGraph: {
     title: 'الألعاب | تحدّي · كتالوج متقدم',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'الألعاب | تحدّي',
-    description: 'كتالوج ألعاب عربية جماعية وفورية مع بحث وفلترة واضحة.',
+    description: 'كتالوج ألعاب عربية جماعية وفردية مع بحث وفلترة واضحة.',
   },
 };
 

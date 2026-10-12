@@ -120,7 +120,7 @@ describe('SpecialGameRoom', () => {
     socketMock.listeners.get('connect')?.();
 
     await user.type(screen.getByLabelText('موضوع محتوى Grok (اختياري)'), 'مدن السعودية');
-    await user.click(screen.getByRole('button', { name: /ولّد مسودة/ }));
+    await user.click(screen.getByRole('button', { name: /جلب محتوى جديد بالذكاء الاصطناعي/ }));
     await user.click(await screen.findByRole('button', { name: /اعتمد المحتوى/ }));
     await user.click(screen.getByRole('button', { name: /أنشئ الغرفة/ }));
 

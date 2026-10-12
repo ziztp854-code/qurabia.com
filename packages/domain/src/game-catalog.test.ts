@@ -7,6 +7,7 @@ import {
   collectAllYears,
   DEFAULT_FILTER_STATE,
   gameMatchesFilters,
+  getGamePlayMode,
   INJECTED_GAME_CATALOG,
   mergeCatalogWithExisting,
   normalizeCatalogFilters,
@@ -28,6 +29,21 @@ function filterState(partial: Partial<GameFilterState>): GameFilterState {
 }
 
 describe('game-catalog engine', () => {
+  it('classifies shared-screen and online games by player capacity', () => {
+    const groupIds = ['letter-challenge', 'category-board', 'baloot', 'chess', 'risk', 'question-word'];
+    const soloIds = ['millionaire', 'knowledge-tower', 'memory-flash', 'word-code', 'color-rush'];
+    for (const id of groupIds) {
+      expect(getGamePlayMode(INJECTED_GAME_CATALOG.find((game) => game.id === id)!)).toBe('group');
+    }
+    for (const id of soloIds) {
+      expect(getGamePlayMode(INJECTED_GAME_CATALOG.find((game) => game.id === id)!)).toBe('solo');
+    }
+    const grouped = applyCatalogFilters(takeCatalog(), filterState({ playModes: ['group'] }));
+    expect(grouped.map((game) => game.id)).toEqual(expect.arrayContaining(groupIds));
+    expect(grouped.every((game) => game.maximumPlayers > 1)).toBe(true);
+    const solo = applyCatalogFilters(takeCatalog(), filterState({ playModes: ['solo'], query: 'المليون' }));
+    expect(solo.map((game) => game.id)).toEqual(['millionaire']);
+  });
   it('exposes at least 7 games including upcoming', () => {
     const catalog = takeCatalog();
     expect(catalog.length).toBeGreaterThanOrEqual(7);

@@ -1,5 +1,7 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+
 import {
   ArrowRight,
   Brain,
@@ -52,14 +54,14 @@ import {
   MEMORY_SYMBOL_BANK,
   COLOR_RUSH_BANK,
   INSTANT_GAME_META,
-  QUESTION_WORD_BANK,
+  QUESTION_WORD_BANK as DEFAULT_QUESTION_WORD_BANK,
   RISK_PRESETS,
   type RiskCard,
   type RiskDifficulty,
   SCRAMBLED_WORDS_ROUNDS,
   SPOT_DIFFERENCE_SCENES,
   type SpotDifferenceScene,
-  WORD_CODE_BANK,
+  WORD_CODE_BANK as DEFAULT_WORD_CODE_BANK,
   type InstantGameMode,
 } from './game-data';
 import { BalootRoom } from './baloot-room';
@@ -672,6 +674,8 @@ export function MemoryFlash() {
 }
 
 function WordCode() {
+  const generated = useAiGameQuestions('word-code', DEFAULT_WORD_CODE_BANK.map((puzzle) => puzzle.hint));
+  const WORD_CODE_BANK = generated?.questions ? generated.questions.map((question) => ({ word: question.answer, hint: question.prompt, scrambled: question.answer.slice(1) + question.answer[0] })) : DEFAULT_WORD_CODE_BANK;
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [score, setScore] = useState(0);
@@ -793,6 +797,8 @@ function getQuestionWordScore(rank: number, elapsedSeconds: number) {
 }
 
 function QuestionWord() {
+  const generated = useAiGameQuestions('question-word', DEFAULT_QUESTION_WORD_BANK.map((question) => question.question));
+  const QUESTION_WORD_BANK = useMemo(() => generated?.questions ? generated.questions.map((question) => ({ question: question.prompt, answer: question.answer, hint: question.explanation, letters: [...question.answer].reverse().concat(['س', 'م']) })) : DEFAULT_QUESTION_WORD_BANK, [generated]);
   const [screen, setScreen] = useState<'intro' | 'play' | 'summary' | 'final'>('intro');
   const [roundIndex, setRoundIndex] = useState(0);
   const [selectedTileIds, setSelectedTileIds] = useState<number[]>([]);
@@ -846,12 +852,13 @@ function QuestionWord() {
           roundIndex,
           seconds,
           screen,
+          questions: QUESTION_WORD_BANK,
         }),
       );
     } catch {
       // The game remains playable when browser storage is unavailable.
     }
-  }, [activePlayer, answeredPlayers, playerScores, players, roundIndex, screen, seconds]);
+  }, [activePlayer, answeredPlayers, playerScores, players, roundIndex, screen, seconds, QUESTION_WORD_BANK]);
 
   const resetRound = useCallback((nextIndex = 0) => {
     setRoundIndex(nextIndex);
@@ -898,7 +905,7 @@ function QuestionWord() {
       setUsedAssists([]);
       setShowHint(false);
     },
-    [activePlayer, answeredPlayers, playerScores, players, round.answer, roundIndex, seconds],
+    [activePlayer, answeredPlayers, playerScores, players, round.answer, roundIndex, seconds, QUESTION_WORD_BANK.length],
   );
 
   useEffect(() => {

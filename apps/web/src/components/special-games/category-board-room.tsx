@@ -1,5 +1,9 @@
 'use client';
 
+import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
+import { toGameQuestionFeed } from '@/lib/ai/game-question-refresh-contract';
+import { adaptFeedToCategoryBoardLibrary } from '@/lib/questions/feed/adapters/to-category-board';
+
 /*
  * THESIS: لوحة مضيف تحوّل الفئات إلى ساحة قرار، لا نسخة من شبكة بطاقات منافس.
  * OWN-WORLD: أسود عميق، ذهب دافئ، سماوي تقني، وألواح بث ذات حواف دقيقة.
@@ -269,10 +273,12 @@ function SetupScreen({
 }
 
 export function CategoryBoardRoom({
-  library = CATEGORY_BOARD_LIBRARY,
+  library: initialLibrary = CATEGORY_BOARD_LIBRARY,
 }: {
   library?: readonly CategoryBoardCategory[];
 }) {
+  const generated = useAiGameQuestions('category-board', initialLibrary.flatMap((category) => category.questions.map((question) => question.prompt)));
+  const library = generated?.questions ? adaptFeedToCategoryBoardLibrary(toGameQuestionFeed(generated.questions, generated.batchId)) : initialLibrary;
   const [phase, setPhase] = useState<Phase>('setup');
   const [assignments, setAssignments] = useState<Assignments>(() =>
     buildDefaultAssignments(library),

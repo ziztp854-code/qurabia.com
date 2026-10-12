@@ -4,6 +4,23 @@ import { describe, expect, it } from 'vitest';
 import { LetterGame } from './letter-game';
 
 describe('LetterGame', () => {
+  it('changes the question for the same letter, hides the new answer, and preserves the turn', async () => {
+    const user = userEvent.setup();
+    render(<LetterGame />);
+    await user.click(screen.getByRole('button', { name: /الحرف أ، خلية متاحة/ }));
+    await user.click(screen.getByRole('button', { name: 'إظهار الإجابة للمضيف' }));
+    expect(screen.getByText('أسد')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'تغيير السؤال' }));
+    expect(screen.getByRole('heading', { name: /ثمانية أذرع/ })).toBeInTheDocument();
+    expect(screen.queryByText('أسد')).not.toBeInTheDocument();
+    expect(screen.queryByText('أخطبوط')).not.toBeInTheDocument();
+    expect(screen.getByText('الإجابة محجوبة')).toBeInTheDocument();
+    expect(screen.getByText('دور الفريق الأخضر')).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('id', 'letter-question-panel'));
+    await user.click(screen.getByRole('button', { name: 'إجابة صحيحة' }));
+    expect(screen.getByRole('button', { name: /الحرف أ، يملكها الفريق الأخضر/ })).toBeDisabled();
+    expect(screen.getByText('دور الفريق البرتقالي')).toBeInTheDocument();
+  });
   it('uses the questions supplied by the database-backed game page', async () => {
     const user = userEvent.setup();
     render(

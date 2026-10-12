@@ -62,7 +62,8 @@ async function readBoundedJson(request: Request) {
 
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
-  if (!origin || origin !== new URL(request.url).origin) {
+  const expectedOrigin = new URL(process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? request.url).origin;
+  if (!origin || origin !== expectedOrigin) {
     return NextResponse.json({ ok: false, message: 'الطلب غير مسموح.' }, { status: 403 });
   }
   const contentLength = Number(request.headers.get('content-length') || 0);

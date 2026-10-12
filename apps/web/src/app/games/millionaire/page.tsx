@@ -1,3 +1,4 @@
+import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { SiteLayout } from '@/components/layout';
 import { GamePackPicker } from '@/components/games/game-pack-picker';
@@ -55,7 +56,7 @@ export default async function MillionairePage({
           selectedQuizId={preferredQuestions ? quizId : null}
         />
       ) : null}
-      <MillionaireRoom preferredQuestions={preferredQuestions} />
+      <AiGameQuestionRefresh game="millionaire"><MillionaireRoom preferredQuestions={preferredQuestions} /></AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

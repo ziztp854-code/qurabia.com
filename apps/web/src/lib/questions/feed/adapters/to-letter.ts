@@ -1,4 +1,4 @@
-import { BOARD_LETTERS, getQuestionForLetter, LETTER_QUESTIONS } from '@/lib/letter-game/questions';
+import { BOARD_LETTERS, LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 import type { LetterQuestion, LetterQuestionCategory } from '@/lib/letter-game/types';
 import type { QuestionFeedRow } from '../types';
 
@@ -28,18 +28,21 @@ export function adaptFeedToLetterQuestions(
     candidates.set(letter, [...(candidates.get(letter) ?? []), row]);
   }
 
-  return BOARD_LETTERS.map((letter) => {
+  return BOARD_LETTERS.flatMap((letter) => {
     const matches = candidates.get(letter) ?? [];
-    if (matches.length === 0) return getQuestionForLetter(letter, LETTER_QUESTIONS);
+    if (matches.length === 0)
+      return LETTER_QUESTION_POOL.filter((question) => question.letter === letter);
     const index = Math.min(matches.length - 1, Math.floor(Math.max(0, random()) * matches.length));
-    const selected = matches[index]!;
-    return {
-      id: selected.id,
-      letter,
-      prompt: selected.prompt,
-      answer: selected.expectedAnswer?.trim() ?? '',
-      category: mapCategory(selected.categoryName),
-      pattern: 'definition',
-    };
+    // Keep all candidates so the host can replace a question without reloading the page.
+    return [...matches.slice(index), ...matches.slice(0, index)].map(
+      (selected): LetterQuestion => ({
+        id: selected.id,
+        letter,
+        prompt: selected.prompt,
+        answer: selected.expectedAnswer?.trim() ?? '',
+        category: mapCategory(selected.categoryName),
+        pattern: 'definition',
+      }),
+    );
   });
 }

@@ -109,10 +109,18 @@ describe('question feed', () => {
           categoryName: 'أدب',
           options: [],
         }),
+        baseRow({
+          id: 'letter-alif-alternative',
+          type: 'SHORT_ANSWER',
+          expectedAnswer: 'أخطبوط',
+          keywords: ['حرف:أ'],
+          options: [],
+        }),
       ],
       () => 0,
     );
 
+    expect(adapted.filter((question) => question.letter === 'أ').map((question) => question.id)).toEqual(['letter-alif', 'letter-alif-alternative']);
     expect(adapted.find((question) => question.letter === 'أ')).toMatchObject({
       id: 'letter-alif',
       answer: 'أبجدية',

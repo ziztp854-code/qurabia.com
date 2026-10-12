@@ -59,6 +59,7 @@ export interface LetterGameState {
   board: GameBoard;
   selectedCell: string | null;
   currentQuestion: LetterQuestion | null;
+  usedQuestionIds: readonly string[];
   timer: number;
   expiresAt: number | null;
   winner: TeamId | null;

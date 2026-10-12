@@ -3,6 +3,8 @@ import {
   BOARD_LETTERS,
   getLetterQuestionStats,
   getQuestionForLetter,
+  getNextQuestionForLetter,
+  LETTER_QUESTION_POOL,
   LETTER_QUESTIONS,
   LETTER_QUESTION_CATEGORIES,
   LETTER_QUESTION_PATTERNS,
@@ -10,6 +12,37 @@ import {
 } from './questions';
 
 describe('letter challenge questions', () => {
+  it('provides distinct alternatives for every letter, with answers beginning with that letter', () => {
+    for (const letter of BOARD_LETTERS) {
+      const original = getQuestionForLetter(letter);
+      const alternative = getNextQuestionForLetter(
+        letter,
+        LETTER_QUESTION_POOL,
+        [original.id],
+        original,
+      )!;
+      expect(alternative).toBeDefined();
+      expect(alternative.id).not.toBe(original.id);
+      expect(alternative.answer.startsWith(letter)).toBe(true);
+    }
+  });
+
+  it('uses unseen questions before cycling and never repeats the current question', () => {
+    const original = getQuestionForLetter('أ');
+    const second = { ...original, id: 'second', prompt: 'سؤال ثانٍ للحرف؟' };
+    const third = { ...original, id: 'third', prompt: 'سؤال ثالث للحرف؟' };
+    const pool = [original, second, third];
+    expect(getNextQuestionForLetter('أ', pool, [original.id, second.id], second)).toBe(third);
+    expect(
+      getNextQuestionForLetter(
+        'أ',
+        pool,
+        pool.map((question) => question.id),
+        third,
+      ),
+    ).toBe(original);
+    expect(getNextQuestionForLetter('أ', [original], [original.id], original)).toBeUndefined();
+  });
   it('covers every board letter exactly once', () => {
     expect(LETTER_QUESTIONS).toHaveLength(BOARD_LETTERS.length);
     expect(new Set(LETTER_QUESTIONS.map((question) => question.letter)).size).toBe(
@@ -38,7 +71,10 @@ describe('letter challenge questions', () => {
     const seen = new Map<string, string>();
     for (const question of LETTER_QUESTIONS) {
       const key = `${question.category}::${question.answer.toLowerCase()}`;
-      expect(seen.get(key), `duplicate answer in ${question.category}: ${question.answer}`).toBeUndefined();
+      expect(
+        seen.get(key),
+        `duplicate answer in ${question.category}: ${question.answer}`,
+      ).toBeUndefined();
       seen.set(key, question.id);
     }
   });

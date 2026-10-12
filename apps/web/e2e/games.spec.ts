@@ -19,9 +19,9 @@ import {
 test('الكتالوج والمسارات والبنوك مشتقة من قوائم الألعاب الثلاث', async ({ page, request }) => {
   await page.goto('/games/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('ساحة الألعاب');
-  await expect(page.getByText(/اختر لعبتك المفضلة وابدأ جولة مباشرة مع أصدقائك/)).toBeVisible();
+  await expect(page.getByText(/اختر لعبة جماعية مع أصدقائك/)).toBeVisible();
   await expect(page.getByRole('list', { name: 'الألعاب الجماعية' })).toBeVisible();
-  await expect(page.getByRole('list', { name: 'الألعاب الفورية' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'الألعاب الفردية' })).toBeVisible();
 
   const cards = page.getByRole('article').filter({ has: page.getByRole('heading', { level: 3 }) });
   await expect(cards).toHaveCount(INJECTED_GAME_CATALOG.length);
@@ -181,16 +181,22 @@ test('سطح الألعاب يحافظ على الاستجابة والاتجا�
   await page.getByRole('menuitem', { name: 'فاتح' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
-  for (let step = 0; step < 20; step += 1) {
-    await page.keyboard.press('Tab');
-    const focusedHref = await page.evaluate(() => document.activeElement?.getAttribute('href'));
-    if (focusedHref === `/games/${SPECIAL_GAME_ORDER[0]}/`) break;
-  }
-
   const gameLink = page.getByRole('link', {
     name: SPECIAL_GAME_META[SPECIAL_GAME_ORDER[0]].title,
     exact: true,
   });
+  const targetHref = await gameLink.getAttribute('href');
+  // Grouping games and adding filters changes the number of preceding tab stops.
+  // Bound traversal to one page cycle rather than assuming a fixed card position.
+  const tabStops = await page
+    .locator('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    .count();
+  for (let step = 0; step < tabStops; step += 1) {
+    await page.keyboard.press('Tab');
+    const focusedHref = await page.evaluate(() => document.activeElement?.getAttribute('href'));
+    if (focusedHref === targetHref) break;
+  }
+
   await expect(gameLink).toBeFocused();
   await expect(gameLink).toHaveCSS('outline-style', 'solid');
 });

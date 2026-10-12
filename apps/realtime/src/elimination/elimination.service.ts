@@ -113,7 +113,10 @@ export class EliminationService {
     room: EliminationRoomRuntime,
     roundNumber: number,
   ): Promise<EliminationRoomRuntime | null> {
-    const bank = await loadEliminationQuestions(this.database);
+    const bank = await loadEliminationQuestions(
+      this.database,
+      room.quizId ? { quizId: room.quizId, ownerId: room.hostId } : undefined,
+    );
     if (bank.length === 0) return null;
     const question = this.pickQuestion(room, roundNumber, bank);
     if (!question) return null;
@@ -187,7 +190,10 @@ export class EliminationService {
     input: CreateEliminationRoomPayload,
     hostId: string,
   ): Promise<EliminationActionResult> {
-    const bank = await loadEliminationQuestions(this.database);
+    const bank = await loadEliminationQuestions(
+      this.database,
+      input.quizId ? { quizId: input.quizId, ownerId: hostId } : undefined,
+    );
     if (bank.length === 0) {
       return {
         ok: false,
@@ -221,6 +227,7 @@ export class EliminationService {
     const room: EliminationRoomRuntime = {
       roomCode,
       hostId,
+      quizId: input.quizId,
       status: 'waiting',
       totalRounds: input.totalRounds,
       currentRound: 0,

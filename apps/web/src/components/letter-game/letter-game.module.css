@@ -996,6 +996,21 @@
   gap: 0.55rem;
 }
 
+.replaceQuestion {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+}
+
+.replaceQuestion small {
+  color: var(--lc-text-muted);
+}
+
+.replaceQuestion button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .answerRevealButton {
   display: inline-flex;
   align-items: center;

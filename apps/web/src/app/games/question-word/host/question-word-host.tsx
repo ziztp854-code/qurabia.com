@@ -17,6 +17,12 @@ import { useEffect, useState } from 'react';
 import { QUESTION_WORD_BANK, QUESTION_WORD_STORAGE_KEY } from '@/components/instant-games';
 import { Button } from '@/components/ui';
 import { formatNumber } from '@/lib/utils';
+import { z } from 'zod';
+
+const questionWordBankSchema = z.array(z.object({
+  question: z.string().min(1).max(240), answer: z.string().min(1).max(120),
+  hint: z.string().max(300), letters: z.array(z.string().length(1)).min(1).max(50),
+})).min(1).max(50);
 
 const ROOM_CODE = '739421';
 type RoomSnapshot = {
@@ -26,6 +32,7 @@ type RoomSnapshot = {
   answeredPlayers: string[];
   roundIndex: number;
   seconds: number;
+  questions?: z.infer<typeof questionWordBankSchema>;
 };
 
 const EMPTY_ROOM: RoomSnapshot = {
@@ -43,6 +50,7 @@ function readRoomSnapshot(): RoomSnapshot {
       localStorage.getItem(QUESTION_WORD_STORAGE_KEY) || '',
     ) as Partial<RoomSnapshot>;
     if (!Array.isArray(parsed.players)) return EMPTY_ROOM;
+    const questions = questionWordBankSchema.safeParse(parsed.questions);
     return {
       ...EMPTY_ROOM,
       ...parsed,
@@ -50,6 +58,7 @@ function readRoomSnapshot(): RoomSnapshot {
       playerScores:
         parsed.playerScores && typeof parsed.playerScores === 'object' ? parsed.playerScores : {},
       answeredPlayers: Array.isArray(parsed.answeredPlayers) ? parsed.answeredPlayers : [],
+      questions: questions.success ? questions.data : undefined,
     };
   } catch {
     return EMPTY_ROOM;
@@ -63,7 +72,8 @@ export function QuestionWordHost() {
   const [answerVisible, setAnswerVisible] = useState(false);
   const [finished, setFinished] = useState(false);
   const [room, setRoom] = useState<RoomSnapshot>(EMPTY_ROOM);
-  const question = QUESTION_WORD_BANK[questionIndex] ?? QUESTION_WORD_BANK[0]!;
+  const questions = room.questions ?? QUESTION_WORD_BANK;
+  const question = questions[questionIndex] ?? questions[0]!;
   const hostPlayers = room.players
     .map((name) => ({
       name,
@@ -92,7 +102,7 @@ export function QuestionWordHost() {
   }, [finished, paused, seconds]);
 
   const nextQuestion = () => {
-    setQuestionIndex((value) => (value + 1) % QUESTION_WORD_BANK.length);
+    setQuestionIndex((value) => (value + 1) % questions.length);
     setSeconds(60);
     setAnswerVisible(false);
     setPaused(false);
