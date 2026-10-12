@@ -100,6 +100,14 @@ jobs:
         working-directory: apps/web
         run: pnpm test:e2e
 
+      - name: Preserve failed browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: browser-failures-${{ github.run_attempt }}
+          path: apps/web/test-results/
+          retention-days: 7
+
       - name: Verify public atlas opening on desktop and mobile
         working-directory: apps/web
         run: pnpm exec playwright test --config playwright.globe-scene.config.ts --grep 'public atlas opens'

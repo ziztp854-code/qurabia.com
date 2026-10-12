@@ -83,7 +83,9 @@ test('real sign-in, world map marker and five-resource collection use the produc
   // Log phase names only: CI traces contain the detailed isolated-player evidence.
   const startedAt = Date.now();
   const phase = (name: string) =>
-    console.info(`[abandoned-player:${testInfo.project.name}] ${name} +${Date.now() - startedAt}ms`);
+    console.info(
+      `[abandoned-player:${testInfo.project.name}] ${name} +${Date.now() - startedAt}ms`,
+    );
   phase('seed complete');
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -123,7 +125,13 @@ test('real sign-in, world map marker and five-resource collection use the produc
   const gather = panel.getByRole('region', { name: 'جمع موارد القرية المهجورة' });
   await expect(gather).toBeVisible();
   phase('directory selection visible');
-  await page.screenshot({ path: testInfo.outputPath('real-player-selected.png'), fullPage: true });
+  // Diagnostic full-page evidence needs CSS-pixel resolution, not a multi-megapixel
+  // mobile encode. Keep device emulation, all gameplay assertions and budgets intact.
+  await page.screenshot({
+    path: testInfo.outputPath('real-player-selected.png'),
+    fullPage: true,
+    scale: 'css',
+  });
   phase('selected screenshot complete');
   await panel.getByRole('button', { name: 'إغلاق تفاصيل القرية' }).click();
   await expect(gather).toBeHidden();
@@ -142,7 +150,7 @@ test('real sign-in, world map marker and five-resource collection use the produc
     page.waitForResponse(
       (response) =>
         response.request().method() === 'POST' &&
-        (response.status()<300 || response.status()>=400) &&
+        (response.status() < 300 || response.status() >= 400) &&
         /^\/api\/kingdoms\/?$/.test(new URL(response.url()).pathname),
     ),
     gather.getByRole('button', { name: 'إرسال بعثة جمع' }).click(),
@@ -188,6 +196,10 @@ test('real sign-in, world map marker and five-resource collection use the produc
   await page.reload();
   await expect(panel.getByRole('heading', { name: 'القرى المهجورة · ٤٨' })).toBeVisible();
   phase('reloaded map ready');
-  await page.screenshot({ path: testInfo.outputPath('real-player-returned.png'), fullPage: true });
+  await page.screenshot({
+    path: testInfo.outputPath('real-player-returned.png'),
+    fullPage: true,
+    scale: 'css',
+  });
   phase('returned screenshot complete');
 });

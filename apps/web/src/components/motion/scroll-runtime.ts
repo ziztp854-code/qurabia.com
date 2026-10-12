@@ -11,7 +11,7 @@ export function startScrollRuntime(root: HTMLElement) {
   let ticking = false;
   let blocked = false;
   let refreshQueued = false;
-  const owned = new Map<HTMLElement, gsap.Context>();
+  const owned = new Map<HTMLElement, { context: gsap.Context; trigger: ScrollTrigger }>();
   const lenis = new Lenis({
     autoRaf: false,
     smoothWheel: true,
@@ -66,7 +66,7 @@ export function startScrollRuntime(root: HTMLElement) {
         lenis.resize();
       }
       blocked = nextBlocked;
-      owned.forEach((context) =>
+      owned.forEach(({ context }) =>
         context.getTweens().forEach((tween: gsap.core.Tween) => tween.paused(blocked)),
       );
     }
@@ -81,7 +81,7 @@ export function startScrollRuntime(root: HTMLElement) {
   };
 
   const collect = () => {
-    owned.forEach((context, element) => {
+    owned.forEach(({ context }, element) => {
       if (!element.isConnected) {
         context.revert();
         owned.delete(element);
@@ -89,6 +89,7 @@ export function startScrollRuntime(root: HTMLElement) {
     });
     root.querySelectorAll<HTMLElement>('[data-scroll-reveal]').forEach((element) => {
       if (owned.has(element)) return;
+      let trigger!: ScrollTrigger;
       const context = gsap.context((self) => {
         self.add('reveal', () => {
           gsap.from(element, {
@@ -99,7 +100,7 @@ export function startScrollRuntime(root: HTMLElement) {
             // The content stays fully visible, including before hydration.
           });
         });
-        ScrollTrigger.create({
+        trigger = ScrollTrigger.create({
           trigger: element,
           start: 'top 94%',
           once: true,
@@ -108,10 +109,13 @@ export function startScrollRuntime(root: HTMLElement) {
           },
         });
       }, element);
-      owned.set(element, context);
+      owned.set(element, { context, trigger });
     });
     lenis.resize();
-    ScrollTrigger.refresh();
+    // These unpinned reveals need only their own geometry recalculated. A global
+    // refresh temporarily scrolls every scroller to zero and restores its cache,
+    // which can rewind native anchors/keyboard scroll before their event arrives.
+    owned.forEach(({ trigger }) => trigger.refresh());
   };
   const onMutation = (records: MutationRecord[]) => {
     syncAvailability();
@@ -154,7 +158,7 @@ export function startScrollRuntime(root: HTMLElement) {
     gsap.ticker.remove(tick);
     lenis.off('scroll', update);
     lenis.destroy();
-    owned.forEach((context) => context.revert());
+    owned.forEach(({ context }) => context.revert());
     owned.clear();
     document.removeEventListener('visibilitychange', syncAvailability);
     document.removeEventListener('pointerdown', pointerDown, true);

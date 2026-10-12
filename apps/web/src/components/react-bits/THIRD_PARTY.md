@@ -42,3 +42,8 @@ is opt-in to `/` and `/games`; nested scrollers, dialogs, previews, editable fie
 maps, canvases, dragging and touch remain native. Mobile filter overlays suspend
 the runtime until closed. Dynamic import generations prevent stale initialization
 after StrictMode cleanup, preference changes or route transitions.
+
+Content changes refresh only the owned, unpinned triggers using the documented
+[instance `refresh()`](https://gsap.com/docs/v3/Plugins/ScrollTrigger/refresh()/).
+They do not require a global pin-layout refresh, which temporarily resets all
+scrollers and can restore a stale scroll cache during native keyboard/hash input.
