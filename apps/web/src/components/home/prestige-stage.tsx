@@ -1,12 +1,17 @@
 'use client';
 
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useMotionActivity } from '@/components/motion/use-motion-activity';
 import styles from './prestige-home.module.css';
+
+const Noise = dynamic(() => import('@/components/react-bits/noise'), { ssr: false });
 
 export function PrestigeStage({ children }: { children: ReactNode }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const lionRef = useRef<HTMLDivElement>(null);
+  useMotionActivity(frameRef);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -14,9 +19,11 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
     if (!frame || !lion) return;
 
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (motion.matches) return;
-
     const onMove = (event: PointerEvent) => {
+      if (motion.matches || document.hidden || event.pointerType !== 'mouse' || event.buttons) {
+        reset();
+        return;
+      }
       const box = frame.getBoundingClientRect();
       const px = (event.clientX - box.left) / box.width - 0.5;
       const py = (event.clientY - box.top) / box.height - 0.5;
@@ -30,14 +37,22 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
 
     frame.addEventListener('pointermove', onMove);
     frame.addEventListener('pointerleave', reset);
+    frame.addEventListener('pointerdown', reset);
+    motion.addEventListener('change', reset);
+    document.addEventListener('visibilitychange', reset);
     return () => {
       frame.removeEventListener('pointermove', onMove);
       frame.removeEventListener('pointerleave', reset);
+      frame.removeEventListener('pointerdown', reset);
+      motion.removeEventListener('change', reset);
+      document.removeEventListener('visibilitychange', reset);
+      reset();
     };
   }, []);
 
   return (
     <div className={styles.stage} ref={frameRef} data-home-hero>
+      <Noise />
       <Image
         className={styles.heroBackground}
         src="/home/tahaddi-hero-background-3344x1882.webp"
@@ -47,7 +62,9 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
         sizes="100vw"
       />
       <div className={styles.particles} aria-hidden="true" data-layer="particles">
-        {Array.from({ length: 10 }, (_, index) => <span key={index} />)}
+        {Array.from({ length: 10 }, (_, index) => (
+          <span key={index} />
+        ))}
       </div>
       <div className={styles.trophyLayer} aria-hidden="true" data-layer="trophy">
         <Image
@@ -81,7 +98,9 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
         />
         <span className={styles.crownShine} data-layer="shine-crown" />
       </div>
-      <div className={styles.heroContent} data-layer="content">{children}</div>
+      <div className={styles.heroContent} data-layer="content">
+        {children}
+      </div>
     </div>
   );
 }

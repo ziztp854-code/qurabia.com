@@ -47,7 +47,7 @@ describe('MotionProvider', () => {
   });
 
   it('applies one shared motion policy and animates the route content without adding a wrapper', () => {
-    navigation.pathname = '/games';
+    navigation.pathname = '/orders';
     const { container } = render(
       <MotionProvider>
         <main>المحتوى</main>
@@ -71,7 +71,7 @@ describe('MotionProvider', () => {
       </MotionProvider>,
     );
 
-    navigation.pathname = '/games';
+    navigation.pathname = '/orders';
     view.rerender(
       <MotionProvider>
         <main>الألعاب</main>

@@ -1,0 +1,106 @@
+.gradientText {
+  position: relative;
+  display: inline-block;
+  max-inline-size: 100%;
+  color: inherit;
+}
+
+.gradientContent {
+  display: inline-block;
+  /* Inherited hero shadows otherwise paint over transparent clipped text. */
+  text-shadow: none;
+  background-image: var(--gt-gradient);
+  background-size: 300% 100%;
+  animation: gradientTravel 12s ease-in-out infinite alternate paused;
+}
+
+@supports (background-clip: text) {
+  .gradientContent {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.gradientText[data-motion-active='true'] .gradientContent {
+  animation-play-state: running;
+}
+
+.magnet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  pointer-events: none;
+  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.noise {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.035;
+  contain: strict;
+}
+
+.grain {
+  position: absolute;
+  inset: -128px;
+  pointer-events: none;
+  background-repeat: repeat;
+  animation: grainShift 2s steps(4, end) infinite paused;
+}
+
+.noise[data-motion-active='true'] .grain {
+  animation-play-state: running;
+}
+
+@keyframes gradientTravel {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes grainShift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(32px, -24px);
+  }
+  50% {
+    transform: translate(-24px, 32px);
+  }
+  75% {
+    transform: translate(24px, 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradientContent,
+  .grain {
+    animation: none;
+  }
+  .magnet {
+    transform: none !important;
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .gradientContent {
+    background: none;
+    color: CanvasText;
+    -webkit-text-fill-color: CanvasText;
+  }
+  .noise {
+    display: none;
+  }
+}

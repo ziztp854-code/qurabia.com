@@ -28,6 +28,12 @@
   color: var(--home-ink);
 }
 
+/* Ambient layers sleep while offscreen, hidden or before JS is ready. */
+.stage:not([data-motion-active='true']) [data-layer]:not([data-layer='content']),
+.stage:not([data-motion-active='true']) [data-layer]:not([data-layer='content']) * {
+  animation-play-state: paused !important;
+}
+
 :global(.home-site-layout:has(.prestigeHome)),
 :global(.home-site-layout:has(.prestigeHome) main),
 :global(.home-site-layout:has(.prestigeHome) .home-footer) {

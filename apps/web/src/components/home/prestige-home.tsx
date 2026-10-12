@@ -11,6 +11,8 @@ import { publicGames } from '@/data/games';
 import type { PlanCode } from '@tahaddi/domain';
 import styles from './prestige-home.module.css';
 import worldStyles from './mamluk-home.module.css';
+import { GradientText } from '@/components/react-bits/gradient-text';
+import { Magnet } from '@/components/react-bits/magnet';
 
 const RANK_EMBLEM: Record<PlanCode, string> = {
   SPECTATOR: '/ranks/emblem-spectator.png',
@@ -47,7 +49,9 @@ export function PrestigeHome({
         <section className={styles.hero} id="top" aria-labelledby="landing-title">
           <PrestigeStage>
             <div className={styles.copy}>
-              <h1 id="landing-title">تحدي</h1>
+              <h1 id="landing-title">
+                <GradientText>تحدي</GradientText>
+              </h1>
               <p className={styles.tagline}>
                 منصة مسابقات وألعاب جماعية عربية مباشرة، حيث يُصنع الأبطال وتُسجّل إنجازاتهم
               </p>
@@ -70,8 +74,10 @@ export function PrestigeHome({
               ) : null}
               <div className={styles.actions}>
                 <ButtonLink href="/games" variant="gold">
-                  ابدأ اللعب الآن
-                  <ArrowLeft aria-hidden="true" />
+                  <Magnet>
+                    ابدأ اللعب الآن
+                    <ArrowLeft aria-hidden="true" />
+                  </Magnet>
                 </ButtonLink>
                 <ButtonLink href="/join" variant="outline">
                   انضم برمز
@@ -111,7 +117,7 @@ export function PrestigeHome({
             </div>
             <nav className={styles.games} aria-label="ألعاب بارزة">
               {featuredGames.map((game) => (
-                <Link className={styles.game} href={game.href} key={game.href}>
+                <Link className={styles.game} href={game.href} key={game.href} data-scroll-reveal>
                   <Image
                     src={game.image}
                     alt={game.imageAlt}
@@ -138,7 +144,12 @@ export function PrestigeHome({
           </section>
         </div>
 
-        <section className={worldStyles.section} id="mamluk-world" aria-labelledby="mamluk-title">
+        <section
+          className={worldStyles.section}
+          id="mamluk-world"
+          aria-labelledby="mamluk-title"
+          data-scroll-reveal
+        >
           <div className={styles.sectionHead}>
             <span aria-hidden="true" />
             <h2 id="mamluk-title">عالم المماليك</h2>
@@ -159,7 +170,8 @@ export function PrestigeHome({
                 من قريتك تبدأ الحكاية
               </span>
               <h3>
-                ابنِ مملكتك،<br />
+                ابنِ مملكتك،
+                <br />
                 واكتب تاريخك
               </h3>
               <p>طوّر قريتك، كوّن تحالفك، واستكشف خريطة العالم. كل قرار يرسم مستقبل مملكتك.</p>
@@ -182,7 +194,7 @@ export function PrestigeHome({
           </figure>
         </section>
 
-        <section className={styles.closingCta} aria-label="استمر في التحدي">
+        <section className={styles.closingCta} aria-label="استمر في التحدي" data-scroll-reveal>
           <Crown aria-hidden="true" />
           <p>
             <strong>استمر في التحدي</strong>

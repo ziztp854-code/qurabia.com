@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { useGameCatalog } from './use-game-catalog';
 import { GameSearch } from './game-search';
@@ -11,6 +12,7 @@ import { ChallengeCardPreview } from '@/components/3d/challenge-card-preview';
 import { formatNumber } from '@/lib/utils';
 import { ButtonLink } from '@/components/ui';
 import type { CatalogGame } from '@/data/games';
+import { GradientText } from '@/components/react-bits/gradient-text';
 
 type GameCatalogWrapperProps = {
   sessionUserName: string | null;
@@ -59,7 +61,9 @@ function GameCatalogShell({
               {formatNumber(catalog.allGames.filter((game) => game.status !== 'soon').length)} لعبة
               متاحة الآن
             </span>
-            <HeroHeading className="gc-hero-title">ساحة الألعاب</HeroHeading>
+            <HeroHeading className="gc-hero-title">
+              <GradientText>ساحة الألعاب</GradientText>
+            </HeroHeading>
             <p className="gc-hero-desc">
               اختر لعبتك المفضلة وابدأ جولة مباشرة مع أصدقائك، أو اختبر سرعتك وتركيزك في ألعاب فورية
               مصممة لتبقى المنافسة ممتعة.
@@ -72,14 +76,14 @@ function GameCatalogShell({
                 <ButtonLink href="/join" variant="outline">
                   انضم برمز
                 </ButtonLink>
-                <a href="#gc-results">
+                <Link href="#gc-results" prefetch={false}>
                   استكشف الألعاب <ArrowLeft aria-hidden="true" size={16} />
-                </a>
+                </Link>
               </div>
             )}
             <GameSearch catalog={catalog} />
           </div>
-          <div className="gc-hero-preview">
+          <div className="gc-hero-preview" data-lenis-prevent>
             <span className="gc-hero-preview-badge">
               <Sparkles aria-hidden="true" size={16} />
               بطاقة تحدّي التفاعلية
