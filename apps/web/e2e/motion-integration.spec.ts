@@ -158,6 +158,47 @@ test('anchors, route changes and browser back do not multiply the runtime', asyn
   }
 });
 
+test('a late preview import preserves the catalogue anchor position', async ({
+  page,
+}, testInfo) => {
+  const viewerChunk = readdirSync('.next/static/chunks').find(
+    (name) =>
+      name.endsWith('.js') &&
+      readFileSync(`.next/static/chunks/${name}`).includes('data-model-src'),
+  );
+  expect(viewerChunk).toBeTruthy();
+  let releasePreview!: () => void;
+  const previewGate = new Promise<void>((resolve) => {
+    releasePreview = resolve;
+  });
+  await page.route(`**/_next/static/chunks/${viewerChunk}`, async (route) => {
+    await previewGate;
+    await route.continue();
+  });
+  await page.goto('/games');
+  await expect(runtime(page)).toHaveAttribute('data-scroll-runtime', 'active');
+  await page.evaluate(() => document.fonts.ready);
+  await page.locator('a[href="#gc-results"]').click();
+  await expect(page).toHaveURL(/#gc-results$/);
+  const geometry = () =>
+    page.evaluate(() => ({
+      top: document.getElementById('gc-results')!.getBoundingClientRect().top,
+      scroll: scrollY,
+      previewHeight: document.querySelector('.gc-hero-preview')!.getBoundingClientRect().height,
+    }));
+  await expect.poll(async () => Math.abs((await geometry()).top)).toBeLessThan(160);
+  const before = await geometry();
+  releasePreview();
+  await expect(page.locator('.gc-hero-preview section[aria-label^="عارض"]')).toBeAttached();
+  const after = await geometry();
+  await testInfo.attach('late-preview-anchor', {
+    body: JSON.stringify({ before, after }, null, 2),
+    contentType: 'application/json',
+  });
+  expect(Math.abs(after.previewHeight - before.previewHeight)).toBeLessThan(1);
+  await expect.poll(async () => Math.abs((await geometry()).top)).toBeLessThan(160);
+});
+
 test('a same-turn catalogue update preserves a native anchor jump', async ({ page }, testInfo) => {
   if (testInfo.project.name !== 'mobile') await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/games');
