@@ -137,6 +137,11 @@ describe('Sultan garden authority and cosmetic isolation', () => {
     const normalized = structuredClone(collected);
     normalized.villages[village.id].sultanFarm = control.villages[village.id].sultanFarm;
     normalized.players.owner.achievements = control.players.owner.achievements;
+    expect(collected.reports.at(-1)).toMatchObject({
+      recipients: ['owner'], event: { key: 'farm.harvested', category: 'economy' },
+    });
+    normalized.reports = control.reports;
+    normalized.nextId = control.nextId;
     expect(normalized).toEqual(control);
     expect(collected.players.owner.achievements).toEqual(['merchant', 'garden:first-bloom']);
     expect(gardenProgress(farmState(collected.villages[village.id]))).toMatchObject({

@@ -10,7 +10,8 @@ const boundary = vi.hoisted(() => {
   let revision = 0;
   const receipts = new Map<string, { fingerprint: string }>();
   const tx = {
-    user: { findUnique: user },
+    user: { findUnique: user, findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => where.id.in.map(id => ({ id }))) },
+    kingdomReportEntry: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
     $queryRaw: async (query: TemplateStringsArray, worldId?: string) =>
       query.join('').includes('clock_timestamp')
         ? [{ now: new Date(1800000000000) }]

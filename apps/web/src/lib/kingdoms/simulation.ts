@@ -208,23 +208,25 @@ function accrue(w: KingdomsWorld, to: number) {
     const rate = production(w, v, deployed.get(v.id) ?? emptyTroops());
     const before = { ...v.resources };
     credit(w, v, Object.fromEntries(resourceKeys.map((k) => [k, rate[k] * elapsed])) as Resources);
-    const bucket = v.productionReport?.ownerId === v.ownerId
-      ? v.productionReport
-      : { ownerId: v.ownerId, from: v.updatedAt, received: resources() };
-    bucket.received = Object.fromEntries(resourceKeys.map(key => [key,
-      bucket.received[key] + Math.max(0, v.resources[key] - before[key]),
-    ])) as Resources;
-    v.productionReport = bucket;
-    // Aggregate at existing simulation commits; do not schedule an extra tick or change production.
-    if (to - bucket.from >= 6 * 3600000) {
-      if (total(bucket.received) > 0) report(w, to, [v.ownerId], 'حصيلة الإنتاج',
-        `الموارد التي أضيفت فعليًا إلى مخازن ${v.name} خلال الفترة المسجلة.`,
-        { event: { key: 'production.summary', category: 'economy',
-          resources: { received: { ...bucket.received } },
-          location: { villageId: v.id, name: v.name, x: v.x, y: v.y },
-          timeline: [{ at: bucket.from, text: 'بداية فترة الإنتاج' }, { at: to, text: 'تسجيل حصيلة الإنتاج' }],
-        } });
-      v.productionReport = { ownerId: v.ownerId, from: to, received: resources() };
+    if (elapsed > 0) {
+      const bucket = v.productionReport?.ownerId === v.ownerId
+        ? v.productionReport
+        : { ownerId: v.ownerId, from: v.updatedAt, received: resources() };
+      bucket.received = Object.fromEntries(resourceKeys.map(key => [key,
+        bucket.received[key] + Math.max(0, v.resources[key] - before[key]),
+      ])) as Resources;
+      v.productionReport = bucket;
+      // Aggregate at existing simulation commits; do not schedule an extra tick or change production.
+      if (to - bucket.from >= 6 * 3600000) {
+        if (total(bucket.received) > 0) report(w, to, [v.ownerId], 'حصيلة الإنتاج',
+          `الموارد التي أضيفت فعليًا إلى مخازن ${v.name} خلال الفترة المسجلة.`,
+          { event: { key: 'production.summary', category: 'economy',
+            resources: { received: { ...bucket.received } },
+            location: { villageId: v.id, name: v.name, x: v.x, y: v.y },
+            timeline: [{ at: bucket.from, text: 'بداية فترة الإنتاج' }, { at: to, text: 'تسجيل حصيلة الإنتاج' }],
+          } });
+        v.productionReport = { ownerId: v.ownerId, from: to, received: resources() };
+      }
     }
     v.updatedAt = to;
   }
