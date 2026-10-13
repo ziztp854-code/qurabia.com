@@ -17,7 +17,7 @@ for (const [name, width, height, dpr] of [
     const artworkRequests: string[] = [];
     page.on('request', req => { if (new URL(req.url()).pathname.includes('/city-scenes/market')) artworkRequests.push(new URL(req.url()).pathname); });
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/?visualQa=1');
     const stage = page.locator('[data-village-scene]');
     await expect(stage).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
     await page.locator('summary').filter({ hasText: /^إعدادات القرية$/ }).click();
@@ -86,7 +86,7 @@ test('built market publishes and cancels an offer through the existing local eng
   expect((await request.post('/__village_test/advance-five-hours')).ok()).toBe(true);
   expect((await request.post('/api/kingdoms', { data: { worldId: 'browser-world', command: { type: 'build', villageId: 'v1', building: 'market' } } })).ok()).toBe(true);
   expect((await request.post('/__village_test/advance-five-hours')).ok()).toBe(true);
-  await page.goto('/');
+  await page.goto('/?visualQa=1');
   await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
   await page.locator('summary').filter({ hasText: /^إعدادات القرية$/ }).click();
   await page.getByLabel('اختر مبنى من الخريطة', { exact: true }).selectOption('market');

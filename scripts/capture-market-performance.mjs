@@ -15,7 +15,7 @@ try {
     const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
     const page = await context.newPage();
     await page.request.post('http://127.0.0.1:3310/__village_test/reset');
-    await page.goto('http://127.0.0.1:3310');
+    await page.goto('http://127.0.0.1:3310/?visualQa=1');
     await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
     await page.locator('summary').filter({ hasText: /^إعدادات القرية$/ }).click();
     await page.getByLabel('اختر مبنى من الخريطة', { exact: true }).selectOption('market');

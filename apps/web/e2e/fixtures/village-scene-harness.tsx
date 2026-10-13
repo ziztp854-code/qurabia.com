@@ -1,11 +1,14 @@
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/cairo';
-import '@fontsource-variable/alexandria';
 import { AppRouterContext, type AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { ImageConfigContext } from 'next/dist/shared/lib/image-config-context.shared-runtime';
 import { imageConfigDefault } from 'next/dist/shared/lib/image-config';
 import { KingdomsClient } from '../../src/components/kingdoms/kingdoms-client';
 import '../../src/app/globals.css';
+
+// Opt in to production fonts for Visual Excellence evidence without changing canonical fixtures.
+if (new URLSearchParams(window.location.search).has('visualQa')) {
+  await import('./visual-excellence-fonts');
+}
 
 // The standalone Vite fixture supplies navigation context; production uses Next's router.
 const router: AppRouterInstance = {

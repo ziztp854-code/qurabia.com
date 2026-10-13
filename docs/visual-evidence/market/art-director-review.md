@@ -5,7 +5,7 @@
 ## Scope and reviewer
 
 - Reviewer: Codex `quality_policy` subagent, independently reviewing the implementation agent's work using `qurabia-visual-qa`. This reviewer authored the permanent policy but did not implement the market presentation.
-- Revision: current local worktree, including market-scoped CSS/token changes, responsive picture assets, market summary grouping, and reviewed Playwright evidence. Uncommitted work; no push/deployment reviewed or authorized.
+- Revision: rebased commit `e9eb06b` on upstream `origin/main` at `39eb1f3`, plus refreshed local browser evidence and this review. I inspected the market source diff against that upstream base. Its newer Sultan Farm wrapper/effects and Safari rules remain intact; market picture sources and scoped CSS follow the updated structure. The market input rule uses `max(16px, 1rem)` to preserve enlarged text while retaining the upstream minimum size. The user authorized push/deployment separately; this review assesses visual acceptance only and does not perform either action.
 - Direction: existing Mamluk stone courtyard artwork with restrained teal/brass control surfaces; Cairo body and Alexandria headings; shared controls and semantic Kingdoms tokens. Other games retain their identities.
 - Environment: Chromium via local village fixture at `127.0.0.1:3314`; actual components, installed fonts, Pixi overview and unchanged local game engine. No production account or authenticated server flow.
 - Viewports/DPR: desktop 1440×900/1; mobile 390×844/1; narrow 320×568/2; tablet 834×1194/2; landscape 844×390/2. Reduced motion enabled. Enlarged-text evidence changes root font size to 200%, which is a text-reflow simulation, not native browser zoom.
@@ -16,7 +16,9 @@ I opened `before-desktop.png`, `before-mobile.png`, and all five after viewport 
 
 Before/after desktop and mobile show a clearer hierarchy and usable form grouping. The original mobile portrait consumes almost the entire initial viewport; the new landscape presentation retains the full courtyard and reaches trading controls much sooner. This improves framing and navigation, not the underlying art's detail.
 
-Reported by the implementation agent: final six browser tests passed, seven targeted unit tests passed, and ESLint passed. This reviewer examined their evidence/test code but did not independently rerun those commands. The six browser tests exercise empty/error states, resource input, command payload, focus/Escape return to overview, and successful built-market publish/cancel using the unchanged engine. Final build status is recorded separately by the implementation agent and does not contribute visual-quality points.
+After the rebase, I reopened all five refreshed viewport images and all five refreshed `fields-text-200` images with `view_image`. The visible market composition, scene framing, tablet stacking, Arabic legibility and five-digit enlarged inputs retain the reviewed quality; no new blocker appeared. Historical before/performance artifacts remain evidence from the original pilot baseline, not new benchmarks of the upstream Sultan Farm changes.
+
+Reported by the implementation agent on the rebased revision: six browser tests, 32 targeted unit tests, ESLint, and web/realtime builds passed. This reviewer examined the refreshed image/source evidence and test code but did not independently rerun those commands. The six browser tests exercise empty/error states, resource input, command payload, focus/Escape return to overview, and successful built-market publish/cancel using the unchanged engine. Builds do not contribute visual-quality points.
 
 ## Score and deductions
 
