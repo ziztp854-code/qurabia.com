@@ -198,7 +198,7 @@ export function QuizBuilderQuestionBank({
   };
 
   return (
-    <section aria-labelledby="quiz-question-bank-heading">
+    <section className={styles.questionBank} aria-labelledby="quiz-question-bank-heading">
       <div className={styles.sectionHeading}>
         <div>
           <h3 id="quiz-question-bank-heading">بنك الأسئلة</h3>
@@ -264,7 +264,7 @@ export function QuizBuilderQuestionBank({
       {pickRandomQuestions || pickAiQuestions ? (
         <fieldset className={styles.randomPicker}>
           <legend>اختيار الأسئلة بتوزيع الصعوبة</legend>
-          <div className={styles.filters}>
+          <div className={styles.randomCounts}>
             {pickRandomQuestions
               ? (['EASY', 'MEDIUM', 'HARD'] as const).map((level) => (
                   <NumberInput
@@ -282,6 +282,8 @@ export function QuizBuilderQuestionBank({
                   />
                 ))
               : null}
+          </div>
+          <div className={styles.pickerActions}>
             {pickRandomQuestions ? (
               <Button
                 type="button"
@@ -320,8 +322,8 @@ export function QuizBuilderQuestionBank({
           </div>
           {pickRandomQuestions ? (
             <p className="muted">
-              جلب 20 سؤالًا منشورًا يوزّعها بين الفئات مع 7 سهلة و7 متوسطة و6 صعبة عند توفرها،
-              بصرف النظر عن فلاتر البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
+              جلب 20 سؤالًا منشورًا يوزّعها بين الفئات مع 7 سهلة و7 متوسطة و6 صعبة عند توفرها، بصرف
+              النظر عن فلاتر البحث. سهل: 500، متوسط: 700، صعب: 1000 نقطة.
             </p>
           ) : null}
           {pickAiQuestions ? (

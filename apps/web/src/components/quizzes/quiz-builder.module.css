@@ -297,7 +297,11 @@
 .modeOption:has(input:checked) {
   border-color: color-mix(in srgb, var(--gold) 62%, var(--border));
   background:
-    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 55%),
+    radial-gradient(
+      120% 140% at 0% 0%,
+      color-mix(in srgb, var(--gold) 16%, transparent),
+      transparent 55%
+    ),
     color-mix(in srgb, var(--gold) 8%, var(--surface));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent);
 }
@@ -323,12 +327,44 @@
   gap: var(--space-3);
 }
 
-.filters,
 .settingsGrid,
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: var(--space-4);
+}
+
+.questionBank {
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--space-5);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.filters > :first-child,
+.filters > .checkbox {
+  grid-column: 1 / -1;
+}
+
+.filters > *,
+.randomCounts > * {
+  min-inline-size: 0;
+}
+
+.filters input[type='search'],
+.filters select,
+.randomCounts input {
+  min-block-size: 54px;
+  font-size: 1rem;
 }
 
 .checkbox {
@@ -339,10 +375,32 @@
 }
 
 .randomPicker {
-  margin-block-start: var(--space-4);
-  padding: var(--space-4);
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-5);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+}
+
+.randomCounts,
+.pickerActions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--space-4);
+}
+
+.pickerActions {
+  margin-block-start: var(--space-5);
+}
+
+.pickerActions > button {
+  min-block-size: 54px;
+  white-space: normal;
+}
+
+.randomPicker p {
+  margin-block: var(--space-4) 0;
+  line-height: 1.8;
 }
 
 .randomPicker legend {
@@ -351,7 +409,7 @@
 }
 
 .bankMeta {
-  margin-block: var(--space-4);
+  margin: 0;
 }
 
 .bankMeta > span {
@@ -369,6 +427,17 @@
   padding-inline-end: var(--space-1);
 }
 
+.bankList {
+  max-block-size: 46rem;
+  gap: var(--space-4);
+}
+
+.bankItem > button {
+  flex: 0 0 auto;
+  min-inline-size: 7rem;
+  min-block-size: 44px;
+}
+
 .bankItem,
 .selectedItem {
   content-visibility: auto;
@@ -382,6 +451,10 @@
 
 .bankItem {
   position: relative;
+  contain-intrinsic-block-size: 112px;
+  min-block-size: 112px;
+  gap: var(--space-5);
+  line-height: 1.8;
   overflow: hidden;
   padding-inline-start: calc(var(--space-4) + 0.45rem);
   transition:
@@ -502,7 +575,11 @@
   border: 1px dashed color-mix(in srgb, var(--gold) 40%, var(--border));
   border-radius: var(--radius-lg);
   background:
-    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--gold) 7%, transparent), transparent 60%),
+    radial-gradient(
+      120% 120% at 50% 0%,
+      color-mix(in srgb, var(--gold) 7%, transparent),
+      transparent 60%
+    ),
     var(--surface-soft);
   text-align: center;
 }
@@ -594,6 +671,17 @@
 }
 
 @media (max-width: 700px) {
+  .filters,
+  .randomCounts,
+  .pickerActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filters,
+  .randomPicker {
+    padding: var(--space-4);
+  }
+
   .hero {
     min-block-size: auto;
   }
