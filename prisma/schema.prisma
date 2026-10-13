@@ -160,6 +160,7 @@ model User {
   subscriptions      UserSubscription[]
   usageCounters      UsageCounter[]
   kingdomCommands    KingdomCommand[]
+  kingdomReports     KingdomReportEntry[]
 
   @@index([role])
   @@index([status])
@@ -675,6 +676,8 @@ model KingdomWorld {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   commands    KingdomCommand[]
+  reports     KingdomReportEntry[]
+  reportsArchived Boolean @default(false)
 
   @@index([nextEventAt])
 }
@@ -691,4 +694,25 @@ model KingdomCommand {
 
   @@id([worldId, actorId, key])
   @@index([actorId, createdAt])
+}
+
+model KingdomReportEntry {
+  worldId String
+  playerId String
+  reportId String @db.VarChar(100)
+  eventAt DateTime
+  ordinal Int
+  category String @db.VarChar(20)
+  eventKey String @db.VarChar(80)
+  title String @db.VarChar(240)
+  preview String @db.VarChar(400)
+  searchText String
+  payload Json
+  readAt DateTime?
+  world KingdomWorld @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  player User @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  @@id([worldId, playerId, reportId])
+  @@index([worldId, playerId, eventAt, ordinal, reportId], map: "royal_report_timeline_idx")
+  @@index([worldId, playerId, category, eventAt, ordinal, reportId], map: "royal_report_category_idx")
+  @@index([worldId, playerId, readAt, eventAt, ordinal, reportId], map: "royal_report_unread_idx")
 }

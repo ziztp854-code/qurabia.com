@@ -30,7 +30,8 @@ const oldIntercept = {
 };
 const tx = {
   $queryRaw: vi.fn(),
-  user: { findUnique: vi.fn() },
+  kingdomReportEntry: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    user: { findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => where.id.in.map((id: string) => ({id}))), findUnique: vi.fn() },
   kingdomWorld: { update: vi.fn() },
   kingdomCommand: { findUnique: vi.fn(), create: vi.fn(), count: vi.fn() },
 };

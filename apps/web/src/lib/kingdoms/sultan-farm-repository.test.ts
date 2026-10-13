@@ -26,7 +26,8 @@ function fixture() {
       .fn()
       .mockResolvedValueOnce([row])
       .mockResolvedValueOnce([{ now: new Date(at) }]),
-    user: {
+    kingdomReportEntry: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    user: { findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => where.id.in.map((id: string) => ({id}))),
       findUnique: vi.fn().mockResolvedValue({ status: 'ACTIVE', tokenVersion: 1, role: 'USER' }),
     },
     kingdomCommand: {
@@ -158,6 +159,7 @@ function concurrentFixture(legacy = false) {
       sql.join('?').includes('FOR UPDATE') ? [f.row] : [{ now: new Date(now) }],
     ),
     user: f.tx.user,
+    kingdomReportEntry: f.tx.kingdomReportEntry,
     kingdomCommand: {
       findUnique: vi.fn(
         async ({ where }: { where: { worldId_actorId_key: { key: string } } }) =>

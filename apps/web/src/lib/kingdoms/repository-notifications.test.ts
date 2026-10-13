@@ -14,7 +14,8 @@ function fixture(options: { rollback?: boolean; duplicate?: boolean; paused?: bo
   const row = { id: 'world_1', name: 'Local', state: createWorld(now), revision: 7, paused: options.paused ?? false };
   const tx = {
     $queryRaw: vi.fn((parts: TemplateStringsArray) => Promise.resolve(parts.join('').includes('clock_timestamp') ? [{ now: new Date(now) }] : [row])),
-    user: { findUnique: vi.fn().mockResolvedValue({ status: 'ACTIVE', tokenVersion: 0, role: 'USER' }) },
+    kingdomReportEntry: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    user: { findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => where.id.in.map((id: string) => ({id}))), findUnique: vi.fn().mockResolvedValue({ status: 'ACTIVE', tokenVersion: 0, role: 'USER' }) },
     kingdomWorld: {
       findUnique: vi.fn().mockResolvedValue(row),
       update: vi.fn(async ({ data }: { data: { state: unknown } }) => ({ ...row, state: data.state, revision: row.revision + 1 })),

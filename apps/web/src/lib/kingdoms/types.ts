@@ -1,3 +1,4 @@
+import type { ReportEvent } from './report-events';
 import type { AbandonedVillageLayout } from './abandoned-village-types';
 
 export const resourceKeys = ['wood', 'stone', 'iron', 'food', 'gold'] as const;
@@ -242,6 +243,8 @@ export type ConstructionItem = {
   refundedCost?: Resources;
 };
 export type Village = {
+  /** Server-side aggregate of actual production credits; never a report per tick. */
+  productionReport?: { ownerId: string; from: number; received: Resources };
   sultanFarm?: import('./sultan-farm').FarmState;
   progression?: VillageProgression;
   constructionQueue?: ConstructionItem[];
@@ -322,6 +325,7 @@ export type IncomingMovementView = {
   source?: IncomingSourceView;
 };
 export type KingdomReport = {
+  event?: ReportEvent;
   id: string;
   at: number;
   recipients: string[];

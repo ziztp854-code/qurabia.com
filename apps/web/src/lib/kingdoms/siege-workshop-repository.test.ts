@@ -54,7 +54,8 @@ function database(damaged = false) {
   };
   const receipts = new Map<string, { fingerprint: string; revision: number }>();
   const tx = {
-    user: {
+    kingdomReportEntry: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    user: { findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => where.id.in.map((id: string) => ({id}))),
       findUnique: vi.fn(
         async ({ where }: { where: { id: keyof typeof users } }) => users[where.id] ?? null,
       ),

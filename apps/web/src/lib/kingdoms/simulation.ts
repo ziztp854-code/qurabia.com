@@ -1,3 +1,4 @@
+import { captureReport, classifyReport } from './report-events';
 import { awardVillageXp, progressionConfig, refreshProgression } from './progression';
 import { completeConstruction, normalizeConstruction } from './construction';
 import { creditAllianceEvent } from './alliance-events';
@@ -79,10 +80,10 @@ export function report(
   detail: string,
   extra: Partial<KingdomReport> = {},
 ) {
-  w.reports = [
-    ...w.reports,
-    { id: nextId(w, 'r'), at, recipients: [...new Set(recipients)], title, detail, ...extra },
-  ].slice(-2000);
+  const entry: KingdomReport = { id: nextId(w, 'r'), at, recipients: [...new Set(recipients)], title, detail, ...extra,
+    event: extra.event ?? classifyReport(title, Boolean(extra.combat), Boolean(extra.intel)) };
+  captureReport(w, entry);
+  w.reports = [...w.reports, entry].slice(-2000);
 }
 export function makeVillage(
   w: KingdomsWorld,
@@ -205,7 +206,26 @@ function accrue(w: KingdomsWorld, to: number) {
   for (const v of Object.values(w.villages)) {
     const elapsed = Math.max(0, to - v.updatedAt) / 3600000;
     const rate = production(w, v, deployed.get(v.id) ?? emptyTroops());
+    const before = { ...v.resources };
     credit(w, v, Object.fromEntries(resourceKeys.map((k) => [k, rate[k] * elapsed])) as Resources);
+    const bucket = v.productionReport?.ownerId === v.ownerId
+      ? v.productionReport
+      : { ownerId: v.ownerId, from: v.updatedAt, received: resources() };
+    bucket.received = Object.fromEntries(resourceKeys.map(key => [key,
+      bucket.received[key] + Math.max(0, v.resources[key] - before[key]),
+    ])) as Resources;
+    v.productionReport = bucket;
+    // Aggregate at existing simulation commits; do not schedule an extra tick or change production.
+    if (to - bucket.from >= 6 * 3600000) {
+      if (total(bucket.received) > 0) report(w, to, [v.ownerId], 'حصيلة الإنتاج',
+        `الموارد التي أضيفت فعليًا إلى مخازن ${v.name} خلال الفترة المسجلة.`,
+        { event: { key: 'production.summary', category: 'economy',
+          resources: { received: { ...bucket.received } },
+          location: { villageId: v.id, name: v.name, x: v.x, y: v.y },
+          timeline: [{ at: bucket.from, text: 'بداية فترة الإنتاج' }, { at: to, text: 'تسجيل حصيلة الإنتاج' }],
+        } });
+      v.productionReport = { ownerId: v.ownerId, from: to, received: resources() };
+    }
     v.updatedAt = to;
   }
 }
@@ -316,6 +336,12 @@ function combat(w: KingdomsWorld, m: Movement, v: Village, at: number) {
     won ? 'انتصار المهاجم' : 'صمود الدفاع',
     `${m.mission === 'raid' ? 'غارة' : 'معركة'} عند (${v.x}، ${v.y})`,
     {
+      event: { key: 'battle.resolved', category: 'military', attackerId: m.ownerId, outcome: won ? 'victory' : 'defeat',
+        location: { villageId: v.id, name: v.name, x: v.x, y: v.y },
+        parties: [{ role: 'attacker', name: w.players[m.ownerId]?.name ?? 'جيش مهاجم' }, { role: 'defender', name: w.players[v.ownerId]?.name ?? v.name }],
+        commanders: [m.commanderId, defenseCommander?.id].flatMap(id => id && w.commanders?.[id] ? [{ playerId: w.commanders[id].playerId, name: w.commanders[id].name }] : []),
+        timeline: [{ at: m.departedAt, text: 'انطلاق الحملة' }, { at, text: 'وصول الحملة وحسم المواجهة' }],
+      },
       combat: {
         attack,
         defense,
@@ -346,7 +372,7 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
         const received = resourceKeys.map(key => `${gatherAmountLabel(home.resources[key] - beforeAbandoned[key])} ${abandonedResourceNames[key]}`).join('، ');
         const overflow = resourceKeys.reduce((sum, key) => sum + m.loot[key] - (home.resources[key] - beforeAbandoned[key]), 0);
         report(w, at, [m.ownerId], 'عودة بعثة القرية المهجورة',
-          `عادت القوات إلى ${home.name}؛ وصلت ${received}${overflow > 0 ? `؛ فائض سعة المخزن ${gatherAmountLabel(overflow)}` : ''}`);
+          `عادت القوات إلى ${home.name}؛ وصلت ${received}${overflow > 0 ? `؛ فائض سعة المخزن ${gatherAmountLabel(overflow)}` : ''}`, { event: { key: 'abandoned.returned', category: 'economy', resources: { received: Object.fromEntries(resourceKeys.map(key => [key, Math.max(0, home.resources[key] - beforeAbandoned[key])])) as Resources }, location: { villageId: home.id, name: home.name, x: home.x, y: home.y } } });
       }
       if (m.gather) {
         const received = home.resources[m.gather.resource] - before;
@@ -358,6 +384,7 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
           [m.ownerId],
           'عودة حملة جمع الموارد',
           `عادت القوات إلى ${home.name}؛ استلمت ${gatherAmountLabel(received)} ${resourceName}${overflow > 0 ? `؛ لم يتسع المخزن لـ ${gatherAmountLabel(overflow)} ${resourceName}` : ''}`,
+          { event: { key: 'gather.returned', category: 'economy', resources: { received: { ...resources(), [m.gather.resource]: Math.max(0, received) } }, location: { villageId: home.id, name: home.name, x: home.x, y: home.y } } },
         );
       }
     } else if (m.gather || m.abandonedGather) {
@@ -497,6 +524,7 @@ function arrive(w: KingdomsWorld, m: Movement, at: number) {
       survived ? 'نجح الاستطلاع' : 'كشف الدفاع الكشافة',
       survived
         ? {
+            event: { key: 'scout.result', category: 'military', outcome: 'victory', location: { villageId: target.id, name: target.name, x: target.x, y: target.y } },
             intel: {
               resources: { ...target.resources },
               troops: { ...target.troops },
@@ -629,7 +657,10 @@ export function advanceCaravan(state: KingdomsWorld, now: number) {
       );
       const recipient = target ?? state.villages[caravan.originVillageId];
       if (recipient) {
+        const before = { ...recipient.resources };
         credit(state, recipient, caravan.resources);
+        const received = Object.fromEntries(resourceKeys.map(key => [key, Math.max(0, recipient.resources[key] - before[key])])) as Resources;
+        report(state, caravan.arrivesAt, [recipient.ownerId], 'وصلت القافلة', `وصلت القافلة إلى ${recipient.name}.`, { event: { key: 'caravan.arrived', category: 'economy', resources: { received }, location: { villageId: recipient.id, name: recipient.name, x: recipient.x, y: recipient.y } } });
         caravan.resources = Object.fromEntries(
           resourceKeys.map((k) => [k, 0]),
         ) as Resources;

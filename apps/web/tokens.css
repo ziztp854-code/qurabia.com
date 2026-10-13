@@ -408,3 +408,16 @@
   --kingdoms-terrain-outside: #1b2926;
   --kingdoms-terrain-selection: #ffe18a;
 }
+
+/* Royal Reports: scoped naval ink and brass; independent from other games. */
+:root {
+  --royal-report-bg: #0d1829;
+  --royal-report-panel: #132239;
+  --royal-report-paper: #182b43;
+  --royal-report-text: #e9e4d8;
+  --royal-report-muted: #b9c4cf;
+  --royal-report-gold: #d2b77f;
+  --royal-report-line: #60758c;
+  --royal-report-victory: #abd1ba;
+  --royal-report-defeat: #edb5ac;
+}

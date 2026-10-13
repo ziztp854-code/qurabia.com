@@ -20,6 +20,7 @@ export default async function WorldMapPage({
   const query = await searchParams;
   const requestedWorld = typeof query?.worldId === 'string' ? query.worldId : undefined;
   const requestedVillage = typeof query?.villageId === 'string' ? query.villageId : undefined;
+  const reportVillage = typeof query?.reportVillageId === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(query.reportVillageId) ? query.reportVillageId : undefined;
   const session = await getCurrentSession();
   let user: { name?: string | null; role?: string | null } | undefined;
   let viewerPlayerId = PUBLIC_ATLAS_VIEWER_ID;
@@ -73,6 +74,7 @@ export default async function WorldMapPage({
         referenceOnly={referenceOnly}
         villageLocations={villageLocations}
         initialVillageId={selectedVillage?.villageId}
+        focusVillageId={reportVillage}
         initialOverview={!requestedVillage}
         initialLocation={
           selectedVillage && {

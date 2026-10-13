@@ -1,3 +1,4 @@
+import { publicReport } from './report-events';
 import { awardVillageXp, progressionConfig, refreshProgression } from './progression';
 import { cancelConstruction, queueConstruction } from './construction';
 import { creditAllianceEvent, projectAllianceEvent, stampAllianceEvent } from './alliance-events';
@@ -54,6 +55,7 @@ import {
   type KingdomsView,
   type KingdomsWorld,
   type Movement,
+  type Resources,
   type SiegeView,
   type Village,
 } from './types';
@@ -361,8 +363,12 @@ function trade(
   const seller = w.villages[o.villageId];
   assertRule(seller?.ownerId === o.ownerId, 'العرض لم يعد متاحاً');
   spend(v, o.want);
+  const buyerBeforeCredit = { ...v.resources };
+  const sellerBeforeCredit = { ...seller.resources };
   credit(w, seller, o.want);
   credit(w, v, o.give);
+  const buyerReceived = Object.fromEntries(resourceKeys.map(key => [key, Math.max(0, v.resources[key] - buyerBeforeCredit[key])])) as Resources;
+  const sellerReceived = Object.fromEntries(resourceKeys.map(key => [key, Math.max(0, seller.resources[key] - sellerBeforeCredit[key])])) as Resources;
   w.offers = w.offers.filter((t) => t.id !== o.id);
   for (const id of [actor, o.ownerId])
     w.players[id].achievements = [...new Set([...w.players[id].achievements, 'merchant'])];
@@ -370,7 +376,7 @@ function trade(
     creditAllianceEvent(w, actor, 'trade', 5, at, undefined, o.ownerId);
     creditAllianceEvent(w, o.ownerId, 'trade', 5, at, undefined, actor);
   }
-  report(w, at, [actor, o.ownerId], 'تم التبادل', 'أتم السوق تبادل الموارد المحجوزة');
+  report(w, at, [actor, o.ownerId], 'تم التبادل', 'أتم السوق تبادل الموارد المحجوزة', { event: { key: 'trade.completed', category: 'economy', parties: [{ role: 'merchant', name: w.players[actor].name }, { role: 'merchant', name: w.players[o.ownerId].name }], transfers: [{ playerId: actor, sent: o.want, received: buyerReceived }, { playerId: o.ownerId, sent: o.give, received: sellerReceived }] } });
 }
 function alliance(
   w: KingdomsWorld,
@@ -567,7 +573,7 @@ function caravanSend(
     route,
     exposed: true,
   });
-  report(w, at, [actor], 'انطلاق قافلة', `انطلقت قافلة من ${v.name} إلى ${target.name}`);
+  report(w, at, [actor], 'انطلاق قافلة', `انطلقت قافلة من ${v.name} إلى ${target.name}`, { event: { key: 'caravan.departed', category: 'economy', resources: { sent: { ...c.resources } }, location: { villageId: target.id, name: target.name, x: target.x, y: target.y }, timeline: [{ at, text: 'انطلاق القافلة' }] } });
 }
 
 function caravanCancel(
@@ -697,7 +703,10 @@ export function executeCommand(
         plantFarm(w.config, own(w, actorId, c.villageId), c.plotId, c.expectedVersion, c.crop, at, c.expectedQuote);
         return w;
       case 'farmHarvest': {
-        const badges = harvestFarm(w.config, own(w, actorId, c.villageId), c.plotId, c.expectedVersion, at);
+        const village = own(w, actorId, c.villageId);
+        const beforeFood = village.resources.food;
+        const badges = harvestFarm(w.config, village, c.plotId, c.expectedVersion, at);
+        report(w, at, [actorId], 'حصاد المزرعة', `اكتمل حصاد الحوض ${c.plotId + 1} في ${village.name}`, { event: { key: 'farm.harvested', category: 'economy', location: { villageId: village.id, name: village.name, x: village.x, y: village.y }, resources: { received: { wood: 0, stone: 0, iron: 0, gold: 0, food: Math.max(0, village.resources.food - beforeFood) } } } });
         w.players[actorId].achievements = [...new Set([...w.players[actorId].achievements, ...badges])];
         return w;
       }
@@ -922,7 +931,7 @@ function projectAdvancedWorld(w: KingdomsWorld, actorId: string, now: number): K
       status: cv.status,
       route: cv.route,
     })),
-    reports: w.reports.filter((r) => r.recipients.includes(actorId)).slice(-100),
+    reports: w.reports.filter((r) => r.recipients.includes(actorId)).slice(-100).map(report => ({ ...publicReport(report, actorId)!, recipients: [actorId] })),
     alliances: Object.values(w.alliances).map((a) => ({
       ...a,
       pending:

@@ -1,4 +1,6 @@
 import 'server-only';
+import { archiveKingdomReports } from './reports-store';
+import { carryReportOutbox } from './report-events';
 import type { DatabaseClient, Prisma } from '@tahaddi/database';
 import { advanceWorld } from './engine';
 import { kingdomTransaction, nextDeadline, type KingdomIdentity } from './repository';
@@ -14,13 +16,13 @@ import {
 import type { KingdomsWorld } from './types';
 import { provisionVillageGeography } from '../mamluk-map/village-geography';
 
-type WorldRow = { id: string; state: unknown; revision: number; paused: boolean };
+type WorldRow = { id: string; state: unknown; revision: number; paused: boolean; reportsArchived?: boolean };
 type Tx = Prisma.TransactionClient;
 
 async function lockedWorkshop(tx: Tx, worldId: string, villageId: string, actor: KingdomIdentity) {
   const [row] = await tx.$queryRaw<
     WorldRow[]
-  >`SELECT id, state, revision, paused FROM "KingdomWorld" WHERE id = ${worldId} FOR UPDATE`;
+  >`SELECT id, state, revision, paused, "reportsArchived" FROM "KingdomWorld" WHERE id = ${worldId} FOR UPDATE`;
   const user = await tx.user.findUnique({
     where: { id: actor.id },
     select: { status: true, tokenVersion: true },
@@ -42,11 +44,12 @@ async function lockedWorkshop(tx: Tx, worldId: string, villageId: string, actor:
   if (!selected || selected.ownerId !== actor.id)
     throw new KingdomsHttpError(403, 'هذه الورشة ليست ضمن قريتك.');
   const settled = row.paused ? selected : settleWorkshop(selected, at);
-  const current = { ...state, villages: { ...state.villages, [villageId]: settled } };
+  const current = carryReportOutbox(state, { ...state, villages: { ...state.villages, [villageId]: settled } });
   return { row, state: current, village: settled, now };
 }
 
 async function persist(tx: Tx, row: WorldRow, state: KingdomsWorld) {
+  await archiveKingdomReports(tx, row, state);
   const ordinary = nextDeadline(state);
   const workshopDates = Object.values(state.villages).flatMap(
     (village) => (village as WorkshopVillage).siegeWorkshop?.queue.map((item) => item.endsAt) ?? [],
@@ -57,6 +60,7 @@ async function persist(tx: Tx, row: WorldRow, state: KingdomsWorld) {
     where: { id: row.id },
     data: {
       state: JSON.parse(JSON.stringify(provisionVillageGeography(row.id, state))) as Prisma.InputJsonValue,
+      reportsArchived: true,
       revision: { increment: 1 },
       nextEventAt: next,
     },
@@ -127,10 +131,10 @@ export async function commandSiegeWorkshop(
     });
     if (recent >= 30) throw new KingdomsHttpError(429, 'بلغت حد الأوامر لهذه الدقيقة.');
     const updated = applyWorkshopAction(village, action, now);
-    const saved = await persist(tx, row, {
+    const saved = await persist(tx, row, carryReportOutbox(state, {
       ...state,
       villages: { ...state.villages, [villageId]: updated },
-    });
+    }));
     await tx.kingdomCommand.create({
       data: { worldId, actorId: actor.id, key, fingerprint, revision: saved.revision },
     });

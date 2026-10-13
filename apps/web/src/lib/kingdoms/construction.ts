@@ -170,7 +170,7 @@ export function completeConstruction(w: KingdomsWorld, v: Village, at: number) {
   v.constructionQueue = v.constructionQueue!.map((entry) =>
     entry.id === item.id ? { ...entry, status: 'COMPLETED' } : entry,
   );
-  report(w, at, [v.ownerId], 'اكتمل البناء', `اكتمل تطوير مبنى في ${v.name}`);
+  report(w, at, [v.ownerId], 'اكتمل البناء', `اكتمل تطوير ${w.config.buildings[item.building].name} في ${v.name}`, { event: { key: 'building.completed', category: 'buildings', location: { villageId: v.id, name: v.name, x: v.x, y: v.y }, construction: { building: item.building, from: item.fromLevel, to: item.targetLevel }, timeline: [{ at: item.startedAt, text: 'بدء التطوير' }, { at, text: 'اكتمال التطوير' }] } });
   activate(v, at);
   trimHistory(w, v);
 }

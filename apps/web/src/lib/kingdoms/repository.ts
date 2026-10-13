@@ -1,4 +1,6 @@
 import 'server-only';
+import { archiveKingdomReports } from './reports-store';
+import { carryReportOutbox } from './report-events';
 import { Prisma, type DatabaseClient } from '@tahaddi/database';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { isManagerRole } from '@/lib/auth/authorization';
@@ -11,7 +13,7 @@ import { provisionVillageGeography } from '../mamluk-map/village-geography';
 import { queueKingdomsNotification, type KingdomsNotification } from './realtime-notifications';
 
 export type KingdomIdentity = { id: string; tokenVersion: number };
-type WorldRow = { id: string; name: string; state: unknown; revision: number; paused: boolean };
+type WorldRow = { id: string; name: string; state: unknown; revision: number; paused: boolean; reportsArchived?: boolean };
 type Tx = Prisma.TransactionClient;
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 
@@ -48,16 +50,18 @@ async function authorize(tx: Tx, identity: KingdomIdentity, admin = false) {
 async function lockWorld(tx: Tx, worldId: string): Promise<WorldRow> {
   const [row] = await tx.$queryRaw<
     WorldRow[]
-  >`SELECT id, name, state, revision, paused FROM "KingdomWorld" WHERE id = ${worldId} FOR UPDATE`;
+  >`SELECT id, name, state, revision, paused, "reportsArchived" FROM "KingdomWorld" WHERE id = ${worldId} FOR UPDATE`;
   if (!row) throw new KingdomsHttpError(404, 'العالم غير موجود.');
   return row;
 }
 
 async function save(tx: Tx, row: WorldRow, state: KingdomsWorld, paused = row.paused) {
+  await archiveKingdomReports(tx, row, state);
   return tx.kingdomWorld.update({
     where: { id: row.id },
     data: {
       state: json(provisionVillageGeography(row.id, state)),
+      reportsArchived: true,
       revision: { increment: 1 },
       nextEventAt: nextDeadline(state),
       paused,
@@ -238,7 +242,7 @@ export async function createKingdomWorld(
     }
     const state = provisionVillageGeography(id, createWorld(await dbNow(tx), config));
     await tx.kingdomWorld.create({
-      data: { id, name, state: json(state), nextEventAt: nextDeadline(state) },
+      data: { id, name, state: json(state), nextEventAt: nextDeadline(state), reportsArchived: true },
     });
     await receipt(tx, id, identity.id, key, fingerprint, 0);
     await tx.auditLog.create({
@@ -279,10 +283,12 @@ export async function editKingdomWorld(
     const now = await dbNow(tx);
     if (await checkReceipt(tx, row, identity.id, key, fingerprint))
       return { id: row.id, name: row.name, revision: row.revision };
-    const state = mutate(advanceWorld(row.state as KingdomsWorld, now), now, {
+    const advanced = advanceWorld(row.state as KingdomsWorld, now);
+    const state = mutate(advanced, now, {
       revision: row.revision,
       paused: row.paused,
     });
+    carryReportOutbox(advanced, state);
     const saved = await save(tx, row, state, paused);
     await receipt(tx, worldId, identity.id, key, fingerprint, saved.revision);
     await tx.auditLog.create({
@@ -318,7 +324,7 @@ export async function tickKingdomWorlds(
         async (tx) => {
           const [row] = await tx.$queryRaw<
             WorldRow[]
-          >`SELECT id, name, state, revision, paused FROM "KingdomWorld" WHERE id = ${id} AND "nextEventAt" <= clock_timestamp() FOR UPDATE SKIP LOCKED`;
+          >`SELECT id, name, state, revision, paused, "reportsArchived" FROM "KingdomWorld" WHERE id = ${id} AND "nextEventAt" <= clock_timestamp() FOR UPDATE SKIP LOCKED`;
           if (!row) return null;
           const saved = await save(
             tx,
