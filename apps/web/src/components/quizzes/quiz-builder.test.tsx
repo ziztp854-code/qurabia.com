@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QuizBuilder } from './quiz-builder';
 import { createQuiz } from '@/app/quizzes/actions';
 import { createEmptyQuizDraft, QUIZ_DRAFT_STORAGE_KEY } from '@/lib/quizzes/quiz-draft';
@@ -17,9 +17,117 @@ vi.mock('@/app/questions/actions', () => ({
 }));
 
 describe('QuizBuilder', () => {
+  afterEach(() => vi.restoreAllMocks());
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+  });
+
+  it('continues through the stages when local storage cannot be read', async () => {
+    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage blocked', 'SecurityError');
+    });
+    const user = userEvent.setup();
+    render(<QuizBuilder />);
+    await screen.findByText('تعذّر استرجاع المسودة المحلية. يمكنك متابعة إنشاء المسابقة.');
+    await user.click(screen.getByRole('button', { name: 'التالي: اختيار الأسئلة' }));
+    expect(screen.getByRole('heading', { name: 'اختيار الأسئلة' })).toBeInTheDocument();
+  });
+
+  it('shows invalid question settings in preview and prevents publishing them', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      QUIZ_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        ...createEmptyQuizDraft(),
+        title: 'مسابقة الاختبار',
+        roundName: 'الجولة الأولى',
+        questions: [
+          { id: 'q1', prompt: 'سؤال المعاينة', category: 'علوم', duration: 20, points: 1000 },
+        ],
+      }),
+    );
+    render(<QuizBuilder />);
+    await screen.findByText('استُعيدت المسودة المحلية المحفوظة.');
+    for (const name of ['اختيار الأسئلة', 'الإعدادات', 'المعاينة']) {
+      await user.click(screen.getByRole('button', { name: `التالي: ${name}` }));
+    }
+    expect(screen.getByText('الجولة الأولى')).toBeInTheDocument();
+    const duration = screen.getByLabelText('الوقت (ثوانٍ)');
+    await user.clear(duration);
+    await user.type(duration, '301');
+    expect(duration).toHaveValue(301);
+    expect(duration).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('وقت السؤال يجب أن يكون بين 5 و300 ثانية.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'التالي: النشر' }));
+    expect(screen.getByRole('button', { name: 'نشر المسابقة' })).toBeDisabled();
+    expect(createQuiz).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'مراجعة الأخطاء' }));
+    expect(screen.getByRole('heading', { name: 'اختيار الأسئلة' })).toBeInTheDocument();
+    expect(document.activeElement).toHaveAttribute('data-stage', '2');
+  });
+
+  it('does not apply out-of-range bulk question settings', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      QUIZ_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        ...createEmptyQuizDraft(),
+        title: 'مسابقة الاختبار',
+        questions: [
+          { id: 'q1', prompt: 'سؤال الاختبار', category: '', duration: 20, points: 1000 },
+        ],
+      }),
+    );
+    render(<QuizBuilder />);
+    await screen.findByText('استُعيدت المسودة المحلية المحفوظة.');
+    for (const name of ['اختيار الأسئلة', 'الإعدادات']) {
+      await user.click(screen.getByRole('button', { name: `التالي: ${name}` }));
+    }
+    const playerLimit = screen.getByLabelText('حد اللاعبين');
+    await user.clear(playerLimit);
+    await user.type(playerLimit, '75');
+    expect(playerLimit).toHaveValue(75);
+    const duration = screen.getByLabelText('وقت موحد للأسئلة');
+    await user.clear(duration);
+    await user.type(duration, '999');
+    expect(duration).toHaveValue(999);
+    expect(screen.getAllByRole('button', { name: 'تطبيق على كل الأسئلة' })[0]).toBeDisabled();
+    expect(screen.getByText('أدخل عددًا صحيحًا بين 5 و300 ثانية.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'التالي: المعاينة' }));
+    expect(screen.getByLabelText('الوقت (ثوانٍ)')).toHaveValue(20);
+  });
+
+  it('shows a successful publish without errors for the cleared draft and starts a new quiz', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      QUIZ_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        ...createEmptyQuizDraft(),
+        title: 'مسابقة الاختبار',
+        questions: [
+          { id: 'q1', prompt: 'سؤال الاختبار', category: '', duration: 20, points: 1000 },
+        ],
+      }),
+    );
+    vi.mocked(createQuiz).mockResolvedValue({
+      status: 'success',
+      quizId: 'quiz-1',
+      roomCode: '123456',
+    });
+    render(<QuizBuilder />);
+    await screen.findByText('استُعيدت المسودة المحلية المحفوظة.');
+    for (const name of ['اختيار الأسئلة', 'الإعدادات', 'المعاينة', 'النشر']) {
+      await user.click(screen.getByRole('button', { name: `التالي: ${name}` }));
+    }
+    expect(screen.getAllByRole('button', { name: 'حفظ المسودة محليًا' })).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'نشر المسابقة' }));
+    await screen.findByRole('heading', { name: 'نُشرت المسابقة بنجاح' });
+    expect(screen.queryByText(/سبب تعطيل النشر/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'شغّل بهذه الحزمة' })).toBeInTheDocument();
+    expect(createQuiz).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'إنشاء مسابقة جديدة' }));
+    expect(screen.getByLabelText('عنوان المسابقة')).toHaveValue('');
   });
 
   it('keeps the draft and returns to the rejected questions so only those can be removed', async () => {

@@ -2,7 +2,7 @@
 
 import { quizBuilderSchema } from '@tahaddi/contracts';
 import { ArrowDown, ArrowUp, CheckCircle2, Save, Sparkles, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createQuiz,
   listQuizBuilderQuestions,
@@ -91,6 +91,7 @@ export function QuizBuilder({
   const [storageReady, setStorageReady] = useState(false);
   const [notice, setNotice] = useState('');
   const [saveFailed, setSaveFailed] = useState(false);
+  const [publishFailed, setPublishFailed] = useState(false);
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [savedRoomCode, setSavedRoomCode] = useState('');
   const [savedQuizId, setSavedQuizId] = useState('');
@@ -98,15 +99,31 @@ export function QuizBuilder({
   const [batchDuration, setBatchDuration] = useState(20);
   const [batchPoints, setBatchPoints] = useState(1_000);
   const [unavailableIds, setUnavailableIds] = useState<string[]>([]);
+  const stepPanelRef = useRef<HTMLDivElement>(null);
+  const previousStep = useRef(currentStep);
+
+  useEffect(() => {
+    if (previousStep.current === currentStep) return;
+    previousStep.current = currentStep;
+    const panel = stepPanelRef.current?.querySelector<HTMLDivElement>('[data-stage]');
+    panel?.focus({ preventScroll: true });
+    panel?.scrollIntoView?.({ block: 'start' });
+  }, [currentStep]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      const storedDraft = parseQuizDraft(localStorage.getItem(storageKey) || '');
-      if (storedDraft) {
-        setDraft(storedDraft);
-        setNotice('استُعيدت المسودة المحلية المحفوظة.');
+      try {
+        const storedDraft = parseQuizDraft(localStorage.getItem(storageKey) || '');
+        if (storedDraft) {
+          setDraft(storedDraft);
+          setNotice('استُعيدت المسودة المحلية المحفوظة.');
+        }
+      } catch {
+        setSaveFailed(true);
+        setNotice('تعذّر استرجاع المسودة المحلية. يمكنك متابعة إنشاء المسابقة.');
+      } finally {
+        setStorageReady(true);
       }
-      setStorageReady(true);
     }, 0);
     return () => window.clearTimeout(timeout);
   }, []);
@@ -146,6 +163,17 @@ export function QuizBuilder({
     ? ''
     : (quizValidation.error.issues[0]?.message ?? 'أكمل بيانات المسابقة قبل النشر.');
   const fieldErrors = quizValidation.success ? {} : quizValidation.error.flatten().fieldErrors;
+  const questionError = (index: number, field: 'duration' | 'points') =>
+    quizValidation.success
+      ? undefined
+      : quizValidation.error.issues.find(
+          (issue) =>
+            issue.path[0] === 'questions' && issue.path[1] === index && issue.path[2] === field,
+        )?.message;
+  const validBatchDuration =
+    Number.isInteger(batchDuration) && batchDuration >= 5 && batchDuration <= 300;
+  const validBatchPoints =
+    Number.isInteger(batchPoints) && batchPoints >= 100 && batchPoints <= 10000;
 
   const updateDraft = <Key extends keyof QuizDraft>(key: Key, value: QuizDraft[Key]) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -217,6 +245,7 @@ export function QuizBuilder({
   const saveQuiz = async () => {
     if (savingQuiz || !quizValidation.success) return;
     setSavingQuiz(true);
+    setPublishFailed(false);
     setSavedRoomCode('');
     setSavedQuizId('');
     try {
@@ -224,18 +253,18 @@ export function QuizBuilder({
       if (result.status === 'error') {
         setUnavailableIds(result.unavailableQuestionIds ?? []);
         if (result.unavailableQuestionIds?.length) setCurrentStep(1);
-        setSaveFailed(true);
+        setPublishFailed(true);
         setNotice(result.message);
         return;
       }
-      setSaveFailed(false);
+      setPublishFailed(false);
       setSavedRoomCode(result.roomCode);
       setSavedQuizId(result.quizId);
       setSavedGameMode(draft.gameMode);
       setDraft(createEmptyQuizDraft());
       setNotice(`نُشرت المسابقة. رمز الغرفة: ${result.roomCode}`);
     } catch {
-      setSaveFailed(true);
+      setPublishFailed(true);
       setNotice('تعذّر نشر المسابقة الآن. حاول مرة أخرى.');
     } finally {
       setSavingQuiz(false);
@@ -265,20 +294,22 @@ export function QuizBuilder({
               <div className={styles.questionSettings}>
                 <NumberInput
                   label="الوقت (ثوانٍ)"
+                  error={questionError(index, 'duration')}
                   min="5"
                   max="300"
-                  value={question.duration}
+                  value={question.duration || ''}
                   onChange={(event) =>
-                    updateQuestion(question.id, 'duration', Number(event.target.value) || 5)
+                    updateQuestion(question.id, 'duration', Number(event.target.value))
                   }
                 />
                 <NumberInput
                   label="النقاط"
+                  error={questionError(index, 'points')}
                   min="100"
                   max="10000"
-                  value={question.points}
+                  value={question.points || ''}
                   onChange={(event) =>
-                    updateQuestion(question.id, 'points', Number(event.target.value) || 100)
+                    updateQuestion(question.id, 'points', Number(event.target.value))
                   }
                 />
               </div>
@@ -325,7 +356,7 @@ export function QuizBuilder({
     );
 
   return (
-    <div className={`quiz-builder ${styles.shell}`} dir="rtl">
+    <div ref={stepPanelRef} className={`quiz-builder ${styles.shell}`} dir="rtl">
       <Card className={styles.hero}>
         <span className={styles.heroGlow} aria-hidden="true" />
         <div className={styles.heroLayout}>
@@ -335,7 +366,13 @@ export function QuizBuilder({
             </p>
             <h2>منشئ المسابقة</h2>
             <p>رتّب الفكرة والأسئلة والإيقاع، ثم أطلق جولة تحمل بصمتك.</p>
-            <Badge>{savedRoomCode ? `رمز ${savedRoomCode}` : 'مسودتك تُحفظ تلقائيًا'}</Badge>
+            <Badge>
+              {savedRoomCode
+                ? `رمز ${savedRoomCode}`
+                : saveFailed
+                  ? 'الحفظ المحلي غير متاح'
+                  : 'مسودتك تُحفظ تلقائيًا'}
+            </Badge>
           </div>
           <div className={styles.stageDial} aria-label={`المرحلة الحالية: ${STEPS[currentStep]}`}>
             <span>المرحلة الحالية</span>
@@ -354,7 +391,7 @@ export function QuizBuilder({
         </div>
         {notice ? (
           <p
-            className={`${styles.notice} ${saveFailed ? 'text-danger' : 'text-success'}`}
+            className={`${styles.notice} ${saveFailed || publishFailed ? 'text-danger' : 'text-success'}`}
             role="status"
           >
             {notice}
@@ -362,7 +399,12 @@ export function QuizBuilder({
         ) : null}
       </Card>
 
-      <Card className={styles.stepPanel} data-stage={currentStep + 1}>
+      <Card
+        className={`${styles.stepPanel} ${styles.stageContent}`}
+        data-stage={currentStep + 1}
+        tabIndex={-1}
+        aria-label={STEPS[currentStep]}
+      >
         {currentStep === 0 ? (
           <>
             <h2>البيانات الأساسية</h2>
@@ -512,29 +554,26 @@ export function QuizBuilder({
               </Select>
               <NumberInput
                 label="حد اللاعبين"
+                error={fieldErrors.playerLimit?.[0]}
                 min="2"
                 max="500"
-                value={draft.playerLimit}
-                onChange={(event) =>
-                  updateDraft(
-                    'playerLimit',
-                    Math.min(500, Math.max(2, Number(event.target.value) || 2)),
-                  )
-                }
+                value={draft.playerLimit || ''}
+                onChange={(event) => updateDraft('playerLimit', Number(event.target.value))}
               />
               <div>
                 <NumberInput
                   label="وقت موحد للأسئلة"
+                  error={validBatchDuration ? undefined : 'أدخل عددًا صحيحًا بين 5 و300 ثانية.'}
                   min="5"
                   max="300"
-                  value={batchDuration}
-                  onChange={(event) => setBatchDuration(Number(event.target.value) || 5)}
+                  value={batchDuration || ''}
+                  onChange={(event) => setBatchDuration(Number(event.target.value))}
                 />
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={draft.questions.length === 0}
+                  disabled={draft.questions.length === 0 || !validBatchDuration}
                   onClick={() =>
                     updateDraft(
                       'questions',
@@ -548,16 +587,17 @@ export function QuizBuilder({
               <div>
                 <NumberInput
                   label="نقاط موحدة للأسئلة"
+                  error={validBatchPoints ? undefined : 'أدخل عددًا صحيحًا بين 100 و10000 نقطة.'}
                   min="100"
                   max="10000"
-                  value={batchPoints}
-                  onChange={(event) => setBatchPoints(Number(event.target.value) || 100)}
+                  value={batchPoints || ''}
+                  onChange={(event) => setBatchPoints(Number(event.target.value))}
                 />
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={draft.questions.length === 0}
+                  disabled={draft.questions.length === 0 || !validBatchPoints}
                   onClick={() =>
                     updateDraft(
                       'questions',
@@ -596,13 +636,31 @@ export function QuizBuilder({
           <>
             <h2>معاينة المسابقة</h2>
             <div className={styles.summaryGrid}>
+              <div className={styles.summaryTitle}>
+                <strong>{draft.title || 'بلا عنوان'}</strong>
+                <span>العنوان</span>
+              </div>
               <div>
                 <strong>{QUIZ_BUILDER_GAME_MODE_LABELS[draft.gameMode]}</strong>
                 <span>وضع اللعب</span>
               </div>
               <div>
-                <strong>{draft.title || 'بلا عنوان'}</strong>
-                <span>العنوان</span>
+                <strong>{draft.roundName || 'بدون اسم للجولة'}</strong>
+                <span>اسم الجولة</span>
+              </div>
+              <div>
+                <strong>{formatNumber(draft.playerLimit)}</strong>
+                <span>حد اللاعبين</span>
+              </div>
+              <div>
+                <strong>{draft.visibility === 'PUBLIC' ? 'عامة' : 'خاصة'}</strong>
+                <span>مستوى الظهور</span>
+              </div>
+              <div>
+                <strong>
+                  {draft.presentationMode === 'RANDOM' ? 'عشوائي' : 'بالترتيب المحدد'}
+                </strong>
+                <span>ترتيب الأسئلة</span>
               </div>
               <div>
                 <strong>{formatNumber(draft.questions.length)}</strong>
@@ -618,6 +676,21 @@ export function QuizBuilder({
               </div>
             </div>
             <p>{draft.description || 'لا يوجد وصف.'}</p>
+            <dl className={styles.previewSettings}>
+              <div>
+                <dt>تثبيت الإجابة فور اختيارها</dt>
+                <dd>{draft.autoLockAnswers ? 'مفعّل' : 'معطّل'}</dd>
+              </div>
+              <div>
+                <dt>الانتقال التلقائي بعد إجابة الجميع</dt>
+                <dd>{draft.autoAdvance ? 'مفعّل' : 'معطّل'}</dd>
+              </div>
+              <div>
+                <dt>احتساب سرعة الإجابة</dt>
+                <dd>{draft.speedScoring ? 'مفعّل' : 'معطّل'}</dd>
+              </div>
+            </dl>
+            <h3>مراجعة الأسئلة والوقت والنقاط</h3>
             {selectedQuestions}
           </>
         ) : null}
@@ -625,37 +698,85 @@ export function QuizBuilder({
         {currentStep === 4 ? (
           <>
             <h2>نشر المسابقة</h2>
-            <p className="muted">
-              راجع الملخص ثم انشر النسخة الحالية. تُسجّل إصدارات الأسئلة للكشف عن أي تعديل لاحق.
-            </p>
-            {!quizValidation.success ? (
-              <p id="quiz-builder-validation-reason" className="text-danger" role="alert">
-                سبب تعطيل النشر: {validationReason}
-              </p>
+            {savedQuizId && savedGameMode ? (
+              <div className={styles.publishSuccess} role="status">
+                <CheckCircle2 aria-hidden="true" />
+                <h3>نُشرت المسابقة بنجاح</h3>
+                <p>
+                  رمز الغرفة: <strong dir="ltr">{savedRoomCode}</strong>
+                </p>
+                <ButtonLink href={playHrefForPack(savedGameMode, savedQuizId)} variant="gold">
+                  شغّل بهذه الحزمة
+                </ButtonLink>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSavedQuizId('');
+                    setSavedRoomCode('');
+                    setSavedGameMode(null);
+                    setUnavailableIds([]);
+                    setNotice('');
+                    setCurrentStep(0);
+                  }}
+                >
+                  إنشاء مسابقة جديدة
+                </Button>
+              </div>
             ) : (
-              <p className="text-success">المسابقة جاهزة للنشر.</p>
+              <>
+                <p className="muted">
+                  راجع الملخص ثم انشر النسخة الحالية. تُسجّل إصدارات الأسئلة للكشف عن أي تعديل لاحق.
+                </p>
+                <p className={styles.publishReview}>
+                  <strong>{draft.title || 'بلا عنوان'}</strong>
+                  <span>
+                    {formatNumber(draft.questions.length)} سؤالًا · {formatNumber(totalDuration)}{' '}
+                    ثانية · {formatNumber(totalPoints)} نقطة
+                  </span>
+                </p>
+                {!quizValidation.success ? (
+                  <p id="quiz-builder-validation-reason" className="text-danger" role="alert">
+                    سبب تعطيل النشر: {validationReason}
+                  </p>
+                ) : (
+                  <p className="text-success">المسابقة جاهزة للنشر.</p>
+                )}
+                {!quizValidation.success ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const field = quizValidation.error.issues[0]?.path[0];
+                      setCurrentStep(
+                        field === 'questions'
+                          ? 1
+                          : ['title', 'description', 'roundName', 'gameMode'].includes(
+                                String(field),
+                              )
+                            ? 0
+                            : 2,
+                      );
+                    }}
+                  >
+                    مراجعة الأخطاء
+                  </Button>
+                ) : null}
+                <div className="dashboard-actions">
+                  <Button
+                    type="button"
+                    onClick={saveQuiz}
+                    loading={savingQuiz}
+                    disabled={savingQuiz || !quizValidation.success}
+                    aria-describedby={
+                      !quizValidation.success ? 'quiz-builder-validation-reason' : undefined
+                    }
+                  >
+                    <CheckCircle2 aria-hidden="true" /> نشر المسابقة
+                  </Button>
+                </div>
+              </>
             )}
-            <div className="dashboard-actions">
-              <Button variant="outline" type="button" onClick={saveDraft}>
-                <Save aria-hidden="true" /> حفظ المسودة محليًا
-              </Button>
-              <Button
-                type="button"
-                onClick={saveQuiz}
-                loading={savingQuiz}
-                disabled={savingQuiz || !quizValidation.success}
-                aria-describedby={
-                  !quizValidation.success ? 'quiz-builder-validation-reason' : undefined
-                }
-              >
-                <CheckCircle2 aria-hidden="true" /> نشر المسابقة
-              </Button>
-            </div>
-            {savedQuizId && savedGameMode && !saveFailed ? (
-              <ButtonLink href={playHrefForPack(savedGameMode, savedQuizId)} variant="gold">
-                شغّل بهذه الحزمة
-              </ButtonLink>
-            ) : null}
           </>
         ) : null}
       </Card>
@@ -664,12 +785,17 @@ export function QuizBuilder({
         <Button
           type="button"
           variant="outline"
-          disabled={currentStep === 0}
+          disabled={currentStep === 0 || savingQuiz || Boolean(savedQuizId)}
           onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
         >
           الخطوة السابقة
         </Button>
-        <Button type="button" variant="outline" onClick={saveDraft}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={savingQuiz || Boolean(savedQuizId)}
+          onClick={saveDraft}
+        >
           <Save aria-hidden="true" /> حفظ المسودة محليًا
         </Button>
         {currentStep < STEPS.length - 1 ? (
