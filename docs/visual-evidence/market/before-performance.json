@@ -1,0 +1,45 @@
+{
+  "phase": "before",
+  "browser": "151.0.7922.173",
+  "context": "Headless local Chromium; warm fixture server; fresh browser context per viewport; normal motion; 120 rAF intervals on static market. No network throttling. Does not measure physical-device game FPS.",
+  "results": [
+    {
+      "name": "desktop",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dpr": 1,
+      "medianFrameMs": 16.699999999999818,
+      "p95FrameMs": 16.799999999999272,
+      "rafPacingHz": 60.00300015000751,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "images": [
+        {
+          "file": "/game-art/kingdoms/city-scenes/market.webp",
+          "localLoadMs": 4.5,
+          "encodedBytes": 571464
+        }
+      ]
+    },
+    {
+      "name": "mobile",
+      "viewport": [
+        390,
+        844
+      ],
+      "dpr": 1,
+      "medianFrameMs": 16.699999999999818,
+      "p95FrameMs": 16.799999999999727,
+      "rafPacingHz": 59.999999999999986,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "images": [
+        {
+          "file": "/game-art/kingdoms/city-scenes/market-portrait.webp",
+          "localLoadMs": 3.4000000001396984,
+          "encodedBytes": 446010
+        }
+      ]
+    }
+  ]
+}

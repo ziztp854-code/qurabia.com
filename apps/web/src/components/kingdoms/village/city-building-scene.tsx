@@ -254,11 +254,10 @@ export function FacilityArtworkScene({
           ) : (
             <>
               <picture>
-                <source
-                  media="(max-width: 700px)"
-                  srcSet={citySceneAsset(scene, true)}
-                  type="image/webp"
-                />
+                {scene === 'market' ? <>
+            <source type="image/avif" srcSet="/game-art/kingdoms/city-scenes/market-768.avif 768w, /game-art/kingdoms/city-scenes/market-1280.avif 1280w, /game-art/kingdoms/city-scenes/market-1672.avif 1672w" sizes="(max-width: 1000px) and (min-height: 501px) calc(100vw - 32px), (max-width: 700px) calc(100vw - 32px), (max-width: 1000px) 62vw, calc(100vw - 30rem)" />
+            <source type="image/webp" srcSet="/game-art/kingdoms/city-scenes/market-768.webp 768w, /game-art/kingdoms/city-scenes/market-1280.webp 1280w, /game-art/kingdoms/city-scenes/market-1672.webp 1672w" sizes="(max-width: 1000px) and (min-height: 501px) calc(100vw - 32px), (max-width: 700px) calc(100vw - 32px), (max-width: 1000px) 62vw, calc(100vw - 30rem)" />
+          </> : <source media="(max-width: 700px)" srcSet={citySceneAsset(scene, true)} type="image/webp" />}
                 {/* Scene artwork is independent of the overview texture. */}
                 <img
                   key={retry}

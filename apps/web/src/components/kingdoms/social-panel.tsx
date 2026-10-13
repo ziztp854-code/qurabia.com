@@ -16,8 +16,8 @@ import { AllianceEventCard } from './alliance-event-card';
 
 export function MarketPanel({ view, village, busy, send }: GameProps) {
   return (
-    <div className={styles.split}>
-      <section className={styles.panel}>
+    <div className={styles.split} data-market-panel="">
+      <section className={styles.panel} data-market-summary="">
         <h2>سوق الممالك</h2>
         <p className={styles.muted}>
           تُحجز موارد عرضك عند نشره. يجب أن تملك سوقًا، وأن تتسع مخازنك للموارد الواردة.

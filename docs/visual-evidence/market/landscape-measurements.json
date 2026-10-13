@@ -1,0 +1,32 @@
+{
+  "viewport": [
+    844,
+    390
+  ],
+  "dpr": 2,
+  "source": "http://127.0.0.1:3314/game-art/kingdoms/city-scenes/market-1280.avif",
+  "densityCorrectedIntrinsic": [
+    523,
+    294
+  ],
+  "display": [
+    476,
+    267.578125
+  ],
+  "font": "\"Cairo Variable\", \"Segoe UI\", Tahoma, sans-serif",
+  "overflow": false,
+  "sceneOverflow": false,
+  "fixture": "local real components + local engine, no production account",
+  "artworkRequests": [
+    "/game-art/kingdoms/city-scenes/market-1280.avif"
+  ],
+  "resourceTiming": [
+    {
+      "name": "/game-art/kingdoms/city-scenes/market-1280.avif",
+      "durationMs": 4.199999999953434,
+      "encodedBytes": 166739
+    }
+  ],
+  "errors": [],
+  "axeViolations": []
+}

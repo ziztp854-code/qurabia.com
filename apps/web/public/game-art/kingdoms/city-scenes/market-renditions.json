@@ -1,0 +1,45 @@
+{
+  "source": "market.webp",
+  "width": 1672,
+  "height": 941,
+  "bytes": 571464,
+  "note": "Derived from existing WebP, no new detail or resolution added; visually review encoding.",
+  "renditions": [
+    {
+      "filename": "market-768.webp",
+      "width": 768,
+      "height": 432,
+      "bytes": 117876
+    },
+    {
+      "filename": "market-768.avif",
+      "width": 768,
+      "height": 432,
+      "bytes": 72899
+    },
+    {
+      "filename": "market-1280.webp",
+      "width": 1280,
+      "height": 720,
+      "bytes": 259228
+    },
+    {
+      "filename": "market-1280.avif",
+      "width": 1280,
+      "height": 720,
+      "bytes": 166739
+    },
+    {
+      "filename": "market-1672.webp",
+      "width": 1672,
+      "height": 941,
+      "bytes": 449126
+    },
+    {
+      "filename": "market-1672.avif",
+      "width": 1672,
+      "height": 941,
+      "bytes": 276197
+    }
+  ]
+}

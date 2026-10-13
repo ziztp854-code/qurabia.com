@@ -53,3 +53,10 @@
 - Apply [the integrated full-site guide](docs/qurabia-codex-guide.md) when working on Qurabia product features. Existing project rules and the current user request take precedence.
 - The user-approved pack is installed as 37 independent `qurabia-*` skills in `.agents/skills/`. Select and read only skills matching the current task; preserve the existing design skill precedence above.
 - The pack guides requested work; it does not authorize implementing every listed feature, rewriting the product, or deploying it.
+
+## Visual Excellence routing
+
+- For visible UI, buildings, scenes, image assets, or responsive design changes, apply [Visual Excellence](docs/visual-excellence.md) alongside the existing design skill precedence. Load `.agents/skills/qurabia-visual-qa/SKILL.md` for the Art Director / Visual QA review role.
+- Relevant surfaces include `apps/web/tokens.css`, `apps/web/src/components/ui`, `apps/web/src/components/kingdoms`, `apps/web/src/components/mamluk-map`, their route styles, and `apps/web/public/game-art`. Preserve each game's art direction; shared quality standards do not impose one visual identity.
+- Browser inspection and desktop/mobile evidence are required for final visual acceptance; build/typecheck success alone is insufficient. Purely nonvisual logic changes do not trigger the expanded visual loop.
+- Visual Excellence work must preserve game rules, data, and production. GitHub pushes and Render or other deployments require explicit user approval for that action, overriding the general push allowance above for this work.

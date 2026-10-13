@@ -1,4 +1,6 @@
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/cairo';
+import '@fontsource-variable/alexandria';
 import { AppRouterContext, type AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { ImageConfigContext } from 'next/dist/shared/lib/image-config-context.shared-runtime';
 import { imageConfigDefault } from 'next/dist/shared/lib/image-config';

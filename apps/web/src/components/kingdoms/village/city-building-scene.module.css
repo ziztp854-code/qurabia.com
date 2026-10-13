@@ -261,3 +261,126 @@
   .manageButton, .backButton { min-inline-size: 0; inline-size: 100%; white-space: normal; }
   .scene input, .scene select, .scene textarea { font-size: 16px; }
 }
+
+/* Market pilot: quiet stone-and-brass command deck. Other scenes retain their identity. */
+.scene[data-scene='market'] {
+  grid-template-columns: minmax(340px, 26rem) minmax(0, 1672px);
+  gap: var(--space-6);
+  padding: var(--space-6);
+  --input: var(--kingdoms-ui-surface-soft);
+  --ring: var(--kingdoms-ui-gold);
+}
+.scene[data-scene='market'] .heading {
+  padding-inline-start: var(--space-4);
+  border-inline-start: 3px solid var(--kingdoms-ui-gold);
+}
+.scene[data-scene='market'] .title { font-family: var(--font-alexandria); }
+.scene[data-scene='market'] .artwork {
+  inline-size: 100%;
+  align-self: start;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+.scene[data-scene='market'] .content {
+  align-self: start;
+  max-block-size: 100%;
+  padding: var(--space-5);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-lg);
+  background: var(--kingdoms-ui-surface);
+  box-shadow: var(--shadow-sm);
+}
+.scene[data-scene='market'] .content h2 {
+  font-size: 1rem;
+  font-family: var(--font-alexandria);
+  line-height: 1.6;
+}
+.scene[data-scene='market'] .content p { font-size: 0.875rem; line-height: 1.8; }
+.scene[data-scene='market'] .content fieldset:has(> legend) {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface-soft);
+}
+.scene[data-scene='market'] .content legend {
+  padding-inline: var(--space-2);
+  color: var(--kingdoms-ui-gold);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.scene[data-scene='market'] .content fieldset > div {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: var(--space-2) var(--space-3);
+}
+.scene[data-scene='market'] .content :global(.field) {
+  container: market-field / inline-size;
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+.scene[data-scene='market'] .content :global(.field-label) { font-size: 0.8125rem; }
+.scene[data-scene='market'] .content :global(.field-control) {
+  min-inline-size: 0;
+  border-color: var(--kingdoms-market-control-border);
+  padding-inline: var(--space-2);
+  background: var(--kingdoms-ui-background);
+}
+.scene[data-scene='market'] .content input { inline-size: 100%; font-variant-numeric: tabular-nums; }
+.scene[data-scene='market'] .content form button[type='submit'] {
+  inline-size: 100%;
+  background: var(--kingdoms-ui-gold);
+  color: var(--kingdoms-ui-background);
+  border-color: var(--kingdoms-ui-gold);
+  box-shadow: none;
+}
+.scene[data-scene='market'] .content form button[type='submit']:hover:enabled {
+  background: color-mix(in srgb, var(--kingdoms-ui-gold) 85%, var(--kingdoms-ui-foreground));
+  box-shadow: var(--shadow-sm);
+}
+@media (max-width: 1000px) and (min-width: 701px) {
+  .scene[data-scene='market'] { grid-template-columns: minmax(320px, 38%) minmax(0, 1fr); padding: var(--space-4); gap: var(--space-4); }
+  .scene[data-scene='market'] .content { padding: var(--space-3); }
+}
+@media (max-width: 700px) {
+  .scene[data-scene='market'] {
+    display: flex;
+    gap: var(--space-4);
+    padding: max(var(--space-4), env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) max(var(--space-4), env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
+  }
+  .scene[data-scene='market'] .heading { padding-inline-start: var(--space-2); }
+  .scene[data-scene='market'] .content { flex: 0 0 auto; max-block-size: none; inline-size: 100%; padding: var(--space-3); }
+  .scene[data-scene='market'] .artwork { aspect-ratio: 1672 / 941; }
+  .scene[data-scene='market'] .header { flex-wrap: wrap; position: relative; }
+  .scene[data-scene='market'] .heading { flex-basis: 100%; }
+  .scene[data-scene='market'] .manageButton, .scene[data-scene='market'] .backButton { flex: 1; font-size: 0.8125rem; }
+}
+.scene[data-scene='market'] .content :global([data-market-summary]) > p:last-child {
+  margin-block: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-surface-soft);
+  text-align: start;
+}
+.scene[data-scene='market'] .content form, .scene[data-scene='market'] .content form > fieldset { gap: var(--space-3); }
+
+@media (min-width: 701px) and (max-width: 1000px) and (min-height: 501px) {
+  .scene[data-scene='market'] { display: flex; flex-direction: column; overflow-y: auto; }
+  .scene[data-scene='market'] .header { order: -1; flex-shrink: 0; }
+  .scene[data-scene='market'] .artwork { flex: 0 0 auto; }
+  .scene[data-scene='market'] .content { flex: 0 0 auto; inline-size: 100%; max-block-size: none; overflow-y: visible; }
+}
+
+@container market-field (max-width: 8rem) {
+  .scene[data-scene='market'] .content :global(.field-label),
+  .scene[data-scene='market'] .content :global(.field-control) { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .scene[data-scene='market'] { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .scene[data-scene='market'] .content,
+  .scene[data-scene='market'] .content fieldset:has(> legend) { padding: clamp(8px, var(--space-3), 12px); }
+}
+
+.scene[data-scene='market'] .content input { font-size: max(16px, 1rem); }

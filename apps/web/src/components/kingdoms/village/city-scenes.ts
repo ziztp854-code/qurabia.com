@@ -32,6 +32,9 @@ export const citySceneAsset = (scene: CitySceneKey, mobile = false) => {
 const prefetched = new Set<string>();
 export function prefetchCityScene(scene: CitySceneKey) {
   if (typeof window === 'undefined' || typeof Image === 'undefined') return;
+  // The market picture selects its format, density and viewport rendition itself.
+  // Preloading the legacy source here would download unused landscape/portrait bytes.
+  if (scene === 'market') return;
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
   if (connection?.saveData) return;
   const src = citySceneAsset(scene, window.matchMedia('(max-width: 700px)').matches);
