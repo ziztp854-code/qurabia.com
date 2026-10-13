@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAiGameDraftToken } from '@tahaddi/contracts';
-import { createMafiaGame, submitMafiaAction } from './actions';
+import { createMafiaGame, submitMafiaAction, submitMafiaVote } from './actions';
 
 const AUTH_SECRET = 'test-only-auth-secret-32-characters';
 
@@ -42,13 +42,6 @@ vi.mock('@/lib/mafia/rules', () => ({
   shuffled: vi.fn(),
 }));
 
-vi.mock('@/lib/mafia/game-modes', () => ({
-  MAFIA_GAME_MODES: {
-    CLASSIC: { id: 'CLASSIC' },
-  },
-  applyModeMultipliers: vi.fn((id, timers) => timers),
-}));
-
 vi.mock('@/lib/quiz/room-code', () => ({
   generateUniqueActivityRoomCode: mocks.generateUniqueActivityRoomCode,
 }));
@@ -84,6 +77,38 @@ describe('createMafiaGame', () => {
       },
     } as never);
     process.env.AUTH_SECRET = AUTH_SECRET;
+  });
+
+  it('preserves the SPEED timers shown in the creation form instead of halving them twice', async () => {
+    const prisma = mocks.getPrismaClient();
+    await expect(
+      createMafiaGame(
+        formData({ modeId: 'SPEED', nightSeconds: '23', daySeconds: '45', votingSeconds: '23' }),
+      ),
+    ).rejects.toThrow('NEXT_REDIRECT');
+    expect(prisma.mafiaGame.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ nightSeconds: 23, daySeconds: 45, votingSeconds: 23 }),
+      }),
+    );
+  });
+
+  it('uses mode defaults for missing or blank number fields', async () => {
+    const prisma = mocks.getPrismaClient();
+    await expect(
+      createMafiaGame(formData({ modeId: 'SPEED', maxPlayers: '', slowModeSeconds: '' })),
+    ).rejects.toThrow('NEXT_REDIRECT');
+    expect(prisma.mafiaGame.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          maxPlayers: 12,
+          slowModeSeconds: 2,
+          nightSeconds: 23,
+          daySeconds: 45,
+          votingSeconds: 23,
+        }),
+      }),
+    );
   });
 
   it('ينشئ غرفة Mafia مع modeId ويمرر القيم المعدّلة', async () => {
@@ -238,6 +263,7 @@ describe('submitMafiaAction — تحقيق المحقق', () => {
     await submitMafiaAction(
       formData({
         gameId: 'game-1',
+        round: '2',
         participantId: actor.id,
         targetId: target.id,
         type: 'INVESTIGATE',
@@ -265,6 +291,7 @@ describe('submitMafiaAction — تحقيق المحقق', () => {
     await submitMafiaAction(
       formData({
         gameId: 'game-1',
+        round: '2',
         participantId: actor.id,
         targetId: target.id,
         type: 'INVESTIGATE',
@@ -297,6 +324,7 @@ describe('submitMafiaAction — تحقيق المحقق', () => {
     await submitMafiaAction(
       formData({
         gameId: 'game-1',
+        round: '2',
         participantId: actor.id,
         targetId: target.id,
         type: 'INVESTIGATE',
@@ -304,5 +332,95 @@ describe('submitMafiaAction — تحقيق المحقق', () => {
     );
 
     expect(prisma.mafiaParticipant.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects an expired automatic night and a decision from a previous round', async () => {
+    for (const game of [
+      { id: 'game-1', status: 'NIGHT', currentRound: 2, autoMode: true, phaseEndsAt: new Date(0) },
+      { id: 'game-1', status: 'NIGHT', currentRound: 3, autoMode: false, phaseEndsAt: null },
+    ]) {
+      const prisma = detectivePrisma();
+      prisma.$queryRaw.mockResolvedValue([game]);
+      mocks.getPrismaClient.mockReturnValue(prisma as never);
+      expect(
+        await submitMafiaAction(
+          formData({ gameId: 'game-1', round: '2', participantId: actor.id, targetId: target.id }),
+        ),
+      ).toBe(false);
+      expect(prisma.mafiaAction.createMany).not.toHaveBeenCalled();
+      expect(prisma.mafiaParticipant.findFirst).not.toHaveBeenCalled();
+    }
+  });
+});
+
+describe('submitMafiaVote', () => {
+  function votePrisma(
+    game = {
+      id: 'game-1',
+      status: 'VOTING',
+      currentRound: 2,
+      autoMode: true,
+      phaseEndsAt: new Date(Date.now() + 60000),
+    },
+    voter: { id: string } | null = { id: 'voter-1' },
+    target: { id: string } | null = { id: 'target-1' },
+  ) {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([game]),
+      mafiaParticipant: {
+        findFirst: vi.fn().mockResolvedValueOnce(voter).mockResolvedValueOnce(target),
+      },
+      mafiaVote: { upsert: vi.fn().mockResolvedValue({}) },
+    };
+    return { ...tx, $transaction: vi.fn(async (callback) => callback(tx)) };
+  }
+  const voteForm = () =>
+    formData({ gameId: 'game-1', participantId: 'voter-1', targetId: 'target-1', round: '2' });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.hasDatabaseUrl.mockReturnValue(true);
+    mocks.getMafiaAccessToken.mockResolvedValue('private-token');
+  });
+
+  it('returns acceptance after writing the vote under the phase lock', async () => {
+    const prisma = votePrisma();
+    mocks.getPrismaClient.mockReturnValue(prisma as never);
+    expect(await submitMafiaVote(voteForm())).toBe(true);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.mafiaVote.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: { gameId: 'game-1', round: 2, voterId: 'voter-1', targetId: 'target-1' },
+      }),
+    );
+  });
+  it.each([
+    { status: 'DAY', currentRound: 2, autoMode: false, phaseEndsAt: null },
+    { status: 'VOTING', currentRound: 3, autoMode: false, phaseEndsAt: null },
+    { status: 'VOTING', currentRound: 2, autoMode: true, phaseEndsAt: new Date(0) },
+  ])('rejects votes for a closed, expired, or later round: %j', async (game) => {
+    const prisma = votePrisma({ id: 'game-1', ...game } as never);
+    mocks.getPrismaClient.mockReturnValue(prisma as never);
+    expect(await submitMafiaVote(voteForm())).toBe(false);
+    expect(prisma.mafiaVote.upsert).not.toHaveBeenCalled();
+  });
+  it.each([
+    [null, { id: 'target-1' }],
+    [{ id: 'voter-1' }, null],
+  ])('rejects unavailable or unauthorized participants', async (voter, target) => {
+    const prisma = votePrisma(undefined, voter, target);
+    mocks.getPrismaClient.mockReturnValue(prisma as never);
+    expect(await submitMafiaVote(voteForm())).toBe(false);
+    expect(prisma.mafiaVote.upsert).not.toHaveBeenCalled();
+  });
+  it('accepts manual votes until the host closes the phase', async () => {
+    const prisma = votePrisma({
+      id: 'game-1',
+      status: 'VOTING',
+      currentRound: 2,
+      autoMode: false,
+      phaseEndsAt: new Date(0),
+    });
+    mocks.getPrismaClient.mockReturnValue(prisma as never);
+    expect(await submitMafiaVote(voteForm())).toBe(true);
   });
 });

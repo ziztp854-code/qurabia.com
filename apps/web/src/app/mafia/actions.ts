@@ -19,7 +19,9 @@ import { generateUniqueActivityRoomCode } from '@/lib/quiz/room-code';
 import { mafiaAiContentSchema } from '@/lib/ai/game-content-generation';
 
 function integerField(formData: FormData, key: string, fallback: number) {
-  const value = Number(formData.get(key));
+  const field = formData.get(key);
+  if (typeof field !== 'string' || !field.trim()) return fallback;
+  const value = Number(field);
   return Number.isInteger(value) ? value : fallback;
 }
 
@@ -49,16 +51,34 @@ export async function createMafiaGame(formData: FormData) {
   const mode = (formData.get('modeId') as MafiaGameModeId | null) ?? 'CLASSIC';
   const modeObj = MAFIA_GAME_MODES[mode] ?? MAFIA_GAME_MODES.CLASSIC;
   const maxPlayers = Math.min(30, Math.max(5, integerField(formData, 'maxPlayers', 12)));
-  const baseKiller = Math.min(3, Math.max(1, integerField(formData, 'killerCount', 1)));
-  const roomCode = await generateUniqueActivityRoomCode(prisma);
-  const baseTimers = {
-    nightSeconds: Math.min(180, Math.max(20, integerField(formData, 'nightSeconds', 45))),
-    daySeconds: Math.min(300, Math.max(30, integerField(formData, 'daySeconds', 90))),
-    votingSeconds: Math.min(120, Math.max(20, integerField(formData, 'votingSeconds', 45))),
-    killerCount: baseKiller,
+  const defaults = applyModeMultipliers(modeObj.id, {
+    nightSeconds: 45,
+    daySeconds: 90,
+    votingSeconds: 45,
+    killerCount: 1,
     maxPlayers,
+  });
+  const roomCode = await generateUniqueActivityRoomCode(prisma);
+  // Presets already write their adjusted values into the form. Apply the mode only to defaults.
+  const adjusted = {
+    nightSeconds: Math.min(
+      180,
+      Math.max(15, integerField(formData, 'nightSeconds', defaults.nightSeconds)),
+    ),
+    daySeconds: Math.min(
+      300,
+      Math.max(30, integerField(formData, 'daySeconds', defaults.daySeconds)),
+    ),
+    votingSeconds: Math.min(
+      120,
+      Math.max(15, integerField(formData, 'votingSeconds', defaults.votingSeconds)),
+    ),
+    killerCount: Math.min(
+      3,
+      Math.floor((maxPlayers - 2) / 3),
+      Math.max(1, integerField(formData, 'killerCount', defaults.killerCount)),
+    ),
   };
-  const adjusted = applyModeMultipliers(modeObj.id, baseTimers);
   const scenario = parseMafiaScenario(formData.get('aiScenario'));
   const scenarioMessages = scenario
     ? [
@@ -184,16 +204,26 @@ export async function submitMafiaAction(formData: FormData) {
   requireMafiaDatabase();
   const gameId = String(formData.get('gameId') ?? '');
   const actorId = String(formData.get('participantId') ?? '');
+  const expectedRound = integerField(formData, 'round', 0);
   const participantToken = await getMafiaAccessToken(gameId);
   const targetId = String(formData.get('targetId') ?? '');
   const prisma = getPrismaClient();
   const accepted = await prisma.$transaction(async (tx) => {
-    const [game] = await tx.$queryRaw<Array<{ id: string; status: string; currentRound: number }>>`
-      SELECT "id", "status"::text, "currentRound"
+    const [game] = await tx.$queryRaw<
+      Array<{
+        id: string;
+        status: string;
+        currentRound: number;
+        autoMode: boolean;
+        phaseEndsAt: Date | null;
+      }>
+    >`
+      SELECT "id", "status"::text, "currentRound", "autoMode", "phaseEndsAt"
       FROM "MafiaGame"
       WHERE "id" = ${gameId}
       FOR UPDATE`;
-    if (!game || game.status !== 'NIGHT') return false;
+    if (!game || game.status !== 'NIGHT' || game.currentRound !== expectedRound) return false;
+    if (game.autoMode && game.phaseEndsAt && game.phaseEndsAt.getTime() <= Date.now()) return false;
 
     const actor = await tx.mafiaParticipant.findFirst({
       where: {
@@ -284,7 +314,7 @@ export async function submitMafiaAction(formData: FormData) {
     });
     return true;
   });
-  if (!accepted) return;
+  if (!accepted) return false;
   refreshMafia(gameId);
   return true;
 }
@@ -293,36 +323,44 @@ export async function submitMafiaVote(formData: FormData) {
   requireMafiaDatabase();
   const gameId = String(formData.get('gameId') ?? '');
   const voterId = String(formData.get('participantId') ?? '');
+  const expectedRound = integerField(formData, 'round', 0);
   const participantToken = await getMafiaAccessToken(gameId);
   const targetId = String(formData.get('targetId') ?? '');
   const prisma = getPrismaClient();
-  const game = await prisma.mafiaGame.findUnique({
-    where: { id: gameId },
-    select: {
-      status: true,
-      currentRound: true,
-      participants: {
-        where: { id: { in: [voterId, targetId] }, status: 'ALIVE' },
-        select: { id: true, role: true },
-      },
-    },
+  if (!participantToken || voterId === targetId) return false;
+  const accepted = await prisma.$transaction(async (tx) => {
+    const [game] = await tx.$queryRaw<
+      Array<{
+        id: string;
+        status: string;
+        currentRound: number;
+        autoMode: boolean;
+        phaseEndsAt: Date | null;
+      }>
+    >`
+      SELECT "id", "status"::text, "currentRound", "autoMode", "phaseEndsAt"
+      FROM "MafiaGame" WHERE "id" = ${gameId} FOR UPDATE`;
+    if (!game || game.status !== 'VOTING' || game.currentRound !== expectedRound) return false;
+    if (game.autoMode && game.phaseEndsAt && game.phaseEndsAt.getTime() <= Date.now()) return false;
+    const voter = await tx.mafiaParticipant.findFirst({
+      where: { id: voterId, gameId, accessToken: participantToken, status: 'ALIVE' },
+      select: { id: true },
+    });
+    const target = await tx.mafiaParticipant.findFirst({
+      where: { id: targetId, gameId, status: 'ALIVE' },
+      select: { id: true },
+    });
+    if (!voter || !target) return false;
+    await tx.mafiaVote.upsert({
+      where: { gameId_round_voterId: { gameId, round: game.currentRound, voterId } },
+      update: { targetId },
+      create: { gameId, round: game.currentRound, voterId, targetId },
+    });
+    return true;
   });
-  if (!game || game.status !== 'VOTING' || game.participants.length !== 2) return;
-  const voter = game.participants.find((item) => item.id === voterId);
-  const target = game.participants.find((item) => item.id === targetId);
-  if (!voter || !target) return;
-  if (voter.id === target.id) return;
-  const authorizedVoter = await prisma.mafiaParticipant.findFirst({
-    where: { id: voterId, gameId, accessToken: participantToken },
-    select: { id: true },
-  });
-  if (!authorizedVoter) return;
-  await prisma.mafiaVote.upsert({
-    where: { gameId_round_voterId: { gameId, round: game.currentRound, voterId } },
-    update: { targetId },
-    create: { gameId, round: game.currentRound, voterId, targetId },
-  });
+  if (!accepted) return false;
   refreshMafia(gameId);
+  return true;
 }
 
 export async function sendMafiaMessage(formData: FormData) {
@@ -334,7 +372,7 @@ export async function sendMafiaMessage(formData: FormData) {
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, 280);
-  if (!body) return;
+  if (!body) return false;
   const prisma = getPrismaClient();
   const participant = await prisma.mafiaParticipant.findFirst({
     where: { id: participantId, gameId, accessToken: participantToken },
@@ -349,21 +387,21 @@ export async function sendMafiaMessage(formData: FormData) {
       },
     },
   });
-  if (!participant || participant.isMuted || !participant.game.chatEnabled) return;
+  if (!participant || participant.isMuted || !participant.game.chatEnabled) return false;
   const elapsed = participant.lastMessageAt
     ? Date.now() - participant.lastMessageAt.getTime()
     : Number.POSITIVE_INFINITY;
-  if (elapsed < participant.game.slowModeSeconds * 1000) return;
+  if (elapsed < participant.game.slowModeSeconds * 1000) return false;
 
   const channel = resolveMafiaChatChannel({
     gameStatus: participant.game.status,
     role: participant.role,
     playerStatus: participant.status,
   });
-  if (!channel) return;
+  if (!channel) return false;
   const now = new Date();
   const cutoff = new Date(now.getTime() - participant.game.slowModeSeconds * 1000);
-  await prisma.$transaction(async (tx) => {
+  const accepted = await prisma.$transaction(async (tx) => {
     const claimed = await tx.mafiaParticipant.updateMany({
       where: {
         id: participantId,
@@ -373,10 +411,13 @@ export async function sendMafiaMessage(formData: FormData) {
       },
       data: { lastMessageAt: now },
     });
-    if (claimed.count === 0) return;
+    if (claimed.count === 0) return false;
     await tx.mafiaMessage.create({ data: { gameId, participantId, channel, body } });
+    return true;
   });
+  if (!accepted) return false;
   refreshMafia(gameId);
+  return true;
 }
 
 export async function moderateMafiaParticipant(formData: FormData) {

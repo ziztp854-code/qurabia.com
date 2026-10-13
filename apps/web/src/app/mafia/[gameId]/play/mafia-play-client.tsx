@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 
 interface GameData {
   id: string;
+  winner?: 'KILLERS' | 'CITIZENS' | null;
   currentRound: number;
   phaseEndsAt: string | null;
   autoMode: boolean;
@@ -89,8 +90,8 @@ function MafiaPlayClient({
     targetId: string | null;
     error: string | null;
   }>({ round: game.currentRound, targetId: null, error: null });
-  const [voteSubmitted, setVoteSubmitted] = useState(false);
   const [chatDraft, setChatDraft] = useState('');
+  const [chatError, setChatError] = useState('');
   const chatInputRef = useRef<HTMLInputElement>(null);
   const [nightPending, startNightTransition] = useTransition();
   const [chatPending, startChatTransition] = useTransition();
@@ -110,19 +111,24 @@ function MafiaPlayClient({
           : 'PROTECT';
 
   const handleNightSubmit = () => {
-    if (!selectedNightTargetId) return;
+    if (!selectedNightTargetId || nightPending || player.status !== 'ALIVE') return;
     const data = new FormData();
     data.append('gameId', game.id);
     data.append('participantId', player.id);
     data.append('targetId', selectedNightTargetId);
+    data.append('round', String(game.currentRound));
     data.append('type', actionType);
     setNightSelection({ round: game.currentRound, targetId: selectedNightTargetId, error: null });
     startNightTransition(async () => {
-      const accepted = await submitMafiaAction(data);
-      if (accepted) {
-        setSubmittedNightRound(game.currentRound);
-        setNightSelection({ round: game.currentRound, targetId: null, error: null });
-        return;
+      try {
+        const accepted = await submitMafiaAction(data);
+        if (accepted) {
+          setSubmittedNightRound(game.currentRound);
+          setNightSelection({ round: game.currentRound, targetId: null, error: null });
+          return;
+        }
+      } catch {
+        // Preserve the selected target for retrying after a network failure.
       }
       setNightSelection({
         round: game.currentRound,
@@ -140,14 +146,22 @@ function MafiaPlayClient({
   const handleChatSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const body = chatDraft.trim();
-    if (!body || !canSendMessage) return;
+    if (!body || !canSendMessage || chatPending) return;
     const data = new FormData();
     data.append('gameId', game.id);
     data.append('participantId', player.id);
     data.append('body', body);
+    setChatError('');
     startChatTransition(async () => {
-      await sendMafiaMessage(data);
-      setChatDraft('');
+      try {
+        if (await sendMafiaMessage(data)) {
+          setChatDraft('');
+          return;
+        }
+      } catch {
+        // Keep the message so the player can retry without typing it again.
+      }
+      setChatError('تعذّر إرسال الرسالة. انتظر قليلًا وتحقق من اتصالك وأن القناة مفتوحة.');
     });
   };
 
@@ -156,13 +170,13 @@ function MafiaPlayClient({
     requestAnimationFrame(() => chatInputRef.current?.focus());
   };
 
-  const handleVoteSubmit = (targetId: string) => {
+  const handleVoteSubmit = async (targetId: string) => {
     const data = new FormData();
     data.append('gameId', game.id);
     data.append('participantId', player.id);
     data.append('targetId', targetId);
-    submitMafiaVote(data);
-    setVoteSubmitted(true);
+    data.append('round', String(game.currentRound));
+    return submitMafiaVote(data);
   };
 
   const channelLabel =
@@ -192,7 +206,13 @@ function MafiaPlayClient({
         participantId={player.id}
       />
 
-      {player.status === 'ELIMINATED' && (
+      {phase === 'FINISHED' && game.winner && (
+        <div className="mafia-vote-confirmation" role="status">
+          <h2>انتهت اللعبة</h2>
+          <p>الفائز: {game.winner === 'KILLERS' ? 'القتلة' : 'المواطنون'}</p>
+        </div>
+      )}
+      {player.status === 'ELIMINATED' && phase !== 'FINISHED' && (
         <div className="mafia-eliminated-banner">
           <h2>خرجت من الجولة</h2>
           <p>اللعبة مستمرة. يمكنك متابعة الأحداث من قناة المستبعدين.</p>
@@ -200,7 +220,7 @@ function MafiaPlayClient({
       )}
 
       <MafiaPrimaryTask phase={phase} role={role} playerStatus={player.status}>
-        {phase === 'NIGHT' && nightActionRole && !nightSubmitted && (
+        {phase === 'NIGHT' && player.status === 'ALIVE' && nightActionRole && !nightSubmitted && (
           <>
             <MafiaPlayerPicker
               players={nightTargets}
@@ -236,7 +256,7 @@ function MafiaPlayClient({
             </div>
           </>
         )}
-        {phase === 'NIGHT' && nightActionRole && nightSubmitted && (
+        {phase === 'NIGHT' && player.status === 'ALIVE' && nightActionRole && nightSubmitted && (
           <p className="mafia-night-locked" role="status">
             {role === 'DETECTIVE'
               ? 'أُغلق ملف هذه الليلة. نتيجتك في الملف السري.'
@@ -248,9 +268,9 @@ function MafiaPlayClient({
         )}
         {phase === 'VOTING' && player.status === 'ALIVE' && (
           <MafiaVotePanel
+            key={`${game.id}:${game.currentRound}`}
             players={voteTargets}
             onSubmit={handleVoteSubmit}
-            disabled={voteSubmitted}
           />
         )}
         {phase === 'DAY' && player.status === 'ALIVE' && (
@@ -337,7 +357,10 @@ function MafiaPlayClient({
                     ? 'اكتب رسالتك…'
                     : 'القناة للقراءة فقط الآن'
               }
-              onChange={(event) => setChatDraft(event.target.value)}
+              onChange={(event) => {
+                setChatDraft(event.target.value);
+                setChatError('');
+              }}
             />
             <Button
               type="submit"
@@ -349,6 +372,11 @@ function MafiaPlayClient({
               <Send aria-hidden="true" />
             </Button>
           </form>
+          {chatError && (
+            <p className="mafia-action-error" role="alert">
+              {chatError}
+            </p>
+          )}
         </div>
       </Card>
 

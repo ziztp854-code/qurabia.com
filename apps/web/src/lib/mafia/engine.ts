@@ -10,20 +10,19 @@ function transitionClaimWhere(
   gameId: string,
   status: 'NIGHT' | 'DAY' | 'VOTING',
   expectedPhaseEndsAt: Date | null,
-  force: boolean,
 ) {
   return {
     id: gameId,
     status,
-    ...(force ? {} : { phaseEndsAt: expectedPhaseEndsAt }),
+    phaseEndsAt: expectedPhaseEndsAt,
   };
 }
 
-async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null, force: boolean) {
+async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null) {
   const prisma = getPrismaClient();
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.mafiaGame.updateMany({
-      where: transitionClaimWhere(gameId, 'NIGHT', expectedPhaseEndsAt, force),
+      where: transitionClaimWhere(gameId, 'NIGHT', expectedPhaseEndsAt),
       data: { phaseEndsAt: expectedPhaseEndsAt },
     });
     if (claimed.count === 0) return;
@@ -75,7 +74,11 @@ async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null, fo
       .filter((role): role is MafiaRoleName => Boolean(role));
     const winner = determineMafiaWinner(aliveRoles);
     const eliminationMessage = eliminated
-      ? renderEliminationText('NIGHT', eliminated.displayName, game.currentRound + eliminated.id.length)
+      ? renderEliminationText(
+          'NIGHT',
+          eliminated.displayName,
+          game.currentRound + eliminated.id.length,
+        )
       : killedId
         ? 'انتهى الليل، لكن الحماية أنقذت المستهدف. لا أثر لقتل هذه الليلة.'
         : 'انتهى الليل من دون ضحية. أشرقة الشمس على قرية لا تزال في أمان نسبي.';
@@ -86,7 +89,13 @@ async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null, fo
       messages.push({
         gameId,
         channel: 'SYSTEM',
-        body: buildNarrativeEvent('start', winner, game.currentRound, aliveRoles.length, game.participants.filter((p) => p.role === 'KILLER').length).body,
+        body: buildNarrativeEvent(
+          'start',
+          winner,
+          game.currentRound,
+          aliveRoles.length,
+          game.participants.filter((p) => p.role === 'KILLER').length,
+        ).body,
       });
     }
 
@@ -97,10 +106,11 @@ async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null, fo
         : null;
     const witness = game.participants.find((player) => player.role === 'WITNESS');
     if (killer && witness && eliminated) {
-      const actualKiller = [...actions]
-        .filter((a) => a.type === 'KILL' && a.targetId === eliminated.id)
-        .map((a) => game.participants.find((p) => p.id === a.actorId))
-        .filter(Boolean)[0] ?? killer;
+      const actualKiller =
+        [...actions]
+          .filter((a) => a.type === 'KILL' && a.targetId === eliminated.id)
+          .map((a) => game.participants.find((p) => p.id === a.actorId))
+          .filter(Boolean)[0] ?? killer;
       const killerName = actualKiller?.displayName ?? killer.displayName;
       const clueVariants = [
         `دليل الجولة ${game.currentRound}: يبدأ اسم أحد القتلة بحرف «${killerName.charAt(0)}».`,
@@ -119,7 +129,13 @@ async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null, fo
       await tx.mafiaMessage.create({ data: m });
     }
     if (winner) {
-      const ending = buildNarrativeEvent('end', winner, game.currentRound, aliveRoles.length, game.participants.filter((p) => p.role === 'KILLER').length);
+      const ending = buildNarrativeEvent(
+        'end',
+        winner,
+        game.currentRound,
+        aliveRoles.length,
+        game.participants.filter((p) => p.role === 'KILLER').length,
+      );
       await tx.mafiaMessage.create({ data: { gameId, channel: 'SYSTEM', body: ending.body } });
     }
     await tx.mafiaGame.update({
@@ -131,11 +147,11 @@ async function resolveNight(gameId: string, expectedPhaseEndsAt: Date | null, fo
   });
 }
 
-async function openVoting(gameId: string, expectedPhaseEndsAt: Date | null, force: boolean) {
+async function openVoting(gameId: string, expectedPhaseEndsAt: Date | null) {
   const prisma = getPrismaClient();
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.mafiaGame.updateMany({
-      where: transitionClaimWhere(gameId, 'DAY', expectedPhaseEndsAt, force),
+      where: transitionClaimWhere(gameId, 'DAY', expectedPhaseEndsAt),
       data: { phaseEndsAt: expectedPhaseEndsAt },
     });
     if (claimed.count === 0) return;
@@ -155,11 +171,11 @@ async function openVoting(gameId: string, expectedPhaseEndsAt: Date | null, forc
   });
 }
 
-async function resolveVoting(gameId: string, expectedPhaseEndsAt: Date | null, force: boolean) {
+async function resolveVoting(gameId: string, expectedPhaseEndsAt: Date | null) {
   const prisma = getPrismaClient();
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.mafiaGame.updateMany({
-      where: transitionClaimWhere(gameId, 'VOTING', expectedPhaseEndsAt, force),
+      where: transitionClaimWhere(gameId, 'VOTING', expectedPhaseEndsAt),
       data: { phaseEndsAt: expectedPhaseEndsAt },
     });
     if (claimed.count === 0) return;
@@ -202,13 +218,25 @@ async function resolveVoting(gameId: string, expectedPhaseEndsAt: Date | null, f
       .filter((role): role is MafiaRoleName => Boolean(role));
     const winner = determineMafiaWinner(aliveRoles);
     const eliminationBody = eliminated
-      ? renderEliminationText('VOTING', eliminated.displayName, game.currentRound + eliminated.id.length)
-      : 'تعادلت الأصوات في هذه الجولة، ولم يخرج أحد. تعود اللعبة للليل لتتضح الصور مجدداً.';
+      ? renderEliminationText(
+          'VOTING',
+          eliminated.displayName,
+          game.currentRound + eliminated.id.length,
+        )
+      : top
+        ? 'تعادلت الأصوات في هذه الجولة، ولم يخرج أحد. تعود اللعبة للليل لتتضح الصور مجدداً.'
+        : 'لم تُسجّل أصوات في هذه الجولة، ولم يخرج أحد. تعود اللعبة للليل.';
     const voteMessages: { gameId: string; channel: 'SYSTEM'; body: string }[] = [
       { gameId, channel: 'SYSTEM', body: eliminationBody },
     ];
     if (winner) {
-      const ending = buildNarrativeEvent('end', winner, game.currentRound, aliveRoles.length, game.participants.filter((p) => p.role === 'KILLER').length);
+      const ending = buildNarrativeEvent(
+        'end',
+        winner,
+        game.currentRound,
+        aliveRoles.length,
+        game.participants.filter((p) => p.role === 'KILLER').length,
+      );
       voteMessages.push({ gameId, channel: 'SYSTEM', body: ending.body });
     }
     for (const m of voteMessages) {
@@ -237,9 +265,9 @@ export async function advanceMafiaGame(gameId: string, force = false) {
   if (!force && (!game.autoMode || !game.phaseEndsAt || game.phaseEndsAt.getTime() > Date.now())) {
     return;
   }
-  if (game.status === 'NIGHT') await resolveNight(gameId, game.phaseEndsAt, force);
-  if (game.status === 'DAY') await openVoting(gameId, game.phaseEndsAt, force);
-  if (game.status === 'VOTING') await resolveVoting(gameId, game.phaseEndsAt, force);
+  if (game.status === 'NIGHT') await resolveNight(gameId, game.phaseEndsAt);
+  if (game.status === 'DAY') await openVoting(gameId, game.phaseEndsAt);
+  if (game.status === 'VOTING') await resolveVoting(gameId, game.phaseEndsAt);
 }
 
 export async function markMafiaParticipantSeen(
