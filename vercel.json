@@ -87,6 +87,16 @@
       ]
     },
     {
+      "source": "/games/sultan-farm/index.html",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
+        }
+      ]
+    },
+    {
       "source": "/.well-known/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }]
     }

@@ -1,6 +1,14 @@
 'use client';
 
-import { useContext, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { Sprout, Timer, Warehouse, Award } from 'lucide-react';
 import { Button } from '@/components/ui';
 import {
@@ -117,6 +125,20 @@ export function FarmPlantVisual({
 }
 
 export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
+  const [gameOpen, setGameOpen] = useState(false);
+  const gameDialog = useRef<HTMLDialogElement>(null);
+  const gameTrigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!gameOpen) return;
+    const trigger = gameTrigger.current;
+    gameDialog.current?.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [gameOpen]);
   const [localSelected, setLocalSelected] = useState(0),
     [seed, setSeed] = useState<CropKey>('wheat');
   const scene = useContext(FarmSceneContext);
@@ -178,6 +200,42 @@ export function SultanFarmPanel({ view, village, busy, send }: GameProps) {
           <Sprout size={28} />
         </span>
       </header>
+      <div className={styles.managementEntry}>
+        <div>
+          <strong>لعبة إدارة مزرعة السلطان</strong>
+          <p>
+            ازرع واحصد، شغّل الطاحونة والمخبز، وأرسل قوافل السوق. تقدم هذه اللعبة يُحفظ على جهازك
+            ومكافآتها داخلها فقط.
+          </p>
+        </div>
+        <Button ref={gameTrigger} variant="gold" fullWidth onClick={() => setGameOpen(true)}>
+          افتح لعبة المزرعة
+        </Button>
+      </div>
+      {gameOpen &&
+        createPortal(
+          <dialog
+            ref={gameDialog}
+            className={styles.managementDialog}
+            aria-label="لعبة إدارة مزرعة السلطان"
+            onKeyDown={(event) => event.stopPropagation()}
+            onCancel={() => setGameOpen(false)}
+            onClose={() => setGameOpen(false)}
+          >
+            <div className={styles.managementToolbar}>
+              <strong>مزرعة السلطان · الزراعة والتصنيع والقوافل</strong>
+              <Button variant="ghost" onClick={() => setGameOpen(false)}>
+                العودة إلى المزرعة
+              </Button>
+            </div>
+            <iframe
+              className={styles.managementFrame}
+              title="لعبة إدارة مزرعة السلطان"
+              src={`/games/sultan-farm/index.html?save=${encodeURIComponent(JSON.stringify([view.worldId, village.ownerId, village.id]))}`}
+            />
+          </dialog>,
+          document.body,
+        )}
       <div className={styles.summary} aria-label={copy.aria.summary}>
         <span>{copy.header.harvests(number(progress.harvests))}</span>
         <span>{copy.header.growing(number(counts.growing))}</span>

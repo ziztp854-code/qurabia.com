@@ -1,0 +1,77 @@
+:root {
+  --kingdoms-ui-background: #10232c;
+  --kingdoms-ui-surface: #18333b;
+  --kingdoms-ui-surface-strong: #24454b;
+  --kingdoms-ui-surface-soft: #142b32;
+  --kingdoms-ui-foreground: #d8ded9;
+  --kingdoms-ui-muted: #b4bdb6;
+  --kingdoms-ui-gold: #c9aa76;
+  --kingdoms-ui-success: #a3bda6;
+  --kingdoms-ui-danger: #d6a092;
+  --kingdoms-ui-border: #597376;
+  --kingdoms-ui-border-gold: #7d7158;
+  --kingdoms-ui-panel-surface: #203139;
+  --kingdoms-ui-panel-strong: #263941;
+  --kingdoms-ui-panel-muted: #b7beb7;
+  --kingdoms-ui-panel-border: #5d7375;
+  --green: var(--kingdoms-ui-surface);
+  --gold: var(--kingdoms-ui-gold);
+  --ink: var(--kingdoms-ui-foreground);
+  --muted: var(--kingdoms-ui-muted);
+  --paper: var(--kingdoms-ui-background);
+  --line: var(--kingdoms-ui-border);
+}
+.card,
+.workshop {
+  background: var(--kingdoms-ui-surface);
+}
+.quiet,
+.crop,
+.stock,
+.item {
+  background: var(--kingdoms-ui-surface-soft);
+  color: var(--kingdoms-ui-muted);
+  border-color: var(--kingdoms-ui-border);
+}
+.crop.selected,
+.item.enough {
+  background: var(--kingdoms-ui-surface-strong);
+  color: var(--kingdoms-ui-success);
+  border-color: var(--kingdoms-ui-success);
+}
+.pill {
+  background: var(--kingdoms-ui-surface-strong);
+  color: var(--kingdoms-ui-success);
+}
+.primary {
+  background: var(--kingdoms-ui-surface-strong);
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  color: var(--kingdoms-ui-gold);
+}
+.crop small,
+.stock small,
+.eyebrow,
+footer {
+  color: var(--kingdoms-ui-muted);
+}
+.avatar {
+  background: var(--kingdoms-ui-surface-strong);
+}
+dialog {
+  background: var(--kingdoms-ui-surface);
+}
+.layout > * {
+  min-inline-size: 0;
+}
+@media (max-width: 780px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crop-list {
+    flex-basis: 100%;
+  }
+  .skyline .building-art {
+    flex-shrink: 1;
+    min-inline-size: 50px;
+  }
+}

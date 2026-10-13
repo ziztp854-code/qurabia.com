@@ -154,6 +154,18 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
+        // Only this standalone mini-game may be embedded by our own farm panel.
+        source: '/games/sultan-farm/index.html',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          {
+            key: 'Content-Security-Policy',
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'",
+          },
+        ],
+      },
+      {
         source: '/models/:path*',
         headers: [
           {

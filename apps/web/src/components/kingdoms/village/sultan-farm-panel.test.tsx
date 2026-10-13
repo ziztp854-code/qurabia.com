@@ -53,6 +53,43 @@ function props(ripe = false, legacy = false): GameProps {
   };
 }
 describe('Sultan garden RTL interaction', () => {
+  it('opens the management game inside the farm and returns without sending kingdom commands', () => {
+    const showModal = vi.fn(function (this: HTMLDialogElement) {
+      this.open = true;
+    });
+    const original = HTMLDialogElement.prototype.showModal;
+    HTMLDialogElement.prototype.showModal = showModal;
+    try {
+      const p = props();
+      const outerKeyDown = vi.fn();
+      render(
+        <div onKeyDown={outerKeyDown}>
+          <SultanFarmPanel {...p} />
+        </div>,
+      );
+      const trigger = screen.getByRole('button', { name: 'افتح لعبة المزرعة' });
+      fireEvent.click(trigger);
+      expect(showModal).toHaveBeenCalledOnce();
+      fireEvent.keyDown(screen.getByRole('dialog', { name: 'لعبة إدارة مزرعة السلطان' }), {
+        key: 'Escape',
+      });
+      expect(outerKeyDown).not.toHaveBeenCalled();
+      const frame = screen.getByTitle('لعبة إدارة مزرعة السلطان');
+      const url = new URL(frame.getAttribute('src')!, 'https://example.test');
+      expect(url.pathname).toBe('/games/sultan-farm/index.html');
+      expect(JSON.parse(url.searchParams.get('save')!)).toEqual([
+        p.view.worldId,
+        p.village.ownerId,
+        p.village.id,
+      ]);
+      fireEvent.click(screen.getByRole('button', { name: 'العودة إلى المزرعة' }));
+      expect(screen.queryByTitle('لعبة إدارة مزرعة السلطان')).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+      expect(p.send).not.toHaveBeenCalled();
+    } finally {
+      HTMLDialogElement.prototype.showModal = original;
+    }
+  });
   it('shows a badge earned in another village and never promises the same award again', () => {
     const p = props();
     p.view.player!.achievements.push('garden:first-bloom');

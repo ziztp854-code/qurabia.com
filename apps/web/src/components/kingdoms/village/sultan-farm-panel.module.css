@@ -593,3 +593,57 @@
     transition: none;
   }
 }
+.managementEntry {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--kingdoms-ui-surface-strong);
+}
+.managementEntry strong {
+  color: var(--kingdoms-ui-gold);
+}
+.managementEntry p {
+  margin: var(--space-2) 0 0;
+  color: var(--kingdoms-ui-muted);
+  font-size: 0.75rem;
+  line-height: 1.8;
+}
+.managementDialog {
+  inline-size: min(1440px, calc(100vw - 24px));
+  max-inline-size: none;
+  block-size: min(940px, calc(100dvh - 24px));
+  max-block-size: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--kingdoms-ui-border-gold);
+  border-radius: var(--radius-lg);
+  background: var(--kingdoms-ui-background);
+  color: var(--kingdoms-ui-foreground);
+}
+.managementDialog::backdrop {
+  background: color-mix(in srgb, var(--kingdoms-ui-background) 85%, transparent);
+}
+.managementToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: 64px;
+  padding: var(--space-2) var(--space-3);
+  border-block-end: 1px solid var(--kingdoms-ui-border);
+  font-size: 0.8rem;
+}
+.managementFrame {
+  display: block;
+  inline-size: 100%;
+  block-size: calc(100% - 64px);
+  border: 0;
+}
+@media (max-width: 600px) {
+  .managementToolbar strong {
+    max-inline-size: 45%;
+    font-size: 0.7rem;
+  }
+}
