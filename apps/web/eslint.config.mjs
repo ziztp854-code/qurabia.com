@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     '.next/**',
     '.next-mamluk/**',
     'public/maplibre/**',
+    // Upstream Three.js distribution; application game sources remain linted.
+    'public/games/sultan-farm/vendor/**',
     'coverage/**',
     'out/**',
     'build/**',
