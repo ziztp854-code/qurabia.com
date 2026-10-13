@@ -1,0 +1,66 @@
+.world {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--kingdoms-ui-background);
+  color: var(--kingdoms-ui-foreground);
+  isolation: isolate;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 56px;
+  flex-shrink: 0;
+  padding: var(--space-2) max(var(--space-4), env(safe-area-inset-right)) var(--space-2)
+    max(var(--space-4), env(safe-area-inset-left));
+  border-block-end: 1px solid var(--kingdoms-ui-border-gold);
+  background: var(--kingdoms-ui-surface);
+  font-size: 0.8rem;
+}
+.back,
+.garden {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--kingdoms-ui-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  color: var(--kingdoms-ui-gold);
+  background: var(--kingdoms-ui-surface-strong);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.back:focus-visible,
+.garden:focus-visible {
+  outline: 2px solid var(--kingdoms-ui-gold);
+  outline-offset: 3px;
+}
+.frame {
+  display: block;
+  inline-size: 100%;
+  flex: 1;
+  min-block-size: 0;
+  border: 0;
+}
+@media (max-width: 600px) {
+  .toolbar {
+    min-block-size: 52px;
+    padding-inline: var(--space-2);
+    font-size: 0.7rem;
+  }
+  .toolbar > span {
+    display: none;
+  }
+  .back,
+  .garden {
+    padding-inline: var(--space-2);
+  }
+}

@@ -10,6 +10,7 @@ async function clickGardenEntrance(page: Page) {
   expect(await page.evaluate(({x,y}) => document.elementFromPoint(x,y)?.tagName, point)).toBe('CANVAS');
   if (await page.evaluate(() => navigator.maxTouchPoints > 0)) await page.touchscreen.tap(point.x, point.y);
   else await page.mouse.click(point.x, point.y);
+  await page.getByRole('button', { name: 'حديقة القصر' }).click();
 }
 
 async function openGarden(page: Page, request: APIRequestContext) {

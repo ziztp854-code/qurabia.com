@@ -126,15 +126,22 @@ describe('village effects', () => {
 describe('village scene rendering', () => {
   it('routes the cosmetic garden entrance through the shared scene callback without a game command', async () => {
     // This equality is enforced by release TypeScript; runtime navigation alone cannot catch a narrowed callback.
-    expectTypeOf<VillageSceneProps['onFacilitySelect']>().toEqualTypeOf<VillageCanvasProps['onFacilitySelect']>();
+    expectTypeOf<VillageSceneProps['onFacilitySelect']>().toEqualTypeOf<
+      VillageCanvasProps['onFacilitySelect']
+    >();
     const view = fixture();
     const send = vi.fn();
-    const { container } = render(<VillagePanel view={view} village={view.villages[0]} send={send} busy={false} />);
+    const { container } = render(
+      <VillagePanel view={view} village={view.villages[0]} send={send} busy={false} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: /افتح حديقة السلطان/ }));
     await waitFor(() => {
       expect(container.querySelector('[data-city-scene="sultan-garden"]')).toBeInTheDocument();
     });
-    expect(container.querySelector('[data-city-scene="sultan-garden"]')).toHaveTextContent('حديقة السلطان');
+    expect(container.querySelector('[data-city-scene="sultan-garden"]')).toHaveTextContent(
+      'مزرعة السلطان',
+    );
+    expect(screen.getByTitle('مزرعة السلطان ثلاثية الأبعاد')).toBeInTheDocument();
     expect(send).not.toHaveBeenCalled();
   });
   it('describes mounted archer training on the Living City stable hotspot only', () => {
@@ -149,7 +156,9 @@ describe('village scene rendering', () => {
     const stable = screen.getByRole('button', { name: /^الإسطبل، المستوى/ });
     expect(stable).toHaveAccessibleDescription(/تدريب جارٍ/);
     expect(stable).not.toHaveAccessibleName(/تدريب جارٍ/);
-    expect(screen.getByRole('button', { name: /^الثكنة/ })).not.toHaveAccessibleDescription(/تدريب جارٍ/);
+    expect(screen.getByRole('button', { name: /^الثكنة/ })).not.toHaveAccessibleDescription(
+      /تدريب جارٍ/,
+    );
   });
 
   it('marks every building with its real state, construction and max level', () => {
@@ -212,7 +221,9 @@ describe('village scene rendering', () => {
     );
     expect(screen.getByRole('alert', { name: 'هجوم قادم' })).toBeInTheDocument();
     expect(screen.getByLabelText('مؤشر تهديد عسكري عند البوابة')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /القوات القادمة/, hidden: true }).closest('section')).toHaveTextContent('هجوم قادم');
+    expect(
+      screen.getByRole('heading', { name: /القوات القادمة/, hidden: true }).closest('section'),
+    ).toHaveTextContent('هجوم قادم');
     expect(document.body.innerHTML).not.toContain('commanderId');
   });
 
@@ -224,7 +235,10 @@ describe('village scene rendering', () => {
     expect(screen.getByRole('button', { name: 'تكبير القرية' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'تصغير القرية' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'عرض القرية بالكامل' })).toBeInTheDocument();
-    expect(container.querySelector('[data-village-scene]')).toHaveAttribute('aria-label', 'مشهد القرية التفاعلي، اسحب للتحريك وكبّر بعجلة الفأرة أو بإصبعين');
+    expect(container.querySelector('[data-village-scene]')).toHaveAttribute(
+      'aria-label',
+      'مشهد القرية التفاعلي، اسحب للتحريك وكبّر بعجلة الفأرة أو بإصبعين',
+    );
     expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'false');
     fireEvent.click(screen.getByRole('button', { name: 'إظهار أسماء المباني' }));
     expect(container.querySelector('[data-labels]')).toHaveAttribute('data-labels', 'true');
@@ -240,7 +254,15 @@ describe('selected building card', () => {
       build: { building: 'farm' as const, level: 1, endsAt: now + 60000 },
     };
     await act(async () => {
-      render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} initialBuilding="warehouse" />);
+      render(
+        <VillagePanel
+          view={view}
+          village={village}
+          send={vi.fn()}
+          busy={false}
+          initialBuilding="warehouse"
+        />,
+      );
     });
     const card = await screen.findByRole('region', { name: 'تفاصيل المخزن' }, { timeout: 3000 });
     const costs = within(card).getByRole('list', { name: 'تكلفة التطوير' });
@@ -248,9 +270,15 @@ describe('selected building card', () => {
     expect(within(costs).getAllByRole('listitem')).toHaveLength(
       Object.values(expected).filter((amount) => amount > 0).length,
     );
-    expect(within(card).getByText('تُخصم التكلفة الآن ويبدأ التطوير بعد المشاريع السابقة، حتى وأنت خارج اللعبة.')).toBeInTheDocument();
     expect(
-      within(document.querySelector<HTMLElement>('section[aria-label="قوائم التنفيذ"]')!).getByText(/مزارع الغذاء/),
+      within(card).getByText(
+        'تُخصم التكلفة الآن ويبدأ التطوير بعد المشاريع السابقة، حتى وأنت خارج اللعبة.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(document.querySelector<HTMLElement>('section[aria-label="قوائم التنفيذ"]')!).getByText(
+        /مزارع الغذاء/,
+      ),
     ).toBeInTheDocument();
     expect(within(card).getByRole('button', { name: 'أضف إلى قائمة البناء' })).toBeEnabled();
   });
@@ -260,15 +288,31 @@ describe('selected building card', () => {
     const send = vi.fn().mockResolvedValue(undefined);
     const village = view.villages[0];
     const { rerender } = render(
-      <VillagePanel view={view} village={village} send={send} busy={false} initialBuilding="hall" />,
+      <VillagePanel
+        view={view}
+        village={village}
+        send={send}
+        busy={false}
+        initialBuilding="hall"
+      />,
     );
     fireEvent.click(await screen.findByRole('button', { name: 'طوّر المبنى' }, { timeout: 3000 }));
     expect(send).toHaveBeenCalledWith({ type: 'build', villageId: village.id, building: 'hall' });
     const card = screen.getByRole('region', { name: 'تفاصيل دار الحكم' });
-    rerender(<VillagePanel view={view} village={village} send={send} busy initialBuilding="hall" />);
+    rerender(
+      <VillagePanel view={view} village={village} send={send} busy initialBuilding="hall" />,
+    );
     expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeDisabled();
     expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
-    rerender(<VillagePanel view={view} village={village} send={send} busy={false} initialBuilding="hall" />);
+    rerender(
+      <VillagePanel
+        view={view}
+        village={village}
+        send={send}
+        busy={false}
+        initialBuilding="hall"
+      />,
+    );
     expect(within(card).getByRole('button', { name: 'طوّر المبنى' })).toBeEnabled();
     expect(within(card).getByText(`مستوى ${number(1)} / ${number(20)}`)).toBeInTheDocument();
     rerender(
@@ -305,12 +349,22 @@ describe('rally point hotspot', () => {
       buildings: { ...view.villages[0].buildings, barracks: 2, stable: 2 },
       training: { unit: 'mounted_archer' as const, count: 2, endsAt: now + 60000 },
     };
-    render(<VillagePanel view={view} village={village} send={vi.fn()} busy={false} initialBuilding="rally" />);
+    render(
+      <VillagePanel
+        view={view}
+        village={village}
+        send={vi.fn()}
+        busy={false}
+        initialBuilding="rally"
+      />,
+    );
 
     const council = await screen.findByRole('region', { name: 'مشهد مجلس الحرب' });
     fireEvent.click(within(council).getByRole('button', { name: 'الذهاب إلى التدريب' }));
     const stable = await screen.findByRole('region', { name: 'مشهد الإسطبل' });
-    expect(within(stable).getByLabelText('قائمة تدريب القرية')).toHaveTextContent(view.config.units.mounted_archer.name);
+    expect(within(stable).getByLabelText('قائمة تدريب القرية')).toHaveTextContent(
+      view.config.units.mounted_archer.name,
+    );
     expect(within(stable).getByRole('button', { name: 'درّب الفرسان' })).toBeDisabled();
     expect(screen.queryByRole('region', { name: 'مشهد مجلس الحرب' })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'خريطة القرية' })).not.toBeInTheDocument();
@@ -318,7 +372,9 @@ describe('rally point hotspot', () => {
     fireEvent.click(within(stable).getByRole('button', { name: 'العودة إلى المدينة' }));
     expect(screen.getByRole('region', { name: 'خريطة القرية' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'مشهد الإسطبل' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^الإسطبل، المستوى/ })).toHaveAccessibleDescription(/تدريب جارٍ/);
+    expect(screen.getByRole('button', { name: /^الإسطبل، المستوى/ })).toHaveAccessibleDescription(
+      /تدريب جارٍ/,
+    );
   });
 
   it('opens the military panel from pointer and keyboard without a second map', async () => {

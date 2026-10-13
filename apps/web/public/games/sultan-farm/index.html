@@ -2,991 +2,144 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#173e32" />
-    <title>تحدي المماليك · مزرعة السلطان</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#18333b" />
+    <title>مزرعة السلطان · عالم ثلاثي الأبعاد</title>
     <meta
       name="description"
-      content="ابنِ مزرعتك في عصر المماليك، ازرع واحصد وصنّع المنتجات وأرسل قوافل السوق."
+      content="ازرع وابنِ واصنع وتاجر في عالم مزرعة السلطان ثلاثي الأبعاد."
     />
-    <style>
-      :root {
-        --green: #173e32;
-        --gold: #d7af60;
-        --ink: #253d32;
-        --muted: #7b8779;
-        --paper: #f6f4eb;
-        --line: #e2e5d9;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: var(--paper);
-        color: var(--ink);
-        font-family: Tahoma, Arial, sans-serif;
-      }
-      button {
-        font: inherit;
-        cursor: pointer;
-        border: 0;
-      }
-      button:focus-visible {
-        outline: 3px solid #b77916;
-        outline-offset: 3px;
-      }
-      button:disabled {
-        cursor: default;
-        opacity: 0.55;
-      }
-      header {
-        height: 84px;
-        background: var(--green);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 5%;
-        gap: 20px;
-      }
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-      }
-      .seal {
-        width: 43px;
-        height: 43px;
-        border: 1px solid #aa965a;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        font-size: 25px;
-        color: var(--gold);
-      }
-      h1 {
-        font-size: 21px;
-        margin: 0 0 5px;
-      }
-      .brand small {
-        font-size: 11px;
-        color: #c1cebb;
-        letter-spacing: 1px;
-      }
-      .stats {
-        display: flex;
-        gap: 14px;
-      }
-      .stat {
-        border: 1px solid #ffffff25;
-        border-radius: 12px;
-        padding: 10px 16px;
-        font-size: 13px;
-        min-width: 110px;
-      }
-      .stat b {
-        margin-right: 7px;
-        color: #f2d396;
-        font-size: 18px;
-      }
-      .wrap {
-        max-width: 1450px;
-        padding: 32px 5%;
-        margin: auto;
-      }
-      .intro {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 26px;
-      }
-      .eyebrow {
-        color: #8a956f;
-        font-size: 11px;
-        letter-spacing: 2px;
-        margin-bottom: 10px;
-      }
-      h2 {
-        font-size: 29px;
-        margin: 0 0 9px;
-      }
-      .intro p {
-        font-size: 13px;
-        color: var(--muted);
-        margin: 0;
-        line-height: 1.8;
-      }
-      .quiet {
-        background: #e9ecdf;
-        border: 1px solid #dbe1cf;
-        color: #526449;
-        border-radius: 9px;
-        padding: 11px 15px;
-        font-size: 12px;
-      }
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
-        gap: 23px;
-      }
-      .card {
-        background: #fffdf7;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        overflow: hidden;
-      }
-      .farm-head {
-        display: flex;
-        justify-content: space-between;
-        padding: 19px 23px;
-        align-items: center;
-      }
-      .farm-head h3 {
-        font-size: 17px;
-        margin: 0 0 6px;
-      }
-      .sub {
-        font-size: 11px;
-        color: var(--muted);
-      }
-      .pill {
-        border-radius: 20px;
-        background: #edf1e6;
-        color: #637f4d;
-        padding: 7px 12px;
-        font-size: 11px;
-      }
-      .land {
-        background: #dce8c1;
-        position: relative;
-        min-height: 415px;
-        overflow: hidden;
-        padding: 24px 24px 15px;
-      }
-      .land:before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(ellipse at 70% 20%, #eef2d9 0, transparent 55%),
-          repeating-linear-gradient(30deg, transparent 0 38px, #b7cd9540 39px 40px);
-        pointer-events: none;
-      }
-      .skyline {
-        height: 95px;
-        display: flex;
-        justify-content: space-around;
-        position: relative;
-        align-items: end;
-        gap: 10px;
-      }
-      .building-art {
-        width: 92px;
-        height: 70px;
-        position: relative;
-        background: #c4a178;
-        border-radius: 8px 8px 2px 2px;
-        box-shadow: 6px 7px 0 #92704e38;
-        border-bottom: 7px solid #9d7552;
-      }
-      .building-art:before {
-        content: '';
-        position: absolute;
-        width: 62px;
-        height: 35px;
-        left: 15px;
-        top: -24px;
-        border-radius: 50% 50% 0 0;
-        background: #688579;
-        box-shadow: inset -10px 0 #0001;
-      }
-      .building-art:after {
-        content: '';
-        position: absolute;
-        width: 23px;
-        height: 39px;
-        bottom: 0;
-        left: 35px;
-        border-radius: 15px 15px 0 0;
-        background: #725641;
-      }
-      .tower {
-        width: 45px;
-        height: 110px;
-        border-radius: 4px;
-        background: #d7be8f;
-        box-shadow: 6px 7px #92704e20;
-        border-top: 8px dashed #967954;
-        position: relative;
-      }
-      .tower:after {
-        content: '';
-        position: absolute;
-        left: 17px;
-        top: 22px;
-        width: 10px;
-        height: 20px;
-        border-radius: 10px 10px 0 0;
-        background: #806d48;
-      }
-      .tree {
-        font-size: 70px;
-        filter: drop-shadow(6px 5px 0 #496b2420);
-      }
-      .path {
-        height: 20px;
-        background: #d0be92;
-        transform: rotate(-3deg);
-        position: relative;
-        margin: 10px -50px 23px;
-        border-top: 3px solid #e5d4a9;
-        border-bottom: 2px solid #b9a875;
-      }
-      .plots {
-        position: relative;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-        max-width: 650px;
-        margin: auto;
-      }
-      .plot {
-        height: 95px;
-        background: repeating-linear-gradient(0deg, #9e744d 0 13px, #ad8257 14px 16px);
-        border: 4px solid #b99464;
-        border-radius: 11px;
-        box-shadow: 0 5px 0 #80644444;
-        color: #fff7e3;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        transition: transform 0.15s;
-      }
-      .plot:hover {
-        transform: translateY(-3px);
-      }
-      .plot.empty {
-        background: repeating-linear-gradient(0deg, #b08c61 0 13px, #be9a70 14px 16px);
-        color: #f4e0bd;
-      }
-      .plot.ready {
-        border-color: #ecd979;
-        box-shadow:
-          0 0 0 3px #f9ed9b66,
-          0 5px 0 #80644444;
-      }
-      .plot .sprout {
-        font-size: 33px;
-        line-height: 1.2;
-        letter-spacing: 7px;
-      }
-      .plot span {
-        font-size: 11px;
-        margin-top: 5px;
-      }
-      .plot progress {
-        height: 4px;
-        width: 70%;
-        margin-top: 6px;
-        accent-color: #dce6a1;
-      }
-      .farm-note {
-        position: relative;
-        text-align: center;
-        font-size: 11px;
-        color: #5e7548;
-        margin-top: 20px;
-      }
-      .tools {
-        padding: 19px 23px;
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-      }
-      .crop-list {
-        display: flex;
-        gap: 8px;
-      }
-      .crop {
-        background: #f5f4ec;
-        border: 1px solid #e4e4d5;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-size: 12px;
-      }
-      .crop.selected {
-        background: #e8efd9;
-        border-color: #8da56d;
-        box-shadow: inset 0 0 0 1px #8da56d;
-      }
-      .crop small {
-        display: block;
-        color: #818777;
-        font-size: 10px;
-        margin-top: 4px;
-      }
-      .primary {
-        background: var(--green);
-        color: white;
-        border-radius: 9px;
-        padding: 11px 15px;
-        font-size: 12px;
-      }
-      .section-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 24px 0 13px;
-      }
-      .section-title h3 {
-        font-size: 16px;
-        margin: 0;
-      }
-      .workshops {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-      }
-      .workshop {
-        padding: 18px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        background: #fffdf7;
-      }
-      .workshop .icon {
-        font-size: 31px;
-        margin-bottom: 9px;
-      }
-      .workshop h4 {
-        margin: 0 0 9px;
-        font-size: 14px;
-      }
-      .workshop p {
-        font-size: 11px;
-        line-height: 1.8;
-        color: var(--muted);
-        min-height: 35px;
-        margin: 0 0 13px;
-      }
-      .workshop button {
-        width: 100%;
-      }
-      .side .card {
-        margin-bottom: 17px;
-        padding: 21px;
-      }
-      .side h3 {
-        font-size: 16px;
-        margin: 0 0 5px;
-      }
-      .order {
-        padding: 17px 0;
-        border-bottom: 1px solid var(--line);
-      }
-      .order:last-child {
-        border: 0;
-        padding-bottom: 0;
-      }
-      .order-top {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .avatar {
-        width: 39px;
-        height: 39px;
-        display: grid;
-        place-items: center;
-        background: #f1ead6;
-        border-radius: 11px;
-        font-size: 23px;
-      }
-      .order h4 {
-        margin: 0 0 5px;
-        font-size: 12px;
-      }
-      .order small {
-        color: #a18950;
-        font-size: 10px;
-      }
-      .items {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-bottom: 12px;
-      }
-      .item {
-        font-size: 10px;
-        padding: 6px 8px;
-        background: #f3f3eb;
-        border-radius: 6px;
-        color: #818775;
-      }
-      .item.enough {
-        color: #497841;
-        background: #ebf2e3;
-      }
-      .order button {
-        width: 100%;
-        padding: 9px;
-      }
-      .inventory {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        margin-top: 17px;
-      }
-      .stock {
-        text-align: center;
-        background: #f5f4ec;
-        border-radius: 10px;
-        padding: 10px 3px;
-      }
-      .stock span {
-        font-size: 23px;
-        display: block;
-      }
-      .stock b {
-        font-size: 14px;
-        display: block;
-        margin: 5px 0;
-      }
-      .stock small {
-        font-size: 10px;
-        color: var(--muted);
-      }
-      .challenge {
-        background: var(--green) !important;
-        color: white;
-        border: 0 !important;
-      }
-      .challenge .sub {
-        color: #b8c8af;
-      }
-      .quest {
-        padding-top: 16px;
-        font-size: 12px;
-      }
-      .quest-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        align-items: center;
-      }
-      .quest button {
-        font-size: 10px;
-        border-radius: 6px;
-        padding: 7px;
-        background: #d7af60;
-        color: #263e2d;
-      }
-      .quest progress {
-        display: block;
-        width: 100%;
-        height: 5px;
-        accent-color: #d7af60;
-        margin-top: 10px;
-      }
-      .xpbar {
-        height: 4px;
-        background: #ffffff20;
-        border-radius: 4px;
-        margin-top: 5px;
-      }
-      .xpbar div {
-        background: var(--gold);
-        height: 100%;
-        border-radius: 4px;
-      }
-      footer {
-        display: flex;
-        justify-content: space-between;
-        color: #8b9383;
-        font-size: 11px;
-        padding: 24px 0;
-        gap: 14px;
-      }
-      .textbutton {
-        background: none;
-        color: #667658;
-        font-size: 11px;
-        text-decoration: underline;
-      }
-      .toast {
-        position: fixed;
-        bottom: 26px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #173e32;
-        color: #fff;
-        padding: 15px 25px;
-        border-radius: 12px;
-        box-shadow: 0 5px 30px #0003;
-        z-index: 10;
-        max-width: 90%;
-        font-size: 13px;
-        text-align: center;
-        pointer-events: none;
-      }
-      .toast:empty {
-        display: none;
-      }
-      dialog {
-        border: 0;
-        border-radius: 20px;
-        padding: 28px;
-        max-width: 480px;
-        width: 90%;
-        color: var(--ink);
-        box-shadow: 0 20px 80px #0003;
-      }
-      dialog::backdrop {
-        background: #173e3280;
-      }
-      dialog h3 {
-        margin-top: 0;
-      }
-      dialog p {
-        font-size: 14px;
-        line-height: 2;
-      }
-      dialog .primary {
-        width: 100%;
-      }
-      @media (max-width: 1100px) {
-        .layout {
-          grid-template-columns: minmax(0, 1fr) 280px;
-        }
-        .wrap {
-          padding: 25px 3%;
-        }
-        .tools {
-          flex-wrap: wrap;
-        }
-        .crop {
-          padding: 9px 10px;
-        }
-        .workshop {
-          padding: 13px;
-        }
-      }
-      @media (max-width: 780px) {
-        header {
-          height: auto;
-          min-height: 80px;
-          padding: 16px 4%;
-          flex-wrap: wrap;
-        }
-        .stats {
-          width: 100%;
-          gap: 8px;
-        }
-        .stat {
-          flex: 1;
-          min-width: 0;
-          padding: 9px;
-          font-size: 11px;
-        }
-        .stat b {
-          font-size: 15px;
-        }
-        .layout {
-          grid-template-columns: 1fr;
-        }
-        .intro {
-          align-items: start;
-          gap: 10px;
-        }
-        h2 {
-          font-size: 24px;
-        }
-        .land {
-          min-height: 390px;
-          padding: 22px 15px 15px;
-        }
-        .plots {
-          gap: 10px;
-        }
-        .plot {
-          height: 85px;
-        }
-        .side {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-        }
-        .side .card {
-          margin: 0;
-          padding: 16px;
-        }
-        .side .orders {
-          grid-row: span 2;
-        }
-        .workshops {
-          gap: 8px;
-        }
-        .workshop p {
-          min-height: 58px;
-        }
-        .tools {
-          padding: 15px;
-        }
-        .crop-list {
-          flex: 1;
-          justify-content: space-between;
-        }
-        .crop {
-          flex: 1;
-        }
-        .quiet {
-          white-space: nowrap;
-        }
-        .workshop button {
-          padding: 10px 4px;
-          font-size: 11px;
-        }
-        .tree {
-          font-size: 53px;
-        }
-        .building-art {
-          width: 80px;
-        }
-        .side .challenge {
-          grid-column: 2;
-        }
-        .farm-head {
-          padding: 17px;
-        }
-        .intro p {
-          font-size: 11px;
-        }
-        footer {
-          flex-wrap: wrap;
-        }
-      }
-      @media (max-width: 430px) {
-        .side {
-          grid-template-columns: 1fr;
-        }
-        .side .challenge {
-          grid-column: auto;
-        }
-        .side .orders {
-          grid-row: auto;
-        }
-        .workshops {
-          grid-template-columns: 1fr;
-        }
-        .workshop {
-          display: grid;
-          grid-template-columns: 45px 1fr 100px;
-          align-items: center;
-          gap: 8px;
-        }
-        .workshop .icon {
-          grid-row: span 2;
-          margin: 0;
-        }
-        .workshop h4 {
-          margin: 0;
-        }
-        .workshop p {
-          min-height: 0;
-          margin: 0;
-        }
-        .workshop button {
-          grid-column: 3;
-          grid-row: 1 / span 2;
-        }
-        .plot .sprout {
-          font-size: 26px;
-          letter-spacing: 0;
-        }
-        .intro .quiet {
-          padding: 9px;
-          font-size: 10px;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .plot {
-          transition: none;
-        }
-      }
-      button {
-        min-height: 44px;
-      }
-      .quest button {
-        min-height: 44px;
-      }
-    </style>
     <link rel="stylesheet" href="theme.css" />
   </head>
   <body>
-    <header>
+    <header class="hud">
       <div class="brand">
-        <div class="seal">♜</div>
+        <span class="crest" aria-hidden="true">♜</span>
         <div>
-          <h1>تحدي المماليك</h1>
-          <small>مزرعة السلطان · ازرع إرثك</small>
+          <h1>مزرعة السلطان</h1>
+          <small>ازرع مدينة… وابنِ حكاية</small>
         </div>
       </div>
-      <div class="stats">
-        <div class="stat">🪙 الدنانير <b id="coins"></b></div>
-        <div class="stat">
-          🌟 المستوى <b id="level"></b>
-          <div class="xpbar"><div id="xp"></div></div>
-        </div>
-        <div class="stat">📦 الطلبات <b id="deliveries"></b></div>
+      <div class="hud-stats">
+        <button class="stat coin" data-tab="orders" aria-label="الدنانير وطلبات السوق">
+          🪙 <b id="coins">٢٤٠</b><small>دينار</small></button
+        ><button class="stat level" data-tab="quests">
+          <span class="level-medal" id="level">١</span
+          ><span
+            ><strong>المستوى</strong
+            ><progress id="xp" max="60" value="0" aria-label="خبرة المستوى"></progress
+          ></span></button
+        ><button class="stat storage" data-tab="inventory">
+          📦 <b id="storage">٨ / ٦٠</b><small>المخزن</small>
+        </button>
       </div>
+      <button class="icon-button" id="help" aria-label="دليل اللعب">؟</button>
     </header>
-    <main class="wrap">
-      <div class="intro">
-        <div>
-          <div class="eyebrow">من بذرة صغيرة… إلى مملكة مزدهرة</div>
-          <h2>أهلًا بك في مزرعتك، يا أمير 🌿</h2>
-          <p>ازرع أرضك، شغّل ورشك، وأرسل خيراتك مع قوافل السوق.</p>
+    <main class="game-shell">
+      <section class="world-area" aria-label="قرية السلطان">
+        <div class="world" id="world" data-renderer="loading">
+          <div class="loading-scene" id="loading-scene">
+            <span>♜</span><strong>تجهيز قريتك ثلاثية الأبعاد…</strong
+            ><small>الزراعة والبناء والتجارة في عالم واحد</small>
+          </div>
         </div>
-        <button class="quiet" id="help">؟ دليل اللعب</button>
-      </div>
-      <div class="layout">
-        <section>
-          <div class="card">
-            <div class="farm-head">
-              <div>
-                <h3>أرض الخير</h3>
-                <span class="sub">اختر بذرة ثم اضغط على حقل فارغ</span>
-              </div>
-              <span class="pill" id="field-count"></span>
-            </div>
-            <div class="land">
-              <div class="skyline" aria-hidden="true">
-                <span class="tree">🌴</span>
-                <div class="building-art"></div>
-                <div class="tower"></div>
-                <div class="building-art" style="transform: scale(0.8)"></div>
-                <span class="tree">🌳</span>
-              </div>
-              <div class="path"></div>
-              <div class="plots" id="plots"></div>
-              <div class="farm-note">☀ أرض خصبة · اضغط على المحصول الذهبي لحصاده</div>
-            </div>
-            <div class="tools">
-              <div class="crop-list" id="crops"></div>
-              <button class="primary" id="expand"></button>
-            </div>
+        <div class="world-title">
+          <span class="live-dot"></span>
+          <div>
+            <strong>قرية الخير</strong><small id="village-status">بداية صغيرة… وإرث كبير</small>
           </div>
-          <div class="section-title">
-            <h3>ورش المزرعة</h3>
-            <span class="sub">من خيرات الأرض إلى منتجات السوق</span>
+        </div>
+        <button class="gift" data-action="daily" aria-label="استلم هدية اليوم">
+          🎁 <span>هدية اليوم</span>
+        </button>
+        <div class="world-hint" id="world-hint">اسحب لتدوير العالم · بإصبعين للتكبير والتحريك</div>
+        <div class="camera-controls" aria-label="التحكم بالكاميرا">
+          <button id="zoom-in" aria-label="تكبير الخريطة">＋</button
+          ><button id="zoom-out" aria-label="تصغير الخريطة">−</button
+          ><button id="rotate" aria-label="تدوير الخريطة">↻</button
+          ><button id="reset-camera" aria-label="إعادة الكاميرا">⌂</button
+          ><button id="day-night" aria-label="تبديل النهار والمساء">☾</button
+          ><button id="quality" aria-label="تبديل جودة الرسومات">◈</button>
+        </div>
+        <div class="tutorial-tip" id="tutorial-tip">
+          <span>🌾</span>
+          <div>
+            <strong>أول محصول لك</strong
+            ><small>اختر القمح واضغط على حقل. عندما ينضج، احصده واصنع الدقيق.</small>
           </div>
-          <div class="workshops" id="workshops"></div>
-        </section>
-        <aside class="side">
-          <section class="card orders">
-            <h3>طلبات القوافل 🐪</h3>
-            <div class="sub">أكمل الطلبات لتكسب الدنانير والخبرة</div>
-            <div id="orders"></div>
-          </section>
-          <section class="card">
-            <h3>مخزن الخيرات</h3>
-            <div class="sub">محاصيلك ومنتجاتك في مكان واحد</div>
-            <div class="inventory" id="inventory"></div>
-          </section>
-          <section class="card challenge">
-            <h3>طريقك إلى الازدهار ✦</h3>
-            <div class="sub">ثلاثة تحديات… ومكافآت تستحق</div>
-            <div id="quests"></div>
-          </section>
-        </aside>
-      </div>
-      <footer>
-        <span id="save-note">◌ يُحفظ تقدمك تلقائيًا على هذا الجهاز</span
-        ><span
-          >مغامرة مزرعة فردية بطابع المماليك
-          <button id="reset" class="textbutton">بدء من جديد</button></span
-        >
-      </footer>
+          <button id="dismiss-tip" aria-label="إخفاء التلميح">×</button>
+        </div>
+      </section>
+      <aside class="side-panel" id="side-panel">
+        <div class="panel-heading">
+          <div>
+            <small id="panel-eyebrow">من الأرض إلى السوق</small>
+            <h2 id="panel-title">حقول المزرعة</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="toggle-panel"
+            aria-label="طي لوحة الإدارة"
+            aria-expanded="true"
+          >
+            ⌄
+          </button>
+        </div>
+        <div class="panel-scroll" id="panel-content"></div>
+        <div class="save-note" id="save-note" role="status">يُحفظ التقدم تلقائيًا على جهازك</div>
+      </aside>
     </main>
-    <div class="toast" role="status" aria-live="polite" id="toast"></div>
+    <nav class="dock" aria-label="إدارة مزرعة السلطان">
+      <button data-tab="farm" aria-pressed="true"><span>🌾</span>الحقول</button
+      ><button data-tab="build"><span>🏗</span>البناء</button
+      ><button data-tab="production"><span>⚙</span>الإنتاج</button
+      ><button data-tab="orders"><span>🐪</span>السوق</button
+      ><button data-tab="transport"><span>⛵</span>النقل</button
+      ><button data-tab="inventory"><span>📦</span>المخزن</button
+      ><button data-tab="quests"><span>✦</span>الأهداف</button>
+    </nav>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <dialog id="help-modal">
-      <h3>دليل مزرعة السلطان 🌾</h3>
+      <div class="dialog-title">
+        <span>♜</span>
+        <h2>حكايتك تبدأ من حقل</h2>
+      </div>
       <p>
-        ١. اختر القمح أو الجزر أو القطن، ثم اضغط على حقل فارغ للزراعة.<br />٢. انتظر عدّاد النمو، ثم
-        اضغط على الحقل الذهبي للحصاد.<br />٣. حوّل القمح إلى دقيق في الطاحونة. ابنِ المخبز والحظيرة
-        عند المستوى ٢ لصنع الخبز والحليب.<br />٤. سلّم طلبات القوافل، واستلم مكافآت التحديات لتوسيع
-        مزرعتك.<br />تستمر المؤقتات أثناء غيابك. يُحفظ تقدمك في هذا المتصفح.
+        حرّك العالم بالسحب، وكبّر بعجلة الفأرة أو بإصبعين. اضغط على الحقول والمباني لاختيارها. جميع
+        الإجراءات متاحة أيضًا من لوحة الإدارة.
       </p>
-      <button class="primary" id="close-help">لنبدأ الزراعة</button>
+      <ol>
+        <li>
+          <strong>الحقول:</strong> اختر بذرة وزرعها. القمح مجاني، والمحاصيل الأعلى تُفتح بالمستويات.
+        </li>
+        <li>
+          <strong>الإنتاج:</strong> حوّل القمح إلى دقيق أو علف. أطعم الأبقار والدجاج، ثم اصنع الخبز
+          والجبن والقماش والثياب.
+        </li>
+        <li>
+          <strong>البناء:</strong> اختر منشأة ثم قطعة أرض شاغرة. طوّر المنزل لزيادة السكان، وحرّك
+          المباني لتصميم قريتك.
+        </li>
+        <li>
+          <strong>التجارة:</strong> سلّم طلبات السوق وأرسل القوافل والسفن. رحلات النقل تعود بالخشب
+          والطوب والمسامير.
+        </li>
+        <li><strong>التقدم:</strong> اجمع مكافآت الأهداف وهدية اليوم، ووسّع المخزن والحقول.</li>
+      </ol>
+      <p class="muted">
+        التقدم محلي على هذا المتصفح ولكل قرية حفظ منفصل. يستمر النمو والإنتاج أثناء غيابك. هذه
+        مغامرة فردية؛ دنانيرها وخبرتها خاصة بها.
+      </p>
+      <button class="primary" id="close-help">إلى مزرعتي</button
+      ><button class="text-button" id="reset">بدء مزرعة جديدة</button>
     </dialog>
     <dialog id="reset-modal">
-      <h3>بدء مزرعة جديدة؟</h3>
-      <p>سيُحذف تقدم المزرعة الحالي من هذا الجهاز.</p>
-      <button class="primary" id="confirm-reset">نعم، ابدأ من جديد</button
-      ><button class="quiet" id="cancel-reset" style="width: 100%; margin-top: 10px">
-        العودة إلى مزرعتي
-      </button>
+      <h2>بداية جديدة؟</h2>
+      <p>سيُحذف تقدم هذه المزرعة من الجهاز. تبقى موارد المملكة منفصلة.</p>
+      <button class="primary" id="confirm-reset">ابدأ من جديد</button
+      ><button class="secondary" id="cancel-reset">احتفظ بمزرعتي</button>
     </dialog>
     <script src="game.js"></script>
-    <script>
-      const KEY =
-        'mamluk-farm-v1:' + (new URLSearchParams(location.search).get('save') || 'standalone');
-      let state = initial(),
-        saveAvailable = true;
-      try {
-        const raw = localStorage.getItem(KEY);
-        if (raw) {
-          const saved = JSON.parse(raw);
-          if (validSave(saved)) state = saved;
-        }
-      } catch (e) {
-        saveAvailable = false;
-      }
-      const $ = (id) => document.getElementById(id),
-        num = (n) => n.toLocaleString('ar-SA'),
-        seconds = (t) => Math.max(0, Math.ceil((t - Date.now()) / 1000));
-      let toastTimer;
-      function notify(message) {
-        $('toast').textContent = message;
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-          $('toast').textContent = '';
-        }, 3500);
-      }
-      function save() {
-        try {
-          localStorage.setItem(KEY, JSON.stringify(state));
-          saveAvailable = true;
-        } catch (e) {
-          saveAvailable = false;
-        }
-        $('save-note').textContent = saveAvailable
-          ? '✓ يُحفظ تقدمك تلقائيًا على هذا الجهاز'
-          : 'الحفظ غير متاح في هذا المتصفح؛ أبقِ الصفحة مفتوحة';
-      }
-      function perform(type, arg) {
-        const before = level(state);
-        notify(act(state, type, arg));
-        save();
-        render();
-        if (level(state) > before)
-          notify('ارتقيت إلى المستوى ' + num(level(state)) + '! ورشك تنتظر توسعتك ✨');
-      }
-      function render() {
-        $('coins').textContent = num(state.coins);
-        $('level').textContent = num(level(state));
-        $('deliveries').textContent = num(state.deliveries);
-        $('xp').style.width = ((state.xp % 60) / 60) * 100 + '%';
-        $('field-count').textContent = num(state.plots.length) + ' حقول';
-        $('crops').innerHTML = Object.entries(crops)
-          .map(
-            ([k, c]) =>
-              `<button class="crop ${state.selected === k ? 'selected' : ''}" aria-pressed="${state.selected === k}" data-crop="${k}">${c.icon} ${c.name}<small>${num(c.cost)} دينار · ${num(c.time)} ث</small></button>`,
-          )
-          .join('');
-        $('plots').innerHTML = state.plots
-          .map((p, i) => {
-            const ready = p && seconds(p.ready) === 0;
-            return `<button class="plot ${!p ? 'empty' : ready ? 'ready' : ''}" data-plot="${i}" aria-label="الحقل ${num(i + 1)}: ${!p ? 'فارغ، اضغط للزراعة' : crops[p.crop].name + (ready ? ' جاهز للحصاد' : ' ينمو')}"><div class="sprout">${!p ? '+' : ready ? crops[p.crop].icon.repeat(3) : '🌱 🌱'}</div><span>${!p ? 'ازرع هنا' : ready ? 'جاهز للحصاد ✦' : crops[p.crop].name + ' · ' + num(seconds(p.ready)) + ' ث'}</span>${p && !ready ? `<progress max="${p.ready - p.start}" value="${Date.now() - p.start}"></progress>` : ''}</button>`;
-          })
-          .join('');
-        $('expand').textContent =
-          state.plots.length >= 12
-            ? 'اكتملت التوسعة'
-            : '＋ حقلان · ' + num(50 + state.plots.length * 5) + ' دينار';
-        $('expand').disabled = state.plots.length >= 12;
-        $('inventory').innerHTML = Object.entries(goods)
-          .map(
-            ([k, g]) =>
-              `<div class="stock"><span>${g.icon}</span><b>${num(state.inventory[k])}</b><small>${g.name}</small></div>`,
-          )
-          .join('');
-        $('workshops').innerHTML = Object.entries(recipes)
-          .map(([k, r]) => {
-            const j = state.jobs[k],
-              built = state.buildings[k],
-              ready = j && seconds(j.ready) === 0,
-              input = Object.entries(r.input)
-                .map(([id, n]) => num(n) + ' ' + goods[id].name)
-                .join(' + ');
-            return `<div class="workshop"><div class="icon">${r.icon}</div><h4>${r.name}</h4><p>${input} ← ${goods[r.output].name}<br>${!built ? 'يفتح في المستوى ٢' : j ? (ready ? 'المنتج جاهز للاستلام' : 'الإنتاج: ' + num(seconds(j.ready)) + ' ث') : num(r.time) + ' ثانية لكل منتج'}</p><button class="${built ? 'primary' : 'quiet'}" data-${built ? 'produce' : 'build'}="${k}" ${(!built && level(state) < 2) || (j && !ready) ? 'disabled' : ''}>${!built ? 'بناء · ' + num(k === 'bakery' ? 85 : 65) + ' 🪙' : j ? (ready ? 'استلم المنتج' : 'قيد الإنتاج…') : 'ابدأ الإنتاج'}</button></div>`;
-          })
-          .join('');
-        $('orders').innerHTML = state.orderIds
-          .map((id, i) => {
-            const o = orderTemplates[id],
-              ready = requirements(state, o.items);
-            return `<div class="order"><div class="order-top"><div class="avatar">${o.icon}</div><div><h4>${o.name}</h4><small>🪙 ${num(o.coins)} دينار · ✦ ${num(o.xp)} خبرة</small></div></div><div class="items">${Object.entries(
-              o.items,
-            )
-              .map(
-                ([k, n]) =>
-                  `<span class="item ${state.inventory[k] >= n ? 'enough' : ''}">${goods[k].icon} ${goods[k].name} ${num(state.inventory[k])}/${num(n)}</span>`,
-              )
-              .join(
-                '',
-              )}</div><button class="${ready ? 'primary' : 'quiet'}" data-deliver="${i}" ${ready ? '' : 'disabled'}>${ready ? 'إرسال القافلة ←' : 'بانتظار المنتجات'}</button></div>`;
-          })
-          .join('');
-        const quests = [
-          ['حصاد ٣ حقول', state.harvests, 3, 35],
-          ['إرسال قافلتين', state.deliveries, 2, 60],
-          ['الوصول إلى المستوى ٣', level(state), 3, 100],
-        ];
-        $('quests').innerHTML = quests
-          .map(
-            ([name, value, max, reward], i) =>
-              `<div class="quest"><div class="quest-row"><span>${name} <small>(${num(Math.min(value, max))}/${num(max)})</small></span><button data-claim="${i}" ${value < max || state.claimed.includes(i) ? 'disabled' : ''}>${state.claimed.includes(i) ? 'تم الاستلام ✓' : value >= max ? 'استلم ' + num(reward) : num(reward) + ' 🪙'}</button></div><progress aria-label="${name}" value="${Math.min(value, max)}" max="${max}"></progress></div>`,
-          )
-          .join('');
-      }
-      document.addEventListener('click', (e) => {
-        const b = e.target.closest('button');
-        if (!b || b.disabled) return;
-        for (const type of ['plot', 'build', 'produce', 'deliver', 'claim'])
-          if (b.dataset[type] !== undefined) {
-            perform(
-              type,
-              ['plot', 'deliver', 'claim'].includes(type)
-                ? Number(b.dataset[type])
-                : b.dataset[type],
-            );
-            return;
-          }
-        if (b.dataset.crop) {
-          state.selected = b.dataset.crop;
-          save();
-          render();
-        }
-      });
-      $('expand').onclick = () => perform('expand');
-      $('help').onclick = () => $('help-modal').showModal();
-      $('close-help').onclick = () => $('help-modal').close();
-      $('reset').onclick = () => $('reset-modal').showModal();
-      $('cancel-reset').onclick = () => $('reset-modal').close();
-      $('confirm-reset').onclick = () => {
-        state = initial();
-        save();
-        render();
-        $('reset-modal').close();
-        notify('مزرعة جديدة… وبداية مباركة!');
-      };
-      render();
-      save();
-      setInterval(() => {
-        if (document.querySelector('dialog[open]') || document.hidden) return;
-        const focused = document.activeElement;
-        const identity = focused?.tagName === 'BUTTON' ? Object.entries(focused.dataset)[0] : null;
-        render();
-        if (identity)
-          document
-            .querySelector(`[data-${identity[0]}="${identity[1]}"]`)
-            ?.focus({ preventScroll: true });
-      }, 1000);
-    </script>
+    <script src="app.js"></script>
   </body>
 </html>
