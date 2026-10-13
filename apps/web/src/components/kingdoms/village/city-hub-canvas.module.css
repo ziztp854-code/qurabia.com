@@ -38,6 +38,22 @@
 .decorativeLandmark { position: absolute; pointer-events: none; }
 .reservedSite { position: absolute; pointer-events: none; }
 .stage[data-camera-state='BUILDING_FOCUS'] .terrain { filter: brightness(1.035); }
+/* Keep the two mountain resource sites identifiable and tappable on portrait phones. */
+@media (max-width: 700px) {
+  .stage[data-city-composition='portrait'] .hotspot[data-pinned-resource='true'] {
+    z-index: 6;
+  }
+  .stage[data-city-composition='portrait'] .hotspot[data-pinned-resource='true'][data-label-hidden='false'] .label {
+    visibility: visible;
+    pointer-events: auto;
+    inline-size: 80px;
+    min-inline-size: 80px;
+    max-inline-size: 80px;
+    min-block-size: 44px;
+    font-size: 12px;
+    touch-action: manipulation;
+  }
+}
 .stage[data-dragging='true'] {
   cursor: grabbing;
 }

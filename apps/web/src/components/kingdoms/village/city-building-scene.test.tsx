@@ -20,6 +20,32 @@ function FarmContextProbe() {
 afterEach(cleanup);
 
 describe('independent city facility scenes', () => {
+  it('follows the iPhone visual viewport when the keyboard opens and removes listeners on close', () => {
+    const viewport = Object.assign(new EventTarget(), { height: 664, offsetTop: 0 });
+    const removeListener = vi.spyOn(viewport, 'removeEventListener');
+    vi.stubGlobal('innerWidth', 390);
+    vi.stubGlobal('visualViewport', viewport);
+    try {
+      const rendered = render(
+        <CityBuildingScene scene="barracks" onClose={vi.fn()}>
+          <input aria-label="عدد الجنود" />
+        </CityBuildingScene>,
+      );
+      const scene = screen.getByRole('region', { name: 'مشهد الثكنة' });
+      expect(scene.style.getPropertyValue('--facility-viewport-height')).toBe('664px');
+      viewport.height = 320;
+      viewport.offsetTop = 30;
+      viewport.dispatchEvent(new Event('resize'));
+      expect(scene.style.getPropertyValue('--facility-viewport-height')).toBe('320px');
+      expect(scene.style.getPropertyValue('--facility-viewport-top')).toBe('30px');
+      rendered.unmount();
+      expect(removeListener).toHaveBeenCalledWith('resize', expect.any(Function));
+      expect(removeListener).toHaveBeenCalledWith('scroll', expect.any(Function));
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
   it('keeps covered page navigation inactive and restores it when returning to the city', () => {
     const rendered = render(<><button type="button">خلف المشهد</button><CityBuildingScene scene="market" onClose={vi.fn()}><button type="button">التجارة</button></CityBuildingScene></>);
     const background = screen.getByText('خلف المشهد');

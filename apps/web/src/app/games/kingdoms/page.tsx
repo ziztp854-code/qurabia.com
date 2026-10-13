@@ -1,8 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { SiteLayout } from '@/components/layout';
 import { requireActiveUser } from '@/lib/auth/session';
 import { KingdomsClient } from '@/components/kingdoms/kingdoms-client';
 import styles from './kingdoms-page.module.css';
+
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
 export const metadata: Metadata = {
   title: 'تحدي الممالك | تحدي',

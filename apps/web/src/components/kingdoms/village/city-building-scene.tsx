@@ -59,11 +59,37 @@ export function CityBuildingScene({ scene, onClose, children, garden, farm }: {
     }
     const scroll = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    const header = surface.current?.querySelector('header');
+    const syncHeader = () => {
+      if (!header || !surface.current) return;
+      surface.current.style.setProperty('--facility-header-height', `${header.getBoundingClientRect().height + 16}px`);
+    };
+    const headerObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(syncHeader);
+    if (header) headerObserver?.observe(header);
+    syncHeader();
+    const syncViewport = () => {
+      const viewport = window.visualViewport;
+      if (!viewport || window.innerWidth > 1000) {
+        surface.current?.style.removeProperty('--facility-viewport-height');
+        surface.current?.style.removeProperty('--facility-viewport-top');
+        return;
+      }
+      surface.current?.style.setProperty('--facility-viewport-height', `${viewport.height}px`);
+      surface.current?.style.setProperty('--facility-viewport-top', `${viewport.offsetTop}px`);
+    };
+    syncViewport();
+    window.visualViewport?.addEventListener('resize', syncViewport);
+    window.visualViewport?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
     back.current?.focus({ preventScroll: true });
     return () => {
       if (exitTimer.current) clearTimeout(exitTimer.current);
       covered.forEach((element) => { element.inert = false; });
       document.body.style.overflow = scroll;
+      headerObserver?.disconnect();
+      window.visualViewport?.removeEventListener('resize', syncViewport);
+      window.visualViewport?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
     };
   }, []);
   function returnToCity(event: MouseEvent<HTMLButtonElement>) {

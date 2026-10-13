@@ -67,6 +67,71 @@ async function setDetails(page: Page, name: string | RegExp, open = true) {
 }
 const setVillageSettings = (page: Page, open = true) => setDetails(page, /^إعدادات القرية$/, open);
 const setQueues = (page: Page, open = true) => setDetails(page, 'البناء والتدريب', open);
+
+test('portrait phone shows tappable iron and gold locations without enabling all labels', async ({
+  page,
+}) => {
+  const viewport = page.viewportSize();
+  test.skip(
+    !viewport || viewport.width > 700 || viewport.width > viewport.height,
+    'Portrait phone layout',
+  );
+  await page.goto('/');
+  for (const building of ['mine', 'treasury']) {
+    await readyCity(page);
+    const label = page.locator(
+      `[data-building="${building}"] [data-resource-location="${building}"]`,
+    );
+    await expect(label).toBeVisible();
+    const rect = await label.boundingBox();
+    expect(rect!.x).toBeGreaterThanOrEqual(0);
+    expect(rect!.x + rect!.width).toBeLessThanOrEqual(viewport!.width + 1);
+    expect(rect!.height).toBeGreaterThanOrEqual(44);
+    await label.click();
+    const facility = page.locator(`[data-city-scene="${building}"]`);
+    await expect(facility).toBeVisible();
+    await facility.getByRole('button', { name: 'العودة إلى المدينة', exact: true }).click();
+    await expect(facility).not.toBeAttached();
+  }
+});
+
+test('phone resource balances and facility controls stay usable inside the visible viewport', async ({
+  page,
+}) => {
+  const viewport = page.viewportSize();
+  test.skip(
+    !viewport || viewport.width > 700 || viewport.width > viewport.height,
+    'Portrait phone layout',
+  );
+  await page.goto('/');
+  await readyCity(page);
+  const resources = page
+    .getByRole('region', { name: 'موارد القرية', exact: true })
+    .locator('[data-resource]');
+  await expect(resources).toHaveCount(5);
+  for (const resource of await resources.all()) {
+    const rect = await resource.boundingBox();
+    expect(rect!.x).toBeGreaterThanOrEqual(0);
+    expect(rect!.x + rect!.width).toBeLessThanOrEqual(viewport!.width + 1);
+  }
+  const facility = await enterBuilding(page, 'barracks');
+  await facility.getByRole('button', { name: 'إدارة المرفق', exact: true }).click();
+  const input = facility.locator('input[type="number"]').first();
+  await input.scrollIntoViewIfNeeded();
+  await expect(input).toBeVisible();
+  expect(
+    await input.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+  ).toBeGreaterThanOrEqual(16);
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport!, 'height', { configurable: true, value: 330 });
+    window.visualViewport!.dispatchEvent(new Event('resize'));
+  });
+  await expect
+    .poll(() => facility.evaluate((element) => element.getBoundingClientRect().height))
+    .toBe(330);
+  await facility.getByRole('button', { name: 'العودة إلى المدينة', exact: true }).click();
+  await expect(facility).not.toBeAttached();
+});
 const sceneKey = (building: string) =>
   building === 'hall' ? 'palace' : building === 'rally' ? 'war-council' : building;
 

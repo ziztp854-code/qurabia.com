@@ -1936,3 +1936,37 @@
   }
   .playing.villageView .seasonBar { margin-block: var(--space-1); }
 }
+
+/* Keep all five resource balances visible on an iPhone. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .shell.playing.villageView .resources {
+    display: grid;
+    grid-auto-flow: initial;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-1);
+    overflow: visible;
+  }
+  .shell.playing.villageView .resource {
+    min-inline-size: 0;
+    min-block-size: 70px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 32px auto auto;
+    gap: 0;
+    justify-items: center;
+    padding: var(--space-1);
+    text-align: center;
+  }
+  .shell.playing.villageView .resource > i[aria-hidden='true'] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .shell.playing.villageView .resource > span,
+  .shell.playing.villageView .resource strong {
+    grid-column: 1;
+    max-inline-size: 100%;
+    font-size: 0.7rem;
+  }
+  .shell.playing.villageView .resource strong {
+    font-size: 0.85rem;
+  }
+}

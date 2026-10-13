@@ -170,17 +170,28 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       }).filter(({ width, height }) => width > 0 && height > 0) : [];
       labelDensity.current = getVillageLabelDensity(snapshot.zoom, labelDensity.current);
       const visible = new Set(visibleVillageLabels(anchors, snapshot, active, blockedAreas, topInset, labelDensity.current));
+      const pinnedResources = new Set<string>();
+      if (cityEnabled && composition === 'portrait') {
+        for (const id of ['mine', 'treasury'] as const) {
+          const area = rect(id);
+          const point = projectPoint({ x: area.x + area.width / 2, y: area.y + area.height / 2 }, snapshot);
+          if (point.x >= 0 && point.x <= snapshot.viewport.width && point.y >= 0 && point.y <= snapshot.viewport.height) {
+            pinnedResources.add(id);
+            visible.add(id);
+          }
+        }
+      }
       world.current?.querySelectorAll<HTMLElement>('[data-label-id]').forEach((element) => {
         element.dataset.labelHidden = String(!visible.has(element.dataset.labelId!));
         element.dataset.labelActive = String(element.dataset.labelId === active);
         const anchor = anchors.find(({ id }) => id === element.dataset.labelId);
         if (!anchor) return;
         const original = projectPoint(anchor, snapshot);
-        const positioned = villageLabelPoint(anchor, snapshot, active, topInset);
+        const positioned = villageLabelPoint(anchor, snapshot, pinnedResources.has(anchor.id) ? anchor.id : active, topInset);
         element.style.setProperty('--label-shift-x', `${(positioned.x - original.x) / snapshot.scale}px`);
         element.style.setProperty('--label-shift-y', `${(positioned.y - original.y) / snapshot.scale}px`);
       });
-    },[rect]);
+    },[rect, cityEnabled, composition]);
     const highlight = (building: VillageSelection | null) => {
       renderer.current?.hover(building);
       if (camera.current) syncLabels(camera.current.getSnapshot(), building ?? current.current.selected);
@@ -360,6 +371,8 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
           .forEach((node) => observer?.observe(node));
       }
       window.addEventListener('resize', resize);
+      window.visualViewport?.addEventListener('resize', scheduleResize);
+      window.visualViewport?.addEventListener('scroll', scheduleResize);
       let inViewport = true;
       const syncVisibility = () => scene?.setVisible(current.current.active !== false && !document.hidden && inViewport);
       syncRendererVisibility.current = syncVisibility;
@@ -425,6 +438,8 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         visibility?.disconnect();
         document.removeEventListener('visibilitychange', syncVisibility);
         window.removeEventListener('resize', resize);
+        window.visualViewport?.removeEventListener('resize', scheduleResize);
+        window.visualViewport?.removeEventListener('scroll', scheduleResize);
         renderer.current = null;
         camera.current = null;
         resizeScene.current = null;
@@ -570,6 +585,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   aria-describedby={`${descriptionId}-${building}`}
                   aria-pressed={props.selected === building}
                   data-building={building}
+                  data-pinned-resource={cityEnabled && composition === 'portrait' && (building === 'mine' || building === 'treasury') ? 'true' : undefined}
                   data-label-id={building}
                   data-state={presentation.status}
                   data-group={buildingGroups[building]}
@@ -583,10 +599,10 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                   <span id={`${descriptionId}-${building}`} className={styles.visuallyHidden}>
                     {presentation.description}، {buildingStatusLabels[presentation.status]}، {villageBuildingSceneStatus(building, props.village)}
                   </span>
-                  <span className={styles.label}>
+                  <span className={styles.label} data-resource-location={cityEnabled && composition === 'portrait' && (building === 'mine' || building === 'treasury') ? building : undefined}>
                     <Icon size={15} aria-hidden="true" />
                     <span>
-                      {presentation.name}
+                      {cityEnabled && composition === 'portrait' && building === 'mine' ? 'الحديد' : cityEnabled && composition === 'portrait' && building === 'treasury' ? 'الذهب' : presentation.name}
                       <small>
                         <bdi dir="ltr">Lv.{presentation.level}</bdi>
                       </small>
