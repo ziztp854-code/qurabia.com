@@ -206,7 +206,7 @@ export type GameCategory =
 
 export interface EnhancedGameMeta {
   id: string;
-  mode: SpecialGameMode | InstantGameMode | 'kingdoms';
+  mode: SpecialGameMode | InstantGameMode | 'kingdoms' | 'fastest-button';
   kind: GameKind;
   title: string;
   shortTitle: string;
@@ -253,6 +253,28 @@ export interface GameSearchSuggestion {
 }
 
 export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
+  {
+    id: 'fastest-button',
+    mode: 'fastest-button',
+    kind: 'room',
+    title: 'أسرع كبسة زر',
+    shortTitle: 'أسرع كبسة',
+    description:
+      'غرفة مباشرة بثلاثة أنماط: أول ضغطة، الإقصاء، والنقاط. يتولى الخادم ترتيب الضغطات، مع شاشة مستقلة للبث والمشاهدين.',
+    minimumPlayers: 2,
+    maximumPlayers: 64,
+    roundSeconds: 10,
+    contentLabel: '٣ أنماط مباشرة',
+    year: 2026,
+    difficulty: 1,
+    platforms: ['web', 'pwa', 'mobile'],
+    categories: ['سرعة', 'اجتماعي', 'تركيز'],
+    tags: ['زر', 'سرعة', 'إقصاء', 'نقاط', 'بث', 'مضيف'],
+    accent: 'var(--fastest-gold)',
+    href: '/games/fastest-button',
+    requiresRealtime: true,
+    requiresAuth: false,
+  },
   {
     id: 'kingdoms',
     mode: 'kingdoms',

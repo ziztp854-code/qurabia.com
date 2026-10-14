@@ -84,7 +84,7 @@ describe('theme color tokens', () => {
       ":global(:root[data-theme='light'] .home-site-layout:has(.prestigeHome))",
     );
     expect(prestigeHomeStyles).toContain('--home-bg: #fefbf6');
-    expect(prestigeHomeStyles).toContain('.brand-logo-copy strong');
+    expect(prestigeHomeStyles).toMatch(/\.brand-logo-copy\s+strong/);
   });
 
   it('derives quiz verdicts and timer tones from the semantic state colors', () => {

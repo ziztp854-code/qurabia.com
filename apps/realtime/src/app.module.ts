@@ -5,6 +5,7 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { validateEnvironment } from './config/environment.js';
+import { FastestButtonModule } from './fastest-button/fastest-button.module.js';
 import { GameModule } from './game/game.module.js';
 import { SpecialGamesModule } from './special-games/special-games.module.js';
 import { ChessModule } from './chess/chess.module.js';
@@ -23,6 +24,7 @@ import { KingdomsModule } from './kingdoms/kingdoms.module.js';
     }),
     SentryModule.forRoot(),
     GameModule,
+    FastestButtonModule,
     SpecialGamesModule,
     ChessModule,
     BalootModule,

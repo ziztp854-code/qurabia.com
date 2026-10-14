@@ -421,3 +421,13 @@
   --royal-report-victory: #abd1ba;
   --royal-report-defeat: #edb5ac;
 }
+
+/* Fastest Button — game-scoped broadcast identity, independent of site theme. */
+:root {
+  --fastest-background: #0B1426;
+  --fastest-surface: #17243B;
+  --fastest-gold: #F5C76B;
+  --fastest-red: #D9273E;
+  --fastest-success: #16A67A;
+  --fastest-text: #FFFFFF;
+}

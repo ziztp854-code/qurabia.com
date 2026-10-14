@@ -19,6 +19,10 @@ export type PublicGame = {
 };
 
 const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
+  'fastest-button': {
+    image: '/game-art/catalog-v2/fastest-button.svg',
+    imageAlt: 'زر منافسة أحمر ثلاثي الأبعاد على قاعدة ذهبية تحت إشارة الاستعداد',
+  },
   kingdoms: {
     image: '/game-art/catalog-v2/kingdoms.svg',
     imageAlt: 'قلعة ذهبية أصلية على خريطة أراض تصل بين قرى تحدي الممالك',

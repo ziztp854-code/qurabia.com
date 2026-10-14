@@ -28,7 +28,8 @@ type RealtimeNamespace =
   | '/ladder'
   | '/scrambled-words'
   | '/kingdoms'
-  | '/elimination';
+  | '/elimination'
+  | '/fastest-button';
 
 function resolveDefaultOrigin(currentOrigin: string, namespace: RealtimeNamespace) {
   try {

@@ -149,3 +149,6 @@ export * from './scrambled-words-host-access-token';
 export * from './elimination';
 export * from './elimination-host-access-token';
 export * from './quiz-builder';
+
+export * from './fastest-button';
+export * from './fastest-button-host-access-token';
