@@ -40,6 +40,19 @@ describe('Header user menu', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('يغلق تنقل الجوال بمفتاح Escape ويعيد التركيز إلى زر القائمة', async () => {
+    const user = userEvent.setup();
+    render(<Header />);
+    const trigger = screen.getByRole('button', { name: 'فتح القائمة' });
+    await user.click(trigger);
+    const navigation = screen.getByRole('navigation', { name: 'قائمة الجوال' });
+    expect(trigger).toHaveAttribute('aria-controls', navigation.id);
+    within(navigation).getByRole('link', { name: 'الألعاب' }).focus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('navigation', { name: 'قائمة الجوال' })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
   it('يمرر مستخدم الجلسة ويعرض إجراءات الحساب دون إجراءات الزائر', async () => {
     const user = userEvent.setup();
     render(
@@ -115,10 +128,9 @@ describe('Header user menu', () => {
       'href',
       '/games',
     );
-    expect(within(desktopNavigation).getByRole('link', { name: 'الدعم' })).toHaveAttribute(
-      'href',
-      '/contact',
-    );
+    expect(
+      within(desktopNavigation).queryByRole('link', { name: 'الدعم' }),
+    ).not.toBeInTheDocument();
     expect(within(desktopNavigation).getByRole('link', { name: 'لوحة الشرف' })).toHaveAttribute(
       'href',
       '/leaderboard',
@@ -127,10 +139,9 @@ describe('Header user menu', () => {
       'href',
       '/quizzes',
     );
-    expect(within(desktopNavigation).getByRole('link', { name: 'الحساب' })).toHaveAttribute(
-      'href',
-      '/profile',
-    );
+    expect(
+      within(desktopNavigation).queryByRole('link', { name: 'الحساب' }),
+    ).not.toBeInTheDocument();
     expect(
       within(screen.getByRole('banner')).getByRole('link', { name: 'تسجيل الدخول' }),
     ).toHaveAttribute('href', '/auth/sign-in');
@@ -146,6 +157,14 @@ describe('Header user menu', () => {
 
     await user.click(screen.getByRole('button', { name: 'فتح القائمة' }));
     const mobileNavigation = screen.getByRole('navigation', { name: 'قائمة الجوال' });
+    expect(within(mobileNavigation).getByRole('link', { name: 'الدعم' })).toHaveAttribute(
+      'href',
+      '/contact',
+    );
+    expect(within(mobileNavigation).getByRole('link', { name: 'الحساب' })).toHaveAttribute(
+      'href',
+      '/profile',
+    );
     expect(within(mobileNavigation).getByRole('link', { name: 'الاشتراكات' })).toHaveAttribute(
       'href',
       '/orders',
@@ -170,7 +189,11 @@ describe('Header user menu', () => {
 describe('DashboardLayout sidebar', () => {
   it('marks بنك الأسئلة as the current page and keeps the collapse control in the brand row', () => {
     render(
-      <DashboardLayout title="بنك الأسئلة المركزي" description="وصف البنك" actions={<a href="#question-editor">إضافة سؤال</a>}>
+      <DashboardLayout
+        title="بنك الأسئلة المركزي"
+        description="وصف البنك"
+        actions={<a href="#question-editor">إضافة سؤال</a>}
+      >
         <p>المحتوى</p>
       </DashboardLayout>,
     );
@@ -184,9 +207,14 @@ describe('DashboardLayout sidebar', () => {
       'aria-current',
     );
     expect(screen.getByRole('button', { name: 'تصغير الشريط الجانبي' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'بنك الأسئلة المركزي', level: 1 })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'بنك الأسئلة المركزي', level: 1 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('وصف البنك')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'إضافة سؤال' })).toHaveAttribute('href', '#question-editor');
+    expect(screen.getByRole('link', { name: 'إضافة سؤال' })).toHaveAttribute(
+      'href',
+      '#question-editor',
+    );
     const crumbs = screen.getByRole('navigation', { name: 'مسار التنقل' });
     expect(within(crumbs).getByRole('link', { name: 'الرئيسية' })).toHaveAttribute('href', '/');
     expect(within(crumbs).getByRole('link', { name: 'لوحة التحكم' })).toHaveAttribute(

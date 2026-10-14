@@ -54,7 +54,13 @@
   color: var(--home-ink);
 }
 
-:global(:root[data-theme='light'] .home-site-layout:has(.prestigeHome) .home-header .brand-logo-copy strong) {
+:global(
+  :root[data-theme='light']
+    .home-site-layout:has(.prestigeHome)
+    .home-header
+    .brand-logo-copy
+    strong
+) {
   color: var(--home-ink);
 }
 
@@ -267,11 +273,12 @@
 }
 
 .heroContent {
-  position: absolute;
+  position: relative;
   z-index: 4;
-  inset: 0;
+  min-block-size: inherit;
   display: grid;
   grid-template-rows: 1fr auto;
+  gap: 2rem;
   align-items: center;
   justify-items: center;
   padding: clamp(10rem, 18vh, 12rem) 26% clamp(1.2rem, 3vw, 2rem);
@@ -769,7 +776,7 @@
 
 .sectionHead {
   display: grid;
-  grid-template-columns: minmax(2rem, 1fr) auto minmax(2rem, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
   gap: 1rem;
   align-items: center;
   margin-block-end: 1.25rem;
@@ -1222,7 +1229,7 @@
   }
 
   .stage {
-    min-block-size: 33.5rem;
+    min-block-size: 39rem;
   }
 
   .heroBackground {
@@ -1257,7 +1264,7 @@
   }
 
   .heroContent {
-    padding: 8.45rem 23.5% 0.55rem;
+    padding: 9rem 24% 1.5rem;
   }
 
   .copy {
@@ -1292,12 +1299,12 @@
   }
 
   :global(.prestigeHome .home-room-shortcut) {
-    min-block-size: 2.55rem;
+    min-block-size: 2.75rem;
     inline-size: min(100%, 26.7rem);
   }
 
   :global(.prestigeHome .home-room-shortcut button) {
-    min-block-size: 2.55rem;
+    min-block-size: 2.75rem;
   }
 
   .online {
@@ -1442,44 +1449,29 @@
   }
 
   .game {
-    grid-template-columns: minmax(0, 1fr) 5.4rem;
-    grid-template-rows: auto auto 1fr;
-    gap: 0.2rem 0.55rem;
-    align-items: center;
-    justify-items: start;
-    min-block-size: 9.15rem;
-    padding: 0.6rem;
-    border-radius: 0.8rem;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 0.5rem;
+    padding: 0.75rem;
     text-align: start;
+    justify-items: stretch;
   }
 
   .game img {
-    grid-column: 2;
-    grid-row: 1 / 4;
-    inline-size: 5.4rem;
-    block-size: 7.8rem;
+    inline-size: 100%;
+    block-size: clamp(9rem, 13vw, 12rem);
     object-position: center;
   }
 
-  .game strong,
-  .game small,
-  .game > span {
-    grid-column: 1;
-  }
-
   .game strong {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
-
   .game small {
-    font-size: 0.72rem;
+    font-size: 0.85rem;
   }
-
   .game > span {
-    align-self: end;
-    min-block-size: 2.25rem;
-    margin: 0;
-    font-size: 0.78rem;
+    min-block-size: 2.75rem;
+    margin: 0.25rem 0 0;
   }
 
   .moreGames {
@@ -1586,17 +1578,19 @@
 
   .heroContent {
     grid-template-rows: 1fr auto;
-    padding: 7.1rem 0.85rem 0.6rem;
+    padding: 7.1rem 1.25rem 1rem;
+    gap: 10rem;
   }
 
   .copy {
+    min-inline-size: 0;
     align-self: start;
     gap: 0.45rem;
     inline-size: min(100%, 25rem);
   }
 
   .copy h1 {
-    font-size: clamp(3.4rem, 17vw, 4.7rem);
+    font-size: min(25vw, 4.7rem);
   }
 
   .tagline {
@@ -1807,7 +1801,7 @@
     inset-inline: 0;
     inset-block-end: 0;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
     border-block-start: 1px solid var(--home-border);
     background: color-mix(in srgb, var(--home-panel) 94%, transparent);
@@ -1881,4 +1875,98 @@
     --lion-x: 0px !important;
     --lion-y: 0px !important;
   }
+}
+
+/* Discovery copy belongs to the same composition as the existing stage artwork. */
+.heroPromise {
+  display: block;
+  margin-block-start: 1.25rem;
+  color: var(--home-ink);
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  line-height: 1.5;
+  letter-spacing: normal;
+  filter: none;
+  text-shadow: none;
+}
+.sectionIntro {
+  margin-block: 0 1.5rem;
+  color: var(--home-muted);
+  text-align: center;
+  font-size: 1rem;
+}
+.catalogLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-block-size: 2.75rem;
+  inline-size: fit-content;
+  margin: 1.25rem auto 0;
+  color: var(--home-gold-bright);
+  font-weight: 700;
+}
+.catalogLink svg {
+  inline-size: 1.1rem;
+}
+@media (max-width: 767px) {
+  .heroPromise {
+    font-size: 1.4rem;
+    margin-block-start: 1rem;
+  }
+  .sectionIntro {
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    inline-size: 100%;
+  }
+  .actions a {
+    padding-inline: 0.5rem;
+    white-space: normal;
+  }
+  .copy > * {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .sectionHead {
+    gap: 0.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+  .sectionHead > span {
+    display: none;
+  }
+  .values span {
+    min-inline-size: 0;
+  }
+  :global(.prestigeHome .home-room-shortcut) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  :global(.prestigeHome .home-room-shortcut input) {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+}
+@media (max-width: 767px) {
+  .mobileDock a {
+    min-inline-size: 44px;
+    min-block-size: 3.7rem;
+  }
+  .mobileDock a span {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+  }
+  .mobileDock svg {
+    inline-size: 24px;
+    block-size: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .actions { display: flex; flex-wrap: wrap; }
+  .actions a { flex: 1 1 10rem; }
 }

@@ -5,6 +5,7 @@ import { PrestigeHome } from './prestige-home';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/',
 }));
 
 describe('PrestigeHome Mamluk world', () => {

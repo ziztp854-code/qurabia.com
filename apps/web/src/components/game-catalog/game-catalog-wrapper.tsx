@@ -2,13 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Users, Zap, Castle } from 'lucide-react';
 import { useGameCatalog } from './use-game-catalog';
 import { GameSearch } from './game-search';
 import { GameFilters } from './game-filters';
 import { GameSortBar } from './game-sort-bar';
 import { GameCard } from './game-card';
-import { ChallengeCardPreview } from '@/components/3d/challenge-card-preview';
 import { formatNumber } from '@/lib/utils';
 import { ButtonLink } from '@/components/ui';
 import type { CatalogGame } from '@/data/games';
@@ -66,8 +65,8 @@ function GameCatalogShell({
               <GradientText>ساحة الألعاب</GradientText>
             </HeroHeading>
             <p className="gc-hero-desc">
-              اختر لعبة جماعية مع أصدقائك، أو اختبر سرعتك وتركيزك في ألعاب فردية
-              مصممة لتبقى المنافسة ممتعة.
+              اختر لعبة جماعية مع أصدقائك، أو اختبر سرعتك وتركيزك في ألعاب فردية مصممة لتبقى
+              المنافسة ممتعة.
             </p>
             {!embedded && (
               <div className="gc-start-actions">
@@ -84,33 +83,60 @@ function GameCatalogShell({
             )}
             <GameSearch catalog={catalog} />
           </div>
-          <div className="gc-hero-preview" data-lenis-prevent>
-            <span className="gc-hero-preview-badge">
-              <Sparkles aria-hidden="true" size={16} />
-              بطاقة تحدّي التفاعلية
+          <aside className="gc-discovery" aria-label="ابدأ على طريقتك">
+            <span className="gc-hero-kicker">
+              {sessionUserName ? `مرحبًا، ${sessionUserName}` : 'مساحة لكل نوع من اللاعبين'}
             </span>
-            <ChallengeCardPreview compact />
-            <p className="gc-hero-welcome">
-              {sessionUserName ? `مرحبًا، ${sessionUserName}. ` : ''}
-              اسحب البطاقة لتدويرها، أو استخدم الأسهم للتنقل.
-            </p>
-          </div>
+            <GroupHeading>على طريقتك، وفي وقتك.</GroupHeading>
+            <button type="button" onClick={() => catalog.setFilterPatch({ playModes: ['group'] })}>
+              <Users aria-hidden="true" />
+              <span>
+                <b>مع المجموعة</b>
+                <small>جولة تجمعكم وتفتح باب المنافسة</small>
+              </span>
+              <ArrowLeft aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => catalog.setFilterPatch({ playModes: ['solo'] })}>
+              <Zap aria-hidden="true" />
+              <span>
+                <b>تحدٍّ لنفسك</b>
+                <small>اختبر معرفتك وسرعتك وتركيزك</small>
+              </span>
+              <ArrowLeft aria-hidden="true" />
+            </button>
+            <Link href="/games/kingdoms">
+              <Castle aria-hidden="true" />
+              <span>
+                <b>عالم تبنيه</b>
+                <small>طوّر قريتك واكتب حكاية مملكتك</small>
+              </span>
+              <ArrowLeft aria-hidden="true" />
+            </Link>
+          </aside>
         </div>
       </section>
 
       <section className="container gc-catalog-body">
         <div className="gc-chips gc-play-modes" role="group" aria-label="تصفح حسب نوع اللعب">
-          {([
-            { label: 'جميع الألعاب', modes: [] },
-            { label: 'الألعاب الجماعية', modes: ['group'] },
-            { label: 'الألعاب الفردية', modes: ['solo'] },
-          ] as const).map(({ label, modes }) => (
+          {(
+            [
+              { label: 'جميع الألعاب', modes: [] },
+              { label: 'الألعاب الجماعية', modes: ['group'] },
+              { label: 'الألعاب الفردية', modes: ['solo'] },
+            ] as const
+          ).map(({ label, modes }) => (
             <button
               key={label}
               type="button"
               className="gc-chip"
-              aria-pressed={catalog.filters.playModes.length === modes.length && modes.every((mode) => catalog.filters.playModes.includes(mode))}
-              data-active={catalog.filters.playModes.length === modes.length && modes.every((mode) => catalog.filters.playModes.includes(mode))}
+              aria-pressed={
+                catalog.filters.playModes.length === modes.length &&
+                modes.every((mode) => catalog.filters.playModes.includes(mode))
+              }
+              data-active={
+                catalog.filters.playModes.length === modes.length &&
+                modes.every((mode) => catalog.filters.playModes.includes(mode))
+              }
               onClick={() => catalog.setFilterPatch({ playModes: [...modes] })}
             >
               {label}
@@ -137,7 +163,9 @@ function GameCatalogShell({
               <>
                 {(['group', 'solo', 'upcoming'] as const).map((kind) => {
                   const group = catalog.visibleGames.filter((game) =>
-                    kind === 'upcoming' ? game.kind === 'upcoming' : game.kind !== 'upcoming' && getGamePlayMode(game) === kind,
+                    kind === 'upcoming'
+                      ? game.kind === 'upcoming'
+                      : game.kind !== 'upcoming' && getGamePlayMode(game) === kind,
                   );
                   if (!group.length) return null;
                   const label =

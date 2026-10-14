@@ -53,8 +53,18 @@ export function Header({
   user?: HeaderUser | null;
   variant?: HeaderVariant;
 }) {
+  const pathname = usePathname();
+  const activeHref = publicNavigation
+    .filter((item) =>
+      item.href === '/'
+        ? pathname === '/'
+        : pathname === item.href || pathname?.startsWith(`${item.href}/`),
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const [open, setOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const mobileMenuId = useId();
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const userMenuId = useId();
   const userMenuButtonId = useId();
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -91,6 +101,17 @@ export function Header({
     };
   }, [closeUserMenu, userOpen]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      mobileMenuButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open]);
+
   const isHome = variant === 'home';
 
   return (
@@ -98,12 +119,21 @@ export function Header({
       <div className="container header-inner">
         <Logo variant={variant} />
         <nav className="desktop-nav" aria-label="التنقل الرئيسي">
-          {publicNavigation.map((item) => (
-            <Link key={item.href} href={item.href} prefetch={false}>
-              {isHome && <item.icon aria-hidden="true" />}
-              {item.label}
-            </Link>
-          ))}
+          {publicNavigation
+            .filter(
+              (item) => !['/games/kingdoms/world-map', '/contact', '/profile'].includes(item.href),
+            )
+            .map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={false}
+                aria-current={activeHref === item.href ? 'page' : undefined}
+              >
+                {isHome && <item.icon aria-hidden="true" />}
+                {item.label}
+              </Link>
+            ))}
         </nav>
         <div className="header-actions">
           {!isHome && (
@@ -210,6 +240,8 @@ export function Header({
             </div>
           )}
           <Button
+            ref={mobileMenuButtonRef}
+            aria-controls={open ? mobileMenuId : undefined}
             className="mobile-menu-button"
             variant="ghost"
             size="icon"
@@ -225,18 +257,19 @@ export function Header({
         </div>
       </div>
       {open && (
-        <nav className="mobile-nav" aria-label="قائمة الجوال">
+        <nav id={mobileMenuId} className="mobile-nav" aria-label="قائمة الجوال">
           {publicNavigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch={false}
-                  onClick={() => setOpen(false)}
-                >
-                  <item.icon />
-                  {item.label}
-                </Link>
-              ))}
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={activeHref === item.href ? 'page' : undefined}
+              prefetch={false}
+              onClick={() => setOpen(false)}
+            >
+              <item.icon aria-hidden="true" />
+              {item.label}
+            </Link>
+          ))}
         </nav>
       )}
     </header>

@@ -35,6 +35,7 @@
 
 .gc-wrapper:not(.gc-wrapper--embedded) .gc-hero .gc-hero-inner {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-block-size: 0;
   gap: clamp(1.5rem, 3vw, 3rem);
 }
 
@@ -351,5 +352,130 @@
   .gc-wrapper:not(.gc-wrapper--embedded) .gc-card:focus-within {
     transition: none;
     transform: none;
+  }
+}
+
+/* Lightweight discovery paths replace the decorative preview with real choices. */
+.gc-discovery {
+  display: grid;
+  align-content: center;
+  gap: 0.75rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  color: var(--foreground);
+}
+.gc-discovery h2 {
+  margin-block: 0.25rem 0.75rem;
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  line-height: 1.5;
+}
+.gc-discovery :is(button, a) {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+.gc-discovery :is(button, a):is(:hover, :focus-visible) {
+  border-color: var(--ring);
+  background: var(--secondary);
+}
+.gc-discovery svg {
+  inline-size: 1.5rem;
+  color: var(--primary);
+}
+.gc-discovery svg:last-child {
+  inline-size: 1rem;
+}
+.gc-discovery span {
+  min-inline-size: 0;
+}
+.gc-discovery b {
+  display: block;
+  font-size: 1rem;
+}
+.gc-discovery small {
+  display: block;
+  margin-block-start: 0.25rem;
+  color: var(--text-soft);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+@media (max-width: 767px) {
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-hero .gc-hero-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gc-discovery {
+    padding: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-discovery :is(button, a) {
+    transition: none;
+  }
+}
+@media (max-width: 767px) {
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-toolbar-right {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-toolbar-right > * {
+    min-inline-size: 0;
+    flex: 1 1 120px;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-view-toggle {
+    flex: 0 0 auto;
+  }
+  .gc-start-actions .button {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .gc-discovery :is(button, a) {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+}
+@media (max-width: 767px) {
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-card-foot {
+    flex-wrap: wrap;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-card-foot > * {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-card-foot a {
+    white-space: normal;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-card-foot a .magnet {
+    white-space: normal;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-filters-panel :is(.gc-range, .gc-range > div) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-range-labels {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-range input {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+}
+@media (max-width: 767px) {
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-hero-title {
+    font-size: min(3.5rem, 16vw);
+    overflow-wrap: normal;
   }
 }

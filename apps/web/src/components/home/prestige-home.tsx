@@ -27,8 +27,8 @@ const featuredGames = featuredGameIds.flatMap((id) => {
   return game ? [game] : [];
 });
 const productionGames = publicGames.filter((game) => game.status !== 'soon');
-const mobileNavigation = publicNavigation.filter(
-  (item) => !['/games/kingdoms', '/games/kingdoms/world-map', '/contact'].includes(item.href),
+const mobileNavigation = publicNavigation.filter((item) =>
+  ['/', '/games', '/quizzes', '/leaderboard', '/profile'].includes(item.href),
 );
 export type HomeRank = {
   code: string;
@@ -51,9 +51,10 @@ export function PrestigeHome({
             <div className={styles.copy}>
               <h1 id="landing-title">
                 <GradientText>تحدي</GradientText>
+                <span className={styles.heroPromise}>جمعتكم تبدأ بلعبة.</span>
               </h1>
               <p className={styles.tagline}>
-                منصة مسابقات وألعاب جماعية عربية مباشرة، حيث يُصنع الأبطال وتُسجّل إنجازاتهم
+                اختر تحدّيك، اجمع أصدقاءك، وشاركهم جولة تستحق المنافسة.
               </p>
               {rank ? (
                 <Link
@@ -92,7 +93,7 @@ export function PrestigeHome({
               <span role="listitem">
                 <Zap aria-hidden="true" />
                 <b>تحديات مباشرة</b>
-                <small>على مدار الساعة</small>
+                <small>العب مع أصدقائك</small>
               </span>
               <span role="listitem">
                 <Trophy aria-hidden="true" />
@@ -112,9 +113,12 @@ export function PrestigeHome({
           <section className={styles.gamesSection} aria-labelledby="featured-title">
             <div className={styles.sectionHead}>
               <span aria-hidden="true" />
-              <h2 id="featured-title">الألعاب الأبرز</h2>
+              <h2 id="featured-title">اختَر تحدّيك القادم</h2>
               <span aria-hidden="true" />
             </div>
+            <p className={styles.sectionIntro}>
+              ذكاء، معرفة، أو منافسة على الطاولة. البداية على ذوقك.
+            </p>
             <nav className={styles.games} aria-label="ألعاب بارزة">
               {featuredGames.map((game) => (
                 <Link className={styles.game} href={game.href} key={game.href} data-scroll-reveal>
@@ -131,6 +135,9 @@ export function PrestigeHome({
                 </Link>
               ))}
             </nav>
+            <Link href="/games" className={styles.catalogLink}>
+              استكشف جميع الألعاب <ArrowLeft aria-hidden="true" />
+            </Link>
             <details className={styles.moreGames}>
               <summary>المزيد من الألعاب</summary>
               <nav aria-label="روابط ألعاب الإنتاج">

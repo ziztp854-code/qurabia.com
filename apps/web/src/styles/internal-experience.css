@@ -1955,3 +1955,271 @@
 :root[data-theme='light'] .site-layout:has(.display-hub) .display-hub :where(.button, .button-gold, .button-secondary, .button-outline, .button-ghost) {
   color: var(--text-on-media);
 }
+
+
+/* Shared public shell: readable navigation and consistent interaction targets. */
+.site-layout .site-header .desktop-nav {
+  gap: 0.25rem;
+}
+.site-layout .site-header .desktop-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.75rem;
+  padding-inline: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.site-layout
+  .site-header
+  :is(.desktop-nav, .mobile-nav)
+  a[aria-current="page"] {
+  color: var(--primary);
+  background: var(--secondary);
+  border-color: var(--border-bright);
+}
+.site-layout .site-header .mobile-nav a {
+  min-block-size: 3rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+}
+.site-layout :is(.site-footer, .home-footer) a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+.site-layout .button {
+  min-block-size: 2.75rem;
+  line-height: 1.5;
+}
+.site-layout :is(.field-control input, .field select, .field textarea) {
+  min-block-size: 2.75rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.site-layout
+  :is(
+    .field-control input,
+    .field select,
+    .field textarea
+  )[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.site-layout .button:focus-visible,
+.site-layout :is(a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+@media (max-width: 1279px) {
+  .site-layout .site-header .desktop-nav {
+    display: none;
+  }
+  .site-layout .site-header .mobile-menu-button {
+    display: inline-flex;
+  }
+  .site-layout .site-header .mobile-nav {
+    display: grid;
+    max-block-size: calc(100dvh - 6rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.site-layout .field-control {
+  border-radius: var(--radius-lg);
+}
+.site-layout .field-control:focus-within {
+  border-color: var(--ring);
+}
+.site-layout .field-label {
+  font-weight: 700;
+  line-height: 1.6;
+}
+.site-layout .field-message {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.site-layout .field-action {
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+}
+
+/* Authentication shares semantic themes and field states with the public shell. */
+.auth-page {
+  color: var(--foreground);
+  background:
+    radial-gradient(ellipse at top, var(--secondary), transparent 65%),
+    var(--background);
+  padding-inline: 1.25rem;
+}
+.auth-page .auth-panel {
+  inline-size: min(100%, 32rem);
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  background: var(--card);
+  border-color: var(--border-bright);
+  backdrop-filter: none;
+}
+.auth-page .auth-panel h1 {
+  color: var(--foreground);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.4;
+  font-weight: 700;
+}
+.auth-page .auth-panel :is(p, .field-message),
+.auth-page .auth-footer {
+  color: var(--text-soft);
+  line-height: 1.8;
+}
+.auth-page .field-label {
+  color: var(--foreground);
+}
+.auth-page :is(input, textarea, select) {
+  min-block-size: 3rem;
+  font-size: 1rem;
+  background: var(--input);
+  color: var(--foreground);
+  border-color: var(--border-bright);
+}
+.auth-page :is(input, textarea, select):focus {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: none;
+  border-color: var(--ring);
+}
+.auth-page .field-control:focus-within {
+  border-color: var(--ring);
+}
+.auth-page .field-action {
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+}
+.auth-page :is(.text-link, .auth-footer a) {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  color: var(--link);
+}
+.auth-page .button-outline {
+  color: var(--foreground);
+  border-color: var(--border-bright);
+  background: var(--muted);
+}
+.auth-page .button-primary {
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+.auth-page [aria-invalid="true"] {
+  border-color: var(--danger);
+}
+@media (max-width: 767px) {
+  .site-layout .home-footer .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1rem;
+  }
+  .site-layout .home-footer .footer-grid > div:first-child {
+    grid-column: 1 / -1;
+  }
+  .site-layout .home-footer .footer-grid a {
+    font-size: 0.875rem;
+  }
+}
+
+/* Allow text enlargement to reflow without enlarging decorative controls. */
+:where(.auth-page, .site-layout)
+  :is(
+    .auth-panel,
+    .auth-form,
+    .auth-footer,
+    .field,
+    .field-control,
+    .password-field,
+    .join-box,
+    .join-page .card
+  ) {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+:where(.auth-page, .site-layout) .field-control input {
+  min-inline-size: 0;
+  inline-size: 100%;
+}
+:where(.auth-page, .site-layout) .button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.auth-page .auth-panel > * {
+  min-inline-size: 0;
+}
+@media (max-width: 767px) {
+  .site-layout .site-header .header-inner {
+    gap: 8px;
+    padding-inline: 12px;
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+  .site-layout .site-header .logo {
+    min-inline-size: 0;
+    max-inline-size: 42%;
+  }
+  .site-layout .site-header .logo .brand-logo {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+  .site-layout .site-header .header-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .site-layout .site-header .button-icon {
+    inline-size: 44px;
+    min-inline-size: 44px;
+    block-size: 44px;
+    min-block-size: 44px;
+    padding: 8px;
+  }
+  .site-layout .site-header .button-icon svg {
+    inline-size: 22px;
+    block-size: 22px;
+  }
+  .site-layout .site-header .mobile-nav {
+    padding: 12px;
+  }
+  .site-layout .join-page .card {
+    padding: 16px;
+  }
+  .site-layout .join-box {
+    padding: 12px;
+  }
+  .auth-page .auth-panel {
+    padding: 20px;
+  }
+}
+@media (max-width: 767px) {
+  .site-layout .site-header .logo .brand-logo {
+    gap: 8px;
+  }
+  .site-layout .site-header .logo .brand-mark {
+    inline-size: 36px;
+    min-inline-size: 36px;
+  }
+  .site-layout .site-header .logo .brand-logo-copy {
+    min-inline-size: 0;
+  }
+  .site-layout .site-header .logo .brand-logo-copy strong {
+    font-size: 28px;
+    line-height: 1.3;
+  }
+  .site-layout .site-header .logo .brand-logo-copy small {
+    display: none;
+  }
+  .site-layout .home-footer-socials {
+    flex-wrap: wrap;
+  }
+  .site-layout .home-footer-socials a {
+    inline-size: 44px;
+    min-inline-size: 44px;
+    block-size: 44px;
+  }
+}
