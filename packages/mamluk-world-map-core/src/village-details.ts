@@ -44,7 +44,7 @@ export const villageDetailRules = {
   villageRank: nullable(text),
   villagePower: nullable(integer),
   villageVisualTier: nullable((v) => integer(v) && (v as number) >= 1),
-  population: (v: unknown) => v === null,
+  population: nullable(integer),
   constructionStatus: (v: unknown) => v === null || v === 'BUILDING' || v === 'IDLE',
   kingdomName: text,
   allianceName: nullable(text),

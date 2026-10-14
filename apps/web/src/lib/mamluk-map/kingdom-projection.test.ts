@@ -1,3 +1,4 @@
+import { villagePopulation } from '../kingdoms/population';
 import { emptyTroops } from '@/lib/kingdoms/simulation';
 import { describe, expect, it } from 'vitest';
 import { createWorld, executeCommand } from '../kingdoms/engine';
@@ -170,7 +171,7 @@ it('publishes stored village level for every visible settlement and keeps privat
     villageLevel: 20,
     villageRank: 'مستوطنة',
     villageVisualTier: 1,
-    population: null,
+    population: villagePopulation(own),
     constructionStatus: 'IDLE',
     kingdomName: 'الأولى',
     allianceName: null,
@@ -180,7 +181,7 @@ it('publishes stored village level for every visible settlement and keeps privat
     villageRank: null,
     villagePower: null,
     villageVisualTier: null,
-    population: null,
+    population: villagePopulation(enemy),
     constructionStatus: null,
     kingdomName: 'الثانية',
   });
@@ -386,4 +387,17 @@ describe('stationed support visibility', () => {
       position: { status: 'retreating' }, route: { mission: 'return' },
     });
   });
+});
+
+it('publishes updated population for all villages only after construction completes', () => {
+  const { own, enemy, state } = fixture();
+  const building = executeCommand(state, 'enemy', { type: 'build', villageId: enemy.id, building: 'hall' }, at);
+  const geographic = { ...building, geography: state.geography };
+  const city = state.geography!.cities.find((entry) => entry.value.id === enemy.id)!.value;
+  const endsAt = building.villages[enemy.id].build!.endsAt;
+  expect(new KingdomMapProjection(geographic, 'world', 'viewer', endsAt - 1).city(city)?.population).toBe(villagePopulation(enemy));
+  expect(new KingdomMapProjection(geographic, 'world', 'viewer', endsAt).city(city)?.population).toBe(villagePopulation(enemy) + 10);
+  const ownCity = state.geography!.cities.find((entry) => entry.value.id === own.id)!.value;
+  expect(new KingdomMapProjection(geographic, 'world', 'viewer', endsAt).city(ownCity)?.population).toBe(villagePopulation(own));
+  expect(building.villages[enemy.id].buildings.hall).toBe(enemy.buildings.hall);
 });

@@ -40,15 +40,15 @@ function payload(features: readonly Feature[] = [city]): MapPayload {
 }
 
 describe('approved map selection', () => {
-  it('shows server village progression and honest unavailable population only for its owner', () => {
+  it('shows server village progression and public population for every owner', () => {
     const village = { ...city, properties: { ...city.properties, villageLevel: 12,
-      villageRank: 'قرية مزدهرة', villagePower: 870, villageVisualTier: 3, population: null,
+      villageRank: 'قرية مزدهرة', villagePower: 870, villageVisualTier: 3, population: 1230,
       constructionStatus: 'BUILDING', kingdomName: 'مملكة النيل', allianceName: 'العهد' } };
     const own = findSelection(payload([village]), { layer: 'cities', id: 'cairo' }, 'viewer');
     expect(own?.kind).toBe('قرية');
     expect(own?.details).toEqual(expect.arrayContaining([
       { label: 'المستوى', value: '١٢' }, { label: 'الرتبة', value: 'قرية مزدهرة' },
-      { label: 'القوة', value: '٨٧٠' }, { label: 'السكان', value: 'غير متوفر' },
+      { label: 'القوة', value: '٨٧٠' }, { label: 'السكان', value: '١٬٢٣٠' },
       { label: 'المملكة', value: 'مملكة النيل' }, { label: 'التحالف', value: 'العهد' },
       { label: 'الحالة', value: 'بناء قيد التنفيذ' },
     ]));
@@ -59,7 +59,7 @@ describe('approved map selection', () => {
     expect(enemy?.details).toContainEqual({ label: 'الرتبة', value: 'غير متوفر' });
     expect(enemy?.details).toContainEqual({ label: 'القوة', value: 'غير متوفر' });
     expect(enemy?.details).toContainEqual({ label: 'المملكة', value: 'مملكة النيل' });
-    expect(enemy?.details).toContainEqual({ label: 'السكان', value: 'غير متوفر' });
+    expect(enemy?.details).toContainEqual({ label: 'السكان', value: '١٬٢٣٠' });
     expect(listSelectableFeatures(payload([village]))).toContainEqual({
       layer: 'cities',
       id: 'cairo',
@@ -225,4 +225,9 @@ describe('approved map selection', () => {
     );
     expect(findSelection(snapshot, null, 'viewer')).toBeNull();
   });
+});
+
+it('keeps population unavailable for legacy villages without a population value', () => {
+  const legacy = { ...city, properties: { ...city.properties, kingdomName: 'النور', population: null } };
+  expect(findSelection(payload([legacy]), { layer: 'cities', id: 'cairo' }, 'viewer')?.details).toContainEqual({ label: 'السكان', value: 'غير متوفر' });
 });

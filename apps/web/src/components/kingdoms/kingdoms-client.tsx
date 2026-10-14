@@ -30,6 +30,7 @@ import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
 import { ResourceIcon } from './resource-icon';
 import { VillageHero } from './village-hero';
+import { villagePopulation } from '@/lib/kingdoms/population';
 import { unitKeys } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import type { RallyMission } from './village/rally-panel';
@@ -144,7 +145,11 @@ export function KingdomsClient({
           <div>
             {!view?.player && <p className={styles.eyebrow}>عالم يستمرّ. عهد تصنعه.</p>}
             <h1>{view?.player && village ? village.name : 'تحدي الممالك'}</h1>
-            {view?.player && <p className={styles.villageIdentity}>تحدي المماليك</p>}
+            {view?.player && (
+              <p className={styles.villageIdentity}>
+                تحدي المماليك{village && <> · السكان: <bdi>{number(villagePopulation(village))}</bdi></>}
+              </p>
+            )}
             {!view?.player && (
               <p className={styles.muted}>
                 من قرية صغيرة إلى مملكة لها كلمة. ابنِ، تحالف، وقُد جيشك نحو عرش تحدي.

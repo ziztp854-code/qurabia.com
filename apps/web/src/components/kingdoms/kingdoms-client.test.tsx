@@ -1,3 +1,4 @@
+import { villagePopulation } from '@/lib/kingdoms/population';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createWorld, executeCommand, projectWorld } from '@/lib/kingdoms/engine';
@@ -272,7 +273,7 @@ describe('Kingdoms player interface', () => {
     expect(troops).toHaveTextContent(
       number(unitKeys.reduce((sum, unit) => sum + village.troops[unit], 0)),
     );
-    expect(within(hud).queryByText('السكان')).not.toBeInTheDocument();
+    expect(screen.getByText(/السكان:/)).toHaveTextContent(number(villagePopulation(village)));
     fireEvent.click(screen.getByRole('button', { name: 'انتقل إلى خريطة العالم' }));
     expect(navigation.push).toHaveBeenCalledWith(
       `/games/kingdoms/world-map/?worldId=world-1&villageId=${encodeURIComponent(village.id)}`,

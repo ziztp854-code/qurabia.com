@@ -8,6 +8,7 @@ import {
   type SultanateTerritory,
 } from '@mamluk/world-map-core/server';
 import { projectWorldSnapshot } from '../kingdoms/engine';
+import { villagePopulation } from '../kingdoms/population';
 import { progressionConfig } from '../kingdoms/progression';
 import type { KingdomsView, KingdomsWorld, Village } from '../kingdoms/types';
 import { buildingKeys } from '../kingdoms/types';
@@ -26,6 +27,7 @@ export class KingdomMapProjection {
   readonly armies: readonly Army[];
   readonly borders: readonly SultanateTerritory[];
   private readonly view: KingdomsView;
+  private readonly publicPopulations: ReadonlyMap<string, number>;
   private readonly publicLevels: ReadonlyMap<string, number>;
   constructor(
     state: KingdomsWorld & { geography?: MamlukMapState },
@@ -35,6 +37,9 @@ export class KingdomMapProjection {
   ) {
     const { world: advanced, view } = projectWorldSnapshot(state, viewerId, serverTime);
     this.view = view;
+    this.publicPopulations = new Map(
+      Object.values(advanced.villages).map((village) => [village.id, villagePopulation(village)]),
+    );
     const maxLevel = progressionConfig(state).maxLevel;
     this.publicLevels = new Map(
       Object.values(state.villages).flatMap((village) => {
@@ -245,7 +250,7 @@ export class KingdomMapProjection {
       villageRank: own?.progression?.rank ?? null,
       villagePower: own?.progression?.power.total ?? null,
       villageVisualTier: own?.progression?.visualTier ?? null,
-      population: null,
+      population: this.publicPopulations.get(village.id) ?? null,
       constructionStatus: own ? (own.build ? 'BUILDING' : 'IDLE') : null,
       kingdomName: village.kingdomName,
       allianceName: alliance?.name ?? null,

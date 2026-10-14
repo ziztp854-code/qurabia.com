@@ -39,8 +39,8 @@ export interface VillageMapDetails {
   readonly villageRank?: string | null;
   readonly villagePower?: number | null;
   readonly villageVisualTier?: number | null;
-  /** POPULATION_DATA_NOT_AVAILABLE: no population exists in the game state. */
-  readonly population?: null;
+  /** Public civilian residents derived from completed village buildings. */
+  readonly population?: number | null;
   readonly constructionStatus?: 'BUILDING' | 'IDLE' | null;
   readonly kingdomName?: string;
   readonly allianceName?: string | null;

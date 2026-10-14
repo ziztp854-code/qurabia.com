@@ -48,8 +48,7 @@ function villageDetails(properties: Feature['properties'], viewerPlayerId: strin
       own && typeof properties.villageRank === 'string' ? properties.villageRank : 'غير متوفر',
     ),
     field('القوة', own ? numeric(properties.villagePower) : 'غير متوفر'),
-    // POPULATION_DATA_NOT_AVAILABLE: no population rule exists in Kingdom World.
-    field('السكان', 'غير متوفر'),
+    field('السكان', numeric(properties.population)),
     field(
       'الحالة',
       own && properties.constructionStatus === 'BUILDING'

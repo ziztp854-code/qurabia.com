@@ -172,7 +172,7 @@ it('preserves authorized village details through city validation and viewport de
     villageRank: 'قرية مزدهرة',
     villagePower: 980,
     villageVisualTier: 3,
-    population: null,
+    population: 1230,
     constructionStatus: 'BUILDING' as const,
     kingdomName: 'النور',
     allianceName: null,
@@ -182,10 +182,20 @@ it('preserves authorized village details through city validation and viewport de
   );
   const payload = await service.getViewport({ worldId: 'world', bounds }, { playerId: 'p1' });
   expect(parseMapPayload(payload).layers.cities.features[0]!.properties).toMatchObject(details);
+  for (const population of [null, 0]) {
+    const legacy = structuredClone(payload);
+    Object.assign(legacy.layers.cities.features[0]!.properties, { population });
+    expect(parseMapPayload(legacy).layers.cities.features[0]!.properties.population).toBe(
+      population,
+    );
+  }
   for (const forged of [
     { villageLevel: -1 },
     { villagePower: Infinity },
-    { population: 999 },
+    { population: -1 },
+    { population: 1.5 },
+    { population: Number.MAX_SAFE_INTEGER + 1 },
+    { population: '1230' },
     { constructionStatus: 'SECRET' },
   ]) {
     const bad = structuredClone(payload);
