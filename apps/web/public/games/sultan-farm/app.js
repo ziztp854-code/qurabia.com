@@ -191,6 +191,28 @@
       )
       .join('')}`;
   }
+  // Update existing controls in place: a timer must not detach a pressed button.
+  function syncChildren(current, next) {
+    for (let index = 0; index < next.childNodes.length; index++) {
+      const incoming = next.childNodes[index],
+        existing = current.childNodes[index];
+      if (!existing) {
+        current.append(incoming.cloneNode(true));
+      } else if (existing.nodeName !== incoming.nodeName) {
+        existing.replaceWith(incoming.cloneNode(true));
+      } else if (incoming.nodeType === Node.TEXT_NODE) {
+        if (existing.nodeValue !== incoming.nodeValue) existing.nodeValue = incoming.nodeValue;
+      } else if (incoming.nodeType === Node.ELEMENT_NODE) {
+        for (const attribute of [...existing.attributes])
+          if (!incoming.hasAttribute(attribute.name)) existing.removeAttribute(attribute.name);
+        for (const attribute of incoming.attributes)
+          if (existing.getAttribute(attribute.name) !== attribute.value)
+            existing.setAttribute(attribute.name, attribute.value);
+        syncChildren(existing, incoming);
+      }
+    }
+    while (current.childNodes.length > next.childNodes.length) current.lastChild.remove();
+  }
   function render() {
     const focused = document.activeElement,
       identity = focused?.closest('#panel-content')
@@ -214,7 +236,8 @@
     document
       .querySelectorAll('[data-tab]')
       .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === tab)));
-    $('panel-content').innerHTML = {
+    const panel = document.createElement('template');
+    panel.innerHTML = {
       farm: cropPanel,
       build: buildingPanel,
       production: productionPanel,
@@ -223,6 +246,7 @@
       inventory: inventoryPanel,
       quests: questPanel,
     }[tab]();
+    syncChildren($('panel-content'), panel.content);
     $('panel-content').scrollTop = scroll;
     if (identity?.action) {
       const b = [...$('panel-content').querySelectorAll('button')].find(

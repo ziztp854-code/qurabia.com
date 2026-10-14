@@ -1,7 +1,41 @@
-import { describe, expect, it } from 'vitest';
-import { assertSameOrigin, readCommandBody, KingdomsHttpError, stableFingerprint } from './http';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  assertSameOrigin,
+  readCommandBody,
+  KingdomsHttpError,
+  stableFingerprint,
+  jsonFailure,
+} from './http';
 
 describe('kingdoms HTTP trust boundary', () => {
+  it.each(['P2022', 'P2028'])(
+    'logs only the safe Prisma %s code and keeps the response generic',
+    async (code) => {
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      try {
+        const error = Object.assign(new Error('private connection details and SQL'), {
+          name: 'PrismaClientKnownRequestError',
+          code,
+          meta: { query: 'private SQL' },
+        });
+        const response = jsonFailure(error);
+        expect(response.status).toBe(503);
+        expect(log).toHaveBeenCalledWith('[kingdoms] request failed', error.name, code);
+        expect(JSON.stringify(await response.json())).not.toMatch(/P2022|P2028|private|SQL/);
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
+  it('does not log arbitrary error code contents', () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      jsonFailure(Object.assign(new Error('private'), { code: 'postgresql://private' }));
+      expect(log).toHaveBeenCalledWith('[kingdoms] request failed', 'Error');
+    } finally {
+      log.mockRestore();
+    }
+  });
   it('accepts the configured public origin behind a proxy without trusting forwarded hosts', () => {
     const internal = 'http://localhost:3100/api/kingdoms';
     expect(() =>

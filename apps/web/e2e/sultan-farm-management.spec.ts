@@ -1,5 +1,22 @@
 import { expect, test } from '@playwright/test';
 
+test('a field press survives timer updates without replacing the control', async ({ page }) => {
+  // This case isolates panel interaction; the journey below checks the 3D renderer.
+  await page.route('**/world.js', (route) => route.abort());
+  await page.goto('/games/sultan-farm/index.html?save=timer-interaction-regression');
+  const field = page.locator('[data-plot="0"]');
+  await expect(field).toHaveAttribute('aria-label', /فارغ/);
+  const original = await field.elementHandle();
+  await field.hover();
+  await page.mouse.down();
+  // Cross the one-second refresh while the pointer is held, then release it.
+  await page.waitForTimeout(1200);
+  expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
+  await page.mouse.up();
+  await expect(field).toHaveAttribute('aria-label', /قمح.*ينمو/);
+  await expect(field).toBeFocused();
+});
+
 test('management game opens inside Sultan farm, harvests, saves and returns on desktop and mobile', async ({
   page,
   request,
@@ -30,7 +47,7 @@ test('management game opens inside Sultan farm, harvests, saves and returns on d
   await game.locator('[data-plot="0"]').click();
   await expect(game.locator('[data-plot="0"]')).toContainText('جاهز للحصاد', { timeout: 16000 });
   await game.locator('[data-plot="0"]').click();
-  await expect(game.locator('#toast')).toContainText('حصدت');
+  await expect(game.locator('[data-plot="0"]')).toHaveAttribute('aria-label', /فارغ/);
   const frame = page
     .frames()
     .find((frame) => frame.url().includes('/games/sultan-farm/index.html'))!;
@@ -49,11 +66,10 @@ test('management game opens inside Sultan farm, harvests, saves and returns on d
     timeout: 20000,
   });
   await game.locator('[data-action="collect"][data-id="mill"]').click();
-  await expect(game.locator('#toast')).toContainText('استلمت');
+  await expect(game.locator('[data-factory="mill"] .queue-item')).toHaveCount(0);
   await game.locator('.dock [data-tab="build"]').click();
   await game.locator('[data-action="place"][data-id="garden"]').click();
   await game.locator('[data-action="slot"][data-id="3"]').click();
-  await expect(game.locator('#toast')).toContainText('بدأ بناء');
   await expect(game.locator('[data-action="relocate"][data-id="garden"]')).toBeEnabled({
     timeout: 12000,
   });

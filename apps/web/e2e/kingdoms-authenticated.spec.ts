@@ -55,6 +55,9 @@ async function selectWorld(page: Page, worldId: string) {
   // The toolbar is initially visible while the world is loading, then collapses
   // for a returning player. Wait for that state before deciding whether to open it.
   await expect(page.getByRole('status').filter({ hasText: 'جارٍ تحميل عالم الممالك…' })).toBeHidden();
+  // A reload already selects the current world; avoid reopening its settings
+  // and triggering another world load before the next mobile interaction.
+  if ((await worlds.inputValue()) === worldId) return;
   if (!(await worlds.isVisible())) {
     const settings = page.getByRole('button', { name: 'إعدادات العالم والقرية', exact: true });
     await settings.click();

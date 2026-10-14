@@ -94,7 +94,12 @@ export class KingdomsWorker implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
-    if (!this.endpoint || !this.secret || this.secret.length < 32) return;
+    if (!this.endpoint || !this.secret || this.secret.length < 32) {
+      this.logger.warn(
+        'Kingdoms worker disabled: configure KINGDOMS_WEB_ORIGIN and KINGDOMS_WORKER_SECRET (at least 32 characters).',
+      );
+      return;
+    }
     this.timer = setInterval(
       () => void this.tick(),
       kingdomHeartbeatIntervalMs,

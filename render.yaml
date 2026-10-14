@@ -23,3 +23,7 @@ services:
         sync: false
       - key: WEB_ORIGIN
         sync: false
+      - key: KINGDOMS_WEB_ORIGIN
+        sync: false
+      - key: KINGDOMS_WORKER_SECRET
+        sync: false

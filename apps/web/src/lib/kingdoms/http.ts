@@ -83,7 +83,20 @@ export function jsonFailure(error: unknown) {
   // Engine business errors have no database or request internals.
   if (error instanceof Error && error.name === 'KingdomsError')
     return NextResponse.json({ success: false, error: error.message }, { status: 409 });
-  console.error('[kingdoms] request failed', error instanceof Error ? error.name : 'UnknownError');
+  // Prisma codes distinguish schema, connection and transaction failures without
+  // logging query text, metadata or credentials from the exception message.
+  const code =
+    error instanceof Error &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    /^P\d{4}$/.test(error.code)
+      ? error.code
+      : undefined;
+  console.error(
+    '[kingdoms] request failed',
+    error instanceof Error ? error.name : 'UnknownError',
+    ...(code ? [code] : []),
+  );
   return NextResponse.json(
     { success: false, error: 'تعذّر إتمام الطلب الآن. حاول مجددًا بالمفتاح نفسه.' },
     { status: 503 },

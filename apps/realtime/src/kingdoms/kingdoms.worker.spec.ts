@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 import type { Namespace, Socket } from 'socket.io';
 import { KingdomsGateway } from './kingdoms.gateway.js';
 import { KingdomsWorker, kingdomWorkerEndpoint } from './kingdoms.worker.js';
@@ -54,8 +55,14 @@ describe('Kingdoms persisted event worker', () => {
   });
 
   it('does no network work when configuration is absent', async () => {
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
     const worker = makeWorker({});
     worker.onModuleInit();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Kingdoms worker disabled'),
+    );
     await worker.tick();
     expect(fetchMock).not.toHaveBeenCalled();
     worker.onModuleDestroy();
