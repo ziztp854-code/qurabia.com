@@ -1,13 +1,17 @@
 import type { GeoJSONSource, Source } from 'maplibre-gl';
 import type { FeatureCollection, Geometry } from '@mamluk/world-map-core';
+import type { FeatureCollection as SdkCollection, Geometry as SdkGeometry } from 'geojson';
 
 type SdkGeoJson = Parameters<GeoJSONSource['setData']>[0];
-type NullableCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry | null>;
+type SdkFeature = SdkCollection['features'][number];
+export type NullableCollection = Omit<SdkCollection, 'features'> & {
+  features: (Omit<SdkFeature, 'geometry'> & { geometry: SdkGeometry | null })[];
+};
 
 export const SDK_FEATURE_ID = '__mamlukFeatureId';
 
 /** Copy immutable domain coordinates at the mutable SDK boundary. */
-function sdkGeometry(geometry: Geometry | GeoJSON.Geometry): GeoJSON.Geometry {
+function sdkGeometry(geometry: Geometry | SdkGeometry): SdkGeometry {
   switch (geometry.type) {
     case 'Point':
       return { ...geometry, coordinates: [...geometry.coordinates] };
@@ -33,8 +37,8 @@ function sdkGeometry(geometry: Geometry | GeoJSON.Geometry): GeoJSON.Geometry {
 }
 
 export function sdkFeatureCollection(
-  data: FeatureCollection | GeoJSON.FeatureCollection,
-): GeoJSON.FeatureCollection;
+  data: FeatureCollection | SdkCollection,
+): SdkCollection;
 export function sdkFeatureCollection(
   data: FeatureCollection | NullableCollection,
 ): NullableCollection;

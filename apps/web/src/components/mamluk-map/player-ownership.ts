@@ -1,6 +1,6 @@
 import type { GeoJSONSource, LayerSpecification, ExpressionSpecification } from 'maplibre-gl';
 import type { FeatureCollection } from '@mamluk/world-map-core';
-import { sdkFeatureCollection } from './source-identity';
+import { sdkFeatureCollection, type NullableCollection } from './source-identity';
 
 export interface OwnershipColors {
   readonly own: string;
@@ -16,7 +16,6 @@ export interface OwnershipPresentationOptions {
 }
 
 type SdkGeoJson = Parameters<GeoJSONSource['setData']>[0];
-type NullableCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry | null>;
 export const OWNER_COLOR = '__mamlukOwnerColor';
 export const OWN_PLOT = '__mamlukOwn';
 
