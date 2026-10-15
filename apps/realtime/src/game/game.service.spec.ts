@@ -25,6 +25,7 @@ function makeSession() {
             explanation: 'شرح',
             timeLimit: 20,
             basePoints: 1_000,
+            difficulty: 'HARD' as 'EASY' | 'MEDIUM' | 'HARD',
             options: [
               { id: 'option-1', text: 'الأولى', position: 0, isCorrect: true },
               {
@@ -437,7 +438,32 @@ describe('GameService live safety', () => {
     });
   });
 
-  it('scores with the quiz question points override', async () => {
+  it.each([
+    ['EASY', 497],
+    ['MEDIUM', 696],
+    ['HARD', 994],
+  ] as const)(
+    'scores %s using its difficulty maximum and received time',
+    async (difficulty, expected) => {
+      const session = makeSession();
+      session.quiz.questions[0].question.difficulty = difficulty;
+      session.quiz.questions[0].question.basePoints = 9999;
+      session.quiz.questions[0].pointsOverride = 9999;
+      const { service, savedAnswerPoints } = setup(session);
+      await service.submitAnswer(
+        { sessionId: 'session-1', subjectId: 'player-1', role: 'player' },
+        'socket-1',
+        {
+          questionId: 'question-1',
+          optionId: 'option-1',
+          receivedAt: session.questionStartedAt.getTime() + 250,
+        },
+      );
+      expect(savedAnswerPoints()).toBe(expected);
+    },
+  );
+
+  it('caps old quiz points overrides at the difficulty score', async () => {
     const session = makeSession();
     session.quiz.questions[0].pointsOverride = 2_000;
     const { service, savedAnswerPoints } = setup(session);
@@ -453,7 +479,7 @@ describe('GameService live safety', () => {
       },
     );
 
-    expect(savedAnswerPoints()).toBe(1_988);
+    expect(savedAnswerPoints()).toBe(994);
   });
 
   it('restores the player answer without exposing other players', async () => {

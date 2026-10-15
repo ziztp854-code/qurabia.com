@@ -108,7 +108,9 @@ function mapBuilderQuestion(question: {
     prompt: question.prompt,
     category: question.category?.name ?? '',
     duration: question.timeLimit,
-    points: question.basePoints,
+    points: question.gameTypes.includes('QUIZ')
+      ? QUIZ_DRAW_POINTS[question.difficulty]
+      : question.basePoints,
     questionVersion: question.version,
     difficulty: question.difficulty,
     status: question.status,
@@ -461,7 +463,7 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
           categoryId: '',
         }),
       },
-      select: { id: true, prompt: true, version: true },
+      select: { id: true, prompt: true, version: true, difficulty: true },
     });
 
     if (availableQuestions.length !== questionIds.length) {
@@ -533,7 +535,10 @@ export async function createQuiz(input: CreateQuizInput): Promise<QuizActionResu
                 questionId: question.id,
                 position,
                 durationOverride: question.duration,
-                pointsOverride: question.points,
+                pointsOverride:
+                  quizInput.gameMode === 'QUIZ'
+                    ? QUIZ_DRAW_POINTS[availableById.get(question.id)!.difficulty]
+                    : question.points,
                 questionVersion: questionVersions.get(question.id)!,
               })),
             },

@@ -368,8 +368,8 @@ describe('createQuiz', () => {
     mocks.getPrismaClient.mockReturnValue({
       question: {
         findMany: vi.fn().mockResolvedValue([
-          { id: 'q1', prompt: 'السؤال الأول', version: 3 },
-          { id: 'q2', prompt: 'السؤال الثاني', version: 5 },
+          { id: 'q1', prompt: 'السؤال الأول', version: 3, difficulty: 'EASY' },
+          { id: 'q2', prompt: 'السؤال الثاني', version: 5, difficulty: 'MEDIUM' },
         ]),
       },
       quiz: { create },
@@ -419,14 +419,14 @@ describe('createQuiz', () => {
               questionId: 'q1',
               position: 0,
               durationOverride: 30,
-              pointsOverride: 800,
+              pointsOverride: 500,
               questionVersion: 3,
             },
             {
               questionId: 'q2',
               position: 1,
               durationOverride: 45,
-              pointsOverride: 1200,
+              pointsOverride: 700,
               questionVersion: 5,
             },
           ],

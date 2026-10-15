@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { canManageQuestions } from '@/lib/auth/authorization';
 import { getCurrentSession, isSessionUserCurrent } from '@/lib/auth/session';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
-import { questionUpdateSchema, validateQuestionRow } from '@/lib/questions/validation';
+import {
+  questionSchema,
+  questionUpdateSchema,
+  validateQuestionRow,
+} from '@/lib/questions/validation';
 import { clampKeywords, MAX_KEYWORDS_PER_QUESTION } from '@/lib/questions/keywords';
 import { Prisma } from '@tahaddi/database';
 
@@ -16,12 +21,19 @@ function getClientIp(request: Request) {
 
 async function authorize(request: Request) {
   if (!hasDatabaseUrl()) {
-    return { error: NextResponse.json({ ok: false, message: 'قاعدة البيانات غير مهيأة.' }, { status: 503 }) };
+    return {
+      error: NextResponse.json(
+        { ok: false, message: 'قاعدة البيانات غير مهيأة.' },
+        { status: 503 },
+      ),
+    };
   }
   const session = await getCurrentSession();
   const sessionUser = session?.user;
   if (!sessionUser?.id || typeof sessionUser.tokenVersion !== 'number') {
-    return { error: NextResponse.json({ ok: false, message: 'سجّل الدخول أولًا.' }, { status: 401 }) };
+    return {
+      error: NextResponse.json({ ok: false, message: 'سجّل الدخول أولًا.' }, { status: 401 }),
+    };
   }
   const storedUser = await getPrismaClient().user.findUnique({
     where: { id: sessionUser.id },
@@ -31,7 +43,12 @@ async function authorize(request: Request) {
     return { error: NextResponse.json({ ok: false, message: 'انتهت الجلسة.' }, { status: 401 }) };
   }
   if (!canManageQuestions(storedUser.role)) {
-    return { error: NextResponse.json({ ok: false, message: 'لا تملك صلاحية إدارة الأسئلة.' }, { status: 403 }) };
+    return {
+      error: NextResponse.json(
+        { ok: false, message: 'لا تملك صلاحية إدارة الأسئلة.' },
+        { status: 403 },
+      ),
+    };
   }
   return { user: storedUser, requestIp: getClientIp(request) };
 }
@@ -84,7 +101,9 @@ export async function GET(_request: Request, context: RouteContext) {
         gameTypes: question.gameTypes,
         source: question.source,
         timeLimit: question.timeLimit,
-        basePoints: question.basePoints,
+        basePoints: question.gameTypes.includes('QUIZ')
+          ? getQuizQuestionPoints(question.difficulty)
+          : question.basePoints,
         version: question.version,
         lastEditedAt: question.lastEditedAt,
         category: question.category,
@@ -108,7 +127,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     ONE_MINUTE_MS,
   );
   if (!allowed) {
-    return NextResponse.json({ ok: false, message: 'تجاوزت الحد المؤقت. حاول لاحقًا.' }, { status: 429 });
+    return NextResponse.json(
+      { ok: false, message: 'تجاوزت الحد المؤقت. حاول لاحقًا.' },
+      { status: 429 },
+    );
   }
   const prisma = getPrismaClient();
   const existing = await prisma.question.findUnique({
@@ -136,6 +158,29 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
   const data = parsed.data;
+  const optionTexts = data.options ?? existing.options.map((option) => option.text);
+  const correctIndex =
+    data.correctOption ??
+    (existing.type === 'SHORT_ANSWER'
+      ? 0
+      : existing.options.findIndex((option) => option.isCorrect));
+  if (data.options !== undefined || data.correctOption !== undefined) {
+    const candidate = questionSchema.safeParse({
+      ...existing,
+      ...data,
+      options: optionTexts,
+      correctOption: correctIndex,
+    });
+    if (!candidate.success) {
+      return NextResponse.json(
+        { ok: false, message: candidate.error.issues[0]?.message ?? 'راجع خيارات السؤال.' },
+        { status: 400 },
+      );
+    }
+  }
+  const quizPoints = (data.gameTypes ?? existing.gameTypes).includes('QUIZ')
+    ? getQuizQuestionPoints(data.difficulty ?? existing.difficulty)
+    : undefined;
   if (data.categoryId) {
     const cat = await prisma.category.findUnique({ where: { id: data.categoryId } });
     if (!cat) {
@@ -168,7 +213,9 @@ export async function PATCH(request: Request, context: RouteContext) {
           ...(data.gameTypes !== undefined ? { gameTypes: data.gameTypes } : {}),
           ...(data.source !== undefined ? { source: data.source } : {}),
           ...(data.timeLimit !== undefined ? { timeLimit: data.timeLimit } : {}),
-          ...(data.basePoints !== undefined ? { basePoints: data.basePoints } : {}),
+          ...(quizPoints !== undefined || data.basePoints !== undefined
+            ? { basePoints: quizPoints ?? data.basePoints }
+            : {}),
           ...(normalizedKeywords !== undefined ? { keywords: normalizedKeywords } : {}),
           version: { increment: 1 },
           lastEditedAt: new Date(),
@@ -179,16 +226,15 @@ export async function PATCH(request: Request, context: RouteContext) {
         if (normalizedKeywords.length > 0) {
           await tx.questionTag.createMany({
             data: normalizedKeywords.map((tag) => ({
-            questionId: id,
-            tag,
-          })),
+              questionId: id,
+              tag,
+            })),
             skipDuplicates: true,
           });
         }
       }
       if (data.options && data.options.length > 0 && existing.type !== 'SHORT_ANSWER') {
         const newOptions = data.options;
-        const correctIndex = data.correctOption ?? 0;
         await tx.questionOption.deleteMany({ where: { questionId: id } });
         await tx.questionOption.createMany({
           data: newOptions.map((text, position) => ({
@@ -197,6 +243,15 @@ export async function PATCH(request: Request, context: RouteContext) {
             text,
             isCorrect: position === correctIndex,
           })),
+        });
+      } else if (data.correctOption !== undefined && existing.type !== 'SHORT_ANSWER') {
+        await tx.questionOption.updateMany({
+          where: { questionId: id },
+          data: { isCorrect: false },
+        });
+        await tx.questionOption.update({
+          where: { id: existing.options[correctIndex]!.id },
+          data: { isCorrect: true },
         });
       }
       return result;

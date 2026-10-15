@@ -1,7 +1,12 @@
 import { z } from 'zod';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { MAX_KEYWORDS_PER_QUESTION, MAX_KEYWORD_LENGTH } from './keywords';
 
 const optionSchema = z.string().trim().min(1, 'اكتب نص الخيار.').max(500, 'الخيار طويل جدًا.');
+const correctOptionSchema = z.preprocess(
+  (value) => (value === null || value === '' ? undefined : value),
+  z.coerce.number().int().nonnegative(),
+);
 
 const baseMetadata = {
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
@@ -46,7 +51,7 @@ const multipleChoice = z
       .array(optionSchema)
       .min(2, 'أضف خيارين على الأقل.')
       .max(6, 'الحد الأقصى ستة خيارات.'),
-    correctOption: z.coerce.number().int().nonnegative(),
+    correctOption: correctOptionSchema,
     ...baseMetadata,
   })
   .superRefine((value, context) => {
@@ -81,11 +86,17 @@ const trueFalse = z
     type: z.literal('TRUE_FALSE'),
     prompt: z.string().trim().min(8, 'اكتب سؤالًا أوضح.').max(1000, 'السؤال طويل جدًا.'),
     options: z.array(optionSchema).length(2, 'سؤال صح أو خطأ يحتوي خيارين فقط.'),
-    correctOption: z.coerce.number().int().min(0).max(1),
+    correctOption: correctOptionSchema.refine(
+      (value) => value <= 1,
+      'اختر إجابة صحيحة من الخيارين.',
+    ),
     ...baseMetadata,
   })
   .superRefine((value, context) => {
-    if (value.options[0] !== 'صح' && value.options[0] !== 'خطأ') {
+    if (
+      new Set(value.options).size !== 2 ||
+      !value.options.every((option) => option === 'صح' || option === 'خطأ')
+    ) {
       context.addIssue({
         code: 'custom',
         path: ['options'],
@@ -151,11 +162,14 @@ const shortAnswer = z
     }
   });
 
-export const questionSchema = z.discriminatedUnion('type', [
-  multipleChoice,
-  trueFalse,
-  shortAnswer,
-]);
+export const questionSchema = z
+  .discriminatedUnion('type', [multipleChoice, trueFalse, shortAnswer])
+  .transform((question) => ({
+    ...question,
+    basePoints: question.gameTypes.includes('QUIZ')
+      ? getQuizQuestionPoints(question.difficulty)
+      : question.basePoints,
+  }));
 
 export type QuestionInput = z.infer<typeof questionSchema>;
 export type QuestionTypeInput = QuestionInput['type'];
@@ -169,7 +183,7 @@ export const questionUpdateSchema = z
   .object({
     prompt: z.string().trim().min(8, 'اكتب سؤالًا أوضح.').max(1000, 'السؤال طويل جدًا.').optional(),
     options: z.array(optionSchema).min(0).max(6).optional(),
-    correctOption: z.coerce.number().int().nonnegative().optional(),
+    correctOption: correctOptionSchema.optional(),
     expectedAnswer: z.string().trim().max(200).optional().nullable(),
     difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
     categoryId: z.string().trim().max(191).optional().nullable(),
@@ -314,6 +328,37 @@ export function validateQuestionRow(row: QuestionRowForValidation): QuestionIssu
     });
   }
   if (row.type !== 'SHORT_ANSWER') {
+    if (row.options.some((option) => !option.text.trim())) {
+      issues.push({ level: 'error', path: 'options', message: 'اكتب نص كل خيار.' });
+    }
+    if (new Set(row.options.map((option) => option.text.trim())).size !== row.options.length) {
+      issues.push({
+        level: 'error',
+        path: 'options',
+        message: 'خيارات السؤال يجب أن تكون متمايزة.',
+      });
+    }
+    if (row.options.filter((option) => option.isCorrect).length > 1) {
+      issues.push({
+        level: 'error',
+        path: 'correctOption',
+        message: 'يجب تحديد إجابة صحيحة واحدة فقط.',
+      });
+    }
+    if (row.options.length > 6) {
+      issues.push({ level: 'error', path: 'options', message: 'الحد الأقصى ستة خيارات.' });
+    }
+    if (
+      row.type === 'TRUE_FALSE' &&
+      (new Set(row.options.map((option) => option.text.trim())).size !== 2 ||
+        !row.options.every((option) => ['صح', 'خطأ'].includes(option.text.trim())))
+    ) {
+      issues.push({
+        level: 'error',
+        path: 'options',
+        message: 'سؤال صح أو خطأ يجب أن يستخدم قيمي "صح" و"خطأ".',
+      });
+    }
     const correctIndex = row.options.findIndex((option) => option.isCorrect);
     if (correctIndex === -1) {
       issues.push({
@@ -328,6 +373,13 @@ export function validateQuestionRow(row: QuestionRowForValidation): QuestionIssu
         message: 'مؤشر الإجابة الصحيحة لا يطابق الخيار الصحيح في البيانات.',
       });
     }
+  }
+  if (row.type === 'SHORT_ANSWER' && row.options.length > 0) {
+    issues.push({
+      level: 'error',
+      path: 'options',
+      message: 'سؤال الإجابة القصيرة لا يقبل خيارات.',
+    });
   }
   if (row.status === 'PUBLISHED' && issues.some((issue) => issue.level === 'error')) {
     issues.push({

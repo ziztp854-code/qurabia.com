@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import type { QuestionRevealPayload, QuestionStatsPayload } from '@tahaddi/contracts';
 import { Crown, MonitorPlay } from 'lucide-react';
 import { BroadcastLayout } from '@/components/layout';
@@ -190,6 +191,7 @@ export default async function DisplayPage({
                   prompt: true,
                   imageUrl: true,
                   type: true,
+                  difficulty: true,
                   explanation: true,
                   timeLimit: true,
                   options: {
@@ -372,6 +374,7 @@ export default async function DisplayPage({
             questionStartedAt,
             questionEndsAt,
             questionNumber: session.currentQuestionPosition + 1,
+            basePoints: getQuizQuestionPoints(currentQuestion.difficulty),
             totalQuestions: session.quiz.questions.length,
           },
           reveal,

@@ -29,9 +29,7 @@ export async function createQuestion(
 ): Promise<QuestionActionState> {
   const user = await requireQuestionManager('/questions');
   const type = formData.get('type');
-  const rawOptions = formData
-    .getAll('options')
-    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+  const rawOptions = formData.getAll('options');
   const options = type === 'TRUE_FALSE' ? ['صح', 'خطأ'] : rawOptions;
   const parsed = questionSchema.safeParse({
     type,

@@ -1,4 +1,5 @@
 import { foldKeyword } from './keywords';
+import { QUIZ_DIFFICULTY_POINTS } from '@tahaddi/domain';
 
 function seedToUint32(seed: string): number {
   let hash = 2166136261;
@@ -9,7 +10,7 @@ function seedToUint32(seed: string): number {
   return hash >>> 0;
 }
 
-export const QUIZ_DRAW_POINTS = { EASY: 500, MEDIUM: 700, HARD: 1000 } as const;
+export const QUIZ_DRAW_POINTS = QUIZ_DIFFICULTY_POINTS;
 
 /** Draws one question per category each round, with random category and question order. */
 export function selectCategoryBalancedQuestions(
@@ -125,9 +126,7 @@ export function selectRandomQuestionsByDifficulty(
   ) as Record<(typeof difficulties)[number], Map<string, string>>;
   const slots = difficulties
     .flatMap((difficulty) => Array.from({ length: counts[difficulty] }, () => difficulty))
-    .sort(
-      (left, right) => idsByPrompt[left].size - idsByPrompt[right].size,
-    );
+    .sort((left, right) => idsByPrompt[left].size - idsByPrompt[right].size);
   const promptAssignments = new Map<string, number>();
 
   const assign = (slot: number, visited: Set<string>): boolean => {
@@ -194,9 +193,7 @@ export function selectCategoryAndDifficultyBalancedQuestions(
       const current = byId.get(from)!;
       const currentCategory = current.categoryId ?? '';
       const usedPrompts = new Set(
-        selected
-          .filter((id) => id !== from)
-          .map((id) => foldKeyword(byId.get(id)!.prompt) || id),
+        selected.filter((id) => id !== from).map((id) => foldKeyword(byId.get(id)!.prompt) || id),
       );
       for (const to of candidateOrder) {
         if (excluded.has(to) || selectedSet.has(to)) continue;

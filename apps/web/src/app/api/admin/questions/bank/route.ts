@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { canManageQuestions } from '@/lib/auth/authorization';
 import { getCurrentSession, isSessionUserCurrent } from '@/lib/auth/session';
@@ -24,12 +25,19 @@ function getClientIp(request: Request) {
 
 async function authorize(request: Request) {
   if (!hasDatabaseUrl()) {
-    return { error: NextResponse.json({ ok: false, message: 'قاعدة البيانات غير مهيأة.' }, { status: 503 }) };
+    return {
+      error: NextResponse.json(
+        { ok: false, message: 'قاعدة البيانات غير مهيأة.' },
+        { status: 503 },
+      ),
+    };
   }
   const session = await getCurrentSession();
   const sessionUser = session?.user;
   if (!sessionUser?.id || typeof sessionUser.tokenVersion !== 'number') {
-    return { error: NextResponse.json({ ok: false, message: 'سجّل الدخول أولًا.' }, { status: 401 }) };
+    return {
+      error: NextResponse.json({ ok: false, message: 'سجّل الدخول أولًا.' }, { status: 401 }),
+    };
   }
   const storedUser = await getPrismaClient().user.findUnique({
     where: { id: sessionUser.id },
@@ -39,7 +47,12 @@ async function authorize(request: Request) {
     return { error: NextResponse.json({ ok: false, message: 'انتهت الجلسة.' }, { status: 401 }) };
   }
   if (!canManageQuestions(storedUser.role)) {
-    return { error: NextResponse.json({ ok: false, message: 'لا تملك صلاحية إدارة الأسئلة.' }, { status: 403 }) };
+    return {
+      error: NextResponse.json(
+        { ok: false, message: 'لا تملك صلاحية إدارة الأسئلة.' },
+        { status: 403 },
+      ),
+    };
   }
   return { user: storedUser, requestIp: getClientIp(request) };
 }
@@ -114,7 +127,9 @@ export async function GET(request: Request) {
         gameTypes: q.gameTypes,
         source: q.source,
         timeLimit: q.timeLimit,
-        basePoints: q.basePoints,
+        basePoints: q.gameTypes.includes('QUIZ')
+          ? getQuizQuestionPoints(q.difficulty)
+          : q.basePoints,
         version: q.version,
         lastEditedAt: q.lastEditedAt,
         category: q.category,
@@ -136,7 +151,10 @@ export async function POST(request: Request) {
     ONE_MINUTE_MS,
   );
   if (!allowed) {
-    return NextResponse.json({ ok: false, message: 'تجاوزت الحد المؤقت. حاول لاحقًا.' }, { status: 429 });
+    return NextResponse.json(
+      { ok: false, message: 'تجاوزت الحد المؤقت. حاول لاحقًا.' },
+      { status: 429 },
+    );
   }
   const parsed = questionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

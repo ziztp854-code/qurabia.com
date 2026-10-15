@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { LiveCountdown, LiveQuestionStage } from './live-question-stage';
@@ -20,11 +20,39 @@ const question = {
 };
 
 describe('LiveQuestionStage', () => {
+  it('renders all six options and submits the sixth option without truncation', () => {
+    const onSelect = vi.fn();
+    const { container } = render(
+      <LiveQuestionStage
+        question={{
+          ...question,
+          basePoints: 700,
+          options: [
+            ...question.options,
+            { id: 'e', text: 'الخامس', position: 4 },
+            { id: 'f', text: 'السادس', position: 5 },
+          ],
+        }}
+        phase="QUESTION"
+        reveal={null}
+        stats={null}
+        clockOffset={0}
+        onSelect={onSelect}
+      />,
+    );
+    expect(screen.getAllByRole('button')).toHaveLength(6);
+    expect(
+      [...container.querySelectorAll('.royal-answer-number')].map((option) => option.textContent),
+    ).toEqual(['أ', 'ب', 'ج', 'د', 'هـ', 'و']);
+    fireEvent.click(screen.getByRole('button', { name: 'الخيار و: السادس' }));
+    expect(onSelect).toHaveBeenCalledWith('f');
+    expect(screen.getByText(/الحد الأقصى/)).toHaveTextContent('700');
+  });
   it('keeps the server-rendered countdown independent from the local clock', () => {
     const now = vi.spyOn(Date, 'now');
     renderToString(
       <LiveCountdown
-        question={{ ...question, questionStartedAt:1_000, questionEndsAt:21_000 }}
+        question={{ ...question, questionStartedAt: 1_000, questionEndsAt: 21_000 }}
         clockOffset={0}
       />,
     );
@@ -36,7 +64,11 @@ describe('LiveQuestionStage', () => {
   it('settles an expired countdown at zero', () => {
     render(
       <LiveCountdown
-        question={{ ...question, questionStartedAt: Date.now() - 20_000, questionEndsAt: Date.now() - 1 }}
+        question={{
+          ...question,
+          questionStartedAt: Date.now() - 20_000,
+          questionEndsAt: Date.now() - 1,
+        }}
         clockOffset={0}
       />,
     );

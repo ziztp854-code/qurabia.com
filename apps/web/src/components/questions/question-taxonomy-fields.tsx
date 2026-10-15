@@ -38,11 +38,13 @@ export function QuestionTaxonomyFields({
   categoryId,
   gameTypes = ['QUIZ', 'LADDER'],
   onCategoryChange,
+  onGameTypesChange,
 }: {
   categories: CategoryOption[];
   categoryId?: string | null;
   gameTypes?: readonly QuestionGameValue[];
   onCategoryChange?: (categoryId: string) => void;
+  onGameTypesChange?: (gameTypes: QuestionGameValue[]) => void;
 }) {
   const ordered = uniqueCanonicalOptions(categories);
 
@@ -76,7 +78,17 @@ export function QuestionTaxonomyFields({
                 type="checkbox"
                 name="gameTypes"
                 value={game.value}
-                defaultChecked={gameTypes.includes(game.value)}
+                {...(onGameTypesChange
+                  ? {
+                      checked: gameTypes.includes(game.value),
+                      onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                        onGameTypesChange(
+                          event.target.checked
+                            ? [...gameTypes, game.value]
+                            : gameTypes.filter((value) => value !== game.value),
+                        ),
+                    }
+                  : { defaultChecked: gameTypes.includes(game.value) })}
               />
               <span>{game.label}</span>
             </label>

@@ -55,6 +55,7 @@ export const quizBuilderQuestionSchema = z
     id: z.string().trim().min(1, 'معرّف السؤال مطلوب.').max(64, 'معرّف السؤال غير صالح.'),
     prompt: z.string().trim().min(1, 'نص السؤال مطلوب.').max(1_000, 'نص السؤال طويل جدًا.'),
     category: z.string().trim().max(160, 'اسم التصنيف طويل جدًا.'),
+    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
     duration: z
       .number()
       .int('وقت السؤال يجب أن يكون عددًا صحيحًا.')

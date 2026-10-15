@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import {
   ANSWER_ACCEPT_GRACE_MS,
   QUESTION_START_LEAD_MS,
@@ -137,6 +138,7 @@ export class GameService {
                     explanation: true,
                     timeLimit: true,
                     basePoints: true,
+                    difficulty: true,
                     options: {
                       orderBy: { position: 'asc' },
                       select: {
@@ -187,8 +189,7 @@ export class GameService {
       ...quizQuestion.question,
       timeLimit:
         quizQuestion.durationOverride ?? quizQuestion.question.timeLimit,
-      basePoints:
-        quizQuestion.pointsOverride ?? quizQuestion.question.basePoints,
+      basePoints: getQuizQuestionPoints(quizQuestion.question.difficulty),
     };
   }
 
@@ -226,6 +227,7 @@ export class GameService {
       questionStartedAt: state.questionStartedAt ?? Date.now(),
       questionEndsAt: state.questionEndsAt ?? Date.now(),
       questionNumber: state.currentQuestionPosition + 1,
+      basePoints: question.basePoints,
       totalQuestions: session.quiz.questions.length,
     };
   }

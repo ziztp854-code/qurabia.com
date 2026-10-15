@@ -1,5 +1,7 @@
+import { getQuizQuestionPoints, type QuizQuestionDifficulty } from '@tahaddi/domain';
+
 export function resolveQuizQuestion<
-  TQuestion extends { timeLimit: number; basePoints: number },
+  TQuestion extends { timeLimit: number; basePoints: number; difficulty: QuizQuestionDifficulty },
 >(quizQuestion: {
   durationOverride: number | null;
   pointsOverride: number | null;
@@ -8,6 +10,6 @@ export function resolveQuizQuestion<
   return {
     ...quizQuestion.question,
     timeLimit: quizQuestion.durationOverride ?? quizQuestion.question.timeLimit,
-    basePoints: quizQuestion.pointsOverride ?? quizQuestion.question.basePoints,
+    basePoints: getQuizQuestionPoints(quizQuestion.question.difficulty),
   };
 }

@@ -59,6 +59,7 @@ const liveSessionSelect = {
               explanation: true,
               timeLimit: true,
               basePoints: true,
+              difficulty: true,
               options: {
                 orderBy: { position: 'asc' as const },
                 select: { id: true, text: true, position: true, isCorrect: true },
@@ -266,6 +267,7 @@ export async function getHttpLiveState(identity: HttpLiveIdentity): Promise<Http
               questionStartedAt: questionStartedAt!,
               questionEndsAt: questionEndsAt!,
               questionNumber: session.currentQuestionPosition + 1,
+              basePoints: question.basePoints,
               totalQuestions: session.quiz.questions.length,
             }
           : null,
@@ -363,10 +365,7 @@ export async function submitHttpLiveAnswer(
 
   const option = question.options.find((item) => item.id === input.optionId);
   if (!option) return { ok: false, reason: 'INVALID_OPTION' };
-  if (
-    !questionStartedAt ||
-    receivedAt.getTime() < questionStartedAt - ANSWER_ACCEPT_GRACE_MS
-  ) {
+  if (!questionStartedAt || receivedAt.getTime() < questionStartedAt - ANSWER_ACCEPT_GRACE_MS) {
     return { ok: false, reason: 'QUESTION_NOT_ACTIVE' };
   }
   if (!questionEndsAt || receivedAt.getTime() > questionEndsAt) {

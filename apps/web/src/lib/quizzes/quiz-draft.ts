@@ -7,6 +7,7 @@ import {
   type QuizBuilderQuestion,
 } from '@tahaddi/contracts';
 import { foldKeyword } from '@/lib/questions/keywords';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 
 export { QUIZ_BUILDER_GAME_MODES };
 export type { QuizBuilderGameMode };
@@ -102,7 +103,7 @@ export function parseQuizDraft(value: string): QuizDraft | null {
       gameMode: isQuizBuilderGameMode(draft.gameMode) ? draft.gameMode : 'QUIZ',
       questions: withoutRepeatedPrompts(draft.questions),
     });
-    return parsed.success ? parsed.data : null;
+    return parsed.success ? normalizeQuizPoints(parsed.data) : null;
   } catch {
     return null;
   }
@@ -116,10 +117,25 @@ export function readQuizDraft(): QuizDraft {
 }
 
 export function writeQuizDraft(draft: QuizDraft): void {
-  localStorage.setItem(QUIZ_DRAFT_STORAGE_KEY, JSON.stringify(quizBuilderDraftSchema.parse(draft)));
+  localStorage.setItem(
+    QUIZ_DRAFT_STORAGE_KEY,
+    JSON.stringify(normalizeQuizPoints(quizBuilderDraftSchema.parse(draft))),
+  );
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(QUIZ_DRAFT_CHANGED_EVENT));
   }
+}
+
+export function normalizeQuizPoints(draft: QuizDraft): QuizDraft {
+  if (draft.gameMode !== 'QUIZ') return draft;
+  return {
+    ...draft,
+    questions: draft.questions.map((question) =>
+      question.difficulty
+        ? { ...question, points: getQuizQuestionPoints(question.difficulty) }
+        : question,
+    ),
+  };
 }
 
 export type AddQuestionToDraftResult =

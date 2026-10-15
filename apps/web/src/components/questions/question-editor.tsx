@@ -1,10 +1,11 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { Button, Input, NumberInput, Select, Textarea } from '@/components/ui';
 import { createQuestion } from '@/app/questions/actions';
 import { QuestionImageField } from './question-image-field';
-import { QuestionTaxonomyFields } from './question-taxonomy-fields';
+import { QuestionTaxonomyFields, type QuestionGameValue } from './question-taxonomy-fields';
 import styles from './question-editor.module.css';
 
 const labels = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
@@ -24,6 +25,8 @@ export function QuestionEditor({
   const [correctOption, setCorrectOption] = useState(0);
   const [difficulty, setDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM');
   const [categoryId, setCategoryId] = useState('');
+  const [gameTypes, setGameTypes] = useState<QuestionGameValue[]>(['QUIZ', 'LADDER']);
+  const [basePoints, setBasePoints] = useState(700);
   const [explanation, setExplanation] = useState('');
 
   const changeType = (nextType: typeof type) => {
@@ -148,6 +151,8 @@ export function QuestionEditor({
             categories={categories}
             categoryId={categoryId}
             onCategoryChange={setCategoryId}
+            gameTypes={gameTypes}
+            onGameTypesChange={setGameTypes}
           />
           <NumberInput
             label="الوقت بالثواني"
@@ -160,7 +165,9 @@ export function QuestionEditor({
           <NumberInput
             label="النقاط الأساسية"
             name="basePoints"
-            defaultValue="1000"
+            value={gameTypes.includes('QUIZ') ? getQuizQuestionPoints(difficulty) : basePoints}
+            readOnly={gameTypes.includes('QUIZ')}
+            onChange={(event) => setBasePoints(Number(event.target.value))}
             min="100"
             max="10000"
             required

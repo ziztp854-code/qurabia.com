@@ -58,6 +58,18 @@ describe('updateQuestion', () => {
     mocks.deleteQuestionImage.mockResolvedValue(undefined);
   });
 
+  it('rejects empty option slots without changing the correct answer index', async () => {
+    const form = validQuestionForm();
+    form.delete('options');
+    form.append('options', '');
+    form.append('options', 'الرياض');
+    form.append('options', 'جدة');
+    form.set('correctOption', '1');
+    const result = await updateQuestion('q1', { status: 'idle', message: '' }, form);
+    expect(result.status).toBe('error');
+    expect(mocks.getPrismaClient).not.toHaveBeenCalled();
+  });
+
   it('clears the stored category when no category is selected', async () => {
     const updateMany = vi.fn().mockResolvedValue({ count: 1 });
     const deleteMany = vi.fn().mockResolvedValue({ count: 4 });

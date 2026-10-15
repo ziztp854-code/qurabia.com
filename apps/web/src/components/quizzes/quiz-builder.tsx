@@ -1,6 +1,7 @@
 'use client';
 
 import { quizBuilderSchema } from '@tahaddi/contracts';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { ArrowDown, ArrowUp, CheckCircle2, Save, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -25,6 +26,7 @@ import {
 import { formatNumber } from '@/lib/utils';
 import {
   createEmptyQuizDraft,
+  normalizeQuizPoints,
   parseQuizDraft,
   QUIZ_BUILDER_GAME_MODES,
   QUIZ_BUILDER_GAME_MODE_LABELS,
@@ -176,7 +178,7 @@ export function QuizBuilder({
     Number.isInteger(batchPoints) && batchPoints >= 100 && batchPoints <= 10000;
 
   const updateDraft = <Key extends keyof QuizDraft>(key: Key, value: QuizDraft[Key]) => {
-    setDraft((current) => ({ ...current, [key]: value }));
+    setDraft((current) => normalizeQuizPoints({ ...current, [key]: value }));
   };
 
   const addQuestions = (questions: AvailableBankQuestion[]) => {
@@ -194,7 +196,11 @@ export function QuizBuilder({
         prompt: question.prompt,
         category: question.category,
         duration: question.duration,
-        points: question.points,
+        points:
+          draft.gameMode === 'QUIZ' && question.difficulty
+            ? getQuizQuestionPoints(question.difficulty)
+            : question.points,
+        difficulty: question.difficulty,
         questionVersion: question.questionVersion,
       }));
     if (fresh.length === 0) {
@@ -304,6 +310,7 @@ export function QuizBuilder({
                 />
                 <NumberInput
                   label="النقاط"
+                  readOnly={draft.gameMode === 'QUIZ'}
                   error={questionError(index, 'points')}
                   min="100"
                   max="10000"
@@ -587,17 +594,25 @@ export function QuizBuilder({
               <div>
                 <NumberInput
                   label="نقاط موحدة للأسئلة"
+                  disabled={draft.gameMode === 'QUIZ'}
                   error={validBatchPoints ? undefined : 'أدخل عددًا صحيحًا بين 100 و10000 نقطة.'}
                   min="100"
                   max="10000"
                   value={batchPoints || ''}
                   onChange={(event) => setBatchPoints(Number(event.target.value))}
                 />
+                {draft.gameMode === 'QUIZ' && (
+                  <small>
+                    النقاط حسب الصعوبة: سهل ٥٠٠، متوسط ٧٠٠، صعب ١٠٠٠. تُحتسب السرعة عند تفعيلها.
+                  </small>
+                )}
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={draft.questions.length === 0 || !validBatchPoints}
+                  disabled={
+                    draft.gameMode === 'QUIZ' || draft.questions.length === 0 || !validBatchPoints
+                  }
                   onClick={() =>
                     updateDraft(
                       'questions',

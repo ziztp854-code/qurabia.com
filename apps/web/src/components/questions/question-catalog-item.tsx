@@ -1,4 +1,5 @@
 import { formatNumber } from '@/lib/utils';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { CircleDot, Clock3, Flame, Gauge, ListChecks, Pencil, ToggleLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ArchiveQuestionButton } from '@/components/questions/archive-question-button';
@@ -57,6 +58,9 @@ export function QuestionCatalogItem({
   view: BankView;
 }) {
   const difficulty = isDifficulty(question.difficulty) ? question.difficulty : 'MEDIUM';
+  const basePoints = question.gameTypes?.includes('QUIZ')
+    ? getQuizQuestionPoints(difficulty)
+    : question.basePoints;
   const type = isType(question.type) ? question.type : 'MULTIPLE_CHOICE';
   const status = isStatus(question.status) ? question.status : 'DRAFT';
   const DifficultyIcon = DIFFICULTY_ICON[difficulty];
@@ -103,7 +107,7 @@ export function QuestionCatalogItem({
           </div>
           <div className={styles.fact}>
             <dt>نقاط</dt>
-            <dd>{formatNumber(question.basePoints)}</dd>
+            <dd>{formatNumber(basePoints)}</dd>
           </div>
         </dl>
       </div>
@@ -116,7 +120,8 @@ export function QuestionCatalogItem({
                 prompt: question.prompt,
                 category: question.category?.name ?? '',
                 duration: question.timeLimit,
-                points: question.basePoints,
+                points: basePoints,
+                difficulty,
                 questionVersion: question.version,
                 gameTypes: question.gameTypes,
               }}

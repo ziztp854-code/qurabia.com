@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { getQuizQuestionPoints } from '@tahaddi/domain';
 import { updateQuestion } from '@/app/questions/[id]/actions';
 import { Button, Input, NumberInput, Select, Textarea } from '@/components/ui';
 import { QuestionImageField } from './question-image-field';
@@ -39,6 +40,9 @@ export function QuestionEditForm({
     initialUpdateQuestionActionState,
   );
   const [type, setType] = useState<QuestionType>(question.type);
+  const [difficulty, setDifficulty] = useState(question.difficulty);
+  const [gameTypes, setGameTypes] = useState(question.gameTypes);
+  const [basePoints, setBasePoints] = useState(question.basePoints);
   const [optionCount, setOptionCount] = useState(
     Math.min(6, Math.max(2, question.type === 'TRUE_FALSE' ? 2 : question.options.length)),
   );
@@ -135,7 +139,12 @@ export function QuestionEditForm({
       </div>
       <aside className={styles.rail} aria-label="التصنيف والإعدادات">
         <p className={styles.sectionTitle}>التصنيف والإعدادات</p>
-        <Select label="الصعوبة" name="difficulty" defaultValue={question.difficulty}>
+        <Select
+          label="الصعوبة"
+          name="difficulty"
+          value={difficulty}
+          onChange={(event) => setDifficulty(event.target.value as typeof difficulty)}
+        >
           <option value="EASY">سهل</option>
           <option value="MEDIUM">متوسط</option>
           <option value="HARD">صعب</option>
@@ -143,7 +152,8 @@ export function QuestionEditForm({
         <QuestionTaxonomyFields
           categories={categories}
           categoryId={question.categoryId}
-          gameTypes={question.gameTypes}
+          gameTypes={gameTypes}
+          onGameTypesChange={setGameTypes}
         />
         <NumberInput
           label="الوقت بالثواني"
@@ -156,7 +166,9 @@ export function QuestionEditForm({
         <NumberInput
           label="النقاط الأساسية"
           name="basePoints"
-          defaultValue={question.basePoints}
+          value={gameTypes.includes('QUIZ') ? getQuizQuestionPoints(difficulty) : basePoints}
+          readOnly={gameTypes.includes('QUIZ')}
+          onChange={(event) => setBasePoints(Number(event.target.value))}
           min="100"
           max="10000"
           required

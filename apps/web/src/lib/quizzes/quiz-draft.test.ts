@@ -45,10 +45,7 @@ describe('quiz-draft', () => {
 
   it('removes repeated text while restoring an old local draft', () => {
     const draft = createEmptyQuizDraft();
-    draft.questions = [
-      sample,
-      { ...sample, id: 'q2', prompt: 'مَا عَاصِمَةُ السُّعُودِيَّة ؟' },
-    ];
+    draft.questions = [sample, { ...sample, id: 'q2', prompt: 'مَا عَاصِمَةُ السُّعُودِيَّة ؟' }];
 
     expect(parseQuizDraft(JSON.stringify(draft))?.questions).toEqual([sample]);
   });
@@ -72,5 +69,26 @@ describe('quiz-draft', () => {
     expect(questionSupportsGameMode({ gameTypes: ['LADDER', 'QUIZ'] }, 'LADDER')).toBe(true);
     expect(questionSupportsGameMode({ gameTypes: ['QUIZ'] }, 'MILLIONAIRE')).toBe(false);
     expect(questionSupportsGameMode({}, 'QUIZ')).toBe(true);
+  });
+});
+
+describe('difficulty point normalization', () => {
+  it('normalizes stored quiz drafts before they are displayed again', () => {
+    const draft = createEmptyQuizDraft();
+    writeQuizDraft({ ...draft, questions: [{ ...sample, difficulty: 'MEDIUM', points: 9999 }] });
+    expect(parseQuizDraft(localStorage.getItem(QUIZ_DRAFT_STORAGE_KEY)!)?.questions[0].points).toBe(
+      700,
+    );
+  });
+  it('preserves the scoring of other game modes', () => {
+    const draft = createEmptyQuizDraft();
+    writeQuizDraft({
+      ...draft,
+      gameMode: 'CATEGORY_BOARD',
+      questions: [{ ...sample, difficulty: 'MEDIUM', points: 400 }],
+    });
+    expect(parseQuizDraft(localStorage.getItem(QUIZ_DRAFT_STORAGE_KEY)!)?.questions[0].points).toBe(
+      400,
+    );
   });
 });

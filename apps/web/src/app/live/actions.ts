@@ -152,39 +152,40 @@ export async function startLiveSession(formData: FormData) {
     quotaConsumed = !roomsQuota.unlimited;
   }
 
-  const { session, created } = await prisma.$transaction(async (tx) => {
-    await tx.quiz.update({
-      where: { id: quiz.id },
-      data: { status: 'ACTIVE', isPublic: true },
-    });
+  const { session, created } = await prisma
+    .$transaction(async (tx) => {
+      await tx.quiz.update({
+        where: { id: quiz.id },
+        data: { status: 'ACTIVE', isPublic: true },
+      });
 
-    const existing = await tx.liveSession.findFirst({
-      where: {
-        quizId: quiz.id,
-        hostId: user.id,
-        status: { in: ['WAITING', 'ACTIVE'] },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    });
-
-    if (existing) {
-      return { session: existing, created: false };
-    }
-
-    return {
-      session: await tx.liveSession.create({
-        data: {
+      const existing = await tx.liveSession.findFirst({
+        where: {
           quizId: quiz.id,
           hostId: user.id,
-          roomCode: quiz.roomCode,
-          status: 'WAITING',
+          status: { in: ['WAITING', 'ACTIVE'] },
         },
+        orderBy: { createdAt: 'desc' },
         select: { id: true },
-      }),
-      created: true,
-    };
-  })
+      });
+
+      if (existing) {
+        return { session: existing, created: false };
+      }
+
+      return {
+        session: await tx.liveSession.create({
+          data: {
+            quizId: quiz.id,
+            hostId: user.id,
+            roomCode: quiz.roomCode,
+            status: 'WAITING',
+          },
+          select: { id: true },
+        }),
+        created: true,
+      };
+    })
     .catch(async (error: unknown) => {
       if (quotaConsumed) {
         await refundQuota(user.id, 'maxLiveRoomsPerMonth').catch(() => undefined);
@@ -364,6 +365,7 @@ export async function submitLiveAnswer(formData: FormData) {
                 select: {
                   id: true,
                   basePoints: true,
+                  difficulty: true,
                   timeLimit: true,
                   options: { select: { id: true, isCorrect: true } },
                 },

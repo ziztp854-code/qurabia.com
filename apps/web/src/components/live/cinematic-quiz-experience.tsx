@@ -495,6 +495,9 @@ function QuestionScreen({
             <div className={styles.questionCopy}>
               <p className={styles.questionEyebrow}>
                 السؤال {question.questionNumber} <span>من {question.totalQuestions}</span>
+                {question.basePoints !== undefined && (
+                  <span>· الحد الأقصى {question.basePoints} نقطة</span>
+                )}
               </p>
               <h1 dir="auto">{question.prompt}</h1>
             </div>

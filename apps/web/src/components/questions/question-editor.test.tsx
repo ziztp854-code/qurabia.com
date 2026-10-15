@@ -14,6 +14,18 @@ const categories = [
 ];
 
 describe('QuestionEditor', () => {
+  it('updates the quiz maximum points when difficulty changes', async () => {
+    const user = userEvent.setup();
+    render(<QuestionEditor />);
+    expect(screen.getByLabelText('النقاط الأساسية')).toHaveValue(700);
+    await user.selectOptions(screen.getByLabelText('الصعوبة'), 'EASY');
+    expect(screen.getByLabelText('النقاط الأساسية')).toHaveValue(500);
+    await user.selectOptions(screen.getByLabelText('الصعوبة'), 'HARD');
+    expect(screen.getByLabelText('النقاط الأساسية')).toHaveValue(1000);
+    expect(screen.getByLabelText('النقاط الأساسية')).toHaveAttribute('readonly');
+    await user.click(screen.getByRole('checkbox', { name: 'المسابقات' }));
+    expect(screen.getByLabelText('النقاط الأساسية')).not.toHaveAttribute('readonly');
+  });
   it('groups editor fields into question, options, and settings sections', () => {
     render(<QuestionEditor categories={categories} />);
     expect(screen.getByRole('group', { name: 'الخيارات والإجابة الصحيحة' })).toBeInTheDocument();

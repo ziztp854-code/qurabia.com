@@ -42,6 +42,7 @@ export type QuestionMediaPayload = {
 export type QuestionPayload = {
   questionId: string;
   prompt: string;
+  basePoints?: number;
   options: QuestionOptionPayload[];
   media: QuestionMediaPayload[];
   questionStartedAt: number;

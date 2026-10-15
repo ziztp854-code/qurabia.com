@@ -1,4 +1,5 @@
 export type EntityId = string;
+export * from './quiz-points';
 export type UtcTimestamp = string;
 
 export * from './special-games';

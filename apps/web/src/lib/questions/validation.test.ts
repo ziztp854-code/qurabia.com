@@ -204,3 +204,47 @@ describe('validateQuestionRow', () => {
     expect(issues.filter((issue) => issue.level === 'error')).toEqual([]);
   });
 });
+
+describe('quiz scores and option integrity', () => {
+  const base = {
+    type: 'MULTIPLE_CHOICE',
+    prompt: 'ما عاصمة المملكة العربية السعودية؟',
+    options: ['الرياض', 'جدة'],
+    correctOption: 0,
+    difficulty: 'EASY',
+    gameTypes: ['QUIZ'],
+    timeLimit: 20,
+    basePoints: 9999,
+  };
+  it.each([
+    ['EASY', 500],
+    ['MEDIUM', 700],
+    ['HARD', 1000],
+  ] as const)('normalizes %s to %i on the server', (difficulty, basePoints) => {
+    expect(questionSchema.parse({ ...base, difficulty }).basePoints).toBe(basePoints);
+  });
+  it('keeps non-quiz game scores intact', () => {
+    expect(
+      questionSchema.parse({ ...base, gameTypes: ['CATEGORY_BOARD'], basePoints: 400 }).basePoints,
+    ).toBe(400);
+  });
+  it.each([
+    ['صح', 'صح'],
+    ['صح', 'نعم'],
+    ['خطأ', 'خطأ'],
+  ])('rejects invalid true/false options %j', (...options) => {
+    expect(questionSchema.safeParse({ ...base, type: 'TRUE_FALSE', options }).success).toBe(false);
+  });
+  it.each([null, ''])(
+    'requires an explicit correct option instead of coercing %j to zero',
+    (correctOption) => {
+      expect(questionSchema.safeParse({ ...base, correctOption }).success).toBe(false);
+    },
+  );
+  it('rejects a blank option instead of shifting the correct option index', () => {
+    expect(
+      questionSchema.safeParse({ ...base, options: ['', 'الرياض', 'جدة'], correctOption: 1 })
+        .success,
+    ).toBe(false);
+  });
+});
