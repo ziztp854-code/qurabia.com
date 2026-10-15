@@ -12,6 +12,8 @@ The exact optional tool allowlist is `qurabia_site_status`, `qurabia_question_st
 
 The service credential authorizes reading and proposing only. Store it on the server and in the dedicated local profile; never in browser code, Git, chat, screenshots or logs. The personal gateway token is not used by this integration.
 
+The dedicated profile uses `ollama/gemma4:31b-cloud` through the existing local Ollama daemon. Its capabilities were checked through `/api/show`; the inherited Kimi cloud model returned a plan restriction. No subscription or personal model configuration is changed. Cloud availability and account limits are enforced by Ollama.
+
 ## Server configuration and release
 
 1. Review and deploy the integration using the existing Qurabia release process. No database migration is required: proposals and outcomes use existing `AuditLog` records.
