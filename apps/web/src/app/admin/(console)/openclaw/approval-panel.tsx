@@ -25,22 +25,19 @@ export function ApprovalPanel() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setConfirmed([]);
-    try {
-      const response = await fetch(endpoint, { cache: 'no-store', credentials: 'same-origin' });
+  const reload = useCallback(() =>
+    fetch(endpoint, { cache: 'no-store', credentials: 'same-origin' }).then(async (response) => {
       if (!response.ok) throw new Error('load');
       const body = await response.json();
       if (!body.ok || !Array.isArray(body.proposals)) throw new Error('load');
       setProposals(body.proposals);
-    } catch {
+    }).catch(() => {
       setProposals([]);
       setError('تعذر تحميل الطلبات. تحقق من صلاحية جلستك ثم أعد المحاولة.');
-    } finally {
+    }).finally(() => {
+      setConfirmed([]);
       setLoading(false);
-    }
-  }, []);
+    }), []);
 
   useEffect(() => { void reload(); }, [reload]);
 
@@ -63,6 +60,7 @@ export function ApprovalPanel() {
     } catch {
       setError('لم يكتمل القرار. قد يكون الطلب منتهيًا أو تغير السؤال أو صلاحية جلستك. راجع القائمة المحدثة.');
     } finally {
+      setLoading(true);
       await reload();
       setBusy(false);
     }
@@ -76,7 +74,7 @@ export function ApprovalPanel() {
           <p>راجع التغيير ثم وافق على تنفيذه. عرض الطلب لا ينفذه.</p>
         </div>
         <Button variant="outline" disabled={loading || busy} onClick={() => {
-          setError(''); setMessage(''); void reload();
+          setError(''); setMessage(''); setLoading(true); void reload();
         }}>تحديث الطلبات</Button>
       </header>
       <p className={admin.notice}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toolRequestSchema, authorizeService } from './protocol';
+import { authorizeService } from './protocol';
 
 describe('OpenClaw restricted tool interface', () => {
   it('fails closed until explicitly enabled with a strong service token', () => {
