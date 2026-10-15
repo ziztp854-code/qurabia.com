@@ -1,0 +1,16 @@
+{
+  "id": "qurabia-admin",
+  "name": "Qurabia restricted administration",
+  "version": "1.0.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {"credentialsFile": {"type": "string"}},
+    "required": ["credentialsFile"], "additionalProperties": false
+  },
+  "contracts": {"tools": ["qurabia_site_status", "qurabia_question_stats", "qurabia_propose_question_status"]},
+  "toolMetadata": {
+    "qurabia_site_status": {"optional": true},
+    "qurabia_question_stats": {"optional": true},
+    "qurabia_propose_question_status": {"optional": true}
+  }
+}

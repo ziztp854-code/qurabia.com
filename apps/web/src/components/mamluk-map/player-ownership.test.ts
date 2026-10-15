@@ -22,6 +22,19 @@ const options: OwnershipPresentationOptions = {
 };
 
 describe('approved player ownership presentation', () => {
+  it('gives the SDK its own coordinate arrays without changing authoritative geography', () => {
+    const cities = approvedPayload().layers.cities;
+    const result = withPlayerOwnership(cities, options);
+    if (typeof result === 'string' || result.type !== 'FeatureCollection')
+      throw new Error('Expected SDK feature collection');
+    const geometry = result.features[0]?.geometry;
+    if (geometry?.type !== 'Point') throw new Error('Expected city point');
+    geometry.coordinates[0] = 99;
+    expect(cities.features[0]?.geometry).toEqual({
+      type: 'Point',
+      coordinates: [31.2357, 30.0444],
+    });
+  });
   it('keeps player colors stable across viewport reorderings while distinguishing own and neutral plots', () => {
     const initial = ['player-a', 'player-b', 'player-c'].map((id) => getPlayerColor(id, options));
     expect(getPlayerColor('viewer', options)).toBe('gold');
