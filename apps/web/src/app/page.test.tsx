@@ -23,6 +23,7 @@ vi.mock('@/lib/auth/session', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/',
 }));
 
 describe('HomePage', () => {
@@ -34,7 +35,7 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('تحدي');
     expect(
       screen.getByText(
-        'منصة مسابقات وألعاب جماعية عربية مباشرة، حيث يُصنع الأبطال وتُسجّل إنجازاتهم',
+        'اختر تحدّيك، اجمع أصدقاءك، وشاركهم جولة تستحق المنافسة.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /ابدأ اللعب الآن/ })).toHaveAttribute('href', '/games');
@@ -70,7 +71,7 @@ describe('HomePage', () => {
       within(showcase as HTMLElement).queryByRole('region', { name: 'إحصاءات المنصة' }),
     ).not.toBeInTheDocument();
     expect(within(showcase as HTMLElement).queryByRole('region', { name: 'إهداء إلى أميرة' })).not.toBeInTheDocument();
-    expect(within(showcase as HTMLElement).getByRole('region', { name: 'الألعاب الأبرز' })).toBeInTheDocument();
+    expect(within(showcase as HTMLElement).getByRole('region', { name: 'اختَر تحدّيك القادم' })).toBeInTheDocument();
     const world = screen.getByRole('region', { name: 'عالم المماليك' });
     expect(within(world).getByRole('link', { name: /ادخل عالم المماليك/ })).toHaveAttribute('href', '/games/kingdoms');
     expect(within(world).getByRole('link', { name: /استكشف خريطة العالم/ })).toHaveAttribute('href', '/games/kingdoms/world-map');
@@ -127,8 +128,8 @@ describe('HomePage', () => {
     expect(within(nav).getByRole('link', { name: 'الألعاب' })).toHaveAttribute('href', '/games');
     expect(within(nav).getByRole('link', { name: 'المسابقات' })).toHaveAttribute('href', '/quizzes');
     expect(within(nav).getByRole('link', { name: 'لوحة الشرف' })).toHaveAttribute('href', '/leaderboard');
-    expect(within(nav).getAllByRole('link')).toHaveLength(6);
+    expect(within(nav).getAllByRole('link')).toHaveLength(5);
     expect(within(nav).getByRole('link', { name: 'الحساب' })).toHaveAttribute('href', '/profile');
-    expect(within(nav).getByRole('link', { name: 'الاشتراكات' })).toHaveAttribute('href', '/orders');
+    expect(within(nav).queryByRole('link', { name: 'الاشتراكات' })).not.toBeInTheDocument();
   });
 });
