@@ -128,7 +128,7 @@ export function useLiveGame(input: {
     });
     socket.on('game:snapshot', (next) => {
       const started = latestStartedQuestion.current;
-      const restored =
+      let restored =
         started &&
         next.phase !== 'FINISHED' &&
         started.questionStartedAt > (next.question?.questionStartedAt ?? 0)
@@ -150,6 +150,19 @@ export function useLiveGame(input: {
                   : null,
             }
           : next;
+      const revealed = latestReveal.current;
+      if (
+        restored.phase === 'QUESTION' &&
+        revealed &&
+        revealed.questionId === restored.question?.questionId
+      ) {
+        restored = {
+          ...restored,
+          phase: 'REVEAL',
+          reveal: revealed,
+          playerResult: revealed.playerResult ?? null,
+        };
+      }
       activeQuestionId.current =
         restored.phase === 'FINISHED' ? null : (restored.question?.questionId ?? null);
       setSnapshot((current) =>

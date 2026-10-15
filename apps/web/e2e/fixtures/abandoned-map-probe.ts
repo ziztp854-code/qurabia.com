@@ -1,5 +1,6 @@
 // Test-only witness of the real SDK source and rendered markers; never imported by app routes.
 import { Map as LibreMap } from 'maplibre-gl';
+import type { Feature } from 'geojson';
 declare global {
   interface Window {
     __abandonedMap?: {
@@ -21,10 +22,7 @@ LibreMap.prototype.addControl = function (...args: Parameters<typeof original>) 
         count: data.features.length,
         ids: data.features.map((feature: { id?: string | number }) => String(feature.id)),
         selectedIds: data.features
-          .filter(
-            (feature) =>
-              feature.properties?.selected === true,
-          )
+          .filter((feature: Feature) => feature.properties?.selected === true)
           .map((feature: { id?: string | number }) => String(feature.id)),
       };
     },

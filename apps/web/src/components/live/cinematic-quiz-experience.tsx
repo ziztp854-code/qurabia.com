@@ -54,6 +54,8 @@ export type CinematicQuizData = {
   stats: QuestionStatsPayload | null;
   players: PlayerInfo[];
   clockOffset: number;
+  clockSource?: 'socket' | 'http';
+  serverTime?: number;
   connected: boolean;
   busy: boolean;
 };
@@ -241,7 +243,9 @@ function HostScreen({
           </div>
           <div className={styles.hostInviteInfo}>
             <strong dir="ltr">{data.roomCode}</strong>
-            <span dir="ltr" className={styles.hostInviteUrl}>{data.joinUrl}</span>
+            <span dir="ltr" className={styles.hostInviteUrl}>
+              {data.joinUrl}
+            </span>
             <div className={styles.hostInviteActions}>
               <button type="button" onClick={() => onAction?.('copy-code')}>
                 <Copy aria-hidden={true} />
@@ -363,22 +367,10 @@ function LobbyScreen({ data, onAction }: Required<Pick<Props, 'data'>> & Pick<Pr
   );
 }
 
-function QuestionHeader({
-  numbered = false,
-  questionNumber = 0,
-  onNavigate,
-}: {
-  numbered?: boolean;
-  questionNumber?: number;
-  onNavigate?: Props['onNavigate'];
-}) {
+function QuestionHeader({ onNavigate }: { onNavigate?: Props['onNavigate'] }) {
   return (
     <header className={styles.questionHeader}>
-      {numbered ? (
-        <span className={styles.questionNumber}>
-          <b>{questionNumber}</b>السؤال
-        </span>
-      ) : onNavigate ? (
+      {onNavigate ? (
         <button onClick={() => onNavigate('host')} type="button">
           <ArrowLeft />
           العودة للوحة
@@ -396,25 +388,64 @@ function optionLetter(position: number) {
   return ['أ', 'ب', 'ج', 'د', 'هـ', 'و'][position] ?? String(position + 1);
 }
 
-function LiveTimer({ question, clockOffset }: { question: QuestionPayload; clockOffset: number }) {
-  const [now, setNow] = useState(Date.now);
+function LiveTimer({
+  question,
+  clockOffset,
+  clockSource,
+  serverTime,
+}: {
+  question: QuestionPayload;
+  clockOffset: number;
+  clockSource?: CinematicQuizData['clockSource'];
+  serverTime?: number;
+}) {
+  // Match the server's first render; read the browser clock on the first tick.
+  const [now, setNow] = useState<number | null>(null);
   // Broadcast screens have no socket clock sync; prefer the HTTP tick offset
   // measured by RoomPoller when it is available.
   const displayClock = getDisplayClockState();
-  const effectiveOffset = displayClock.ready ? displayClock.offset : clockOffset;
+  const effectiveOffset =
+    clockSource === 'http' && displayClock.ready ? displayClock.offset : clockOffset;
+  const initialServerTime = Math.max(
+    question.questionStartedAt,
+    serverTime ?? question.questionStartedAt,
+  );
+  const duration = Math.max(0, question.questionEndsAt - question.questionStartedAt);
   const remaining =
     question.questionStartedAt === 0
-      ? Math.max(0, Math.ceil((question.questionEndsAt - question.questionStartedAt) / 1_000))
-      : Math.max(0, Math.ceil((question.questionEndsAt - (now + effectiveOffset)) / 1_000));
+      ? Math.ceil(duration / 1_000)
+      : Math.max(
+          0,
+          Math.ceil(
+            Math.min(
+              duration,
+              question.questionEndsAt - (now === null ? initialServerTime : now + effectiveOffset),
+            ) / 1_000,
+          ),
+        );
 
   useEffect(() => {
     if (question.questionStartedAt === 0) return;
+    const firstTick = window.setTimeout(() => setNow(Date.now()), 0);
+    const resume = () => {
+      if (document.visibilityState === 'visible') setNow(Date.now());
+    };
     const timer = window.setInterval(() => setNow(Date.now()), 250);
-    return () => window.clearInterval(timer);
+    document.addEventListener('visibilitychange', resume);
+    return () => {
+      window.clearTimeout(firstTick);
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', resume);
+    };
   }, [question.questionStartedAt]);
 
   return (
-    <div className={styles.timer}>
+    <div
+      className={styles.timer}
+      role="timer"
+      aria-label={`متبقي ${remaining} ثانية`}
+      data-urgent={remaining <= 5}
+    >
       <strong>{remaining}</strong>
       <span>ثانية</span>
     </div>
@@ -429,15 +460,19 @@ function AnswerGrid({
   reveal: QuestionRevealPayload | null;
 }) {
   return (
-    <div className={styles.answerGrid}>
+    <div className={styles.answerGrid} role="group" aria-label="خيارات الإجابة">
       {question.options.map((option) => (
         <div
           className={reveal?.correctOptionId === option.id ? styles.correctChoice : undefined}
           key={option.id}
         >
-          <strong>{option.text}</strong>
-          <span>{optionLetter(option.position)}</span>
-          {reveal?.correctOptionId === option.id ? <Crown aria-hidden="true" /> : null}
+          <span className={styles.answerLetter}>{optionLetter(option.position)}</span>
+          <strong dir="auto">{option.text}</strong>
+          {reveal?.correctOptionId === option.id ? (
+            <small className={styles.answerState}>
+              <Check aria-hidden="true" /> صحيحة
+            </small>
+          ) : null}
         </div>
       ))}
     </div>
@@ -453,16 +488,54 @@ function QuestionScreen({
   const revealData = reveal ? (data.reveal ?? null) : null;
   return (
     <div className={reveal ? styles.revealScreen : styles.questionScreen}>
-      <QuestionHeader
-        numbered={reveal}
-        questionNumber={question?.questionNumber ?? 0}
-        onNavigate={onNavigate}
-      />
+      <QuestionHeader onNavigate={onNavigate} />
       {question ? (
         <div className={styles.questionMain}>
-          <h1>{question.prompt}</h1>
-          <LiveTimer question={question} clockOffset={data.clockOffset} />
+          <div className={styles.questionHeading}>
+            <div className={styles.questionCopy}>
+              <p className={styles.questionEyebrow}>
+                السؤال {question.questionNumber} <span>من {question.totalQuestions}</span>
+              </p>
+              <h1 dir="auto">{question.prompt}</h1>
+            </div>
+            {reveal ? (
+              <span className={styles.revealLabel}>
+                <Check aria-hidden="true" /> كشف الإجابة
+              </span>
+            ) : (
+              <LiveTimer
+                question={question}
+                clockOffset={data.clockOffset}
+                clockSource={data.clockSource}
+                serverTime={data.serverTime}
+              />
+            )}
+          </div>
+          {question.media.length > 0 && (
+            <div className={styles.questionMedia}>
+              {question.media.map((media) =>
+                media.type === 'video' ? (
+                  <video
+                    key={media.url}
+                    src={media.url}
+                    controls
+                    preload="metadata"
+                    aria-label={media.alt ?? 'فيديو السؤال'}
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={media.url} src={media.url} alt={media.alt ?? 'صورة السؤال'} />
+                ),
+              )}
+            </div>
+          )}
           <AnswerGrid question={question} reveal={revealData} />
+          {question.options.length === 0 && (
+            <p className={styles.stageNote}>لا توجد خيارات لهذا السؤال.</p>
+          )}
+          {revealData?.explanation && (
+            <p className={styles.questionExplanation}>{revealData.explanation}</p>
+          )}
         </div>
       ) : (
         <div className={styles.questionMain}>
@@ -476,6 +549,17 @@ function QuestionScreen({
           <p className={styles.stageNote}>بانتظار كشف الإجابة…</p>
         )
       ) : null}
+      <footer className={styles.questionFooter}>
+        <span>
+          <UsersRound aria-hidden="true" /> {data.participantCount} متسابق
+        </span>
+        <span>
+          رمز الغرفة <b dir="ltr">{data.roomCode}</b>
+        </span>
+        <span className={styles.broadcastStatus}>
+          {reveal ? 'نتائج السؤال' : 'اختر إجابتك من جهازك'}
+        </span>
+      </footer>
     </div>
   );
 }
@@ -514,7 +598,7 @@ function RevealPanel({ data, question }: { data: CinematicQuizData; question: Qu
       <div className={styles.answerProgress}>
         <span>
           تقدم الإجابات{' '}
-          <b>
+          <b dir="ltr">
             {stats.answeredCount} / {stats.participantCount}
           </b>
         </span>
@@ -673,9 +757,23 @@ const labels: Record<CinematicQuizScreen, string> = {
 
 export function CinematicQuizExperience({ screen, data, onNavigate, onAction, onCommand }: Props) {
   const resolvedData = data ?? defaultData;
-  const scene = screen === 'lobby' ? 'intro' : screen === 'finale' ? 'finished' : screen === 'reveal' || screen === 'leaderboard' ? 'reveal' : 'question';
+  const scene =
+    screen === 'lobby'
+      ? 'intro'
+      : screen === 'finale'
+        ? 'finished'
+        : screen === 'reveal' || screen === 'leaderboard'
+          ? 'reveal'
+          : 'question';
   return (
-    <MotionScene scene={scene} sceneKey={screen}>
+    <MotionScene
+      scene={scene}
+      sceneKey={
+        screen === 'question' || screen === 'reveal'
+          ? `${screen}:${resolvedData.question?.questionId ?? ''}:${resolvedData.question?.questionStartedAt ?? ''}`
+          : screen
+      }
+    >
       <section
         className={styles.cinema}
         data-screen={screen}
@@ -683,25 +781,27 @@ export function CinematicQuizExperience({ screen, data, onNavigate, onAction, on
         aria-label={labels[screen]}
       >
         <Stage screen={screen}>
-        {screen === 'host' ? (
-          <HostScreen
-            data={resolvedData}
-            onNavigate={onNavigate}
-            onAction={onAction}
-            onCommand={onCommand}
-          />
-        ) : null}
-        {screen === 'lobby' ? <LobbyScreen data={resolvedData} onAction={onAction} /> : null}
-        {screen === 'question' ? (
-          <QuestionScreen data={resolvedData} onNavigate={onNavigate} />
-        ) : null}
-        {screen === 'reveal' ? (
-          <QuestionScreen data={resolvedData} reveal onNavigate={onNavigate} />
-        ) : null}
-        {screen === 'leaderboard' ? (
-          <LeaderboardScreen data={resolvedData} onNavigate={onNavigate} onAction={onAction} />
-        ) : null}
-        {screen === 'finale' ? <FinaleScreen data={resolvedData} onNavigate={onNavigate} /> : null}
+          {screen === 'host' ? (
+            <HostScreen
+              data={resolvedData}
+              onNavigate={onNavigate}
+              onAction={onAction}
+              onCommand={onCommand}
+            />
+          ) : null}
+          {screen === 'lobby' ? <LobbyScreen data={resolvedData} onAction={onAction} /> : null}
+          {screen === 'question' ? (
+            <QuestionScreen data={resolvedData} onNavigate={onNavigate} />
+          ) : null}
+          {screen === 'reveal' ? (
+            <QuestionScreen data={resolvedData} reveal onNavigate={onNavigate} />
+          ) : null}
+          {screen === 'leaderboard' ? (
+            <LeaderboardScreen data={resolvedData} onNavigate={onNavigate} onAction={onAction} />
+          ) : null}
+          {screen === 'finale' ? (
+            <FinaleScreen data={resolvedData} onNavigate={onNavigate} />
+          ) : null}
         </Stage>
       </section>
     </MotionScene>
@@ -795,6 +895,8 @@ export function CinematicLiveHostExperience({
     stats: game.stats,
     players: game.snapshot?.leaderboard ?? [],
     clockOffset: game.clockOffset,
+    clockSource: 'socket',
+    serverTime: game.snapshot?.serverTime,
     connected: game.connected,
     busy: game.busy,
   };

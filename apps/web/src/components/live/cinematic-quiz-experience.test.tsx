@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetDisplayClock, setDisplayClockOffset } from './display-clock';
 import { CinematicQuizExperience, type CinematicQuizData } from './cinematic-quiz-experience';
 
 describe('CinematicQuizExperience', () => {
@@ -191,6 +192,44 @@ describe('CinematicQuizExperience', () => {
 
     expect(screen.queryByRole('button', { name: 'العودة للوحة' })).toBeNull();
   });
+
+  it('preserves question media and labels the answer only after reveal', () => {
+    const data: CinematicQuizData = {
+      ...defaultLikeData,
+      question: {
+        questionId: 'media-question',
+        prompt: 'ما المعلم الظاهر في الصورة؟',
+        options: [{ id: 'answer', text: 'قصر المصمك', position: 0 }],
+        media: [{ type: 'image', url: '/landmark.webp', alt: 'معلم تاريخي' }],
+        questionStartedAt: 0,
+        questionEndsAt: 15_000,
+        questionNumber: 2,
+        totalQuestions: 3,
+      },
+      reveal: {
+        questionId: 'media-question',
+        correctOptionId: 'answer',
+        explanation: 'قصر المصمك معلم تاريخي في الرياض.',
+        stats: { questionId: 'media-question', answeredCount: 0, participantCount: 5, options: [] },
+      },
+    };
+    const { rerender } = render(<CinematicQuizExperience screen="question" data={data} />);
+    expect(screen.getByRole('img', { name: 'معلم تاريخي' })).toHaveAttribute(
+      'src',
+      '/landmark.webp',
+    );
+    expect(screen.getByRole('timer', { name: 'متبقي 15 ثانية' })).toBeVisible();
+    expect(screen.queryByText(data.reveal!.explanation!)).toBeNull();
+    const options = screen.getByRole('group', { name: 'خيارات الإجابة' });
+    expect(within(options).queryByText('صحيحة')).toBeNull();
+
+    rerender(<CinematicQuizExperience screen="reveal" data={data} />);
+    expect(screen.queryByRole('timer')).toBeNull();
+    expect(
+      within(screen.getByRole('group', { name: 'خيارات الإجابة' })).getByText('صحيحة'),
+    ).toBeVisible();
+    expect(screen.getByText(data.reveal!.explanation!)).toBeVisible();
+  });
 });
 
 const defaultLikeData: CinematicQuizData = {
@@ -207,3 +246,88 @@ const defaultLikeData: CinematicQuizData = {
   busy: false,
   players: [],
 };
+
+describe('cinematic live timing and transitions', () => {
+  const liveData = (): CinematicQuizData => ({
+    ...defaultLikeData,
+    serverTime: 1_000_000,
+    clockOffset: 1_000,
+    question: {
+      questionId: 'timed-question',
+      prompt: 'سؤال متزامن؟',
+      options: [{ id: 'a', text: 'إجابة', position: 0 }],
+      media: [],
+      questionStartedAt: 990_000,
+      questionEndsAt: 1_020_000,
+      questionNumber: 1,
+      totalQuestions: 3,
+    },
+  });
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    resetDisplayClock();
+  });
+  afterEach(() => {
+    resetDisplayClock();
+    vi.useRealTimers();
+  });
+
+  it('keeps socket timing independent from a previously opened broadcast', () => {
+    setDisplayClockOffset(9_000);
+    render(<CinematicQuizExperience screen="question" data={liveData()} />);
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(screen.getByRole('timer', { name: 'متبقي 19 ثانية' })).toBeVisible();
+  });
+
+  it('uses the HTTP clock for a broadcast display', () => {
+    setDisplayClockOffset(9_000);
+    render(
+      <CinematicQuizExperience screen="question" data={{ ...liveData(), clockSource: 'http' }} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(screen.getByRole('timer', { name: 'متبقي 11 ثانية' })).toBeVisible();
+  });
+
+  it('renders the remaining snapshot time instead of restarting a late question', () => {
+    render(
+      <CinematicQuizExperience screen="question" data={{ ...liveData(), serverTime: 1_019_000 }} />,
+    );
+    expect(screen.getByRole('timer', { name: 'متبقي 1 ثانية' })).toBeVisible();
+  });
+
+  it('catches up immediately after a background tab resumes and cleans up timers', () => {
+    const view = render(<CinematicQuizExperience screen="question" data={liveData()} />);
+    act(() => {
+      vi.setSystemTime(1_021_000);
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(screen.getByRole('timer', { name: 'متبقي 0 ثانية' })).toBeVisible();
+    view.unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('starts a transition for a new question, but preserves the scene for stats updates', () => {
+    const data = liveData();
+    const { rerender } = render(<CinematicQuizExperience screen="question" data={data} />);
+    const scene = screen.getByRole('heading', { level: 1 }).closest('[data-motion-scene]');
+    rerender(<CinematicQuizExperience screen="question" data={{ ...data, participantCount: 7 }} />);
+    expect(screen.getByRole('heading', { level: 1 }).closest('[data-motion-scene]')).toBe(scene);
+    rerender(
+      <CinematicQuizExperience
+        screen="question"
+        data={{
+          ...data,
+          question: { ...data.question!, questionId: 'next', questionStartedAt: 1_000_000 },
+        }}
+      />,
+    );
+    expect(screen.getByRole('heading', { level: 1 }).closest('[data-motion-scene]')).not.toBe(
+      scene,
+    );
+  });
+});

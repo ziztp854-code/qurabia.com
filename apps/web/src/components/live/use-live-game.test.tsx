@@ -190,6 +190,21 @@ describe('useLiveGame realtime connection', () => {
     });
   });
 
+  it('keeps a reveal when an in-flight snapshot still reports the same question as open', () => {
+    const { result } = connectedPlayer();
+    const reveal = {
+      questionId: 'question-1',
+      correctOptionId: 'option-1',
+      explanation: 'التوضيح',
+      stats: { questionId: 'question-1', answeredCount: 1, participantCount: 1, options: [] },
+    };
+    receive('question:revealed', reveal);
+    receive('game:snapshot', questionSnapshot);
+    expect(result.current.snapshot?.phase).toBe('REVEAL');
+    expect(result.current.snapshot?.reveal).toEqual(reveal);
+    expect(result.current.stats).toEqual(reveal.stats);
+  });
+
   it('does not mark an answer sent when the socket has already disconnected', () => {
     const { result } = connectedPlayer();
     socketState.socket.connected = false;

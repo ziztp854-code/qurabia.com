@@ -37,6 +37,7 @@ function previewData(overrides: Partial<CinematicQuizData> = {}): CinematicQuizD
     stats: null,
     players: previewPlayers,
     clockOffset: 0,
+    clockSource: 'http',
     connected: true,
     busy: false,
     ...overrides,
@@ -355,6 +356,8 @@ export default async function DisplayPage({
           participantCount: session.participants.length,
           totalQuestions: session.quiz.questions.length,
           phase,
+          clockSource: 'http',
+          serverTime: requestTime,
           question: {
             questionId: currentQuestion.id,
             prompt: currentQuestion.prompt,
