@@ -31,6 +31,7 @@ export function MafiaModePresets() {
                 name="modeId"
                 value={id}
                 defaultChecked={id === 'CLASSIC'}
+                disabled={mode.experimental}
                 onChange={(e) => {
                   if (!e.currentTarget.checked) return;
                   const baseSettings = {
@@ -101,7 +102,7 @@ export function MafiaModePresets() {
                      : `سرعة ${mode.timeMultiplier < 1 ? 'أسرع' : 'أبطأ'}`}
                  </Badge>
                  {mode.experimental && (
-                   <span className="mafia-mode-experimental">تجريبي</span>
+                   <span className="mafia-mode-experimental">قريبًا — غير متاح</span>
                  )}
                </div>
               <p className="muted">{mode.tagline}</p>

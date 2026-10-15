@@ -64,18 +64,18 @@ export const MAFIA_GAME_MODES: Record<MafiaGameModeId, MafiaGameMode> = {
     id: 'SPEED',
     label: 'السريع',
     description:
-      'نصف الوقت المعتاد لكل مرحلة، أهداف أقل، لكن النتيجة أسرع 2 دقيقة كحد أقصى للجولة.',
-    tagline: 'لعبة خاطفة في 5 إلى 10 دقائق.',
+      'القواعد والأدوار نفسها مع نصف الوقت الافتراضي لكل مرحلة. تستمر الجولات حتى يتحقق الفوز.',
+    tagline: 'نقاش أسرع بالقواعد نفسها.',
     timeMultiplier: 0.5,
     killerMultiplier: 1,
-    features: ['نصف الوقت لكل مرحلة', 'جولة واحدة في نهاية سريعة', 'تخفي عدد الأدوار الخاصة'] as const,
+    features: ['نصف الوقت الافتراضي لكل مرحلة', 'الأدوار وشروط الفوز المعتادة'] as const,
   },
   BLIND: {
     id: 'BLIND',
     label: 'الأعمى',
     description:
       'لا تظهر لك دورك إلا بعد أول إقصاء لاعب، ولا يظهر تفاصيل الأدوار إلا في نهاية اللعبة.',
-    tagline: 'الغموض تام: لا أدلة واضحة حتى النهاية.',
+    tagline: 'وضع مخطط لإخفاء معلومات إضافية. غير متاح حاليًا.',
     timeMultiplier: 1,
     killerMultiplier: 1.1,
     experimental: true,
@@ -89,7 +89,7 @@ export const MAFIA_GAME_MODES: Record<MafiaGameModeId, MafiaGameMode> = {
     label: 'القاتل المنفرد',
     description:
       'قاتل واحد فقط لكن لديه ثلاث مراحل قبل النهاية. المواطنون يجب أن يكتشفوه قبل أن يفقدوا جميع أصدقائهم.',
-    tagline: 'فارسالي واحد ضد قرية بأسرها. من سينتصر؟',
+    tagline: 'وضع مخطط لمواجهة قاتل منفرد. غير متاح حاليًا.',
     timeMultiplier: 1,
     killerMultiplier: 0.6,
     experimental: true,
@@ -103,7 +103,7 @@ export const MAFIA_GAME_MODES: Record<MafiaGameModeId, MafiaGameMode> = {
     label: 'الفوضى',
     description:
       'تبديل عشوائي للأدوار في منتصف اللعبة، وقت أصوات مضاعفة، ودور زائفة تظهر للحظة قبل الليل القاتل.',
-    tagline: 'كل شيء يمكن أن يتغير في أمر لا متوقع.',
+    tagline: 'وضع مخطط لتبديل الأدوار. غير متاح حاليًا.',
     timeMultiplier: 0.75,
     killerMultiplier: 1.2,
     experimental: true,

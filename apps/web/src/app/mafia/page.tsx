@@ -5,7 +5,7 @@ import { GameContentGenerator } from '@/components/games/game-content-generator'
 import { GAME_GUIDES, GameHowTo } from '@/components/games/shared';
 import { JoinQuizForm } from '@/components/home/join-quiz-form';
 import { SiteLayout } from '@/components/layout';
-import { MafiaModeCards, MafiaCompositionPreview } from '@/components/mafia';
+import { MafiaGameSettings } from '@/components/mafia/mafia-game-settings';
 import { Badge, Button, ButtonLink, Card, EmptyState } from '@/components/ui';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { getCurrentSession } from '@/lib/auth/session';
@@ -86,100 +86,9 @@ export default async function MafiaPage() {
                 <h2>أنشئ غرفة قاتل</h2>
                 {session?.user ? (
                   <form action={createMafiaGame} className="stack-form" id="mafia-create-form">
-                    <MafiaModeCards name="modeId" />
+                    <MafiaGameSettings />
 
                     <GameContentGenerator game="mafia" hiddenInputName="aiScenario" />
-
-                    <MafiaCompositionPreview
-                      maxPlayers={12}
-                      killerCount={1}
-                      className="mafia-composition-inline"
-                    />
-
-                    <label>
-                      عدد اللاعبين المتوقع
-                      <input
-                        id="mafia-maxPlayers"
-                        name="maxPlayers"
-                        type="number"
-                        min="5"
-                        max="30"
-                        defaultValue="12"
-                      />
-                    </label>
-
-                    <details className="mafia-advanced-details">
-                      <summary className="mafia-advanced-summary">إعدادات متقدمة</summary>
-                      <div className="mafia-advanced-body">
-                        <label>
-                          عدد القتلة
-                          <select id="mafia-killerCount" name="killerCount" defaultValue="1">
-                            <option value="1">قاتل واحد</option>
-                            <option value="2">قاتلان</option>
-                            <option value="3">ثلاثة قتلة</option>
-                          </select>
-                        </label>
-                        <div className="form-row">
-                          <label>
-                            <Moon aria-hidden="true" /> وقت الليل (ثانية)
-                            <input
-                              id="mafia-nightSeconds"
-                              name="nightSeconds"
-                              type="number"
-                              min="20"
-                              max="180"
-                              defaultValue="45"
-                            />
-                          </label>
-                          <label>
-                            وقت النهار (ثانية)
-                            <input
-                              id="mafia-daySeconds"
-                              name="daySeconds"
-                              type="number"
-                              min="30"
-                              max="300"
-                              defaultValue="90"
-                            />
-                          </label>
-                          <label>
-                            وقت التصويت (ثانية)
-                            <input
-                              id="mafia-votingSeconds"
-                              name="votingSeconds"
-                              type="number"
-                              min="20"
-                              max="120"
-                              defaultValue="45"
-                            />
-                          </label>
-                        </div>
-                        <label>
-                          إدارة المراحل
-                          <select name="autoMode" defaultValue="on">
-                            <option value="on">تلقائية مع تحكم المضيف</option>
-                            <option value="off">يدوية بالكامل</option>
-                          </select>
-                        </label>
-                        <label>
-                          الدردشة
-                          <select name="chatEnabled" defaultValue="on">
-                            <option value="on">مفعلة</option>
-                            <option value="off">متوقفة</option>
-                          </select>
-                        </label>
-                        <label>
-                          مهلة الرسائل (ثانية)
-                          <input
-                            name="slowModeSeconds"
-                            type="number"
-                            min="0"
-                            max="30"
-                            defaultValue="2"
-                          />
-                        </label>
-                      </div>
-                    </details>
 
                     <Button type="submit" size="lg" fullWidth>
                       <Shield aria-hidden="true" />

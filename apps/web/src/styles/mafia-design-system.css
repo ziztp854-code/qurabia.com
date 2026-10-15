@@ -61,6 +61,8 @@
   z-index: calc(var(--z-dialog) + 10);
   display: grid;
   place-items: center;
+  align-items: safe center;
+  overflow-y: auto;
   padding: var(--space-6);
   background: rgba(4, 2, 8, 0.94);
   backdrop-filter: blur(10px);
@@ -75,6 +77,8 @@
   }
 }
 .mafia-reveal-warning {
+  inline-size: 100%;
+  min-inline-size: 0;
   max-inline-size: 26rem;
   text-align: center;
   display: grid;
@@ -98,7 +102,8 @@
 }
 .mafia-reveal-card-wrapper {
   perspective: 900px;
-  inline-size: min(22rem, 90vw);
+  inline-size: min(22rem, 100%);
+  margin-inline: auto;
 }
 .mafia-reveal-card {
   inline-size: 100%;
@@ -791,6 +796,24 @@
 }
 
 /* ---------- Mode Selection Cards ---------- */
+.mafia-settings-timers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: stretch;
+}
+.mafia-settings-timers > label {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+@media (max-width: 640px) {
+  .mafia-settings-timers {
+    grid-template-columns: 1fr;
+  }
+}
 .mafia-mode-card {
   position: relative;
   display: block;
@@ -810,16 +833,62 @@
   transform: translateY(-3px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
-.mafia-mode-card:focus-visible {
+.mafia-mode-card:has(input:focus-visible) {
   outline: 3px solid color-mix(in srgb, var(--primary) 60%, transparent);
   outline-offset: 3px;
 }
-.mafia-mode-card[aria-pressed='true'] {
+.mafia-mode-card-selected {
   border-color: var(--primary);
   background: color-mix(in srgb, var(--primary) 10%, var(--surface));
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent),
     0 16px 40px rgba(0, 0, 0, 0.3);
+}
+.mafia-mode-card > input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  min-block-size: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.mafia-mode-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-inline-end: var(--space-6);
+}
+.mafia-mode-card-tagline {
+  margin: var(--space-2) 0 var(--space-3);
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.7;
+}
+.mafia-mode-card-features {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+.mafia-mode-card-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.mafia-mode-card-features svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex-shrink: 0;
+  margin-block-start: 0.3em;
+  color: var(--primary);
 }
 .mafia-mode-card-icon {
   inline-size: 2.2rem;
@@ -881,7 +950,7 @@
   place-items: center;
   transition: all var(--duration-fast) var(--ease-out);
 }
-.mafia-mode-card[aria-pressed='true'] .mafia-mode-card-check {
+.mafia-mode-card-selected .mafia-mode-card-check {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);

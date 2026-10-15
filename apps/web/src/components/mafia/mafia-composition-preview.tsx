@@ -29,7 +29,7 @@ export function MafiaCompositionPreview({
   const citizenCount = roleCounts.get('CITIZEN') ?? 0;
 
   return (
-    <div className={cn('mafia-composition', className)}>
+    <div className={cn('mafia-composition', className)} role="status" aria-live="polite" aria-atomic="true">
       <div className="mafia-composition-header">
         <h3>التكوين المقترح</h3>
       </div>

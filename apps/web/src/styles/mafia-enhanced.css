@@ -594,6 +594,7 @@ fieldset.mafia-mode-presets > legend {
 
 /* ---------- Mode Cards ---------- */
 .mafia-mode-cards-field {
+  min-inline-size: 0;
   border: 0;
   padding: 0;
   margin: 0;
@@ -610,6 +611,14 @@ fieldset.mafia-mode-presets > legend {
   display: grid;
   gap: var(--space-3);
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
+
+.mafia-mode-card:has(input:disabled) {
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.mafia-mode-card:has(input:disabled):hover {
+  transform: none;
 }
 
 /* ---------- Role Reveal ---------- */
@@ -630,7 +639,7 @@ fieldset.mafia-mode-presets > legend {
   50% { filter: drop-shadow(0 0 20px color-mix(in srgb, var(--primary) 70%, transparent)); }
 }
 .mafia-reveal-btn {
-  inline-size: min(20rem, 90vw);
+  inline-size: min(20rem, 100%);
   margin-inline: auto;
 }
 .mafia-reveal-card-details {

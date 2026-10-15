@@ -49,7 +49,10 @@ export async function createMafiaGame(formData: FormData) {
   const user = await requireActiveUser('/mafia');
   const prisma = getPrismaClient();
   const mode = (formData.get('modeId') as MafiaGameModeId | null) ?? 'CLASSIC';
-  const modeObj = MAFIA_GAME_MODES[mode] ?? MAFIA_GAME_MODES.CLASSIC;
+  const requestedMode = MAFIA_GAME_MODES[mode];
+  const modeObj = requestedMode && !requestedMode.experimental
+    ? requestedMode
+    : MAFIA_GAME_MODES.CLASSIC;
   const maxPlayers = Math.min(30, Math.max(5, integerField(formData, 'maxPlayers', 12)));
   const defaults = applyModeMultipliers(modeObj.id, {
     nightSeconds: 45,

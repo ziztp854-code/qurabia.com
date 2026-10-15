@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Badge, Button } from '@/components/ui';
 import { mafiaRoleLabels, type MafiaRoleName } from '@/lib/mafia/rules';
 import { mafiaRoleGuides } from '@/lib/mafia/guidance';
-import { cn } from '@/lib/utils';
 
 const PHASE_BADGE_CLASS: Record<string, string> = {
   LOBBY: 'mafia-phase-badge-lobby',
@@ -23,42 +22,42 @@ export function MafiaRoleReveal({
   onRevealed: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const [animating, setAnimating] = useState(false);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!role) return;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
-  }, [role]);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+    };
+  }, []);
 
   useEffect(() => {
-    if (!revealed && role) {
+    if (role) {
       primaryButtonRef.current?.focus();
     }
   }, [revealed, role]);
 
   useEffect(() => {
-    if (!role || revealed) return;
+    if (!role) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onRevealed();
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        primaryButtonRef.current?.focus();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [role, revealed, onRevealed]);
 
-  const handleReveal = () => {
-    setAnimating(true);
-    setTimeout(() => {
-      setRevealed(true);
-      setAnimating(false);
-      onRevealed();
-      previousFocusRef.current?.focus();
-    }, 400);
-  };
+  const handleReveal = () => setRevealed(true);
 
   if (!role) {
     return (
@@ -79,16 +78,41 @@ export function MafiaRoleReveal({
         aria-modal="true"
         aria-label="كشف الدور"
       >
-        <div className={cn('mafia-reveal-warning', animating && 'mafia-reveal-warning-animating')}>
+        <div className="mafia-reveal-warning">
           <div className="mafia-reveal-shield" aria-hidden="true">
-            <svg inline-size="3rem" block-size="3rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              inline-size="3rem"
+              block-size="3rem"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
           <h2 className="mafia-reveal-warning-title">لا تدع أحدًا يرى شاشتك</h2>
           <p>دورك سري. تأكد من أنك بمفردك قبل الكشف عنه.</p>
-          <Button ref={primaryButtonRef} size="lg" onClick={handleReveal} className="mafia-reveal-btn">
-            <svg aria-hidden="true" inline-size="1.1rem" block-size="1.1rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <Button
+            type="button"
+            ref={primaryButtonRef}
+            size="lg"
+            onClick={handleReveal}
+            className="mafia-reveal-btn"
+          >
+            <svg
+              aria-hidden="true"
+              inline-size="1.1rem"
+              block-size="1.1rem"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -100,7 +124,8 @@ export function MafiaRoleReveal({
   }
 
   const guide = mafiaRoleGuides[role];
-  const badgeClass = PHASE_BADGE_CLASS[role === 'KILLER' ? 'NIGHT' : 'DAY'] ?? 'mafia-phase-badge-lobby';
+  const badgeClass =
+    PHASE_BADGE_CLASS[role === 'KILLER' ? 'NIGHT' : 'DAY'] ?? 'mafia-phase-badge-lobby';
 
   return (
     <div
@@ -134,7 +159,13 @@ export function MafiaRoleReveal({
             </div>
           </div>
         </div>
-        <Button size="lg" onClick={onRevealed} className="mafia-reveal-btn">
+        <Button
+          type="button"
+          ref={primaryButtonRef}
+          size="lg"
+          onClick={onRevealed}
+          className="mafia-reveal-btn"
+        >
           فهمت دوري
         </Button>
       </div>

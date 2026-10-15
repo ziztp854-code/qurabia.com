@@ -168,6 +168,16 @@ describe('createMafiaGame', () => {
     });
   });
 
+  it.each(['BLIND', 'ASSASSIN', 'CHAOS'])('uses classic rules for unavailable mode %s', async (modeId) => {
+    const prisma = mocks.getPrismaClient();
+    prisma.mafiaGame.create.mockResolvedValue({ id: 'game-1' });
+    await expect(createMafiaGame(formData({ modeId }))).rejects.toThrow('NEXT_REDIRECT');
+    expect(prisma.mafiaGame.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ modeId: 'CLASSIC', nightSeconds: 45, daySeconds: 90, votingSeconds: 45 }),
+      select: { id: true },
+    });
+  });
+
   it('يحفظ السيناريو المعتمد كرسائل نظام دون كشف الأدوار', async () => {
     const prisma = mocks.getPrismaClient();
     const scenario = {

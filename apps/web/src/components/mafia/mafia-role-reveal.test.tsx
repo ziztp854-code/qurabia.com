@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MafiaRoleReveal } from './mafia-role-reveal';
@@ -18,18 +18,47 @@ describe('MafiaRoleReveal Accessibility', () => {
 
   it('closes dialog on Escape key', async () => {
     let revealed = false;
-    const { unmount } = render(<MafiaRoleReveal role="CITIZEN" onRevealed={() => { revealed = true; unmount(); }} />);
+    const { unmount } = render(
+      <MafiaRoleReveal
+        role="CITIZEN"
+        onRevealed={() => {
+          revealed = true;
+          unmount();
+        }}
+      />,
+    );
     await userEvent.keyboard('{Escape}');
     expect(revealed).toBe(true);
   });
 
-  it('restores focus after reveal', async () => {
-    let onRevealedCalled = false;
-    render(<MafiaRoleReveal role="CITIZEN" onRevealed={() => { onRevealedCalled = true; }} />);
-    const button = screen.getByRole('button', { name: /اكشف دوري/ });
-    button.focus();
-    await userEvent.click(button);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    expect(onRevealedCalled).toBe(true);
+  it('keeps the role card open until the player acknowledges it', async () => {
+    const onRevealed = vi.fn();
+    render(<MafiaRoleReveal role="DETECTIVE" onRevealed={onRevealed} />);
+    await userEvent.click(screen.getByRole('button', { name: /اكشف دوري/ }));
+    expect(screen.getByRole('dialog', { name: 'بطاقة الدور' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'المحقق' })).toBeInTheDocument();
+    expect(onRevealed).not.toHaveBeenCalled();
+    const done = screen.getByRole('button', { name: 'فهمت دوري' });
+    expect(done).toHaveFocus();
+    await userEvent.tab();
+    expect(done).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(done).toHaveFocus();
+    await userEvent.click(done);
+    expect(onRevealed).toHaveBeenCalledOnce();
+  });
+
+  it('supports Escape after revealing and restores focus when closed', async () => {
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
+    trigger.focus();
+    const onRevealed = vi.fn();
+    const { unmount } = render(<MafiaRoleReveal role="DOCTOR" onRevealed={onRevealed} />);
+    await userEvent.click(screen.getByRole('button', { name: /اكشف دوري/ }));
+    await userEvent.keyboard('{Escape}');
+    expect(onRevealed).toHaveBeenCalledOnce();
+    unmount();
+    expect(trigger).toHaveFocus();
+    trigger.remove();
   });
 });
