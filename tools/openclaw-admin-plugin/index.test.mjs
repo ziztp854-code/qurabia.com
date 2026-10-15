@@ -17,7 +17,7 @@ test('tool sends only fixed-origin request with server credential and no redirec
     return new Response(JSON.stringify({ ok: true, data: { service: 'qurabia' } }));
   });
   await tools[0].execute('call', {});
-  assert.equal(request.url, 'https://qurabia.com/api/integrations/openclaw');
+  assert.equal(request.url, 'https://qurabia.com/api/integrations/openclaw/');
   assert.equal(request.options.redirect, 'error');
   assert.equal(request.options.headers.Authorization, `Bearer ${token}`);
   assert.deepEqual(JSON.parse(request.options.body), { tool: 'site_status', args: {} });

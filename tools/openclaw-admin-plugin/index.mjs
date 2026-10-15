@@ -60,7 +60,7 @@ export function createTools(context, config, fetcher = fetch) {
       const payload = { tool, args: index === 2 ? { ...args, requestId: randomUUID() } : {} };
       let response;
       try {
-        response = await fetcher(`${config.origin}/api/integrations/openclaw`, {
+        response = await fetcher(`${config.origin}/api/integrations/openclaw/`, {
           method: 'POST', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(15000),
           headers: { Authorization: `Bearer ${config.token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
