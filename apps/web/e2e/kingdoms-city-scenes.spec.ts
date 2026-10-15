@@ -75,6 +75,14 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
     const before = (await (await request.get('/api/kingdoms')).json()).data.villages[0];
     await page.goto('/');
     const stage = await readyHub(page);
+    if (width < 700 && height > width) {
+      const resources = stage.locator('[data-resource-location]');
+      await expect(resources).toHaveCount(2);
+      for (const label of await resources.all()) {
+        await expect(label).toBeVisible();
+        expect((await label.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
+    }
     const overview = await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}));
       await expect(stage.locator('[data-reserved-site] > span')).toHaveCount(0);
       await expect(stage.locator('[data-sultan-garden-entrance] > *')).toHaveCount(0);

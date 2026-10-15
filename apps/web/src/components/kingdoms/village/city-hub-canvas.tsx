@@ -33,8 +33,8 @@ import { presentRallyCommand } from '@/lib/kingdoms/rally-command';
 import { useViewClock } from '../use-view-clock';
 import { buildingKeys } from '@/lib/kingdoms/types';
 import { villageAssets, villageArtRenditions } from '@/lib/kingdoms/village/assetManifest';
-import { cityAssets, getCityComposition, getCityPlacement, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
-import { getVillageLabelDensity, villageLabelPoint, visibleVillageLabels, type VillageLabelDensity } from '@/lib/kingdoms/village/labelLayout';
+import { cityAssets, getCityComposition, getCityPlacement, sultanGardenEntranceRect, type CityCompositionId } from '@/lib/kingdoms/village/city-composition';
+import { getVillageLabelDensity, pinnedVillageLabelPoint, villageLabelPoint, visibleVillageLabels, type VillageLabelDensity } from '@/lib/kingdoms/village/labelLayout';
 import {
   buildingGroups,
   buildingStatusLabels,
@@ -170,13 +170,27 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       }).filter(({ width, height }) => width > 0 && height > 0) : [];
       labelDensity.current = getVillageLabelDensity(snapshot.zoom, labelDensity.current);
       const visible = new Set(visibleVillageLabels(anchors, snapshot, active, blockedAreas, topInset, labelDensity.current));
-      const pinnedResources = new Set<string>();
-      if (cityEnabled && composition === 'portrait') {
+      const pinnedPositions = new Map<string, { x: number; y: number }>();
+      if (cityEnabled && compositionRef.current === 'portrait') {
+        const occupied = [...blockedAreas, ...anchors.map(({ id }) => {
+          const area = rect(id as Parameters<typeof getVillageRect>[0]);
+          const point = projectPoint({ x: area.x + area.width / 2, y: area.y + area.height / 2 }, snapshot);
+          return { x: point.x - 12, y: point.y - 12, width: 24, height: 24 };
+        })];
+        if (current.current.onFacilitySelect) {
+          const garden = sultanGardenEntranceRect(compositionRef.current);
+          const center = projectPoint({ x: garden.x + garden.width / 2, y: garden.y + garden.height / 2 }, snapshot);
+          occupied.push({ x: center.x - 12, y: center.y - 12, width: 24, height: 24 });
+        }
         for (const id of ['mine', 'treasury'] as const) {
           const area = rect(id);
           const point = projectPoint({ x: area.x + area.width / 2, y: area.y + area.height / 2 }, snapshot);
           if (point.x >= 0 && point.x <= snapshot.viewport.width && point.y >= 0 && point.y <= snapshot.viewport.height) {
-            pinnedResources.add(id);
+            const preferred = villageLabelPoint(anchors.find((anchor) => anchor.id === id)!, snapshot, id, topInset);
+            const position = pinnedVillageLabelPoint(preferred, snapshot.viewport, occupied);
+            if (!position) continue;
+            pinnedPositions.set(id, position);
+            occupied.push({ x: position.x - 40, y: position.y - 45, width: 80, height: 45 });
             visible.add(id);
           }
         }
@@ -187,11 +201,11 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
         const anchor = anchors.find(({ id }) => id === element.dataset.labelId);
         if (!anchor) return;
         const original = projectPoint(anchor, snapshot);
-        const positioned = villageLabelPoint(anchor, snapshot, pinnedResources.has(anchor.id) ? anchor.id : active, topInset);
+        const positioned = pinnedPositions.get(anchor.id) ?? villageLabelPoint(anchor, snapshot, active, topInset);
         element.style.setProperty('--label-shift-x', `${(positioned.x - original.x) / snapshot.scale}px`);
         element.style.setProperty('--label-shift-y', `${(positioned.y - original.y) / snapshot.scale}px`);
       });
-    },[rect, cityEnabled, composition]);
+    },[rect, cityEnabled]);
     const highlight = (building: VillageSelection | null) => {
       renderer.current?.hover(building);
       if (camera.current) syncLabels(camera.current.getSnapshot(), building ?? current.current.selected);

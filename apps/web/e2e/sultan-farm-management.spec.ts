@@ -21,6 +21,8 @@ test('management game opens inside Sultan farm, harvests, saves and returns on d
   page,
   request,
 }) => {
+  // Real gameplay timers and desktop software rendering span the full save/reload journey.
+  test.setTimeout(240_000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -40,6 +42,11 @@ test('management game opens inside Sultan farm, harvests, saves and returns on d
   await expect(game.locator('#world')).toHaveAttribute('data-renderer', 'ready', {
     timeout: 30000,
   });
+  if ((page.viewportSize()?.width ?? 0) >= 700) {
+    // Exercise the available lightweight mode on software-rendered desktop CI.
+    await game.getByRole('button', { name: 'تبديل جودة الرسومات' }).click();
+    await expect(game.locator('#toast')).toContainText('جودة خفيفة');
+  }
   const camera = await game.locator('#world').getAttribute('data-camera');
   await game.getByRole('button', { name: 'تدوير الخريطة' }).click();
   await expect(game.locator('#world')).not.toHaveAttribute('data-camera', camera!);

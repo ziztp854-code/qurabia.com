@@ -353,7 +353,7 @@
   .scene[data-scene='market'] .heading { padding-inline-start: var(--space-2); }
   .scene[data-scene='market'] .content { flex: 0 0 auto; max-block-size: none; inline-size: 100%; padding: var(--space-3); }
   .scene[data-scene='market'] .artwork { aspect-ratio: 1672 / 941; }
-  .scene[data-scene='market'] .header { flex-wrap: wrap; position: relative; }
+  .scene[data-scene='market'] .header { flex-wrap: wrap; }
   .scene[data-scene='market'] .heading { flex-basis: 100%; }
   .scene[data-scene='market'] .manageButton, .scene[data-scene='market'] .backButton { flex: 1; font-size: 0.8125rem; }
 }
