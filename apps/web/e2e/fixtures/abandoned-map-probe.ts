@@ -22,7 +22,7 @@ LibreMap.prototype.addControl = function (...args: Parameters<typeof original>) 
         ids: data.features.map((feature: { id?: string | number }) => String(feature.id)),
         selectedIds: data.features
           .filter(
-            (feature: { properties?: { selected?: unknown } }) =>
+            (feature) =>
               feature.properties?.selected === true,
           )
           .map((feature: { id?: string | number }) => String(feature.id)),

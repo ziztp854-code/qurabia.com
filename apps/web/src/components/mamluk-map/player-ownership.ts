@@ -1,5 +1,6 @@
 import type { GeoJSONSource, LayerSpecification, ExpressionSpecification } from 'maplibre-gl';
-import type { Feature } from '@mamluk/world-map-core';
+import type { FeatureCollection } from '@mamluk/world-map-core';
+import { sdkFeatureCollection } from './source-identity';
 
 export interface OwnershipColors {
   readonly own: string;
@@ -15,18 +16,27 @@ export interface OwnershipPresentationOptions {
 }
 
 type SdkGeoJson = Parameters<GeoJSONSource['setData']>[0];
+type NullableCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry | null>;
 export const OWNER_COLOR = '__mamlukOwnerColor';
 export const OWN_PLOT = '__mamlukOwn';
 
 /** Presentation copies retain every server coordinate and never create ownership. */
 export function withPlayerOwnership(
-  data: SdkGeoJson,
+  data: SdkGeoJson | FeatureCollection,
   options: OwnershipPresentationOptions,
-): SdkGeoJson {
+): SdkGeoJson;
+export function withPlayerOwnership(
+  data: NullableCollection,
+  options: OwnershipPresentationOptions,
+): NullableCollection;
+export function withPlayerOwnership(
+  data: SdkGeoJson | FeatureCollection | NullableCollection,
+  options: OwnershipPresentationOptions,
+): SdkGeoJson | NullableCollection {
   if (typeof data === 'string' || data.type !== 'FeatureCollection') return data;
   return {
     ...data,
-    features: data.features.map((feature: Feature) => {
+    features: sdkFeatureCollection(data).features.map((feature) => {
       if (!feature.properties || !Object.hasOwn(feature.properties, 'ownerPlayerId'))
         return feature;
       const owner = feature.properties.ownerPlayerId;

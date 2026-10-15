@@ -22,7 +22,12 @@ import {
   validateDestination,
   type RelocationDestination,
 } from './relocation-destination';
-import { SDK_FEATURE_ID, withFeatureIdentity, withSourceIdentity } from './source-identity';
+import {
+  SDK_FEATURE_ID,
+  sdkFeatureCollection,
+  withFeatureIdentity,
+  withSourceIdentity,
+} from './source-identity';
 import type { SettlementPresentation } from './settlement-presentation';
 import { CLUSTER_LAYERS, settlementClusters } from './settlement-clusters';
 import { createWorldOverview, type Overview } from './world-overview';
@@ -278,7 +283,7 @@ class ObservedAdapter extends MapLibreAdapter {
       try {
         this.port
           .getSource<GeoJSONSource>('mamluk-cities')
-          ?.setData(this.publicPayload.layers.cities);
+          ?.setData(sdkFeatureCollection(this.publicPayload.layers.cities));
       } catch {
         // If sanitization fails, remove public sources too; never keep their old private attributes.
         this.publicPayload = null;

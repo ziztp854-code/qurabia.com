@@ -1,16 +1,61 @@
 import type { GeoJSONSource, Source } from 'maplibre-gl';
-import type { Feature } from '@mamluk/world-map-core';
+import type { FeatureCollection, Geometry } from '@mamluk/world-map-core';
 
 type SdkGeoJson = Parameters<GeoJSONSource['setData']>[0];
+type NullableCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry | null>;
 
 export const SDK_FEATURE_ID = '__mamlukFeatureId';
+
+/** Copy immutable domain coordinates at the mutable SDK boundary. */
+function sdkGeometry(geometry: Geometry | GeoJSON.Geometry): GeoJSON.Geometry {
+  switch (geometry.type) {
+    case 'Point':
+      return { ...geometry, coordinates: [...geometry.coordinates] };
+    case 'MultiPoint':
+    case 'LineString':
+      return { ...geometry, coordinates: geometry.coordinates.map((point) => [...point]) };
+    case 'MultiLineString':
+    case 'Polygon':
+      return {
+        ...geometry,
+        coordinates: geometry.coordinates.map((line) => line.map((point) => [...point])),
+      };
+    case 'MultiPolygon':
+      return {
+        ...geometry,
+        coordinates: geometry.coordinates.map((polygon) =>
+          polygon.map((line) => line.map((point) => [...point])),
+        ),
+      };
+    case 'GeometryCollection':
+      return { ...geometry, geometries: geometry.geometries.map(sdkGeometry) };
+  }
+}
+
+export function sdkFeatureCollection(
+  data: FeatureCollection | GeoJSON.FeatureCollection,
+): GeoJSON.FeatureCollection;
+export function sdkFeatureCollection(
+  data: FeatureCollection | NullableCollection,
+): NullableCollection;
+export function sdkFeatureCollection(
+  data: FeatureCollection | NullableCollection,
+): NullableCollection {
+  return {
+    ...data,
+    features: data.features.map((feature) => ({
+      ...feature,
+      geometry: feature.geometry === null ? null : sdkGeometry(feature.geometry),
+    })),
+  };
+}
 
 /** GeoJSON-vt serializes feature.id numerically; promotion preserves domain string IDs. */
 export function withFeatureIdentity(data: SdkGeoJson): SdkGeoJson {
   if (typeof data === 'string' || data.type !== 'FeatureCollection') return data;
   return {
     ...data,
-    features: data.features.map((feature: Feature) => ({
+    features: data.features.map((feature) => ({
       ...feature,
       properties: { ...feature.properties, [SDK_FEATURE_ID]: feature.id },
     })),
