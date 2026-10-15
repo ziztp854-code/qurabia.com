@@ -159,24 +159,24 @@ test('anchors, route changes and browser back do not multiply the runtime', asyn
   }
 });
 
-test('a late preview import preserves the catalogue anchor position', async ({
+test('late catalogue artwork preserves the catalogue anchor position', async ({
   page,
 }, testInfo) => {
-  const viewerChunk = readdirSync('.next/static/chunks').find(
-    (name) =>
-      name.endsWith('.js') &&
-      readFileSync(`.next/static/chunks/${name}`).includes('data-model-src'),
-  );
-  expect(viewerChunk).toBeTruthy();
-  let releasePreview!: () => void;
-  const previewGate = new Promise<void>((resolve) => {
-    releasePreview = resolve;
+  let releaseArtwork!: () => void;
+  let delayedRequests = 0;
+  const artworkGate = new Promise<void>((resolve) => {
+    releaseArtwork = resolve;
   });
-  await page.route(`**/_next/static/chunks/${viewerChunk}`, async (route) => {
-    await previewGate;
+  page.once('close', releaseArtwork);
+  await page.route((url) => {
+    const source = url.pathname === '/_next/image' ? url.searchParams.get('url') : url.pathname;
+    return source?.startsWith('/game-art/catalog-v2/') ?? false;
+  }, async (route) => {
+    delayedRequests += 1;
+    await artworkGate;
     await route.continue();
   });
-  await page.goto('/games');
+  await page.goto('/games', { waitUntil: 'domcontentloaded' });
   await expect(runtime(page)).toHaveAttribute('data-scroll-runtime', 'active');
   await page.evaluate(() => document.fonts.ready);
   await page.locator('a[href="#gc-results"]').click();
@@ -185,28 +185,24 @@ test('a late preview import preserves the catalogue anchor position', async ({
     page.evaluate(() => ({
       top: document.getElementById('gc-results')!.getBoundingClientRect().top,
       scroll: scrollY,
-      previewHeight: document.querySelector('.gc-hero-preview')!.getBoundingClientRect().height,
+      artworkHeight: document.querySelector('.gc-card-visual')!.getBoundingClientRect().height,
     }));
   await expect.poll(async () => Math.abs((await geometry()).top)).toBeLessThan(160);
   const before = await geometry();
-  releasePreview();
-  await expect(page.locator('.gc-hero-preview section[aria-label^="عارض"]')).toBeAttached();
+  expect(before.artworkHeight).toBeGreaterThan(0);
+  await expect.poll(() => delayedRequests).toBeGreaterThan(0);
+  releaseArtwork();
+  await page.locator('.gc-card-cover').first().evaluate((image: HTMLImageElement) => image.decode());
   const after = await geometry();
-  await testInfo.attach('late-preview-anchor', {
+  await testInfo.attach('late-artwork-anchor', {
     body: JSON.stringify({ before, after }, null, 2),
     contentType: 'application/json',
   });
-  expect(Math.abs(after.previewHeight - before.previewHeight)).toBeLessThan(1);
+  expect(Math.abs(after.artworkHeight - before.artworkHeight)).toBeLessThan(1);
   await expect.poll(async () => Math.abs((await geometry()).top)).toBeLessThan(160);
-  await expect(page.locator('.gc-hero-preview section[aria-label^="عارض"]')).toHaveAttribute(
-    'data-model-src',
-    /.+/,
-  );
-  await expect(page.locator('.gc-hero-preview canvas')).toHaveCount(0);
-  await page
-    .locator('.gc-hero-preview')
-    .evaluate((element) => element.scrollIntoView({ behavior: 'instant' }));
-  await expect(page.locator('.gc-hero-preview canvas')).toHaveCount(1);
+  expect(await page.locator('.gc-card-cover').first().evaluate((image: HTMLImageElement) =>
+    image.complete && image.naturalWidth > 0,
+  )).toBe(true);
 });
 
 test('a same-turn catalogue update preserves a native anchor jump', async ({ page }, testInfo) => {

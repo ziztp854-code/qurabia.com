@@ -10,7 +10,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:3314',
     reducedMotion: 'reduce',
-    launchOptions: { executablePath: process.env.CHROMIUM_PATH ?? '/usr/bin/chromium', args: ['--no-sandbox'] },
+    launchOptions: { executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox'] },
     trace: 'retain-on-failure',
   },
   webServer: {

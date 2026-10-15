@@ -20,10 +20,12 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'تحدي' })).toBeVisible();
+    const heroHeading = page.getByRole('heading', { level: 1 });
+    await expect(heroHeading).toHaveText(/^تحدي\s*جمعتكم تبدأ بلعبة\.$/);
+    await expect(heroHeading).toBeVisible();
     await expect(
       page.getByText(
-        'منصة مسابقات وألعاب جماعية عربية مباشرة، حيث يُصنع الأبطال وتُسجّل إنجازاتهم',
+        'اختر تحدّيك، اجمع أصدقاءك، وشاركهم جولة تستحق المنافسة.',
       ),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: /ابدأ اللعب الآن/ })).toHaveAttribute(
@@ -36,7 +38,18 @@ for (const viewport of [
     );
     await expect(page.getByRole('textbox', { name: 'رمز الغرفة' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'انضم' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'الألعاب الأبرز' })).toBeVisible();
+    const featured = page.getByRole('region', { name: 'اختَر تحدّيك القادم' });
+    await expect(featured).toBeVisible();
+    const featuredGames = featured.getByRole('navigation', { name: 'ألعاب بارزة' });
+    await expect(featuredGames.getByRole('link')).toHaveCount(4);
+    for (const href of [
+      '/games/chess',
+      '/games/baloot',
+      '/games/millionaire',
+      '/games/letter-challenge',
+    ]) {
+      await expect(featuredGames.locator(`a[href="${href}"], a[href="${href}/"]`)).toBeVisible();
+    }
     const world = page.getByRole('region', { name: 'عالم المماليك' });
     await expect(world).toBeVisible();
     await expect(world.getByRole('link', { name: /ادخل عالم المماليك/ })).toHaveAttribute(
@@ -50,13 +63,30 @@ for (const viewport of [
     await expect(page.getByRole('img', { name: /بطاقة رتبة/ })).toHaveCount(0);
 
     const bottomNav = page.getByRole('navigation', { name: 'التنقل السفلي' });
-    if (viewport.width < 768) await expect(bottomNav).toBeVisible();
-    else await expect(bottomNav).toBeHidden();
-    let navigation =
-      viewport.width < 768
-        ? bottomNav
-        : page.getByRole('navigation', { name: 'التنقل الرئيسي' });
-    if (viewport.width >= 768 && !(await navigation.isVisible())) {
+    if (viewport.width < 768) {
+      await expect(bottomNav).toBeVisible();
+      await expect(bottomNav.getByRole('link')).toHaveCount(5);
+      for (const [name, href] of [
+        ['الرئيسية', '/'],
+        ['الألعاب', '/games'],
+        ['المسابقات', '/quizzes'],
+        ['لوحة الشرف', '/leaderboard'],
+        ['الحساب', '/profile'],
+      ]) {
+        await expect(bottomNav.getByRole('link', { name, exact: true })).toHaveAttribute(
+          'href',
+          new RegExp(`^${href === '/' ? '/' : `${href}/?`}$`),
+        );
+      }
+      await expect(bottomNav.getByRole('link', { name: 'الرئيسية' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+    } else await expect(bottomNav).toBeHidden();
+
+    let navigation = page.getByRole('navigation', { name: 'التنقل الرئيسي' });
+    const usesMobileMenu = !(await navigation.isVisible());
+    if (usesMobileMenu) {
       await page.getByRole('button', { name: 'فتح القائمة' }).click();
       navigation = page.getByRole('navigation', { name: 'قائمة الجوال' });
     }
@@ -64,6 +94,9 @@ for (const viewport of [
       'href',
       /\/orders\/?$/,
     );
+    if (usesMobileMenu) {
+      await page.getByRole('button', { name: 'إغلاق القائمة' }).click();
+    }
 
     if (await page.locator('.desktop-nav').isVisible()) {
       await expect

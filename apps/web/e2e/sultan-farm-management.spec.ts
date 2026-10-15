@@ -21,6 +21,8 @@ test('management game opens inside Sultan farm, harvests, saves and returns on d
   page,
   request,
 }) => {
+  // This journey includes real harvest, production and construction timers.
+  test.setTimeout(120_000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: 'reduce' });

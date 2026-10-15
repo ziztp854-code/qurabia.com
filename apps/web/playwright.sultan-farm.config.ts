@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 const baseURL = 'http://127.0.0.1:3349';
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'kingdoms-sultan-farm.spec.ts',
+  testMatch: ['kingdoms-sultan-farm.spec.ts', 'sultan-farm-management.spec.ts'],
   workers: 1,
   timeout: 60000,
   outputDir: './test-results/sultan-farm',

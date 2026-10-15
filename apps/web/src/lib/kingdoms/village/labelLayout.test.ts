@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { getVillageLabelDensity, villageLabelPoint, visibleVillageLabels } from './labelLayout';
+import { getVillageLabelDensity, pinnedVillageLabelPoint, villageLabelPoint, visibleVillageLabels } from './labelLayout';
 
 describe('village labels at camera scale', () => {
+  it('keeps pinned resource labels clear of building touch centers and other labels', () => {
+    const blocked = [{ x: 75, y: 40, width: 44, height: 44 }];
+    const first = pinnedVillageLabelPoint({ x: 97, y: 48 }, { width: 194, height: 345 }, blocked);
+    expect(first).toBeDefined();
+    const rect = { x: first!.x - 40, y: first!.y - 45, width: 80, height: 45 };
+    expect(rect.x + rect.width <= 75 || rect.x >= 119 || rect.y + rect.height <= 40 || rect.y >= 84).toBe(true);
+    const second = pinnedVillageLabelPoint({ x: 97, y: 48 }, { width: 194, height: 345 }, [...blocked, rect]);
+    expect(second).toBeDefined();
+    expect(Math.abs(first!.x - second!.x) >= 80 || Math.abs(first!.y - second!.y) >= 45).toBe(true);
+  });
   const camera = { x: 800, y: 450, scale: 1, zoom: 1, viewport: { width: 1600, height: 900 } };
   it('keeps the selected label and suppresses overlapping neighbours', () => {
     const labels = [

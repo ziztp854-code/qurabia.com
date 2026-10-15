@@ -3,12 +3,12 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-async function clickGardenEntrance(page: Page) {
+async function clickGardenEntrance(page: Page, hasTouch: boolean) {
   const entrance = page.locator('[data-sultan-garden-entrance]');
   const box = (await entrance.boundingBox())!;
   const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   expect(await page.evaluate(({x,y}) => document.elementFromPoint(x,y)?.tagName, point)).toBe('CANVAS');
-  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) await page.touchscreen.tap(point.x, point.y);
+  if (hasTouch) await page.touchscreen.tap(point.x, point.y);
   else await page.mouse.click(point.x, point.y);
   await page.getByRole('button', { name: 'حديقة القصر' }).click();
 }
@@ -51,7 +51,7 @@ test('garden: visible courtyard entry, free planting, cosmetic collection, persi
   expect(target!.width).toBeGreaterThanOrEqual(44);
   expect(target!.height).toBeGreaterThanOrEqual(44);
   await page.screenshot({ path: path.join(out, `${prefix}-village-entry.png`), fullPage: true });
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   const scene = page.locator('[data-city-scene="sultan-garden"]');
   const farm = page.getByRole('region', { name: 'مزرعة السلطان', exact: true });
   const mobile = prefix.includes('mobile');
@@ -114,13 +114,13 @@ test('garden: visible courtyard entry, free planting, cosmetic collection, persi
   });
   await page.reload();
   await expect(stage).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   await openGardenManagement(scene, mobile);
   await expect(farm.getByRole('button', { name: 'الحوض 5، السوسن، بذرة' })).toBeVisible();
   expect((await request.post('/__village_test/advance-farm')).ok()).toBe(true);
   await page.reload();
   await expect(stage).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   await openGardenManagement(scene, mobile);
   await expect(farm.getByRole('button', { name: 'الحوض 5، السوسن، ناضج' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
@@ -156,7 +156,7 @@ test('garden: a delayed command cannot replace a newer plot draft and rapid acti
 }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openGarden(page, request);
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   const scene = page.locator('[data-city-scene="sultan-garden"]');
   const farm = page.getByRole('region', { name: 'مزرعة السلطان', exact: true });
   await expect(scene).toHaveAttribute('data-phase', 'active');
@@ -195,7 +195,7 @@ test('garden: offline planting keeps the authoritative plot and recovers after r
 }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openGarden(page, request);
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   const scene = page.locator('[data-city-scene="sultan-garden"]');
   const farm = page.getByRole('region', { name: 'مزرعة السلطان', exact: true });
   await expect(scene).toHaveAttribute('data-phase', 'active');
@@ -211,7 +211,7 @@ test('garden: offline planting keeps the authoritative plot and recovers after r
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await page.reload();
   await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true', { timeout: 30000 });
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   await openGardenManagement(scene, info.project.name.includes('mobile'));
   await expect(farm.getByRole('button', { name: 'الحوض 1، فارغ' })).toBeVisible();
 });
@@ -219,10 +219,10 @@ test('garden: offline planting keeps the authoritative plot and recovers after r
 test('garden: reduced motion and visibility stop animation without sending garden commands', async ({
   page,
   request,
-}) => {
+}, info) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openGarden(page, request);
-  await clickGardenEntrance(page);
+  await clickGardenEntrance(page, Boolean(info.project.use.hasTouch));
   const scene = page.locator('[data-city-scene="sultan-garden"]');
   const canvas = scene.locator('canvas');
   await expect(scene.locator('[data-sultan-farm]')).toHaveAttribute('data-pixi-farm', 'true');

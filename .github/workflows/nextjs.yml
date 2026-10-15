@@ -100,6 +100,14 @@ jobs:
         working-directory: apps/web
         run: pnpm test:e2e
 
+      - name: Verify Sultan Farm and management against the local fixture
+        working-directory: apps/web
+        run: pnpm exec playwright test --config playwright.sultan-farm.config.ts
+
+      - name: Verify market controls against the local fixture
+        working-directory: apps/web
+        run: pnpm exec playwright test --config playwright.visual-excellence.config.ts
+
       - name: Preserve failed browser evidence
         if: failure()
         uses: actions/upload-artifact@v7.0.1

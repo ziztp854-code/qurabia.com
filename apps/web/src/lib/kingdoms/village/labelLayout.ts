@@ -4,6 +4,35 @@ import type { CameraSnapshot, WorldPoint, WorldRect } from './types';
 export type VillageLabelAnchor = WorldPoint & Readonly<{ id: string }>;
 export type VillageLabelDensity = 'overview' | 'village' | 'detail';
 
+// Resource callouts remain clickable without covering the canvas building targets.
+export function pinnedVillageLabelPoint(
+  preferred: WorldPoint,
+  viewport: Readonly<{ width: number; height: number }>,
+  blocked: readonly WorldRect[],
+): WorldPoint | undefined {
+  let best: WorldPoint | undefined;
+  let distance = Infinity;
+  // Only obstacle edges can improve a blocked preferred position. This bounds
+  // work by the number of buildings, rather than the viewport's pixel area.
+  const xs = new Set([Math.max(44, Math.min(viewport.width - 44, preferred.x)), 44, viewport.width - 44,
+    ...blocked.flatMap((area) => [area.x - 40, area.x + area.width + 40])]);
+  const ys = new Set([Math.max(49, Math.min(viewport.height - 4, preferred.y)), 49, viewport.height - 4,
+    ...blocked.flatMap((area) => [area.y, area.y + area.height + 45])]);
+  for (const y of ys) {
+    for (const x of xs) {
+      if (x < 44 || x > viewport.width - 44 || y < 49 || y > viewport.height - 4) continue;
+      const area = { x: x - 40, y: y - 45, width: 80, height: 45 };
+      if (blocked.some((other) => area.x < other.x + other.width && area.x + area.width > other.x && area.y < other.y + other.height && area.y + area.height > other.y)) continue;
+      const candidateDistance = (x - preferred.x) ** 2 + (y - preferred.y) ** 2;
+      if (candidateDistance < distance) {
+        best = { x, y };
+        distance = candidateDistance;
+      }
+    }
+  }
+  return best;
+}
+
 export function getVillageLabelDensity(zoom: number, previous?: VillageLabelDensity): VillageLabelDensity {
   // A small band prevents label flicker while a pinch crosses a density boundary.
   if (previous === 'overview' && zoom <= 1.6) return 'overview';
