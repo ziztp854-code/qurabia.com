@@ -4,11 +4,8 @@ import { SPECIAL_GAME_META, SPECIAL_GAME_ORDER, UPCOMING_SPECIAL_GAMES } from '.
 export type InstantGameMode =
   | 'quote-master'
   | 'memory-flash'
-  | 'word-code'
   | 'question-word'
   | 'color-rush'
-  | 'spot-difference'
-  | 'scrambled-words'
   | 'risk'
   | 'category-board'
   | 'millionaire'
@@ -45,14 +42,6 @@ export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
     minimumPlayers: 1,
     contentLabel: 'جولات تلقائية',
   },
-  'word-code': {
-    mode: 'word-code',
-    title: 'شفرة الحروف',
-    description: 'فكّ الحروف العربية المبعثرة مستعينًا بالتلميح، واجمع أكبر رصيد.',
-    roundSeconds: 60,
-    minimumPlayers: 1,
-    contentLabel: 'بنك كلمات',
-  },
   'question-word': {
     mode: 'question-word',
     title: 'كلمة وسؤال',
@@ -68,22 +57,6 @@ export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
     roundSeconds: 45,
     minimumPlayers: 1,
     contentLabel: 'جولات تلقائية',
-  },
-  'spot-difference': {
-    mode: 'spot-difference',
-    title: 'اختلاف الصور',
-    description: 'قارن بين مشهدين متطابقين ظاهريًا، واكشف الفروق الخمسة قبل انتهاء الوقت.',
-    roundSeconds: 60,
-    minimumPlayers: 1,
-    contentLabel: 'مشاهد متعددة',
-  },
-  'scrambled-words': {
-    mode: 'scrambled-words',
-    title: 'كلمات مفككة',
-    description: 'ركّب الكلمات المبعثرة حرفًا حرفًا مستعينًا بالصورة والتلميح، وأكمل اللوحات.',
-    roundSeconds: 60,
-    minimumPlayers: 1,
-    contentLabel: 'لوحات كلمات',
   },
   risk: {
     mode: 'risk',
@@ -172,11 +145,8 @@ export const INSTANT_GAME_ORDER: InstantGameMode[] = [
   'millionaire',
   'baloot',
   'memory-flash',
-  'word-code',
   'question-word',
   'color-rush',
-  'spot-difference',
-  'scrambled-words',
   'risk',
   'letter-challenge',
   'ladder',
@@ -634,26 +604,6 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
     requiresAuth: false,
   },
   {
-    id: 'word-code',
-    mode: 'word-code',
-    kind: 'instant',
-    title: 'شفرة الحروف',
-    shortTitle: 'شفرة الحروف',
-    description: 'فكّ الحروف العربية المبعثرة مستعينًا بالتلميح، واجمع أكبر رصيد.',
-    minimumPlayers: 1,
-    maximumPlayers: 1,
-    roundSeconds: 60,
-    contentLabel: 'بنك كلمات',
-    year: 2024,
-    difficulty: 2,
-    platforms: ['web', 'pwa'],
-    categories: ['ذكاء', 'سرعة', 'ثقافة'],
-    tags: ['حروف', 'كلمات', 'تلميح', 'فوري'],
-    accent: '#22d3ee',
-    requiresRealtime: false,
-    requiresAuth: false,
-  },
-  {
     id: 'question-word',
     mode: 'question-word',
     kind: 'instant',
@@ -691,50 +641,6 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
     categories: ['تركيز', 'سرعة', 'ذاكرة'],
     tags: ['ألوان', 'حبس انتباه', 'Stroop', 'فوري'],
     accent: '#fbbf24',
-    requiresRealtime: false,
-    requiresAuth: false,
-  },
-  {
-    id: 'spot-difference',
-    mode: 'spot-difference',
-    kind: 'instant',
-    title: 'اختلاف الصور',
-    shortTitle: 'الفروق',
-    description:
-      'قارن بين مشهدين متطابقين ظاهريًا، واكشف الفروق الخمسة بأسرع ما يمكن قبل انتهاء الوقت.',
-    minimumPlayers: 1,
-    maximumPlayers: 1,
-    roundSeconds: 60,
-    contentLabel: 'مشاهد متعددة',
-    year: 2026,
-    difficulty: 2,
-    platforms: ['web', 'pwa', 'mobile'],
-    categories: ['تركيز', 'ذاكرة', 'سرعة'],
-    tags: ['فروق', 'صور', 'ملاحظة', 'فوري'],
-    accent: '#60a5fa',
-    href: '/games/spot-difference',
-    requiresRealtime: false,
-    requiresAuth: false,
-  },
-  {
-    id: 'scrambled-words',
-    mode: 'scrambled-words',
-    kind: 'instant',
-    title: 'كلمات مفككة',
-    shortTitle: 'الكلمات',
-    description:
-      'ركّب الكلمات المبعثرة حرفًا حرفًا مستعينًا بالصورة والتلميح، وأكمل لوحات الكلمات قبل الوقت.',
-    minimumPlayers: 1,
-    maximumPlayers: 1,
-    roundSeconds: 60,
-    contentLabel: 'لوحات كلمات',
-    year: 2026,
-    difficulty: 2,
-    platforms: ['web', 'pwa', 'mobile'],
-    categories: ['ذكاء', 'سرعة', 'تركيز'],
-    tags: ['كلمات', 'حروف', 'تركيب', 'فوري'],
-    accent: '#e879f9',
-    href: '/games/scrambled-words',
     requiresRealtime: false,
     requiresAuth: false,
   },

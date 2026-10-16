@@ -68,7 +68,7 @@ export default async function SpecialGamePage({
           initialPin={query.join?.replace(/\D/g, '').slice(0, 6) ?? ''}
         />
       ) : (
-        mode === 'word-code' || mode === 'question-word' ? (
+        mode === 'question-word' ? (
           <AiGameQuestionRefresh game={mode}><InstantGameRoom mode={mode} /></AiGameQuestionRefresh>
         ) : <InstantGameRoom mode={mode} />
       )}

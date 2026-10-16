@@ -18,7 +18,6 @@ describe('GAME_GUIDES', () => {
     'reverse-time',
     'infiltrator',
     'memory-flash',
-    'word-code',
     'question-word',
     'color-rush',
     'chess',

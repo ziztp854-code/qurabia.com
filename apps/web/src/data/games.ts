@@ -51,10 +51,6 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     image: '/game-art/catalog-v2/memory-flash.webp',
     imageAlt: 'تسلسل من بلاطات مضيئة وثلاث فرص في ومضة الذاكرة',
   },
-  'word-code': {
-    image: '/game-art/catalog-v2/word-code.webp',
-    imageAlt: 'أسطوانة شفرة ذهبية تحيط بها قطع حروف مبعثرة',
-  },
   'question-word': {
     image: '/game-art/catalog-v2/question-word.webp',
     imageAlt: 'كرة سؤال ذهبية فوق مساحة إجابة وقطع كلمات متناثرة',
@@ -62,14 +58,6 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
   'color-rush': {
     image: '/game-art/catalog-v2/color-rush.webp',
     imageAlt: 'مسارات ألوان سريعة تتجه نحو بلاطة مضيئة في خدعة الألوان',
-  },
-  'spot-difference': {
-    image: '/game-art/catalog-v2/spot-difference.webp',
-    imageAlt: 'باحة عربية مكررة تفحصها عدسة مكبرة لاكتشاف الفرق',
-  },
-  'scrambled-words': {
-    image: '/game-art/catalog-v2/scrambled-words.webp',
-    imageAlt: 'فانوس مضيء تحيط به قطع كلمات تعاد إلى صفوف مرتبة',
   },
   'scrambled-words-live': {
     image: '/game-art/catalog-v2/scrambled-words-live.webp',

@@ -8,7 +8,6 @@ export const AI_QUESTION_GAMES = [
   'quote-master',
   'ladder',
   'elimination-live',
-  'word-code',
   'question-word',
 ] as const;
 export type AiQuestionGame = (typeof AI_QUESTION_GAMES)[number];
@@ -20,7 +19,6 @@ export const AI_QUESTION_COUNTS: Record<AiQuestionGame, number> = {
   'quote-master': 12,
   ladder: 24,
   'elimination-live': 24,
-  'word-code': 12,
   'question-word': 12,
 };
 export const gameQuestionRefreshInputSchema = z

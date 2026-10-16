@@ -9,9 +9,6 @@ import {
   QUESTION_WORD_BANK,
   buildRiskDeck,
   RISK_PRESETS,
-  SCRAMBLED_WORDS_ROUNDS,
-  SPOT_DIFFERENCE_SCENES,
-  WORD_CODE_BANK,
 } from './game-data';
 import { InstantGameRoom, MemoryFlash } from './instant-game-room';
 
@@ -140,19 +137,6 @@ describe('MemoryFlash', () => {
     expect(localStorage.getItem('tahaddi.memory-flash.high-score.medium')).toBe('50');
     expect(screen.getByRole('heading', { name: 'رقم قياسي جديد!' })).toBeInTheDocument();
     expect(screen.getAllByText('50').length).toBeGreaterThan(0);
-  });
-});
-
-describe('word-code bank integrity', () => {
-  it('provides an expanded bank of unique, solvable puzzles', () => {
-    expect(WORD_CODE_BANK.length).toBeGreaterThanOrEqual(40);
-    const words = WORD_CODE_BANK.map((entry) => entry.word);
-    expect(new Set(words).size).toBe(words.length);
-    for (const entry of WORD_CODE_BANK) {
-      expect(entry.hint.trim().length).toBeGreaterThan(0);
-      expect(entry.scrambled).not.toBe(entry.word);
-      expect([...entry.scrambled].sort().join('')).toBe([...entry.word].sort().join(''));
-    }
   });
 });
 
@@ -369,44 +353,6 @@ describe('instant mode catalog contract', () => {
   }
 });
 
-describe('spot-difference bank integrity', () => {
-  it('provides scenes with five valid, in-bounds differences each', () => {
-    expect(SPOT_DIFFERENCE_SCENES.length).toBeGreaterThanOrEqual(6);
-    for (const scene of SPOT_DIFFERENCE_SCENES) {
-      expect(scene.rows).toHaveLength(6);
-      expect(scene.diffs).toHaveLength(5);
-      const keys = new Set<string>();
-      for (const diff of scene.diffs) {
-        const key = `${diff.r}-${diff.c}`;
-        expect(keys.has(key)).toBe(false);
-        keys.add(key);
-        expect(scene.rows[diff.r]?.[diff.c]).toBeTruthy();
-        expect(diff.with).not.toBe(scene.rows[diff.r]![diff.c]!);
-      }
-    }
-  });
-});
-
-describe('scrambled-words bank integrity', () => {
-  it('provides solvable rounds whose letter pools cover the words', () => {
-    expect(SCRAMBLED_WORDS_ROUNDS.length).toBeGreaterThanOrEqual(8);
-    for (const round of SCRAMBLED_WORDS_ROUNDS) {
-      expect(round.words).toHaveLength(3);
-      expect(new Set(round.words).size).toBe(3);
-      expect(round.hint.trim().length).toBeGreaterThan(0);
-      const poolCounts = new Map<string, number>();
-      for (const letter of round.letters) {
-        poolCounts.set(letter, (poolCounts.get(letter) ?? 0) + 1);
-      }
-      for (const letter of round.words.join('')) {
-        const remaining = poolCounts.get(letter) ?? 0;
-        expect(remaining).toBeGreaterThan(0);
-        poolCounts.set(letter, remaining - 1);
-      }
-    }
-  });
-});
-
 describe('risk board integrity', () => {
   it('يبني رزمة متوازنة من ٢٤ بطاقة وبثلاث قنابل دون معرّفات مكررة', () => {
     const deck = buildRiskDeck('balanced', () => 0.5);
@@ -415,82 +361,6 @@ describe('risk board integrity', () => {
     expect(deck.filter((card) => card.kind === 'shield')).toHaveLength(2);
     expect(deck.filter((card) => card.kind === 'double')).toHaveLength(2);
     expect(new Set(deck.map((card) => card.id)).size).toBe(deck.length);
-  });
-});
-
-describe('SpotDifference', () => {
-  it('يعرض إعدادات الجولة وأدوات المشهد المستوحاة من لوحة المضيف', () => {
-    render(<InstantGameRoom mode="spot-difference" />);
-
-    expect(screen.getByLabelText('اسم الجولة')).toHaveValue('تحدّي اختلاف الصور');
-    expect(screen.getByLabelText('الوقت لكل صورة')).toHaveValue('60');
-    expect(screen.getByLabelText('عدد الصور')).toHaveValue('3');
-    expect(screen.getByLabelText('حد الأخطاء')).toHaveValue('5');
-
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدّي' }));
-    fireEvent.click(screen.getByRole('button', { name: 'إظهار الفروق' }));
-
-    expect(screen.getByText('تم إظهار الفروق المتبقية مؤقتًا')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'صورة جديدة' })).toBeInTheDocument();
-  });
-
-  it('يكتشف الفروق ويخصم المواضع الخاطئة', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0);
-    render(<InstantGameRoom mode="spot-difference" />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدّي' }));
-    expect(screen.getByText('الصورة الأولى')).toBeInTheDocument();
-    expect(screen.getByText('الصورة الثانية')).toBeInTheDocument();
-
-    const hudTitle = screen.getByText(/المشهد 1 •/);
-    const scene = SPOT_DIFFERENCE_SCENES.find((item) =>
-      hudTitle.textContent?.includes(item.title),
-    );
-    expect(scene).toBeDefined();
-    const diff = scene!.diffs[0]!;
-
-    fireEvent.click(screen.getByTestId(`spot-cell-b-${diff.r}-${diff.c}`));
-    expect(screen.getByText('فرق صحيح! +١٠٠')).toBeInTheDocument();
-    expect(screen.getByLabelText('حالة اللعبة')).toHaveTextContent('الرصيد 100');
-
-    const diffKeys = new Set(scene!.diffs.map((entry) => `${entry.r}-${entry.c}`));
-    let wrong: { r: number; c: number } | null = null;
-    for (let r = 0; r < scene!.rows.length && !wrong; r += 1) {
-      for (let c = 0; c < scene!.rows[r]!.length && !wrong; c += 1) {
-        if (!diffKeys.has(`${r}-${c}`)) wrong = { r, c };
-      }
-    }
-    expect(wrong).not.toBeNull();
-
-    fireEvent.click(screen.getByTestId(`spot-cell-a-${wrong!.r}-${wrong!.c}`));
-    expect(screen.getByLabelText('حالة اللعبة')).toHaveTextContent('الرصيد 80');
-  });
-});
-
-describe('ScrambledWords', () => {
-  it('يركّب الكلمات من فقاعات الحروف ويقفلها بالتتابع', () => {
-    render(<InstantGameRoom mode="scrambled-words" />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدّي' }));
-    expect(screen.getByText(SCRAMBLED_WORDS_ROUNDS[0]!.hint)).toBeInTheDocument();
-
-    const tapWord = (word: string) => {
-      for (const letter of word) {
-        const button = screen
-          .getAllByRole('button', { name: `اختر حرف ${letter}` })
-          .find((candidate) => !candidate.hasAttribute('disabled'));
-        expect(button).toBeDefined();
-        fireEvent.click(button!);
-      }
-    };
-
-    const [first, second] = SCRAMBLED_WORDS_ROUNDS[0]!.words;
-    tapWord(first!);
-    expect(screen.getByText('كلمة صحيحة! +100')).toBeInTheDocument();
-    expect(screen.getByLabelText('حالة اللعبة')).toHaveTextContent('الرصيد 100');
-
-    tapWord(second!);
-    expect(screen.getByLabelText('حالة اللعبة')).toHaveTextContent('الرصيد 200');
   });
 });
 

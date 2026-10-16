@@ -13,7 +13,6 @@ import {
   INSTANT_GAME_META,
   INSTANT_GAME_ORDER,
   MEMORY_SYMBOL_BANK,
-  WORD_CODE_BANK,
 } from '../src/components/instant-games/game-data';
 
 test('الكتالوج والمسارات والبنوك مشتقة من قوائم الألعاب الثلاث', async ({ page, request }) => {
@@ -25,6 +24,13 @@ test('الكتالوج والمسارات والبنوك مشتقة من قوا�
 
   const cards = page.getByRole('article').filter({ has: page.getByRole('heading', { level: 3 }) });
   await expect(cards).toHaveCount(INJECTED_GAME_CATALOG.length);
+
+  for (const removed of ['word-code', 'spot-difference', 'scrambled-words']) {
+    await expect(page.locator(`a[href="/games/${removed}/"], a[href="/games/${removed}"]`)).toHaveCount(0);
+    const response = await request.get(`/games/${removed}/`);
+    expect(response.status()).toBe(200);
+    expect(new URL(response.url()).pathname).toMatch(/^\/games\/?$/);
+  }
 
   for (const mode of SPECIAL_GAME_ORDER) {
     const meta = SPECIAL_GAME_META[mode];
@@ -80,9 +86,7 @@ test('الكتالوج والمسارات والبنوك مشتقة من قوا�
   expect(SPECTRUM_BANK.length).toBeGreaterThanOrEqual(24);
   expect(new Set(SPECTRUM_BANK.map((pair) => pair.id)).size).toBe(SPECTRUM_BANK.length);
   expect(MEMORY_SYMBOL_BANK.length).toBeGreaterThanOrEqual(4);
-  expect(WORD_CODE_BANK.length).toBeGreaterThanOrEqual(12);
   expect(COLOR_RUSH_BANK.length).toBeGreaterThanOrEqual(4);
-  expect(new Set(WORD_CODE_BANK.map((item) => item.word)).size).toBe(WORD_CODE_BANK.length);
   expect(new Set(COLOR_RUSH_BANK.map((item) => item.value)).size).toBe(COLOR_RUSH_BANK.length);
   for (const round of PARALLEL_WORLD_BANK) {
     expect(round.variants.length).toBeGreaterThanOrEqual(4);

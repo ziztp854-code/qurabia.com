@@ -15,7 +15,6 @@ import {
   isInstantGameMode,
   MEMORY_SYMBOL_BANK,
   QUESTION_WORD_BANK,
-  WORD_CODE_BANK,
 } from '../instant-games/game-data';
 import { generateStaticParams } from '@/app/games/[mode]/page';
 
@@ -105,7 +104,6 @@ describe('game content banks', () => {
     expect(new Set(MEMORY_SYMBOL_BANK.map((item) => item.label)).size).toBe(
       MEMORY_SYMBOL_BANK.length,
     );
-    expect(new Set(WORD_CODE_BANK.map((item) => item.word)).size).toBe(WORD_CODE_BANK.length);
     expect(new Set(QUESTION_WORD_BANK.map((item) => item.answer)).size).toBe(
       QUESTION_WORD_BANK.length,
     );

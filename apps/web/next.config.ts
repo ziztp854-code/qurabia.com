@@ -147,6 +147,13 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  async redirects() {
+    return ['word-code', 'spot-difference', 'scrambled-words'].map((mode) => ({
+      source: `/games/${mode}`,
+      destination: '/games',
+      permanent: false,
+    }));
+  },
   async headers() {
     return [
       {

@@ -29,9 +29,16 @@ function filterState(partial: Partial<GameFilterState>): GameFilterState {
 }
 
 describe('game-catalog engine', () => {
+  it('excludes removed solo games while retaining live scrambled words', () => {
+    const ids = takeCatalog().map((game) => game.id);
+    for (const id of ['word-code', 'spot-difference', 'scrambled-words']) {
+      expect(ids).not.toContain(id);
+    }
+    expect(ids).toContain('scrambled-words-live');
+  });
   it('classifies shared-screen and online games by player capacity', () => {
     const groupIds = ['letter-challenge', 'category-board', 'baloot', 'chess', 'risk', 'question-word'];
-    const soloIds = ['millionaire', 'knowledge-tower', 'memory-flash', 'word-code', 'color-rush'];
+    const soloIds = ['millionaire', 'knowledge-tower', 'memory-flash', 'color-rush'];
     for (const id of groupIds) {
       expect(getGamePlayMode(INJECTED_GAME_CATALOG.find((game) => game.id === id)!)).toBe('group');
     }

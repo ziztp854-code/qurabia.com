@@ -153,7 +153,6 @@ export const ARCHITECTURE_REGISTRY: ArchitectureNodeRecord[] = [
     ['game-infiltrator', 'الدخيل', 'infiltrator', 'apps/realtime/src/special-games/special-games.service.ts'],
     ['game-chess', 'تحدي الشطرنج', 'chess', 'apps/realtime/src/chess/chess.gateway.ts'],
     ['game-memory', 'ومضة الذاكرة', 'memory-flash', 'apps/web/src/components/instant-games/instant-game-room.tsx'],
-    ['game-word', 'شفرة الحروف', 'word-code', 'apps/web/src/components/instant-games/game-data.ts'],
     ['game-color', 'خدعة الألوان', 'color-rush', 'apps/web/src/components/instant-games/instant-game-room.tsx'],
   ].map(([id, label, slug, path], index) => ({
     id, label, route: `/games/${slug}`, kind: 'Game' as const, status: 'ACTIVE' as const,

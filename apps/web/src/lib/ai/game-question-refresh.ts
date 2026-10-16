@@ -18,7 +18,7 @@ export function validateGameQuestionBatch(
   if (questions.length !== AI_QUESTION_COUNTS[input.game])
     throw new Error('Incomplete question batch');
   const seen = new Set(input.excludePrompts.map(foldKeyword));
-  const shortAnswer = ['letter-challenge', 'category-board', 'word-code', 'question-word'].includes(
+  const shortAnswer = ['letter-challenge', 'category-board', 'question-word'].includes(
     input.game,
   );
   for (const question of questions) {
@@ -46,7 +46,7 @@ export function validateGameQuestionBatch(
     )
       throw new Error('Invalid answer letter');
     if (
-      ['word-code', 'question-word'].includes(input.game) &&
+      input.game === 'question-word' &&
       !/^[ء-ي]{2,14}$/.test(question.answer)
     )
       throw new Error('Invalid word');
@@ -102,8 +102,6 @@ export async function generateFreshGameQuestions(
       'أربعة وعشرون سؤال اختيار من متعدد: ثمانية سهلة وثمانية متوسطة وثمانية صعبة، لكل سؤال أربعة خيارات فريدة.',
     'elimination-live':
       'أربعة وعشرون سؤال اختيار من متعدد: ثمانية سهلة وثمانية متوسطة وثمانية صعبة، لكل سؤال أربعة خيارات فريدة.',
-    'word-code':
-      'ألغاز كلمات عربية، prompt تلميح للكلمة، الجواب كلمة واحدة من حرفين إلى 14 حرفًا دون مسافات أو تشكيل. options فارغة.',
     'question-word':
       'أسئلة عربية سريعة، جواب كل سؤال كلمة واحدة من حرفين إلى 14 حرفًا دون مسافات أو تشكيل. options فارغة.',
   };
