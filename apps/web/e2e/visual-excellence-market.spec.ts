@@ -36,7 +36,7 @@ for (const [name, width, height, dpr] of [
     expect(initial.overflow).toBe(false);
     expect(initial.sceneOverflow).toBe(false);
     expect(await page.evaluate(() => document.fonts.check('16px "Cairo Variable"'))).toBe(true);
-    await expect(scene.locator('input')).toHaveCount(10);
+    await expect(scene.locator('input')).toHaveCount(11);
     for (const field of await scene.locator('input').all()) {
       expect(await field.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
     }
@@ -102,4 +102,31 @@ test('built market publishes and cancels an offer through the existing local eng
   await scene.getByRole('button', { name: 'ألغِ العرض', exact: true }).click();
   await expect(scene.getByRole('button', { name: 'ألغِ العرض', exact: true })).toHaveCount(0);
   expect((await (await request.get('/api/kingdoms')).json()).data.offers).toHaveLength(0);
+});
+
+test('instant purchase immediately exchanges the selected resources in a built market', async ({ page, request }) => {
+  expect((await request.post('/__village_test/offline-scenario')).ok()).toBe(true);
+  expect((await request.post('/__village_test/advance-five-hours')).ok()).toBe(true);
+  expect((await request.post('/api/kingdoms', { data: { worldId: 'browser-world', command: { type: 'build', villageId: 'v1', building: 'market' } } })).ok()).toBe(true);
+  expect((await request.post('/__village_test/advance-five-hours')).ok()).toBe(true);
+  await page.goto('/?visualQa=1');
+  await expect(page.locator('[data-village-scene]')).toHaveAttribute('data-pixi-ready', 'true');
+  await page.locator('summary').filter({ hasText: /^إعدادات القرية$/ }).click();
+  await page.getByLabel('اختر مبنى من الخريطة', { exact: true }).selectOption('market');
+  const scene = page.locator('[data-city-scene="market"]');
+  await scene.getByLabel('المورد المطلوب', { exact: true }).selectOption('iron');
+  await scene.getByLabel('مورد الدفع', { exact: true }).selectOption('food');
+  await scene.getByLabel('الكمية المطلوبة', { exact: true }).fill('1000');
+  const before = (await (await request.get('/api/kingdoms')).json()).data;
+  const response = page.waitForResponse(res => res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/kingdoms');
+  await scene.getByRole('button', { name: 'اشترِ الآن', exact: true }).click();
+  expect((await response).ok()).toBe(true);
+  const after = (await (await request.get('/api/kingdoms')).json()).data;
+  expect(after.villages[0].resources.iron - before.villages[0].resources.iron).toBe(1000);
+  expect(before.villages[0].resources.food - after.villages[0].resources.food).toBe(1000);
+  expect(after.offers).toHaveLength(0);
+  expect(after.caravans).toHaveLength(0);
+  await scene.getByLabel('مورد الدفع', { exact: true }).selectOption('iron');
+  await expect(scene.getByRole('button', { name: 'اشترِ الآن', exact: true })).toBeDisabled();
+  await expect(scene.locator('[data-market-instant]').getByRole('status')).toContainText('اختر موردين مختلفين');
 });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { buildingKeys, unitKeys, commanderSpecializations } from './types';
+import { buildingKeys, unitKeys, commanderSpecializations, resourceKeys } from './types';
 import { resourcesSchema } from './config';
 import { cropKeys, gardenStyleKeys } from './sultan-farm';
 const id = z
@@ -66,6 +66,13 @@ export const kingdomsCommandSchema = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('recall'), villageId, hostVillageId: id }).strict(),
+  z.object({
+    type: z.literal('tradeInstant'),
+    villageId,
+    pay: z.enum(resourceKeys),
+    receive: z.enum(resourceKeys),
+    amount: z.number().int().min(1).max(1e9),
+  }).strict(),
   z
     .object({
       type: z.literal('tradeOffer'),

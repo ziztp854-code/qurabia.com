@@ -322,6 +322,9 @@
   min-inline-size: 0;
 }
 .scene[data-scene='market'] .content :global(.field-label) { font-size: 0.8125rem; }
+.scene[data-scene='market'] .content :global([data-market-instant] .field) {
+  grid-template-columns: minmax(0, 1fr);
+}
 .scene[data-scene='market'] .content :global(.field-control) {
   min-inline-size: 0;
   border-color: var(--kingdoms-market-control-border);

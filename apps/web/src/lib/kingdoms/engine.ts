@@ -332,7 +332,7 @@ function march(
 function trade(
   w: KingdomsWorld,
   actor: string,
-  c: Extract<KingdomsCommand, { type: 'tradeOffer' | 'tradeAccept' | 'tradeCancel' }>,
+  c: Extract<KingdomsCommand, { type: 'tradeInstant' | 'tradeOffer' | 'tradeAccept' | 'tradeCancel' }>,
   at: number,
 ) {
   if (c.type === 'tradeCancel') {
@@ -344,6 +344,18 @@ function trade(
   }
   const v = own(w, actor, c.villageId);
   assertRule(v.buildings.market > 0, 'ابنِ السوق أولاً');
+  if (c.type === 'tradeInstant') {
+    assertRule(c.pay !== c.receive, 'اختر موردين مختلفين للتبادل');
+    assertRule(v.resources[c.receive] + c.amount <= capacity(w, v), 'لا تتسع المخازن للكمية المطلوبة');
+    const sent = { ...resources(), [c.pay]: c.amount };
+    const received = { ...resources(), [c.receive]: c.amount };
+    spend(v, sent);
+    credit(w, v, received);
+    report(w, at, [actor], 'تم الشراء الفوري', 'اشترى السوق الموارد بنسبة ١:١', {
+      event: { key: 'trade.instant', category: 'economy', resources: { sent, received } },
+    });
+    return;
+  }
   if (c.type === 'tradeOffer') {
     assertRule(total(c.give) > 0 && total(c.want) > 0, 'يجب تحديد موارد للتبادل');
     assertRule(w.offers.filter((o) => o.ownerId === actor).length < 20, 'لديك عروض كثيرة');
@@ -761,6 +773,7 @@ export function executeCommand(
       case 'recall':
         recall(w, actorId, c, at);
         break;
+      case 'tradeInstant':
       case 'tradeOffer':
       case 'tradeAccept':
       case 'tradeCancel':

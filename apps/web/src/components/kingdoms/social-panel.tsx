@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Button, Input, Select } from '@/components/ui';
+import { resourceKeys, type Resource } from '@/lib/kingdoms/types';
+import { storageCapacity } from '@/lib/kingdoms/simulation';
 import {
   CommandForm,
   ResourceFields,
@@ -8,6 +11,7 @@ import {
   Empty,
   amounts,
   number,
+  labels,
   type GameProps,
 } from './shared';
 import styles from './kingdoms.module.css';
@@ -17,6 +21,7 @@ import { AllianceEventCard } from './alliance-event-card';
 export function MarketPanel({ view, village, busy, send }: GameProps) {
   return (
     <div className={styles.split} data-market-panel="">
+      <InstantPurchase key={village.id} view={view} village={village} busy={busy} send={send} />
       <section className={styles.panel} data-market-summary="">
         <h2>سوق الممالك</h2>
         <p className={styles.muted}>
@@ -74,6 +79,90 @@ export function MarketPanel({ view, village, busy, send }: GameProps) {
         </CommandForm>
       </section>
     </div>
+  );
+}
+
+function InstantPurchase({ view, village, busy, send }: GameProps) {
+  const [pay, setPay] = useState<Resource>('food');
+  const [receive, setReceive] = useState<Resource>('iron');
+  const [amount, setAmount] = useState('1000');
+  const quantity = Number(amount);
+  const available = Math.floor(village.resources[pay]);
+  const room = Math.max(
+    0,
+    Math.floor(storageCapacity(view.config, village) - village.resources[receive]),
+  );
+  const limit = Math.min(available, room, 1e9);
+  const error =
+    village.buildings.market < 1
+      ? 'ابنِ السوق أولاً لتتمكن من الشراء الفوري.'
+      : pay === receive
+        ? 'اختر موردين مختلفين للتبادل.'
+        : !Number.isSafeInteger(quantity) || quantity < 1
+          ? 'أدخل كمية صحيحة أكبر من صفر.'
+          : quantity > available
+            ? 'رصيد مورد الدفع غير كافٍ.'
+            : quantity > room
+              ? 'لا تتسع المخازن للكمية المطلوبة.'
+              : '';
+  return (
+    <section className={styles.panel} data-market-instant="" aria-labelledby="market-instant-title">
+      <h2 id="market-instant-title">شراء فوري</h2>
+      <p className={styles.muted}>
+        استبدل مواردك بنسبة ١:١، وتصل الكمية فورًا دون انتظار لاعب آخر.
+      </p>
+      <CommandForm
+        busy={busy}
+        label="اشترِ الآن"
+        submitDisabled={Boolean(error)}
+        onSubmit={() =>
+          void send({ type: 'tradeInstant', villageId: village.id, pay, receive, amount: quantity })
+        }
+      >
+        <Select
+          label="المورد المطلوب"
+          value={receive}
+          onChange={(event) => setReceive(event.target.value as Resource)}
+        >
+          {resourceKeys.map((key) => (
+            <option key={key} value={key}>
+              {labels[key]}
+            </option>
+          ))}
+        </Select>
+        <Select
+          label="مورد الدفع"
+          value={pay}
+          onChange={(event) => setPay(event.target.value as Resource)}
+        >
+          {resourceKeys.map((key) => (
+            <option key={key} value={key}>
+              {labels[key]}
+            </option>
+          ))}
+        </Select>
+        <Input
+          label="الكمية المطلوبة"
+          type="number"
+          min="1"
+          max={Math.max(1, limit)}
+          step="1"
+          required
+          dir="ltr"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          aria-describedby="market-instant-status"
+        />
+        <p className={styles.muted}>
+          رصيد الدفع: {number(available)} {labels[pay]} · المساحة المتاحة: {number(room)}{' '}
+          {labels[receive]}
+        </p>
+        <p id="market-instant-status" role="status">
+          {error ||
+            `تحصل على ${number(quantity)} ${labels[receive]} مقابل ${number(quantity)} ${labels[pay]}.`}
+        </p>
+      </CommandForm>
+    </section>
   );
 }
 
