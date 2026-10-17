@@ -18,7 +18,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Button, ButtonLink, Input, Select } from '@/components/ui';
-import { CommandForm, Empty, compactNumber, date, number } from './shared';
+import { CommandForm, Empty, date, number } from './shared';
 import { useKingdoms } from './use-kingdoms';
 import { VillagePanel, ArmyPanel } from './village-panel';
 import { GlobalMilitaryAlert } from './incoming-alert';
@@ -28,7 +28,7 @@ import { geographicMapHref } from './map-links';
 import { AlliancePanel, MarketPanel, ThronePanel } from './social-panel';
 import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
-import { ResourceIcon } from './resource-icon';
+import { VillageResourceStock } from './village-resource-stock';
 import { VillageHero } from './village-hero';
 import { villagePopulation } from '@/lib/kingdoms/population';
 import { unitKeys } from '@/lib/kingdoms/types';
@@ -57,14 +57,6 @@ const tabIcons = {
   alliances: Flag,
   reports: ScrollText,
   throne: Crown,
-};
-const resourceOrder = ['wood', 'stone', 'iron', 'food', 'gold'] as const;
-const resourceNames = {
-  wood: 'الخشب',
-  stone: 'الحجر',
-  iron: 'الحديد',
-  food: 'الطعام',
-  gold: 'الذهب',
 };
 type ScopedBuildingSelection = { worldId: string; villageId: string; building: VillageSelection };
 const mobileTabs = [
@@ -161,34 +153,7 @@ export function KingdomsClient({
           </div>
         </header>
         {village && (
-          <section aria-label="موارد القرية" className={styles.resources} tabIndex={0}>
-            {resourceOrder.map((resource) => {
-              const cap =
-                view!.config.storageBase +
-                village.buildings.warehouse * view!.config.storagePerLevel;
-              const fill = Math.min(100, (village.resources[resource] / cap) * 100);
-              return (
-                <div
-                  key={resource}
-                  className={styles.resource}
-                  data-resource={resource}
-                  data-full={fill >= 95}
-                  title={`${resourceNames[resource]} ${number(village.resources[resource])} · السعة ${number(cap)}`}
-                >
-                  <ResourceIcon resource={resource} size={32} hud />
-                  <span>{resourceNames[resource]}</span>
-                  <strong role="group" aria-label={`${resourceNames[resource]}: ${number(village.resources[resource])}`}>
-                    <bdi className={styles.resourceExact} aria-hidden="true">{number(village.resources[resource])}</bdi>
-                    <bdi className={styles.resourceCompact} data-compact-value aria-hidden="true">{compactNumber(village.resources[resource])}</bdi>
-                  </strong>
-                  <span className={styles.resourceCapacity}>من {number(cap)}</span>
-                  <em className={styles.capacity} aria-hidden="true" title={`السعة ${number(cap)}`}>
-                    <i style={{ inlineSize: `${fill}%` }} />
-                  </em>
-                </div>
-              );
-            })}
-          </section>
+          <VillageResourceStock view={view!} village={village} />
         )}
         <div className={styles.hudActions}>
           <ButtonLink

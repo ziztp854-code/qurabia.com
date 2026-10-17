@@ -283,3 +283,38 @@ it('retries a failed revision GET on the next heartbeat without starting a tight
   await waitFor(() => expect(result.current.view?.revision).toBe(9));
   expect(vi.mocked(fetch).mock.calls).toHaveLength(baseline + 2);
 });
+
+describe('automatic snapshot request coordination', () => {
+  it('shares one initial read across reconnect, visibility and online signals, then permits a later read', async () => {
+    const initial = deferredResponse();
+    vi.mocked(fetch).mockResolvedValueOnce(response(worlds)).mockImplementationOnce(() => initial.promise);
+    const { result } = renderHook(() => useKingdoms());
+    await waitFor(() => expect(result.current.worldId).toBe('world-1'));
+    await act(async () => {
+      socket.handlers.get('connect')?.();
+      window.dispatchEvent(new Event('online'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
+    await act(async () => { initial.resolve(response(snapshot(2, now + 1000))); await initial.promise; });
+    expect(result.current.view?.revision).toBe(2);
+    vi.mocked(fetch).mockResolvedValueOnce(response(snapshot(3, now + 2000)));
+    await act(async () => window.dispatchEvent(new Event('online')));
+    expect(result.current.view?.revision).toBe(3);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not replace a newer successful refresh with an older request failure', async () => {
+    const { result } = renderHook(() => useKingdoms());
+    await waitFor(() => expect(result.current.view?.revision).toBe(1));
+    let reject!: (error: Error) => void;
+    const oldRead = new Promise<Response>((_, fail) => { reject = fail; });
+    vi.mocked(fetch).mockImplementationOnce(() => oldRead).mockResolvedValueOnce(response(snapshot(9, now + 2000)));
+    let first!: Promise<void>;
+    act(() => { first = result.current.refresh(); });
+    await act(() => result.current.refresh());
+    await act(async () => { reject(new Error('تحديث قديم فشل')); await first; });
+    expect(result.current.view?.revision).toBe(9);
+    expect(result.current.error).toBe('');
+  });
+});

@@ -1,4 +1,5 @@
 import { captureReport, classifyReport } from './report-events';
+import { accrueResources } from './resource-accrual';
 import { awardVillageXp, progressionConfig, refreshProgression } from './progression';
 import { completeConstruction, normalizeConstruction } from './construction';
 import { creditAllianceEvent } from './alliance-events';
@@ -207,7 +208,7 @@ function accrue(w: KingdomsWorld, to: number) {
     const elapsed = Math.max(0, to - v.updatedAt) / 3600000;
     const rate = production(w, v, deployed.get(v.id) ?? emptyTroops());
     const before = { ...v.resources };
-    credit(w, v, Object.fromEntries(resourceKeys.map((k) => [k, rate[k] * elapsed])) as Resources);
+    v.resources = accrueResources(v.resources, rate, to - v.updatedAt, capacity(w, v));
     if (elapsed > 0) {
       const bucket = v.productionReport?.ownerId === v.ownerId
         ? v.productionReport
@@ -618,6 +619,7 @@ export function advanceDraft(w: KingdomsWorld, now: number) {
     advanceCaravan(w, next);
   }
   accrue(w, end);
+  advanceCaravan(w, end);
   refreshProgression(w, deployedTroops(w));
   w.updatedAt = end;
   pruneResourceSiteStocks(w, end);
@@ -674,14 +676,10 @@ export function advanceCaravan(state: KingdomsWorld, now: number) {
   );
 }
 
-export function canInterceptCaravan(state: KingdomsWorld, carrierId: string): boolean {
+export function canInterceptCaravan(state: KingdomsWorld, carrierId: string, at = state.updatedAt): boolean {
   const caravan = state.caravans?.find((c) => c.id === carrierId);
   if (!caravan || caravan.status !== 'traveling' || !caravan.exposed) return false;
-  const window = state.config.caravans?.interceptWindowSeconds ?? 60;
-  return (
-    Date.now() >= caravan.departsAt - window * 1000 &&
-    Date.now() <= caravan.arrivesAt + window * 1000
-  );
+  return at >= caravan.departsAt && at < caravan.arrivesAt;
 }
 
 export function interceptCaravan(

@@ -57,6 +57,8 @@ export function useKingdoms(initialWorldId = '') {
   const mutating = useRef(false);
   const mutationWorld = useRef<string | null>(null);
   const generation = useRef(0);
+  const readAttempt = useRef(0);
+  const automaticRead = useRef<{ worldId: string; version: number; promise: Promise<void> } | null>(null);
   const viewRevision = useRef<{ worldId: string; revision: number } | null>(null);
   useEffect(() => {
     viewRevision.current = view ? { worldId: view.worldId, revision: view.revision } : null;
@@ -115,6 +117,7 @@ export function useKingdoms(initialWorldId = '') {
   const refresh = useCallback(async () => {
     if (!worldId || mutationWorld.current === worldId) return;
     const version = generation.current;
+    const attempt = ++readAttempt.current;
     try {
       const result = await request<WorldView>(
         `/api/kingdoms?worldId=${encodeURIComponent(worldId)}`,
@@ -123,37 +126,38 @@ export function useKingdoms(initialWorldId = '') {
         const known = viewRevision.current;
         viewRevision.current = { worldId: result.worldId, revision: Math.max(result.revision, known?.worldId === result.worldId ? known.revision : -1) };
         setView((current) => latestView(current, result));
-        setError('');
+        if (attempt === readAttempt.current) setError('');
       }
     } catch (failure) {
-      if (version === generation.current) setError((failure as Error).message);
+      if (version === generation.current && attempt === readAttempt.current)
+        setError((failure as Error).message);
     } finally {
       if (version === generation.current) setLoading(false);
     }
   }, [worldId]);
+  // Polling, visibility, reconnect and revision signals share one pending read.
+  // Explicit refresh stays independent so the player can recover a stalled read.
+  const automaticRefresh = useCallback(() => {
+    const version = generation.current;
+    const current = automaticRead.current;
+    if (current?.worldId === worldId && current.version === version) return current.promise;
+    const pendingRead = { worldId, version, promise: refresh() };
+    automaticRead.current = pendingRead;
+    void pendingRead.promise.then(() => {
+      if (automaticRead.current === pendingRead) automaticRead.current = null;
+    });
+    return pendingRead.promise;
+  }, [refresh, worldId]);
   useEffect(() => {
     if (!worldId) return;
-    const version = generation.current;
-    void request<WorldView>(`/api/kingdoms?worldId=${encodeURIComponent(worldId)}`)
-      .then((result) => {
-        if (version === generation.current && mutationWorld.current !== worldId) {
-          setView((current) => latestView(current, result));
-          setError('');
-        }
-      })
-      .catch((failure) => {
-        if (version === generation.current) setError((failure as Error).message);
-      })
-      .finally(() => {
-        if (version === generation.current) setLoading(false);
-      });
+    void automaticRefresh();
     const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState === 'visible') void automaticRefresh();
     }, 15000);
     const visible = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState === 'visible') void automaticRefresh();
     };
-    const online = () => void refresh();
+    const online = () => void automaticRefresh();
     document.addEventListener('visibilitychange', visible);
     window.addEventListener('online', online);
     return () => {
@@ -162,7 +166,7 @@ export function useKingdoms(initialWorldId = '') {
       document.removeEventListener('visibilitychange', visible);
       window.removeEventListener('online', online);
     };
-  }, [refresh, worldId]);
+  }, [automaticRefresh, worldId]);
   useEffect(() => {
     if (!worldId) return;
     const socket = io(
@@ -175,7 +179,7 @@ export function useKingdoms(initialWorldId = '') {
     );
     socket.on('connect', () => {
       socket.emit('kingdoms:watch', { worldId });
-      void refresh();
+      void automaticRefresh();
     });
     let current = true;
     let pendingRevision = -1;
@@ -187,7 +191,7 @@ export function useKingdoms(initialWorldId = '') {
       try {
         while (current && pendingRevision > handledRevision) {
           const demanded = pendingRevision;
-          await refresh();
+          await automaticRefresh();
           const applied = viewRevision.current?.worldId === worldId ? viewRevision.current.revision : -1;
           // A skipped/failed/lagging GET has not acknowledged this revision. The next
           // heartbeat or authorization poll retries it without a synchronous loop.
@@ -210,7 +214,7 @@ export function useKingdoms(initialWorldId = '') {
       current = false;
       socket.disconnect();
     };
-  }, [refresh, worldId]);
+  }, [automaticRefresh, worldId]);
   const send = useCallback(
     async (command: KingdomsCommand) => {
       if (mutating.current) return;

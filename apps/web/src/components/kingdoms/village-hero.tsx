@@ -7,6 +7,7 @@ import { villageProgress } from '@/lib/kingdoms/stages';
 import { resourceKeys, unitKeys } from '@/lib/kingdoms/types';
 import { date, labels, number, rateAmount, type GameProps } from './shared';
 import { ResourceIcon } from './resource-icon';
+import { useResourceStock } from './use-resource-stock';
 import styles from './village.module.css';
 
 /**
@@ -14,6 +15,7 @@ import styles from './village.module.css';
  * ميزان الغذاء (الإجمالي / الإعاشة / الصافي) يظهر عند الطلب فقط.
  */
 export function VillageHero({ view, village }: Pick<GameProps, 'view' | 'village'>) {
+  const stock = useResourceStock(view, village);
   const progress = villageProgress(village, view.config);
   const level = village.progression?.level ?? progress.levels;
   const power = village.progression?.power.total;
@@ -53,8 +55,8 @@ export function VillageHero({ view, village }: Pick<GameProps, 'view' | 'village
         <ul>
           {resourceKeys.map((key) => {
             const fill =
-              capacity > 0 ? Math.min(100, Math.round((village.resources[key] / capacity) * 100)) : 0;
-            const full = capacity > 0 && village.resources[key] >= capacity;
+              capacity > 0 ? Math.min(100, Math.round((stock[key] / capacity) * 100)) : 0;
+            const full = capacity > 0 && stock[key] >= capacity;
             const hourly = rate[key];
             return (
               <li
@@ -67,7 +69,7 @@ export function VillageHero({ view, village }: Pick<GameProps, 'view' | 'village
                   <ResourceIcon resource={key} size={24} />
                   <span className={styles.stockLabel}>{labels[key]}</span>
                 </span>
-                <span className={styles.stockValue}>{number(village.resources[key])}</span>
+                <span className={styles.stockValue}>{number(stock[key])}</span>
                 {key === 'food' ? (
                   <button
                     type="button"

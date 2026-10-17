@@ -107,7 +107,7 @@ test.describe('administrator console', () => {
     await page.getByRole('button', { name: 'دخول بالبريد' }).click();
 
     await expect(page).toHaveURL(/\/admin\/?$/);
-    await expect(page.getByRole('heading', { name: 'إدارة تحدّي' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'إدارة المنصة', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: 'الصلاحيات' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'سجل النشاط' })).toBeVisible();
   });

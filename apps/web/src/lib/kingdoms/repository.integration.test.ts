@@ -133,6 +133,42 @@ describe.skipIf(!databaseUrl)('Kingdoms PostgreSQL serialization', () => {
     return { ...fixtureData, state };
   }
 
+  it('preserves a full-storage quest claim and archives one receipt after concurrent retries', async () => {
+    const { worldId, identities: [actor], state } = await fixture();
+    const village = Object.values(state.villages)[0];
+    village.buildings.lumber = 1;
+    village.resources.food = state.config.storageBase;
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(state)) as Prisma.InputJsonValue },
+    });
+    const idempotencyKey = key();
+    const command = { type: 'claim', mission: 'builder' };
+    await expect(repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db))
+      .rejects.toThrow(/سعة/);
+    const failed = await stateOf(worldId);
+    expect(failed.row.revision).toBe(0);
+    expect(failed.state.players[actor.id].claims).toEqual([]);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(0);
+    failed.state.villages[village.id].resources.food -= state.config.questReward.food;
+    await db.kingdomWorld.update({
+      where: { id: worldId },
+      data: { state: JSON.parse(JSON.stringify(failed.state)) as Prisma.InputJsonValue },
+    });
+    await Promise.all([
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
+      repository.commandKingdomWorld(worldId, actor, idempotencyKey, command, db),
+    ]);
+    const saved = await stateOf(worldId);
+    expect(saved.row.revision).toBe(1);
+    expect(saved.state.villages[village.id].resources.food).toBe(state.config.storageBase);
+    expect(saved.state.villages[village.id].resources.gold).toBe(100 + state.config.questReward.gold);
+    expect(saved.state.players[actor.id].claims).toEqual(['builder']);
+    expect(await db.kingdomCommand.count({ where: { worldId } })).toBe(1);
+    expect(await db.kingdomReportEntry.count({ where: { worldId, playerId: actor.id, eventKey: 'quest.claimed' } }))
+      .toBe(1);
+  });
+
   it('farm: serializes distinct simultaneous planting keys on the same plot', async () => {
     const { worldId, identities: [actor], state } = await fixture();
     const village = Object.values(state.villages)[0];

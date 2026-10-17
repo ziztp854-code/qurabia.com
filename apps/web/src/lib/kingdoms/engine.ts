@@ -19,7 +19,7 @@ import { normalizeWorldState } from './world-compatibility';
 import { kingdomsCommandSchema, type KingdomsCommand } from './commands';
 import {
   advanceDraft,
-  advanceCaravan,
+  canInterceptCaravan,
   interceptCaravan,
   nonAggression,
   assertRule,
@@ -102,7 +102,6 @@ export function advanceWorld(state: KingdomsWorld, now: number): KingdomsWorld {
   const w = normalizeWorldState(state);
   normalizeCommanders(w);
   advanceDraft(w, Math.max(now, w.updatedAt));
-  advanceCaravan(w, Math.max(now, w.updatedAt));
   return w;
 }
 export function nextEventAt(w: KingdomsWorld): number | null {
@@ -527,7 +526,7 @@ function alliance(
     `${a.name}: ${c.status === 'war' ? 'إعلان حرب' : c.status === 'ally' ? 'اقتراح تحالف' : 'اقتراح سلام'}`,
   );
 }
-function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { type: 'claim' }>) {
+function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { type: 'claim' }>, at: number) {
   const p = w.players[actor],
     villages = Object.values(w.villages).filter((v) => v.ownerId === actor).sort((a,b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
   assertRule(!p.claims.includes(c.mission), 'استلمت المكافأة مسبقاً');
@@ -540,6 +539,10 @@ function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { ty
         ? villages.some((v) => total(v.troops) >= 10)
         : p.achievements.includes(c.mission);
   assertRule(ready, 'المهمة غير مكتملة');
+  assertRule(
+    resourceKeys.every((key) => villages[0].resources[key] + w.config.questReward[key] <= capacity(w, villages[0])),
+    'لا توجد سعة كافية في مخزن العاصمة لاستلام المكافأة كاملة',
+  );
   p.claims = [...p.claims, c.mission];
   p.achievements = [...new Set([...p.achievements, c.mission])];
   p.score += w.config.questScore;
@@ -549,6 +552,14 @@ function claim(w: KingdomsWorld, actor: string, c: Extract<KingdomsCommand, { ty
     const commanderId = villages.find((v) => v.commanderId && total(v.troops) >= 10)?.commanderId;
     if (commanderId && w.commanders?.[commanderId]?.playerId === actor) addCommanderExperience(w, commanderId, commanderConfig(w).questXp);
   }
+  const village = villages[0];
+  report(w, at, [actor], 'استلام مكافأة المهمة', `أُضيفت مكافأة المهمة كاملة إلى مخازن ${village.name}.`, {
+    event: {
+      key: 'quest.claimed', sourceId: c.mission, category: 'economy',
+      resources: { received: { ...w.config.questReward } },
+      location: { villageId: village.id, name: village.name, x: village.x, y: village.y },
+    },
+  });
 }
 function caravanSend(
   w: KingdomsWorld,
@@ -572,6 +583,8 @@ function caravanSend(
   const distance = Math.hypot(target.x - v.x, target.y - v.y);
   const speed = w.config.caravans?.baseSpeedTilesPerSecond ?? 4;
   const travelMs = Math.max(1000, Math.ceil((distance * w.config.secondsPerTile * 1000) / speed));
+  const arrivesAt = deadline(at, travelMs);
+  assertRule(arrivesAt <= w.season.endsAt, 'لا يكفي وقت الموسم لوصول القافلة');
   spend(v, c.resources);
   w.caravans.push({
     id: nextId(w, 'cv'),
@@ -580,7 +593,7 @@ function caravanSend(
     targetVillageId: c.targetVillageId,
     resources: { ...c.resources },
     departsAt: at,
-    arrivesAt: at + travelMs,
+    arrivesAt,
     status: 'traveling',
     route,
     exposed: true,
@@ -613,7 +626,8 @@ function caravanIntercept(
   at: number,
 ) {
   const carrier = w.caravans.find((cv) => cv.id === c.carrierId);
-  assertRule(carrier && carrier.status === 'traveling', 'القافلة غير متاحة للاعتراض');
+  assertRule(carrier && canInterceptCaravan(w, c.carrierId, at), 'القافلة غير متاحة للاعتراض');
+  assertRule(carrier.ownerId !== actor, 'لا يمكن اعتراض قافلة مملكتك');
   const v = own(w, actor, c.villageId);
   assertRule(total(c.troops) > 0 && unitKeys.every((k) => v.troops[k] >= c.troops[k]), 'القوات غير متاحة');
   // Interception resolves immediately and defines no casualties or deployed army.
@@ -802,7 +816,7 @@ export function executeCommand(
         claimAllianceEvent(w, actorId, c, at);
         break;
       case 'claim':
-        claim(w, actorId, c);
+        claim(w, actorId, c, at);
         break;
       case 'throne': {
         const v = own(w, actorId, c.villageId);
