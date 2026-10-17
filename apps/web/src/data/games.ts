@@ -19,6 +19,10 @@ export type PublicGame = {
 };
 
 const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
+  'intelligence-test': {
+    image: '/game-art/catalog-v2/intelligence-test.svg',
+    imageAlt: 'مسارات منطق ذهبية تتصل عبر ثلاث مراحل في تحدي الذكاء',
+  },
   'fastest-button': {
     image: '/game-art/catalog-v2/fastest-button.svg',
     imageAlt: 'زر منافسة أحمر ثلاثي الأبعاد على قاعدة ذهبية تحت إشارة الاستعداد',

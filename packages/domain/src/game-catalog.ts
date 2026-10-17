@@ -176,7 +176,7 @@ export type GameCategory =
 
 export interface EnhancedGameMeta {
   id: string;
-  mode: SpecialGameMode | InstantGameMode | 'kingdoms' | 'fastest-button';
+  mode: SpecialGameMode | InstantGameMode | 'kingdoms' | 'fastest-button' | 'intelligence-test';
   kind: GameKind;
   title: string;
   shortTitle: string;
@@ -223,6 +223,28 @@ export interface GameSearchSuggestion {
 }
 
 export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
+  {
+    id: 'intelligence-test',
+    mode: 'intelligence-test',
+    kind: 'instant',
+    title: 'تحدي الذكاء',
+    shortTitle: 'تحدي الذكاء',
+    description:
+      '18 سؤالًا متدرجًا في المنطق والأعداد والأنماط، مع تقييم ترفيهي وتقرير أداء قابل للطباعة والحفظ PDF.',
+    minimumPlayers: 1,
+    maximumPlayers: 1,
+    roundSeconds: 0,
+    contentLabel: '18 سؤالًا · دون مؤقت',
+    year: 2026,
+    difficulty: 3,
+    platforms: ['web', 'mobile', 'pwa'],
+    categories: ['ذكاء', 'تركيز'],
+    tags: ['ذكاء', 'منطق', 'أنماط', 'تقرير', 'PDF'],
+    accent: 'var(--primary)',
+    href: '/games/intelligence-test',
+    requiresRealtime: false,
+    requiresAuth: false,
+  },
   {
     id: 'fastest-button',
     mode: 'fastest-button',

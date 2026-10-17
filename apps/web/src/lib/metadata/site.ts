@@ -28,6 +28,12 @@ export const SHARE_IMAGE = {
 
 export const PUBLIC_GAME_PAGES = [
   {
+    slug: 'intelligence-test',
+    title: 'تحدي الذكاء',
+    description:
+      'لعبة منطق وأنماط من 18 سؤالًا متدرجًا مع تقرير أداء ترفيهي قابل للطباعة والحفظ PDF.',
+  },
+  {
     slug: 'parallel-world',
     title: 'العالم الموازي',
     description:

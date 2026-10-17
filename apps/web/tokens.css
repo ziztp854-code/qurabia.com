@@ -431,3 +431,27 @@
   --fastest-success: #16A67A;
   --fastest-text: #FFFFFF;
 }
+
+/* Paper report colors, independent of the selected screen theme. */
+:root {
+  --report-ink: #111827;
+  --report-gold: #704b12;
+  --report-paper: #ffffff;
+  --report-rule: #aaaaaa;
+}
+
+/* Decorative metals and chart accents for the illustrated intelligence report. */
+:root {
+  --report-shadow: rgb(16 29 52 / 0.1);
+  --report-ivory: #fffbf3;
+  --report-navy: #101d34;
+  --report-metal-dark: #8b520c;
+  --report-metal: #d89a25;
+  --report-metal-light: #ffedaf;
+  --report-chart-red: #ef334b;
+  --report-chart-orange: #f3ad20;
+  --report-chart-cyan: #19aec4;
+  --report-chart-green: #37ae59;
+  --report-chart-blue: #2c81f1;
+  --report-chart-purple: #8b3fda;
+}
