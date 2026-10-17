@@ -11,7 +11,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureMessage('Application error');
+    Sentry.captureException(error);
   }, [error]);
 
   return (

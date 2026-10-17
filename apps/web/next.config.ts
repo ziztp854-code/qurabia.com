@@ -3,6 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { NextConfig } from 'next';
 import { withWorkflow } from 'workflow/next';
+import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { resolveSentryBuildRelease } from './src/lib/observability/sentry-release';
 
 function loadEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) return;
@@ -37,6 +40,18 @@ if (
 const isProduction = process.env.NODE_ENV === 'production';
 const onVercel = process.env.VERCEL === '1';
 const sentrySourceMapsToken = process.env.SENTRY_SOURCE_MAPS_AUTH_TOKEN?.trim();
+let buildRevision: string;
+try {
+  buildRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+} catch {
+  buildRevision = `build-${randomUUID()}`;
+}
+const sentryRelease = resolveSentryBuildRelease(process.env, buildRevision);
+// Share the same fallback with build workers even in source archives without Git.
+process.env.NEXT_PUBLIC_SENTRY_RELEASE = sentryRelease;
 
 function toOrigin(value: string | undefined): string | null {
   const trimmed = value?.trim();
@@ -134,6 +149,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease },
   ...(process.env.MAMLUK_LOCAL_BUILD === '1' ? { distDir: '.next-mamluk' } : {}),
   serverExternalPackages: ['@mamluk/world-map-core', 'polygon-clipping'],
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
@@ -209,6 +225,7 @@ export default sentrySourceMapsToken
       org: 'qurabia',
       project: 'javascript-nextjs',
       authToken: sentrySourceMapsToken,
+      release: { name: sentryRelease },
       silent: !process.env.CI,
       webpack: {
         treeshake: { removeDebugLogging: true },

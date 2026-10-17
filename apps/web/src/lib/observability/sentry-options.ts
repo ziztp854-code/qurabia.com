@@ -1,9 +1,35 @@
-import type { ErrorEvent, Event } from '@sentry/nextjs';
+import type { ErrorEvent, Event, StackFrame } from '@sentry/nextjs';
 
 type SentryEnvironment = Record<string, string | undefined>;
 type TransactionEvent = Event & { type: 'transaction' };
 
 const DEFAULT_TRACES_SAMPLE_RATE = 0.02;
+const ERROR_CODES: Record<string, string> = {
+  Error: 'WEB_ERROR',
+  TypeError: 'WEB_TYPE_ERROR',
+  ReferenceError: 'WEB_REFERENCE_ERROR',
+  RangeError: 'WEB_RANGE_ERROR',
+  SyntaxError: 'WEB_SYNTAX_ERROR',
+  URIError: 'WEB_URI_ERROR',
+  EvalError: 'WEB_EVAL_ERROR',
+  AggregateError: 'WEB_AGGREGATE_ERROR',
+};
+
+function sanitizeFrame(frame: StackFrame): StackFrame | undefined {
+  // Keep only compiled application locations. Never send origins, query strings,
+  // function names, source context, local variables, or arbitrary file paths.
+  const filename = frame.filename?.split(/[?#]/, 1)[0];
+  const match = filename?.match(
+    /(?:^|\/)((?:_next\/static|\.next\/server)\/(?:[A-Za-z0-9_@()[\].-]+\/)*[A-Za-z0-9_@()[\].-]+\.(?:js|mjs))$/,
+  );
+  if (!match || match[1].split('/').includes('..')) return undefined;
+  return {
+    filename: match[1].startsWith('_next/') ? `/${match[1]}` : `app:///${match[1]}`,
+    lineno: Number.isSafeInteger(frame.lineno) && frame.lineno! > 0 ? frame.lineno : undefined,
+    colno: Number.isSafeInteger(frame.colno) && frame.colno! >= 0 ? frame.colno : undefined,
+    in_app: true,
+  };
+}
 
 function optionalValue(value: string | undefined) {
   const normalized = value?.trim();
@@ -28,10 +54,18 @@ export function sanitizeSentryEvent(event: ErrorEvent): ErrorEvent {
     message: event.message ? 'Application error' : undefined,
     exception: event.exception?.values
       ? {
-          values: event.exception.values.map(() => ({
-            type: 'Error',
-            value: '[redacted]',
-          })),
+          values: event.exception.values.map((exception) => {
+            const knownType = exception.type && Object.hasOwn(ERROR_CODES, exception.type);
+            const type = knownType ? exception.type! : 'Error';
+            const frames = exception.stacktrace?.frames
+              ?.map(sanitizeFrame)
+              .filter((frame): frame is StackFrame => Boolean(frame));
+            return {
+              type,
+              value: ERROR_CODES[type],
+              stacktrace: frames?.length ? { frames } : undefined,
+            };
+          }),
         }
       : undefined,
   };
