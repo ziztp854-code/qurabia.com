@@ -55,6 +55,73 @@ describe('BalootService', () => {
     return { roomCode, players };
   }
 
+  it.each([0, 1, 2, 3])(
+    'completes the deal once when seat %i buys, giving them the exposed card',
+    async (buyer) => {
+      const { roomCode, players } = await fillRoom();
+      for (const player of players)
+        await service.setReady(roomCode, player.sessionToken, true);
+      await service.startGame(roomCode, players[0].sessionToken);
+      const before = await Promise.all(
+        players.map((player) =>
+          service.getSnapshot(roomCode, player.sessionToken),
+        ),
+      );
+      const purchaseCard = before[0]!.purchaseCard!;
+      for (let step = 0; step < buyer + 4; step += 1) {
+        const seat = step % 4;
+        const snapshot = (await service.getSnapshot(
+          roomCode,
+          players[seat].sessionToken,
+        ))!;
+        const result = await service.bid(roomCode, players[seat].sessionToken, {
+          bid: step === buyer ? { mode: 'sun' } : { mode: 'pass' },
+          expectedVersion: snapshot.stateVersion,
+          commandId: `staged-${step}`,
+        });
+        expect(result.ok).toBe(true);
+      }
+      const after = await Promise.all(
+        players.map((player) =>
+          service.getSnapshot(roomCode, player.sessionToken),
+        ),
+      );
+      for (let seat = 0; seat < 4; seat += 1) {
+        expect(after[seat]!.phase).toBe('DOUBLING');
+        expect(after[seat]!.yourHand).toHaveLength(8);
+        expect(after[seat]!.yourHand).toEqual(
+          expect.arrayContaining(before[seat]!.yourHand),
+        );
+        expect(after[seat]!.purchaseCard).toBeNull();
+      }
+      expect(after[buyer]!.yourHand).toContainEqual(purchaseCard);
+      expect(
+        new Set(
+          after.flatMap((snapshot) =>
+            snapshot!.yourHand.map((card) => card.id),
+          ),
+        ).size,
+      ).toBe(32);
+      const bidder = after[0]!.bidder;
+      const accepted = await service.bid(
+        roomCode,
+        players[bidder].sessionToken,
+        {
+          bid: { mode: 'accept' },
+          expectedVersion: after[bidder]!.stateVersion,
+          commandId: 'staged-accept',
+        },
+      );
+      expect(accepted.ok).toBe(true);
+      const playing = (await service.getSnapshot(
+        roomCode,
+        players[0].sessionToken,
+      ))!;
+      expect(playing.phase).toBe('PLAYING');
+      expect(playing.yourHand).toHaveLength(8);
+    },
+  );
+
   it('creates four fixed seats with opposite partners and random session tokens', async () => {
     const { roomCode, players } = await fillRoom();
 
@@ -118,11 +185,18 @@ describe('BalootService', () => {
     const hands = [];
     for (const player of players) {
       const snapshot = await service.getSnapshot(roomCode, player.sessionToken);
-      expect(snapshot?.yourHand).toHaveLength(8);
+      expect(snapshot?.yourHand).toHaveLength(5);
       expect(snapshot?.seats.every((seat) => !('hand' in seat))).toBe(true);
+      expect(snapshot?.purchaseCard).toBeTruthy();
+      expect(snapshot).not.toHaveProperty('remainingDeck');
+      expect(
+        snapshot?.yourHand.some(
+          (card) => card.id === snapshot.purchaseCard?.id,
+        ),
+      ).toBe(false);
       hands.push(snapshot?.yourHand ?? []);
     }
-    expect(new Set(hands.flat().map((card) => card.id)).size).toBe(32);
+    expect(new Set(hands.flat().map((card) => card.id)).size).toBe(20);
     const hostPayload = JSON.stringify(
       await service.getSnapshot(roomCode, players[0].sessionToken),
     );
@@ -143,7 +217,7 @@ describe('BalootService', () => {
       players[0].sessionToken,
     ))!;
     await service.bid(roomCode, players[0].sessionToken, {
-      bid: { mode: 'hokum', trump: 'spades' },
+      bid: { mode: 'hokum', trump: 'hearts' },
       expectedVersion: bidding.stateVersion,
       commandId: 'scoring-bid',
     });
@@ -617,7 +691,7 @@ describe('BalootService', () => {
     expect(after.phase).toBe('BIDDING');
     expect(after.auctionRound).toBe(2);
     expect(after.bidder).toBe(0);
-    expect(after.yourHand).toHaveLength(8);
+    expect(after.yourHand).toHaveLength(5);
     expect(after.availableBids.some((bid) => bid.mode === 'sun')).toBe(false);
     expect(after.availableBids.some((bid) => bid.mode === 'hokum')).toBe(true);
   });
@@ -661,7 +735,7 @@ describe('BalootService', () => {
     // the auction to round 1.
     expect(after.phase).toBe('BIDDING');
     expect(after.auctionRound).toBe(1);
-    expect(after.yourHand).toHaveLength(8);
+    expect(after.yourHand).toHaveLength(5);
 
     // The new dealer (next seat after the previous dealer) is now the first
     // bidder and must see the full set of round-1 options, including SUN.

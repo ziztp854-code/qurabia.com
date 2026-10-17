@@ -118,6 +118,10 @@ export type BalootRoom = {
    * DOUBLING phase, this seat must answer the pending double.
    */
   bidder: number;
+  /** Private undealt cards; optional for rooms created before staged dealing. */
+  remainingDeck?: BalootCard[];
+  purchaseCard?: BalootCard | null;
+  dealerSeat?: number;
   /** Seat that owns the contract for scoring purposes. */
   buyerPlayerId: number;
   /**
@@ -183,6 +187,7 @@ export type BalootSnapshot = {
   yourSeat: number;
   yourTeam: BalootTeam;
   yourHand: BalootCard[];
+  purchaseCard?: BalootCard | null;
   /**
    * Full contract state including buyer, multiplier and auction round.
    * `null` until the auction closes.

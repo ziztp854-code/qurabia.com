@@ -56,6 +56,7 @@ export type BalootSnapshot = {
   yourSeat: number;
   yourTeam: 'A' | 'B';
   yourHand: BalootCard[];
+  purchaseCard?: BalootCard | null;
   contract: BalootContractState | null;
   /** Last contract offered in the auction (null before the first bid). */
   lastContract: BalootContractState | null;
@@ -336,7 +337,12 @@ export function useBalootSocket() {
 
   const leave = useCallback(() => {
     const socket = socketRef.current;
+    let finished = false;
+    let fallback: number | undefined;
     const finishLeave = () => {
+      if (finished || socketRef.current !== socket) return;
+      finished = true;
+      window.clearTimeout(fallback);
       busyRef.current = false;
       pendingRef.current = null;
       clearSavedSession();
@@ -346,14 +352,14 @@ export function useBalootSocket() {
       setRestoring(false);
       if (socket) {
         socket.disconnect();
-        window.setTimeout(() => socket.connect(), 0);
+        window.setTimeout(() => { if (socketRef.current === socket) socket.connect(); }, 0);
       }
     };
     if (socket?.connected) {
+      fallback = window.setTimeout(finishLeave, COMMAND_ACK_TIMEOUT_MS);
       socket.timeout(COMMAND_ACK_TIMEOUT_MS).emit('baloot:leave', {}, () => {
         finishLeave();
       });
-      window.setTimeout(finishLeave, COMMAND_ACK_TIMEOUT_MS);
       return;
     }
     finishLeave();

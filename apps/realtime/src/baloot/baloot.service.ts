@@ -166,6 +166,25 @@ function findOpposingPlayer(room: BalootRoom, declarerSeat: number): number {
   return -1;
 }
 
+/** Finish the staged deal exactly once; legacy full-hand rooms need no cards. */
+function completeDeal(room: BalootRoom): void {
+  if (!room.contract || !room.remainingDeck?.length || !room.purchaseCard)
+    return;
+  const buyer = room.contract.buyerSeat;
+  let offset = 0;
+  for (let step = 1; step <= MAX_PLAYERS; step += 1) {
+    const seatIndex = ((room.dealerSeat ?? 3) + step) % MAX_PLAYERS;
+    const seat = room.seats[seatIndex];
+    if (!seat) continue;
+    const count = seatIndex === buyer ? 2 : 3;
+    seat.hand.push(...room.remainingDeck.slice(offset, offset + count));
+    offset += count;
+    if (seatIndex === buyer) seat.hand.push({ ...room.purchaseCard });
+  }
+  room.remainingDeck = [];
+  room.purchaseCard = null;
+}
+
 /**
  * Closes the auction and transitions the table into PLAYING. The
  * declarer's seat becomes the leader and the first to play. The buyer
@@ -173,6 +192,7 @@ function findOpposingPlayer(room: BalootRoom, declarerSeat: number): number {
  * round's "owner" for scoring purposes.
  */
 function startPlay(room: BalootRoom): void {
+  completeDeal(room);
   if (!room.contract) return;
   const contract = room.contract.mode;
   room.projectDeclarations = room.seats.flatMap((seat) =>
@@ -396,7 +416,12 @@ export class BalootService {
         return this.failure('NOT_HOST', 'المضيف وحده يبدأ الصكة التالية.');
       if (found.room.phase !== 'ROUND_RESULT')
         return this.failure('INVALID_PHASE', 'الصكة الحالية لم تنته بعد.');
-      this.dealRound(found.room, (found.room.bidder + 1) % MAX_PLAYERS);
+      this.dealRound(
+        found.room,
+        (found.room.dealerSeat === undefined
+          ? found.room.bidder + 1
+          : found.room.dealerSeat + 2) % MAX_PLAYERS,
+      );
       await this.persist(found.room);
       return {
         ok: true as const,
@@ -515,7 +540,12 @@ export class BalootService {
             found.room.lastContract = null;
           } else {
             // Second round also passed out: redeal to the next dealer.
-            this.dealRound(found.room, (found.room.bidder + 1) % MAX_PLAYERS);
+            this.dealRound(
+              found.room,
+              (found.room.dealerSeat === undefined
+                ? found.room.bidder + 1
+                : found.room.dealerSeat + 2) % MAX_PLAYERS,
+            );
             await this.persist(found.room);
             return {
               ok: true as const,
@@ -545,6 +575,7 @@ export class BalootService {
         found.room.passCount = 0;
         // Open the doubling phase so the opponent can react to the
         // new contract. The opponent team gets the first action.
+        completeDeal(found.room);
         found.room.phase = 'DOUBLING';
         found.room.bidder = findOpposingPlayer(found.room, partner);
         found.room.pendingDouble = null;
@@ -584,6 +615,7 @@ export class BalootService {
         found.room.passCount === MAX_PLAYERS - 1
       ) {
         found.room.passCount = 0;
+        completeDeal(found.room);
         found.room.phase = 'DOUBLING';
         found.room.bidder = findOpposingPlayer(
           found.room,
@@ -819,6 +851,10 @@ export class BalootService {
       yourSeat: viewer.seat,
       yourTeam: viewer.team,
       yourHand: viewer.hand.map((card) => ({ ...card })),
+      purchaseCard:
+        room.phase === 'BIDDING' && room.purchaseCard
+          ? { ...room.purchaseCard }
+          : null,
       contract: room.contract ? { ...room.contract } : null,
       lastContract: room.lastContract ? { ...room.lastContract } : null,
       buyerPlayerId: room.buyerPlayerId,
@@ -991,6 +1027,10 @@ export class BalootService {
         yourSeat: viewer.seat,
         yourTeam: viewer.team,
         yourHand: viewer.hand.map((card) => ({ ...card })),
+        purchaseCard:
+          room.phase === 'BIDDING' && room.purchaseCard
+            ? { ...room.purchaseCard }
+            : null,
         contract: room.contract ? { ...room.contract } : null,
         lastContract: room.lastContract ? { ...room.lastContract } : null,
         buyerPlayerId: room.buyerPlayerId,
@@ -1046,9 +1086,21 @@ export class BalootService {
       ...card,
       id: `${card.suit}-${card.rank}`,
     }));
-    room.seats.forEach((seat, index) => {
-      if (seat) seat.hand = deck.slice(index * 8, index * 8 + 8);
+    room.dealerSeat = (bidder + MAX_PLAYERS - 1) % MAX_PLAYERS;
+    room.seats.forEach((seat) => {
+      if (seat) seat.hand = [];
     });
+    let offset = 0;
+    // Saudi deal: three cards, then two, starting after the dealer.
+    for (const count of [3, 2]) {
+      for (let step = 0; step < MAX_PLAYERS; step += 1) {
+        const seat = room.seats[(bidder + step) % MAX_PLAYERS];
+        if (seat) seat.hand.push(...deck.slice(offset, offset + count));
+        offset += count;
+      }
+    }
+    room.purchaseCard = deck[offset];
+    room.remainingDeck = deck.slice(offset + 1);
     room.phase = 'BIDDING';
     room.stateVersion += 1;
   }

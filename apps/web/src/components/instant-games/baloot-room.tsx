@@ -10,6 +10,10 @@ import {
   Heart,
   LogIn,
   LogOut,
+  Maximize2,
+  Minimize2,
+  Expand,
+  Shrink,
   Play,
   Radio,
   ShieldCheck,
@@ -20,13 +24,12 @@ import {
   UsersRound,
   Wifi,
   WifiOff,
-  X,
   Zap,
   type LucideIcon,
 } from 'lucide-react';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
-import { Button, Card, Input } from '@/components/ui';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Button, Card, Dialog, Input } from '@/components/ui';
 import { formatNumber } from '@/lib/utils';
 import { balootBidLabel, handFanDegrees, sortHandForDisplay } from './baloot-hand-display';
 import { PlayingCardFace, suitName } from './playing-card-face';
@@ -128,109 +131,110 @@ function multiplierLabel(multiplier: 1 | 2 | 3 | 4) {
 }
 
 function BalootRulesModal({ onClose }: { onClose: () => void }) {
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) onClose();
+    },
+    [onClose],
+  );
   const { cardRawPoints, gameRoundPoints, matchTarget, projectGamePoints, rawRoundPoints } =
     BALOOT_RULES;
 
   return (
-    <div
-      className={styles.rulesBackdrop}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="دليل قوانين البلوت"
+    <Dialog
+      open
+      title="دليل قوانين البلوت"
+      onOpenChange={handleOpenChange}
+      className={styles.rulesModal}
     >
-      <div className={styles.rulesModal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.rulesHeader}>
-          <h3>🃏 دليل وقوانين البلوت الملكية</h3>
-          <button type="button" className={styles.rulesClose} onClick={onClose} aria-label="إغلاق">
-            <X aria-hidden="true" />
-          </button>
+      <div className={styles.rulesGrid}>
+        <div className={styles.rulesCard}>
+          <h4>التوزيع السعودي</h4>
+          <p>
+            ثلاث أوراق ثم ورقتان لكل لاعب، وورقة شراء مكشوفة. بعد حسم الشراء يحصل المشتري عليها
+            ومعها ورقتان، ويأخذ كل لاعب آخر ثلاث أوراق لتكتمل اليد إلى ثماني أوراق.
+          </p>
+          <h4>👑 ترتيب قوة الورق</h4>
+          <ul>
+            <li>
+              <strong>في الصن (Sun):</strong> A &gt; 10 &gt; K &gt; Q &gt; J &gt; 9 &gt; 8 &gt; 7
+            </li>
+            <li>
+              <strong>في الحكم (لون الحكم):</strong> J &gt; 9 &gt; A &gt; 10 &gt; K &gt; Q &gt; 8
+              &gt; 7
+            </li>
+            <li>
+              <strong>في الحكم (الألوان العادية):</strong> A &gt; 10 &gt; K &gt; Q &gt; J &gt; 9
+              &gt; 8 &gt; 7
+            </li>
+          </ul>
         </div>
-        <div className={styles.rulesGrid}>
-          <div className={styles.rulesCard}>
-            <h4>👑 ترتيب قوة الورق</h4>
-            <ul>
-              <li>
-                <strong>في الصن (Sun):</strong> A &gt; 10 &gt; K &gt; Q &gt; J &gt; 9 &gt; 8 &gt; 7
-              </li>
-              <li>
-                <strong>في الحكم (لون الحكم):</strong> J &gt; 9 &gt; A &gt; 10 &gt; K &gt; Q &gt; 8
-                &gt; 7
-              </li>
-              <li>
-                <strong>في الحكم (الألوان العادية):</strong> A &gt; 10 &gt; K &gt; Q &gt; J &gt; 9
-                &gt; 8 &gt; 7
-              </li>
-            </ul>
-          </div>
-          <div className={styles.rulesCard}>
-            <h4>💎 قيمة الأبناط (حساب الورق)</h4>
-            <ul>
-              <li>
-                <strong>الصن:</strong> A = {formatNumber(cardRawPoints.sun.A)}، 10 ={' '}
-                {formatNumber(cardRawPoints.sun['10'])}، K = {formatNumber(cardRawPoints.sun.K)}، Q
-                = {formatNumber(cardRawPoints.sun.Q)}، J = {formatNumber(cardRawPoints.sun.J)}{' '}
-                (إجمالي الورق الخام مع الأرض = {formatNumber(rawRoundPoints.sun)}، ويُحوّل إلى{' '}
-                {formatNumber(gameRoundPoints.sun)} بنطًا).
-              </li>
-              <li>
-                <strong>الحكم:</strong> J = {formatNumber(cardRawPoints.hokum.J)}، 9 ={' '}
-                {formatNumber(cardRawPoints.hokum['9'])}، A = {formatNumber(cardRawPoints.hokum.A)}،
-                10 = {formatNumber(cardRawPoints.hokum['10'])}، K ={' '}
-                {formatNumber(cardRawPoints.hokum.K)}، Q = {formatNumber(cardRawPoints.hokum.Q)}
-                (إجمالي الورق الخام مع الأرض = {formatNumber(rawRoundPoints.hokum)}، ويُحوّل إلى{' '}
-                {formatNumber(gameRoundPoints.hokum)} بنطًا).
-              </li>
-            </ul>
-          </div>
-          <div className={styles.rulesCard}>
-            <h4>🏆 المشاريع (تُكشف في الأكلة الأولى)</h4>
-            <ul>
-              <li>
-                <strong>سرا (3 كروت متتالية):</strong>{' '}
-                {formatNumber(projectGamePoints.run.hokum[3])} في الحكم /{' '}
-                {formatNumber(projectGamePoints.run.sun[3])} في الصن.
-              </li>
-              <li>
-                <strong>خمسين (4 كروت متتالية):</strong>{' '}
-                {formatNumber(projectGamePoints.run.hokum[4])} في الحكم /{' '}
-                {formatNumber(projectGamePoints.run.sun[4])} في الصن.
-              </li>
-              <li>
-                <strong>مية (5 كروت أو 4 متشابهة من 10، Q، K، A):</strong>{' '}
-                {formatNumber(projectGamePoints.run.hokum[5])} في الحكم /{' '}
-                {formatNumber(projectGamePoints.run.sun[5])} في الصن.
-              </li>
-              <li>
-                <strong>أربعمية (4 إكك A):</strong>{' '}
-                {formatNumber(projectGamePoints.fourOfKind.sun.A)} في الصن.
-              </li>
-              <li>
-                <strong>بلوت (شايب وبنت الحكم):</strong>{' '}
-                {formatNumber(BALOOT_RULES.balootGamePoints)} في الحكم (لا تُبطل).
-              </li>
-            </ul>
-          </div>
-          <div className={styles.rulesCard}>
-            <h4>⚡ قوانين اللعب والفوز بالصكة</h4>
-            <ul>
-              <li>
-                <strong>إجبارية اتباع اللون:</strong> يجب لعب نفس لون الورقة الأولى إن كان متاحاً في
-                يدك.
-              </li>
-              <li>
-                <strong>الدق بالحكم:</strong> في عقد الحكم إذا لم يكن لديك اللون الملعوب، يُجبر
-                اللاعب على الدق بورقة حكم.
-              </li>
-              <li>
-                <strong>الفوز بالمباراة:</strong> أول فريق يجمع {formatNumber(matchTarget)} بنطًا
-                يفوز.
-              </li>
-            </ul>
-          </div>
+        <div className={styles.rulesCard}>
+          <h4>💎 قيمة الأبناط (حساب الورق)</h4>
+          <ul>
+            <li>
+              <strong>الصن:</strong> A = {formatNumber(cardRawPoints.sun.A)}، 10 ={' '}
+              {formatNumber(cardRawPoints.sun['10'])}، K = {formatNumber(cardRawPoints.sun.K)}، Q ={' '}
+              {formatNumber(cardRawPoints.sun.Q)}، J = {formatNumber(cardRawPoints.sun.J)} (إجمالي
+              الورق الخام مع الأرض = {formatNumber(rawRoundPoints.sun)}، ويُحوّل إلى{' '}
+              {formatNumber(gameRoundPoints.sun)} بنطًا).
+            </li>
+            <li>
+              <strong>الحكم:</strong> J = {formatNumber(cardRawPoints.hokum.J)}، 9 ={' '}
+              {formatNumber(cardRawPoints.hokum['9'])}، A = {formatNumber(cardRawPoints.hokum.A)}،
+              10 = {formatNumber(cardRawPoints.hokum['10'])}، K ={' '}
+              {formatNumber(cardRawPoints.hokum.K)}، Q = {formatNumber(cardRawPoints.hokum.Q)}
+              (إجمالي الورق الخام مع الأرض = {formatNumber(rawRoundPoints.hokum)}، ويُحوّل إلى{' '}
+              {formatNumber(gameRoundPoints.hokum)} بنطًا).
+            </li>
+          </ul>
+        </div>
+        <div className={styles.rulesCard}>
+          <h4>🏆 المشاريع (تُكشف في الأكلة الأولى)</h4>
+          <ul>
+            <li>
+              <strong>سرا (3 كروت متتالية):</strong> {formatNumber(projectGamePoints.run.hokum[3])}{' '}
+              في الحكم / {formatNumber(projectGamePoints.run.sun[3])} في الصن.
+            </li>
+            <li>
+              <strong>خمسين (4 كروت متتالية):</strong>{' '}
+              {formatNumber(projectGamePoints.run.hokum[4])} في الحكم /{' '}
+              {formatNumber(projectGamePoints.run.sun[4])} في الصن.
+            </li>
+            <li>
+              <strong>مية (5 كروت أو 4 متشابهة من 10، Q، K، A):</strong>{' '}
+              {formatNumber(projectGamePoints.run.hokum[5])} في الحكم /{' '}
+              {formatNumber(projectGamePoints.run.sun[5])} في الصن.
+            </li>
+            <li>
+              <strong>أربعمية (4 إكك A):</strong> {formatNumber(projectGamePoints.fourOfKind.sun.A)}{' '}
+              في الصن.
+            </li>
+            <li>
+              <strong>بلوت (شايب وبنت الحكم):</strong> {formatNumber(BALOOT_RULES.balootGamePoints)}{' '}
+              في الحكم (لا تُبطل).
+            </li>
+          </ul>
+        </div>
+        <div className={styles.rulesCard}>
+          <h4>⚡ قوانين اللعب والفوز بالصكة</h4>
+          <ul>
+            <li>
+              <strong>إجبارية اتباع اللون:</strong> يجب لعب نفس لون الورقة الأولى إن كان متاحاً في
+              يدك.
+            </li>
+            <li>
+              <strong>الدق بالحكم:</strong> في عقد الحكم إذا لم يكن لديك اللون الملعوب، يُجبر اللاعب
+              على الدق بورقة حكم.
+            </li>
+            <li>
+              <strong>الفوز بالمباراة:</strong> أول فريق يجمع {formatNumber(matchTarget)} بنطًا
+              يفوز.
+            </li>
+          </ul>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -318,9 +322,14 @@ function connectionStatusCopy(
   quality: 'offline' | 'excellent' | 'good' | 'slow',
 ) {
   if (!connected) return 'جارٍ الاتصال بخادم اللعب';
-  if (latencyMs === null) return 'خادم اللعب متصل · WebSocket';
+  if (latencyMs === null) return 'متصل بخادم اللعب';
   const qualityLabel = quality === 'excellent' ? 'سريع جداً' : quality === 'good' ? 'جيد' : 'بطيء';
   return `اتصال ${qualityLabel} · ${formatNumber(latencyMs)} ملّي ثانية`;
+}
+
+function subscribeFullscreen(listener: () => void) {
+  document.addEventListener('fullscreenchange', listener);
+  return () => document.removeEventListener('fullscreenchange', listener);
 }
 
 export function BalootRoom() {
@@ -336,12 +345,30 @@ export function BalootRoom() {
     leave,
     clearError,
   } = useBalootSocket();
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const canFullscreen = useSyncExternalStore(
+    subscribeFullscreen,
+    () => Boolean(document.fullscreenEnabled),
+    () => false,
+  );
+  useEffect(() => {
+    const changed = () =>
+      setFullscreen(document.fullscreenElement === stageRef.current && Boolean(stageRef.current));
+    document.addEventListener('fullscreenchange', changed);
+    return () => document.removeEventListener('fullscreenchange', changed);
+  }, []);
   const [joinMode, setJoinMode] = useState(false);
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const copyTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
   const [showRules, setShowRules] = useState(false);
   const [handWarning, setHandWarning] = useState('');
+  const closeRules = useCallback(() => setShowRules(false), []);
   const networkStatus = connectionStatusCopy(connected, latencyMs, connectionQuality);
 
   const seats = useMemo(() => {
@@ -361,7 +388,7 @@ export function BalootRoom() {
   if (!room) {
     return (
       <>
-        {showRules && <BalootRulesModal onClose={() => setShowRules(false)} />}
+        {showRules && <BalootRulesModal onClose={closeRules} />}
         <Card className={`${styles.shell} ${styles.lobbyShell}`}>
           <section className={styles.lobbyIntro}>
             <span className={styles.ruleset}>
@@ -408,6 +435,7 @@ export function BalootRoom() {
             <Input
               label="اسم اللاعب"
               name="playerName"
+              disabled={!connected || restoring || busy}
               autoComplete="nickname"
               value={playerName}
               onChange={(event) => {
@@ -422,6 +450,7 @@ export function BalootRoom() {
               <Input
                 label="رمز المجلس"
                 name="roomCode"
+                disabled={!connected || restoring || busy}
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={roomCode}
@@ -470,7 +499,13 @@ export function BalootRoom() {
   }
 
   const self = room.seats.find((seat) => seat.seat === room.yourSeat)!;
-  const isYourTurn = room.turn === room.yourSeat;
+  const activeSeat =
+    room.phase === 'BIDDING' || room.phase === 'DOUBLING'
+      ? room.bidder
+      : room.phase === 'PLAYING'
+        ? room.turn
+        : null;
+  const isYourTurn = room.phase === 'PLAYING' && room.turn === room.yourSeat;
   const contractLabel = room.contract
     ? room.contract.mode.mode === 'sun'
       ? 'صن'
@@ -478,9 +513,9 @@ export function BalootRoom() {
     : 'بانتظار الشراء';
 
   return (
-    <>
-      {showRules && <BalootRulesModal onClose={() => setShowRules(false)} />}
-      <Card className={styles.shell}>
+    <div ref={stageRef} className={styles.stage} data-fullscreen={fullscreen || undefined}>
+      {showRules && <BalootRulesModal onClose={closeRules} />}
+      <Card className={`${styles.shell} ${expanded || fullscreen ? styles.expandedShell : ''}`}>
         <section className={styles.table} aria-label="طاولة بلوت مباشرة">
           <header className={styles.roomHeader}>
             <div>
@@ -489,7 +524,33 @@ export function BalootRoom() {
               </span>
               <h2>طاولة البلوت</h2>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <div className={styles.tableTools}>
+              <button
+                type="button"
+                className={styles.rulesButton}
+                aria-pressed={expanded}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                {expanded ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
+                {expanded ? 'الحجم العادي' : 'توسيع الطاولة'}
+              </button>
+              {canFullscreen ? (
+                <button
+                  type="button"
+                  className={styles.rulesButton}
+                  aria-label={fullscreen ? 'إنهاء ملء الشاشة' : 'ملء الشاشة'}
+                  onClick={async () => {
+                    try {
+                      if (document.fullscreenElement) await document.exitFullscreen();
+                      else await stageRef.current?.requestFullscreen();
+                    } catch {
+                      setExpanded(true);
+                    }
+                  }}
+                >
+                  {fullscreen ? <Shrink aria-hidden="true" /> : <Expand aria-hidden="true" />}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={styles.rulesButton}
@@ -505,10 +566,17 @@ export function BalootRoom() {
                 <button
                   type="button"
                   aria-label="نسخ رمز المجلس"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(room.roomCode);
-                    setCopied(true);
-                    window.setTimeout(() => setCopied(false), 1500);
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(room.roomCode);
+                      setCopyError('');
+                      setCopied(true);
+                      window.clearTimeout(copyTimer.current);
+                      copyTimer.current = window.setTimeout(() => setCopied(false), 1500);
+                    } catch {
+                      setCopied(false);
+                      setCopyError('تعذّر النسخ. حدّد رمز المجلس وانسخه يدوياً.');
+                    }
                   }}
                 >
                   {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
@@ -554,6 +622,11 @@ export function BalootRoom() {
             </span>
           </div>
 
+          {copyError ? (
+            <p className={styles.error} role="alert">
+              {copyError}
+            </p>
+          ) : null}
           {(room.phase === 'BIDDING' ||
             room.phase === 'DOUBLING' ||
             room.phase === 'PLAYING' ||
@@ -562,10 +635,10 @@ export function BalootRoom() {
             <div className={styles.roundInfo} aria-label="معلومات الجولة">
               <span className={styles.roundInfoScore}>
                 <em>لنا</em>
-                <strong>{formatNumber(room.scores[0])}</strong>
+                <strong>{formatNumber(room.scores[room.yourTeam === 'A' ? 0 : 1])}</strong>
                 <small>·</small>
                 <em>لهم</em>
-                <strong>{formatNumber(room.scores[1])}</strong>
+                <strong>{formatNumber(room.scores[room.yourTeam === 'A' ? 1 : 0])}</strong>
               </span>
               <span className={styles.roundInfoPipe}>|</span>
               <span className={styles.roundInfoContract}>
@@ -605,12 +678,39 @@ export function BalootRoom() {
               <span>
                 الدور:{' '}
                 <strong>
-                  {room.seats.find((seat) => seat.seat === room.turn)?.playerName ?? '—'}
+                  {room.seats.find((seat) => seat.seat === activeSeat)?.playerName ?? '—'}
                 </strong>
               </span>
             </div>
           ) : null}
 
+          {activeSeat !== null ? (
+            <div
+              className={styles.turnNotice}
+              data-yours={activeSeat === room.yourSeat || undefined}
+              role="status"
+            >
+              <Sparkles aria-hidden="true" />
+              <div>
+                <strong>
+                  {activeSeat === room.yourSeat
+                    ? room.phase === 'BIDDING'
+                      ? 'دورك للشراء'
+                      : room.phase === 'DOUBLING'
+                        ? 'قرار الدبل عندك'
+                        : 'دورك · اختر ورقتك'
+                    : `الدور عند ${room.seats.find((seat) => seat.seat === activeSeat)?.playerName ?? 'اللاعب'}`}
+                </strong>
+                <span>
+                  {room.phase === 'BIDDING'
+                    ? 'خمس أوراق في يدك · ورقة الشراء مكشوفة للجميع'
+                    : room.phase === 'DOUBLING'
+                      ? 'اكتمل التوزيع · راجع يدك قبل القرار'
+                      : `الأكلة ${formatNumber(room.trickHistory.length + 1)} من ${formatNumber(8)}`}
+                </span>
+              </div>
+            </div>
+          ) : null}
           <div className={styles.felt} data-phase={room.phase}>
             <Image
               src={TABLE_ART.src}
@@ -626,7 +726,7 @@ export function BalootRoom() {
                 className={styles.seat}
                 data-position={position}
                 data-team={team === room.yourTeam ? 'لنا' : 'لهم'}
-                data-active={seat && room.turn === seat.seat ? true : undefined}
+                data-active={seat && activeSeat === seat.seat ? true : undefined}
                 data-empty={!seat || undefined}
               >
                 <span
@@ -653,13 +753,13 @@ export function BalootRoom() {
                       المضيف
                     </span>
                   ) : null}
-                  {seat?.ready ? (
+                  {seat?.ready && (room.phase === 'LOBBY' || room.phase === 'READY') ? (
                     <span>
                       <Check aria-hidden="true" style={{ width: '0.75rem', height: '0.75rem' }} />
                       جاهز
                     </span>
                   ) : null}
-                  {seat && room.turn === seat.seat ? (
+                  {seat && activeSeat === seat.seat ? (
                     <span>
                       <Sparkles
                         aria-hidden="true"
@@ -683,6 +783,15 @@ export function BalootRoom() {
             ))}
 
             <div className={styles.centerStack} aria-live="polite">
+              {room.phase === 'BIDDING' && room.purchaseCard ? (
+                <div className={styles.purchaseCard} aria-label="ورقة الشراء المكشوفة">
+                  <span>ورقة الشراء</span>
+                  <PlayingCardFace card={room.purchaseCard} />
+                  <small>
+                    {room.purchaseCard.rank} {suitName(room.purchaseCard.suit)}
+                  </small>
+                </div>
+              ) : null}
               <div className={styles.trickCards}>
                 {room.currentTrick.map((play, index) => {
                   // Fix #15: dynamic per-card rotation that scales to any
@@ -699,7 +808,8 @@ export function BalootRoom() {
                       aria-label={`${play.card.rank} ${suitName(play.card.suit)}`}
                     >
                       <span className={styles.trickCardTag}>
-                        مقعد {formatNumber(play.seat + 1)}
+                        {room.seats.find((seat) => seat.seat === play.seat)?.playerName ??
+                          `مقعد ${formatNumber(play.seat + 1)}`}
                       </span>
                       <PlayingCardFace card={play.card} />
                     </div>
@@ -739,7 +849,7 @@ export function BalootRoom() {
                   ابدأ المباراة
                 </Button>
               ) : null}
-              <p>تبدأ المباراة تلقائياً بعد اكتمال المقاعد الأربعة واستعداد الجميع.</p>
+              <p>بعد جاهزية اللاعبين الأربعة، يضغط المضيف «ابدأ المباراة».</p>
             </div>
           ) : null}
 
@@ -903,6 +1013,7 @@ export function BalootRoom() {
 
           {room.yourHand.length > 0 &&
           (room.phase === 'BIDDING' ||
+            room.phase === 'DOUBLING' ||
             room.phase === 'PLAYING' ||
             room.phase === 'TRICK_RESULT') ? (
             <section className={styles.handPanel} aria-label="يدك">
@@ -914,9 +1025,11 @@ export function BalootRoom() {
                       ? room.bidder === room.yourSeat
                         ? 'راجع ورقك ثم اختر الشراء'
                         : 'راجع ورقك بانتظار الشراء'
-                      : isYourTurn
-                        ? 'اختر ورقة قانونية للرمي'
-                        : 'بانتظار دورك'}
+                      : room.phase === 'DOUBLING'
+                        ? 'اكتملت يدك · راجع الورق قبل قرار الدبل'
+                        : isYourTurn
+                          ? 'اختر ورقة قانونية للرمي'
+                          : 'بانتظار دورك'}
                   </strong>
                 </div>
                 {handWarning ? (
@@ -974,6 +1087,17 @@ export function BalootRoom() {
                 )}
               </div>
             </section>
+          ) : null}
+
+          {room.phase === 'GAME_OVER' ? (
+            <div className={styles.actionPanel} role="status">
+              <strong>
+                {(room.scores[0] > room.scores[1] ? 'A' : 'B') === room.yourTeam
+                  ? 'فاز فريقنا بالمباراة'
+                  : 'فاز الفريق الآخر بالمباراة'}
+              </strong>
+              <p>انتهت المباراة. يمكنك مغادرة المجلس وإنشاء مباراة جديدة.</p>
+            </div>
           ) : null}
 
           {room.phase === 'ROUND_RESULT' ? (
@@ -1125,7 +1249,8 @@ export function BalootRoom() {
             </div>
           ) : null}
           <p className={styles.honestyNote}>
-            الخادم يخلط ويوزع ويتحقق من الدور وقانونية الورقة. لا تُرسل أوراق خصومك إلى جهازك.
+            الشريك مقابلك، والخصمان عن يمينك ويسارك. اتبع اللون الملعوب، واختر من الأوراق المضيئة
+            عندما يحين دورك.
           </p>
           <Button variant="ghost" onClick={leave}>
             <LogOut aria-hidden="true" />
@@ -1133,6 +1258,6 @@ export function BalootRoom() {
           </Button>
         </aside>
       </Card>
-    </>
+    </div>
   );
 }
