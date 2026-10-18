@@ -1,3 +1,4 @@
+import { voiceAccountBadges, voiceBadgeAccountSelect } from './account-badges';
 import 'server-only';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { getPrismaClient } from '@/lib/auth/prisma';
@@ -31,8 +32,13 @@ async function pruneInactiveAccounts(state: VoiceRoomState) {
   if (!state.participants.length) return;
   const accounts = await getPrismaClient().user.findMany({
     where: { id: { in: state.participants.map((p) => p.id) }, status: 'ACTIVE' },
-    select: { id: true, tokenVersion: true },
+    select: { id: true, tokenVersion: true, ...voiceBadgeAccountSelect },
   });
+  const byId = new Map(accounts.map((account) => [account.id, account]));
+  for (const member of state.participants) {
+    const account = byId.get(member.id);
+    member.accountBadges = account ? voiceAccountBadges(account) : [];
+  }
   const versions = new Map(accounts.map((account) => [account.id, account.tokenVersion]));
   state.participants = state.participants.filter(
     (participant) => versions.get(participant.id) === (participant.tokenVersion ?? 0),

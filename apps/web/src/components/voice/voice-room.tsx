@@ -54,6 +54,7 @@ import {
 import { VoiceChat } from './voice-chat';
 import { RoomSettings } from './room-settings';
 import { useVoiceMediaQuery, useVoiceOverlay } from './use-voice-overlay';
+import { MemberName } from './member-name';
 import roomStyles from './room-layout.module.css';
 import { VoiceGifts } from './voice-gifts';
 
@@ -480,7 +481,7 @@ export function VoiceRoomView({
                 <span>/</span>
                 <span>{room.category}</span>
               </div>
-              <section className="v-room-hero" inert={chatOverlayOpen}>
+              <section className={`v-room-hero ${roomStyles.hero}`} inert={chatOverlayOpen}>
                 <VoiceCover src={room.cover} priority sizes="(max-width: 800px) 100vw, 80vw" />
                 <div className="v-room-hero-top">
                   <LiveBadge active={room.active} waiting={room.participantCount === 0} />
@@ -531,7 +532,12 @@ export function VoiceRoomView({
                   <div className="v-room-hero-meta">
                     <button onClick={() => setProfileId(room.hostId)}>
                       <Avatar user={{ name: room.hostName, image: room.hostImage }} size={31} />
-                      <span>{room.hostName}</span>
+                      <MemberName
+                        name={room.hostName}
+                        badges={
+                          snapshot?.participants.find((p) => p.id === room.hostId)?.accountBadges
+                        }
+                      />
                       <Crown size={16} />
                     </button>
                     <span>
@@ -652,7 +658,10 @@ export function VoiceRoomView({
                                       )}
                                     </span>
                                     <strong title={person.name}>
-                                      <bdi>{person.id === user.id ? 'أنت' : person.name}</bdi>
+                                      <MemberName
+                                        name={person.id === user.id ? 'أنت' : person.name}
+                                        badges={person.accountBadges}
+                                      />
                                     </strong>
                                     <small>{roleLabels[person.role]}</small>
                                     <span className={roomStyles.seatState}>
@@ -799,7 +808,10 @@ export function VoiceRoomView({
                             </span>
                             <span className={roomStyles.memberInfo}>
                               <strong title={p.name}>
-                                <bdi>{p.id === user.id ? 'أنت' : p.name}</bdi>
+                                <MemberName
+                                  name={p.id === user.id ? 'أنت' : p.name}
+                                  badges={p.accountBadges}
+                                />
                               </strong>
                               <small>
                                 {p.seatIndex !== null ? (
@@ -838,6 +850,7 @@ export function VoiceRoomView({
                       messages={(snapshot?.messages || []).filter(
                         (m) => !preferences.blockedUsers.includes(m.userId),
                       )}
+                      participants={snapshot?.participants}
                       me={me || null}
                       enabled={room.chatEnabled}
                       canModerate={canModerate}
@@ -845,6 +858,7 @@ export function VoiceRoomView({
                       onProfile={setProfileId}
                       onError={setError}
                       close={closeChat}
+                      onGift={() => openGifts()}
                     />
                   </div>
                 </div>
@@ -867,7 +881,7 @@ export function VoiceRoomView({
                 </label>
               </div>
               {room.active && (
-                <div className="v-room-controls" inert={chatOverlayOpen}>
+                <div className={`v-room-controls ${roomStyles.controls}`} inert={chatOverlayOpen}>
                   <div className="v-controls-me">
                     <Avatar user={user} size={37} />
                     <span>
@@ -967,7 +981,9 @@ export function VoiceRoomView({
                   <>
                     <div className="v-profile-head">
                       <Avatar user={selected} size={88} />
-                      <h3>{selected.name}</h3>
+                      <h3>
+                        <MemberName name={selected.name} badges={selected.accountBadges} />
+                      </h3>
                       <p>
                         {roleLabels[selected.role]}
                         {selected.moderatorMuted ? ' · الميكروفون مكتوم من المشرف' : ''}

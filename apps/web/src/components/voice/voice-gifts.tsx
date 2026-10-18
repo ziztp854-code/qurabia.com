@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { Gift } from 'lucide-react';
+import { Gift, Sparkles } from 'lucide-react';
 import { Dialog } from '@/components/ui/overlay';
 import { VOICE_GIFTS, voiceGift, type VoiceGiftId } from '@/lib/voice/gifts';
 import type { VoiceEvent, VoiceMessage, VoiceParticipant } from '@/lib/voice/types';
@@ -54,6 +54,26 @@ export function VoiceGifts({
       className={`v-dialog ${styles.dialog}`}
     >
       <form className={styles.form} onSubmit={(event) => void send(event)}>
+        <div className={styles.preview} aria-label="معاينة الهدية">
+          <span className={styles.previewArt} aria-hidden="true">
+            {selected.emoji}
+          </span>
+          <div>
+            <span className={styles.eyebrow}>
+              <Sparkles size={14} /> لحظة تستحق هدية
+            </span>
+            <h3>{selected.name}</h3>
+            <p>
+              {recipient ? (
+                <>
+                  إلى <bdi>{recipient.name}</bdi>، بكل تقدير
+                </>
+              ) : (
+                'اختر عضوًا موجودًا في الغرفة'
+              )}
+            </p>
+          </div>
+        </div>
         <p className={styles.trial}>
           <Gift size={20} /> جميع الهدايا مجانية للتجربة، دون شراء أو خصم رصيد.
         </p>

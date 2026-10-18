@@ -1,3 +1,4 @@
+import { voiceAccountBadges, voiceBadgeAccountSelect } from './account-badges';
 import 'server-only';
 import { getCurrentSession, isSessionUserCurrent } from '@/lib/auth/session';
 import { getPrismaClient } from '@/lib/auth/prisma';
@@ -14,7 +15,7 @@ export async function voiceIdentity(): Promise<VoiceIdentity> {
       id: true,
       name: true,
       image: true,
-      role: true,
+      ...voiceBadgeAccountSelect,
       status: true,
       tokenVersion: true,
       profile: { select: { displayName: true, avatarUrl: true } },
@@ -24,6 +25,7 @@ export async function voiceIdentity(): Promise<VoiceIdentity> {
     throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة. سجّل الدخول مجددًا.', 'SESSION_REVOKED');
   return {
     id: user.id,
+    accountBadges: voiceAccountBadges(user),
     tokenVersion: user.tokenVersion,
     name: user.profile?.displayName || user.name || 'عضو تحدي',
     image: user.profile?.avatarUrl || user.image || null,

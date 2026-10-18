@@ -1,0 +1,23 @@
+.name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: inherit;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-inline-size: 100%;
+  vertical-align: middle;
+}
+.name > bdi {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.badge,
+.verified {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: var(--voice-gold-light);
+}
+.verified {
+  color: var(--voice-cyan);
+}

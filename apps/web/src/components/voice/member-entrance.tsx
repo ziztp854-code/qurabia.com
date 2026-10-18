@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Crown, LogIn, X } from 'lucide-react';
+import { LogIn, Sparkles, X } from 'lucide-react';
 import type { VoiceParticipant, VoiceSnapshot } from '@/lib/voice/types';
+import { MemberName } from './member-name';
 import { Avatar } from './voice-ui';
 import styles from './voice-enhancements.module.css';
 
@@ -40,14 +41,14 @@ export function MemberEntrance({
   return (
     <aside className={styles.entrance} hidden={!visible} dir="rtl" aria-label="ترحيب بالأعضاء">
       <div className={styles.seal} aria-hidden="true">
-        <Crown size={18} />
+        <Sparkles size={18} />
       </div>
       <Avatar user={member} size={42} />
       <div className={styles.welcome} role="status" aria-live="polite" aria-atomic="true">
         <small>تحدي لايف · نورت المجلس</small>
         <p>
           {member.id === selfId ? 'حيّاك ' : 'وصل الآن '}
-          <bdi>{member.name}</bdi>
+          <MemberName name={member.name} badges={member.accountBadges} />
         </p>
       </div>
       <LogIn className={styles.arrivalIcon} size={19} aria-hidden="true" />

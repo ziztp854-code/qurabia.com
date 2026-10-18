@@ -1,3 +1,4 @@
+import type { VoiceAccountBadge } from './account-badges';
 import type { VoiceGiftId } from './gifts';
 
 export const VOICE_CATEGORIES = [
@@ -16,6 +17,7 @@ export type VoiceIdentity = {
   name: string;
   image: string | null;
   tokenVersion?: number;
+  accountBadges?: VoiceAccountBadge[];
 };
 export type VoiceParticipant = VoiceIdentity & {
   role: VoiceRole;

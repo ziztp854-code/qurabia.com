@@ -1,11 +1,16 @@
-.dialog {
+.dialog:global(.v-dialog) {
+  inline-size: min(640px, calc(100vw - 24px));
+  max-inline-size: 640px;
+  max-block-size: calc(100dvh - 32px);
+  overflow-y: auto;
+  border-radius: 24px;
   color: var(--voice-text);
   background: var(--voice-card);
   border: 1px solid var(--voice-border);
 }
 .form {
   display: grid;
-  gap: 20px;
+  gap: 16px;
   min-inline-size: 0;
   font-size: 14px;
   line-height: 1.9;
@@ -14,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   background: var(--voice-glow);
   color: var(--voice-gold-light);
@@ -57,9 +62,9 @@
   align-items: center;
   position: relative;
   min-inline-size: 0;
-  padding: 16px 6px 12px;
+  padding: 22px 6px 14px;
   border: 1px solid var(--voice-line);
-  border-radius: 14px;
+  border-radius: 18px;
   background: var(--voice-bg);
   cursor: pointer;
 }
@@ -67,16 +72,24 @@
   border-color: var(--voice-gold);
   background: var(--voice-glow);
 }
-.choice input {
+.dialog .choice input[type='radio'] {
   position: absolute;
   inset-block-start: 8px;
   inset-inline-start: 8px;
   accent-color: var(--voice-gold);
   inline-size: 16px;
   block-size: 16px;
+  min-height: 16px;
 }
 .choice > span {
-  font-size: 36px;
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  margin-block-end: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--voice-glow), transparent 72%);
+  font-size: 40px;
   line-height: 1.5;
 }
 .choice strong {
@@ -108,7 +121,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-block: 10px;
+  padding: 12px;
+  border: 1px solid var(--voice-border);
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--voice-glow), var(--voice-bg));
   color: var(--voice-text);
   overflow-wrap: anywhere;
   animation: gift-in 240ms ease-out;
@@ -121,7 +137,7 @@
   block-size: 64px;
   background: var(--voice-glow);
   border: 1px solid var(--voice-border);
-  border-radius: 14px;
+  border-radius: 18px;
   font-size: 32px;
 }
 .receipt > div {
@@ -157,5 +173,73 @@
 @media (prefers-reduced-motion: reduce) {
   .receipt {
     animation: none;
+  }
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--voice-border);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 80% 50%, var(--voice-glow), transparent 70%), var(--voice-bg);
+}
+.previewArt {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 104px;
+  block-size: 104px;
+  border: 1px solid var(--voice-border);
+  border-radius: 32px;
+  font-size: 64px;
+  transform: rotate(-8deg);
+  box-shadow: var(--voice-shadow);
+}
+.preview > div {
+  min-inline-size: 0;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--voice-gold-light);
+  font-size: 11px;
+}
+.preview h3 {
+  font-size: 28px;
+  margin-block: 4px;
+}
+.preview p {
+  color: var(--voice-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .dialog:global(.v-dialog) {
+    max-block-size: calc(100dvh - 16px);
+  }
+  .preview {
+    gap: 16px;
+    padding: 16px;
+  }
+  .previewArt {
+    inline-size: 72px;
+    block-size: 72px;
+    font-size: 44px;
+    border-radius: 24px;
+  }
+  .preview h3 {
+    font-size: 23px;
+  }
+  .choice {
+    padding-block: 16px 10px;
+  }
+  .choice > span {
+    inline-size: 52px;
+    block-size: 52px;
+    margin-block-end: 4px;
   }
 }

@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Flag, MessageCircle, Pin, Reply, Send, SmilePlus, Trash2, X } from 'lucide-react';
+import { Flag, Gift, MessageCircle, Pin, Reply, Send, SmilePlus, Trash2, X } from 'lucide-react';
 import type { VoiceEvent, VoiceMessage, VoiceParticipant } from '@/lib/voice/types';
 import { Avatar } from './voice-ui';
 import { useVoiceMediaQuery } from './use-voice-overlay';
 import { number } from './voice-client';
 import roomStyles from './room-layout.module.css';
+import { MemberName } from './member-name';
 import { GiftReceipt } from './voice-gifts';
 
 export function VoiceChat({
   messages,
+  participants = [],
   me,
   enabled,
   canModerate,
@@ -18,8 +20,10 @@ export function VoiceChat({
   onProfile,
   onError,
   close,
+  onGift,
 }: {
   messages: VoiceMessage[];
+  participants?: VoiceParticipant[];
   me: VoiceParticipant | null;
   enabled: boolean;
   canModerate: boolean;
@@ -27,6 +31,7 @@ export function VoiceChat({
   onProfile: (id: string) => void;
   onError: (message: string) => void;
   close: () => void;
+  onGift?: () => void;
 }) {
   const [text, setText] = useState('');
   const draggable = useVoiceMediaQuery('(max-width: 760px)');
@@ -61,7 +66,7 @@ export function VoiceChat({
   }
   async function send(event: FormEvent) {
     event.preventDefault();
-    if (!text.trim() || sending) return;
+    if (!text.trim() || sending || !enabled || !me) return;
     setSending(true);
     try {
       await onEvent({
@@ -78,6 +83,7 @@ export function VoiceChat({
       setSending(false);
     }
   }
+  const membersById = new Map(participants.map((member) => [member.id, member]));
   const pinned = messages.find((m) => m.pinned);
   return (
     <section ref={panel} className={`v-chat ${roomStyles.chat}`} aria-label="دردشة الغرفة">
@@ -163,7 +169,10 @@ export function VoiceChat({
             <div className="v-message-body">
               <div className="v-message-meta">
                 <strong>
-                  <bdi>{message.name}</bdi>
+                  <MemberName
+                    name={message.name}
+                    badges={membersById.get(message.userId)?.accountBadges}
+                  />
                 </strong>
                 <time dateTime={new Date(message.createdAt).toISOString()}>
                   {new Date(message.createdAt).toLocaleTimeString('ar-SA', {
@@ -298,32 +307,47 @@ export function VoiceChat({
         <label className="v-sr-only" htmlFor="voice-message">
           رسالتك
         </label>
-        <input
+        <textarea
+          rows={2}
           id="voice-message"
           value={text}
           maxLength={1000}
           onChange={(e) => setText(e.target.value)}
-          disabled={!enabled || !me}
+          disabled={!enabled || !me || sending}
           placeholder={enabled ? 'اكتب رسالتك هنا…' : 'الدردشة معطّلة من المضيف'}
           autoComplete="off"
         />
-        <button
-          className="v-icon"
-          type="button"
-          aria-label="إضافة رمز تعبيري"
-          disabled={!enabled}
-          onClick={() => setText((t) => `${t} ✨`)}
-        >
-          <SmilePlus size={19} />
-        </button>
-        <button
-          className="v-send"
-          type="submit"
-          aria-label="إرسال الرسالة"
-          disabled={!enabled || !me || !text.trim() || sending}
-        >
-          <Send size={17} />
-        </button>
+        <div className={roomStyles.composeTools}>
+          <span className={roomStyles.composeHint}>مساحة للسوالف واللحظات الحلوة</span>
+          {onGift && (
+            <button
+              className={`v-icon ${roomStyles.giftAction}`}
+              type="button"
+              aria-label="إرسال هدية"
+              disabled={!enabled || !me}
+              onClick={onGift}
+            >
+              <Gift size={20} />
+            </button>
+          )}
+          <button
+            className="v-icon"
+            type="button"
+            aria-label="إضافة رمز تعبيري"
+            disabled={!enabled || !me || sending}
+            onClick={() => setText((t) => `${t} ✨`)}
+          >
+            <SmilePlus size={19} />
+          </button>
+          <button
+            className="v-send"
+            type="submit"
+            aria-label="إرسال الرسالة"
+            disabled={!enabled || !me || !text.trim() || sending}
+          >
+            <Send size={17} />
+          </button>
+        </div>
       </form>
     </section>
   );

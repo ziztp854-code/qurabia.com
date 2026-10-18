@@ -1,6 +1,45 @@
-/* Scope the room refinement above legacy voice rules without changing the audio dock. */
+/* Broadcast-room composition. Scoped selectors isolate legacy lobby styles. */
+.hero:global(.v-room-hero) {
+  min-height: 218px;
+  border-radius: 24px;
+  border-color: var(--voice-border);
+}
+.hero:global(.v-room-hero)::after {
+  background:
+    linear-gradient(90deg, var(--voice-soft-shade), var(--voice-shade) 85%),
+    linear-gradient(0deg, var(--voice-shade), transparent);
+}
+.hero :global(.v-room-hero-top) {
+  padding: 16px 24px 0;
+}
+.hero :global(.v-room-hero-content) {
+  padding: 12px 24px 20px;
+}
+.hero:global(.v-room-hero) h1 {
+  font-size: clamp(23px, 2.3vw, 34px);
+  line-height: 1.5;
+  margin-block: 6px;
+  overflow-wrap: anywhere;
+}
+.hero :global(.v-room-hero-meta) {
+  margin-block-start: 12px;
+  gap: 12px 20px;
+}
+.hero :global(.v-room-hero-meta > button) {
+  min-block-size: 44px;
+}
+.controls:global(.v-room-controls) {
+  border-block-start: 2px solid var(--voice-border);
+}
+.controls :global(.v-control) {
+  border-radius: 16px;
+}
+.controls :global(.v-control > span) {
+  font-size: 10px;
+}
+
 .layout {
-  gap: 20px;
+  gap: 24px;
 }
 
 .stageActions {
@@ -21,7 +60,7 @@
 .layout :global(.v-stage),
 .layout :global(.v-listeners) {
   padding: 20px;
-  border-radius: 20px;
+  border-radius: 24px;
   min-inline-size: 0;
 }
 
@@ -54,10 +93,10 @@
 
 .layout :global(.v-seat) {
   padding: 16px 8px 12px;
-  min-block-size: 190px;
+  min-block-size: 180px;
   border: 1px solid var(--voice-line);
-  border-radius: 16px;
-  background: var(--voice-bg);
+  border-radius: 24px;
+  background: linear-gradient(180deg, var(--voice-raised), var(--voice-bg));
 }
 
 .layout :global(.v-host-seat) {
@@ -67,12 +106,13 @@
 
 .layout :global(.v-seat.is-speaking) {
   border-color: var(--voice-cyan);
+  box-shadow: inset 0 -3px 0 var(--voice-cyan);
 }
 
 .layout :global(.v-seat-person),
 .layout :global(.v-empty-seat) {
-  min-block-size: 156px;
-  min-height: 156px;
+  min-block-size: 146px;
+  min-height: 146px;
   border-radius: 10px;
 }
 
@@ -231,7 +271,9 @@
 
 .chat:global(.v-chat) {
   min-inline-size: 0;
-  border-radius: 20px;
+  border-radius: 24px;
+  block-size: min(740px, calc(100dvh - 120px));
+  max-height: none;
 }
 
 .chat > header,
@@ -242,8 +284,8 @@
 
 .chat:global(.v-chat) > header {
   padding-inline: 16px;
-  min-block-size: 72px;
-  background: var(--voice-bg);
+  min-block-size: 76px;
+  background: linear-gradient(110deg, var(--voice-glow), var(--voice-bg));
 }
 
 .chat:global(.v-chat) > header h2 {
@@ -262,14 +304,14 @@
 
 .chat :global(.v-message) {
   gap: 8px;
-  margin-block-end: 16px;
+  margin-block-end: 14px;
 }
 
 .chat :global(.v-message-body) {
   padding: 10px 12px 6px;
   border: 1px solid var(--voice-line);
-  border-radius: 14px;
-  border-start-start-radius: 4px;
+  border-radius: 18px;
+  border-start-start-radius: 5px;
   background: var(--voice-bg);
 }
 
@@ -298,6 +340,7 @@
   color: var(--voice-text);
   font-size: 13px;
   line-height: 1.9;
+  white-space: pre-wrap;
 }
 
 .chat :global(.v-message-body blockquote) {
@@ -308,7 +351,8 @@
 }
 
 .chat :global(.v-message-actions) {
-  gap: 2px;
+  gap: 0;
+  flex-wrap: wrap;
   padding-block-start: 4px;
 }
 
@@ -319,21 +363,60 @@
 }
 
 .chat :global(.v-chat-compose) {
-  gap: 6px;
-  padding: 12px;
+  display: grid;
+  gap: 8px;
+  margin: 8px 12px 12px;
+  padding: 10px;
+  border: 1px solid var(--voice-border);
+  border-radius: 18px;
+  background: var(--voice-bg);
+  flex-shrink: 0;
 }
-
-.chat :global(.v-chat-compose input) {
-  font-size: 13px;
-  border: 1px solid var(--voice-line);
-  border-radius: 10px;
-  background: var(--voice-card);
+.chat :global(.v-chat-compose textarea) {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 52px;
+  max-block-size: 140px;
+  resize: vertical;
+  padding: 8px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--voice-text);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
 }
-
+.chat :global(.v-chat-compose textarea)::placeholder {
+  color: var(--voice-muted);
+}
+.composeTools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.composeHint {
+  flex: 1;
+  color: var(--voice-muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.chat .giftAction {
+  color: var(--voice-gold-light);
+  background: var(--voice-glow);
+  border-radius: 12px;
+}
 .chat :global(.v-chat-compose .v-icon),
 .chat :global(.v-send) {
   min-inline-size: 44px;
   min-block-size: 44px;
+  border-radius: 12px;
+}
+.chat :global(.v-messages) {
+  flex: 1;
+  min-block-size: 0;
+  overscroll-behavior: contain;
 }
 
 .chat :global(.v-chat-empty) {
@@ -351,7 +434,8 @@
 .layout :global(.v-empty-seat:focus-visible),
 .layout :global(.v-listener-grid > button:focus-visible),
 .chat :global(button:focus-visible),
-.chat :global(input:focus-visible) {
+.chat :global(input:focus-visible),
+.chat :global(textarea:focus-visible) {
   outline: 2px solid var(--voice-gold);
   outline-offset: 3px;
 }
@@ -365,7 +449,7 @@
 
 @media (min-width: 1021px) {
   .layout:global(.v-room-columns) {
-    grid-template-columns: minmax(0, 1fr) clamp(310px, 26vw, 360px);
+    grid-template-columns: minmax(0, 1fr) clamp(330px, 29vw, 420px);
   }
 }
 
@@ -376,7 +460,18 @@
 }
 
 @media (max-width: 1020px) {
+  .layout:global(.v-chat-open) :global(.v-chat-column) {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   .layout:global(.v-chat-open) .chat {
+    inline-size: 100%;
+    block-size: calc(100dvh - 48px);
+    height: calc(100dvh - 48px);
+    max-height: none;
+    max-inline-size: 640px;
     min-block-size: 0;
     min-height: 0;
   }
@@ -388,6 +483,58 @@
 }
 
 @media (max-width: 760px) {
+  .hero:global(.v-room-hero) {
+    min-height: 206px;
+    border-radius: 20px;
+  }
+  .hero :global(.v-room-hero-top) {
+    padding: 12px 16px 0;
+  }
+  .hero :global(.v-room-hero-content) {
+    padding: 10px 16px 16px;
+  }
+  .hero :global(.v-room-hero-meta) {
+    gap: 8px 12px;
+  }
+  .layout:global(.v-chat-open) :global(.v-chat-column) {
+    inset-block: 0;
+    padding: max(8px, env(safe-area-inset-top)) 0 0;
+    border-radius: 0;
+  }
+  .layout:global(.v-chat-open) .chat {
+    height: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    border-radius: 20px 20px 0 0;
+  }
+  .controls :global(.v-control > span) {
+    font-size: 8px;
+  }
+  .layout :global(.v-seat) {
+    min-block-size: 158px;
+    padding: 12px 4px 8px;
+    border-radius: 18px;
+  }
+  .layout :global(.v-seat-person),
+  .layout :global(.v-empty-seat) {
+    min-block-size: 132px;
+    min-height: 132px;
+  }
+  .layout :global(.v-seat-avatar) {
+    inline-size: 62px;
+    block-size: 62px;
+    margin-block-end: 8px;
+  }
+  .layout :global(.v-seat-avatar .v-avatar) {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  .layout :global(.v-empty-seat > span) {
+    inline-size: 56px;
+    block-size: 56px;
+    margin-block: 3px 11px;
+  }
+
   .layout :global(.v-stage),
   .layout :global(.v-listeners) {
     padding: 16px 12px;

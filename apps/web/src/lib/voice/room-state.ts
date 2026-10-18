@@ -33,6 +33,7 @@ export function joinVoiceState(state: VoiceRoomState, user: VoiceIdentity, now: 
     participant.lastSeenAt = now;
     participant.name = user.name;
     participant.image = user.image;
+    participant.accountBadges = user.accountBadges ?? [];
     return;
   }
   participant = {

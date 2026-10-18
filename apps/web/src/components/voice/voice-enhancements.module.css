@@ -1,7 +1,7 @@
 .entrance {
   position: fixed;
   inset-inline-end: max(16px, env(safe-area-inset-right));
-  inset-block-end: max(24px, env(safe-area-inset-bottom));
+  inset-block-end: calc(120px + env(safe-area-inset-bottom));
   z-index: var(--z-toast);
   display: flex;
   align-items: center;
