@@ -356,7 +356,8 @@ function combat(w: KingdomsWorld, m: Movement, v: Village, at: number) {
       },
     },
   );
-  w.players[m.ownerId].score += Math.floor(total(defenders) - total(defenderAfter));
+  // Reinforcements can remain after an alliance changes; own casualties earn no score.
+  w.players[m.ownerId].score += Math.floor(enemyDefenderLoss);
   returnMovement(w, { ...m, troops: remaining, loot }, at);
 }
 function arrive(w: KingdomsWorld, m: Movement, at: number) {

@@ -337,7 +337,12 @@ function trade(
   if (c.type === 'tradeCancel') {
     const o = w.offers.find((o) => o.id === c.offerId);
     assertRule(o && o.ownerId === actor, 'العرض غير متاح');
-    credit(w, own(w, actor, o.villageId), o.give);
+    const village = own(w, actor, o.villageId);
+    assertRule(
+      resourceKeys.every((key) => village.resources[key] + o.give[key] <= capacity(w, village)),
+      'لا توجد سعة كافية في المخزن لاسترداد الموارد كاملة؛ أفرغ مساحة ثم أعد الإلغاء',
+    );
+    credit(w, village, o.give);
     w.offers = w.offers.filter((t) => t.id !== o.id);
     return;
   }
@@ -610,11 +615,13 @@ function caravanCancel(
   const caravan = w.caravans.find((cv) => cv.id === c.caravanId);
   assertRule(caravan && caravan.ownerId === actor, 'القافلة غير متاحة');
   assertRule(caravan.status === 'preparing' || caravan.status === 'traveling', 'لا يمكن إلغاء القافلة في هذه الحالة');
-  const v = w.villages[caravan.originVillageId];
-  if (v) {
-    credit(w, v, caravan.resources);
-    caravan.resources = resources(0);
-  }
+  const v = own(w, actor, caravan.originVillageId);
+  assertRule(
+    resourceKeys.every((key) => v.resources[key] + caravan.resources[key] <= capacity(w, v)),
+    'لا توجد سعة كافية في المخزن لاسترداد الموارد كاملة؛ أفرغ مساحة ثم أعد الإلغاء',
+  );
+  credit(w, v, caravan.resources);
+  caravan.resources = resources(0);
   caravan.status = 'returned';
   report(w, at, [actor], 'إلغاء القافلة', 'أُلغيت القافلة');
 }

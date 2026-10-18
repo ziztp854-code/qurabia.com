@@ -229,10 +229,13 @@ describe('Kingdoms multiplayer rules', () => {
     const home = advanceWorld(recalled, recalled.movements[0].arrivesAt);
     expect(home.villages[a].troops.guard).toBe(30);
   });
-  it('reports and scores actual rounding of separate defender groups', () => {
+  it.each(['own', 'enemy'] as const)('reports all losses with %s reinforcements and scores enemy casualties', (owner) => {
     const { w, a, b } = fixture();
     w.villages[b].troops = { ...emptyTroops(), guard: 1 };
-    w.villages[b].reinforcements[a] = { ...emptyTroops(), guard: 1 };
+    const reinforcementId = owner === 'own' ? a : 'enemy-outpost';
+    if (owner === 'enemy')
+      w.villages[reinforcementId] = { ...structuredClone(w.villages[b]), id: reinforcementId, x: 10, y: 10 };
+    w.villages[b].reinforcements[reinforcementId] = { ...emptyTroops(), guard: 1 };
     const target = w.villages[b];
     const sent = executeCommand(
       w,
@@ -250,9 +253,9 @@ describe('Kingdoms multiplayer rules', () => {
     const result = advanceWorld(sent, sent.movements[0].arrivesAt);
     const combat = result.reports.find((r) => r.combat)!.combat!;
     const actual =
-      result.villages[b].troops.guard + (result.villages[b].reinforcements[a]?.guard ?? 0);
+      result.villages[b].troops.guard + (result.villages[b].reinforcements[reinforcementId]?.guard ?? 0);
     expect(combat.defenderAfter.guard).toBe(actual);
-    expect(result.players.alice.score).toBe(2 - actual);
+    expect(result.players.alice.score).toBe(owner === 'own' ? 1 - result.villages[b].troops.guard : 2 - actual);
   });
   it('accepts balanced throne contributions only after unlock and settles alliance winner', () => {
     const { w, a } = fixture();
