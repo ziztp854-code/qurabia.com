@@ -243,3 +243,130 @@
     margin-block-end: 4px;
   }
 }
+
+/* Shared photographic sheet: one request for selection, preview and receipts. */
+.photo,
+.choice > .photo {
+  display: block;
+  flex: none;
+  background-image: url('/voice/gifts/studio-gifts.webp');
+  background-size: 200% 200%;
+  background-repeat: no-repeat;
+  border-radius: 16px;
+}
+.photo[data-gift='rose'] {
+  background-position: 0 0;
+}
+.photo[data-gift='applause'] {
+  background-position: 100% 0;
+}
+.photo[data-gift='star'] {
+  background-position: 0 100%;
+}
+.photo[data-gift='crown'] {
+  background-position: 100% 100%;
+}
+.previewArt.photo {
+  transform: none;
+}
+.giftEmoji.photo {
+  inline-size: 60px;
+  block-size: 60px;
+}
+@media (max-width: 480px) {
+  .choice > .photo {
+    inline-size: 84px;
+    block-size: 84px;
+  }
+  .choices > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.celebration {
+  position: fixed;
+  inset-block-start: 28%;
+  inset-inline: 0;
+  z-index: var(--z-toast, 100);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.celebrationCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-inline-size: min(340px, 100%);
+  min-inline-size: min(280px, 100%);
+  padding: 24px;
+  border: 1px solid var(--voice-border);
+  border-radius: 28px;
+  background: var(--voice-shade);
+  color: var(--voice-text);
+  box-shadow: var(--voice-shadow);
+  text-align: center;
+  animation: gift-arrival 3200ms var(--ease-out) both;
+}
+.celebrationCard > button {
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-end: 6px;
+  display: grid;
+  place-items: center;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--voice-muted);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.celebrationCard strong {
+  font: 700 16px/1.8 var(--font-arabic);
+  overflow-wrap: anywhere;
+}
+.celebrationCard > span:last-child {
+  font: 400 14px/1.8 var(--font-arabic);
+  color: var(--voice-gold-light);
+  overflow-wrap: anywhere;
+}
+.celebrationArt.photo {
+  inline-size: 150px;
+  block-size: 150px;
+  max-inline-size: 100%;
+  border-radius: 24px;
+  animation: gift-art-arrival 600ms var(--ease-out) both;
+}
+@keyframes gift-arrival {
+  0% {
+    opacity: 0;
+    transform: translateY(36px) scale(0.86);
+  }
+  12%,
+  85% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.97);
+  }
+}
+@keyframes gift-art-arrival {
+  from {
+    transform: scale(0.7) rotate(-10deg);
+  }
+  to {
+    transform: scale(1) rotate(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebrationCard,
+  .celebrationArt.photo {
+    animation: none;
+  }
+}

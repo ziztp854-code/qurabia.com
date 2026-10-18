@@ -231,7 +231,7 @@ describe('persistent microphone across game routes', () => {
     sdk.pathname = '/voice/room-one/';
     view.rerender(<App />);
     expect(await screen.findByRole('heading', { name: 'على الميكروفون' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'تشغيل المايك أثناء اللعب' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'تشغيل الميكروفون' })).toBeInTheDocument();
     expect(sdk.connect).toHaveBeenCalledTimes(1);
     expect(sdk.disconnect).not.toHaveBeenCalled();
     expect(requests('/token')).toHaveLength(1);

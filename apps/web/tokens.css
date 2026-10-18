@@ -458,7 +458,8 @@
 
 /* Tahaddi Live voice rooms — user-approved Premium Dark Arabic palette, scoped. */
 .v-app,
-.v-player {
+.v-player,
+.v-room-scope {
   --voice-bg: #080510;
   --voice-card: #151021;
   --voice-raised: #21172f;
@@ -467,6 +468,7 @@
   --voice-purple: #a855f7;
   --voice-cyan: #00d5f5;
   --voice-live: #ff2878;
+  --voice-live-strong: #dc245f;
   --voice-text: #ffffff;
   --voice-muted: #bdb3c9;
   --voice-ink: #211509;

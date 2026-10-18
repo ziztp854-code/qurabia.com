@@ -138,3 +138,74 @@
     display: none;
   }
 }
+
+/* Keep one mounted audio session while removing duplicate in-room controls. */
+.inRoom {
+  position: fixed;
+  inset-block-start: 90px;
+  inset-inline-end: 52px;
+  z-index: 30;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  max-inline-size: min(360px, calc(100vw - 32px));
+  background: var(--voice-bg);
+}
+.inRoom > .heading,
+.inRoom > .actions {
+  display: none;
+}
+.inRoom .audio {
+  inline-size: auto;
+}
+.inRoom .audio > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  padding: 8px 12px;
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.inRoom .audio > details[open] {
+  padding: 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 14px;
+  max-block-size: 70dvh;
+  overflow: auto;
+}
+.inRoom[inert] {
+  visibility: hidden;
+}
+@media (max-width: 760px) {
+  .inRoom {
+    inset-block-start: auto;
+    inset-block-end: calc(158px + env(safe-area-inset-bottom));
+    inset-inline-end: 14px;
+  }
+  .inRoom .audio > details:not([open]) > summary {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: var(--voice-card);
+    border: 1px solid var(--voice-line);
+    border-radius: 999px;
+  }
+}
+.inRoom[data-audio-open='false'] {
+  display: none;
+}
+.inRoom[data-audio-open='true'] {
+  inset-block-start: 90px;
+  inset-block-end: auto;
+  box-shadow: var(--voice-shadow);
+}
+@media (max-width: 760px) {
+  .inRoom[data-audio-open='true'] {
+    inset-block-start: 100px;
+    inset-block-end: auto;
+    inset-inline: 16px;
+    max-inline-size: none;
+  }
+}

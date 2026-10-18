@@ -55,9 +55,11 @@ export function VoiceGifts({
     >
       <form className={styles.form} onSubmit={(event) => void send(event)}>
         <div className={styles.preview} aria-label="معاينة الهدية">
-          <span className={styles.previewArt} aria-hidden="true">
-            {selected.emoji}
-          </span>
+          <span
+            className={`${styles.previewArt} ${styles.photo}`}
+            data-gift={selected.id}
+            aria-hidden="true"
+          />
           <div>
             <span className={styles.eyebrow}>
               <Sparkles size={14} /> لحظة تستحق هدية
@@ -117,7 +119,7 @@ export function VoiceGifts({
                     setError('');
                   }}
                 />
-                <span aria-hidden="true">{gift.emoji}</span>
+                <span className={styles.photo} data-gift={gift.id} aria-hidden="true" />
                 <strong>{gift.name}</strong>
                 <small>مجانية</small>
               </label>
@@ -152,9 +154,11 @@ export function GiftReceipt({ message }: { message: VoiceMessage }) {
   if (!gift || !message.gift) return <p>{message.text}</p>;
   return (
     <div className={styles.receipt}>
-      <span className={styles.giftEmoji} aria-hidden="true">
-        {gift.emoji}
-      </span>
+      <span
+        className={`${styles.giftEmoji} ${styles.photo}`}
+        data-gift={gift.id}
+        aria-hidden="true"
+      />
       <div>
         <strong>هدية {gift.name}</strong>
         <p>

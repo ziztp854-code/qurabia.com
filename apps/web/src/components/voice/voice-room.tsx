@@ -35,6 +35,7 @@ import type {
   VoicePreferences,
   VoicePreferencesAction,
   VoiceSnapshot,
+  VoiceMessage,
 } from '@/lib/voice/types';
 import { AudioSession } from './audio-session';
 import { MemberEntrance, voiceArrivals, type VoiceArrival } from './member-entrance';
@@ -57,6 +58,8 @@ import { useVoiceMediaQuery, useVoiceOverlay } from './use-voice-overlay';
 import { MemberName } from './member-name';
 import roomStyles from './room-layout.module.css';
 import { VoiceGifts } from './voice-gifts';
+import liveStyles from './live-room.module.css';
+import { GiftCelebration } from './gift-celebration';
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
 
@@ -89,6 +92,11 @@ export function VoiceRoomView({
     if (!open) setProfileId(null);
   }, []);
   const [chatOpen, setChatOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [showEmptySeats, setShowEmptySeats] = useState(false);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
+  const [giftArrival, setGiftArrival] = useState<VoiceMessage | null>(null);
+  const dismissGift = useCallback(() => setGiftArrival(null), []);
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [giftRecipient, setGiftRecipient] = useState<string | undefined>();
   const closeGifts = useCallback(() => setGiftsOpen(false), []);
@@ -125,6 +133,13 @@ export function VoiceRoomView({
     if (leaving.current) return;
     const next = nextSnapshot(snapshotRef.current, data);
     if (next === snapshotRef.current) return;
+    // Initial history is not a live event. Polling the same message must not replay it.
+    const previous = snapshotRef.current;
+    if (previous) {
+      const seen = new Set(previous.messages.map((message) => message.id));
+      const gifts = next.messages.filter((message) => message.gift && !seen.has(message.id));
+      if (gifts.length) setGiftArrival(gifts[gifts.length - 1]);
+    }
     const entrants = voiceArrivals(snapshotRef.current, next);
     if (entrants.length)
       setArrivals((current) =>
@@ -373,13 +388,29 @@ export function VoiceRoomView({
   );
   const onSeat = me?.seatIndex !== null && me?.seatIndex !== undefined;
   return (
-    <>
+    <div className={`${liveStyles.liveRoom} v-room-scope`} data-room-visible={visible}>
+      {visible && room && (
+        <div className={liveStyles.backdrop} aria-hidden="true">
+          <VoiceCover src={room.cover} sizes="100vw" priority />
+        </div>
+      )}
       {snapshot && (
         <PersistentVoiceDock
           snapshot={snapshot}
           deafened={deafened}
           busy={actionBusy}
           visible={visible}
+          audioSettingsOpen={audioSettingsOpen}
+          onAudioSettingsOpenChange={setAudioSettingsOpen}
+          overlayActive={
+            chatOverlayOpen ||
+            Boolean(profileId) ||
+            reportOpen ||
+            settings ||
+            giftsOpen ||
+            closeRoom ||
+            membersOpen
+          }
           error={error}
           mediaPending={mediaPending}
           onMute={() => void act({ type: 'mute', muted: !me?.muted })}
@@ -400,6 +431,11 @@ export function VoiceRoomView({
           )}
         </PersistentVoiceDock>
       )}
+      <GiftCelebration
+        message={giftArrival}
+        visible={visible && !preferences.blockedUsers.includes(giftArrival?.userId || '')}
+        onDismiss={dismissGift}
+      />
       <MemberEntrance
         arrival={arrivals[0]}
         selfId={user.id}
@@ -481,76 +517,114 @@ export function VoiceRoomView({
                 <span>/</span>
                 <span>{room.category}</span>
               </div>
-              <section className={`v-room-hero ${roomStyles.hero}`} inert={chatOverlayOpen}>
-                <VoiceCover src={room.cover} priority sizes="(max-width: 800px) 100vw, 80vw" />
-                <div className="v-room-hero-top">
-                  <LiveBadge active={room.active} waiting={room.participantCount === 0} />
-                  <div>
+              <header className={liveStyles.roomHeader} inert={chatOverlayOpen}>
+                <div className={liveStyles.hostPill}>
+                  <button
+                    onClick={() => setProfileId(room.hostId)}
+                    aria-label={`ملف المضيف ${room.hostName}`}
+                  >
+                    <Avatar user={{ name: room.hostName, image: room.hostImage }} size={40} />
+                    <span>
+                      <strong>
+                        <MemberName
+                          name={room.hostName}
+                          badges={participants.find((p) => p.id === room.hostId)?.accountBadges}
+                        />
+                      </strong>
+                      <small>
+                        <Crown size={12} /> مضيف المجلس
+                      </small>
+                    </span>
+                  </button>
+                  {room.hostId !== user.id && (
                     <button
-                      className={`v-icon v-glass ${preferences.favorites.includes(roomId) ? 'is-selected' : ''}`}
+                      className={liveStyles.follow}
+                      aria-pressed={preferences.following.includes(room.hostId)}
+                      aria-label={
+                        preferences.following.includes(room.hostId)
+                          ? 'إلغاء متابعة المضيف'
+                          : 'متابعة المضيف'
+                      }
                       onClick={() =>
                         void preference({
-                          type: 'favorite',
-                          id: roomId,
-                          enabled: !preferences.favorites.includes(roomId),
+                          type: 'follow',
+                          id: room.hostId,
+                          enabled: !preferences.following.includes(room.hostId),
                         })
                       }
-                      aria-label="إضافة الغرفة للمفضلة"
-                      aria-pressed={preferences.favorites.includes(roomId)}
                     >
-                      <Heart size={19} />
+                      {preferences.following.includes(room.hostId) ? (
+                        <Check size={17} />
+                      ) : (
+                        <Users size={17} />
+                      )}
                     </button>
-                    <button
-                      className="v-icon v-glass"
-                      onClick={() => void share()}
-                      aria-label="مشاركة الغرفة"
-                    >
-                      <Share2 size={19} />
-                    </button>
-                    <button
-                      className="v-icon v-glass"
-                      onClick={() => {
-                        if (host) setSettings(true);
-                        else {
-                          setReportUserId(null);
-                          setReportOpen(true);
-                        }
-                      }}
-                      aria-label={host ? 'إعدادات الغرفة' : 'الإبلاغ عن الغرفة'}
-                    >
-                      <MoreHorizontal size={22} />
-                    </button>
-                  </div>
+                  )}
                 </div>
-                <div className="v-room-hero-content">
-                  <span className="v-category-label">
-                    {room.category}
-                    {room.isPrivate && ' · خاصة'}
-                  </span>
-                  <h1>{room.name}</h1>
-                  <p>{room.description}</p>
-                  <div className="v-room-hero-meta">
-                    <button onClick={() => setProfileId(room.hostId)}>
-                      <Avatar user={{ name: room.hostName, image: room.hostImage }} size={31} />
-                      <MemberName
-                        name={room.hostName}
-                        badges={
-                          snapshot?.participants.find((p) => p.id === room.hostId)?.accountBadges
-                        }
-                      />
-                      <Crown size={16} />
-                    </button>
-                    <span>
-                      <Users size={16} />
-                      {number(room.participantCount)} حاضر
-                    </span>
-                    <span>
-                      <Headphones size={16} />
-                      {number(room.listenerCount)} مستمع
-                    </span>
-                  </div>
+                <div className={liveStyles.presence}>
+                  <LiveBadge active={room.active} waiting={room.participantCount === 0} />
+                  <button
+                    className="v-icon"
+                    onClick={() => setMembersOpen(true)}
+                    aria-label={`عرض أعضاء الغرفة، ${number(room.participantCount)} حاضر`}
+                  >
+                    <Users size={17} />
+                    <span>{number(room.participantCount)}</span>
+                  </button>
                 </div>
-              </section>
+                <div className={liveStyles.headerActions}>
+                  <button
+                    className="v-icon"
+                    aria-label="إضافة الغرفة للمفضلة"
+                    aria-pressed={preferences.favorites.includes(roomId)}
+                    onClick={() =>
+                      void preference({
+                        type: 'favorite',
+                        id: roomId,
+                        enabled: !preferences.favorites.includes(roomId),
+                      })
+                    }
+                  >
+                    <Heart size={20} />
+                  </button>
+                  <button
+                    className="v-icon"
+                    onClick={() => void share()}
+                    aria-label="مشاركة الغرفة"
+                  >
+                    <Share2 size={19} />
+                  </button>
+                  <button
+                    className="v-icon"
+                    onClick={() => {
+                      if (host) setSettings(true);
+                      else {
+                        setReportUserId(null);
+                        setReportOpen(true);
+                      }
+                    }}
+                    aria-label={host ? 'إعدادات الغرفة' : 'الإبلاغ عن الغرفة'}
+                  >
+                    <MoreHorizontal size={21} />
+                  </button>
+                  <button
+                    className="v-icon"
+                    onClick={() => void leave()}
+                    disabled={actionBusy}
+                    aria-label="مغادرة الغرفة"
+                  >
+                    <X size={21} />
+                  </button>
+                </div>
+              </header>
+              <div className={liveStyles.roomHeading} inert={chatOverlayOpen}>
+                <span>
+                  <Headphones size={14} /> {room.category}
+                  {room.isPrivate && ' · خاصة'}
+                </span>
+                <h1>{room.name}</h1>
+                {room.description && <p>{room.description}</p>}
+              </div>
               {error && (
                 <div className="v-error v-room-error" role="alert">
                   <span>{error}</span>
@@ -594,13 +668,6 @@ export function VoiceRoomView({
                           </h2>
                         </div>
                         <div className={roomStyles.stageActions}>
-                          <button
-                            className="v-button v-small"
-                            disabled={!me || !room.chatEnabled}
-                            onClick={() => openGifts()}
-                          >
-                            <Gift size={16} /> الهدايا
-                          </button>
                           <span className={`v-connection v-state-${audioState}`}>
                             <span />
                             {audioState === 'connected'
@@ -615,13 +682,13 @@ export function VoiceRoomView({
                           </span>
                         </div>
                       </div>
-                      <div className="v-seats">
+                      <div className="v-seats" data-show-empty={showEmptySeats}>
                         {Array.from({ length: room.seatCount }, (_, index) => {
                           const person = participants.find((p) => p.seatIndex === index);
                           const locked = room.lockedSeats.includes(index);
                           return (
                             <div
-                              className={`v-seat ${!person ? roomStyles.emptySeat : ''} ${person?.role === 'host' ? 'v-host-seat' : ''} ${person && speakers.includes(person.id) ? 'is-speaking' : ''}`}
+                              className={`v-seat ${!person ? `${roomStyles.emptySeat} v-seat-is-empty` : ''} ${person?.role === 'host' ? 'v-host-seat' : ''} ${person && speakers.includes(person.id) ? 'is-speaking' : ''}`}
                               key={index}
                             >
                               {person ? (
@@ -732,6 +799,16 @@ export function VoiceRoomView({
                           );
                         })}
                       </div>
+                      {participants.filter((p) => p.seatIndex !== null).length < room.seatCount && (
+                        <button
+                          className="v-seat-expand v-text-button"
+                          aria-expanded={showEmptySeats}
+                          onClick={() => setShowEmptySeats((value) => !value)}
+                        >
+                          <Mic size={15} />
+                          {showEmptySeats ? 'طي المقاعد الشاغرة' : 'عرض المقاعد الشاغرة'}
+                        </button>
+                      )}
                       <p className="v-stage-note">
                         <ShieldCheck size={14} />
                         يضيء إطار المتحدث عند وصول الصوت فعليًا.
@@ -771,72 +848,6 @@ export function VoiceRoomView({
                         ))}
                       </section>
                     )}
-                    <section className="v-listeners" aria-label="أعضاء الغرفة">
-                      <header>
-                        <div className={roomStyles.membersHeading}>
-                          <h2>
-                            <Users size={19} />
-                            أعضاء الغرفة <span>{number(participants.length)}</span>
-                          </h2>
-                          <p>
-                            {number(room.listenerCount)} مستمع ·{' '}
-                            {number(participants.filter((p) => p.seatIndex !== null).length)} على
-                            المايك
-                          </p>
-                        </div>
-                        <label className="v-search">
-                          <Search size={16} />
-                          <input
-                            type="search"
-                            aria-label="البحث في أعضاء الغرفة"
-                            placeholder="ابحث عن اسم…"
-                            value={participantSearch}
-                            onChange={(e) => setParticipantSearch(e.target.value)}
-                          />
-                        </label>
-                      </header>
-                      <div className="v-listener-grid">
-                        {members.map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() => setProfileId(p.id)}
-                            aria-label={`ملف ${p.name}، ${roleLabels[p.role]}`}
-                          >
-                            <span>
-                              <Avatar user={p} size={43} />
-                              {p.handRaised && <Hand className="v-listener-hand" size={15} />}
-                            </span>
-                            <span className={roomStyles.memberInfo}>
-                              <strong title={p.name}>
-                                <MemberName
-                                  name={p.id === user.id ? 'أنت' : p.name}
-                                  badges={p.accountBadges}
-                                />
-                              </strong>
-                              <small>
-                                {p.seatIndex !== null ? (
-                                  <Mic size={12} />
-                                ) : (
-                                  <Headphones size={12} />
-                                )}
-                                {p.handRaised
-                                  ? 'رفع يده'
-                                  : p.seatIndex !== null
-                                    ? roleLabels[p.role]
-                                    : 'مستمع'}
-                              </small>
-                            </span>
-                          </button>
-                        ))}
-                        {!members.length && (
-                          <p className="v-muted">
-                            {participantSearch
-                              ? 'لا يوجد اسم يطابق البحث.'
-                              : 'سيظهر الأعضاء هنا عند الانضمام.'}
-                          </p>
-                        )}
-                      </div>
-                    </section>
                   </div>
                   <div
                     className="v-chat-column"
@@ -863,7 +874,12 @@ export function VoiceRoomView({
                   </div>
                 </div>
               )}
-              <div className="v-audio-session" inert={chatOverlayOpen}>
+              <details className="v-audio-session" inert={chatOverlayOpen}>
+                <summary>الصوت والألعاب</summary>
+                <button className="v-button v-outline" onClick={() => setAudioSettingsOpen(true)}>
+                  <Headphones size={16} />
+                  أجهزة الصوت والاتصال
+                </button>
                 <Link href="/games/" className="v-button v-outline">
                   افتح الألعاب وابقَ على المايك
                 </Link>
@@ -879,7 +895,7 @@ export function VoiceRoomView({
                     onChange={(e) => setVolume(Number(e.target.value))}
                   />
                 </label>
-              </div>
+              </details>
               {room.active && (
                 <div className={`v-room-controls ${roomStyles.controls}`} inert={chatOverlayOpen}>
                   <div className="v-controls-me">
@@ -955,6 +971,14 @@ export function VoiceRoomView({
                       <span>{deafened ? 'تشغيل السماعات' : 'كتم السماعات'}</span>
                     </button>
                     <button
+                      className="v-control v-gift-control"
+                      disabled={!me || !room.chatEnabled}
+                      onClick={() => openGifts()}
+                    >
+                      <Gift />
+                      <span>الهدايا</span>
+                    </button>
+                    <button
                       className={`v-control v-chat-toggle ${chatOpen ? 'is-selected' : ''}`}
                       aria-expanded={chatOpen}
                       onClick={() => setChatOpen((v) => !v)}
@@ -969,6 +993,75 @@ export function VoiceRoomView({
                   </button>
                 </div>
               )}
+              <Dialog
+                open={membersOpen}
+                onOpenChange={setMembersOpen}
+                title="أهل المجلس"
+                className="v-dialog v-members-dialog"
+              >
+                {' '}
+                <section className="v-listeners" aria-label="أعضاء الغرفة">
+                  <header>
+                    <div className={roomStyles.membersHeading}>
+                      <h2>
+                        <Users size={19} />
+                        أعضاء الغرفة <span>{number(participants.length)}</span>
+                      </h2>
+                      <p>
+                        {number(room.listenerCount)} مستمع ·{' '}
+                        {number(participants.filter((p) => p.seatIndex !== null).length)} على المايك
+                      </p>
+                    </div>
+                    <label className="v-search">
+                      <Search size={16} />
+                      <input
+                        type="search"
+                        aria-label="البحث في أعضاء الغرفة"
+                        placeholder="ابحث عن اسم…"
+                        value={participantSearch}
+                        onChange={(e) => setParticipantSearch(e.target.value)}
+                      />
+                    </label>
+                  </header>
+                  <div className="v-listener-grid">
+                    {members.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setProfileId(p.id)}
+                        aria-label={`ملف ${p.name}، ${roleLabels[p.role]}`}
+                      >
+                        <span>
+                          <Avatar user={p} size={43} />
+                          {p.handRaised && <Hand className="v-listener-hand" size={15} />}
+                        </span>
+                        <span className={roomStyles.memberInfo}>
+                          <strong title={p.name}>
+                            <MemberName
+                              name={p.id === user.id ? 'أنت' : p.name}
+                              badges={p.accountBadges}
+                            />
+                          </strong>
+                          <small>
+                            {p.seatIndex !== null ? <Mic size={12} /> : <Headphones size={12} />}
+                            {p.handRaised
+                              ? 'رفع يده'
+                              : p.seatIndex !== null
+                                ? roleLabels[p.role]
+                                : 'مستمع'}
+                          </small>
+                        </span>
+                      </button>
+                    ))}
+                    {!members.length && (
+                      <p className="v-muted">
+                        {participantSearch
+                          ? 'لا يوجد اسم يطابق البحث.'
+                          : 'سيظهر الأعضاء هنا عند الانضمام.'}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              </Dialog>
               <Dialog
                 open={Boolean(profileId)}
                 onOpenChange={onProfileOpenChange}
@@ -1214,6 +1307,6 @@ export function VoiceRoomView({
           )}
         </VoiceShell>
       )}
-    </>
+    </div>
   );
 }

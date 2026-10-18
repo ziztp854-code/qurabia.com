@@ -171,6 +171,7 @@ describe('Live room roles and state', () => {
   it('lists speakers and listeners together and searches members without removing their microphone seat', async () => {
     mockRoom();
     render(<VoiceRoomView roomId={room.id} user={host} />);
+    fireEvent.click(await screen.findByRole('button', { name: /عرض أعضاء الغرفة/ }));
     const members = await screen.findByRole('region', { name: 'أعضاء الغرفة' });
     expect(
       within(members).getByRole('button', { name: new RegExp(host.name) }),

@@ -11,6 +11,9 @@ export function PersistentVoiceDock({
   deafened,
   busy,
   visible,
+  overlayActive = false,
+  audioSettingsOpen = false,
+  onAudioSettingsOpenChange,
   error,
   mediaPending,
   onMute,
@@ -22,6 +25,9 @@ export function PersistentVoiceDock({
   deafened: boolean;
   busy: boolean;
   visible: boolean;
+  overlayActive?: boolean;
+  audioSettingsOpen?: boolean;
+  onAudioSettingsOpenChange?: (open: boolean) => void;
   error: string;
   mediaPending: boolean;
   onMute: () => void;
@@ -34,7 +40,13 @@ export function PersistentVoiceDock({
   const canSpeak = Boolean(admitted && me?.seatIndex !== null && me?.role !== 'listener');
   const muted = !canSpeak || Boolean(me?.muted || me?.moderatorMuted);
   return (
-    <aside className={`v-player ${styles.dock}`} dir="rtl" aria-label="جلسة الصوت المستمرة">
+    <aside
+      className={`v-player ${styles.dock} ${visible ? styles.inRoom : ''}`}
+      data-audio-open={audioSettingsOpen}
+      inert={visible && overlayActive}
+      dir="rtl"
+      aria-label="جلسة الصوت المستمرة"
+    >
       <div className={styles.heading}>
         <Headphones aria-hidden="true" />
         <div>
@@ -80,7 +92,19 @@ export function PersistentVoiceDock({
           {admitted ? 'مغادرة الصوت' : 'إغلاق جلسة الصوت'}
         </button>
       </nav>
-      <div className={styles.audio}>{children}</div>
+      <div className={styles.audio}>
+        <details
+          open={visible ? audioSettingsOpen : true}
+          onToggle={(event) => {
+            if (visible) onAudioSettingsOpenChange?.(event.currentTarget.open);
+          }}
+        >
+          <summary>
+            <Headphones size={17} /> الصوت والأجهزة
+          </summary>
+          {children}
+        </details>
+      </div>
       {!visible && error && (
         <p role="alert" className={styles.warning}>
           {error}
