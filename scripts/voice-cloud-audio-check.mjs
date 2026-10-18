@@ -37,6 +37,19 @@ export async function checkCloudAudio() {
       });
       child.on('exit', (code) => {
         clearTimeout(timer);
+        if (code !== 0 && report?.phase === 'verify' && Array.isArray(report.paths)) {
+          for (const path of report.paths) {
+            // Only fixed labels and finite measurements cross the secret-bearing child boundary.
+            if (
+              !['B→A', 'A→B'].includes(path.direction) ||
+              ![path.samples, path.rms, path.expectedHz, path.toneRatio].every(Number.isFinite)
+            )
+              continue;
+            console.log(
+              `[voice-cloud-audio] failed ${path.direction}: decoded ${path.samples} PCM samples, RMS ${path.rms}, expected ${path.expectedHz}Hz, tone ratio ${path.toneRatio}`,
+            );
+          }
+        }
         if (code === 0 && report?.ok && report?.paths?.length === 2) resolve(report);
         else
           reject(
@@ -83,6 +96,7 @@ async function runNativeClients(roomName) {
   let collecting = false;
   let phase = 'connect';
   let report;
+  let paths;
   try {
     for (let index = 0; index < 2; index++) {
       rooms[index].on(rtc.RoomEvent.TrackSubscribed, (track) => {
@@ -160,7 +174,7 @@ async function runNativeClients(roomName) {
     );
     await delay(500);
     phase = 'verify';
-    const paths = received.map((frames, index) => {
+    paths = received.map((frames, index) => {
       const samples = new Int16Array(frames.reduce((sum, frame) => sum + frame.length, 0));
       let offset = 0;
       for (const frame of frames) {
@@ -175,7 +189,7 @@ async function runNativeClients(roomName) {
     if (paths.some((path) => !path.passed)) throw new Error('Expected tone was not decoded');
     report = { ok: true, paths };
   } catch {
-    report = { ok: false, phase };
+    report = { ok: false, phase, ...(phase === 'verify' && paths ? { paths } : {}) };
   } finally {
     await Promise.allSettled(readers.map((reader) => reader.cancel()));
     await Promise.allSettled(tracks.map((track) => track.close()));
