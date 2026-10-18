@@ -36,6 +36,7 @@ import type {
   VoiceSnapshot,
 } from '@/lib/voice/types';
 import { AudioSession } from './audio-session';
+import { MemberEntrance, voiceArrivals, type VoiceArrival } from './member-entrance';
 import { PersistentVoiceDock } from './persistent-voice-dock';
 import { Avatar, EmptyState, LiveBadge, VoiceShell, VoiceCover } from './voice-ui';
 import {
@@ -91,6 +92,8 @@ export function VoiceRoomView({
   const [volume, setVolume] = useState(0.85);
   const [speakers, setSpeakers] = useState<string[]>([]);
   const [audioState, setAudioState] = useState('disconnected');
+  const [arrivals, setArrivals] = useState<VoiceArrival[]>([]);
+  const dismissArrival = useCallback(() => setArrivals((current) => current.slice(1)), []);
   const [settings, setSettings] = useState(false);
   const [closeRoom, setCloseRoom] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
@@ -109,6 +112,18 @@ export function VoiceRoomView({
     if (leaving.current) return;
     const next = nextSnapshot(snapshotRef.current, data);
     if (next === snapshotRef.current) return;
+    const entrants = voiceArrivals(snapshotRef.current, next);
+    if (entrants.length)
+      setArrivals((current) =>
+        [
+          ...current.filter((entry) => entry.expiresAt > Date.now()),
+          ...entrants.slice(-3).map((member, index) => ({
+            member,
+            key: `${member.id}:${member.joinedAt}`,
+            expiresAt: Date.now() + 6000 + index * 3000,
+          })),
+        ].slice(-3),
+      );
     snapshotRef.current = next;
     setSnapshot(next);
     if (data.mediaSyncPending !== undefined) setMediaPending(data.mediaSyncPending);
@@ -372,6 +387,20 @@ export function VoiceRoomView({
           )}
         </PersistentVoiceDock>
       )}
+      <MemberEntrance
+        arrival={arrivals[0]}
+        selfId={user.id}
+        onDismiss={dismissArrival}
+        visible={
+          visible &&
+          Boolean(me && room?.active) &&
+          !profileId &&
+          !reportOpen &&
+          !settings &&
+          !closeRoom &&
+          !chatOverlayOpen
+        }
+      />
       {visible && (
         <VoiceShell user={user} room modalActive={chatOverlayOpen}>
           {loading ? (

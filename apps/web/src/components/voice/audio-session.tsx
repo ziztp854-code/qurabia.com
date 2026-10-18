@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ConnectionState,
   Room,
@@ -10,6 +10,7 @@ import {
   type RemoteParticipant,
 } from 'livekit-client';
 import type { VoiceParticipant } from '@/lib/voice/types';
+import { SoundCheck } from './sound-check';
 
 export type VoiceAudioState =
   | 'connecting'
@@ -66,6 +67,12 @@ export function AudioSession({
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [canSelectOutput, setCanSelectOutput] = useState(false);
   const participantId = participant?.id;
+  const getMicrophoneTrack = useCallback(
+    () =>
+      roomRef.current?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
+        ?.mediaStreamTrack,
+    [],
+  );
   const canPublish = Boolean(
     participant &&
     participant.seatIndex !== null &&
@@ -362,6 +369,14 @@ export function AudioSession({
         >
           تفعيل الاستماع
         </button>
+      )}
+      {state === 'connected' && (
+        <SoundCheck
+          inputId={inputId}
+          outputId={outputId}
+          roomMicActive={canPublish && !muted}
+          getMicrophoneTrack={getMicrophoneTrack}
+        />
       )}
       {state === 'connected' && (
         <details>

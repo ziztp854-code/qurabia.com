@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
+import { checkCloudAudio } from './voice-cloud-audio-check.mjs';
 
 if (process.env.VERCEL_ENV !== 'production' || process.env.LIVEKIT_MODE !== 'cloud') {
   console.log('[voice-cloud-check] skipped outside production Cloud mode');
@@ -42,7 +43,7 @@ if (
   origins.some((origin) => !policy.split(/[ ;]/).includes(origin))
 )
   throw new Error('Cloud CSP is incomplete');
-const roomName = `tahaddi-voice-cloud-check-${randomUUID()}`;
+const roomName = `voice-cloud-signal-check-${randomUUID()}`;
 const client = new RoomServiceClient(
   endpoint.href.replace(/^ws/, 'http'),
   process.env.LIVEKIT_API_KEY,
@@ -75,6 +76,7 @@ async function token(identity, publish = true) {
   });
   return jwt.toJwt();
 }
+
 function join(jwt) {
   return new Promise((resolve, reject) => {
     const url = new URL('rtc', endpoint);
@@ -216,5 +218,13 @@ try {
       console.error('[voice-cloud-check] test-room cleanup failed');
       process.exitCode = 1;
     }
+  }
+}
+if (!process.exitCode) {
+  try {
+    await checkCloudAudio();
+  } catch (error) {
+    console.error(`[voice-cloud-audio] ${error.message}; production activation blocked`);
+    process.exitCode = 1;
   }
 }
