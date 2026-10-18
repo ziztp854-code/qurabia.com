@@ -3,6 +3,7 @@ import { readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import pg from 'pg';
+import { resolveMigrationUrl } from './deploy-migrations.mjs';
 
 export const VOICE_MIGRATION = '20261018090000_voice_rooms';
 const VOICE_TABLES = ['VoiceRoom', 'VoicePreference', 'VoiceReport', 'VoiceCover'];
@@ -31,8 +32,9 @@ async function main() {
     console.log('Voice schema deployment skipped outside the enabled production build.');
     return;
   }
-  const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
-  if (!connectionString) throw new Error('The production database is not configured.');
+  if (!process.env.DIRECT_URL && !process.env.DATABASE_URL)
+    throw new Error('The production database is not configured.');
+  const connectionString = resolveMigrationUrl(process.env);
   const migrationsPath = fileURLToPath(new URL('../prisma/migrations/', import.meta.url));
   const available = readdirSync(migrationsPath, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -79,7 +81,7 @@ async function main() {
       '--config',
       'scripts/voice-production-prisma.config.ts',
     ],
-    { stdio: 'inherit' },
+    { stdio: 'inherit', env: { ...process.env, DIRECT_URL: connectionString } },
   );
   if (result.status !== 0) throw new Error('Voice schema migration did not complete.');
 }
