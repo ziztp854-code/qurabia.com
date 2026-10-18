@@ -1,0 +1,161 @@
+.dialog {
+  color: var(--voice-text);
+  background: var(--voice-card);
+  border: 1px solid var(--voice-border);
+}
+.form {
+  display: grid;
+  gap: 20px;
+  min-inline-size: 0;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.trial {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--voice-glow);
+  color: var(--voice-gold-light);
+}
+.trial svg {
+  flex-shrink: 0;
+}
+.recipient {
+  display: grid;
+  gap: 8px;
+}
+.recipient select {
+  min-block-size: 48px;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 8px 12px;
+  background: var(--voice-bg);
+  color: var(--voice-text);
+  border: 1px solid var(--voice-border);
+  border-radius: 10px;
+  font: inherit;
+}
+.choices {
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.choices legend {
+  margin-block-end: 10px;
+}
+.choices > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-inline-size: 0;
+  padding: 16px 6px 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 14px;
+  background: var(--voice-bg);
+  cursor: pointer;
+}
+.choice:has(input:checked) {
+  border-color: var(--voice-gold);
+  background: var(--voice-glow);
+}
+.choice input {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  accent-color: var(--voice-gold);
+  inline-size: 16px;
+  block-size: 16px;
+}
+.choice > span {
+  font-size: 36px;
+  line-height: 1.5;
+}
+.choice strong {
+  font-size: 14px;
+}
+.choice small,
+.hint {
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.choice:has(input:focus-visible),
+.recipient select:focus-visible,
+.form button:focus-visible {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+.error {
+  color: var(--voice-danger);
+}
+.success {
+  color: var(--voice-success);
+}
+.form button:disabled,
+.choices:disabled .choice {
+  opacity: 0.6;
+  cursor: default;
+}
+.receipt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 10px;
+  color: var(--voice-text);
+  overflow-wrap: anywhere;
+  animation: gift-in 240ms ease-out;
+}
+.giftEmoji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 52px;
+  block-size: 64px;
+  background: var(--voice-glow);
+  border: 1px solid var(--voice-border);
+  border-radius: 14px;
+  font-size: 32px;
+}
+.receipt > div {
+  min-inline-size: 0;
+}
+.receipt strong {
+  font-size: 14px;
+  color: var(--voice-gold-light);
+}
+.receipt p {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.receipt small {
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+@keyframes gift-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 480px) {
+  .choices > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .receipt {
+    animation: none;
+  }
+}

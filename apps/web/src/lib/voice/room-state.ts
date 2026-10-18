@@ -1,4 +1,5 @@
 import { VoiceHttpError } from './http';
+import { voiceGift, VOICE_GIFT_INTERVAL } from './gifts';
 import type {
   VoiceEvent,
   VoiceIdentity,
@@ -98,6 +99,30 @@ export function applyVoiceEvent(
     participant.muted = true;
   };
   switch (event.type) {
+    case 'gift': {
+      if (!state.settings.chatEnabled)
+        throw new VoiceHttpError(403, 'الهدايا متوقفة أثناء إغلاق الدردشة.', 'CHAT_DISABLED');
+      const gift = voiceGift(event.giftId);
+      if (!gift) throw new VoiceHttpError(400, 'الهدية غير متاحة.', 'INVALID_GIFT');
+      const recipient = target(event.recipientId, false);
+      if (actor.lastGiftAt !== undefined && now - actor.lastGiftAt < VOICE_GIFT_INTERVAL)
+        throw new VoiceHttpError(429, 'انتظر خمس ثوانٍ بين الهدايا التجريبية.', 'GIFT_SLOW_MODE');
+      state.messages.push({
+        id: messageId,
+        userId: actor.id,
+        name: actor.name,
+        image: actor.image,
+        text: `${gift.emoji} أرسل ${actor.name} ${gift.name} إلى ${recipient.name} · هدية تجريبية مجانية`,
+        createdAt: now,
+        replyTo: null,
+        pinned: false,
+        reactions: {},
+        gift: { id: gift.id, recipientId: recipient.id, recipientName: recipient.name },
+      });
+      actor.lastGiftAt = now;
+      state.messages = state.messages.slice(-200);
+      break;
+    }
     case 'request-seat': {
       if (!state.settings.allowMicRequests && !canManageVoice(state, actor)) forbidden();
       const index =
@@ -269,6 +294,7 @@ export function applyVoiceEvent(
 function publicParticipant(participant: VoiceParticipant): VoiceParticipant {
   const publicValue = { ...participant };
   delete publicValue.tokenVersion;
+  delete publicValue.lastGiftAt;
   return publicValue;
 }
 export function voiceSnapshot(

@@ -3,6 +3,13 @@
   gap: 20px;
 }
 
+.stageActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .layout :global(.v-stage-column) {
   gap: 20px;
 }

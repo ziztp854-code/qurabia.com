@@ -195,6 +195,18 @@ describe('voice server room permissions', () => {
   });
 });
 describe('voice input boundaries', () => {
+  it('accepts only trial catalog gifts and rejects forged receipt or wallet fields', () => {
+    const gift = { type: 'gift', giftId: 'rose', recipientId: 'alice' };
+    expect(voiceEventSchema.safeParse(gift).success).toBe(true);
+    for (const extra of [
+      { giftId: 'expensive-car' },
+      { recipientName: 'مزيف' },
+      { userId: 'host' },
+      { price: 100 },
+      { amount: 10 },
+    ])
+      expect(voiceEventSchema.safeParse({ ...gift, ...extra }).success).toBe(false);
+  });
   it('rejects remote/svg/path traversal covers, forged identity/role and oversized text', () => {
     for (const value of [
       'https://example.com/a.webp',
@@ -216,5 +228,69 @@ describe('voice input boundaries', () => {
     expect(voiceEventSchema.safeParse({ type: 'message', text: 'x'.repeat(1001) }).success).toBe(
       false,
     );
+  });
+});
+
+describe('free trial gifts', () => {
+  it('creates a shared receipt using real server identities and leaves microphone state unchanged', () => {
+    const state = room();
+    const before = state.participants.map((p) => ({
+      id: p.id,
+      seatIndex: p.seatIndex,
+      muted: p.muted,
+    }));
+    event(state, 'alice', { type: 'gift', giftId: 'crown', recipientId: 'host' });
+    expect(state.messages[0]).toMatchObject({
+      userId: 'alice',
+      name: 'عائشة',
+      gift: { id: 'crown', recipientId: 'host', recipientName: 'المضيف' },
+    });
+    expect(state.messages[0].text).toContain('هدية تجريبية مجانية');
+    expect(voiceSnapshot('room', state, 2, 'bob').messages).toEqual(state.messages);
+    expect(
+      state.participants.map((p) => ({ id: p.id, seatIndex: p.seatIndex, muted: p.muted })),
+    ).toEqual(before);
+    expect(JSON.stringify(voiceSnapshot('room', state, 2, 'alice'))).not.toContain('lastGiftAt');
+  });
+  it('keeps the throttle after deletion and permits a self gift at the five-second boundary', () => {
+    const state = room();
+    event(state, 'alice', { type: 'gift', giftId: 'rose', recipientId: 'host' });
+    event(state, 'alice', { type: 'delete-message', messageId: `msg-${now}` });
+    expect(() =>
+      event(state, 'alice', { type: 'gift', giftId: 'rose', recipientId: 'host' }, now + 4999),
+    ).toThrow(expect.objectContaining({ status: 429, code: 'GIFT_SLOW_MODE' }));
+    event(state, 'alice', { type: 'gift', giftId: 'star', recipientId: 'alice' }, now + 5000);
+    expect(state.messages[0].gift?.recipientId).toBe('alice');
+  });
+  it('requires active membership for sender and recipient and respects disabled chat', () => {
+    const state = room();
+    expect(() =>
+      event(state, 'outsider', { type: 'gift', giftId: 'rose', recipientId: 'host' }),
+    ).toThrow(expect.objectContaining({ code: 'NOT_JOINED' }));
+    leaveVoiceState(state, 'bob');
+    expect(() =>
+      event(state, 'alice', { type: 'gift', giftId: 'rose', recipientId: 'bob' }),
+    ).toThrow(expect.objectContaining({ code: 'NOT_JOINED' }));
+    state.settings.chatEnabled = false;
+    expect(() =>
+      event(state, 'alice', { type: 'gift', giftId: 'rose', recipientId: 'host' }),
+    ).toThrow(expect.objectContaining({ code: 'CHAT_DISABLED' }));
+    state.active = false;
+    expect(() =>
+      event(state, 'alice', { type: 'gift', giftId: 'rose', recipientId: 'host' }),
+    ).toThrow(expect.objectContaining({ code: 'ROOM_CLOSED' }));
+    expect(state.messages).toHaveLength(0);
+  });
+  it('bounds the shared history and applies blocked sender filtering to gifts', () => {
+    const state = room();
+    for (let index = 0; index < 205; index++)
+      event(
+        state,
+        'alice',
+        { type: 'gift', giftId: 'applause', recipientId: 'host' },
+        now + index * 5000,
+      );
+    expect(state.messages).toHaveLength(200);
+    expect(voiceSnapshot('room', state, 2, 'bob', false, ['alice']).messages).toHaveLength(0);
   });
 });

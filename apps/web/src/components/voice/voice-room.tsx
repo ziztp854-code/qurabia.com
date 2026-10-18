@@ -9,6 +9,7 @@ import {
   Check,
   Crown,
   Flag,
+  Gift,
   Hand,
   Headphones,
   Heart,
@@ -54,6 +55,7 @@ import { VoiceChat } from './voice-chat';
 import { RoomSettings } from './room-settings';
 import { useVoiceMediaQuery, useVoiceOverlay } from './use-voice-overlay';
 import roomStyles from './room-layout.module.css';
+import { VoiceGifts } from './voice-gifts';
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
 
@@ -86,6 +88,15 @@ export function VoiceRoomView({
     if (!open) setProfileId(null);
   }, []);
   const [chatOpen, setChatOpen] = useState(false);
+  const [giftsOpen, setGiftsOpen] = useState(false);
+  const [giftRecipient, setGiftRecipient] = useState<string | undefined>();
+  const closeGifts = useCallback(() => setGiftsOpen(false), []);
+  function openGifts(recipientId?: string) {
+    setProfileId(null);
+    setChatOpen(false);
+    setGiftRecipient(recipientId);
+    setGiftsOpen(true);
+  }
   const chatRef = useRef<HTMLDivElement>(null);
   const compactChat = useVoiceMediaQuery('(max-width: 1020px)');
   const closeChat = useCallback(() => setChatOpen(false), []);
@@ -105,7 +116,7 @@ export function VoiceRoomView({
   const mountSequence = useRef(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportUserId, setReportUserId] = useState<string | null>(null);
-  const chatOverlayOpen = chatOpen && compactChat && !profileId && !reportOpen;
+  const chatOverlayOpen = chatOpen && compactChat && !profileId && !reportOpen && !giftsOpen;
   useVoiceOverlay(chatOverlayOpen && visible, chatRef, closeChat);
   const leaving = useRef(false);
   const snapshotRef = useRef<VoiceSnapshot | null>(null);
@@ -398,6 +409,7 @@ export function VoiceRoomView({
           !profileId &&
           !reportOpen &&
           !settings &&
+          !giftsOpen &&
           !closeRoom &&
           !chatOverlayOpen
         }
@@ -575,18 +587,27 @@ export function VoiceRoomView({
                             على الميكروفون
                           </h2>
                         </div>
-                        <span className={`v-connection v-state-${audioState}`}>
-                          <span />
-                          {audioState === 'connected'
-                            ? 'الصوت متصل'
-                            : audioState === 'reconnecting'
-                              ? 'إعادة الاتصال'
-                              : audioState === 'setup-needed'
-                                ? 'الصوت يحتاج إعدادًا'
-                                : audioState === 'connecting'
-                                  ? 'جارٍ الاتصال'
-                                  : 'الصوت غير متصل'}
-                        </span>
+                        <div className={roomStyles.stageActions}>
+                          <button
+                            className="v-button v-small"
+                            disabled={!me || !room.chatEnabled}
+                            onClick={() => openGifts()}
+                          >
+                            <Gift size={16} /> الهدايا
+                          </button>
+                          <span className={`v-connection v-state-${audioState}`}>
+                            <span />
+                            {audioState === 'connected'
+                              ? 'الصوت متصل'
+                              : audioState === 'reconnecting'
+                                ? 'إعادة الاتصال'
+                                : audioState === 'setup-needed'
+                                  ? 'الصوت يحتاج إعدادًا'
+                                  : audioState === 'connecting'
+                                    ? 'جارٍ الاتصال'
+                                    : 'الصوت غير متصل'}
+                          </span>
+                        </div>
                       </div>
                       <div className="v-seats">
                         {Array.from({ length: room.seatCount }, (_, index) => {
@@ -952,6 +973,13 @@ export function VoiceRoomView({
                         {selected.moderatorMuted ? ' · الميكروفون مكتوم من المشرف' : ''}
                       </p>
                     </div>
+                    <button
+                      className="v-button"
+                      disabled={!me || !room.chatEnabled || !room.active}
+                      onClick={() => openGifts(selected.id)}
+                    >
+                      <Gift size={18} /> إرسال هدية تجريبية
+                    </button>
                     {selected.id !== user.id && (
                       <div className="v-profile-actions">
                         <button
@@ -1077,6 +1105,16 @@ export function VoiceRoomView({
                   <p className="v-muted">هذا المشارك غير موجود في الغرفة الآن.</p>
                 )}
               </Dialog>
+              {giftsOpen && (
+                <VoiceGifts
+                  participants={participants}
+                  selfId={user.id}
+                  initialRecipientId={giftRecipient}
+                  enabled={Boolean(me && room.active && room.chatEnabled)}
+                  onEvent={event}
+                  onClose={closeGifts}
+                />
+              )}
               {host && (
                 <>
                   <RoomSettings

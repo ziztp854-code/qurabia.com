@@ -7,6 +7,7 @@ import { Avatar } from './voice-ui';
 import { useVoiceMediaQuery } from './use-voice-overlay';
 import { number } from './voice-client';
 import roomStyles from './room-layout.module.css';
+import { GiftReceipt } from './voice-gifts';
 
 export function VoiceChat({
   messages,
@@ -177,7 +178,7 @@ export function VoiceChat({
                   {messages.find((m) => m.id === message.replyTo)?.text || 'رد على رسالة سابقة'}
                 </blockquote>
               )}
-              <p>{message.text}</p>
+              {message.gift ? <GiftReceipt message={message} /> : <p>{message.text}</p>}
               {Object.entries(message.reactions).length > 0 && (
                 <div className="v-reactions">
                   {Object.entries(message.reactions).map(([emoji, users]) => (

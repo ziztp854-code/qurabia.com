@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { VOICE_CATEGORIES } from './types';
+import { VOICE_GIFTS } from './gifts';
 const id = z.string().min(1).max(160);
 const seatIndex = z.number().int().min(0).max(15);
 // Covers are served by our own asset/upload pipeline; remote URLs and SVG are excluded.
@@ -42,6 +43,13 @@ export const joinRoomSchema = z
   })
   .strict();
 export const voiceEventSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('gift'),
+      giftId: z.enum(VOICE_GIFTS.map((gift) => gift.id)),
+      recipientId: id,
+    })
+    .strict(),
   z.object({ type: z.literal('request-seat'), seatIndex: seatIndex.optional() }).strict(),
   z.object({ type: z.literal('approve-seat'), userId: id, seatIndex }).strict(),
   z.object({ type: z.literal('deny-seat'), userId: id }).strict(),

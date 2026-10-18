@@ -164,6 +164,39 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('persistent microphone across game routes', () => {
+  it('keeps the microphone connected during trial gifting and releases the gift dialog on game navigation', async () => {
+    const view = render(<App />);
+    await connected();
+    const microphoneCalls = sdk.microphone.mock.calls.length;
+    const previousOverflow = document.body.style.overflow;
+    fireEvent.click(screen.getByRole('button', { name: 'الهدايا' }));
+    expect(await screen.findByRole('dialog', { name: 'الهدايا التجريبية' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال وردة مجانًا' }));
+    expect(await screen.findByText(/أُرسلت وردة/)).toBeInTheDocument();
+    expect(
+      fetcher.mock.calls.some(
+        ([, init]) => init?.body && JSON.parse(init.body as string).type === 'gift',
+      ),
+    ).toBe(true);
+    expect(sdk.microphone).toHaveBeenCalledTimes(microphoneCalls);
+    expect(sdk.disconnect).not.toHaveBeenCalled();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'الهدايا التجريبية' })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe(previousOverflow);
+    fireEvent.click(screen.getByRole('button', { name: 'الهدايا' }));
+    sdk.pathname = '/games/chess';
+    view.rerender(<App />);
+    expect(screen.queryByRole('dialog', { name: 'الهدايا التجريبية' })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe(previousOverflow);
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+    expect(sdk.disconnect).not.toHaveBeenCalled();
+    expect(requests('/token')).toHaveLength(1);
+    // Drain this fixture's deferred page-leave cleanup before the next navigator mock.
+    view.unmount();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  });
   it('does not load or request voice for users who only open games', async () => {
     sdk.pathname = '/games/chess';
     render(<App />);

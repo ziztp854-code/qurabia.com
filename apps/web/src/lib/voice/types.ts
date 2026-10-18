@@ -1,3 +1,5 @@
+import type { VoiceGiftId } from './gifts';
+
 export const VOICE_CATEGORIES = [
   'مجالس',
   'سوالف',
@@ -24,6 +26,8 @@ export type VoiceParticipant = VoiceIdentity & {
   moderatorMuted: boolean;
   joinedAt: number;
   lastSeenAt: number;
+  /** Server-only trial gift throttle for this membership. */
+  lastGiftAt?: number;
 };
 export type VoiceMessage = {
   id: string;
@@ -35,6 +39,7 @@ export type VoiceMessage = {
   replyTo: string | null;
   pinned: boolean;
   reactions: Record<string, string[]>;
+  gift?: { id: VoiceGiftId; recipientId: string; recipientName: string };
 };
 export type VoiceRoomSettings = {
   name: string;
@@ -111,6 +116,7 @@ export type VoiceEvent =
   | { type: 'remove'; userId: string }
   | { type: 'role'; userId: string; role: 'moderator' | 'speaker' | 'listener' }
   | { type: 'message'; text: string; replyTo?: string }
+  | { type: 'gift'; giftId: VoiceGiftId; recipientId: string }
   | { type: 'reaction'; messageId: string; emoji: string }
   | { type: 'pin-message'; messageId: string; pinned: boolean }
   | { type: 'delete-message'; messageId: string }
