@@ -455,3 +455,36 @@
   --report-chart-blue: #2c81f1;
   --report-chart-purple: #8b3fda;
 }
+
+/* Tahaddi Live voice rooms — user-approved Premium Dark Arabic palette, scoped. */
+.v-app,
+.v-player {
+  --voice-bg: #080510;
+  --voice-card: #151021;
+  --voice-raised: #21172f;
+  --voice-gold: #ffbf50;
+  --voice-gold-light: #ffd978;
+  --voice-purple: #a855f7;
+  --voice-cyan: #00d5f5;
+  --voice-live: #ff2878;
+  --voice-text: #ffffff;
+  --voice-muted: #bdb3c9;
+  --voice-ink: #211509;
+  --voice-border: rgb(255 217 120 / 0.18);
+  --voice-line: rgb(255 255 255 / 0.1);
+  --voice-glass: rgb(8 5 16 / 0.82);
+  --voice-shade: rgb(8 5 16 / 0.92);
+  --voice-soft-shade: rgb(8 5 16 / 0.1);
+  --voice-glow: rgb(255 191 80 / 0.12);
+  --voice-danger: #ff9abf;
+  --voice-success: #7ce4bc;
+  --voice-shadow: 0 16px 50px rgb(0 0 0 / 0.26);
+  --background: var(--voice-bg);
+  --foreground: var(--voice-text);
+  --surface: var(--voice-card);
+  --surface-strong: var(--voice-raised);
+  --muted-foreground: var(--voice-muted);
+  --primary: var(--voice-gold);
+  --primary-foreground: var(--voice-ink);
+  --border: var(--voice-line);
+}

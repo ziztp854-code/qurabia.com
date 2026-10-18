@@ -9,6 +9,7 @@ import {
   Home,
   LayoutDashboard,
   MonitorPlay,
+  Mic2,
   Skull,
   Trophy,
   UserCircle2,
@@ -17,6 +18,7 @@ import {
 export const publicNavigation = [
   { label: 'الرئيسية', href: '/', icon: Home },
   { label: 'الألعاب', href: '/games', icon: Gamepad2 },
+  { label: 'تحدي لايف', href: '/voice', icon: Mic2 },
   { label: 'القرية', href: '/games/kingdoms', icon: Castle },
   { label: 'خريطة العالم', href: '/games/kingdoms/world-map', icon: Globe2 },
   { label: 'المسابقات', href: '/quizzes', icon: Trophy },
@@ -31,6 +33,7 @@ export const primaryNavigation = [
   { label: 'المسابقات', href: '/quizzes', icon: Trophy },
   { label: 'شاشة العرض', href: '/display', icon: MonitorPlay },
   { label: 'الألعاب', href: '/games', icon: Gamepad2 },
+  { label: 'تحدي لايف', href: '/voice', icon: Mic2 },
   { label: 'القرية', href: '/games/kingdoms', icon: Castle },
   { label: 'خريطة العالم', href: '/games/kingdoms/world-map', icon: Globe2 },
   { label: 'من هو القاتل؟', href: '/mafia', icon: Skull },

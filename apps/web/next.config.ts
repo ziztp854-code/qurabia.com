@@ -97,6 +97,17 @@ function buildContentSecurityPolicy(): string {
     connectSources.add(toWebSocketOrigin(origin));
   }
 
+  // A voice session survives App Router navigation to games. The policy belongs
+  // to the initial document, so the configured gateway must work on every entry route.
+  {
+    const origin = toOrigin(process.env.LIVEKIT_URL);
+    if (origin && /^(wss?|https?):/.test(origin)) {
+      const httpOrigin = origin.replace(/^ws/, 'http');
+      connectSources.add(httpOrigin);
+      connectSources.add(toWebSocketOrigin(httpOrigin));
+    }
+  }
+
   return [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
@@ -122,7 +133,7 @@ function buildContentSecurityPolicy(): string {
  *  - X-Frame-Options DENY: block clickjacking on every route.
  *  - X-Content-Type-Options nosniff: block MIME sniffing.
  *  - Referrer-Policy strict-origin-when-cross-origin: sane default.
- *  - Permissions-Policy: disable powerful APIs we do not need.
+ *  - Permissions-Policy: allow same-origin audio for persistent voice across games.
  *  - COOP / DNS prefetch / cross-domain policies: match `vercel.json`.
  *  - CSP: only emitted on production builds that do not run on Vercel
  *    (Vercel already injects it from `vercel.json`; emitting it twice would
@@ -138,7 +149,7 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    value: 'camera=(), microphone=(self), speaker-selection=(self), geolocation=(), interest-cohort=()',
   },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
@@ -181,6 +192,7 @@ const nextConfig: NextConfig = {
         source: '/games/sultan-farm/index.html',
         headers: [
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), speaker-selection=(), geolocation=(), interest-cohort=()' },
           {
             key: 'Content-Security-Policy',
             value:

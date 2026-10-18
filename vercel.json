@@ -59,7 +59,7 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+          "value": "camera=(), microphone=(self), speaker-selection=(self), geolocation=(), interest-cohort=()"
         },
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Cross-Origin-Resource-Policy", "value": "same-origin" },
@@ -90,6 +90,10 @@
       "source": "/games/sultan-farm/index.html",
       "headers": [
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), speaker-selection=(), geolocation=(), interest-cohort=()"
+        },
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
