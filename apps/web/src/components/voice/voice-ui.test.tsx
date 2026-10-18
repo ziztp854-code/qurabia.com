@@ -168,6 +168,33 @@ describe('Voice lobby and creation', () => {
 });
 
 describe('Live room roles and state', () => {
+  it('lists speakers and listeners together and searches members without removing their microphone seat', async () => {
+    mockRoom();
+    render(<VoiceRoomView roomId={room.id} user={host} />);
+    const members = await screen.findByRole('region', { name: 'أعضاء الغرفة' });
+    expect(
+      within(members).getByRole('button', { name: new RegExp(host.name) }),
+    ).toBeInTheDocument();
+    expect(
+      within(members).getByRole('button', { name: new RegExp(listener.name) }),
+    ).toBeInTheDocument();
+    fireEvent.change(within(members).getByRole('searchbox'), {
+      target: { value: `  ${listener.name}  ` },
+    });
+    expect(
+      within(members).queryByRole('button', { name: new RegExp(host.name) }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(members).getByRole('button', { name: new RegExp(listener.name) }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: new RegExp(`${host.name}.*الميكروفون مكتوم`) }),
+    ).toBeInTheDocument();
+    fireEvent.change(within(members).getByRole('searchbox'), {
+      target: { value: 'اسم غير موجود' },
+    });
+    expect(within(members).getByText('لا يوجد اسم يطابق البحث.')).toBeInTheDocument();
+  });
   it('allows a host to approve a generic request into a free unlocked seat', async () => {
     const fetcher = mockRoom();
     render(<VoiceRoomView roomId={room.id} user={host} />);

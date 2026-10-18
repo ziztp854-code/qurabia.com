@@ -1,0 +1,420 @@
+/* Scope the room refinement above legacy voice rules without changing the audio dock. */
+.layout {
+  gap: 20px;
+}
+
+.layout :global(.v-stage-column) {
+  gap: 20px;
+}
+
+.layout :global(.v-chat-column) {
+  min-inline-size: 0;
+}
+
+.layout :global(.v-stage),
+.layout :global(.v-listeners) {
+  padding: 20px;
+  border-radius: 20px;
+  min-inline-size: 0;
+}
+
+.layout :global(.v-stage-heading) {
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-block-end: 16px;
+  margin-block-end: 20px;
+  border-block-end: 1px solid var(--voice-line);
+}
+
+.layout :global(.v-stage-heading h2),
+.layout :global(.v-listeners h2) {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.layout :global(.v-connection) {
+  min-block-size: 32px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+.layout :global(.v-stage .v-seats) {
+  max-inline-size: none;
+  max-width: none;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.layout :global(.v-seat) {
+  padding: 16px 8px 12px;
+  min-block-size: 190px;
+  border: 1px solid var(--voice-line);
+  border-radius: 16px;
+  background: var(--voice-bg);
+}
+
+.layout :global(.v-host-seat) {
+  border-color: var(--voice-border);
+  background: linear-gradient(160deg, var(--voice-glow), transparent 70%), var(--voice-bg);
+}
+
+.layout :global(.v-seat.is-speaking) {
+  border-color: var(--voice-cyan);
+}
+
+.layout :global(.v-seat-person),
+.layout :global(.v-empty-seat) {
+  min-block-size: 156px;
+  min-height: 156px;
+  border-radius: 10px;
+}
+
+.layout :global(.v-seat-avatar) {
+  inline-size: 72px;
+  block-size: 72px;
+  margin-block-end: 12px;
+}
+
+.layout :global(.v-seat-avatar .v-avatar) {
+  width: 66px !important;
+  height: 66px !important;
+}
+
+.layout :global(.v-seat-person strong),
+.layout :global(.v-empty-seat strong) {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.layout :global(.v-seat-person small),
+.layout :global(.v-empty-seat small) {
+  font-size: 11px;
+}
+
+.seatState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-block-size: 24px;
+  margin-block-start: 5px;
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+
+.layout :global(.is-speaking) .seatState {
+  color: var(--voice-cyan);
+}
+
+.seatState svg {
+  flex-shrink: 0;
+}
+
+.layout :global(.v-seat).emptySeat {
+  border-style: dashed;
+  background: transparent;
+  padding-block-end: 42px;
+}
+
+.layout :global(.v-empty-seat > span) {
+  inline-size: 66px;
+  block-size: 66px;
+  margin-block: 3px 15px;
+}
+
+.layout :global(.v-seat-lock) {
+  inset-block-end: 4px;
+  min-inline-size: 60px;
+  min-block-size: 44px;
+  font-size: 11px;
+}
+
+.layout :global(.v-stage-note) {
+  justify-content: flex-start;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.layout :global(.v-stage-note svg) {
+  flex-shrink: 0;
+}
+
+.layout :global(.v-listeners > header) {
+  gap: 16px;
+  margin-block-end: 18px;
+}
+
+.membersHeading {
+  min-inline-size: 0;
+}
+
+.membersHeading p {
+  margin-block-start: 4px;
+  font-size: 11px;
+  color: var(--voice-muted);
+}
+
+.layout :global(.v-listeners h2 span) {
+  min-inline-size: 28px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.layout :global(.v-listeners .v-search) {
+  min-block-size: 44px;
+  max-inline-size: 220px;
+  max-width: 220px;
+  flex: 1 1 160px;
+}
+
+.layout :global(.v-listeners .v-search input) {
+  min-block-size: 42px;
+  font-size: 12px;
+}
+
+.layout :global(.v-listener-grid) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr));
+  gap: 10px;
+}
+
+.layout :global(.v-listener-grid > button) {
+  flex-direction: row;
+  gap: 10px;
+  text-align: start;
+  min-inline-size: 0;
+  max-inline-size: none;
+  max-width: none;
+  min-block-size: 76px;
+  padding: 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 12px;
+  background: var(--voice-bg);
+}
+
+.layout :global(.v-listener-grid > button > span:first-child) {
+  flex-shrink: 0;
+}
+
+.memberInfo {
+  display: grid;
+  gap: 3px;
+  min-inline-size: 0;
+}
+
+.layout .memberInfo strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--voice-text);
+}
+
+.memberInfo small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+
+.layout :global(.v-listener-grid > p) {
+  grid-column: 1 / -1;
+  padding-block: 20px;
+  text-align: center;
+}
+
+.chat:global(.v-chat) {
+  min-inline-size: 0;
+  border-radius: 20px;
+}
+
+.chat > header,
+.chat :global(.v-pinned),
+.chat :global(.v-reply-preview) {
+  flex-shrink: 0;
+}
+
+.chat:global(.v-chat) > header {
+  padding-inline: 16px;
+  min-block-size: 72px;
+  background: var(--voice-bg);
+}
+
+.chat:global(.v-chat) > header h2 {
+  font-size: 16px;
+}
+
+.chat:global(.v-chat) > header > span {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.chat :global(.v-messages) {
+  padding: 16px 12px 4px;
+  scrollbar-gutter: stable;
+}
+
+.chat :global(.v-message) {
+  gap: 8px;
+  margin-block-end: 16px;
+}
+
+.chat :global(.v-message-body) {
+  padding: 10px 12px 6px;
+  border: 1px solid var(--voice-line);
+  border-radius: 14px;
+  border-start-start-radius: 4px;
+  background: var(--voice-bg);
+}
+
+.chat :global(.v-my-message .v-message-body) {
+  background: var(--voice-glow);
+  border-color: var(--voice-border);
+}
+
+.chat :global(.v-message-meta) {
+  gap: 6px 10px;
+  margin-block-end: 4px;
+}
+
+.chat :global(.v-message-meta strong) {
+  font-size: 12px;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.chat :global(.v-message-meta time) {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat :global(.v-message-body > p) {
+  color: var(--voice-text);
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.chat :global(.v-message-body blockquote) {
+  font-size: 11px;
+  max-block-size: 60px;
+  max-height: 60px;
+  line-height: 1.8;
+}
+
+.chat :global(.v-message-actions) {
+  gap: 2px;
+  padding-block-start: 4px;
+}
+
+.chat :global(.v-message-actions button) {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  border-radius: 8px;
+}
+
+.chat :global(.v-chat-compose) {
+  gap: 6px;
+  padding: 12px;
+}
+
+.chat :global(.v-chat-compose input) {
+  font-size: 13px;
+  border: 1px solid var(--voice-line);
+  border-radius: 10px;
+  background: var(--voice-card);
+}
+
+.chat :global(.v-chat-compose .v-icon),
+.chat :global(.v-send) {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+}
+
+.chat :global(.v-chat-empty) {
+  padding: 16px;
+  line-height: 1.9;
+}
+
+.chat :global(.v-chat-empty small),
+.chat :global(.v-pinned),
+.chat :global(.v-reply-preview) {
+  font-size: 11px;
+}
+
+.layout :global(.v-seat-person:focus-visible),
+.layout :global(.v-empty-seat:focus-visible),
+.layout :global(.v-listener-grid > button:focus-visible),
+.chat :global(button:focus-visible),
+.chat :global(input:focus-visible) {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .layout :global(.v-seat:has(.v-seat-person:hover)),
+  .layout :global(.v-listener-grid > button:hover) {
+    border-color: var(--voice-gold);
+  }
+}
+
+@media (min-width: 1021px) {
+  .layout:global(.v-room-columns) {
+    grid-template-columns: minmax(0, 1fr) clamp(310px, 26vw, 360px);
+  }
+}
+
+@media (min-width: 1021px) and (max-width: 1300px) {
+  .layout :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1020px) {
+  .layout:global(.v-chat-open) .chat {
+    min-block-size: 0;
+    min-height: 0;
+  }
+
+  .chat :global(.v-messages) {
+    min-block-size: 0;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .layout :global(.v-stage),
+  .layout :global(.v-listeners) {
+    padding: 16px 12px;
+    border-radius: 16px;
+  }
+
+  .layout :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .layout :global(.v-seat-person strong),
+  .layout :global(.v-empty-seat strong) {
+    font-size: 12px;
+  }
+
+  .layout :global(.v-listeners .v-search) {
+    max-inline-size: none;
+    max-width: none;
+  }
+
+  .layout :global(.v-listener-grid) {
+    grid-template-columns: repeat(auto-fill, minmax(min(126px, 100%), 1fr));
+    gap: 8px;
+  }
+
+  .layout :global(.v-listener-grid > button) {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .layout :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

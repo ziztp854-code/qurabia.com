@@ -5,6 +5,8 @@ import { Flag, MessageCircle, Pin, Reply, Send, SmilePlus, Trash2, X } from 'luc
 import type { VoiceEvent, VoiceMessage, VoiceParticipant } from '@/lib/voice/types';
 import { Avatar } from './voice-ui';
 import { useVoiceMediaQuery } from './use-voice-overlay';
+import { number } from './voice-client';
+import roomStyles from './room-layout.module.css';
 
 export function VoiceChat({
   messages,
@@ -77,7 +79,7 @@ export function VoiceChat({
   }
   const pinned = messages.find((m) => m.pinned);
   return (
-    <section ref={panel} className="v-chat" aria-label="دردشة الغرفة">
+    <section ref={panel} className={`v-chat ${roomStyles.chat}`} aria-label="دردشة الغرفة">
       {draggable && (
         <button
           className="v-chat-drag"
@@ -108,7 +110,7 @@ export function VoiceChat({
           <MessageCircle size={18} />
           الدردشة
         </h2>
-        <span>{messages.length} رسالة</span>
+        <span>{number(messages.length)} رسالة</span>
         <button className="v-icon v-chat-close" onClick={close} aria-label="إغلاق الدردشة">
           <X size={19} />
         </button>
@@ -159,7 +161,9 @@ export function VoiceChat({
             </button>
             <div className="v-message-body">
               <div className="v-message-meta">
-                <strong>{message.name}</strong>
+                <strong>
+                  <bdi>{message.name}</bdi>
+                </strong>
                 <time dateTime={new Date(message.createdAt).toISOString()}>
                   {new Date(message.createdAt).toLocaleTimeString('ar-SA', {
                     hour: '2-digit',

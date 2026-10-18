@@ -53,6 +53,7 @@ import {
 import { VoiceChat } from './voice-chat';
 import { RoomSettings } from './room-settings';
 import { useVoiceMediaQuery, useVoiceOverlay } from './use-voice-overlay';
+import roomStyles from './room-layout.module.css';
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
 
@@ -355,8 +356,8 @@ export function VoiceRoomView({
   const participants = snapshot?.participants || [];
   const selected = participants.find((p) => p.id === profileId);
   const requests = participants.filter((p) => p.requestedSeat !== null);
-  const listeners = participants.filter(
-    (p) => p.seatIndex === null && p.name.toLowerCase().includes(participantSearch.toLowerCase()),
+  const members = participants.filter((p) =>
+    p.name.toLowerCase().includes(participantSearch.trim().toLowerCase()),
   );
   const onSeat = me?.seatIndex !== null && me?.seatIndex !== undefined;
   return (
@@ -561,7 +562,9 @@ export function VoiceRoomView({
                 </div>
               )}
               {room.active && (
-                <div className={`v-room-columns ${chatOpen ? 'v-chat-open' : ''}`}>
+                <div
+                  className={`v-room-columns ${roomStyles.layout} ${chatOpen ? 'v-chat-open' : ''}`}
+                >
                   <div className="v-stage-column" inert={chatOverlayOpen}>
                     <section className="v-stage">
                       <div className="v-stage-heading">
@@ -591,7 +594,7 @@ export function VoiceRoomView({
                           const locked = room.lockedSeats.includes(index);
                           return (
                             <div
-                              className={`v-seat ${person?.role === 'host' ? 'v-host-seat' : ''} ${person && speakers.includes(person.id) ? 'is-speaking' : ''}`}
+                              className={`v-seat ${!person ? roomStyles.emptySeat : ''} ${person?.role === 'host' ? 'v-host-seat' : ''} ${person && speakers.includes(person.id) ? 'is-speaking' : ''}`}
                               key={index}
                             >
                               {person ? (
@@ -627,15 +630,26 @@ export function VoiceRoomView({
                                         </span>
                                       )}
                                     </span>
-                                    <strong>{person.id === user.id ? 'أنت' : person.name}</strong>
+                                    <strong title={person.name}>
+                                      <bdi>{person.id === user.id ? 'أنت' : person.name}</bdi>
+                                    </strong>
                                     <small>{roleLabels[person.role]}</small>
-                                  </button>
-                                  {speakers.includes(person.id) && (
-                                    <span className="v-speaking-label">
-                                      <AudioLines size={12} />
-                                      يتحدث الآن
+                                    <span className={roomStyles.seatState}>
+                                      {speakers.includes(person.id) ? (
+                                        <>
+                                          <AudioLines size={13} /> يتحدث الآن
+                                        </>
+                                      ) : person.muted || person.moderatorMuted ? (
+                                        <>
+                                          <MicOff size={13} /> مكتوم
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Mic size={13} /> المايك مفتوح
+                                        </>
+                                      )}
                                     </span>
-                                  )}
+                                  </button>
                                 </>
                               ) : (
                                 <>
@@ -727,17 +741,24 @@ export function VoiceRoomView({
                         ))}
                       </section>
                     )}
-                    <section className="v-listeners">
+                    <section className="v-listeners" aria-label="أعضاء الغرفة">
                       <header>
-                        <h2>
-                          <Headphones size={19} />
-                          المستمعون <span>{number(room.listenerCount)}</span>
-                        </h2>
+                        <div className={roomStyles.membersHeading}>
+                          <h2>
+                            <Users size={19} />
+                            أعضاء الغرفة <span>{number(participants.length)}</span>
+                          </h2>
+                          <p>
+                            {number(room.listenerCount)} مستمع ·{' '}
+                            {number(participants.filter((p) => p.seatIndex !== null).length)} على
+                            المايك
+                          </p>
+                        </div>
                         <label className="v-search">
                           <Search size={16} />
                           <input
                             type="search"
-                            aria-label="البحث في المستمعين"
+                            aria-label="البحث في أعضاء الغرفة"
                             placeholder="ابحث عن اسم…"
                             value={participantSearch}
                             onChange={(e) => setParticipantSearch(e.target.value)}
@@ -745,20 +766,40 @@ export function VoiceRoomView({
                         </label>
                       </header>
                       <div className="v-listener-grid">
-                        {listeners.map((p) => (
-                          <button key={p.id} onClick={() => setProfileId(p.id)}>
+                        {members.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => setProfileId(p.id)}
+                            aria-label={`ملف ${p.name}، ${roleLabels[p.role]}`}
+                          >
                             <span>
                               <Avatar user={p} size={43} />
                               {p.handRaised && <Hand className="v-listener-hand" size={15} />}
                             </span>
-                            <strong>{p.id === user.id ? 'أنت' : p.name}</strong>
+                            <span className={roomStyles.memberInfo}>
+                              <strong title={p.name}>
+                                <bdi>{p.id === user.id ? 'أنت' : p.name}</bdi>
+                              </strong>
+                              <small>
+                                {p.seatIndex !== null ? (
+                                  <Mic size={12} />
+                                ) : (
+                                  <Headphones size={12} />
+                                )}
+                                {p.handRaised
+                                  ? 'رفع يده'
+                                  : p.seatIndex !== null
+                                    ? roleLabels[p.role]
+                                    : 'مستمع'}
+                              </small>
+                            </span>
                           </button>
                         ))}
-                        {!listeners.length && (
+                        {!members.length && (
                           <p className="v-muted">
                             {participantSearch
                               ? 'لا يوجد اسم يطابق البحث.'
-                              : 'المستمعون القادمون لهم مكان هنا.'}
+                              : 'سيظهر الأعضاء هنا عند الانضمام.'}
                           </p>
                         )}
                       </div>
