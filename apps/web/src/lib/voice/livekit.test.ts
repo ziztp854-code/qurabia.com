@@ -11,17 +11,20 @@ import {
   voiceMediaConfig,
   VoiceMediaUnavailable,
 } from './livekit';
-import type { VoiceParticipant, VoiceSnapshot } from './types';
+import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
 const mocks = vi.hoisted(() => ({
   snapshot: undefined as unknown,
   list: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
   mute: vi.fn(),
+  ledger: {} as VoiceMediaLedger,
 }));
 vi.mock('./repository', () => ({
-  withVoiceMediaSnapshot: async (_id: string, work: (snapshot: unknown) => unknown) =>
-    work(mocks.snapshot),
+  withVoiceMediaSnapshot: async (
+    _id: string,
+    work: (snapshot: unknown, ledger: VoiceMediaLedger) => unknown,
+  ) => work(mocks.snapshot, mocks.ledger),
 }));
 vi.mock('livekit-server-sdk', async (importOriginal) => {
   const actual = await importOriginal<typeof import('livekit-server-sdk')>();
@@ -49,12 +52,14 @@ const speaker: VoiceParticipant = {
   lastSeenAt: 1,
 };
 beforeEach(() => {
+  vi.stubEnv('LIVEKIT_MODE', 'gateway');
   vi.stubEnv('LIVEKIT_URL', 'ws://127.0.0.1:7890');
   vi.stubEnv('LIVEKIT_INTERNAL_URL', 'ws://127.0.0.1:7880');
   vi.stubEnv('LIVEKIT_API_KEY', 'local-test');
   vi.stubEnv('LIVEKIT_API_SECRET', 'this-is-only-a-unit-test-secret-32');
   vi.clearAllMocks();
   mocks.list.mockResolvedValue([]);
+  mocks.ledger = {};
 });
 describe('voice SFU admission', () => {
   it('fails closed with absent or insecure configuration', async () => {
@@ -180,5 +185,116 @@ describe('voice SFU admission', () => {
     await expect(reconcileVoiceMedia('one-room', {} as VoiceSnapshot)).rejects.toThrow(
       'unreachable',
     );
+  });
+});
+
+describe('LiveKit Cloud strict revocation', () => {
+  beforeEach(() => {
+    vi.stubEnv('LIVEKIT_MODE', 'cloud');
+    vi.stubEnv('LIVEKIT_URL', 'wss://tahaddi-test.livekit.cloud');
+    vi.stubEnv('LIVEKIT_INTERNAL_URL', '');
+    mocks.snapshot = { room: { active: true }, participants: [speaker] };
+  });
+  const grant = () => ({
+    active: true,
+    canPublish: true,
+    tokenVersion: 0,
+    joinedAt: speaker.joinedAt,
+    revokedBefore: 0,
+  });
+  it('requires explicit Cloud mode and an exact TLS Cloud project hostname', () => {
+    expect(voiceMediaConfig()?.mode).toBe('cloud');
+    for (const url of [
+      'wss://evil.livekit.cloud.example',
+      'wss://livekit.cloud',
+      'wss://test.livekit.cloud/path',
+      'ws://test.livekit.cloud',
+      'wss://test.livekit.cloud:7880',
+    ]) {
+      vi.stubEnv('LIVEKIT_URL', url);
+      expect(voiceMediaConfig()).toBeNull();
+    }
+    vi.stubEnv('LIVEKIT_URL', 'wss://tahaddi-test.livekit.cloud');
+    vi.stubEnv('LIVEKIT_INTERNAL_URL', 'http://localhost:7880');
+    expect(voiceMediaConfig()).toBeNull();
+  });
+  it('records every issued token in a server ledger and refuses untracked issuance', async () => {
+    await expect(createVoiceToken('room', speaker)).rejects.toBeInstanceOf(VoiceMediaUnavailable);
+    const ledger: VoiceMediaLedger = {};
+    const token = await createVoiceToken('room', speaker, 0, ledger);
+    expect(ledger[speaker.id]).toEqual(grant());
+    expect(token).not.toHaveProperty('ledger');
+  });
+  it('revokes removed identities even when they are offline at the SFU', async () => {
+    mocks.ledger['offline-member'] = grant();
+    const before = Math.ceil(Date.now() / 1000) + 1;
+    await reconcileVoiceMedia('room');
+    expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-room', 'offline-member', {
+      revokeTokenTs: expect.any(BigInt),
+    });
+    expect(mocks.ledger['offline-member'].active).toBe(false);
+    expect(mocks.ledger['offline-member'].revokedBefore).toBeGreaterThanOrEqual(before);
+  });
+  it.each([
+    { ...speaker, moderatorMuted: true },
+    { ...speaker, role: 'listener' as const, seatIndex: null },
+    { ...speaker, tokenVersion: 1 },
+    { ...speaker, joinedAt: 2 },
+  ])(
+    'invalidates cached grants when rights or session/join version changes: %j',
+    async (member) => {
+      mocks.ledger[speaker.id] = grant();
+      mocks.snapshot = { room: { active: true }, participants: [member] };
+      await reconcileVoiceMedia('room');
+      expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-room', speaker.id, {
+        revokeTokenTs: expect.any(BigInt),
+      });
+      expect(mocks.ledger[speaker.id].active).toBe(false);
+    },
+  );
+  it('does not issue a replacement JWT before the strict cutoff has passed', async () => {
+    const ledger: VoiceMediaLedger = {
+      [speaker.id]: { ...grant(), active: false, revokedBefore: Math.floor(Date.now() / 1000) + 5 },
+    };
+    await expect(createVoiceToken('room', speaker, 0, ledger)).rejects.toMatchObject({
+      code: 'MEDIA_RETRY',
+    });
+    ledger[speaker.id].revokedBefore = Math.floor(Date.now() / 1000) - 1;
+    await expect(createVoiceToken('room', speaker, 0, ledger)).resolves.toMatchObject({
+      canPublish: true,
+    });
+  });
+  it('requires reconciliation before a changed grant can be reissued', async () => {
+    const ledger = { [speaker.id]: grant() };
+    await expect(
+      createVoiceToken('room', { ...speaker, moderatorMuted: true }, 0, ledger),
+    ).rejects.toMatchObject({ code: 'MEDIA_RETRY' });
+    expect(ledger[speaker.id].active).toBe(true);
+  });
+  it('removes untracked connections with a strict cutoff', async () => {
+    mocks.list.mockResolvedValue([{ identity: 'unknown', tracks: [] }]);
+    await reconcileVoiceMedia('room');
+    expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-room', 'unknown', {
+      revokeTokenTs: expect.any(BigInt),
+    });
+  });
+  it('preserves a connected participant whose current grant matches the ledger', async () => {
+    mocks.ledger[speaker.id] = grant();
+    mocks.list.mockResolvedValue([
+      {
+        identity: speaker.id,
+        tracks: [],
+        permission: {
+          canPublish: true,
+          canSubscribe: true,
+          canPublishData: false,
+          canUpdateMetadata: false,
+          canPublishSources: [2],
+        },
+      },
+    ]);
+    await reconcileVoiceMedia('room');
+    expect(mocks.remove).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 });

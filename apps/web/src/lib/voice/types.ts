@@ -86,7 +86,19 @@ export type VoiceRoomState = {
   participants: VoiceParticipant[];
   messages: VoiceMessage[];
   bannedUsers: string[];
+  /** Server-only Cloud token ledger; never included in public snapshots. */
+  mediaGrants?: VoiceMediaLedger;
 };
+export type VoiceMediaLedger = Record<
+  string,
+  {
+    active: boolean;
+    canPublish: boolean;
+    tokenVersion: number;
+    joinedAt: number;
+    revokedBefore: number;
+  }
+>;
 export type VoiceEvent =
   | { type: 'request-seat'; seatIndex?: number }
   | { type: 'approve-seat'; userId: string; seatIndex: number }

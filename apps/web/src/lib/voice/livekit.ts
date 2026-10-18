@@ -1,7 +1,8 @@
 import 'server-only';
 import { AccessToken, RoomServiceClient, TrackSource } from 'livekit-server-sdk';
-import type { VoiceParticipant, VoiceSnapshot } from './types';
+import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
 import { withVoiceMediaSnapshot } from './repository';
+import { VoiceHttpError } from './http';
 
 export const VOICE_MEDIA_ROOM_PREFIX = 'tahaddi-voice-';
 export const VOICE_TOKEN_TTL_SECONDS = 60;
@@ -28,9 +29,24 @@ export function voiceMediaConfig() {
   const internalUrl = process.env.LIVEKIT_INTERNAL_URL;
   const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
-  if (!url || !internalUrl || !apiKey || !apiSecret) return null;
+  if (!url || !apiKey || !apiSecret) return null;
   try {
     const client = safeMediaUrl(url);
+    if (process.env.LIVEKIT_MODE === 'cloud') {
+      const parsed = new URL(client);
+      // Cloud revocation is a provider feature, never enable it for arbitrary SFUs.
+      if (
+        !/^[a-z0-9-]+\.livekit\.cloud$/.test(parsed.hostname) ||
+        parsed.protocol !== 'wss:' ||
+        parsed.port ||
+        parsed.pathname !== '/' ||
+        internalUrl
+      )
+        return null;
+      return { mode: 'cloud' as const, url: client, internalUrl: client, apiKey, apiSecret };
+    }
+    if (process.env.LIVEKIT_MODE && process.env.LIVEKIT_MODE !== 'gateway') return null;
+    if (!internalUrl) return null;
     const internal = safeMediaUrl(internalUrl, true);
     // Browsers must only reach the admission gateway, never the private SFU.
     if (
@@ -38,7 +54,7 @@ export function voiceMediaConfig() {
       new URL(internal.replace(/^ws/, 'http')).origin
     )
       return null;
-    return { url: client, internalUrl: internal, apiKey, apiSecret };
+    return { mode: 'gateway' as const, url: client, internalUrl: internal, apiKey, apiSecret };
   } catch {
     return null;
   }
@@ -60,10 +76,28 @@ export async function createVoiceToken(
   roomId: string,
   participant: VoiceParticipant,
   sessionVersion = participant.tokenVersion ?? 0,
+  ledger?: VoiceMediaLedger,
 ) {
   const config = voiceMediaConfig();
   if (!config) throw new VoiceMediaUnavailable();
   const canPublish = canPublishVoice(participant);
+  if (config.mode === 'cloud') {
+    if (!ledger) throw new VoiceMediaUnavailable();
+    const previous = ledger[participant.id];
+    if (previous?.active && !sameCloudGrant(previous, participant))
+      throw new VoiceHttpError(409, 'تحدّثت صلاحيات الصوت. أعد الاتصال بعد لحظات.', 'MEDIA_RETRY');
+    // A strict cutoff also rejects tokens minted earlier in the same second.
+    // Wait for the next explicit client retry rather than issue an unusable JWT.
+    if (Math.floor(Date.now() / 1000) < (ledger[participant.id]?.revokedBefore ?? 0))
+      throw new VoiceHttpError(409, 'تحدّثت صلاحيات الصوت. أعد الاتصال بعد لحظات.', 'MEDIA_RETRY');
+    ledger[participant.id] = {
+      active: true,
+      canPublish,
+      tokenVersion: sessionVersion,
+      joinedAt: participant.joinedAt,
+      revokedBefore: ledger[participant.id]?.revokedBefore ?? 0,
+    };
+  }
   const token = new AccessToken(config.apiKey, config.apiSecret, {
     identity: participant.id,
     name: participant.name,
@@ -92,23 +126,76 @@ export async function reconcileVoiceMedia(roomId: string, _snapshot?: VoiceSnaps
   void _snapshot; // Caller revisions are never used to grant media permissions.
   if (!voiceMediaConfig()) return;
   const startBy = Date.now() + 12_000;
-  return withVoiceMediaSnapshot(roomId, (snapshot) => {
+  return withVoiceMediaSnapshot(roomId, (snapshot, ledger) => {
     // Leave room for the three sequential 2s RPC stages within the 20s DB lock.
     // A delayed DB read must not start media writes after most of the lock budget.
     if (Date.now() > startBy) throw new Error('VoiceMediaDeadlineExceeded');
-    return applyVoiceMediaPermissions(roomId, snapshot);
+    return applyVoiceMediaPermissions(roomId, snapshot, ledger);
   });
 }
 
-async function applyVoiceMediaPermissions(roomId: string, snapshot: VoiceSnapshot) {
+function mediaClient(config: NonNullable<ReturnType<typeof voiceMediaConfig>>) {
+  return new RoomServiceClient(
+    config.internalUrl.replace(/^ws/, 'http'),
+    config.apiKey,
+    config.apiSecret,
+    {
+      requestTimeout: 2,
+      failover: false,
+    },
+  );
+}
+function sameCloudGrant(grant: VoiceMediaLedger[string], member: VoiceParticipant) {
+  return (
+    grant.canPublish === canPublishVoice(member) &&
+    grant.tokenVersion === (member.tokenVersion ?? 0) &&
+    grant.joinedAt === member.joinedAt
+  );
+}
+async function revokeCloudGrant(
+  client: RoomServiceClient,
+  roomId: string,
+  identity: string,
+  ledger: VoiceMediaLedger,
+) {
+  const cutoff = Math.ceil(Date.now() / 1000) + 1;
+  // Explicit cutoff has no default one-minute buffer, including offline identities.
+  await client.removeParticipant(voiceMediaRoomName(roomId), identity, {
+    revokeTokenTs: BigInt(cutoff),
+  });
+  ledger[identity] = {
+    active: false,
+    canPublish: false,
+    tokenVersion: 0,
+    joinedAt: 0,
+    revokedBefore: cutoff,
+  };
+}
+async function applyVoiceMediaPermissions(
+  roomId: string,
+  snapshot: VoiceSnapshot,
+  ledger: VoiceMediaLedger,
+) {
   const config = voiceMediaConfig();
   if (!config) return;
-  const serviceUrl = config.internalUrl.replace(/^ws/, 'http');
-  const client = new RoomServiceClient(serviceUrl, config.apiKey, config.apiSecret, {
-    requestTimeout: 2,
-    failover: false,
-  });
+  const client = mediaClient(config);
   const roomName = voiceMediaRoomName(roomId);
+  if (config.mode === 'cloud') {
+    const outcomes = await Promise.allSettled(
+      Object.entries(ledger).map(async ([id, grant]) => {
+        const member = snapshot.room.active
+          ? snapshot.participants.find((p) => p.id === id)
+          : undefined;
+        if (grant.active && (!member || !sameCloudGrant(grant, member)))
+          await revokeCloudGrant(client, roomId, id, ledger);
+        // Cloud refresh tokens expire in ten minutes. Retain inactive tombstones
+        // beyond that window; never discard a still-active grant based on age.
+        if (!grant.active && Date.now() / 1000 > grant.revokedBefore + 660) delete ledger[id];
+      }),
+    );
+    const failed = outcomes.find((r) => r.status === 'rejected');
+    if (failed?.status === 'rejected') throw failed.reason;
+  }
   let mediaParticipants;
   try {
     mediaParticipants = await client.listParticipants(roomName);
@@ -122,6 +209,17 @@ async function applyVoiceMediaPermissions(roomId: string, snapshot: VoiceSnapsho
       const member = snapshot.room.active
         ? snapshot.participants.find((p) => p.id === media.identity)
         : undefined;
+      if (
+        config.mode === 'cloud' &&
+        (!member ||
+          !ledger[media.identity]?.active ||
+          !sameCloudGrant(ledger[media.identity], member))
+      ) {
+        // A revocation in the first stage already removed this identity.
+        if (ledger[media.identity]?.active !== false)
+          await revokeCloudGrant(client, roomId, media.identity, ledger);
+        return;
+      }
       if (!member) {
         await client.removeParticipant(roomName, media.identity);
         return;
@@ -136,7 +234,11 @@ async function applyVoiceMediaPermissions(roomId: string, snapshot: VoiceSnapsho
         permission.canUpdateMetadata ||
         permission.canPublishSources.length !== 1 ||
         permission.canPublishSources[0] !== TrackSource.MICROPHONE
-      )
+      ) {
+        if (config.mode === 'cloud') {
+          await revokeCloudGrant(client, roomId, media.identity, ledger);
+          return;
+        }
         await client.updateParticipant(roomName, media.identity, undefined, {
           canPublish,
           canPublishSources: [TrackSource.MICROPHONE],
@@ -144,6 +246,7 @@ async function applyVoiceMediaPermissions(roomId: string, snapshot: VoiceSnapsho
           canPublishData: false,
           canUpdateMetadata: false,
         });
+      }
       if (!canPublish) {
         const muted = await Promise.allSettled(
           media.tracks

@@ -48,8 +48,12 @@ describe('voice server room permissions', () => {
     state.participants.forEach((participant) => {
       participant.tokenVersion = 42;
     });
+    state.mediaGrants = {
+      host: { active: true, canPublish: true, tokenVersion: 42, joinedAt: now, revokedBefore: 0 },
+    };
     const snapshot = voiceSnapshot('room', state, 1, 'host');
     expect(JSON.stringify(snapshot)).not.toContain('tokenVersion');
+    expect(JSON.stringify(snapshot)).not.toContain('mediaGrants');
     expect(state.participants[0].tokenVersion).toBe(42);
   });
   it('rejects listener publication, moderation, room closing and arbitrary role changes', () => {

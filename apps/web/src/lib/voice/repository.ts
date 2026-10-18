@@ -17,6 +17,7 @@ import type {
   VoiceIdentity,
   VoiceJoinInput,
   VoiceList,
+  VoiceMediaLedger,
   VoicePreferences,
   VoicePreferencesAction,
   VoiceRoomSettings,
@@ -227,6 +228,8 @@ async function mutateRoom(
     await pruneInactiveAccounts(state);
     await mutate(state, record);
     const changed = await db.$transaction(async (tx) => {
+      // State changes and Cloud token issuance/revocation share one room lock.
+      await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
       const result = await tx.voiceRoom.updateMany({
         where: { id: roomId, revision: record.revision },
         data: {
@@ -424,7 +427,7 @@ export async function createVoiceInvite(roomId: string, userId: string, origin: 
 /** Serialize SFU permission writes and read fresh, unfiltered authoritative membership. */
 export async function withVoiceMediaSnapshot<T>(
   roomId: string,
-  work: (snapshot: VoiceSnapshot) => Promise<T>,
+  work: (snapshot: VoiceSnapshot, ledger: VoiceMediaLedger) => Promise<T>,
 ): Promise<T> {
   return getPrismaClient().$transaction(
     async (tx) => {
@@ -451,7 +454,17 @@ export async function withVoiceMediaSnapshot<T>(
       // This callback is server-only: admission compares signed JWT session versions.
       // Public repository snapshots continue to strip this internal account field.
       snapshot.participants = state.participants;
-      return work(snapshot);
+      const ledger = state.mediaGrants ?? {};
+      const before = JSON.stringify(ledger);
+      const result = await work(snapshot, ledger);
+      if (JSON.stringify(ledger) !== before) {
+        state.mediaGrants = ledger;
+        await tx.voiceRoom.update({
+          where: { id: roomId },
+          data: { state: json(state), revision: { increment: 1 } },
+        });
+      }
+      return result;
     },
     { timeout: 20_000, maxWait: 10_000 },
   );

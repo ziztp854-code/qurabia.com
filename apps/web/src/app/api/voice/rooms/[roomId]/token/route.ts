@@ -1,7 +1,12 @@
 import { voiceIdentity, voiceRateLimit } from '@/lib/voice/identity';
 import { jsonFailure, jsonSuccess, voiceOrigin, VoiceHttpError } from '@/lib/voice/http';
 import { requireVoiceMembership, withVoiceMediaSnapshot } from '@/lib/voice/repository';
-import { createVoiceToken, VoiceMediaUnavailable } from '@/lib/voice/livekit';
+import {
+  createVoiceToken,
+  reconcileVoiceMedia,
+  voiceMediaConfig,
+  VoiceMediaUnavailable,
+} from '@/lib/voice/livekit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,12 +19,16 @@ export async function POST(request: Request, context: { params: Promise<{ roomId
     const snapshot = await requireVoiceMembership(roomId, identity.id);
     if (!snapshot.room.active || !snapshot.me)
       throw new VoiceHttpError(403, 'انضم إلى غرفة نشطة قبل تشغيل الصوت.', 'NOT_MEMBER');
+    // Commit strict Cloud revocations before issuing a replacement token.
+    if (voiceMediaConfig()?.mode === 'cloud') await reconcileVoiceMedia(roomId);
     // Serialize issuance with moderation and read current unfiltered membership.
-    const grant = await withVoiceMediaSnapshot(roomId, (current) => {
+    const grant = await withVoiceMediaSnapshot(roomId, (current, ledger) => {
       const member = current.participants.find((person) => person.id === identity.id);
       if (!current.room.active || !member)
         throw new VoiceHttpError(403, 'انضم إلى غرفة نشطة قبل تشغيل الصوت.', 'NOT_MEMBER');
-      return createVoiceToken(roomId, member, identity.tokenVersion ?? 0);
+      if ((member.tokenVersion ?? 0) !== (identity.tokenVersion ?? 0))
+        throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
+      return createVoiceToken(roomId, member, identity.tokenVersion ?? 0, ledger);
     });
     return jsonSuccess(grant);
   } catch (error) {

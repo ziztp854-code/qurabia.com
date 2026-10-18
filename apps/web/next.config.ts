@@ -6,6 +6,7 @@ import { withWorkflow } from 'workflow/next';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { resolveSentryBuildRelease } from './src/lib/observability/sentry-release';
+import voiceCloudOrigins from '../../config/voice-cloud-origins.json';
 
 function loadEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) return;
@@ -106,6 +107,8 @@ function buildContentSecurityPolicy(): string {
       connectSources.add(httpOrigin);
       connectSources.add(toWebSocketOrigin(httpOrigin));
     }
+    if (process.env.LIVEKIT_MODE === 'cloud')
+      for (const cloudOrigin of voiceCloudOrigins) connectSources.add(cloudOrigin);
   }
 
   return [

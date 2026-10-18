@@ -42,10 +42,10 @@ export async function admitVoiceSignal(token: string) {
   });
   if (!identity || identity.status !== 'ACTIVE' || identity.tokenVersion !== sessionVersion)
     throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
-  return withVoiceMediaSnapshot(roomId, (snapshot) => {
+  return withVoiceMediaSnapshot(roomId, (snapshot, ledger) => {
     const member = snapshot.participants.find((person) => person.id === claims.sub);
     if (!snapshot.room.active || !member || (member.tokenVersion ?? 0) !== sessionVersion)
       throw new VoiceHttpError(403, 'انضم إلى الغرفة مجددًا.', 'NOT_MEMBER');
-    return createVoiceToken(roomId, member, Number(sessionVersion));
+    return createVoiceToken(roomId, member, Number(sessionVersion), ledger);
   });
 }
