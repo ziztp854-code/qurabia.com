@@ -56,12 +56,14 @@ export function MemberEntrance({
   if (!arrival) return null;
   const { member } = arrival;
   const rank = voiceEntranceRank(member);
+  const premium = rank !== 'member';
   const emblem = rank === 'owner' || rank === 'sultan' || rank === 'prince' || rank === 'knight';
   return (
     <aside
       key={arrival.key}
       className={styles.entrance}
       data-rank={rank}
+      data-premium={premium || undefined}
       hidden={!visible}
       dir="rtl"
       aria-label="ترحيب بالأعضاء"
@@ -93,7 +95,14 @@ export function MemberEntrance({
       </div>
       <Avatar user={member} size={42} />
       <div className={styles.welcome} role="status" aria-live="polite" aria-atomic="true">
-        <small>{rankLabels[rank]}</small>
+        <small className={styles.entranceHeading}>
+          {premium && (
+            <span className={styles.premiumLabel}>
+              <Sparkles size={12} aria-hidden="true" /> دخول مميز
+            </span>
+          )}
+          <span>{rankLabels[rank]}</span>
+        </small>
         <p>
           {member.id === selfId ? 'حيّاك ' : 'وصل الآن '}
           <MemberName
@@ -103,7 +112,7 @@ export function MemberEntrance({
             showVerificationBadge={rank !== 'owner'}
           />
         </p>
-        {rank === 'owner' && <span className={styles.ownerSignature}>تحدّي لايف</span>}
+        {premium && <span className={styles.ownerSignature}>تحدّي لايف</span>}
       </div>
       <LogIn className={styles.arrivalIcon} size={19} aria-hidden="true" />
       <button type="button" onClick={onDismiss} aria-label="إخفاء شارة الدخول">

@@ -114,3 +114,32 @@ it('reserves the bespoke owner treatment for the verified platform owner badge',
   expect(screen.queryByText('تحدّي لايف')).not.toBeInTheDocument();
   expect(document.querySelector('aside[data-rank="owner"]')).toBeNull();
 });
+
+it('shows the special entrance only for an eligible account and keeps the real name', () => {
+  const arrival = {
+    member: { ...member, accountBadges: ['sultan'] as const },
+    key: 'sultan',
+    expiresAt: Date.now() + 6000,
+  };
+  const { rerender } = render(
+    <MemberEntrance
+      arrival={{ ...arrival, member: { ...arrival.member, accountBadges: ['sultan'] } }}
+      visible
+      selfId="someone-else"
+      onDismiss={() => {}}
+    />,
+  );
+  expect(screen.getByRole('status')).toHaveTextContent('دخول مميز');
+  expect(screen.getByRole('status')).toHaveTextContent(member.name);
+  expect(screen.getByRole('status')).toHaveTextContent('دخول السلطان');
+  rerender(
+    <MemberEntrance
+      arrival={{ ...arrival, member: { ...member, role: 'host', accountBadges: [] } }}
+      visible
+      selfId="me"
+      onDismiss={() => {}}
+    />,
+  );
+  expect(screen.queryByText('دخول مميز')).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('نورت المجلس');
+});

@@ -555,6 +555,7 @@ export function VoiceRoomView({
           Boolean(me && room?.active) &&
           !profileId &&
           !socialOpen &&
+          !membersOpen &&
           !reportOpen &&
           !settings &&
           !audioSettingsOpen &&
@@ -858,6 +859,9 @@ export function VoiceRoomView({
                               className={`v-seat ${!person ? `${roomStyles.emptySeat} v-seat-is-empty` : ''} ${person?.role === 'host' ? 'v-host-seat' : ''} ${person && speakers.includes(person.id) ? 'is-speaking' : ''}`}
                               key={index}
                             >
+                              <span className="v-seat-number" aria-hidden="true">
+                                {number(index + 1)}
+                              </span>
                               {person ? (
                                 <>
                                   <button

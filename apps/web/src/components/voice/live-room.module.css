@@ -49,7 +49,7 @@
 .liveRoom :global(.v-main) {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 420px);
   column-gap: 24px;
   row-gap: 8px;
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -184,6 +184,7 @@
 .liveRoom :global(.v-stage) {
   border: 0;
   border-radius: 0;
+  container: voiceStage / inline-size;
   padding: 12px 12px 4px;
   background: radial-gradient(ellipse at 50% 20%, var(--voice-soft-shade), transparent 75%);
   box-shadow: none;
@@ -219,11 +220,13 @@
   max-inline-size: none;
 }
 .liveRoom :global(.v-seat) {
-  padding: 4px;
-  border: 0;
+  position: relative;
+  padding: 14px 8px 10px;
+  border: 1px solid var(--voice-line);
+  min-inline-size: 0;
   min-block-size: 0;
   border-radius: 18px;
-  background: transparent;
+  background: var(--voice-soft-shade);
   box-shadow: none;
 }
 .liveRoom :global(.v-seat-person) {
@@ -232,6 +235,7 @@
   min-inline-size: 0;
   inline-size: 100%;
   min-block-size: 0;
+  min-height: 0;
   border-radius: 18px;
 }
 .liveRoom :global(.v-seat-avatar) {
@@ -277,7 +281,8 @@
 .liveRoom :global(.v-empty-seat) {
   padding: 0;
   gap: 5px;
-  min-block-size: 96px;
+  min-block-size: 124px;
+  min-height: 0;
 }
 .liveRoom :global(.v-empty-seat > span) {
   inline-size: 54px;
@@ -322,7 +327,7 @@
   min-inline-size: 0;
   position: sticky;
   inset-block-start: 16px;
-  block-size: clamp(280px, calc(100dvh - 280px), 700px);
+  block-size: clamp(360px, calc(100dvh - 280px), 780px);
   max-block-size: none;
   min-block-size: 0;
   margin: 0;
@@ -344,6 +349,9 @@
 .liveRoom :global(.v-messages) {
   flex: 1;
   min-block-size: 0;
+  min-height: 0;
+  max-block-size: none;
+  max-height: none;
   padding: 18px 12px;
   gap: 18px;
 }
@@ -579,7 +587,7 @@
 }
 @media (max-width: 760px) {
   .liveRoom[data-room-visible='true'] {
-    padding: 0 0 calc(160px + env(safe-area-inset-bottom));
+    padding: 0 0 calc(100px + env(safe-area-inset-bottom));
   }
   .liveRoom :global(.v-topbar) {
     display: none;
@@ -667,7 +675,7 @@
     margin-block: 2px 0;
   }
   .liveRoom :global(.v-stage-column) {
-    display: contents;
+    display: flex;
   }
   .liveRoom :global(.v-stage) {
     padding: 8px 0 0;
@@ -688,11 +696,10 @@
     padding-inline: 6px;
   }
   .liveRoom :global(.v-stage .v-seats) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px 6px;
+    gap: 12px;
   }
   .liveRoom :global(.v-seat) {
-    padding: 2px 0;
+    padding: 12px 6px 8px;
   }
   .liveRoom :global(.v-seat-avatar) {
     inline-size: 64px;
@@ -709,7 +716,7 @@
     font-size: 10px;
   }
   .liveRoom :global(.v-empty-seat) {
-    min-block-size: 99px;
+    min-block-size: 124px;
     gap: 4px;
   }
   .liveRoom :global(.v-empty-seat > span) {
@@ -741,7 +748,7 @@
     margin-block-start: 12px;
   }
   .liveRoom :global(.v-chat) {
-    block-size: 230px;
+    block-size: clamp(360px, 55dvh, 560px);
     max-block-size: none;
     min-block-size: 0;
     background: transparent;
@@ -785,10 +792,7 @@
     flex-wrap: wrap;
   }
   .liveRoom :global(.v-chat-compose) {
-    position: fixed;
-    inset-inline: 0;
-    inset-block-end: calc(86px + env(safe-area-inset-bottom));
-    z-index: 31;
+    position: static;
     margin: 0;
     padding: 10px 14px;
     gap: 8px;
@@ -914,52 +918,54 @@
   }
 }
 
-/* Keep supporting metadata quiet so conversation reaches the first phone screen. */
-.backdrop img {
-  opacity: 0.12;
-}
-.liveRoom :global(.v-stage-heading) {
-  min-block-size: 32px;
-}
-@media (max-width: 760px) {
-  .liveRoom :global(.v-seat-person > small) {
-    display: none;
-  }
-  .liveRoom :global(.v-empty-seat small) {
-    display: none;
-  }
-  .liveRoom :global(.v-empty-seat) {
-    min-block-size: 84px;
-  }
-  .liveRoom :global(.v-seat-person > span:last-child) {
-    font-size: 11px;
-    line-height: 1.6;
-  }
-  .liveRoom :global(.v-chat-drag) {
-    display: none;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-drag) {
-    display: flex;
-  }
-  .liveRoom :global(.v-stage-note) {
-    margin-block: 8px 2px;
-  }
-  .liveRoom :global(.v-chat > header) {
-    min-block-size: 36px;
-  }
-  .liveRoom :global(.v-chat-open .v-chat > header) {
-    min-block-size: 52px;
+/* Seats respond to the stage width, including beside the desktop chat rail. */
+@container voiceStage (max-width: 720px) {
+  .liveRoom :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-
-/* Conversation owns the remaining screen; empty seats are progressive disclosure. */
-@media (min-width: 1101px) {
-  .liveRoom :global(.v-main) {
-    grid-template-columns: minmax(0, 1fr) 380px;
+@container voiceStage (max-width: 340px) {
+  .liveRoom :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+.liveRoom :global(.v-seat-person > strong),
+.liveRoom :global(.v-empty-seat strong) {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.liveRoom :global(.v-seat-avatar > .v-avatar) {
+  width: 100% !important;
+  height: 100% !important;
+}
+.liveRoom :global(.v-host-seat) {
+  border-color: var(--voice-border);
+  background: var(--voice-glow);
+}
+.liveRoom :global(.v-seat.is-speaking) {
+  border-color: var(--voice-cyan);
+  box-shadow: inset 0 -2px 0 var(--voice-cyan);
+}
+.liveRoom :global(.v-seat-number) {
+  position: absolute;
+  inset-block-start: 5px;
+  inset-inline-start: 8px;
+  color: var(--voice-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 .liveRoom :global(.v-seats[data-show-empty='false'] .v-seat-is-empty) {
   display: none;
+}
+.liveRoom :global(.v-seat.v-seat-is-empty) {
+  padding-block-end: 4px;
+  border-style: dashed;
+}
+.liveRoom :global(.v-seat-lock) {
+  position: static;
 }
 .liveRoom :global(.v-seat-expand) {
   display: flex;
@@ -968,120 +974,103 @@
   gap: 6px;
   min-block-size: 44px;
   inline-size: 100%;
-  margin-block-start: 6px;
+  margin-block-start: 8px;
   font-size: 12px;
   color: var(--voice-muted);
 }
-@media (max-width: 1100px) and (min-width: 1021px) {
-  .liveRoom :global(.v-main) {
-    grid-template-columns: minmax(0, 1fr) 310px;
+.liveRoom :global(.v-stage-heading) {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-end: 16px;
+}
+.liveRoom :global(.v-stage-heading > div:last-child) {
+  flex-wrap: wrap;
+}
+.liveRoom :global(.v-chat-column) {
+  align-self: stretch;
+}
+.liveRoom :global(.v-chat-compose) {
+  position: static;
+  display: grid;
+  margin: 0;
+  gap: 8px;
+}
+.liveRoom :global(.v-chat-compose textarea) {
+  min-block-size: 52px;
+  block-size: 52px;
+  font-size: 16px;
+  border-radius: 12px;
+}
+.liveRoom :global(.v-chat-compose > div) {
+  justify-content: flex-end;
+}
+.liveRoom :global(.v-chat-compose button[aria-label='إرسال هدية']),
+.liveRoom :global(.v-chat-compose button[aria-label='إضافة رمز تعبيري']) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.liveRoom :global(.v-message-body) {
+  min-inline-size: 0;
+  padding: 10px 12px 4px;
+  border: 1px solid var(--voice-line);
+  border-radius: 14px;
+  background: var(--voice-soft-shade);
+}
+.liveRoom :global(.v-my-message .v-message-body) {
+  border: 1px solid var(--voice-border);
+  background: var(--voice-glow);
+}
+.liveRoom :global(.v-message-meta) {
+  flex-wrap: wrap;
+}
+.liveRoom :global(.v-message-meta strong) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.liveRoom :global(.v-messages) {
+  overscroll-behavior: contain;
+  scroll-padding-block: 12px;
+}
+.liveRoom :global(.v-pinned),
+.liveRoom :global(.v-reply-preview) {
+  max-block-size: 5rem;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  flex-shrink: 0;
+}
+.liveRoom :global(.v-chat-close),
+.liveRoom :global(.v-chat-drag) {
+  display: none;
+}
+@media (max-width: 1020px) {
+  .liveRoom :global(.v-controls-me) {
+    display: none;
+  }
+  .liveRoom :global(.v-chat-open .v-chat-column) {
+    border: 0;
+  }
+  .liveRoom :global(.v-chat-open .v-chat-close) {
+    display: grid;
+  }
+  .liveRoom:has(:global(.v-chat-open)) :global(.v-room-controls) {
+    visibility: hidden;
   }
 }
 @media (max-width: 760px) {
-  .liveRoom[data-room-visible='true'] {
-    padding: 0;
-  }
-  .liveRoom :global(.v-main) {
-    min-block-size: 100dvh;
-    block-size: auto;
-    padding-block-end: calc(150px + env(safe-area-inset-bottom));
-    overflow: visible;
-  }
-  .roomHeader,
-  .roomHeading,
-  .liveRoom :global(.v-stage) {
-    flex: none;
-  }
-  .liveRoom :global(.v-seats[data-show-empty='false'] .v-seat-is-empty) {
-    display: none;
-  }
-  .liveRoom :global(.v-seat-expand) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-block-size: 44px;
-    inline-size: 100%;
-    margin-block-start: 6px;
-    font-size: 12px;
-    color: var(--voice-muted);
+  .liveRoom :global(.v-stage-column) {
+    gap: 12px;
   }
   .liveRoom :global(.v-stage-note) {
     display: none;
   }
-  .liveRoom :global(.v-chat-column) {
-    flex: none;
-    min-block-size: 240px;
-    block-size: max(240px, calc(100dvh - 560px));
-    margin-block-start: 0;
-  }
-  .liveRoom :global(.v-chat) {
-    position: static;
-    block-size: 100%;
-    height: 100%;
-    min-block-size: 0;
-    max-block-size: none;
-  }
-  .liveRoom :global(.v-messages) {
-    min-block-size: 0;
-    flex: 1;
-  }
-  .liveRoom :global(.v-audio-session) {
-    flex: none;
-    margin-block: 0;
-  }
-  .liveRoom :global(.v-close-room) {
-    min-block-size: 32px;
-    margin: 0;
-    font-size: 11px;
-    flex: none;
-  }
-  .liveRoom:has(:global(.v-seats[data-show-empty='true'])) :global(.v-main) {
-    block-size: auto;
-    min-block-size: 100dvh;
-    overflow: visible;
-  }
-  .liveRoom:has(:global(.v-seats[data-show-empty='true'])) :global(.v-chat-column) {
-    block-size: 300px;
-    flex: none;
+  .liveRoom :global(.v-chat-open .v-chat-drag) {
+    display: flex;
   }
   .liveRoom :global(.v-chat-open .v-chat-column) {
-    min-block-size: 0;
-    block-size: auto;
+    padding-block: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-bottom));
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
-}
-@media (max-width: 760px) and (max-height: 650px) {
-  .liveRoom :global(.v-main) {
-    block-size: auto;
-    min-block-size: 100dvh;
-    overflow: visible;
-  }
-  .liveRoom :global(.v-chat-column) {
-    block-size: 260px;
-    flex: none;
-  }
-}
-
-/* Arrival greetings sit above the controls and outside the desktop chat column. */
-.liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
-  inset-block-start: auto;
-  inset-block-end: calc(112px + env(safe-area-inset-bottom));
-  inset-inline-end: auto;
-  inset-inline-start: max(40px, calc((100vw - 1280px) / 2));
-}
-@media (max-width: 1020px) {
-  .liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
-    inset-inline-start: 16px;
-    inset-block-end: calc(180px + env(safe-area-inset-bottom));
-  }
-}
-@media (max-width: 760px) {
-  .liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
-    inset-block-end: calc(166px + env(safe-area-inset-bottom));
-  }
-}
-
-@media (max-width: 760px) {
   .hostPill strong > span {
     flex-wrap: nowrap;
   }
@@ -1095,7 +1084,12 @@
     overflow: hidden;
   }
 }
-
+.liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
+  inset-block-start: auto;
+  inset-block-end: calc(112px + env(safe-area-inset-bottom));
+  inset-inline-end: auto;
+  inset-inline-start: max(16px, calc((100vw - 1280px) / 2));
+}
 .liveRoom :global(.v-friend-status) {
   display: flex;
   align-items: center;
@@ -1104,109 +1098,9 @@
   font-size: 0.85rem;
   line-height: 1.8;
 }
-
-/* Let long names and short viewports expand naturally without inherited card heights. */
-.liveRoom :global(.v-seat-person),
-.liveRoom :global(.v-empty-seat) {
-  min-height: 0;
-}
-.liveRoom :global(.v-seat.v-seat-is-empty) {
-  padding-block-end: 4px;
-}
-.liveRoom :global(.v-chat-column) {
-  align-self: stretch;
-}
-@media (min-width: 761px) {
-  .liveRoom :global(.v-stage-heading) {
-    padding-block-end: 8px;
-    margin-block-end: 12px;
-  }
-  .liveRoom :global(.v-seat-lock) {
-    position: static;
-  }
-}
 @media (max-height: 500px) and (min-width: 761px) {
   .liveRoom :global(.v-chat) {
     position: static;
-    block-size: 280px;
-  }
-}
-
-.liveRoom :global(.v-seat-person > small) {
-  font-size: 11px;
-  line-height: 1.5;
-}
-.liveRoom :global(.v-seat-person > span:last-child) {
-  margin-block-start: 0;
-  min-block-size: 20px;
-  line-height: 1.6;
-}
-@media (min-width: 761px) {
-  .liveRoom :global(.v-empty-seat) {
-    min-block-size: 84px;
-  }
-  .liveRoom :global(.v-empty-seat > span) {
-    inline-size: 54px;
-    block-size: 54px;
-    margin-block: 0 6px;
-  }
-  .liveRoom :global(.v-stage-note) {
-    margin-block: 12px 0;
-  }
-  .liveRoom :global(.v-audio-session) {
-    margin: 0;
-  }
-  .liveRoom :global(.v-close-room) {
-    margin: 0;
-    min-block-size: 44px;
-  }
-}
-
-.roomHeading > span {
-  padding: 4px 10px;
-  border: 1px solid var(--voice-line);
-  border-radius: 999px;
-  background: var(--voice-soft-shade);
-}
-@media (max-width: 1020px) and (min-width: 761px) {
-  .liveRoom :global(.v-seat-person > small) {
-    display: none;
-  }
-  .liveRoom :global(.v-stage-note) {
-    display: none;
-  }
-  .liveRoom :global(.v-chat) {
-    block-size: clamp(280px, 30dvh, 380px);
-  }
-  .liveRoom :global(.v-chat > header) {
-    min-block-size: 52px;
-    padding-block: 8px;
-  }
-}
-
-@media (max-width: 1020px) and (min-width: 761px) {
-  .liveRoom :global(.v-chat-compose) {
-    position: fixed;
-    inset-inline: 36px;
-    inset-block-end: calc(92px + env(safe-area-inset-bottom));
-    z-index: 31;
-    margin: 0;
-    border: 1px solid var(--voice-line);
-    border-radius: 16px 16px 0 0;
-  }
-  .liveRoom :global(.v-chat-compose textarea) {
-    font-size: 16px;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-compose) {
-    position: static;
-  }
-}
-
-@media (max-width: 1020px) and (min-width: 761px) {
-  .liveRoom :global(.v-chat-close) {
-    display: none;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-close) {
-    display: grid;
+    block-size: 360px;
   }
 }

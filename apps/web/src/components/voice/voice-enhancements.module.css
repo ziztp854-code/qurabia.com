@@ -407,3 +407,70 @@
   stroke: var(--voice-ink);
   stroke-width: 2.2;
 }
+
+/* A brief ranked entrance, driven by server-projected account badges. */
+.entranceHeading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  line-height: 1.8;
+}
+.premiumLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--voice-gold-light);
+  font-size: 11px;
+  font-weight: 700;
+}
+.entrance[data-premium] {
+  inline-size: min(460px, calc(100vw - 32px));
+  gap: 12px;
+  padding-block: 14px;
+  min-block-size: 104px;
+  border-inline-start-width: 4px;
+  background:
+    radial-gradient(ellipse at 100% 0, var(--voice-glow), transparent 70%),
+    linear-gradient(120deg, var(--voice-card), var(--voice-bg));
+}
+.entrance[data-premium] .welcome p {
+  font-size: 15px;
+  line-height: 1.9;
+}
+.entrance[data-premium] .seal {
+  display: grid;
+  border: 0;
+  background: transparent;
+}
+.entrance[data-premium] .arrivalIcon {
+  display: none;
+}
+.entrance[data-premium]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 18px;
+  inset-block-end: 0;
+  block-size: 2px;
+  background: linear-gradient(90deg, transparent, var(--voice-gold), transparent);
+  pointer-events: none;
+}
+.entrance[data-rank='prince']::after,
+.entrance[data-rank='admin']::after {
+  background: linear-gradient(90deg, transparent, var(--voice-cyan), transparent);
+}
+@media (max-width: 420px) {
+  .entrance[data-premium] {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+  .entrance[data-premium] .welcome p {
+    font-size: 13px;
+  }
+  .entrance[data-premium] .seal,
+  .entrance[data-premium]:has(.seal img) .seal,
+  .entrance[data-premium] .seal img {
+    inline-size: 52px;
+    block-size: 56px;
+  }
+}
