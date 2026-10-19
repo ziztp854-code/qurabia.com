@@ -1,42 +1,49 @@
-/* Immersive audio-room presentation. State and actions stay in VoiceRoomView. */
+/* Scoped voice-room composition; state and audio stay in VoiceRoomView. */
+.liveRoom {
+  --room-avatar-size: 64px;
+  --room-controls-space: 170px;
+}
 .liveRoom[data-room-visible='true'] {
   position: relative;
   isolation: isolate;
   min-block-size: 100dvh;
-  padding: 0 40px 112px;
-  background: var(--voice-bg);
+  padding: 0 12px calc(var(--room-controls-space) + env(safe-area-inset-bottom));
   color: var(--voice-text);
+  background: var(--voice-bg);
 }
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
-  pointer-events: none;
   overflow: hidden;
+  pointer-events: none;
 }
 .backdrop img {
   object-fit: cover;
-  opacity: 0.2;
+  opacity: 0.08;
+}
+/* Static skyline adapted from the user's code_artifact.html reference. */
+.backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    url('/voice/aflaqni-riyadh-night.webp') center bottom / cover no-repeat,
+    url('/voice/aflaqni-skyline.svg') center bottom / cover no-repeat;
+  opacity: 0.8;
 }
 .backdrop::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--voice-soft-shade), var(--voice-bg));
+  background: linear-gradient(180deg, var(--voice-soft-shade), var(--voice-glass));
 }
 .liveRoom :global(.v-room-app) {
   background: transparent;
   min-block-size: 0;
   overflow: visible;
 }
-.liveRoom :global(.v-topbar) {
-  max-inline-size: 1360px;
-  margin-inline: auto;
-  block-size: 80px;
-  border: 0;
-  background: transparent;
-  padding-inline: 8px;
-}
+.liveRoom :global(.v-room-app .v-topbar),
 .liveRoom :global(.v-sidebar),
 .liveRoom :global(.v-menu-toggle),
 .liveRoom :global(.v-room-breadcrumb),
@@ -46,1061 +53,1105 @@
 .liveRoom :global(.v-workspace) {
   display: block;
 }
-.liveRoom :global(.v-main) {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 420px);
-  column-gap: 24px;
-  row-gap: 8px;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  align-content: start;
-  max-inline-size: 1360px;
+.liveRoom :global(.v-room-app .v-main) {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-inline-size: 0;
+  max-inline-size: 1880px;
   margin-inline: auto;
-  padding: 0 24px 24px;
-  border: 1px solid var(--voice-line);
-  border-radius: 28px;
-  background: var(--voice-glass);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   overflow: visible;
 }
+.roomHeader,
+.roomHeading,
+.audienceRail,
+.liveRoom :global(.v-stage-column),
+.liveRoom :global(.v-chat-column) {
+  direction: rtl;
+  min-inline-size: 0;
+}
 .roomHeader {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  grid-area: header;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 20px;
-  min-block-size: 72px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-block: 14px;
   border-block-end: 1px solid var(--voice-line);
 }
 .hostPill {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px;
-  border: 1px solid var(--voice-line);
-  border-radius: 999px;
-  background: var(--voice-soft-shade);
   min-inline-size: 0;
+  flex: 1 1 170px;
 }
 .hostPill > button:first-child {
   display: flex;
-  gap: 8px;
   align-items: center;
-  padding: 0 4px;
-  min-block-size: 44px;
-  border: 0;
-  border-radius: 999px;
+  gap: 8px;
+  min-inline-size: 0;
+  min-block-size: 48px;
+  padding: 0;
   color: inherit;
+  border: 0;
   background: transparent;
+}
+.hostPill > button:first-child > span:last-child {
   min-inline-size: 0;
 }
 .hostPill strong {
   display: block;
   font-size: 13px;
-  font-weight: 700;
+}
+.hostPill strong bdi {
+  overflow-wrap: anywhere;
 }
 .hostPill small {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  font-size: 11px;
+  display: block;
   color: var(--voice-muted);
-}
-.hostPill small svg {
-  color: var(--voice-gold);
+  font-size: 11px;
 }
 .follow {
-  display: grid;
-  place-items: center;
-  inline-size: 44px;
-  block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
+  gap: 5px;
+  min-inline-size: 48px;
+  min-block-size: 48px;
+  padding: 8px 12px;
   border: 0;
-  border-radius: 50%;
-  background: var(--voice-gold);
+  border-radius: 999px;
   color: var(--voice-ink);
+  background: var(--voice-live);
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
 }
 .presence {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex: none;
+  gap: 8px;
 }
 .presence > button {
-  display: flex;
-  gap: 7px;
-  min-inline-size: 64px;
-  padding-inline: 10px;
-  border-radius: 999px;
-  background: var(--voice-card);
-}
-.headerActions {
-  margin-inline-start: auto;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+.headerActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-inline-start: auto;
+}
+.liveRoom :global(.v-room-app .v-icon) {
+  min-inline-size: 48px;
+  min-block-size: 48px;
 }
 .headerActions :global(.v-icon) {
   border-radius: 50%;
 }
+.headerMenu {
+  position: relative;
+  margin-inline-start: auto;
+}
+.headerMenu > summary {
+  display: none;
+  cursor: pointer;
+  list-style: none;
+}
+.headerMenu > summary::-webkit-details-marker {
+  display: none;
+}
+.mobileLive {
+  display: none;
+}
+.mobileAudioSettings {
+  display: none;
+}
 .roomHeading {
-  grid-column: 1;
-  grid-row: 2;
+  grid-area: heading;
   text-align: center;
-  padding: 16px 16px 8px;
-  min-inline-size: 0;
+  padding: 12px 0 0;
 }
 .roomHeading > span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  color: var(--voice-muted);
+  gap: 6px;
+  color: var(--voice-gold);
   font-size: 12px;
 }
 .roomHeading h1 {
-  font-size: clamp(24px, 2.2vw, 32px);
-  line-height: 1.55;
-  margin-block: 2px;
+  margin-block: 8px 4px;
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1.6;
   overflow-wrap: anywhere;
   text-wrap: balance;
+  color: var(--voice-gold);
+  background: linear-gradient(
+    180deg,
+    var(--voice-text),
+    var(--voice-gold-light) 45%,
+    var(--voice-gold)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .roomHeading p {
+  margin: 0;
   color: var(--voice-muted);
   font-size: 13px;
   line-height: 1.8;
   overflow-wrap: anywhere;
-  margin-block: 4px 0;
 }
 .liveRoom :global(.v-room-columns) {
   display: contents;
 }
 .liveRoom :global(.v-stage-column) {
-  grid-column: 1;
-  grid-row: 3;
+  grid-area: stage;
   display: flex;
   flex-direction: column;
-  min-inline-size: 0;
-  gap: 16px;
+  gap: 18px;
 }
-.liveRoom :global(.v-stage) {
+.liveRoom :global(.v-stage-column .v-stage) {
+  container: voiceStage / inline-size;
+  min-inline-size: 0;
+  padding: 8px 0 16px;
   border: 0;
   border-radius: 0;
-  container: voiceStage / inline-size;
-  padding: 12px 12px 4px;
-  background: radial-gradient(ellipse at 50% 20%, var(--voice-soft-shade), transparent 75%);
+  background: transparent;
   box-shadow: none;
 }
-.liveRoom :global(.v-stage-heading) {
-  margin-block-end: 22px;
-  padding-block-end: 0;
+.liveRoom :global(.v-stage .v-stage-heading) {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-end: 24px;
+  padding: 0;
   border: 0;
-  align-items: center;
 }
 .liveRoom :global(.v-stage-heading .v-eyebrow) {
   display: none;
 }
 .liveRoom :global(.v-stage-heading h2) {
-  font-size: 13px;
-  font-weight: 500;
   color: var(--voice-muted);
+  font-size: 13px;
 }
-.liveRoom :global(.v-stage-heading .v-button) {
-  display: none;
-}
-.liveRoom :global(.v-connection) {
+.liveRoom :global(.v-stage-heading .v-connection) {
+  min-block-size: 48px;
+  color: var(--voice-muted);
   font-size: 11px;
-  padding: 4px 8px;
-  min-block-size: 28px;
   background: transparent;
-  border: 1px solid var(--voice-line);
 }
 .liveRoom :global(.v-stage .v-seats) {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px 10px;
   max-inline-size: none;
+  align-items: start;
 }
-.liveRoom :global(.v-seat) {
+/* Outrank legacy card styling, including the host, empty and speaking states. */
+.liveRoom :global(.v-stage .v-seats .v-seat),
+.liveRoom :global(.v-stage .v-seats .v-seat:hover),
+.liveRoom :global(.v-stage .v-seats .v-host-seat),
+.liveRoom :global(.v-stage .v-seats .v-seat.is-speaking) {
   position: relative;
-  padding: 14px 8px 10px;
-  border: 1px solid var(--voice-line);
   min-inline-size: 0;
   min-block-size: 0;
-  border-radius: 18px;
-  background: var(--voice-soft-shade);
-  box-shadow: none;
-}
-.liveRoom :global(.v-seat-person) {
-  padding: 0;
-  gap: 5px;
-  min-inline-size: 0;
-  inline-size: 100%;
-  min-block-size: 0;
-  min-height: 0;
-  border-radius: 18px;
-}
-.liveRoom :global(.v-seat-avatar) {
-  inline-size: 72px;
-  block-size: 72px;
-  margin-block-end: 0;
-  padding: 4px;
-  border: 1px solid var(--voice-line);
-  border-radius: 50%;
-  background: transparent;
-}
-.liveRoom :global(.v-seat-avatar > .v-avatar) {
-  inline-size: 100%;
-  block-size: 100%;
-  background: radial-gradient(circle at 45% 15%, var(--voice-raised), var(--voice-bg));
-  color: var(--voice-gold-light);
-  border: 0;
-}
-.liveRoom :global(.v-seat-person > strong) {
-  max-inline-size: 100%;
-  font-size: 14px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
-}
-.liveRoom :global(.v-seat-person > small) {
-  font-size: 12px;
-  color: var(--voice-muted);
-}
-.liveRoom :global(.v-seat-mic) {
-  font-size: 11px;
-  min-block-size: 20px;
-}
-.liveRoom :global(.v-seat-role) {
-  color: var(--voice-gold);
-}
-.liveRoom :global(.is-speaking .v-seat-avatar) {
-  border-color: var(--voice-cyan);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--voice-cyan) 15%, transparent);
-}
-.liveRoom :global(.is-speaking .v-seat-mic) {
-  color: var(--voice-cyan);
-}
-.liveRoom :global(.v-empty-seat) {
-  padding: 0;
-  gap: 5px;
-  min-block-size: 124px;
-  min-height: 0;
-}
-.liveRoom :global(.v-empty-seat > span) {
-  inline-size: 54px;
-  block-size: 54px;
-  margin-block: 0 6px;
-  border-radius: 50%;
-  border: 1px dashed var(--voice-muted);
-  opacity: 0.6;
-  background: var(--voice-soft-shade);
-}
-.liveRoom :global(.v-empty-seat strong) {
-  font-size: 12px;
-  font-weight: 400;
-}
-.liveRoom :global(.v-empty-seat small) {
-  font-size: 11px;
-}
-.liveRoom :global(.v-seat-lock) {
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  margin-block-start: 0;
-  padding: 4px;
-  font-size: 11px;
-  text-underline-offset: 4px;
-}
-.liveRoom :global(.v-stage-note) {
-  font-size: 11px;
-  margin-block: 22px 8px;
-  color: var(--voice-muted);
-}
-.liveRoom :global(.v-chat-column) {
-  grid-column: 2;
-  grid-row: 2 / span 2;
-  padding: 0;
-  display: flex;
-  min-inline-size: 0;
-  min-block-size: 0;
-  border-inline-start: 1px solid var(--voice-line);
-}
-.liveRoom :global(.v-chat) {
-  inline-size: 100%;
-  min-inline-size: 0;
-  position: sticky;
-  inset-block-start: 16px;
-  block-size: clamp(360px, calc(100dvh - 280px), 780px);
-  max-block-size: none;
-  min-block-size: 0;
-  margin: 0;
+  padding: 4px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
+}
+.liveRoom :global(.v-seats:has(.v-host-seat) .v-host-seat) {
+  grid-column: 1 / -1;
+  order: -1;
+  justify-self: center;
+  inline-size: min(100%, 190px);
+}
+.liveRoom :global(.v-stage .v-seat-person),
+.liveRoom :global(.v-stage .v-empty-seat) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  inline-size: 100%;
+  min-inline-size: 48px;
+  min-block-size: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+.liveRoom :global(.v-stage .v-seat-avatar),
+.liveRoom :global(.v-stage .v-empty-seat > span) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-sizing: border-box;
+  inline-size: var(--room-avatar-size);
+  block-size: var(--room-avatar-size);
+  margin: 0 0 4px;
+  padding: 0;
+  border: 2px solid var(--voice-gold);
+  border-radius: 50%;
+  background: transparent;
+  opacity: 1;
+}
+.liveRoom :global(.v-stage .v-seat-avatar > .v-avatar) {
+  box-sizing: border-box;
+  flex-basis: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0 !important;
+  box-shadow: none;
+  border-radius: 50%;
+  color: var(--voice-gold);
+  background: var(--voice-raised);
+}
+.liveRoom :global(.v-stage .v-seat-avatar .v-speaking) {
+  border: 0 !important;
+  box-shadow: none !important;
+  animation: none;
+}
+.liveRoom :global(.v-stage .is-speaking .v-seat-avatar) {
+  box-shadow: 0 0 0 5px var(--voice-glow);
+}
+.liveRoom :global(.v-stage .is-speaking .v-seat-avatar)::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border: 1px solid var(--voice-gold);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: speakerHalo 1.8s ease-out infinite;
+}
+@keyframes speakerHalo {
+  from {
+    transform: scale(0.96);
+    opacity: 0.65;
+  }
+  to {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+}
+.liveRoom :global(.v-stage .v-seat-person > strong),
+.liveRoom :global(.v-stage .v-empty-seat > strong) {
+  max-inline-size: 100%;
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.liveRoom :global(.v-stage .v-seat-person > small),
+.liveRoom :global(.v-stage .v-empty-seat > small) {
+  color: var(--voice-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.liveRoom :global(.v-stage .v-mic-status) {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset-block-end: -2px;
+  inset-inline-start: -2px;
+  inset-inline-end: auto;
+  inline-size: 18px;
+  block-size: 18px;
+  border: 1px solid var(--voice-bg);
+  border-radius: 50%;
+  background: var(--voice-gold);
+  color: var(--voice-ink);
+}
+.liveRoom :global(.v-stage .v-mic-status.is-muted) {
+  color: var(--voice-text);
+  background: var(--voice-raised);
+}
+.liveRoom :global(.v-stage .v-mic-status svg) {
+  inline-size: 12px;
+  block-size: 12px;
+}
+.liveRoom :global(.v-stage .v-seat-role) {
+  position: absolute;
+  inset-block-start: -3px;
+  inset-inline-end: -3px;
+  color: var(--voice-gold);
+}
+.liveRoom :global(.v-stage .v-seat-hand) {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: -4px;
+  color: var(--voice-gold);
+  background: var(--voice-bg);
+  border-radius: 50%;
+}
+.liveRoom :global(.v-stage .v-seat-number) {
+  display: none;
+  color: var(--voice-muted);
+  font-size: 11px;
+  margin-block-end: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.liveRoom :global(.v-stage .v-empty-seat > span) {
+  inline-size: 56px;
+  block-size: 56px;
+  border-style: dashed;
+  color: var(--voice-gold);
+  opacity: 0.7;
+}
+.liveRoom :global(.v-stage .v-seat-lock) {
+  position: static;
+  min-inline-size: 48px;
+  min-block-size: 48px;
+  margin-block-start: 4px;
+  color: var(--voice-gold);
+  font-size: 12px;
+}
+.liveRoom :global(.v-seats[data-show-empty='false'] .v-seat-is-empty) {
+  display: none;
+}
+.liveRoom :global(.v-stage .v-seat-expand) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  inline-size: 100%;
+  min-block-size: 48px;
+  margin-block-start: 16px;
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.liveRoom :global(.v-stage .v-stage-note) {
+  color: var(--voice-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-block: 12px 0;
+}
+.speakerWave {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  block-size: 22px;
+  color: var(--voice-gold);
+}
+.liveRoom :global(.is-speaking) .speakerWave {
+  display: flex;
+}
+.speakerWave i {
+  inline-size: 3px;
+  block-size: 16px;
+  border-radius: 3px;
+  background: currentColor;
+  transform: scaleY(0.35);
+  animation: voiceWave 650ms ease-in-out infinite alternate;
+}
+.speakerWave i:nth-child(3n + 2) {
+  animation-delay: -180ms;
+  block-size: 22px;
+}
+.speakerWave i:nth-child(3n) {
+  animation-delay: -400ms;
+  block-size: 12px;
+}
+@keyframes voiceWave {
+  to {
+    transform: scaleY(1);
+  }
+}
+.audienceRail {
+  display: none;
+  grid-area: audience;
+  align-self: start;
+  padding: 16px;
+  border: 1px solid var(--voice-line);
+  border-radius: 18px;
+  background: var(--voice-glass);
+}
+.audienceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 12px;
+  border-block: 1px solid var(--voice-line);
+}
+.audienceHeader h2 {
+  margin: 0;
+  color: var(--voice-text);
+  font-size: 15px;
+}
+.audienceHeader span {
+  color: var(--voice-gold);
+  font-size: 12px;
+}
+.audienceList {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+  max-block-size: min(52dvh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.audienceMember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 48px;
+  min-inline-size: 0;
+  inline-size: 100%;
+  padding: 6px 0;
+  text-align: start;
+  color: var(--voice-text);
+  background: transparent;
+  border: 0;
+}
+.audienceMember :global(.v-avatar) {
+  flex: none;
+}
+.audienceMember :global(.v-speaking) {
+  border-color: var(--voice-gold) !important;
+  box-shadow: 0 0 0 3px var(--voice-glow) !important;
+  animation: none;
+}
+.liveRoom :global(.v-stage .is-speaking .v-seat-state) {
+  color: var(--voice-gold);
+}
+.audienceMember > svg {
+  flex: none;
+  inline-size: 15px;
+}
+.audienceIdentity {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-inline-size: 0;
+  font-size: 12px;
+}
+.audienceIdentity small {
+  color: var(--voice-muted);
+  font-size: 11px;
+}
+.audienceNav {
+  display: grid;
+  gap: 4px;
+  padding-block-end: 10px;
+}
+.audienceNav a,
+.audienceNav button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-block-size: 48px;
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.audienceNav a:hover,
+.audienceMember:hover {
+  color: var(--voice-gold);
+}
+.liveRoom :global(.v-chat-column) {
+  grid-area: chat;
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: transparent;
+}
+.liveRoom :global(.v-chat-column .v-chat) {
+  grid-area: chat;
+  position: static;
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 0;
+  block-size: clamp(360px, 58dvh, 720px);
+  max-block-size: none;
+  max-height: none;
+  margin: 0;
+  border: 1px solid var(--voice-line);
+  border-radius: 18px;
+  background: var(--voice-glass);
+  overflow: hidden;
 }
 .liveRoom :global(.v-chat > header) {
-  min-block-size: 66px;
-  padding: 16px 20px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-block-size: 60px;
+  padding: 10px 14px;
   border-block-end: 1px solid var(--voice-line);
+  background: transparent;
 }
 .liveRoom :global(.v-chat > header h2) {
   font-size: 14px;
 }
 .liveRoom :global(.v-chat > header > span) {
+  color: var(--voice-muted);
   font-size: 11px;
 }
-.liveRoom :global(.v-messages) {
+.liveRoom :global(.v-chat .v-messages) {
   flex: 1;
   min-block-size: 0;
   min-height: 0;
   max-block-size: none;
   max-height: none;
-  padding: 18px 12px;
-  gap: 18px;
+  padding: 14px 10px;
+  overscroll-behavior: contain;
 }
-.liveRoom :global(.v-message) {
+.liveRoom :global(.v-chat .v-message) {
   gap: 8px;
+  margin-block-end: 16px;
 }
-.liveRoom :global(.v-message-body) {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+.liveRoom :global(.v-chat .v-avatar-button) {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-inline-size: 48px;
+  min-block-size: 48px;
 }
-.liveRoom :global(.v-my-message .v-message-body) {
-  border: 0;
-  background: transparent;
+.liveRoom :global(.v-chat .v-message-body) {
+  min-inline-size: 0;
+  border: 1px solid var(--voice-line);
+  border-radius: 16px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--voice-raised) 65%, transparent);
 }
-.liveRoom :global(.v-message-meta strong) {
+.liveRoom :global(.v-chat .v-message-meta) {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.liveRoom :global(.v-chat .v-message-meta strong) {
+  min-inline-size: 0;
+  color: var(--voice-gold);
   font-size: 12px;
-  color: var(--voice-gold-light);
+  overflow-wrap: anywhere;
 }
-.liveRoom :global(.v-message-body > p) {
-  font-size: 14px;
-  line-height: 1.9;
-}
-.liveRoom :global(.v-message-meta time) {
+.liveRoom :global(.v-chat .v-message-meta time) {
+  color: var(--voice-muted);
   font-size: 10px;
 }
-.liveRoom :global(.v-message-actions) {
-  gap: 0;
-  margin-block-start: 3px;
+.liveRoom :global(.v-chat .v-message-body > p) {
+  color: var(--voice-text);
+  font-size: 14px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
-.liveRoom :global(.v-message-actions button) {
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  inline-size: 44px;
-  block-size: 44px;
-  padding: 0;
+.liveRoom :global(.v-chat .v-message-actions) {
+  flex-wrap: wrap;
 }
-.liveRoom :global(.v-chat-compose) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.liveRoom :global(.v-chat .v-message-actions button) {
+  min-inline-size: 48px;
+  min-block-size: 48px;
+}
+.liveRoom :global(.v-chat .v-chat-compose) {
+  position: static;
+  display: grid;
   flex: none;
+  gap: 8px;
+  margin: 0;
   padding: 12px;
   border: 0;
   border-block-start: 1px solid var(--voice-line);
   border-radius: 0;
   background: var(--voice-bg);
 }
-.liveRoom :global(.v-chat-compose textarea) {
-  flex: 1;
+.liveRoom :global(.v-chat .v-chat-compose textarea) {
+  min-inline-size: 0;
   inline-size: 100%;
-  block-size: 48px;
-  min-block-size: 48px;
+  block-size: 52px;
+  min-block-size: 52px;
+  min-height: 52px;
   max-block-size: 120px;
-  min-height: 48px;
-  padding: 12px 14px;
-  margin: 0;
+  padding: 10px 12px;
   border: 1px solid var(--voice-line);
-  border-radius: 24px;
-  background: var(--voice-card);
-  font-size: 13px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 16px;
   line-height: 1.7;
   resize: vertical;
-}
-.liveRoom :global(.v-chat-compose > div) {
-  display: flex;
-  flex: none;
-  gap: 0;
-  margin: 0;
-}
-.liveRoom :global(.v-chat-compose > div > span),
-.liveRoom :global(.v-chat-compose button[aria-label='إرسال هدية']),
-.liveRoom :global(.v-chat-compose button[aria-label='إضافة رمز تعبيري']) {
-  display: none;
-}
-.liveRoom :global(.v-send) {
-  inline-size: 44px;
-  block-size: 44px;
-  min-block-size: 44px;
-  min-inline-size: 44px;
-  border-radius: 50%;
-  color: var(--voice-ink);
-  background: var(--voice-gold);
-}
-.liveRoom :global(.v-audio-session) {
-  grid-column: 1 / -1;
-  padding: 0 12px;
-  margin: 8px 0;
-  border: 0;
-  background: transparent;
-}
-.liveRoom :global(.v-audio-session > summary) {
-  cursor: pointer;
-  min-block-size: 44px;
-  padding-block: 10px;
-  font-size: 12px;
-  color: var(--voice-muted);
-}
-.liveRoom :global(.v-audio-session .v-volume) {
-  margin: 12px;
-  font-size: 12px;
-}
-.liveRoom :global(.v-room-controls) {
-  position: fixed;
-  z-index: 30;
-  inset-block-end: 0;
-  inset-inline: 0;
-  max-inline-size: 1360px;
-  margin-inline: auto;
-  border-block-start: 1px solid var(--voice-line);
-  background: var(--voice-bg);
-  padding: 12px 24px max(12px, env(safe-area-inset-bottom));
-  min-block-size: 92px;
-  gap: 16px;
-}
-.liveRoom :global(.v-control-actions) {
-  gap: 8px;
-}
-.liveRoom :global(.v-control) {
-  min-inline-size: 56px;
-  min-block-size: 62px;
-  padding: 6px 4px;
-  border-radius: 14px;
-}
-.liveRoom :global(.v-control > span) {
-  font-size: 11px;
-}
-.liveRoom :global(.v-control.v-main-mic) {
-  background: var(--voice-raised);
-  border: 1px solid var(--voice-line);
-}
-.liveRoom :global(.v-control.v-gift-control) {
-  background: var(--voice-live-strong);
   color: var(--voice-text);
+  background: var(--voice-card);
 }
-.liveRoom :global(.v-control.v-gift-control > span) {
-  color: inherit;
+.liveRoom :global(.v-chat .v-chat-compose > div) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
 }
-.liveRoom :global(.v-control.v-gift-control > svg) {
-  color: inherit;
-}
-.liveRoom :global(.v-leave) {
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  border-radius: 12px;
-}
-.liveRoom :global(.v-leave > span) {
-  font-size: 12px;
-}
-.liveRoom :global(.v-join-panel),
-.liveRoom :global(.v-empty-state),
-.liveRoom :global(.v-room-loading),
-.liveRoom :global(.v-room-error),
-.liveRoom :global(.v-ended) {
-  grid-column: 1 / -1;
-}
-.liveRoom :global(.v-members-dialog .v-listeners) {
-  padding: 0;
-  background: transparent;
-  border: 0;
-}
-.liveRoom :global(.v-members-dialog .v-listener-grid) {
-  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
-}
-.liveRoom :global(.v-members-dialog .v-listener-grid > button) {
-  min-block-size: 60px;
-}
-.liveRoom :global(.v-close-room) {
-  grid-column: 1 / -1;
-  font-size: 12px;
-  margin: 12px;
-}
-@media (min-width: 1021px) {
-  .liveRoom :global(.v-chat-toggle) {
-    display: none;
-  }
-}
-@media (max-width: 1100px) and (min-width: 761px) {
-  .liveRoom[data-room-visible='true'] {
-    padding-inline: 20px;
-  }
-  .liveRoom :global(.v-main) {
-    grid-template-columns: minmax(0, 1fr) 290px;
-    column-gap: 12px;
-    padding-inline: 16px;
-  }
-  .liveRoom :global(.v-seat-avatar) {
-    inline-size: 72px;
-    block-size: 72px;
-  }
-  .liveRoom :global(.v-controls-me) {
-    display: none;
-  }
-}
-@media (max-width: 1020px) and (min-width: 761px) {
-  .liveRoom :global(.v-main) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .roomHeading,
-  .liveRoom :global(.v-stage-column) {
-    grid-column: 1;
-  }
-  .liveRoom :global(.v-chat-column) {
-    grid-column: 1;
-    grid-row: 4;
-    border-inline-start: 0;
-    border-block-start: 1px solid var(--voice-line);
-  }
-  .liveRoom :global(.v-chat) {
-    position: static;
-    block-size: clamp(280px, 35dvh, 440px);
-  }
-  .liveRoom :global(.v-chat-column) {
-    position: static;
-    inset: auto;
-    background: transparent;
-    z-index: auto;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-column) {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    background: var(--voice-shade);
-    padding: 24px;
-  }
-  .liveRoom :global(.v-chat-open .v-chat) {
-    block-size: calc(100dvh - 48px);
-    max-block-size: none;
-    border-radius: 20px;
-    background: var(--voice-card);
-  }
-}
-@media (max-width: 760px) {
-  .liveRoom[data-room-visible='true'] {
-    padding: 0 0 calc(100px + env(safe-area-inset-bottom));
-  }
-  .liveRoom :global(.v-topbar) {
-    display: none;
-  }
-  .liveRoom :global(.v-main) {
-    display: flex;
-    flex-direction: column;
-    border: 0;
-    border-radius: 0;
-    padding: 0 16px;
-    background: transparent;
-    max-inline-size: none;
-    gap: 0;
-  }
-  .roomHeader {
-    min-block-size: 76px;
-    gap: 8px;
-    flex-wrap: nowrap;
-    border: 0;
-  }
-  .hostPill {
-    gap: 4px;
-    padding: 3px;
-    flex: 1;
-    max-inline-size: 210px;
-  }
-  .hostPill > button:first-child {
-    flex: 1;
-    gap: 6px;
-    padding: 0;
-  }
-  .hostPill > button:first-child > span:last-child {
-    min-inline-size: 0;
-  }
-  .hostPill strong {
-    font-size: 12px;
-    max-inline-size: 105px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .hostPill small {
-    font-size: 10px;
-  }
-  .hostPill :global(.v-avatar) {
-    inline-size: 34px;
-    block-size: 34px;
-    flex: none;
-  }
-  .presence {
-    gap: 0;
-  }
-  .presence :global(.v-live) {
-    display: none;
-  }
-  .presence > button {
-    min-inline-size: 44px;
-    padding: 0;
-    gap: 4px;
-    font-size: 12px;
-  }
-  .presence > button svg {
-    inline-size: 14px;
-  }
-  .headerActions {
-    gap: 0;
-    margin-inline-start: 0;
-  }
-  .headerActions > button[aria-label='إضافة الغرفة للمفضلة'],
-  .headerActions > button[aria-label='مشاركة الغرفة'] {
-    display: none;
-  }
-  .roomHeading {
-    padding: 8px 4px 10px;
-  }
-  .roomHeading h1 {
-    font-size: 26px;
-    line-height: 1.45;
-  }
-  .roomHeading > span {
-    font-size: 11px;
-  }
-  .roomHeading p {
-    font-size: 12px;
-    margin-block: 2px 0;
-  }
-  .liveRoom :global(.v-stage-column) {
-    display: flex;
-  }
-  .liveRoom :global(.v-stage) {
-    padding: 8px 0 0;
-  }
-  .liveRoom :global(.v-stage-heading) {
-    margin-block-end: 16px;
-    gap: 4px;
-    flex-wrap: nowrap;
-  }
-  .liveRoom :global(.v-stage-heading h2) {
-    font-size: 12px;
-  }
-  .liveRoom :global(.v-stage-heading h2 svg) {
-    inline-size: 14px;
-  }
-  .liveRoom :global(.v-connection) {
-    font-size: 10px;
-    padding-inline: 6px;
-  }
-  .liveRoom :global(.v-stage .v-seats) {
-    gap: 12px;
-  }
-  .liveRoom :global(.v-seat) {
-    padding: 12px 6px 8px;
-  }
-  .liveRoom :global(.v-seat-avatar) {
-    inline-size: 64px;
-    block-size: 64px;
-    padding: 3px;
-  }
-  .liveRoom :global(.v-seat-person > strong) {
-    font-size: 12px;
-  }
-  .liveRoom :global(.v-seat-person > small) {
-    font-size: 11px;
-  }
-  .liveRoom :global(.v-seat-mic) {
-    font-size: 10px;
-  }
-  .liveRoom :global(.v-empty-seat) {
-    min-block-size: 124px;
-    gap: 4px;
-  }
-  .liveRoom :global(.v-empty-seat > span) {
-    inline-size: 54px;
-    block-size: 54px;
-  }
-  .liveRoom :global(.v-empty-seat strong) {
-    font-size: 11px;
-  }
-  .liveRoom :global(.v-empty-seat small) {
-    font-size: 10px;
-  }
-  .liveRoom :global(.v-seat-lock) {
-    font-size: 11px;
-    min-block-size: 44px;
-  }
-  .liveRoom :global(.v-stage-note) {
-    margin-block: 12px 6px;
-    font-size: 10px;
-  }
-  .liveRoom :global(.v-chat-column) {
-    position: static;
-    inset: auto;
-    z-index: auto;
-    display: flex;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    margin-block-start: 12px;
-  }
-  .liveRoom :global(.v-chat) {
-    block-size: clamp(360px, 55dvh, 560px);
-    max-block-size: none;
-    min-block-size: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-  }
-  .liveRoom :global(.v-chat > header) {
-    padding: 4px 0;
-    border: 0;
-    min-block-size: 44px;
-  }
-  .liveRoom :global(.v-chat > header h2) {
-    font-size: 12px;
-  }
-  .liveRoom :global(.v-chat > header > span) {
-    font-size: 11px;
-  }
-  .liveRoom :global(.v-chat-close),
-  .liveRoom :global(.v-chat-drag-handle) {
-    display: none;
-  }
-  .liveRoom :global(.v-messages) {
-    padding: 8px 0;
-    gap: 16px;
-    min-block-size: 0;
-  }
-  .liveRoom :global(.v-pinned) {
-    font-size: 12px;
-    padding: 10px;
-    border: 1px solid var(--voice-line);
-    border-radius: 12px;
-    background: var(--voice-soft-shade);
-  }
-  .liveRoom :global(.v-message-meta strong) {
-    font-size: 12px;
-  }
-  .liveRoom :global(.v-message-body > p) {
-    font-size: 13px;
-  }
-  .liveRoom :global(.v-message-actions) {
-    flex-wrap: wrap;
-  }
-  .liveRoom :global(.v-chat-compose) {
-    position: static;
-    margin: 0;
-    padding: 10px 14px;
-    gap: 8px;
-  }
-  .liveRoom :global(.v-chat-compose textarea) {
-    block-size: 44px;
-    min-block-size: 44px;
-    min-height: 44px;
-    padding-block: 10px;
-    font-size: 16px;
-  }
-  .liveRoom :global(.v-room-controls) {
-    inset-inline: 0;
-    min-block-size: 86px;
-    padding: 6px 8px max(8px, env(safe-area-inset-bottom));
-    gap: 0;
-  }
-  .liveRoom :global(.v-controls-me) {
-    display: none;
-  }
-  .liveRoom :global(.v-control-actions) {
-    flex: 1;
-    justify-content: space-around;
-    gap: 0;
-  }
-  .liveRoom :global(.v-control) {
-    inline-size: 44px;
-    min-inline-size: 44px;
-    min-block-size: 64px;
-    padding: 4px 0;
-    gap: 4px;
-  }
-  .liveRoom :global(.v-control svg) {
-    inline-size: 20px;
-    block-size: 20px;
-  }
-  .liveRoom :global(.v-control > span) {
-    font-size: 10px;
-    max-inline-size: 48px;
-    line-height: 1.5;
-  }
-  .liveRoom :global(.v-leave) {
-    inline-size: 44px;
-    min-inline-size: 44px;
-    padding: 4px;
-    margin-inline-start: 2px;
-  }
-  .liveRoom :global(.v-leave > span) {
-    display: none;
-  }
-  .liveRoom :global(.v-audio-session) {
-    display: block;
-    padding: 0;
-    margin: 8px 0;
-  }
-  .liveRoom :global(.v-audio-session > summary) {
-    font-size: 12px;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-column) {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    margin: 0;
-    padding: max(8px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
-    background: var(--voice-card);
-    border: 0;
-  }
-  .liveRoom :global(.v-chat-open .v-chat) {
-    block-size: 100%;
-    height: 100%;
-    max-block-size: none;
-    max-height: none;
-    min-height: 0;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-compose) {
-    position: static;
-    padding: 10px 0 0;
-    background: transparent;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-close) {
-    display: grid;
-    min-inline-size: 44px;
-    min-block-size: 44px;
-  }
-  .liveRoom :global(.v-chat-open .v-chat > header) {
-    font-size: 16px;
-    border-block-end: 1px solid var(--voice-line);
-    padding-block: 8px;
-  }
-  .liveRoom :global(.v-chat-open .v-messages) {
-    flex: 1;
-    min-block-size: 0;
-  }
-  .liveRoom:has(:global(.v-chat-open)) :global(.v-room-controls) {
-    visibility: hidden;
-  }
-}
-@media (max-width: 359px) {
-  .liveRoom :global(.v-main) {
-    padding-inline: 10px;
-  }
-  .hostPill {
-    max-inline-size: 154px;
-  }
-  .hostPill strong {
-    font-size: 11px;
-  }
-  .hostPill small {
-    font-size: 9px;
-  }
-  .liveRoom :global(.v-seat-avatar) {
-    inline-size: 58px;
-    block-size: 58px;
-  }
-  .liveRoom :global(.v-room-controls) {
-    padding-inline: 2px;
-  }
-  .liveRoom :global(.v-leave) {
-    margin: 0;
-  }
-  .liveRoom :global(.v-control-actions) {
-    justify-content: space-between;
-  }
-}
-
-/* Seats respond to the stage width, including beside the desktop chat rail. */
-@container voiceStage (max-width: 720px) {
-  .liveRoom :global(.v-stage .v-seats) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@container voiceStage (max-width: 340px) {
-  .liveRoom :global(.v-stage .v-seats) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-.liveRoom :global(.v-seat-person > strong),
-.liveRoom :global(.v-empty-seat strong) {
-  white-space: normal;
-  overflow: visible;
-  overflow-wrap: anywhere;
-  text-align: center;
-}
-.liveRoom :global(.v-seat-avatar > .v-avatar) {
-  width: 100% !important;
-  height: 100% !important;
-}
-.liveRoom :global(.v-host-seat) {
-  border-color: var(--voice-border);
-  background: var(--voice-glow);
-}
-.liveRoom :global(.v-seat.is-speaking) {
-  border-color: var(--voice-cyan);
-  box-shadow: inset 0 -2px 0 var(--voice-cyan);
-}
-.liveRoom :global(.v-seat-number) {
-  position: absolute;
-  inset-block-start: 5px;
-  inset-inline-start: 8px;
-  color: var(--voice-muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
-}
-.liveRoom :global(.v-seats[data-show-empty='false'] .v-seat-is-empty) {
+.liveRoom :global(.v-chat .v-chat-compose > div > span) {
   display: none;
 }
-.liveRoom :global(.v-seat.v-seat-is-empty) {
-  padding-block-end: 4px;
-  border-style: dashed;
+.liveRoom :global(.v-chat .v-chat-compose button) {
+  min-inline-size: 48px;
+  min-block-size: 48px;
 }
-.liveRoom :global(.v-seat-lock) {
-  position: static;
-}
-.liveRoom :global(.v-seat-expand) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-block-size: 44px;
-  inline-size: 100%;
-  margin-block-start: 8px;
-  font-size: 12px;
-  color: var(--voice-muted);
-}
-.liveRoom :global(.v-stage-heading) {
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-block-end: 16px;
-}
-.liveRoom :global(.v-stage-heading > div:last-child) {
-  flex-wrap: wrap;
-}
-.liveRoom :global(.v-chat-column) {
-  align-self: stretch;
-}
-.liveRoom :global(.v-chat-compose) {
-  position: static;
-  display: grid;
-  margin: 0;
-  gap: 8px;
-}
-.liveRoom :global(.v-chat-compose textarea) {
-  min-block-size: 52px;
-  block-size: 52px;
-  font-size: 16px;
+.liveRoom :global(.v-chat .v-send) {
+  background: var(--voice-gold);
+  color: var(--voice-ink);
   border-radius: 12px;
 }
-.liveRoom :global(.v-chat-compose > div) {
-  justify-content: flex-end;
-}
-.liveRoom :global(.v-chat-compose button[aria-label='إرسال هدية']),
-.liveRoom :global(.v-chat-compose button[aria-label='إضافة رمز تعبيري']) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.liveRoom :global(.v-message-body) {
-  min-inline-size: 0;
-  padding: 10px 12px 4px;
-  border: 1px solid var(--voice-line);
-  border-radius: 14px;
-  background: var(--voice-soft-shade);
-}
-.liveRoom :global(.v-my-message .v-message-body) {
-  border: 1px solid var(--voice-border);
-  background: var(--voice-glow);
-}
-.liveRoom :global(.v-message-meta) {
-  flex-wrap: wrap;
-}
-.liveRoom :global(.v-message-meta strong) {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.liveRoom :global(.v-messages) {
-  overscroll-behavior: contain;
-  scroll-padding-block: 12px;
-}
-.liveRoom :global(.v-pinned),
-.liveRoom :global(.v-reply-preview) {
-  max-block-size: 5rem;
+.liveRoom :global(.v-chat .v-pinned),
+.liveRoom :global(.v-chat .v-reply-preview) {
+  flex: none;
+  max-block-size: 88px;
   overflow-y: auto;
   overflow-wrap: anywhere;
-  flex-shrink: 0;
+  font-size: 12px;
 }
 .liveRoom :global(.v-chat-close),
 .liveRoom :global(.v-chat-drag) {
   display: none;
 }
+.liveRoom :global(.v-audio-session) {
+  grid-area: audio;
+  min-inline-size: 0;
+  padding: 0;
+  margin: 8px 0;
+  border: 0;
+  background: transparent;
+}
+.liveRoom :global(.v-audio-session > summary) {
+  min-block-size: 48px;
+  padding-block: 12px;
+  color: var(--voice-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.liveRoom :global(.v-audio-session .v-volume) {
+  margin: 12px;
+}
+.liveRoom :global(.v-room-app .v-room-controls) {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  justify-content: center;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 0;
+  min-block-size: 0;
+  max-inline-size: 1880px;
+  margin-inline: auto;
+  padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+  border-block-start: 1px solid var(--voice-border);
+  background: var(--voice-bg);
+  box-shadow: 0 -12px 30px var(--voice-soft-shade);
+}
+.liveRoom :global(.v-room-controls .v-controls-me) {
+  display: none;
+}
+.liveRoom :global(.v-room-controls .v-control-actions) {
+  display: contents;
+}
+.liveRoom :global(.v-room-controls .v-control),
+.liveRoom :global(.v-room-controls .v-leave) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  inline-size: auto;
+  min-width: 48px;
+  min-height: 64px;
+  min-inline-size: 48px;
+  min-block-size: 64px;
+  padding: 7px 3px;
+  margin: 0;
+  color: var(--voice-text);
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+}
+.liveRoom :global(.v-room-controls .v-control > span),
+.liveRoom :global(.v-room-controls .v-leave > span) {
+  display: block;
+  color: inherit;
+  max-inline-size: 100%;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.liveRoom :global(.v-room-controls .v-control > svg),
+.liveRoom :global(.v-room-controls .v-leave > svg) {
+  box-sizing: border-box;
+  inline-size: 36px;
+  block-size: 36px;
+  padding: 7px;
+  border: 1px solid var(--voice-line);
+  border-radius: 50%;
+  background: var(--voice-soft-shade);
+  color: inherit;
+}
+.liveRoom :global(.v-room-controls .v-main-mic:not(.is-muted)) {
+  background: transparent;
+  color: var(--voice-text);
+}
+.liveRoom :global(.v-room-controls .v-main-mic:not(.is-muted) > svg) {
+  background: var(--voice-gold);
+  color: var(--voice-ink);
+}
+.liveRoom :global(.v-room-controls .v-gift-control) {
+  background: transparent;
+  color: var(--voice-live);
+}
+.liveRoom :global(.v-room-controls .v-gift-control > svg) {
+  background: var(--voice-live);
+  color: var(--voice-ink);
+}
+.liveRoom :global(.v-room-controls .v-leave) {
+  color: var(--voice-live);
+  background: transparent;
+}
+.liveRoom :global(.v-room-controls .v-control.is-selected) {
+  box-shadow: none;
+  color: var(--voice-gold);
+}
+.liveRoom :global(.v-room-controls .v-control.is-selected > svg) {
+  border-color: var(--voice-gold);
+  background: var(--voice-glow);
+}
+.liveRoom :global(.v-room-app button:focus-visible),
+.liveRoom :global(.v-room-app summary:focus-visible),
+.liveRoom :global(.v-room-app a:focus-visible),
+.liveRoom :global(.v-room-app textarea:focus-visible) {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+.liveRoom :global(.v-room-app button),
+.liveRoom :global(.v-room-app a) {
+  touch-action: manipulation;
+}
+.liveRoom :global(.v-room-error),
+.liveRoom :global(.v-ended),
+.liveRoom :global(.v-join-panel),
+.liveRoom :global(.v-room-loading) {
+  grid-column: 1 / -1;
+  direction: rtl;
+}
+.liveRoom :global(.v-close-room) {
+  grid-area: close;
+  min-block-size: 48px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+.liveRoom :global(.v-members-dialog .v-listener-grid) {
+  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+}
+.liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
+  inset-block-start: auto;
+  inset-block-end: calc(var(--room-controls-space) + env(safe-area-inset-bottom));
+}
+@media (min-width: 480px) {
+  .liveRoom {
+    --room-controls-space: 100px;
+  }
+  .liveRoom :global(.v-room-app .v-room-controls) {
+    grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  }
+}
+@media (min-width: 761px) {
+  .liveRoom {
+    --room-avatar-size: 72px;
+  }
+  .liveRoom[data-room-visible='true'] {
+    padding-inline: 24px;
+  }
+  .liveRoom :global(.v-room-app .v-main) {
+    display: grid;
+    direction: ltr;
+    grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+    grid-template-areas: 'header header' 'heading chat' 'stage chat' 'audio chat' 'close chat';
+    gap: 20px;
+    align-content: start;
+  }
+  .audienceRail {
+    display: block;
+    flex: none;
+    inline-size: 100%;
+    overscroll-behavior: contain;
+  }
+  .audienceNav {
+    display: none;
+  }
+  .audienceHeader {
+    padding-block: 4px;
+  }
+  .audienceList {
+    max-block-size: 112px;
+    overflow-y: auto;
+  }
+  .liveRoom :global(.v-chat-column) {
+    block-size: calc(100dvh - var(--room-controls-space) - 100px);
+  }
+  .liveRoom :global(.v-chat-column .v-chat) {
+    flex: 1 1 0;
+    block-size: auto;
+    min-height: 0;
+  }
+  .liveRoom :global(.v-stage .v-seat-person > strong) {
+    font-size: 13px;
+  }
+}
+@media (min-width: 1280px) {
+  .liveRoom {
+    --room-avatar-size: 88px;
+  }
+  .liveRoom :global(.v-room-app .v-main) {
+    grid-template-columns: minmax(0, 20fr) minmax(0, 55fr) minmax(0, 25fr);
+    grid-template-areas: 'header header header' 'audience heading chat' 'audience stage chat' 'audience audio chat' 'audience close chat';
+    gap: 24px;
+  }
+  .audienceRail {
+    position: sticky;
+    inset-block-start: 20px;
+    max-block-size: none;
+    overflow: visible;
+  }
+  .audienceNav {
+    display: grid;
+  }
+  .liveRoom :global(.v-chat-column) {
+    display: contents;
+  }
+  .audienceList {
+    max-block-size: min(52dvh, 560px);
+    overflow-y: auto;
+  }
+  .liveRoom :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px 18px;
+  }
+  .liveRoom :global(.v-chat-column .v-chat) {
+    flex: none;
+    position: sticky;
+    inset-block-start: 20px;
+    block-size: min(780px, calc(100dvh - var(--room-controls-space) - 120px));
+  }
+}
+@container voiceStage (max-width:340px) {
+  .liveRoom :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap-inline: 8px;
+  }
+}
+@media (max-width: 760px) {
+  .backdrop::before {
+    background-image:
+      url('/voice/aflaqni-riyadh-night-mobile.webp'), url('/voice/aflaqni-skyline.svg');
+    background-position: center bottom;
+  }
+  .liveRoom {
+    --room-controls-space: 170px;
+  }
+  .mobileAudioSettings {
+    display: inline-flex;
+  }
+  .liveRoom :global(.v-stage-heading[data-audio-state='connected']) {
+    display: none;
+  }
+  .liveRoom :global(.v-room-controls .v-control > span),
+  .liveRoom :global(.v-room-controls .v-leave > span) {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+  .headerMenu > summary {
+    display: grid;
+    place-items: center;
+    min-inline-size: 48px;
+    min-block-size: 48px;
+    border-radius: 50%;
+    color: var(--voice-gold);
+  }
+  .headerMenu[open] .headerActions {
+    position: absolute;
+    inset-block-start: calc(100% + 8px);
+    inset-inline-end: 0;
+    z-index: 45;
+    inline-size: min(260px, calc(100vw - 32px));
+    padding: 8px;
+    border: 1px solid var(--voice-border);
+    border-radius: 16px;
+    background: var(--voice-card);
+    box-shadow: var(--voice-shadow);
+  }
+  .mobileLive {
+    display: inline-flex;
+    margin-inline-start: 8px;
+  }
+  .mobileLive :global(.v-live) {
+    color: var(--voice-ink);
+    font-size: 9px;
+  }
+  .liveRoom :global(.v-room-app .v-main) {
+    gap: 12px;
+  }
+  .liveRoom :global(.v-stage-column) {
+    display: contents;
+  }
+  .liveRoom :global(.v-requests) {
+    order: 1;
+  }
+  .liveRoom :global(.v-audio-session) {
+    order: 2;
+  }
+  .liveRoom :global(.v-close-room) {
+    order: 3;
+  }
+  .liveRoom :global(.v-room-controls .v-leave) {
+    display: none;
+  }
+  .roomHeader {
+    padding-block: 6px;
+    gap: 4px;
+  }
+  .hostPill {
+    flex-basis: 150px;
+  }
+  .hostPill strong {
+    max-inline-size: 120px;
+  }
+  .presence :global(.v-live) {
+    display: none;
+  }
+  .headerActions {
+    justify-content: flex-end;
+  }
+  .roomHeading {
+    padding-block-start: 0;
+  }
+  .roomHeading h1 {
+    font-size: 26px;
+    margin-block: 2px;
+    line-height: 1.4;
+  }
+  .roomHeading p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .liveRoom :global(.v-stage .v-seat-state) {
+    display: none;
+  }
+  .liveRoom :global(.v-stage .v-seat-person > small) {
+    display: none;
+  }
+  .liveRoom :global(.v-stage .v-seats) {
+    gap-block: 12px;
+  }
+  .liveRoom :global(.v-stage .v-stage-note) {
+    display: none;
+  }
+  .liveRoom :global(.v-stage-column .v-stage) {
+    padding-block-end: 0;
+  }
+  .liveRoom :global(.v-stage .v-seat-expand) {
+    margin-block-start: 4px;
+  }
+  .liveRoom :global(.v-stage .v-stage-heading) {
+    margin-block-end: 18px;
+  }
+}
+@media (min-width: 380px) and (max-width: 760px) {
+  .liveRoom {
+    --room-controls-space: 100px;
+  }
+  .liveRoom :global(.v-room-app .v-room-controls) {
+    grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+    gap: 4px;
+    padding-inline: 8px;
+  }
+}
+@media (min-width: 1021px) {
+  .liveRoom :global(.v-room-controls .v-chat-toggle) {
+    display: none;
+  }
+  .liveRoom :global(.v-room-app .v-room-controls) {
+    grid-template-columns: repeat(auto-fit, minmax(48px, 88px));
+  }
+}
 @media (max-width: 1020px) {
-  .liveRoom :global(.v-controls-me) {
+  .liveRoom :global(.v-chat-open) .audienceRail {
     display: none;
   }
   .liveRoom :global(.v-chat-open .v-chat-column) {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    margin: 0;
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background: var(--voice-bg);
     border: 0;
+  }
+  .liveRoom :global(.v-chat-open .v-chat) {
+    position: static;
+    block-size: 100%;
+    height: 100%;
+    max-block-size: none;
+    max-height: none;
+    min-block-size: 0;
+    min-height: 0;
   }
   .liveRoom :global(.v-chat-open .v-chat-close) {
     display: grid;
+    min-inline-size: 48px;
+    min-block-size: 48px;
+  }
+  .liveRoom :global(.v-chat-open .v-chat-drag) {
+    display: flex;
   }
   .liveRoom:has(:global(.v-chat-open)) :global(.v-room-controls) {
     visibility: hidden;
   }
 }
-@media (max-width: 760px) {
-  .liveRoom :global(.v-stage-column) {
-    gap: 12px;
-  }
-  .liveRoom :global(.v-stage-note) {
-    display: none;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-drag) {
-    display: flex;
-  }
-  .liveRoom :global(.v-chat-open .v-chat-column) {
-    padding-block: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-bottom));
-    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
-  }
-  .hostPill strong > span {
-    flex-wrap: nowrap;
-  }
-  .hostPill strong bdi {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .hostPill small {
-    white-space: nowrap;
-    overflow: hidden;
-  }
-}
-.liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
-  inset-block-start: auto;
-  inset-block-end: calc(112px + env(safe-area-inset-bottom));
-  inset-inline-end: auto;
-  inset-inline-start: max(16px, calc((100vw - 1280px) / 2));
-}
-.liveRoom :global(.v-friend-status) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--voice-gold-light);
-  font-size: 0.85rem;
-  line-height: 1.8;
-}
 @media (max-height: 500px) and (min-width: 761px) {
-  .liveRoom :global(.v-chat) {
+  .liveRoom :global(.v-chat-column .v-chat) {
     position: static;
     block-size: 360px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveRoom :global(.v-stage .is-speaking .v-seat-avatar)::after {
+    animation: none;
+    opacity: 0.4;
+  }
+  .speakerWave i {
+    animation: none;
+    transform: scaleY(0.65);
   }
 }

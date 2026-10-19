@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VoiceParticipant, VoiceRoom, VoiceSnapshot } from '@/lib/voice/types';
 import { VoiceRoomEntry } from './voice-room-entry';
@@ -117,7 +117,8 @@ function requests(suffix: string) {
   return fetcher.mock.calls.filter(([url]) => String(url).endsWith(suffix));
 }
 async function connected() {
-  await screen.findByText('متصل بالصوت');
+  // Readiness includes the lazy room import and its asynchronous media effects.
+  await screen.findByText('متصل بالصوت', {}, { timeout: 3000 });
   await waitFor(() => expect(sdk.microphone).toHaveBeenCalledWith(true, expect.anything()));
 }
 
@@ -165,7 +166,14 @@ beforeEach(() => {
   });
   vi.stubGlobal('fetch', fetcher);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(async () => {
+  cleanup();
+  // Drain deferred page-leave work even when an assertion fails, before replacing navigator mocks.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  vi.unstubAllGlobals();
+});
 
 describe('persistent microphone across game routes', () => {
   it('keeps the microphone connected during trial gifting and releases the gift dialog on game navigation', async () => {
@@ -334,7 +342,10 @@ describe('persistent microphone across game routes', () => {
     await connected();
     sdk.pathname = '/games/chess';
     view.rerender(<App />);
-    const originalFetch = fetcher.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>;
+    const originalFetch = fetcher.getMockImplementation() as (
+      url: string,
+      init?: RequestInit,
+    ) => Promise<Response>;
     fetcher.mockImplementation((url: string, init?: RequestInit) =>
       url.endsWith('/leave') ? new Promise<Response>(() => {}) : originalFetch(url, init),
     );
@@ -350,14 +361,19 @@ describe('persistent microphone across game routes', () => {
     await connected();
     sdk.pathname = '/games/chess';
     view.rerender(<App />);
-    const originalFetch = fetcher.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>;
+    const originalFetch = fetcher.getMockImplementation() as (
+      url: string,
+      init?: RequestInit,
+    ) => Promise<Response>;
     fetcher.mockImplementation((url: string, init?: RequestInit) =>
       url.endsWith('/leave') ? new Promise<Response>(() => {}) : originalFetch(url, init),
     );
     vi.useFakeTimers();
     try {
       fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
-      await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
       expect(screen.getByRole('button', { name: 'مغادرة الصوت' })).toBeEnabled();
       expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
       expect(sdk.connect).toHaveBeenCalledTimes(1);

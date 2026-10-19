@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type MouseEvent,
+  type Ref,
+} from 'react';
 import {
   ArrowRight,
   AudioLines,
@@ -63,6 +71,7 @@ import liveStyles from './live-room.module.css';
 import { GiftCelebration } from './gift-celebration';
 import { requestVoiceMicrophone } from './microphone-permission';
 import { VoiceSocial } from './voice-social';
+import { VoiceRoomAudience } from './voice-room-audience';
 import { withLiveMessages, type VoiceLiveMessage } from './voice-live-message';
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
@@ -120,6 +129,7 @@ export function VoiceRoomView({
   }
   const chatRef = useRef<HTMLDivElement>(null);
   const compactChat = useVoiceMediaQuery('(max-width: 1020px)');
+  const narrowHeader = useVoiceMediaQuery('(max-width: 760px)');
   const closeChat = useCallback(() => setChatOpen(false), []);
   const [deafened, setDeafened] = useState(false);
   const [volume, setVolume] = useState(0.85);
@@ -128,7 +138,52 @@ export function VoiceRoomView({
   const [audioError, setAudioError] = useState('');
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const audioController = useRef<VoiceAudioHandle>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const headerMenuRef = useRef<HTMLDetailsElement>(null);
+  const audioSettingsLauncher = useRef<HTMLButtonElement | null>(null);
   const [mediaStopped, setMediaStopped] = useState(false);
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    const controls = controlsRef.current;
+    if (
+      !visible ||
+      loading ||
+      joinRequired ||
+      authRequired ||
+      !snapshot?.room.active ||
+      !surface ||
+      !controls
+    )
+      return;
+    const updateInset = () => {
+      // offsetHeight stays in CSS pixels when text or page scaling wraps the controls.
+      const height = controls.offsetHeight;
+      if (height > 0) surface.style.setProperty('--room-controls-space', `${height + 16}px`);
+    };
+    updateInset();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateInset);
+    observer?.observe(controls);
+    window.addEventListener('resize', updateInset);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateInset);
+      surface.style.removeProperty('--room-controls-space');
+    };
+  }, [visible, snapshot?.room.active, roomId, loading, joinRequired, authRequired]);
+  const openAudioSettings = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      audioSettingsLauncher.current = event.currentTarget;
+      setAudioSettingsOpen(true);
+      if (narrowHeader && headerMenuRef.current) headerMenuRef.current.open = false;
+      requestAnimationFrame(() =>
+        surfaceRef.current
+          ?.querySelector<HTMLElement>('aside[aria-label="جلسة الصوت المستمرة"] details > summary')
+          ?.focus(),
+      );
+    },
+    [narrowHeader],
+  );
   const [arrivals, setArrivals] = useState<VoiceArrival[]>([]);
   const dismissArrival = useCallback(() => setArrivals((current) => current.slice(1)), []);
   const [settings, setSettings] = useState(false);
@@ -497,7 +552,11 @@ export function VoiceRoomView({
   );
   const onSeat = me?.seatIndex !== null && me?.seatIndex !== undefined;
   return (
-    <div className={`${liveStyles.liveRoom} v-room-scope`} data-room-visible={visible}>
+    <div
+      ref={surfaceRef}
+      className={`${liveStyles.liveRoom} v-room-scope`}
+      data-room-visible={visible}
+    >
       {visible && room && (
         <div className={liveStyles.backdrop} aria-hidden="true">
           <VoiceCover src={room.cover} sizes="100vw" priority />
@@ -511,7 +570,18 @@ export function VoiceRoomView({
           muteBusy={muteBusy}
           visible={visible}
           audioSettingsOpen={audioSettingsOpen}
-          onAudioSettingsOpenChange={setAudioSettingsOpen}
+          onAudioSettingsOpenChange={(open) => {
+            setAudioSettingsOpen(open);
+            if (!open && visible) {
+              const launcher = narrowHeader
+                ? headerMenuRef.current?.querySelector<HTMLElement>('summary')
+                : audioSettingsLauncher.current ||
+                  surfaceRef.current?.querySelector<HTMLElement>(
+                    '[aria-label="حالة الصوت وإعدادات الاتصال"]',
+                  );
+              requestAnimationFrame(() => launcher?.focus());
+            }
+          }}
           overlayActive={
             chatOverlayOpen ||
             Boolean(profileId) ||
@@ -677,6 +747,9 @@ export function VoiceRoomView({
                       ) : (
                         <Users size={17} />
                       )}
+                      <span>
+                        {preferences.following.includes(room.hostId) ? 'متابَع' : 'المتابعة'}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -691,63 +764,93 @@ export function VoiceRoomView({
                     <span>{number(room.participantCount)}</span>
                   </button>
                 </div>
-                <div className={liveStyles.headerActions}>
-                  <VoiceSocial
-                    user={user}
-                    preferences={preferences}
-                    onPreference={preference}
-                    peerId={privatePeer}
-                    onPeerChange={setPrivatePeer}
-                    onVisibilityChange={setSocialOpen}
-                  />
-                  <button
-                    className="v-icon"
-                    aria-label="إضافة الغرفة للمفضلة"
-                    aria-pressed={preferences.favorites.includes(roomId)}
-                    onClick={() =>
-                      void preference({
-                        type: 'favorite',
-                        id: roomId,
-                        enabled: !preferences.favorites.includes(roomId),
-                      })
+                <details
+                  ref={headerMenuRef}
+                  className={liveStyles.headerMenu}
+                  open={!narrowHeader}
+                  onKeyDown={(e) => {
+                    if (
+                      narrowHeader &&
+                      e.key === 'Escape' &&
+                      e.currentTarget.contains(e.target as Node) &&
+                      !(e.target as Element).closest('[role="dialog"]')
+                    ) {
+                      e.currentTarget.open = false;
+                      e.currentTarget.querySelector('summary')?.focus();
                     }
-                  >
-                    <Heart size={20} />
-                  </button>
-                  <button
-                    className="v-icon"
-                    onClick={() => void share()}
-                    aria-label="مشاركة الغرفة"
-                  >
-                    <Share2 size={19} />
-                  </button>
-                  <button
-                    className="v-icon"
-                    onClick={() => {
-                      if (host) setSettings(true);
-                      else {
-                        setReportUserId(null);
-                        setReportOpen(true);
+                  }}
+                >
+                  <summary aria-label="خيارات الغرفة">
+                    <MoreHorizontal size={21} aria-hidden="true" />
+                  </summary>
+                  <div className={liveStyles.headerActions}>
+                    <button
+                      className={`v-icon ${liveStyles.mobileAudioSettings}`}
+                      aria-label="إعدادات الصوت والاتصال"
+                      onClick={openAudioSettings}
+                    >
+                      <Headphones size={20} />
+                    </button>
+                    <VoiceSocial
+                      user={user}
+                      preferences={preferences}
+                      onPreference={preference}
+                      peerId={privatePeer}
+                      onPeerChange={setPrivatePeer}
+                      onVisibilityChange={setSocialOpen}
+                    />
+                    <button
+                      className="v-icon"
+                      aria-label="إضافة الغرفة للمفضلة"
+                      aria-pressed={preferences.favorites.includes(roomId)}
+                      onClick={() =>
+                        void preference({
+                          type: 'favorite',
+                          id: roomId,
+                          enabled: !preferences.favorites.includes(roomId),
+                        })
                       }
-                    }}
-                    aria-label={host ? 'إعدادات الغرفة' : 'الإبلاغ عن الغرفة'}
-                  >
-                    <MoreHorizontal size={21} />
-                  </button>
-                  <button
-                    className="v-icon"
-                    onClick={() => void leave()}
-                    disabled={actionBusy}
-                    aria-label="مغادرة الغرفة"
-                  >
-                    <X size={21} />
-                  </button>
-                </div>
+                    >
+                      <Heart size={20} />
+                    </button>
+                    <button
+                      className="v-icon"
+                      onClick={() => void share()}
+                      aria-label="مشاركة الغرفة"
+                    >
+                      <Share2 size={19} />
+                    </button>
+                    <button
+                      className="v-icon"
+                      onClick={() => {
+                        if (host) setSettings(true);
+                        else {
+                          setReportUserId(null);
+                          setReportOpen(true);
+                        }
+                      }}
+                      aria-label={host ? 'إعدادات الغرفة' : 'الإبلاغ عن الغرفة'}
+                    >
+                      <MoreHorizontal size={21} />
+                    </button>
+                  </div>
+                </details>
+                <button
+                  className="v-icon"
+                  onClick={() => void leave()}
+                  disabled={actionBusy}
+                  aria-label="مغادرة الغرفة"
+                >
+                  <X size={21} />
+                </button>
               </header>
               <div className={liveStyles.roomHeading} inert={chatOverlayOpen}>
                 <span>
                   <Headphones size={14} /> {room.category}
                   {room.isPrivate && ' · خاصة'}
+                  <span className={liveStyles.mobileLive}>
+                    <LiveBadge active={room.active} waiting={room.participantCount === 0} />
+                  </span>
                 </span>
                 <h1>{room.name}</h1>
                 {room.description && <p>{room.description}</p>}
@@ -786,7 +889,7 @@ export function VoiceRoomView({
                 >
                   <div className="v-stage-column" inert={chatOverlayOpen}>
                     <section className="v-stage">
-                      <div className="v-stage-heading">
+                      <div className="v-stage-heading" data-audio-state={audioState}>
                         <div>
                           <p className="v-eyebrow">مساحة الحديث</p>
                           <h2>
@@ -798,14 +901,14 @@ export function VoiceRoomView({
                           <button
                             type="button"
                             className={roomStyles.diagnosticsButton}
-                            onClick={() => setAudioSettingsOpen(true)}
+                            onClick={openAudioSettings}
                           >
                             <AudioLines size={16} aria-hidden="true" /> فحص الصوت
                           </button>
                           <button
                             type="button"
                             className={`v-connection v-state-${audioState} ${roomStyles.connectionButton}`}
-                            onClick={() => setAudioSettingsOpen(true)}
+                            onClick={openAudioSettings}
                             aria-label="حالة الصوت وإعدادات الاتصال"
                           >
                             <span />
@@ -845,10 +948,7 @@ export function VoiceRoomView({
                               إعادة الاتصال
                             </button>
                           ) : audioState === 'connected' ? (
-                            <button
-                              className="v-button v-small"
-                              onClick={() => setAudioSettingsOpen(true)}
-                            >
+                            <button className="v-button v-small" onClick={openAudioSettings}>
                               إعدادات الميكروفون
                             </button>
                           ) : (
@@ -906,7 +1006,7 @@ export function VoiceRoomView({
                                       />
                                     </strong>
                                     <small>{roleLabels[person.role]}</small>
-                                    <span className={roomStyles.seatState}>
+                                    <span className={`${roomStyles.seatState} v-seat-state`}>
                                       {speakers.includes(person.id) ? (
                                         <>
                                           <AudioLines size={13} /> يتحدث الآن
@@ -920,6 +1020,11 @@ export function VoiceRoomView({
                                           <Mic size={13} /> المايك مفتوح
                                         </>
                                       )}
+                                    </span>
+                                    <span className={liveStyles.speakerWave} aria-hidden="true">
+                                      {Array.from({ length: 9 }, (_, bar) => (
+                                        <i key={bar} />
+                                      ))}
                                     </span>
                                   </button>
                                 </>
@@ -1032,6 +1137,13 @@ export function VoiceRoomView({
                     aria-label={chatOverlayOpen ? 'دردشة الغرفة' : undefined}
                     tabIndex={chatOverlayOpen ? -1 : undefined}
                   >
+                    <VoiceRoomAudience
+                      participants={participants}
+                      speakers={speakers}
+                      onProfile={setProfileId}
+                      onMembers={() => setMembersOpen(true)}
+                      inert={chatOverlayOpen}
+                    />
                     <VoiceChat
                       messages={(snapshot?.messages || []).filter(
                         (m) => !preferences.blockedUsers.includes(m.userId),
@@ -1051,7 +1163,7 @@ export function VoiceRoomView({
               )}
               <details className="v-audio-session" inert={chatOverlayOpen}>
                 <summary>الصوت والألعاب</summary>
-                <button className="v-button v-outline" onClick={() => setAudioSettingsOpen(true)}>
+                <button className="v-button v-outline" onClick={openAudioSettings}>
                   <Headphones size={16} />
                   أجهزة الصوت والاتصال
                 </button>
@@ -1072,7 +1184,11 @@ export function VoiceRoomView({
                 </label>
               </details>
               {room.active && (
-                <div className={`v-room-controls ${roomStyles.controls}`} inert={chatOverlayOpen}>
+                <div
+                  ref={controlsRef}
+                  className={`v-room-controls ${roomStyles.controls}`}
+                  inert={chatOverlayOpen}
+                >
                   <div className="v-controls-me">
                     <Avatar user={user} size={37} />
                     <span>
@@ -1091,15 +1207,18 @@ export function VoiceRoomView({
                       className={`v-control v-main-mic ${!onSeat || me?.muted || me?.moderatorMuted ? 'is-muted' : ''}`}
                       disabled={!onSeat || me?.moderatorMuted || muteBusy}
                       aria-pressed={Boolean(me?.muted)}
+                      aria-label={
+                        onSeat
+                          ? me?.muted
+                            ? 'تشغيل الميكروفون'
+                            : 'كتم الميكروفون'
+                          : 'الميكروفون مكتوم'
+                      }
                       onClick={() => void act({ type: 'mute', muted: !me?.muted })}
                     >
                       {!onSeat || me?.muted || me?.moderatorMuted ? <MicOff /> : <Mic />}
                       <span>
-                        {onSeat
-                          ? me?.muted
-                            ? 'تشغيل الميكروفون'
-                            : 'كتم الميكروفون'
-                          : 'الميكروفون مكتوم'}
+                        {onSeat ? (me?.muted ? 'تشغيل المايك' : 'كتم المايك') : 'المايك مكتوم'}
                       </span>
                     </button>
                     {!onSeat ? (
@@ -1162,7 +1281,12 @@ export function VoiceRoomView({
                       <span>الدردشة</span>
                     </button>
                   </div>
-                  <button className="v-leave" disabled={actionBusy} onClick={() => void leave()}>
+                  <button
+                    className="v-leave"
+                    aria-label="مغادرة الغرفة"
+                    disabled={actionBusy}
+                    onClick={() => void leave()}
+                  >
                     <LogOut size={18} />
                     <span>مغادرة</span>
                   </button>
