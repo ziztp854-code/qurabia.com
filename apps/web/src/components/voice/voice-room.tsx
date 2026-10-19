@@ -38,7 +38,7 @@ import type {
   VoiceSnapshot,
   VoiceMessage,
 } from '@/lib/voice/types';
-import { AudioSession } from './audio-session';
+import { AudioSession, type VoiceAudioHandle } from './audio-session';
 import { MemberEntrance, voiceArrivals, type VoiceArrival } from './member-entrance';
 import { PersistentVoiceDock } from './persistent-voice-dock';
 import { Avatar, EmptyState, LiveBadge, VoiceShell, VoiceCover } from './voice-ui';
@@ -63,6 +63,7 @@ import liveStyles from './live-room.module.css';
 import { GiftCelebration } from './gift-celebration';
 import { requestVoiceMicrophone } from './microphone-permission';
 import { VoiceSocial } from './voice-social';
+import { withLiveMessages, type VoiceLiveMessage } from './voice-live-message';
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
 
@@ -124,6 +125,9 @@ export function VoiceRoomView({
   const [volume, setVolume] = useState(0.85);
   const [speakers, setSpeakers] = useState<string[]>([]);
   const [audioState, setAudioState] = useState('disconnected');
+  const [audioError, setAudioError] = useState('');
+  const [playbackBlocked, setPlaybackBlocked] = useState(false);
+  const audioController = useRef<VoiceAudioHandle>(null);
   const [arrivals, setArrivals] = useState<VoiceArrival[]>([]);
   const dismissArrival = useCallback(() => setArrivals((current) => current.slice(1)), []);
   const [settings, setSettings] = useState(false);
@@ -143,10 +147,12 @@ export function VoiceRoomView({
   useVoiceOverlay(chatOverlayOpen && visible, chatRef, closeChat);
   const leaving = useRef(false);
   const snapshotRef = useRef<VoiceSnapshot | null>(null);
+  const liveMessages = useRef<VoiceLiveMessage[]>([]);
   const apply = useCallback((data: VoiceSnapshot) => {
     if (leaving.current) return;
-    const next = nextSnapshot(snapshotRef.current, data);
-    if (next === snapshotRef.current) return;
+    const accepted = nextSnapshot(snapshotRef.current, data);
+    if (accepted === snapshotRef.current) return;
+    const next = withLiveMessages(accepted, liveMessages.current);
     // Initial history is not a live event. Polling the same message must not replay it.
     const previous = snapshotRef.current;
     if (previous) {
@@ -170,6 +176,23 @@ export function VoiceRoomView({
     setSnapshot(next);
     if (data.mediaSyncPending !== undefined) setMediaPending(data.mediaSyncPending);
   }, []);
+  const receiveRoomMessage = useCallback(
+    (packet: VoiceLiveMessage) => {
+      const current = snapshotRef.current;
+      if (
+        !current?.me ||
+        !current.room.active ||
+        packet.roomId !== current.room.id ||
+        packet.cursor <= current.cursor ||
+        preferences.blockedUsers.includes(packet.message.userId)
+      )
+        return;
+      if (!liveMessages.current.some((entry) => entry.message.id === packet.message.id))
+        liveMessages.current.push(packet);
+      apply({ ...current });
+    },
+    [apply, preferences.blockedUsers],
+  );
   const event = useCallback(
     async (value: VoiceEvent) => {
       const result = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}/events`, value);
@@ -501,6 +524,9 @@ export function VoiceRoomView({
         >
           {room?.active && me && !joinRequired && (
             <AudioSession
+              ref={audioController}
+              onErrorChange={setAudioError}
+              onPlaybackBlockedChange={setPlaybackBlocked}
               roomId={roomId}
               participant={me}
               muted={me.muted}
@@ -510,6 +536,7 @@ export function VoiceRoomView({
               onStateChange={setAudioState}
               onSpeakersChange={setSpeakers}
               onRoomChanged={refreshRoom}
+              onRoomMessage={receiveRoomMessage}
             />
           )}
         </PersistentVoiceDock>
@@ -761,7 +788,12 @@ export function VoiceRoomView({
                           </h2>
                         </div>
                         <div className={roomStyles.stageActions}>
-                          <span className={`v-connection v-state-${audioState}`}>
+                          <button
+                            type="button"
+                            className={`v-connection v-state-${audioState} ${roomStyles.connectionButton}`}
+                            onClick={() => setAudioSettingsOpen(true)}
+                            aria-label="حالة الصوت وإعدادات الاتصال"
+                          >
                             <span />
                             {audioState === 'connected'
                               ? 'الصوت متصل'
@@ -771,10 +803,45 @@ export function VoiceRoomView({
                                   ? 'الصوت يحتاج إعدادًا'
                                   : audioState === 'connecting'
                                     ? 'جارٍ الاتصال'
-                                    : 'الصوت غير متصل'}
-                          </span>
+                                    : audioState === 'tab-conflict'
+                                      ? 'الصوت مفتوح في نافذة أخرى'
+                                      : 'الصوت غير متصل'}
+                          </button>
                         </div>
                       </div>
+                      {(audioError || playbackBlocked) && (
+                        <div className={roomStyles.audioNotice} role="status">
+                          <p>
+                            {playbackBlocked ? 'اضغط لتفعيل سماع أصوات أعضاء الغرفة.' : audioError}
+                          </p>
+                          {playbackBlocked ? (
+                            <button
+                              className="v-button v-small"
+                              onClick={() => void audioController.current?.startAudio()}
+                            >
+                              تفعيل الاستماع
+                            </button>
+                          ) : ['error', 'disconnected', 'setup-needed', 'tab-conflict'].includes(
+                              audioState,
+                            ) ? (
+                            <button
+                              className="v-button v-small"
+                              onClick={() => audioController.current?.retry()}
+                            >
+                              إعادة الاتصال
+                            </button>
+                          ) : audioState === 'connected' ? (
+                            <button
+                              className="v-button v-small"
+                              onClick={() => setAudioSettingsOpen(true)}
+                            >
+                              إعدادات الميكروفون
+                            </button>
+                          ) : (
+                            <span>جارٍ استعادة الصوت…</span>
+                          )}
+                        </div>
+                      )}
                       <div className="v-seats" data-show-empty={showEmptySeats}>
                         {Array.from({ length: room.seatCount }, (_, index) => {
                           const person = participants.find((p) => p.seatIndex === index);

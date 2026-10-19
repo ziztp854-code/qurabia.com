@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import {
   ConnectionState,
+  DisconnectReason,
   Room,
   RoomEvent,
   Track,
@@ -11,6 +12,9 @@ import {
 } from 'livekit-client';
 import type { VoiceParticipant } from '@/lib/voice/types';
 import { SoundCheck } from './sound-check';
+import { requestVoiceMediaToken, VoiceMediaTokenError } from './voice-media-token';
+import { readVoiceLiveMessage, type VoiceLiveMessage } from './voice-live-message';
+export type VoiceAudioHandle = { retry: () => void; startAudio: () => Promise<void> };
 
 export type VoiceAudioState =
   | 'connecting'
@@ -21,6 +25,9 @@ export type VoiceAudioState =
   | 'error'
   | 'tab-conflict';
 type Props = {
+  ref?: Ref<VoiceAudioHandle>;
+  onErrorChange?: (error: string) => void;
+  onPlaybackBlockedChange?: (blocked: boolean) => void;
   roomId: string;
   participant: VoiceParticipant | null;
   muted?: boolean;
@@ -30,6 +37,7 @@ type Props = {
   onStateChange?: (state: VoiceAudioState) => void;
   onSpeakersChange?: (identities: string[]) => void;
   onRoomChanged?: () => void;
+  onRoomMessage?: (packet: VoiceLiveMessage) => void;
 };
 const STATE_LABEL: Record<VoiceAudioState, string> = {
   connecting: 'جارٍ الاتصال بالصوت…',
@@ -51,13 +59,25 @@ export function AudioSession({
   onStateChange,
   onSpeakersChange,
   onRoomChanged,
+  onRoomMessage,
+  onErrorChange,
+  onPlaybackBlockedChange,
+  ref,
 }: Props) {
   const roomRef = useRef<Room | null>(null);
+  const recoveryAttempts = useRef(0);
   const micQueue = useRef<Promise<void>>(Promise.resolve());
   const tracks = useRef(
     new Map<RemoteAudioTrack, { element: HTMLMediaElement; identity: string }>(),
   );
-  const callbacks = useRef({ onStateChange, onSpeakersChange, onRoomChanged });
+  const callbacks = useRef({
+    onStateChange,
+    onSpeakersChange,
+    onRoomChanged,
+    onRoomMessage,
+    onErrorChange,
+    onPlaybackBlockedChange,
+  });
   const playback = useRef({ deafened, volume, mutedUserIds });
   const [state, setState] = useState<VoiceAudioState>('disconnected');
   const [error, setError] = useState('');
@@ -69,6 +89,26 @@ export function AudioSession({
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [canSelectOutput, setCanSelectOutput] = useState(false);
   const participantId = participant?.id;
+  const retryAudio = useCallback(() => {
+    recoveryAttempts.current = 0;
+    setRetry((n) => n + 1);
+  }, []);
+  const startAudio = useCallback(async () => {
+    try {
+      await roomRef.current?.startAudio();
+      if (roomRef.current) setAudioBlocked(!roomRef.current.canPlaybackAudio);
+    } catch {
+      setError('اضغط للسماح بتشغيل الصوت في المتصفح.');
+    }
+  }, []);
+  useImperativeHandle(ref, () => ({ retry: retryAudio, startAudio }), [retryAudio, startAudio]);
+  useEffect(() => {
+    callbacks.current.onErrorChange?.(error);
+  }, [error]);
+  useEffect(() => {
+    callbacks.current.onPlaybackBlockedChange?.(audioBlocked);
+  }, [audioBlocked]);
+
   const getMicrophoneTrack = useCallback(
     () =>
       roomRef.current?.localParticipant.getTrackPublication?.(Track.Source.Microphone)?.track
@@ -82,8 +122,22 @@ export function AudioSession({
     !participant.moderatorMuted,
   );
   useEffect(() => {
-    callbacks.current = { onStateChange, onSpeakersChange, onRoomChanged };
-  }, [onStateChange, onSpeakersChange, onRoomChanged]);
+    callbacks.current = {
+      onStateChange,
+      onSpeakersChange,
+      onRoomChanged,
+      onRoomMessage,
+      onErrorChange,
+      onPlaybackBlockedChange,
+    };
+  }, [
+    onStateChange,
+    onSpeakersChange,
+    onRoomChanged,
+    onRoomMessage,
+    onErrorChange,
+    onPlaybackBlockedChange,
+  ]);
   useEffect(() => {
     callbacks.current.onStateChange?.(state);
   }, [state]);
@@ -101,12 +155,27 @@ export function AudioSession({
     let releaseLock: (() => void) | undefined;
     let leaseTimer: ReturnType<typeof setInterval> | undefined;
     let room: Room | undefined;
+    let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
+    let intentionalDisconnect = false;
     const abort = new AbortController();
     const owner = crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     const leaseKey = 'tahaddi-voice-session';
     const attached = tracks.current;
     const changeState = (next: VoiceAudioState) => {
       if (!disposed) setState(next);
+    };
+    const recover = () => {
+      if (disposed || recoveryTimer) return;
+      if (recoveryAttempts.current >= 4) {
+        setError('تعذر استعادة اتصال الصوت. تحقق من الشبكة ثم اضغط إعادة الاتصال.');
+        changeState('error');
+        return;
+      }
+      const delay = [1000, 2000, 4000, 8000][recoveryAttempts.current++];
+      changeState('reconnecting');
+      recoveryTimer = setTimeout(() => {
+        if (!disposed) setRetry((n) => n + 1);
+      }, delay);
     };
     const refreshDevices = async () => {
       try {
@@ -117,26 +186,11 @@ export function AudioSession({
       }
     };
     const connect = async () => {
-      let publicError = '';
       try {
         setError('');
+        setAudioBlocked(false);
         changeState('connecting');
-        const response = await fetch(`/api/voice/rooms/${encodeURIComponent(roomId)}/token`, {
-          method: 'POST',
-          signal: abort.signal,
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}',
-        });
-        const payload = await response.json();
-        if (!response.ok) {
-          if (payload.code === 'MEDIA_SETUP_REQUIRED') {
-            changeState('setup-needed');
-            setError(payload.error);
-            return;
-          }
-          publicError = payload.error || 'تعذّر الحصول على صلاحية الصوت.';
-          throw new Error('TokenRequestFailed');
-        }
+        const payload = await requestVoiceMediaToken(roomId, abort.signal);
         if (disposed) return;
         room = new Room({
           adaptiveStream: true,
@@ -149,10 +203,16 @@ export function AudioSession({
           publishDefaults: { dtx: true, red: true, stopMicTrackOnMute: true },
         });
         roomRef.current = room;
+        micQueue.current = Promise.resolve();
         room.on(RoomEvent.DataReceived, (payload, sender, _kind, topic) => {
-          // Peers are never trusted to provide room state or invalidate other rooms.
-          if (disposed || sender || topic !== 'tahaddi-voice-refresh-v1' || payload.length > 512)
+          // Only server-origin data can update chat or invalidate authoritative state.
+          if (disposed || sender) return;
+          if (topic === 'tahaddi-voice-message-v1') {
+            const packet = readVoiceLiveMessage(payload, roomId);
+            if (packet) callbacks.current.onRoomMessage?.(packet);
             return;
+          }
+          if (topic !== 'tahaddi-voice-refresh-v1' || payload.length > 512) return;
           try {
             const value = JSON.parse(new TextDecoder().decode(payload));
             if (value.roomId === roomId && Number.isSafeInteger(value.cursor))
@@ -191,9 +251,17 @@ export function AudioSession({
           changeState('reconnecting');
         });
         room.on(RoomEvent.Reconnected, () => changeState('connected'));
-        room.on(RoomEvent.Disconnected, () => {
+        room.on(RoomEvent.Disconnected, (reason) => {
+          if (disposed || intentionalDisconnect) return;
           callbacks.current.onSpeakersChange?.([]);
-          changeState('disconnected');
+          if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
+            changeState('tab-conflict');
+            setError('جلسة الصوت مفتوحة باسم حسابك في نافذة أخرى.');
+            return;
+          }
+          // Cloud permission changes disconnect the old grant. Obtain a fresh,
+          // server-authorized token; removed members are refused by the token API.
+          recover();
         });
         room.on(RoomEvent.MediaDevicesChanged, refreshDevices);
         room.on(RoomEvent.ParticipantPermissionsChanged, (_previous, changed) => {
@@ -208,15 +276,27 @@ export function AudioSession({
           await room.disconnect();
           return;
         }
+        recoveryAttempts.current = 0;
         changeState('connected');
         setAudioBlocked(!room.canPlaybackAudio);
         setCanSelectOutput('setSinkId' in HTMLMediaElement.prototype);
         await refreshDevices();
-      } catch {
+      } catch (cause) {
         if (disposed || abort.signal.aborted) return;
-        setError(publicError || 'تعذّر الاتصال بخدمة الصوت. تحقق من الشبكة ثم أعد المحاولة.');
-        changeState('error');
+        intentionalDisconnect = true;
         await room?.disconnect();
+        if (cause instanceof VoiceMediaTokenError) {
+          setError(cause.message);
+          if (cause.code === 'MEDIA_SETUP_REQUIRED') {
+            changeState('setup-needed');
+            return;
+          }
+          if ([400, 401, 403, 404, 410].includes(cause.status)) {
+            changeState('error');
+            return;
+          }
+        } else setError('تعذّر الاتصال بخدمة الصوت. جارٍ إعادة المحاولة تلقائيًا.');
+        recover();
       }
     };
     const start = async () => {
@@ -294,6 +374,7 @@ export function AudioSession({
     return () => {
       disposed = true;
       abort.abort();
+      if (recoveryTimer) clearTimeout(recoveryTimer);
       releaseLock?.();
       if (leaseTimer) clearInterval(leaseTimer);
       try {
@@ -344,6 +425,7 @@ export function AudioSession({
             track.enabled =
               canPublish && !muted && Boolean(room.localParticipant.permissions?.canPublish);
         }
+        if (!cancelled) setError('');
         const list = await navigator.mediaDevices.enumerateDevices();
         if (!cancelled) setDevices(list);
       })
@@ -377,19 +459,12 @@ export function AudioSession({
       </div>
       {error && <p role="alert">{error}</p>}
       {['error', 'disconnected', 'tab-conflict', 'setup-needed'].includes(state) && (
-        <button type="button" onClick={() => setRetry((n) => n + 1)}>
+        <button type="button" onClick={retryAudio}>
           إعادة المحاولة
         </button>
       )}
       {audioBlocked && state === 'connected' && (
-        <button
-          type="button"
-          onClick={() => {
-            void roomRef.current
-              ?.startAudio()
-              .catch(() => setError('اضغط للسماح بتشغيل الصوت في المتصفح.'));
-          }}
-        >
+        <button type="button" onClick={() => void startAudio()}>
           تفعيل الاستماع
         </button>
       )}

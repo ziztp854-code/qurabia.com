@@ -11,6 +11,7 @@ const sdk = vi.hoisted(() => ({
   connect: vi.fn(),
   disconnect: vi.fn(),
   microphone: vi.fn(),
+  events: new Map<string, (...args: unknown[]) => void>(),
 }));
 vi.mock('next/navigation', () => ({
   usePathname: () => sdk.pathname,
@@ -37,7 +38,7 @@ vi.mock('next/image', () => ({
 vi.mock('livekit-client', () => ({
   ConnectionState: { Connected: 'connected' },
   Track: { Kind: { Audio: 'audio' } },
-  RoomEvent: {},
+  RoomEvent: { DataReceived: 'data' },
   Room: class {
     state = 'connected';
     canPlaybackAudio = true;
@@ -47,10 +48,13 @@ vi.mock('livekit-client', () => ({
     };
     connect = sdk.connect;
     disconnect = sdk.disconnect;
-    on() {
+    on(event: string, callback: (...args: unknown[]) => void) {
+      sdk.events.set(event, callback);
       return this;
     }
-    removeAllListeners() {}
+    removeAllListeners() {
+      sdk.events.clear();
+    }
   },
 }));
 
@@ -334,4 +338,39 @@ describe('persistent microphone across game routes', () => {
       screen.queryByRole('complementary', { name: 'جلسة الصوت المستمرة' }),
     ).not.toBeInTheDocument();
   });
+});
+
+it('renders server-confirmed chat immediately and does not let an older heartbeat erase or duplicate it', async () => {
+  const view = render(<App />);
+  await connected();
+  const message = {
+    id: 'server-live-message',
+    userId: 'other',
+    name: 'ضيف المجلس',
+    image: null,
+    text: 'وصلت الرسالة مباشرة',
+    createdAt: Date.now(),
+    replyTo: null,
+    pinned: false,
+    reactions: {},
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify({ roomId: room.id, cursor: 12, message }));
+  try {
+    act(() => sdk.events.get('data')?.(bytes, undefined, 0, 'tahaddi-voice-message-v1'));
+    expect(screen.getByText(message.text)).toBeInTheDocument();
+    act(() => sdk.events.get('data')?.(bytes, undefined, 0, 'tahaddi-voice-message-v1'));
+    expect(screen.getAllByText(message.text)).toHaveLength(1);
+    await waitFor(() => expect(requests('/events').length).toBeGreaterThan(0), { timeout: 3500 });
+    expect(screen.getAllByText(message.text)).toHaveLength(1);
+    current = { ...current, cursor: 13, messages: [] };
+    await waitFor(() => expect(screen.queryByText(message.text)).not.toBeInTheDocument(), {
+      timeout: 3500,
+    });
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+  } finally {
+    view.unmount();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
 });

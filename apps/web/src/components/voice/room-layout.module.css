@@ -572,3 +572,39 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.layout :global(.v-stage-heading) button.connectionButton {
+  border: 0;
+  min-block-size: 44px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.connectionButton:focus-visible {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+.audioNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  margin-block-end: 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 14px;
+  background: var(--voice-card);
+  color: var(--voice-text);
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+.audioNotice p {
+  flex: 1 1 160px;
+  margin: 0;
+}
+.audioNotice > span {
+  color: var(--voice-muted);
+}
+.audioNotice > button {
+  min-block-size: 44px;
+}

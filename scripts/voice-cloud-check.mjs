@@ -196,7 +196,8 @@ try {
   console.log('[voice-cloud-check] offline identity token revocation passed');
   await delay(2_100);
   phase = 'fresh listener reconnect';
-  const listener = await join(await token('cloud-check-speaker', false));
+  const listenerToken = await token('cloud-check-speaker', false);
+  const listener = await join(listenerToken);
   if (
     listener.participant?.permission?.canPublish ||
     !listener.participant?.permission?.canSubscribe
@@ -204,6 +205,21 @@ try {
     throw new Error('Replacement listener permissions are incorrect');
   console.log(
     '[voice-cloud-check] fresh authorized listener reconnect passed; regional CSP verified',
+  );
+  phase = 'listener promotion and fresh speaker reconnect';
+  await client.removeParticipant(roomName, 'cloud-check-speaker', {
+    revokeTokenTs: BigInt(Math.ceil(Date.now() / 1000) + 1),
+  });
+  await rejectsToken(listenerToken);
+  await delay(2_100);
+  const promoted = await join(await token('cloud-check-speaker', true));
+  if (
+    !promoted.participant?.permission?.canPublish ||
+    !promoted.participant?.permission?.canSubscribe
+  )
+    throw new Error('Promoted speaker permissions are incorrect');
+  console.log(
+    '[voice-cloud-check] listener promotion with strict old-token revocation and fresh microphone grant passed',
   );
 } catch {
   // SDK errors may include request URLs. Keep build logs free of tokens.

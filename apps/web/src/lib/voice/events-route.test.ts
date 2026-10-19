@@ -17,7 +17,7 @@ const context = { params: Promise.resolve({ roomId: 'room' }) };
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('NEXTAUTH_URL', 'https://voice.test');
-  mocks.command.mockResolvedValue({ cursor: 1 });
+  mocks.command.mockResolvedValue({ cursor: 1, messages: [{ id: 'confirmed' }] });
   mocks.read.mockResolvedValue({ cursor: 2 });
   mocks.sync.mockImplementation(async (_id, value) => value);
   mocks.announce.mockImplementation((value) => value);
@@ -38,7 +38,10 @@ it.each([
   );
   expect(response.status).toBe(200);
   expect(mocks.sync).not.toHaveBeenCalled();
-  expect(mocks.announce).toHaveBeenCalledWith({ cursor: 1 });
+  expect(mocks.announce).toHaveBeenCalledWith(
+    { cursor: 1, messages: [{ id: 'confirmed' }] },
+    event.type === 'mute' ? undefined : 'confirmed',
+  );
 });
 it('keeps authoritative permission reconciliation on moderator mute and coalesces periodic checks', async () => {
   await POST(
@@ -49,7 +52,7 @@ it('keeps authoritative permission reconciliation on moderator mute and coalesce
     }),
     context,
   );
-  expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 1 });
+  expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 1, messages: [{ id: 'confirmed' }] });
   await GET(new Request('https://voice.test'), context);
   expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 2 }, true);
 });

@@ -2,6 +2,7 @@ import 'server-only';
 import { AccessToken, RoomServiceClient, TrackSource, DataPacket_Kind } from 'livekit-server-sdk';
 import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
 import { withVoiceMediaSnapshot } from './repository';
+import { voiceMessageDelivery } from './message-delivery';
 import { VoiceHttpError } from './http';
 
 export const VOICE_MEDIA_ROOM_PREFIX = 'tahaddi-voice-';
@@ -270,9 +271,25 @@ async function applyVoiceMediaPermissions(
 }
 
 /** Trusted invalidation only; clients fetch authorized state and cannot publish data. */
-export async function notifyVoiceRoomChanged(roomId: string, cursor: number) {
+export async function notifyVoiceRoomChanged(roomId: string, cursor: number, messageId?: string) {
   const config = voiceMediaConfig();
   if (!config) return;
+  if (messageId) {
+    try {
+      const delivery = await voiceMessageDelivery(roomId, messageId);
+      if (delivery?.recipients.length)
+        await mediaClient(config).sendData(
+          voiceMediaRoomName(roomId),
+          new TextEncoder().encode(
+            JSON.stringify({ roomId, cursor: delivery.cursor, message: delivery.message }),
+          ),
+          DataPacket_Kind.RELIABLE,
+          { topic: 'tahaddi-voice-message-v1', destinationIdentities: delivery.recipients },
+        );
+    } catch {
+      /* Authorized HTTP polling recovers any missed data packet. */
+    }
+  }
   try {
     await mediaClient(config).sendData(
       voiceMediaRoomName(roomId),

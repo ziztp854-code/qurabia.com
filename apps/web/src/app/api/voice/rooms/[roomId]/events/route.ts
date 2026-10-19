@@ -41,7 +41,12 @@ export async function POST(request: Request, context: Context) {
       'lock-seat',
     ].includes(event.type);
     return jsonSuccess(
-      announceVoiceChange(local ? snapshot : await synchronizeVoiceMedia(roomId, snapshot)),
+      announceVoiceChange(
+        local ? snapshot : await synchronizeVoiceMedia(roomId, snapshot),
+        event.type === 'message' || event.type === 'gift'
+          ? snapshot.messages.at(-1)?.id
+          : undefined,
+      ),
     );
   } catch (error) {
     return jsonFailure(error);

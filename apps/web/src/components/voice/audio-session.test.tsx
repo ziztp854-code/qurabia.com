@@ -1,18 +1,21 @@
+import { createRef } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AudioSession } from './audio-session';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AudioSession, type VoiceAudioHandle } from './audio-session';
 import type { VoiceParticipant } from '@/lib/voice/types';
 const mocks = vi.hoisted(() => ({
   connect: vi.fn(),
   disconnect: vi.fn(),
   mic: vi.fn(),
   startAudio: vi.fn(),
+  canPlaybackAudio: true,
   lock: vi.fn(),
   track: { enabled: true },
   events: new Map<string, (...args: unknown[]) => void>(),
 }));
 vi.mock('livekit-client', () => ({
   ConnectionState: { Connected: 'connected' },
+  DisconnectReason: { DUPLICATE_IDENTITY: 2, PARTICIPANT_REMOVED: 4 },
   Track: { Kind: { Audio: 'audio' }, Source: { Microphone: 'microphone' } },
   RoomEvent: {
     DataReceived: 'data',
@@ -29,7 +32,9 @@ vi.mock('livekit-client', () => ({
   },
   Room: class {
     state = 'connected';
-    canPlaybackAudio = true;
+    get canPlaybackAudio() {
+      return mocks.canPlaybackAudio;
+    }
     localParticipant = {
       permissions: { canSubscribe: true, canPublish: true },
       setMicrophoneEnabled: mocks.mic,
@@ -44,6 +49,7 @@ vi.mock('livekit-client', () => ({
     }
     removeAllListeners() {
       mocks.events.clear();
+      mocks.canPlaybackAudio = true;
     }
   },
 }));
@@ -63,6 +69,7 @@ const participant: VoiceParticipant = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.events.clear();
+  mocks.canPlaybackAudio = true;
   vi.stubGlobal('isSecureContext', true);
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
@@ -176,4 +183,134 @@ it('accepts invalidation only from server data for the current room', async () =
     mocks.events.get('data')?.(packet('room'), undefined, 0, 'tahaddi-voice-refresh-v1');
   });
   expect(changed).toHaveBeenCalledTimes(1);
+});
+
+afterEach(() => vi.useRealTimers());
+it('restores the SFU connection with a new token after listener promotion and Cloud revocation', async () => {
+  const listener = { ...participant, role: 'listener' as const, seatIndex: null };
+  const view = render(<AudioSession roomId="room" participant={listener} muted />);
+  await screen.findByText('متصل بالصوت');
+  vi.mocked(fetch).mockResolvedValueOnce({
+    ok: false,
+    status: 409,
+    json: async () => ({ code: 'MEDIA_RETRY', error: 'updating' }),
+  } as Response);
+  vi.useFakeTimers();
+  view.rerender(<AudioSession roomId="room" participant={participant} muted={false} />);
+  act(() => mocks.events.get('disconnected')?.(4));
+  expect(screen.getByText('جارٍ إعادة الاتصال…')).toBeInTheDocument();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+  expect(fetch).toHaveBeenCalledTimes(3);
+  expect(mocks.connect).toHaveBeenCalledTimes(2);
+  expect(screen.getByText('متصل بالصوت')).toBeInTheDocument();
+  expect(mocks.mic).toHaveBeenLastCalledWith(true, expect.anything());
+});
+it('does not reconnect a removed member when the fresh token request is forbidden', async () => {
+  render(<AudioSession roomId="room" participant={participant} />);
+  await screen.findByText('متصل بالصوت');
+  vi.mocked(fetch).mockResolvedValue({
+    ok: false,
+    status: 403,
+    json: async () => ({ error: 'انتهت عضويتك' }),
+  } as Response);
+  vi.useFakeTimers();
+  act(() => mocks.events.get('disconnected')?.(4));
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(20_000);
+  });
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
+  expect(screen.getByText('انتهت عضويتك')).toBeInTheDocument();
+});
+it('never fights a duplicate identity or leaves a reconnect timer after unmount', async () => {
+  const view = render(<AudioSession roomId="room" participant={participant} />);
+  await screen.findByText('متصل بالصوت');
+  vi.useFakeTimers();
+  act(() => mocks.events.get('disconnected')?.(2));
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5000);
+  });
+  expect(screen.getByText('الصوت مفتوح في علامة تبويب أخرى')).toBeInTheDocument();
+  expect(fetch).toHaveBeenCalledTimes(1);
+  act(() => mocks.events.get('disconnected')?.(4));
+  view.unmount();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(5000);
+  });
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('delivers live chat only from the server and never from a peer data publisher', async () => {
+  const received = vi.fn();
+  render(<AudioSession roomId="room" participant={participant} onRoomMessage={received} />);
+  await screen.findByText('متصل بالصوت');
+  const packet = {
+    roomId: 'room',
+    cursor: 12,
+    message: {
+      id: 'msg',
+      userId: 'sender',
+      name: 'عضو',
+      image: null,
+      text: 'أهلًا',
+      createdAt: 1,
+      replyTo: null,
+      pinned: false,
+      reactions: {},
+    },
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify(packet));
+  act(() => mocks.events.get('data')?.(bytes, { identity: 'peer' }, 0, 'tahaddi-voice-message-v1'));
+  expect(received).not.toHaveBeenCalled();
+  act(() => mocks.events.get('data')?.(bytes, undefined, 0, 'tahaddi-voice-message-v1'));
+  expect(received).toHaveBeenCalledWith(packet);
+});
+
+it('stops automatic reconnects after a bounded number of transport failures', async () => {
+  mocks.connect.mockRejectedValue(new Error('transport'));
+  vi.useFakeTimers();
+  render(<AudioSession roomId="room" participant={participant} />);
+  await act(async () => {});
+  for (const delay of [1000, 2000, 4000, 8000])
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(delay);
+    });
+  expect(mocks.connect).toHaveBeenCalledTimes(5);
+  expect(screen.getByText('تعذّر الاتصال بالصوت')).toBeInTheDocument();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(30_000);
+  });
+  expect(mocks.connect).toHaveBeenCalledTimes(5);
+});
+it('exposes a user-gesture playback action when the browser blocks remote audio', async () => {
+  mocks.canPlaybackAudio = false;
+  mocks.startAudio.mockImplementation(async () => {
+    mocks.canPlaybackAudio = true;
+  });
+  const ref = createRef<VoiceAudioHandle>();
+  const blocked = vi.fn();
+  render(
+    <AudioSession
+      ref={ref}
+      roomId="room"
+      participant={participant}
+      onPlaybackBlockedChange={blocked}
+    />,
+  );
+  await screen.findByText('متصل بالصوت');
+  expect(blocked).toHaveBeenLastCalledWith(true);
+  await act(async () => {
+    await ref.current?.startAudio();
+  });
+  expect(mocks.startAudio).toHaveBeenCalledTimes(1);
+  expect(blocked).toHaveBeenLastCalledWith(false);
 });

@@ -10,17 +10,21 @@ import {
   reconcileVoiceMedia,
   voiceMediaConfig,
   VoiceMediaUnavailable,
+  notifyVoiceRoomChanged,
 } from './livekit';
 import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
 const mocks = vi.hoisted(() => ({
   snapshot: undefined as unknown,
   list: vi.fn(),
+  send: vi.fn(),
+  delivery: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
   mute: vi.fn(),
   ledger: {} as VoiceMediaLedger,
   checkpoint: { checkedAt: 0 },
 }));
+vi.mock('./message-delivery', () => ({ voiceMessageDelivery: mocks.delivery }));
 vi.mock('./repository', () => ({
   withVoiceMediaSnapshot: async (
     _id: string,
@@ -36,6 +40,7 @@ vi.mock('livekit-server-sdk', async (importOriginal) => {
   return {
     ...actual,
     RoomServiceClient: class {
+      sendData = mocks.send;
       listParticipants = mocks.list;
       updateParticipant = mocks.update;
       removeParticipant = mocks.remove;
@@ -318,4 +323,21 @@ it('does not checkpoint failed SFU reconciliations', async () => {
   mocks.list.mockRejectedValue(new Error('network'));
   await expect(reconcileVoiceMedia('room', undefined, true)).rejects.toThrow();
   expect(mocks.checkpoint.checkedAt).toBe(0);
+});
+
+it('sends chat only to explicit authorized recipients and never broadcasts an empty recipient list', async () => {
+  const message = { id: 'msg', text: 'أهلًا' };
+  mocks.delivery.mockResolvedValue({ message, recipients: ['allowed'], cursor: 12 });
+  await notifyVoiceRoomChanged('room', 10, 'msg');
+  expect(mocks.send).toHaveBeenCalledWith(
+    'tahaddi-voice-room',
+    expect.anything(),
+    expect.anything(),
+    { topic: 'tahaddi-voice-message-v1', destinationIdentities: ['allowed'] },
+  );
+  mocks.send.mockClear();
+  mocks.delivery.mockResolvedValue({ message, recipients: [], cursor: 12 });
+  await notifyVoiceRoomChanged('room', 10, 'msg');
+  expect(mocks.send).toHaveBeenCalledTimes(1);
+  expect(mocks.send.mock.calls[0][3]).toEqual({ topic: 'tahaddi-voice-refresh-v1' });
 });

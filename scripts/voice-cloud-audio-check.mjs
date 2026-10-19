@@ -19,7 +19,7 @@ export async function checkCloudAudio() {
   );
   let created = false;
   try {
-    await client.createRoom({ name: roomName, emptyTimeout: 30, maxParticipants: 2 });
+    await client.createRoom({ name: roomName, emptyTimeout: 30, maxParticipants: 5 });
     created = true;
     const result = await new Promise((resolve, reject) => {
       const child = fork(fileURLToPath(import.meta.url), [roomName], {
@@ -50,25 +50,35 @@ export async function checkCloudAudio() {
             );
           }
         }
-        if (code === 0 && report?.ok && report?.paths?.length === 2) resolve(report);
+        if (
+          code === 0 &&
+          report?.ok &&
+          report?.paths?.length === 2 &&
+          report?.participants === 5 &&
+          report?.serverData?.isolated
+        )
+          resolve(report);
         else
           reject(
             new Error(
-              `Native audio check failed at ${['connect', 'subscribe', 'capture', 'verify', 'cleanup'].includes(report?.phase) ? report.phase : 'startup'}`,
+              `Native audio check failed at ${['connect', 'subscribe', 'data', 'capture', 'verify', 'cleanup'].includes(report?.phase) ? report.phase : 'startup'}`,
             ),
           );
       });
     });
+    console.log(
+      `[voice-cloud-data] reliable server message reached only its authorized recipient in ${result.serverData.latencyMs}ms`,
+    );
     for (const path of result.paths)
       console.log(
         `[voice-cloud-audio] ${path.direction}: decoded ${path.samples} PCM samples, RMS ${path.rms}, expected ${path.expectedHz}Hz, tone ratio ${path.toneRatio}`,
       );
     console.log(
-      '[voice-cloud-audio] bidirectional WebRTC audio passed with two native clients; synthetic tones only',
+      '[voice-cloud-audio] bidirectional WebRTC audio passed with five native clients (two speakers, three listeners); synthetic tones only',
     );
   } catch (error) {
     if (
-      /^Native audio check (failed at (connect|subscribe|capture|verify|cleanup|startup)|could not start)$/.test(
+      /^Native audio check (failed at (connect|subscribe|data|capture|verify|cleanup|startup)|could not start)$/.test(
         error.message,
       )
     )
@@ -86,9 +96,17 @@ export async function checkCloudAudio() {
 }
 
 async function runNativeClients(roomName) {
-  const { AccessToken, TrackSource: GrantSource } = requireWeb('livekit-server-sdk');
+  const {
+    AccessToken,
+    RoomServiceClient,
+    DataPacket_Kind,
+    TrackSource: GrantSource,
+  } = requireWeb('livekit-server-sdk');
   const rtc = await import('@livekit/rtc-node');
-  const rooms = [new rtc.Room(), new rtc.Room()];
+  const rooms = Array.from({ length: 5 }, () => new rtc.Room());
+  const serverPackets = Array(5).fill(0);
+  const marker = randomUUID();
+  let serverData;
   const readers = [],
     sources = [],
     tracks = [];
@@ -99,7 +117,17 @@ async function runNativeClients(roomName) {
   let paths;
   try {
     for (let index = 0; index < 2; index++) {
+      rooms[index].on(rtc.RoomEvent.DataReceived, (payload, sender, _kind, topic) => {
+        if (sender || topic !== 'tahaddi-voice-message-v1') return;
+        try {
+          if (JSON.parse(new TextDecoder().decode(payload)).marker === marker)
+            serverPackets[index]++;
+        } catch {
+          /* Ignore unrelated packets. */
+        }
+      });
       rooms[index].on(rtc.RoomEvent.TrackSubscribed, (track) => {
+        if (index >= 2) return;
         if (track.kind !== rtc.TrackKind.KIND_AUDIO) return;
         const reader = new rtc.AudioStream(track, {
           sampleRate: 48_000,
@@ -129,7 +157,7 @@ async function runNativeClients(roomName) {
         token.addGrant({
           room: roomName,
           roomJoin: true,
-          canPublish: true,
+          canPublish: index < 2,
           canSubscribe: true,
           canPublishData: false,
           canUpdateOwnMetadata: false,
@@ -141,9 +169,30 @@ async function runNativeClients(roomName) {
         });
       }),
     );
+    phase = 'data';
+    const service = new RoomServiceClient(
+      process.env.LIVEKIT_URL.replace(/^ws/, 'http'),
+      process.env.LIVEKIT_API_KEY,
+      process.env.LIVEKIT_API_SECRET,
+      { requestTimeout: 8, failover: false },
+    );
+    await delay(300);
+    const started = Date.now();
+    await service.sendData(
+      roomName,
+      new TextEncoder().encode(JSON.stringify({ marker })),
+      DataPacket_Kind.RELIABLE,
+      { topic: 'tahaddi-voice-message-v1', destinationIdentities: ['synthetic-1'] },
+    );
+    for (let attempt = 0; attempt < 50 && serverPackets[1] === 0; attempt++) await delay(100);
+    const latencyMs = Date.now() - started;
+    await delay(200);
+    if (serverPackets.some((count, index) => count !== (index === 1 ? 1 : 0)))
+      throw new Error('Server data recipient isolation failed');
+    serverData = { isolated: true, latencyMs };
     phase = 'subscribe';
     await Promise.all(
-      rooms.map(async (room, index) => {
+      rooms.slice(0, 2).map(async (room, index) => {
         const source = new rtc.AudioSource(48_000, 1, 100);
         sources[index] = source;
         const track = rtc.LocalAudioTrack.createAudioTrack(`test-tone-${index}`, source);
@@ -187,7 +236,7 @@ async function runNativeClients(roomName) {
       };
     });
     if (paths.some((path) => !path.passed)) throw new Error('Expected tone was not decoded');
-    report = { ok: true, paths };
+    report = { ok: true, paths, participants: rooms.length, serverData };
   } catch {
     report = { ok: false, phase, ...(phase === 'verify' && paths ? { paths } : {}) };
   } finally {
