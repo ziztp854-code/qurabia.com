@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   startAudio: vi.fn(),
   canPlaybackAudio: true,
   lock: vi.fn(),
-  track: { enabled: true },
+  track: { enabled: true, stop: vi.fn() },
   events: new Map<string, (...args: unknown[]) => void>(),
 }));
 vi.mock('livekit-client', () => ({
@@ -71,6 +71,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.events.clear();
   mocks.canPlaybackAudio = true;
+  mocks.track.enabled = true;
   vi.stubGlobal('isSecureContext', true);
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
@@ -92,6 +93,67 @@ beforeEach(() => {
       json: async () => ({ token: 'ephemeral', url: 'ws://127.0.0.1:7880' }),
     }),
   );
+});
+
+it('stops capture and disconnects immediately on explicit local stop without restarting', async () => {
+  const ref = createRef<VoiceAudioHandle>();
+  const view = render(<AudioSession ref={ref} roomId="room" participant={participant} muted={false} />);
+  await screen.findByText('متصل بالصوت');
+  await waitFor(() => expect(mocks.mic).toHaveBeenCalledWith(true, expect.anything()));
+  act(() => ref.current!.stop());
+  expect(mocks.track.enabled).toBe(false);
+  expect(mocks.track.stop).toHaveBeenCalledTimes(1);
+  expect(mocks.disconnect).toHaveBeenCalledWith(true);
+  expect(screen.getByText('الصوت غير متصل')).toBeInTheDocument();
+  act(() => ref.current!.retry());
+  await act(async () => {});
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
+  view.unmount();
+  expect(mocks.disconnect).toHaveBeenCalledTimes(1);
+});
+
+it('disconnects a connection that completes after explicit local stop without enabling capture', async () => {
+  let finishConnect!: () => void;
+  mocks.connect.mockImplementation(() => new Promise<void>((resolve) => { finishConnect = resolve; }));
+  const ref = createRef<VoiceAudioHandle>();
+  render(<AudioSession ref={ref} roomId="room" participant={participant} muted={false} />);
+  await waitFor(() => expect(mocks.connect).toHaveBeenCalledTimes(1));
+  act(() => ref.current!.stop());
+  expect(mocks.disconnect).toHaveBeenCalledWith(true);
+  await act(async () => { finishConnect(); });
+  expect(mocks.disconnect).toHaveBeenCalledTimes(2);
+  expect(mocks.mic).not.toHaveBeenCalledWith(true, expect.anything());
+  expect(screen.getByText('الصوت غير متصل')).toBeInTheDocument();
+  act(() => ref.current!.retry());
+  await act(async () => {});
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
+});
+
+it('disables a late microphone enable completion after explicit local stop', async () => {
+  let finishEnable!: () => void;
+  mocks.mic.mockImplementation((enabled: boolean) => {
+    if (!enabled) {
+      mocks.track.enabled = false;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      finishEnable = () => {
+        mocks.track.enabled = true;
+        resolve();
+      };
+    });
+  });
+  const ref = createRef<VoiceAudioHandle>();
+  render(<AudioSession ref={ref} roomId="room" participant={participant} muted={false} />);
+  await waitFor(() => expect(mocks.mic).toHaveBeenCalledWith(true, expect.anything()));
+  act(() => ref.current!.stop());
+  expect(mocks.track.enabled).toBe(false);
+  expect(mocks.track.stop).toHaveBeenCalledTimes(1);
+  await act(async () => { finishEnable(); });
+  expect(mocks.mic).toHaveBeenLastCalledWith(false);
+  expect(mocks.track.enabled).toBe(false);
+  expect(screen.getByText('الصوت غير متصل')).toBeInTheDocument();
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
 });
 describe('audio session lifecycle', () => {
   it('inspects the current transport without reconnecting or changing the microphone', async () => {

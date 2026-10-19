@@ -201,10 +201,9 @@ export async function createVoiceRoom(
   input: VoiceCreateInput,
 ): Promise<VoiceSnapshot> {
   const db = getPrismaClient();
-  if ((await db.voiceRoom.count({ where: { hostId: user.id, active: true } })) >= 5)
-    throw new VoiceHttpError(409, 'لديك خمس غرف نشطة. أغلق غرفة قبل إنشاء أخرى.');
   await assertCoverOwner(input.cover, user.id);
   const { password, ...settings } = input;
+  const passwordHash = password ? await hashPassword(password) : null;
   const now = Date.now();
   const state: VoiceRoomState = {
     settings,
@@ -217,13 +216,19 @@ export async function createVoiceRoom(
     bannedUsers: [],
   };
   joinVoiceState(state, user, now);
-  const room = await db.voiceRoom.create({
-    data: {
-      hostId: user.id,
-      state: json(state),
-      isPrivate: settings.isPrivate,
-      passwordHash: password ? await hashPassword(password) : null,
-    },
+  const room = await db.$transaction(async (tx) => {
+    // Serialize quota checks across app instances without holding a lock while hashing.
+    await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-create:${user.id}`}, 0))`;
+    if ((await tx.voiceRoom.count({ where: { hostId: user.id, active: true } })) >= 5)
+      throw new VoiceHttpError(409, 'لديك خمس غرف نشطة. أغلق غرفة قبل إنشاء أخرى.');
+    return tx.voiceRoom.create({
+      data: {
+        hostId: user.id,
+        state: json(state),
+        isPrivate: settings.isPrivate,
+        passwordHash,
+      },
+    });
   });
   await addHistory(user.id, room.id, settings.name);
   return voiceSnapshot(room.id, state, room.revision, user.id, Boolean(room.passwordHash));
