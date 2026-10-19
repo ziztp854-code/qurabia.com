@@ -28,7 +28,6 @@ export function VoiceGifts({
   const [giftId, setGiftId] = useState<VoiceGiftId>('rose');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [sent, setSent] = useState('');
   const recipient = participants.find((p) => p.id === recipientId);
   const selected = voiceGift(giftId)!;
   async function send(event: FormEvent) {
@@ -36,10 +35,9 @@ export function VoiceGifts({
     if (!recipient || !enabled || sending) return;
     setSending(true);
     setError('');
-    setSent('');
     try {
       await onEvent({ type: 'gift', giftId, recipientId });
-      setSent(`أُرسلت ${selected.name} إلى ${recipient.name}. ظهرت الهدية في دردشة الغرفة.`);
+      onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : 'تعذر إرسال الهدية. حاول مجددًا.');
     } finally {
@@ -86,7 +84,6 @@ export function VoiceGifts({
             disabled={sending}
             onChange={(event) => {
               setRecipientId(event.target.value);
-              setSent('');
               setError('');
             }}
           >
@@ -115,7 +112,6 @@ export function VoiceGifts({
                   checked={giftId === gift.id}
                   onChange={() => {
                     setGiftId(gift.id);
-                    setSent('');
                     setError('');
                   }}
                 />
@@ -133,11 +129,6 @@ export function VoiceGifts({
         {error && (
           <p className={styles.error} role="alert">
             {error}
-          </p>
-        )}
-        {sent && (
-          <p className={styles.success} role="status">
-            {sent}
           </p>
         )}
         <button className="v-button" type="submit" disabled={sending || !enabled || !recipient}>

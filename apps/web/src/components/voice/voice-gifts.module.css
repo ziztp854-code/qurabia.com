@@ -109,9 +109,6 @@
 .error {
   color: var(--voice-danger);
 }
-.success {
-  color: var(--voice-success);
-}
 .form button:disabled,
 .choices:disabled .choice {
   opacity: 0.6;
@@ -369,4 +366,58 @@
   .celebrationArt.photo {
     animation: none;
   }
+}
+
+/* Keep selection compact and the send action within reach on small screens. */
+.form > button[type='submit'] {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  min-block-size: 48px;
+  box-shadow: 0 -8px 20px var(--voice-bg);
+}
+@media (max-width: 480px) {
+  .form {
+    gap: 12px;
+  }
+  .preview {
+    padding: 12px;
+  }
+  .trial {
+    font-size: 12px;
+  }
+  .choices > div {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .choice {
+    padding: 26px 2px 8px;
+    border-radius: 12px;
+  }
+  .choice > .photo {
+    inline-size: min(52px, 100%);
+    block-size: auto;
+    aspect-ratio: 1;
+    border-radius: 10px;
+  }
+  .choice strong {
+    font-size: 12px;
+  }
+  .recipient select {
+    font-size: 16px;
+  }
+}
+
+.dialog :global(.dialog-header button) {
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  color: var(--voice-text);
+}
+.dialog :global(.dialog-header button svg) {
+  inline-size: 20px;
+  block-size: 20px;
 }

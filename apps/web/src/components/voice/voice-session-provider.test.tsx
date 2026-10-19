@@ -176,7 +176,9 @@ describe('persistent microphone across game routes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'الهدايا' }));
     expect(await screen.findByRole('dialog', { name: 'الهدايا التجريبية' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'إرسال وردة مجانًا' }));
-    expect(await screen.findByText(/أُرسلت وردة/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'الهدايا التجريبية' })).not.toBeInTheDocument(),
+    );
     expect(
       fetcher.mock.calls.some(
         ([, init]) => init?.body && JSON.parse(init.body as string).type === 'gift',
@@ -184,7 +186,6 @@ describe('persistent microphone across game routes', () => {
     ).toBe(true);
     expect(sdk.microphone).toHaveBeenCalledTimes(microphoneCalls);
     expect(sdk.disconnect).not.toHaveBeenCalled();
-    fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'الهدايا التجريبية' })).not.toBeInTheDocument();
     expect(document.body.style.overflow).toBe(previousOverflow);
     fireEvent.click(screen.getByRole('button', { name: 'الهدايا' }));

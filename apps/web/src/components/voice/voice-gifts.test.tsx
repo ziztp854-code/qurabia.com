@@ -27,25 +27,37 @@ const base = { participants: [self, other], selfId: self.id, enabled: true, onCl
 
 describe('trial gift interface', () => {
   it('sends the selected catalog gift to the selected member and confirms only after success', async () => {
-    const onEvent = vi.fn(async () => {});
-    render(<VoiceGifts {...base} onEvent={onEvent} />);
+    let confirm!: () => void;
+    const onEvent = vi.fn(
+      () => new Promise<void>((resolve) => {
+        confirm = resolve;
+      }),
+    );
+    const onClose = vi.fn();
+    render(<VoiceGifts {...base} onEvent={onEvent} onClose={onClose} />);
     expect(screen.getByText(/دون شراء أو خصم رصيد/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: /تاج/ }));
     fireEvent.click(screen.getByRole('button', { name: 'إرسال تاج مجانًا' }));
     await waitFor(() =>
       expect(onEvent).toHaveBeenCalledWith({ type: 'gift', giftId: 'crown', recipientId: 'other' }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent('أُرسلت تاج إلى أميرة');
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'جارٍ الإرسال…' })).toBeDisabled();
+    confirm();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
   it('supports trying a gift alone and never reports a rejected request as success', async () => {
     const onEvent = vi.fn(async () => {
       throw new Error('انتظر خمس ثوانٍ بين الهدايا التجريبية.');
     });
-    render(<VoiceGifts {...base} participants={[self]} onEvent={onEvent} />);
+    const onClose = vi.fn();
+    render(<VoiceGifts {...base} participants={[self]} onEvent={onEvent} onClose={onClose} />);
     expect(screen.getByRole('combobox')).toHaveValue('self');
     fireEvent.click(screen.getByRole('button', { name: 'إرسال وردة مجانًا' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('انتظر خمس ثوانٍ');
     expect(screen.queryByText(/أُرسلت/)).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'إرسال وردة مجانًا' })).toBeEnabled();
   });
   it('disables sending when the selected recipient leaves or chat becomes unavailable', () => {
     const onEvent = vi.fn();
