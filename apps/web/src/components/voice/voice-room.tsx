@@ -557,7 +557,9 @@ export function VoiceRoomView({
           !socialOpen &&
           !reportOpen &&
           !settings &&
+          !audioSettingsOpen &&
           !giftsOpen &&
+          !giftArrival &&
           !closeRoom &&
           !chatOverlayOpen
         }
@@ -642,9 +644,7 @@ export function VoiceRoomView({
                           badges={participants.find((p) => p.id === room.hostId)?.accountBadges}
                         />
                       </strong>
-                      <small>
-                        <Crown size={12} /> مضيف المجلس
-                      </small>
+                      <small>مضيف المجلس</small>
                     </span>
                   </button>
                   {room.hostId !== user.id && (
@@ -790,6 +790,13 @@ export function VoiceRoomView({
                         <div className={roomStyles.stageActions}>
                           <button
                             type="button"
+                            className={roomStyles.diagnosticsButton}
+                            onClick={() => setAudioSettingsOpen(true)}
+                          >
+                            <AudioLines size={16} aria-hidden="true" /> فحص الصوت
+                          </button>
+                          <button
+                            type="button"
                             className={`v-connection v-state-${audioState} ${roomStyles.connectionButton}`}
                             onClick={() => setAudioSettingsOpen(true)}
                             aria-label="حالة الصوت وإعدادات الاتصال"
@@ -864,9 +871,7 @@ export function VoiceRoomView({
                                         size={72}
                                         speaking={speakers.includes(person.id)}
                                       />
-                                      {person.role === 'host' ? (
-                                        <Crown className="v-seat-role" size={20} />
-                                      ) : person.role === 'moderator' ? (
+                                      {person.role === 'moderator' ? (
                                         <ShieldCheck className="v-seat-role" size={19} />
                                       ) : null}
                                       <span

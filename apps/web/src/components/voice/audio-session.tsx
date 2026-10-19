@@ -12,6 +12,8 @@ import {
 } from 'livekit-client';
 import type { VoiceParticipant } from '@/lib/voice/types';
 import { SoundCheck } from './sound-check';
+import { VoiceConnectionCheck } from './voice-connection-check';
+import { inspectVoiceConnection } from './voice-connection-report';
 import { requestVoiceMediaToken, VoiceMediaTokenError } from './voice-media-token';
 import { readVoiceLiveMessage, type VoiceLiveMessage } from './voice-live-message';
 export type VoiceAudioHandle = { retry: () => void; startAudio: () => Promise<void> };
@@ -468,7 +470,11 @@ export function AudioSession({
           تفعيل الاستماع
         </button>
       )}
-      {state === 'connected' && (
+      <VoiceConnectionCheck
+        key={`${roomId}:${state}:${canPublish}:${muted}`}
+        inspect={() => inspectVoiceConnection(roomRef.current, canPublish && !muted)}
+      />
+      {participant && (
         <SoundCheck
           inputId={inputId}
           outputId={outputId}

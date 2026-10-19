@@ -79,3 +79,38 @@ it('uses verified account badges for entrance rank, with platform-role precedenc
   );
   expect(screen.getByRole('status')).toHaveTextContent('دخول الأمير');
 });
+
+it('reserves the bespoke owner treatment for the verified platform owner badge', () => {
+  const { rerender } = render(
+    <MemberEntrance
+      arrival={{
+        member: { ...member, role: 'host', accountBadges: ['verified', 'owner'] },
+        key: 'owner',
+        expiresAt: Date.now() + 6000,
+      }}
+      visible
+      selfId="me"
+      onDismiss={() => {}}
+    />,
+  );
+  expect(screen.getByRole('status')).toHaveTextContent('دخول مالك المنصة');
+  expect(screen.getByRole('img', { name: 'مالك المنصة موثّق' })).toBeInTheDocument();
+  expect(document.querySelector('aside[data-rank="owner"] img')).toHaveAttribute(
+    'src',
+    expect.stringContaining('emblem-owner.png'),
+  );
+  rerender(
+    <MemberEntrance
+      arrival={{
+        member: { ...member, role: 'host', accountBadges: [] },
+        key: 'host',
+        expiresAt: Date.now() + 6000,
+      }}
+      visible
+      selfId="me"
+      onDismiss={() => {}}
+    />,
+  );
+  expect(screen.queryByText('تحدّي لايف')).not.toBeInTheDocument();
+  expect(document.querySelector('aside[data-rank="owner"]')).toBeNull();
+});

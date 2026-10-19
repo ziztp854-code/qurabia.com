@@ -5,8 +5,17 @@ it('renders only supplied account badges with accessible labels next to an isola
   const view = render(<MemberName name="سالم" />);
   expect(screen.queryByRole('img')).not.toBeInTheDocument();
   view.rerender(<MemberName name="سالم" badges={['verified', 'owner', 'sultan']} />);
-  expect(screen.getByRole('img', { name: 'حساب إدارة موثّق' })).toBeInTheDocument();
+  expect(screen.getByRole('img', { name: 'مالك المنصة موثّق' })).toBeInTheDocument();
   expect(screen.getByRole('img', { name: 'مالك المنصة' })).toBeInTheDocument();
   expect(screen.getByRole('img', { name: 'باقة السلطان' })).toBeInTheDocument();
   expect(view.container.querySelector('bdi')).toHaveTextContent('سالم');
+});
+
+it('does not show verification for a subscription or a verification flag without a platform role', () => {
+  const { rerender } = render(<MemberName name="عضو" badges={['sultan']} />);
+  expect(screen.queryByRole('img', { name: /موثّق/ })).not.toBeInTheDocument();
+  rerender(<MemberName name="عضو" badges={['verified']} />);
+  expect(screen.queryByRole('img', { name: /موثّق/ })).not.toBeInTheDocument();
+  rerender(<MemberName name="مشرف" badges={['verified', 'admin']} />);
+  expect(screen.getByRole('img', { name: 'حساب إدارة موثّق' })).toBeInTheDocument();
 });

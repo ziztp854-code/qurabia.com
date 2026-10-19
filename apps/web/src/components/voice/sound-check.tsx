@@ -191,7 +191,7 @@ function SoundCheckSession({ inputId, outputId, roomMicActive, getMicrophoneTrac
       }}
     >
       <summary>
-        <AudioLines size={17} aria-hidden="true" /> فحص الصوت
+        <AudioLines size={17} aria-hidden="true" /> فحص الميكروفون والسماعة
       </summary>
       <div className={styles.checkPanel}>
         <header>

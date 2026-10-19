@@ -1,5 +1,5 @@
 import { createRef } from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AudioSession, type VoiceAudioHandle } from './audio-session';
 import type { VoiceParticipant } from '@/lib/voice/types';
@@ -32,6 +32,7 @@ vi.mock('livekit-client', () => ({
   },
   Room: class {
     state = 'connected';
+    remoteParticipants = new Map();
     get canPlaybackAudio() {
       return mocks.canPlaybackAudio;
     }
@@ -93,6 +94,17 @@ beforeEach(() => {
   );
 });
 describe('audio session lifecycle', () => {
+  it('inspects the current transport without reconnecting or changing the microphone', async () => {
+    render(<AudioSession roomId="room" participant={participant} muted />);
+    await screen.findByText('متصل بالصوت');
+    await waitFor(() => expect(mocks.mic).toHaveBeenCalledWith(false, expect.any(Object)));
+    const microphoneCalls = mocks.mic.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'فحص اتصال الغرفة' }));
+    expect(await screen.findByText('اتصال الصوت قائم الآن.')).toBeInTheDocument();
+    expect(mocks.connect).toHaveBeenCalledTimes(1);
+    expect(mocks.disconnect).not.toHaveBeenCalled();
+    expect(mocks.mic).toHaveBeenCalledTimes(microphoneCalls);
+  });
   it('shows setup-needed and never connects to a fake audio service', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: false,

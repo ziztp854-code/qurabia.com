@@ -1062,10 +1062,23 @@
   }
 }
 
-/* Arrival greetings must not cover the fixed message composer. */
+/* Arrival greetings sit above the controls and outside the desktop chat column. */
 .liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
-  inset-block-start: 84px;
-  inset-block-end: auto;
+  inset-block-start: auto;
+  inset-block-end: calc(112px + env(safe-area-inset-bottom));
+  inset-inline-end: auto;
+  inset-inline-start: max(40px, calc((100vw - 1280px) / 2));
+}
+@media (max-width: 1020px) {
+  .liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
+    inset-inline-start: 16px;
+    inset-block-end: calc(180px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 760px) {
+  .liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
+    inset-block-end: calc(166px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (max-width: 760px) {

@@ -56,7 +56,7 @@ const props = {
   getMicrophoneTrack: () => undefined,
 };
 function open() {
-  const details = screen.getByText('فحص الصوت').closest('details')!;
+  const details = screen.getByText('فحص الميكروفون والسماعة').closest('details')!;
   details.open = true;
   fireEvent(details, new Event('toggle'));
 }

@@ -32,7 +32,13 @@ export function GiftCelebration({
       aria-live="polite"
       aria-atomic="true"
     >
-      <div className={styles.celebrationCard}>
+      <div className={styles.celebrationCard} data-gift={gift.id}>
+        <div className={styles.giftAtmosphere} aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <span className={styles.giftEyebrow}>لحظة تقدير</span>
         <button type="button" aria-label="إغلاق تأثير الهدية" onClick={onDismiss}>
           <X size={18} />
         </button>
@@ -41,12 +47,16 @@ export function GiftCelebration({
           data-gift={gift.id}
           aria-hidden="true"
         />
+        <span className={styles.giftTitle} aria-hidden="true">
+          {gift.name}
+        </span>
         <strong>
           <bdi>{message.name}</bdi> أهدى {gift.name}
         </strong>
         <span>
           إلى <bdi>{message.gift.recipientName}</bdi>
         </span>
+        <span className={styles.giftProgress} aria-hidden="true" />
       </div>
     </aside>,
     document.body,

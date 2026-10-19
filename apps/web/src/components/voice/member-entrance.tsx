@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Image from 'next/image';
-import { LogIn, Sparkles, X } from 'lucide-react';
+import { BadgeCheck, LogIn, ShieldCheck, Sparkles, X } from 'lucide-react';
 import type { VoiceParticipant, VoiceSnapshot } from '@/lib/voice/types';
 import { MemberName } from './member-name';
 import { Avatar } from './voice-ui';
@@ -56,20 +56,39 @@ export function MemberEntrance({
   if (!arrival) return null;
   const { member } = arrival;
   const rank = voiceEntranceRank(member);
-  const emblem = rank === 'sultan' || rank === 'prince' || rank === 'knight';
+  const emblem = rank === 'owner' || rank === 'sultan' || rank === 'prince' || rank === 'knight';
   return (
     <aside
+      key={arrival.key}
       className={styles.entrance}
       data-rank={rank}
       hidden={!visible}
       dir="rtl"
       aria-label="ترحيب بالأعضاء"
     >
-      <div className={styles.seal} aria-hidden="true">
+      <span className={styles.entranceLight} aria-hidden="true" />
+      <div className={styles.seal}>
         {emblem ? (
-          <Image src={`/ranks/emblem-${rank}.png`} width={56} height={56} alt="" />
+          <Image
+            src={rank === 'owner' ? '/ranks/emblem-owner.png' : `/ranks/emblem-${rank}.png`}
+            width={rank === 'owner' ? 96 : 56}
+            height={rank === 'owner' ? 96 : 56}
+            alt=""
+          />
+        ) : rank === 'admin' ? (
+          <ShieldCheck size={23} aria-hidden="true" />
         ) : (
-          <Sparkles size={20} />
+          <Sparkles size={20} aria-hidden="true" />
+        )}
+        {rank === 'owner' && member.accountBadges?.includes('verified') && (
+          <span
+            className={styles.ownerVerification}
+            role="img"
+            aria-label="مالك المنصة موثّق"
+            title="مالك المنصة موثّق"
+          >
+            <BadgeCheck size={22} aria-hidden="true" />
+          </span>
         )}
       </div>
       <Avatar user={member} size={42} />
@@ -77,8 +96,14 @@ export function MemberEntrance({
         <small>{rankLabels[rank]}</small>
         <p>
           {member.id === selfId ? 'حيّاك ' : 'وصل الآن '}
-          <MemberName name={member.name} badges={member.accountBadges} />
+          <MemberName
+            name={member.name}
+            badges={member.accountBadges}
+            showRankBadge={rank !== 'owner'}
+            showVerificationBadge={rank !== 'owner'}
+          />
         </p>
+        {rank === 'owner' && <span className={styles.ownerSignature}>تحدّي لايف</span>}
       </div>
       <LogIn className={styles.arrivalIcon} size={19} aria-hidden="true" />
       <button type="button" onClick={onDismiss} aria-label="إخفاء شارة الدخول">

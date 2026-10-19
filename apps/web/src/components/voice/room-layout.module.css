@@ -608,3 +608,17 @@
 .audioNotice > button {
   min-block-size: 44px;
 }
+
+.layout :global(.v-stage-heading) button.diagnosticsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-block-size: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--voice-border);
+  border-radius: 12px;
+  background: var(--voice-soft-shade);
+  color: var(--voice-gold-light);
+  font-size: 12px;
+}

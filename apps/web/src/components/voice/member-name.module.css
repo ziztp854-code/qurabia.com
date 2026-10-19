@@ -21,3 +21,29 @@
 .verified {
   color: var(--voice-cyan);
 }
+
+.verified svg {
+  inline-size: 17px;
+  block-size: 17px;
+  fill: var(--voice-cyan);
+  stroke: var(--voice-ink);
+  stroke-width: 2.2;
+}
+
+.ownerCrown {
+  inline-size: 24px;
+  block-size: 24px;
+  object-fit: contain;
+  flex: none;
+}
+
+.credentials {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
+}
+.credentials:empty {
+  display: none;
+}
