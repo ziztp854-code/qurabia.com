@@ -16,7 +16,7 @@ import { VoiceConnectionCheck } from './voice-connection-check';
 import { inspectVoiceConnection } from './voice-connection-report';
 import { requestVoiceMediaToken, VoiceMediaTokenError } from './voice-media-token';
 import { readVoiceLiveMessage, type VoiceLiveMessage } from './voice-live-message';
-export type VoiceAudioHandle = { retry: () => void; startAudio: () => Promise<void> };
+export type VoiceAudioHandle = { retry: () => void; startAudio: () => Promise<void>; stop: () => void };
 
 export type VoiceAudioState =
   | 'connecting'
@@ -67,6 +67,8 @@ export function AudioSession({
   ref,
 }: Props) {
   const roomRef = useRef<Room | null>(null);
+  const stopped = useRef(false);
+  const stopSession = useRef<() => void>(() => {});
   const recoveryAttempts = useRef(0);
   const micQueue = useRef<Promise<void>>(Promise.resolve());
   const tracks = useRef(
@@ -92,6 +94,7 @@ export function AudioSession({
   const [canSelectOutput, setCanSelectOutput] = useState(false);
   const participantId = participant?.id;
   const retryAudio = useCallback(() => {
+    if (stopped.current) return;
     recoveryAttempts.current = 0;
     setRetry((n) => n + 1);
   }, []);
@@ -103,7 +106,12 @@ export function AudioSession({
       setError('اضغط للسماح بتشغيل الصوت في المتصفح.');
     }
   }, []);
-  useImperativeHandle(ref, () => ({ retry: retryAudio, startAudio }), [retryAudio, startAudio]);
+  const stop = useCallback(() => {
+    stopped.current = true;
+    stopSession.current();
+    setState('disconnected');
+  }, []);
+  useImperativeHandle(ref, () => ({ retry: retryAudio, startAudio, stop }), [retryAudio, startAudio, stop]);
   useEffect(() => {
     callbacks.current.onErrorChange?.(error);
   }, [error]);
@@ -152,7 +160,7 @@ export function AudioSession({
   }, [deafened, volume, mutedUserIds]);
 
   useEffect(() => {
-    if (!participantId) return;
+    if (!participantId || stopped.current) return;
     let disposed = false;
     let releaseLock: (() => void) | undefined;
     let leaseTimer: ReturnType<typeof setInterval> | undefined;
@@ -373,7 +381,13 @@ export function AudioSession({
         changeState('error');
       }
     });
-    return () => {
+    const dispose = () => {
+      if (disposed) return;
+      const microphone = getMicrophoneTrack();
+      if (microphone) {
+        microphone.enabled = false;
+        microphone.stop();
+      }
       disposed = true;
       abort.abort();
       if (recoveryTimer) clearTimeout(recoveryTimer);
@@ -397,7 +411,9 @@ export function AudioSession({
       }
       attached.clear();
     };
-  }, [roomId, participantId, retry]);
+    stopSession.current = dispose;
+    return dispose;
+  }, [roomId, participantId, retry, getMicrophoneTrack]);
 
   useEffect(() => {
     const room = roomRef.current;
@@ -410,7 +426,7 @@ export function AudioSession({
     micQueue.current = micQueue.current
       .catch(() => {})
       .then(async () => {
-        if (cancelled || room.state !== ConnectionState.Connected) return;
+        if (cancelled || stopped.current || room.state !== ConnectionState.Connected) return;
         await room.localParticipant.setMicrophoneEnabled(
           canPublish && !muted && Boolean(room.localParticipant.permissions?.canPublish),
           {
@@ -420,7 +436,7 @@ export function AudioSession({
             deviceId: inputId,
           },
         );
-        if (cancelled) await room.localParticipant.setMicrophoneEnabled(false);
+        if (cancelled || stopped.current) await room.localParticipant.setMicrophoneEnabled(false);
         else {
           const track = getMicrophoneTrack();
           if (track)

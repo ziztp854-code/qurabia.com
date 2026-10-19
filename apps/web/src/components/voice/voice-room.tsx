@@ -128,6 +128,7 @@ export function VoiceRoomView({
   const [audioError, setAudioError] = useState('');
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const audioController = useRef<VoiceAudioHandle>(null);
+  const [mediaStopped, setMediaStopped] = useState(false);
   const [arrivals, setArrivals] = useState<VoiceArrival[]>([]);
   const dismissArrival = useCallback(() => setArrivals((current) => current.slice(1)), []);
   const [settings, setSettings] = useState(false);
@@ -465,6 +466,11 @@ export function VoiceRoomView({
   async function leave(navigate = true, rejectOnFailure = false) {
     leaving.current = true;
     setActionBusy(true);
+    // Local privacy must not depend on the server acknowledging departure.
+    audioController.current?.stop();
+    setMediaStopped(true);
+    setLocalMuted(true);
+    setAudioState('disconnected');
     try {
       if (snapshotRef.current?.me && snapshotRef.current.room.active)
         await voiceRequest(`rooms/${roomId}/leave`, {});
@@ -522,7 +528,7 @@ export function VoiceRoomView({
           onDeafen={() => setDeafened((value) => !value)}
           onLeave={() => void leave(visible)}
         >
-          {room?.active && me && !joinRequired && (
+          {room?.active && me && !joinRequired && !mediaStopped && (
             <AudioSession
               ref={audioController}
               onErrorChange={setAudioError}

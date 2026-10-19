@@ -305,7 +305,7 @@ describe('persistent microphone across game routes', () => {
     expect(screen.getByRole('main', { name: 'لعبة اختبار' })).toBeInTheDocument();
   });
 
-  it('requires an explicit room switch, retains audio if leave fails, then switches once', async () => {
+  it('requires an explicit room switch, keeps audio stopped if leave fails, then switches once', async () => {
     const view = render(<App />);
     await connected();
     sdk.pathname = '/voice/room-two';
@@ -318,12 +318,60 @@ describe('persistent microphone across game routes', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'مغادرة الحالية والانضمام' })).toBeEnabled(),
     );
-    expect(sdk.disconnect).not.toHaveBeenCalled();
+    expect(sdk.disconnect).toHaveBeenCalledWith(true);
+    expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+    expect(requests('/token')).toHaveLength(1);
     leaveFails = false;
     fireEvent.click(screen.getByRole('button', { name: 'مغادرة الحالية والانضمام' }));
     await waitFor(() => expect(sdk.connect).toHaveBeenCalledTimes(2));
     expect(sdk.disconnect).toHaveBeenCalledTimes(1);
     expect(requests('/token')).toHaveLength(2);
+  });
+
+  it('stops local audio before the server acknowledges a pending leave', async () => {
+    const view = render(<App />);
+    await connected();
+    sdk.pathname = '/games/chess';
+    view.rerender(<App />);
+    const originalFetch = fetcher.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>;
+    fetcher.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/leave') ? new Promise<Response>(() => {}) : originalFetch(url, init),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
+    expect(sdk.disconnect).toHaveBeenCalledWith(true);
+    expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
+    expect(requests('/leave')).toHaveLength(1);
+    expect(sdk.push).not.toHaveBeenCalled();
+  });
+
+  it('keeps local audio stopped after a leave timeout and permits retrying departure', async () => {
+    const view = render(<App />);
+    await connected();
+    sdk.pathname = '/games/chess';
+    view.rerender(<App />);
+    const originalFetch = fetcher.getMockImplementation() as (url: string, init?: RequestInit) => Promise<Response>;
+    fetcher.mockImplementation((url: string, init?: RequestInit) =>
+      url.endsWith('/leave') ? new Promise<Response>(() => {}) : originalFetch(url, init),
+    );
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+      expect(screen.getByRole('button', { name: 'مغادرة الصوت' })).toBeEnabled();
+      expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
+      expect(sdk.connect).toHaveBeenCalledTimes(1);
+      expect(requests('/token')).toHaveLength(1);
+      expect(requests('/leave')).toHaveLength(1);
+      fetcher.mockImplementation(originalFetch);
+      fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
+      await act(async () => {});
+      expect(requests('/leave')).toHaveLength(2);
+      expect(sdk.disconnect).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('main', { name: 'لعبة اختبار' })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('leaving on the room page does not immediately recreate the session', async () => {

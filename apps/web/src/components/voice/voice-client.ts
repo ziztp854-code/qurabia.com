@@ -11,21 +11,54 @@ export class VoiceRequestError extends Error {
   }
 }
 
-export async function voiceRequest<T>(path: string, body?: unknown, method = 'POST'): Promise<T> {
-  const response = await fetch(`/api/voice/${path}`, {
-    method: body === undefined ? 'GET' : method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    cache: 'no-store',
+export async function voiceRequest<T>(
+  path: string,
+  body?: unknown,
+  method = 'POST',
+  options: { signal?: AbortSignal } = {},
+): Promise<T> {
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout>;
+  let cancel: () => void;
+  const deadline = new Promise<never>((_, reject) => {
+    cancel = () => {
+      controller.abort(options.signal?.reason);
+      reject(controller.signal.reason);
+    };
+    timeout = setTimeout(() => {
+      const error = new VoiceRequestError('انتهت مهلة الطلب. حاول مرة أخرى.', 408, 'REQUEST_TIMEOUT');
+      controller.abort(error);
+      reject(error);
+    }, 10_000);
   });
-  const value = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new VoiceRequestError(
-      value.error || 'تعذر تنفيذ الطلب. حاول مرة أخرى.',
-      response.status,
-      value.code,
-    );
-  return value as T;
+  options.signal?.addEventListener('abort', cancel!, { once: true });
+  try {
+    if (options.signal?.aborted) cancel!();
+    return await Promise.race([
+      (async () => {
+        controller.signal.throwIfAborted();
+        const response = await fetch(`/api/voice/${path}`, {
+          method: body === undefined ? 'GET' : method,
+          headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+          body: body === undefined ? undefined : JSON.stringify(body),
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const value = await response.json().catch(() => ({}));
+        if (!response.ok)
+          throw new VoiceRequestError(
+            value.error || 'تعذر تنفيذ الطلب. حاول مرة أخرى.',
+            response.status,
+            value.code,
+          );
+        return value as T;
+      })(),
+      deadline,
+    ]);
+  } finally {
+    clearTimeout(timeout!);
+    options.signal?.removeEventListener('abort', cancel!);
+  }
 }
 
 export const emptyPreferences: VoicePreferences = {
