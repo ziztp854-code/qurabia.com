@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -66,8 +66,8 @@ describe('actual Next.js production release configuration', () => {
   it('shares a generated build identifier when Git and release metadata are absent', () => {
     const directory = mkdtempSync(path.join(tmpdir(), 'sentry-no-git-'));
     try {
-      writeFileSync(path.join(directory, 'git'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
-      const result = productionConfig({ PATH: `${directory}${path.delimiter}${process.env.PATH}` });
+      // Restrict only the child process lookup; a shell shim cannot hide git.exe on Windows.
+      const result = productionConfig({ PATH: directory });
       expect(result.release).toMatch(/^qurabia-web@build-[a-f0-9-]{36}$/);
       expect(result.inherited).toBe(result.release);
       expect(result.repeated).toBe(result.release);
