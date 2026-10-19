@@ -4,6 +4,7 @@ import {
   voiceMigrationPlan,
   VOICE_MIGRATION,
   VOICE_SOCIAL_MIGRATION,
+  PROFILE_IDENTITY_MIGRATION,
 } from './voice-production-schema.mjs';
 
 const old = '20260101000000_existing_schema';
@@ -11,6 +12,39 @@ const complete = (migration_name) => ({
   migration_name,
   finished_at: new Date(),
   rolled_back_at: null,
+});
+
+test('allows only absent additive profile columns; rejects partial or missing applied columns', () => {
+  const available = [old, VOICE_MIGRATION, VOICE_SOCIAL_MIGRATION, PROFILE_IDENTITY_MIGRATION];
+  const rows = [complete(old), complete(VOICE_MIGRATION), complete(VOICE_SOCIAL_MIGRATION)];
+  assert.equal(voiceMigrationPlan(available, rows, [...present, true], [false, false]), 'apply');
+  assert.equal(
+    voiceMigrationPlan(
+      available,
+      [...rows, complete(PROFILE_IDENTITY_MIGRATION)],
+      [...present, true],
+      [true, true],
+    ),
+    'ready',
+  );
+  assert.throws(
+    () => voiceMigrationPlan(available, rows, [...present, true], [true, false]),
+    /Profile schema drift/,
+  );
+  assert.throws(
+    () =>
+      voiceMigrationPlan(
+        available,
+        [...rows, complete(PROFILE_IDENTITY_MIGRATION)],
+        [...present, true],
+        [false, false],
+      ),
+    /Profile schema drift/,
+  );
+  assert.throws(
+    () => voiceMigrationPlan([...available, 'unrelated'], rows, [...present, true], [false, false]),
+    /Unrelated migrations/,
+  );
 });
 const absent = [false, false, false, false];
 const present = [true, true, true, true];

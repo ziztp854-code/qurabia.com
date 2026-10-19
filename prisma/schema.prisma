@@ -552,10 +552,12 @@ model Profile {
   id          String   @id @default(cuid())
   userId      String   @unique
   displayName String   @db.VarChar(120)
+  username    String?  @unique @db.VarChar(24)
   bio         String?  @db.VarChar(500)
   locale      String   @default("ar") @db.VarChar(12)
   timezone    String   @default("Asia/Riyadh") @db.VarChar(64)
   avatarUrl   String?
+  avatarContent Bytes?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

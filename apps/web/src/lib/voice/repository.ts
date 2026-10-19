@@ -28,17 +28,24 @@ import type {
 import type { Prisma } from '@tahaddi/database';
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 const stateOf = (value: unknown) => structuredClone(value) as VoiceRoomState;
+const profileSelect = { name: true, image: true, profile: { select: { displayName: true, avatarUrl: true } } } as const;
+function syncMemberProfile(member: VoiceIdentity, account: { name: string | null; image: string | null; profile: { displayName: string; avatarUrl: string | null } | null }) {
+  member.name = account.profile?.displayName || account.name || 'عضو تحدي';
+  member.image = account.profile?.avatarUrl || account.image || null;
+}
 async function pruneInactiveAccounts(state: VoiceRoomState) {
-  if (!state.participants.length) return;
   const accounts = await getPrismaClient().user.findMany({
-    where: { id: { in: state.participants.map((p) => p.id) }, status: 'ACTIVE' },
-    select: { id: true, tokenVersion: true, ...voiceBadgeAccountSelect },
+    where: { id: { in: [...new Set([state.host.id, ...state.participants.map((p) => p.id)])] }, status: 'ACTIVE' },
+    select: { id: true, tokenVersion: true, ...voiceBadgeAccountSelect, ...profileSelect },
   });
   const byId = new Map(accounts.map((account) => [account.id, account]));
   for (const member of state.participants) {
     const account = byId.get(member.id);
     member.accountBadges = account ? voiceAccountBadges(account) : [];
+    if (account) syncMemberProfile(member, account);
   }
+  const host = byId.get(state.host.id);
+  if (host) syncMemberProfile(state.host, host);
   const versions = new Map(accounts.map((account) => [account.id, account.tokenVersion]));
   state.participants = state.participants.filter(
     (participant) => versions.get(participant.id) === (participant.tokenVersion ?? 0),
@@ -151,20 +158,23 @@ export async function listVoiceRooms(userId: string): Promise<VoiceList> {
   });
   const aggregates = records.map((record) => ({ record, state: stateOf(record.state) }));
   const accountIds = [
-    ...new Set(aggregates.flatMap(({ state }) => state.participants.map((p) => p.id))),
+    ...new Set(aggregates.flatMap(({ state }) => [state.host.id, ...state.participants.map((p) => p.id)])),
   ];
   const accounts = accountIds.length
     ? await getPrismaClient().user.findMany({
         where: { id: { in: accountIds }, status: 'ACTIVE' },
-        select: { id: true, tokenVersion: true },
+        select: { id: true, tokenVersion: true, ...profileSelect },
       })
     : [];
   const versions = new Map(accounts.map((account) => [account.id, account.tokenVersion]));
+  const profiles = new Map(accounts.map((account) => [account.id, account]));
   const rooms = aggregates.flatMap(({ record, state }) => {
     pruneVoicePresence(state, Date.now());
     state.participants = state.participants.filter(
       (participant) => versions.get(participant.id) === (participant.tokenVersion ?? 0),
     );
+    const host = profiles.get(state.host.id);
+    if (host) syncMemberProfile(state.host, host);
     if (state.bannedUsers.includes(userId) || preferences.blockedUsers.includes(state.host.id))
       return [];
     if (

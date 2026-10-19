@@ -13,7 +13,8 @@ export function Dialog({ open, onOpenChange, title, description, children, class
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onOpenChange(false);
       if (event.key === 'Tab' && panel.current) {
-        const items = [...panel.current.querySelectorAll<HTMLElement>('button,a,input,select,textarea,[tabindex]:not([tabindex="-1"])')];
+        const items = [...panel.current.querySelectorAll<HTMLElement>('button,a,input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+          .filter((item) => !item.matches(':disabled,[tabindex="-1"],[type="hidden"],[hidden]'));
         if (!items.length) return;
         const first = items[0]; const last = items[items.length - 1];
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
@@ -21,8 +22,8 @@ export function Dialog({ open, onOpenChange, title, description, children, class
       }
     };
     document.body.style.overflow = 'hidden'; document.addEventListener('keydown', handleKey);
-    requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('button,input,[tabindex="0"]')?.focus());
-    return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', handleKey); previous?.focus(); };
+    const frame = requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('button:not(:disabled),input:not(:disabled),[tabindex="0"]')?.focus());
+    return () => { cancelAnimationFrame(frame); document.body.style.overflow = ''; document.removeEventListener('keydown', handleKey); previous?.focus(); };
   }, [open, onOpenChange]);
   if (!open) return null;
   return <div className="dialog-backdrop" role="presentation" onMouseDown={() => onOpenChange(false)}><div ref={panel} className={cn('dialog', className)} role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby={description ? 'dialog-description' : undefined} onMouseDown={(event) => event.stopPropagation()}><div className="dialog-header"><div><h2 id="dialog-title">{title}</h2>{description && <p id="dialog-description">{description}</p>}</div><Button variant="ghost" size="icon" aria-label="إغلاق النافذة" onClick={() => onOpenChange(false)}><X /></Button></div><div className="dialog-content">{children}</div></div></div>;

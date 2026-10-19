@@ -132,12 +132,18 @@ export const authOptions: NextAuthOptions = {
         typeof (issuedRole ?? token.role) !== 'string' ||
         typeof (issuedStatus ?? token.status) !== 'string' ||
         typeof (issuedTokenVersion ?? token.tokenVersion) !== 'number';
-      let storedUser: { role: string; status: string; tokenVersion: number } | null = null;
+      let storedUser: {
+        role: string;
+        status: string;
+        tokenVersion: number;
+        name: string | null;
+        image: string | null;
+      } | null = null;
       if (userId && hasDatabaseUrl() && (!user || missingStoredClaims)) {
         try {
           storedUser = await getPrismaClient().user.findUnique({
             where: { id: String(userId) },
-            select: { role: true, status: true, tokenVersion: true },
+            select: { role: true, status: true, tokenVersion: true, name: true, image: true },
           });
         } catch {
           // Database connection failures (e.g. Docker not running) should
@@ -147,6 +153,10 @@ export const authOptions: NextAuthOptions = {
       token.role = storedUser?.role ?? issuedRole ?? token.role;
       token.status = storedUser?.status ?? issuedStatus ?? token.status;
       token.tokenVersion = issuedTokenVersion ?? token.tokenVersion ?? storedUser?.tokenVersion;
+      if (storedUser) {
+        token.name = storedUser.name;
+        token.picture = storedUser.image;
+      }
       return token;
     },
     async session({ session, token }) {
