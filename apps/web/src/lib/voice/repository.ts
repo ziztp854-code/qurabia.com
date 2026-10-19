@@ -113,10 +113,19 @@ export async function updateVoicePreferences(userId: string, action: VoicePrefer
     )
       throw new VoiceHttpError(404, 'العضو غير موجود.');
   }
+  if (action.type === 'follow' && action.enabled) {
+    const [self, target] = await Promise.all([
+      getVoicePreferences(userId),
+      getVoicePreferences(action.id),
+    ]);
+    if (self.blockedUsers.includes(action.id) || target.blockedUsers.includes(userId))
+      throw new VoiceHttpError(403, 'المتابعة غير متاحة لهذا العضو.');
+  }
   return mutatePreferences(userId, (state) => {
     if (action.type === 'privacy') {
       if (action.privateProfile !== undefined) state.privateProfile = action.privateProfile;
       if (action.notifyFavorites !== undefined) state.notifyFavorites = action.notifyFavorites;
+      if (action.directMessages !== undefined) state.directMessages = action.directMessages;
       return;
     }
     const field = {
@@ -433,7 +442,11 @@ export async function createVoiceInvite(roomId: string, userId: string, origin: 
 /** Serialize SFU permission writes and read fresh, unfiltered authoritative membership. */
 export async function withVoiceMediaSnapshot<T>(
   roomId: string,
-  work: (snapshot: VoiceSnapshot, ledger: VoiceMediaLedger) => Promise<T>,
+  work: (
+    snapshot: VoiceSnapshot,
+    ledger: VoiceMediaLedger,
+    checkpoint: { checkedAt: number },
+  ) => Promise<T>,
 ): Promise<T> {
   return getPrismaClient().$transaction(
     async (tx) => {
@@ -462,8 +475,13 @@ export async function withVoiceMediaSnapshot<T>(
       snapshot.participants = state.participants;
       const ledger = state.mediaGrants ?? {};
       const before = JSON.stringify(ledger);
-      const result = await work(snapshot, ledger);
-      if (JSON.stringify(ledger) !== before) {
+      const checkpoint = { checkedAt: state.mediaReconciledAt ?? 0 };
+      const result = await work(snapshot, ledger, checkpoint);
+      if (
+        JSON.stringify(ledger) !== before ||
+        checkpoint.checkedAt !== (state.mediaReconciledAt ?? 0)
+      ) {
+        state.mediaReconciledAt = checkpoint.checkedAt;
         state.mediaGrants = ledger;
         await tx.voiceRoom.update({
           where: { id: roomId },

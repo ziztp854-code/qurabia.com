@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MemberEntrance, voiceArrivals } from './member-entrance';
+import { MemberEntrance, voiceArrivals, voiceEntranceRank } from './member-entrance';
 import type { VoiceParticipant, VoiceSnapshot } from '@/lib/voice/types';
 
 const member = { id: 'me', name: 'عضو الاختبار', image: null, joinedAt: 1 } as VoiceParticipant;
@@ -57,4 +57,25 @@ describe('member entrance notices', () => {
     view.unmount();
     expect(vi.getTimerCount()).toBe(0);
   });
+});
+
+it('uses verified account badges for entrance rank, with platform-role precedence', () => {
+  expect(voiceEntranceRank({ ...member, role: 'host', accountBadges: [] })).toBe('member');
+  expect(voiceEntranceRank({ ...member, accountBadges: ['prince', 'knight', 'sultan'] })).toBe(
+    'sultan',
+  );
+  expect(voiceEntranceRank({ ...member, accountBadges: ['sultan', 'owner'] })).toBe('owner');
+  render(
+    <MemberEntrance
+      arrival={{
+        member: { ...member, accountBadges: ['prince'] },
+        key: 'prince',
+        expiresAt: Date.now() + 6000,
+      }}
+      visible
+      selfId="me"
+      onDismiss={() => {}}
+    />,
+  );
+  expect(screen.getByRole('status')).toHaveTextContent('دخول الأمير');
 });

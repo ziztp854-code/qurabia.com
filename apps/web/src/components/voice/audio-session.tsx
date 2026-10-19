@@ -29,6 +29,7 @@ type Props = {
   mutedUserIds?: string[];
   onStateChange?: (state: VoiceAudioState) => void;
   onSpeakersChange?: (identities: string[]) => void;
+  onRoomChanged?: () => void;
 };
 const STATE_LABEL: Record<VoiceAudioState, string> = {
   connecting: 'جارٍ الاتصال بالصوت…',
@@ -49,13 +50,14 @@ export function AudioSession({
   mutedUserIds = [],
   onStateChange,
   onSpeakersChange,
+  onRoomChanged,
 }: Props) {
   const roomRef = useRef<Room | null>(null);
   const micQueue = useRef<Promise<void>>(Promise.resolve());
   const tracks = useRef(
     new Map<RemoteAudioTrack, { element: HTMLMediaElement; identity: string }>(),
   );
-  const callbacks = useRef({ onStateChange, onSpeakersChange });
+  const callbacks = useRef({ onStateChange, onSpeakersChange, onRoomChanged });
   const playback = useRef({ deafened, volume, mutedUserIds });
   const [state, setState] = useState<VoiceAudioState>('disconnected');
   const [error, setError] = useState('');
@@ -69,7 +71,7 @@ export function AudioSession({
   const participantId = participant?.id;
   const getMicrophoneTrack = useCallback(
     () =>
-      roomRef.current?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
+      roomRef.current?.localParticipant.getTrackPublication?.(Track.Source.Microphone)?.track
         ?.mediaStreamTrack,
     [],
   );
@@ -80,8 +82,8 @@ export function AudioSession({
     !participant.moderatorMuted,
   );
   useEffect(() => {
-    callbacks.current = { onStateChange, onSpeakersChange };
-  }, [onStateChange, onSpeakersChange]);
+    callbacks.current = { onStateChange, onSpeakersChange, onRoomChanged };
+  }, [onStateChange, onSpeakersChange, onRoomChanged]);
   useEffect(() => {
     callbacks.current.onStateChange?.(state);
   }, [state]);
@@ -147,6 +149,18 @@ export function AudioSession({
           publishDefaults: { dtx: true, red: true, stopMicTrackOnMute: true },
         });
         roomRef.current = room;
+        room.on(RoomEvent.DataReceived, (payload, sender, _kind, topic) => {
+          // Peers are never trusted to provide room state or invalidate other rooms.
+          if (disposed || sender || topic !== 'tahaddi-voice-refresh-v1' || payload.length > 512)
+            return;
+          try {
+            const value = JSON.parse(new TextDecoder().decode(payload));
+            if (value.roomId === roomId && Number.isSafeInteger(value.cursor))
+              callbacks.current.onRoomChanged?.();
+          } catch {
+            /* Ignore malformed data. */
+          }
+        });
         room.on(RoomEvent.TrackSubscribed, (track, _publication, remote: RemoteParticipant) => {
           if (track.kind !== Track.Kind.Audio || disposed) return;
           const audioTrack = track as RemoteAudioTrack;
@@ -306,6 +320,9 @@ export function AudioSession({
     const room = roomRef.current;
     if (!room || state !== 'connected' || room.state !== ConnectionState.Connected) return;
     let cancelled = false;
+    // Stop capture immediately, even if an earlier device operation is still pending.
+    const track = getMicrophoneTrack();
+    if (track && (muted || !canPublish)) track.enabled = false;
     // Serialize rapid mute/device changes so an older async enable cannot finish last.
     micQueue.current = micQueue.current
       .catch(() => {})
@@ -321,6 +338,12 @@ export function AudioSession({
           },
         );
         if (cancelled) await room.localParticipant.setMicrophoneEnabled(false);
+        else {
+          const track = getMicrophoneTrack();
+          if (track)
+            track.enabled =
+              canPublish && !muted && Boolean(room.localParticipant.permissions?.canPublish);
+        }
         const list = await navigator.mediaDevices.enumerateDevices();
         if (!cancelled) setDevices(list);
       })
@@ -335,7 +358,7 @@ export function AudioSession({
     return () => {
       cancelled = true;
     };
-  }, [muted, canPublish, inputId, state, permissionsRevision]);
+  }, [muted, canPublish, inputId, state, permissionsRevision, getMicrophoneTrack]);
 
   async function switchDevice(kind: 'audioinput' | 'audiooutput', id: string) {
     try {

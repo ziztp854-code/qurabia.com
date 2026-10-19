@@ -8,12 +8,15 @@ const mocks = vi.hoisted(() => ({
   mic: vi.fn(),
   startAudio: vi.fn(),
   lock: vi.fn(),
+  track: { enabled: true },
   events: new Map<string, (...args: unknown[]) => void>(),
 }));
 vi.mock('livekit-client', () => ({
   ConnectionState: { Connected: 'connected' },
-  Track: { Kind: { Audio: 'audio' } },
+  Track: { Kind: { Audio: 'audio' }, Source: { Microphone: 'microphone' } },
   RoomEvent: {
+    DataReceived: 'data',
+    ParticipantPermissionsChanged: 'permissions',
     TrackSubscribed: 'subscribed',
     TrackUnsubscribed: 'unsubscribed',
     ActiveSpeakersChanged: 'speakers',
@@ -30,6 +33,7 @@ vi.mock('livekit-client', () => ({
     localParticipant = {
       permissions: { canSubscribe: true, canPublish: true },
       setMicrophoneEnabled: mocks.mic,
+      getTrackPublication: () => ({ track: { mediaStreamTrack: mocks.track } }),
     };
     connect = mocks.connect;
     disconnect = mocks.disconnect;
@@ -75,12 +79,10 @@ beforeEach(() => {
   mocks.mic.mockResolvedValue(undefined);
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn()
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ token: 'ephemeral', url: 'ws://127.0.0.1:7880' }),
-      }),
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ token: 'ephemeral', url: 'ws://127.0.0.1:7880' }),
+    }),
   );
 });
 describe('audio session lifecycle', () => {
@@ -143,4 +145,35 @@ describe('audio session lifecycle', () => {
     await waitFor(() => expect(mocks.mic).toHaveBeenCalledWith(false, expect.anything()));
     expect(mocks.mic).not.toHaveBeenCalledWith(true, expect.anything());
   });
+});
+
+it('cuts microphone capture immediately when muting, before queued SDK work completes', async () => {
+  mocks.track.enabled = true;
+  const view = render(<AudioSession roomId="room" participant={participant} muted={false} />);
+  await waitFor(() => expect(mocks.mic).toHaveBeenCalledWith(true, expect.anything()));
+  mocks.mic.mockImplementation(() => new Promise(() => {}));
+  view.rerender(<AudioSession roomId="room" participant={participant} muted />);
+  expect(mocks.track.enabled).toBe(false);
+});
+it('accepts invalidation only from server data for the current room', async () => {
+  const changed = vi.fn();
+  render(<AudioSession roomId="room" participant={participant} onRoomChanged={changed} />);
+  await screen.findByText('متصل بالصوت');
+  const packet = (roomId: string) =>
+    new TextEncoder().encode(JSON.stringify({ roomId, cursor: 10 }));
+  act(() => {
+    mocks.events.get('data')?.(
+      packet('room'),
+      { identity: 'untrusted' },
+      0,
+      'tahaddi-voice-refresh-v1',
+    );
+    mocks.events.get('data')?.(packet('other'), undefined, 0, 'tahaddi-voice-refresh-v1');
+    mocks.events.get('data')?.(packet('room'), undefined, 0, 'other');
+  });
+  expect(changed).not.toHaveBeenCalled();
+  act(() => {
+    mocks.events.get('data')?.(packet('room'), undefined, 0, 'tahaddi-voice-refresh-v1');
+  });
+  expect(changed).toHaveBeenCalledTimes(1);
 });

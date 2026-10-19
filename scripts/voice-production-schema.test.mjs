@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { voiceMigrationPlan, VOICE_MIGRATION } from './voice-production-schema.mjs';
+import {
+  voiceMigrationPlan,
+  VOICE_MIGRATION,
+  VOICE_SOCIAL_MIGRATION,
+} from './voice-production-schema.mjs';
 
 const old = '20260101000000_existing_schema';
 const complete = (migration_name) => ({
@@ -59,4 +63,16 @@ test('refuses incomplete migrations and schema drift without a reset or automati
       ),
     /drift/,
   );
+});
+
+test('allows the additive private-message table only after checking the base schema', () => {
+  const available = [old, VOICE_MIGRATION, VOICE_SOCIAL_MIGRATION];
+  const base = [complete(old), complete(VOICE_MIGRATION)];
+  assert.equal(voiceMigrationPlan(available, base, [...present, false]), 'apply');
+  assert.equal(
+    voiceMigrationPlan(available, [...base, complete(VOICE_SOCIAL_MIGRATION)], [...present, true]),
+    'ready',
+  );
+  assert.throws(() => voiceMigrationPlan(available, base, [...present, true]), /drift/);
+  assert.throws(() => voiceMigrationPlan(available, base, [...absent, false]), /Partial/);
 });

@@ -10,6 +10,7 @@ export function PersistentVoiceDock({
   snapshot,
   deafened,
   busy,
+  muteBusy = false,
   visible,
   overlayActive = false,
   audioSettingsOpen = false,
@@ -24,6 +25,7 @@ export function PersistentVoiceDock({
   snapshot: VoiceSnapshot;
   deafened: boolean;
   busy: boolean;
+  muteBusy?: boolean;
   visible: boolean;
   overlayActive?: boolean;
   audioSettingsOpen?: boolean;
@@ -72,7 +74,7 @@ export function PersistentVoiceDock({
           type="button"
           aria-label={muted ? 'تشغيل المايك أثناء اللعب' : 'كتم المايك أثناء اللعب'}
           aria-pressed={muted}
-          disabled={!canSpeak || me?.moderatorMuted || busy}
+          disabled={!canSpeak || me?.moderatorMuted || muteBusy}
           onClick={onMute}
         >
           {muted ? <MicOff size={18} /> : <Mic size={18} />}

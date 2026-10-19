@@ -101,6 +101,7 @@ export const preferencesActionSchema = z.union([
       type: z.literal('privacy'),
       privateProfile: z.boolean().optional(),
       notifyFavorites: z.boolean().optional(),
+      directMessages: z.enum(['everyone', 'friends', 'none']).optional(),
     })
     .strict(),
 ]);

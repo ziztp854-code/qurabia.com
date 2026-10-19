@@ -1,5 +1,5 @@
 import 'server-only';
-import { AccessToken, RoomServiceClient, TrackSource } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, TrackSource, DataPacket_Kind } from 'livekit-server-sdk';
 import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
 import { withVoiceMediaSnapshot } from './repository';
 import { VoiceHttpError } from './http';
@@ -122,15 +122,21 @@ export async function createVoiceToken(
 }
 
 /** Apply authoritative app membership to SFU permissions. Never trust a client role. */
-export async function reconcileVoiceMedia(roomId: string, _snapshot?: VoiceSnapshot) {
+export async function reconcileVoiceMedia(
+  roomId: string,
+  _snapshot?: VoiceSnapshot,
+  periodic = false,
+) {
   void _snapshot; // Caller revisions are never used to grant media permissions.
   if (!voiceMediaConfig()) return;
   const startBy = Date.now() + 12_000;
-  return withVoiceMediaSnapshot(roomId, (snapshot, ledger) => {
+  return withVoiceMediaSnapshot(roomId, async (snapshot, ledger, checkpoint) => {
+    if (periodic && checkpoint && Date.now() - checkpoint.checkedAt < 2000) return;
     // Leave room for the three sequential 2s RPC stages within the 20s DB lock.
     // A delayed DB read must not start media writes after most of the lock budget.
     if (Date.now() > startBy) throw new Error('VoiceMediaDeadlineExceeded');
-    return applyVoiceMediaPermissions(roomId, snapshot, ledger);
+    await applyVoiceMediaPermissions(roomId, snapshot, ledger);
+    if (checkpoint) checkpoint.checkedAt = Date.now();
   });
 }
 
@@ -261,4 +267,20 @@ async function applyVoiceMediaPermissions(
   // Wait for every bounded RPC before releasing the shared database lock.
   const failed = outcomes.find((result) => result.status === 'rejected');
   if (failed?.status === 'rejected') throw failed.reason;
+}
+
+/** Trusted invalidation only; clients fetch authorized state and cannot publish data. */
+export async function notifyVoiceRoomChanged(roomId: string, cursor: number) {
+  const config = voiceMediaConfig();
+  if (!config) return;
+  try {
+    await mediaClient(config).sendData(
+      voiceMediaRoomName(roomId),
+      new TextEncoder().encode(JSON.stringify({ roomId, cursor })),
+      DataPacket_Kind.RELIABLE,
+      { topic: 'tahaddi-voice-refresh-v1' },
+    );
+  } catch {
+    /* Polling recovers from notification transport failure. */
+  }
 }

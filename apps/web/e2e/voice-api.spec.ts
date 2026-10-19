@@ -363,3 +363,72 @@ test('cover uploads decode real images and protect private room assets', async (
   await body(await event(host, id, { type: 'remove', userId: member.id }));
   expect((await member.api.get(url)).status()).toBe(404);
 });
+
+test('private messages enforce friendship, recipient privacy, blocking and authenticated participants', async ({
+  baseURL,
+  request,
+}) => {
+  const a = await actor(baseURL!);
+  const b = await actor(baseURL!);
+  const outsider = await actor(baseURL!);
+  const path = `/api/voice/social/${b.id}`;
+  expect((await request.get(path)).status()).toBe(401);
+  expect((await post(a, path, { text: 'رسالة قبل الصداقة' })).status()).toBe(403);
+  const follow = (who: Actor, target: string) =>
+    who.api.patch('/api/voice/preferences', {
+      headers: { Origin: who.origin },
+      data: { type: 'follow', id: target, enabled: true },
+    });
+  await body(await follow(a, b.id));
+  expect(
+    (await body<{ relationship: { friend: boolean } }>(await a.api.get(path))).relationship.friend,
+  ).toBe(false);
+  await body(await follow(b, a.id));
+  const sent = await body<{
+    relationship: { friend: boolean };
+    messages: { senderId: string; text: string }[];
+  }>(await post(a, path, { text: 'أهلًا يا صديقي' }));
+  expect(sent.relationship.friend).toBe(true);
+  expect(sent.messages).toHaveLength(1);
+  expect(sent.messages[0].senderId).toBe(a.id);
+  const profile = await body<{ relationship: { friend: boolean }; messages?: unknown }>(
+    await b.api.get(`/api/voice/social/${a.id}?profile=1`),
+  );
+  expect(profile.relationship.friend).toBe(true);
+  expect(profile.messages).toBeUndefined();
+  expect(
+    (await db.voiceDirectMessage.findFirstOrThrow({ where: { senderId: a.id, recipientId: b.id } }))
+      .readAt,
+  ).toBeNull();
+  const received = await body<{ messages: { text: string }[] }>(
+    await b.api.get(`/api/voice/social/${a.id}`),
+  );
+  expect(received.messages[0].text).toBe('أهلًا يا صديقي');
+  expect((await body<{ messages: unknown[] }>(await outsider.api.get(path))).messages).toEqual([]);
+  expect((await post(a, path, { text: 'رسالة', senderId: outsider.id })).status()).toBe(400);
+  expect((await a.api.post(path, { data: { text: 'رسالة' } })).status()).toBe(403);
+  await body(
+    await b.api.patch('/api/voice/preferences', {
+      headers: { Origin: b.origin },
+      data: { type: 'privacy', directMessages: 'none' },
+    }),
+  );
+  expect((await post(a, path, { text: 'غير مسموحة' })).status()).toBe(403);
+  await body(
+    await b.api.patch('/api/voice/preferences', {
+      headers: { Origin: b.origin },
+      data: { type: 'privacy', directMessages: 'everyone' },
+    }),
+  );
+  await body(await post(outsider, path, { text: 'مسموحة للجميع' }));
+  await body(
+    await b.api.patch('/api/voice/preferences', {
+      headers: { Origin: b.origin },
+      data: { type: 'block', id: a.id, enabled: true },
+    }),
+  );
+  expect((await a.api.get(path)).status()).toBe(403);
+  expect((await b.api.get(`/api/voice/social/${a.id}`)).status()).toBe(403);
+  expect((await post(a, path, { text: 'محظورة' })).status()).toBe(403);
+  expect((await follow(a, b.id)).status()).toBe(403);
+});

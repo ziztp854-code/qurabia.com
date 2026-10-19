@@ -146,3 +146,42 @@
     animation: none;
   }
 }
+
+.entrance[data-rank='sultan'],
+.entrance[data-rank='owner'] {
+  background:
+    radial-gradient(ellipse at 90% 50%, var(--voice-glow), transparent 75%), var(--voice-card);
+  border-inline-start-width: 6px;
+  box-shadow:
+    var(--voice-shadow),
+    0 0 28px var(--voice-glow);
+}
+.entrance[data-rank='prince'],
+.entrance[data-rank='admin'] {
+  border-color: var(--voice-cyan);
+}
+.entrance[data-rank='prince'] .welcome small,
+.entrance[data-rank='admin'] .welcome small {
+  color: var(--voice-cyan);
+}
+.entrance[data-rank='knight'] {
+  border-style: double;
+  border-inline-start-width: 6px;
+}
+.entrance[data-rank='member'] {
+  border-color: var(--voice-line);
+}
+.entrance:has(.seal img) :global(.v-avatar) {
+  display: none;
+}
+.entrance:has(.seal img) .seal {
+  display: grid;
+  width: 52px;
+  height: 56px;
+  background: transparent;
+}
+.seal img {
+  object-fit: contain;
+  width: 56px;
+  height: 56px;
+}

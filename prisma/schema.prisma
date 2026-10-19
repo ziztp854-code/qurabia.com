@@ -161,6 +161,8 @@ model User {
   usageCounters      UsageCounter[]
   voiceRooms         VoiceRoom[]
   voicePreference    VoicePreference?
+  voiceSentMessages VoiceDirectMessage[] @relation("VoiceMessageSender")
+  voiceReceivedMessages VoiceDirectMessage[] @relation("VoiceMessageRecipient")
   voiceReports       VoiceReport[]
   voiceCovers        VoiceCover[]
   kingdomCommands    KingdomCommand[]
@@ -770,4 +772,17 @@ model VoiceCover {
   createdAt DateTime @default(now())
   owner     User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   @@index([ownerId])
+}
+
+model VoiceDirectMessage {
+  id String @id @default(cuid())
+  senderId String
+  recipientId String
+  text String @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  readAt DateTime?
+  sender User @relation("VoiceMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("VoiceMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, createdAt])
 }

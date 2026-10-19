@@ -6,7 +6,14 @@ import pg from 'pg';
 import { resolveMigrationUrl } from './deploy-migrations.mjs';
 
 export const VOICE_MIGRATION = '20261018090000_voice_rooms';
-const VOICE_TABLES = ['VoiceRoom', 'VoicePreference', 'VoiceReport', 'VoiceCover'];
+export const VOICE_SOCIAL_MIGRATION = '20261019120000_voice_direct_messages';
+const VOICE_TABLES = [
+  'VoiceRoom',
+  'VoicePreference',
+  'VoiceReport',
+  'VoiceCover',
+  'VoiceDirectMessage',
+];
 
 export function voiceMigrationPlan(available, rows, tables) {
   if (rows.some((row) => !row.finished_at && !row.rolled_back_at))
@@ -15,15 +22,20 @@ export function voiceMigrationPlan(available, rows, tables) {
     rows.filter((row) => row.finished_at && !row.rolled_back_at).map((row) => row.migration_name),
   );
   const pending = available.filter((name) => !applied.has(name));
+  const socialAvailable = available.includes(VOICE_SOCIAL_MIGRATION);
+  const expected = socialAvailable ? tables : tables.slice(0, 4);
   if (pending.length === 0) {
-    if (!tables.every(Boolean))
+    if (!expected.every(Boolean))
       throw new Error('Voice schema drift detected; refusing to repair it automatically.');
     return 'ready';
   }
-  if (pending.length !== 1 || pending[0] !== VOICE_MIGRATION)
+  if (pending.some((name) => ![VOICE_MIGRATION, VOICE_SOCIAL_MIGRATION].includes(name)))
     throw new Error('Unrelated migrations are pending; this release will not apply them.');
-  if (tables.some(Boolean))
+  const basePresent = tables.slice(0, 4);
+  if (pending.includes(VOICE_MIGRATION) ? basePresent.some(Boolean) : !basePresent.every(Boolean))
     throw new Error('Partial voice tables exist without a completed migration.');
+  if (socialAvailable && (pending.includes(VOICE_SOCIAL_MIGRATION) ? tables[4] : !tables[4]))
+    throw new Error('Voice schema drift detected; refusing to repair it automatically.');
   return 'apply';
 }
 
@@ -70,7 +82,7 @@ async function main() {
     console.log('Voice schema is already present.');
     return;
   }
-  console.log('Applying the single additive voice-room migration.');
+  console.log('Applying the allowlisted additive voice migrations.');
   const result = spawnSync(
     'pnpm',
     [

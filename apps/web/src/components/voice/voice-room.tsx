@@ -23,6 +23,7 @@ import {
   Share2,
   ShieldCheck,
   Users,
+  UserCheck,
   Volume2,
   VolumeX,
   X,
@@ -60,6 +61,8 @@ import roomStyles from './room-layout.module.css';
 import { VoiceGifts } from './voice-gifts';
 import liveStyles from './live-room.module.css';
 import { GiftCelebration } from './gift-celebration';
+import { requestVoiceMicrophone } from './microphone-permission';
+import { VoiceSocial } from './voice-social';
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
 
@@ -87,6 +90,14 @@ export function VoiceRoomView({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
+  const [relationship, setRelationship] = useState<{
+    peerId: string;
+    friend: boolean;
+    followsYou: boolean;
+  } | null>(null);
+  const [followingBusy, setFollowingBusy] = useState<string | null>(null);
+  const [socialOpen, setSocialOpen] = useState(false);
+  const [privatePeer, setPrivatePeer] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const onProfileOpenChange = useCallback((open: boolean) => {
     if (!open) setProfileId(null);
@@ -118,6 +129,9 @@ export function VoiceRoomView({
   const [settings, setSettings] = useState(false);
   const [closeRoom, setCloseRoom] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [localMuted, setLocalMuted] = useState<boolean | null>(null);
+  const mutePending = useRef(false);
+  const [muteBusy, setMuteBusy] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [mediaPending, setMediaPending] = useState(false);
   const inviteRef = useRef<string | null>(null);
@@ -165,17 +179,64 @@ export function VoiceRoomView({
   );
   const act = useCallback(
     async (value: VoiceEvent) => {
-      setActionBusy(true);
+      if (value.type === 'mute' && mutePending.current) return;
+      const mute = value.type === 'mute';
+      if (mute) {
+        mutePending.current = true;
+        setMuteBusy(true);
+        if (value.muted) setLocalMuted(true);
+      } else setActionBusy(true);
       setError('');
       try {
+        if (value.type === 'request-seat' || (value.type === 'mute' && !value.muted)) {
+          setNotice('اسمح باستخدام الميكروفون من نافذة المتصفح للمتابعة.');
+          await requestVoiceMicrophone();
+          setNotice(value.type === 'request-seat' ? 'الميكروفون جاهز. جارٍ طلب المايك…' : '');
+        }
+        if (value.type === 'mute') setLocalMuted(value.muted);
         await event(value);
+        if (mute) setLocalMuted(null);
       } catch (err) {
+        if (mute) setLocalMuted(true);
+        setNotice('');
         setError(err instanceof Error ? err.message : 'تعذر تنفيذ الإجراء.');
       } finally {
-        setActionBusy(false);
+        if (mute) {
+          mutePending.current = false;
+          setMuteBusy(false);
+        } else setActionBusy(false);
       }
     },
     [event],
+  );
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshing = useRef(false);
+  const refreshAgain = useRef(false);
+  const refreshRoom = useCallback(() => {
+    refreshAgain.current = true;
+    if (refreshTimer.current || refreshing.current || leaving.current) return;
+    async function refresh() {
+      if (leaving.current) return;
+      refreshTimer.current = null;
+      refreshing.current = true;
+      refreshAgain.current = false;
+      try {
+        apply(await voiceRequest<VoiceSnapshot>(`rooms/${roomId}`));
+      } catch {
+        /* The heartbeat handles admission and disconnect failures. */
+      } finally {
+        refreshing.current = false;
+        if (refreshAgain.current && !leaving.current)
+          refreshTimer.current = setTimeout(refresh, 750);
+      }
+    }
+    refreshTimer.current = setTimeout(refresh, 750);
+  }, [roomId, apply]);
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    },
+    [],
   );
   async function join() {
     setJoining(true);
@@ -333,11 +394,30 @@ export function VoiceRoomView({
     const timer = setTimeout(() => setNotice(''), 5000);
     return () => clearTimeout(timer);
   }, [notice]);
+  useEffect(() => {
+    if (!profileId || profileId === user.id) return;
+    let cancelled = false;
+    void voiceRequest<{ relationship: { friend: boolean; followsYou: boolean } }>(
+      `social/${encodeURIComponent(profileId)}?profile=1`,
+    )
+      .then((data) => {
+        if (!cancelled) setRelationship({ peerId: profileId, ...data.relationship });
+      })
+      .catch(() => {
+        if (!cancelled) setRelationship(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profileId, user.id, preferences.following, preferences.blockedUsers]);
   async function preference(action: VoicePreferencesAction) {
+    if (action.type === 'follow') setFollowingBusy(action.id);
     try {
       setPreferences(await voiceRequest<VoicePreferences>('preferences', action, 'PATCH'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر حفظ التفضيل.');
+    } finally {
+      if (action.type === 'follow') setFollowingBusy(null);
     }
   }
   async function share() {
@@ -376,7 +456,7 @@ export function VoiceRoomView({
   }
   useImperativeHandle(ref, () => ({ leave: () => leave(false, true) }));
   const room = snapshot?.room;
-  const me = snapshot?.me;
+  const me = snapshot?.me ? { ...snapshot.me, muted: localMuted ?? snapshot.me.muted } : null;
   const canModerate =
     me?.role === 'host' || (me?.role === 'moderator' && Boolean(room?.moderatorsCanManage));
   const host = me?.role === 'host';
@@ -396,15 +476,17 @@ export function VoiceRoomView({
       )}
       {snapshot && (
         <PersistentVoiceDock
-          snapshot={snapshot}
+          snapshot={{ ...snapshot, me }}
           deafened={deafened}
           busy={actionBusy}
+          muteBusy={muteBusy}
           visible={visible}
           audioSettingsOpen={audioSettingsOpen}
           onAudioSettingsOpenChange={setAudioSettingsOpen}
           overlayActive={
             chatOverlayOpen ||
             Boolean(profileId) ||
+            socialOpen ||
             reportOpen ||
             settings ||
             giftsOpen ||
@@ -427,6 +509,7 @@ export function VoiceRoomView({
               mutedUserIds={preferences.mutedUsers}
               onStateChange={setAudioState}
               onSpeakersChange={setSpeakers}
+              onRoomChanged={refreshRoom}
             />
           )}
         </PersistentVoiceDock>
@@ -444,6 +527,7 @@ export function VoiceRoomView({
           visible &&
           Boolean(me && room?.active) &&
           !profileId &&
+          !socialOpen &&
           !reportOpen &&
           !settings &&
           !giftsOpen &&
@@ -540,6 +624,7 @@ export function VoiceRoomView({
                     <button
                       className={liveStyles.follow}
                       aria-pressed={preferences.following.includes(room.hostId)}
+                      disabled={followingBusy === room.hostId}
                       aria-label={
                         preferences.following.includes(room.hostId)
                           ? 'إلغاء متابعة المضيف'
@@ -573,6 +658,14 @@ export function VoiceRoomView({
                   </button>
                 </div>
                 <div className={liveStyles.headerActions}>
+                  <VoiceSocial
+                    user={user}
+                    preferences={preferences}
+                    onPreference={preference}
+                    peerId={privatePeer}
+                    onPeerChange={setPrivatePeer}
+                    onVisibilityChange={setSocialOpen}
+                  />
                   <button
                     className="v-icon"
                     aria-label="إضافة الغرفة للمفضلة"
@@ -914,7 +1007,7 @@ export function VoiceRoomView({
                   <div className="v-control-actions">
                     <button
                       className={`v-control v-main-mic ${!onSeat || me?.muted || me?.moderatorMuted ? 'is-muted' : ''}`}
-                      disabled={!onSeat || me?.moderatorMuted || actionBusy}
+                      disabled={!onSeat || me?.moderatorMuted || muteBusy}
                       aria-pressed={Boolean(me?.muted)}
                       onClick={() => void act({ type: 'mute', muted: !me?.muted })}
                     >
@@ -1090,67 +1183,91 @@ export function VoiceRoomView({
                       <Gift size={18} /> إرسال هدية تجريبية
                     </button>
                     {selected.id !== user.id && (
-                      <div className="v-profile-actions">
-                        <button
-                          className="v-button"
-                          onClick={() =>
-                            void preference({
-                              type: 'follow',
-                              id: selected.id,
-                              enabled: !preferences.following.includes(selected.id),
-                            })
-                          }
-                        >
-                          <Users size={17} />
-                          {preferences.following.includes(selected.id)
-                            ? 'إلغاء المتابعة'
-                            : 'متابعة'}
-                        </button>
-                        <button
-                          className="v-button v-outline"
-                          onClick={() =>
-                            void preference({
-                              type: 'mute',
-                              id: selected.id,
-                              enabled: !preferences.mutedUsers.includes(selected.id),
-                            })
-                          }
-                        >
-                          {preferences.mutedUsers.includes(selected.id) ? (
-                            <Volume2 size={17} />
-                          ) : (
-                            <VolumeX size={17} />
-                          )}
-                          {preferences.mutedUsers.includes(selected.id)
-                            ? 'إلغاء الكتم لدي'
-                            : 'كتم الصوت لدي'}
-                        </button>
-                        <button
-                          className="v-text-button"
-                          onClick={() =>
-                            void preference({
-                              type: 'block',
-                              id: selected.id,
-                              enabled: !preferences.blockedUsers.includes(selected.id),
-                            })
-                          }
-                        >
-                          {preferences.blockedUsers.includes(selected.id)
-                            ? 'إلغاء الحظر'
-                            : 'حظر رسائل المستخدم'}
-                        </button>
-                        <button
-                          className="v-text-button"
-                          onClick={() => {
-                            setReportUserId(selected.id);
-                            setProfileId(null);
-                            setReportOpen(true);
-                          }}
-                        >
-                          <Flag size={15} />
-                          الإبلاغ عن المستخدم
-                        </button>
-                      </div>
+                      <>
+                        {relationship?.peerId === selected.id && (
+                          <p className="v-friend-status">
+                            <UserCheck size={17} />
+                            {relationship.friend
+                              ? 'صديق · تتابعان بعضكما'
+                              : relationship.followsYou
+                                ? 'يتابعك'
+                                : 'المتابعة المتبادلة تجعلكما أصدقاء'}
+                          </p>
+                        )}
+                        <div className="v-profile-actions">
+                          <button
+                            className="v-button"
+                            onClick={() => {
+                              setSocialOpen(true);
+                              setPrivatePeer(selected.id);
+                              setProfileId(null);
+                            }}
+                          >
+                            <MessageCircle size={17} /> رسالة خاصة
+                          </button>
+                          <button
+                            className="v-button"
+                            disabled={followingBusy === selected.id}
+                            aria-pressed={preferences.following.includes(selected.id)}
+                            onClick={() =>
+                              void preference({
+                                type: 'follow',
+                                id: selected.id,
+                                enabled: !preferences.following.includes(selected.id),
+                              })
+                            }
+                          >
+                            <Users size={17} />
+                            {preferences.following.includes(selected.id)
+                              ? 'إلغاء المتابعة'
+                              : 'متابعة'}
+                          </button>
+                          <button
+                            className="v-button v-outline"
+                            onClick={() =>
+                              void preference({
+                                type: 'mute',
+                                id: selected.id,
+                                enabled: !preferences.mutedUsers.includes(selected.id),
+                              })
+                            }
+                          >
+                            {preferences.mutedUsers.includes(selected.id) ? (
+                              <Volume2 size={17} />
+                            ) : (
+                              <VolumeX size={17} />
+                            )}
+                            {preferences.mutedUsers.includes(selected.id)
+                              ? 'إلغاء الكتم لدي'
+                              : 'كتم الصوت لدي'}
+                          </button>
+                          <button
+                            className="v-text-button"
+                            onClick={() =>
+                              void preference({
+                                type: 'block',
+                                id: selected.id,
+                                enabled: !preferences.blockedUsers.includes(selected.id),
+                              })
+                            }
+                          >
+                            {preferences.blockedUsers.includes(selected.id)
+                              ? 'إلغاء الحظر'
+                              : 'حظر رسائل المستخدم'}
+                          </button>
+                          <button
+                            className="v-text-button"
+                            onClick={() => {
+                              setReportUserId(selected.id);
+                              setProfileId(null);
+                              setReportOpen(true);
+                            }}
+                          >
+                            <Flag size={15} />
+                            الإبلاغ عن المستخدم
+                          </button>
+                        </div>
+                      </>
                     )}
                     {canModerate && selected.id !== user.id && selected.role !== 'host' && (
                       <div className="v-moderation">

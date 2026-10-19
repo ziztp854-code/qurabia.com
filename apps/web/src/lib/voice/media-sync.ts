@@ -6,9 +6,10 @@ import type { VoiceSnapshot } from './types';
 export async function synchronizeVoiceMedia(
   roomId: string,
   snapshot: VoiceSnapshot,
+  periodic = false,
 ): Promise<VoiceSnapshot> {
   try {
-    await reconcileVoiceMedia(roomId, snapshot);
+    await reconcileVoiceMedia(roomId, snapshot, periodic);
     return { ...snapshot, mediaSyncPending: false };
   } catch {
     console.error('[voice] media synchronization pending');

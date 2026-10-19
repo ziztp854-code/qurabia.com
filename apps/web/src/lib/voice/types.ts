@@ -83,6 +83,7 @@ export type VoicePreferences = {
   mutedUsers: string[];
   privateProfile: boolean;
   notifyFavorites: boolean;
+  directMessages?: 'everyone' | 'friends' | 'none';
 };
 export type VoiceRoomState = {
   settings: VoiceRoomSettings;
@@ -95,6 +96,7 @@ export type VoiceRoomState = {
   bannedUsers: string[];
   /** Server-only Cloud token ledger; never included in public snapshots. */
   mediaGrants?: VoiceMediaLedger;
+  mediaReconciledAt?: number;
 };
 export type VoiceMediaLedger = Record<
   string,
@@ -128,7 +130,12 @@ export type VoiceCreateInput = VoiceRoomSettings & { password?: string };
 export type VoiceJoinInput = { password?: string; invite?: string };
 export type VoicePreferencesAction =
   | { type: 'favorite' | 'follow' | 'block' | 'mute'; id: string; enabled: boolean }
-  | { type: 'privacy'; privateProfile?: boolean; notifyFavorites?: boolean };
+  | {
+      type: 'privacy';
+      privateProfile?: boolean;
+      notifyFavorites?: boolean;
+      directMessages?: 'everyone' | 'friends' | 'none';
+    };
 export type VoiceList = {
   rooms: VoiceRoom[];
   stats: { activeRooms: number; listeners: number; participants: number };

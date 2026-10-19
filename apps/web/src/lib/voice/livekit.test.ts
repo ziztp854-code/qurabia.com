@@ -19,12 +19,17 @@ const mocks = vi.hoisted(() => ({
   remove: vi.fn(),
   mute: vi.fn(),
   ledger: {} as VoiceMediaLedger,
+  checkpoint: { checkedAt: 0 },
 }));
 vi.mock('./repository', () => ({
   withVoiceMediaSnapshot: async (
     _id: string,
-    work: (snapshot: unknown, ledger: VoiceMediaLedger) => unknown,
-  ) => work(mocks.snapshot, mocks.ledger),
+    work: (
+      snapshot: unknown,
+      ledger: VoiceMediaLedger,
+      checkpoint: { checkedAt: number },
+    ) => unknown,
+  ) => work(mocks.snapshot, mocks.ledger, mocks.checkpoint),
 }));
 vi.mock('livekit-server-sdk', async (importOriginal) => {
   const actual = await importOriginal<typeof import('livekit-server-sdk')>();
@@ -60,6 +65,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.list.mockResolvedValue([]);
   mocks.ledger = {};
+  mocks.checkpoint.checkedAt = 0;
 });
 describe('voice SFU admission', () => {
   it('fails closed with absent or insecure configuration', async () => {
@@ -297,4 +303,19 @@ describe('LiveKit Cloud strict revocation', () => {
     expect(mocks.remove).not.toHaveBeenCalled();
     expect(mocks.update).not.toHaveBeenCalled();
   });
+});
+
+it('coalesces periodic SFU checks but never skips forced permission reconciliation', async () => {
+  mocks.snapshot = { room: { active: true }, participants: [] };
+  mocks.checkpoint.checkedAt = Date.now();
+  await reconcileVoiceMedia('room', undefined, true);
+  expect(mocks.list).not.toHaveBeenCalled();
+  await reconcileVoiceMedia('room');
+  expect(mocks.list).toHaveBeenCalledTimes(1);
+});
+it('does not checkpoint failed SFU reconciliations', async () => {
+  mocks.snapshot = { room: { active: true }, participants: [] };
+  mocks.list.mockRejectedValue(new Error('network'));
+  await expect(reconcileVoiceMedia('room', undefined, true)).rejects.toThrow();
+  expect(mocks.checkpoint.checkedAt).toBe(0);
 });

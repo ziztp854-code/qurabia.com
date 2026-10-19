@@ -607,7 +607,7 @@
   .presence {
     gap: 0;
   }
-  .presence :global(.v-live-badge) {
+  .presence :global(.v-live) {
     display: none;
   }
   .presence > button {
@@ -623,7 +623,8 @@
     gap: 0;
     margin-inline-start: 0;
   }
-  .headerActions > button:nth-child(-n + 2) {
+  .headerActions > button[aria-label='إضافة الغرفة للمفضلة'],
+  .headerActions > button[aria-label='مشاركة الغرفة'] {
     display: none;
   }
   .roomHeading {
@@ -1023,4 +1024,28 @@
 .liveRoom :global(aside[aria-label='ترحيب بالأعضاء']) {
   inset-block-start: 84px;
   inset-block-end: auto;
+}
+
+@media (max-width: 760px) {
+  .hostPill strong > span {
+    flex-wrap: nowrap;
+  }
+  .hostPill strong bdi {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hostPill small {
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
+.liveRoom :global(.v-friend-status) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--voice-gold-light);
+  font-size: 0.85rem;
+  line-height: 1.8;
 }

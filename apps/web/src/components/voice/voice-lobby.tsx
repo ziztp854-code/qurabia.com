@@ -27,6 +27,7 @@ import type {
 import { VOICE_CATEGORIES } from '@/lib/voice/types';
 import { Switch } from '@/components/ui/forms';
 import { CreateRoom } from './create-room';
+import { VoiceSocial } from './voice-social';
 import {
   EmptyState,
   LiveBadge,
@@ -164,6 +165,11 @@ export function VoiceLobby({
           : []
       }
     >
+      {user && (
+        <div className="v-profile-actions">
+          <VoiceSocial user={user} preferences={preferences} onPreference={preference} />
+        </div>
+      )}
       {view === 'explore' && (
         <section className="v-hero" aria-labelledby="voice-hero-title">
           <VoiceCover

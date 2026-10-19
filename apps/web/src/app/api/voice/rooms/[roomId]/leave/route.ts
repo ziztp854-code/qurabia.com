@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ roomId: string }> };
 import { leaveVoiceRoom } from '@/lib/voice/repository';
 import { synchronizeVoiceMedia } from '@/lib/voice/media-sync';
+import { announceVoiceChange } from '@/lib/voice/notifications';
 export async function POST(request: Request, context: Context) {
   try {
     voiceOrigin(request);
@@ -12,6 +13,7 @@ export async function POST(request: Request, context: Context) {
     await voiceRateLimit(user.id, true);
     const { roomId } = await context.params;
     const snapshot = await synchronizeVoiceMedia(roomId, await leaveVoiceRoom(roomId, user.id));
+    announceVoiceChange(snapshot);
     return jsonSuccess({ ok: true, mediaSyncPending: snapshot.mediaSyncPending ?? false });
   } catch (error) {
     return jsonFailure(error);

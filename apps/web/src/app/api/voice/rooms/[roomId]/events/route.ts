@@ -6,13 +6,14 @@ type Context = { params: Promise<{ roomId: string }> };
 import { voiceEventSchema } from '@/lib/voice/schemas';
 import { getVoiceSnapshot, sendVoiceEvent } from '@/lib/voice/repository';
 import { synchronizeVoiceMedia } from '@/lib/voice/media-sync';
+import { announceVoiceChange } from '@/lib/voice/notifications';
 export async function GET(_request: Request, context: Context) {
   try {
     const user = await voiceIdentity();
     await voiceRateLimit(user.id, false);
     const { roomId } = await context.params;
     return jsonSuccess(
-      await synchronizeVoiceMedia(roomId, await getVoiceSnapshot(roomId, user.id, true)),
+      await synchronizeVoiceMedia(roomId, await getVoiceSnapshot(roomId, user.id, true), true),
     );
   } catch (error) {
     return jsonFailure(error);
@@ -25,8 +26,22 @@ export async function POST(request: Request, context: Context) {
     await voiceRateLimit(user.id, true);
     const { roomId } = await context.params;
     const event = await readVoiceBody(request, voiceEventSchema);
+    const snapshot = await sendVoiceEvent(roomId, user.id, event);
+    // These commands never change an SFU publication grant. Persist and respond immediately.
+    const local = [
+      'mute',
+      'gift',
+      'message',
+      'reaction',
+      'hand',
+      'pin-message',
+      'delete-message',
+      'report',
+      'deny-seat',
+      'lock-seat',
+    ].includes(event.type);
     return jsonSuccess(
-      await synchronizeVoiceMedia(roomId, await sendVoiceEvent(roomId, user.id, event)),
+      announceVoiceChange(local ? snapshot : await synchronizeVoiceMedia(roomId, snapshot)),
     );
   } catch (error) {
     return jsonFailure(error);
