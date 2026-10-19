@@ -63,7 +63,7 @@ const secret = randomUUID();
 const origin = 'https://auth.example.test';
 const identity = {
   id: 'protocol-user', name: 'Protocol User', email: 'protocol@example.test',
-  picture: 'https://images.example.test/avatar.png', role: 'ADMIN', status: 'ACTIVE', tokenVersion: 4,
+  image: 'https://images.example.test/avatar.png', role: 'ADMIN', status: 'ACTIVE', tokenVersion: 4,
 };
 
 function fixtureOptions(): NextAuthOptions {
@@ -87,8 +87,9 @@ function request(action: string, cookies: Record<string, string> = {}, body?: Re
 }
 
 function signedSession(overrides: JWT = {}, maxAge = 3600) {
+  const { image, ...claims } = identity;
   return encode({ secret, maxAge, token: {
-    ...identity, sub: identity.id, ...overrides,
+    ...claims, picture: image, sub: identity.id, ...overrides,
     access_token: 'fixture-access-token', refresh_token: 'fixture-refresh-token',
     id_token: 'fixture-provider-id-token',
   } });
@@ -119,10 +120,12 @@ describe('locked NextAuth session endpoint', () => {
   it('returns the current identity without any provider tokens', async () => {
     const options = await protocolOptions();
     const result = await request('session', {
-      [options.cookies.sessionToken.name]: await signedSession(),
+      [options.cookies.sessionToken.name]: await signedSession({
+        name: 'Outdated Name', picture: 'https://images.example.test/outdated-avatar.png',
+      }),
     });
     expect(result.body).toMatchObject({ user: {
-      id: identity.id, email: identity.email, name: identity.name, image: identity.picture,
+      id: identity.id, email: identity.email, name: identity.name, image: identity.image,
       role: 'ADMIN', status: 'ACTIVE', tokenVersion: 4,
     } });
     const exposed = JSON.stringify(result.body);
@@ -131,6 +134,17 @@ describe('locked NextAuth session endpoint', () => {
     }
     expect(exposed).not.toMatch(/access_token|refresh_token|id_token/);
     expect(database.findUnique).toHaveBeenCalled();
+  });
+
+  it('clears a stale session avatar when the stored image is removed', async () => {
+    database.findUnique.mockResolvedValue({ ...identity, image: null });
+    const options = await protocolOptions();
+    const result = await request('session', {
+      [options.cookies.sessionToken.name]: await signedSession(),
+    });
+    expect(result.body).toMatchObject({ user: {
+      id: identity.id, name: identity.name, image: null,
+    } });
   });
 
   it('returns anonymous without a cookie and does not query the database', async () => {
