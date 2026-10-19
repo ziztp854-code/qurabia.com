@@ -97,6 +97,17 @@ export function PersistentVoiceDock({
       <div className={styles.audio}>
         <details
           open={visible ? audioSettingsOpen : true}
+          onKeyDown={(event) => {
+            if (
+              visible &&
+              event.key === 'Escape' &&
+              !(event.target as Element).closest('[role="dialog"]')
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+              onAudioSettingsOpenChange?.(false);
+            }
+          }}
           onToggle={(event) => {
             if (visible) onAudioSettingsOpenChange?.(event.currentTarget.open);
           }}

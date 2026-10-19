@@ -1,0 +1,50 @@
+<svg viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <linearGradient id="goldTowerGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFF3B0" stop-opacity="0.9"/>
+              <stop offset="40%" stop-color="#D4AF37" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#0B0A10" stop-opacity="0.95"/>
+            </linearGradient>
+            <linearGradient id="buildingGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2A2232" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#08070C" stop-opacity="0.98"/>
+            </linearGradient>
+            <linearGradient id="ribbonGold" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#D4AF37" stop-opacity="0"/>
+              <stop offset="50%" stop-color="#F5D061" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="280" cy="220" r="1.5" fill="#FFF3B0" opacity="0.6"/>
+          <circle cx="1080" cy="180" r="2" fill="#FFF3B0" opacity="0.5"/>
+          <circle cx="650" cy="140" r="1.5" fill="#FE2C55" opacity="0.5"/>
+          <circle cx="880" cy="250" r="1.5" fill="#FFF3B0" opacity="0.4"/>
+          <g transform="translate(260, 170)">
+            <path d="M20 650 L35 80 L55 20 L65 20 L65 75 C65 145 125 145 125 75 L125 20 L135 20 L155 80 L170 650 Z" fill="url(#buildingGrad)" stroke="url(#goldTowerGrad)" stroke-width="2"/>
+            <path d="M58 22 L132 22 M64 25 C64 140 126 140 126 25" stroke="#F5D061" stroke-width="3.5" fill="none"/>
+          </g>
+          <g transform="translate(990, 210) scale(0.85)">
+            <path d="M20 650 L35 80 L55 20 L65 20 L65 75 C65 145 125 145 125 75 L125 20 L135 20 L155 80 L170 650 Z" fill="url(#buildingGrad)" stroke="url(#goldTowerGrad)" stroke-width="2"/>
+            <path d="M58 22 L132 22 M64 25 C64 140 126 140 126 25" stroke="#F5D061" stroke-width="3" fill="none"/>
+          </g>
+          <g transform="translate(520, 310)">
+            <polygon points="45,40 15,520 75,520" fill="url(#buildingGrad)" stroke="#D4AF37" stroke-width="1" stroke-opacity="0.4"/>
+            <circle cx="45" cy="95" r="11" fill="#D4AF37" fill-opacity="0.35" stroke="#FFF3B0" stroke-width="1"/>
+            <line x1="45" y1="0" x2="45" y2="40" stroke="#FFF3B0" stroke-width="2"/>
+          </g>
+          <rect x="120" y="420" width="55" height="400" fill="url(#buildingGrad)"/>
+          <rect x="185" y="470" width="45" height="350" fill="url(#buildingGrad)"/>
+          <rect x="440" y="450" width="60" height="380" fill="url(#buildingGrad)"/>
+          <rect x="610" y="490" width="50" height="340" fill="url(#buildingGrad)"/>
+          <rect x="860" y="440" width="65" height="390" fill="url(#buildingGrad)"/>
+          <rect x="935" y="485" width="45" height="345" fill="url(#buildingGrad)"/>
+          <rect x="1170" y="430" width="70" height="400" fill="url(#buildingGrad)"/>
+          <path d="M0 720 Q 360 630, 720 710 T 1440 670" stroke="url(#ribbonGold)" stroke-width="3" fill="none" />
+          <path d="M0 750 Q 420 810, 820 700 T 1440 740" stroke="url(#ribbonGold)" stroke-width="1.5" fill="none" />
+          <g fill="#F5D061" opacity="0.55">
+            <circle cx="240" cy="610" r="2"/><circle cx="255" cy="615" r="1.5"/><circle cx="290" cy="600" r="2.5"/>
+            <circle cx="460" cy="590" r="2"/><circle cx="490" cy="620" r="1.5"/><circle cx="540" cy="610" r="2"/>
+            <circle cx="880" cy="605" r="2"/><circle cx="910" cy="580" r="1.5"/><circle cx="960" cy="625" r="2.5"/>
+            <circle cx="1050" cy="610" r="2"/><circle cx="1120" cy="595" r="1.5"/>
+          </g>
+        </svg>

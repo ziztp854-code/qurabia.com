@@ -490,3 +490,24 @@
   --primary-foreground: var(--voice-ink);
   --border: var(--voice-line);
 }
+
+/* Aflaqni room palette; keep the discovery lobby's existing identity. */
+.v-room-scope,
+.v-room-scope .v-room-app {
+  --voice-bg: #0b0a10;
+  --voice-card: #15131d;
+  --voice-raised: #211e2b;
+  --voice-gold: #d4af37;
+  --voice-gold-light: #e8cd7a;
+  --voice-live: #fe2c55;
+  --voice-live-strong: #fe2c55;
+  --voice-ink: #0b0a10;
+  --voice-text: #ffffff;
+  --voice-muted: #c7c3ce;
+  --voice-border: rgb(212 175 55 / 0.3);
+  --voice-line: rgb(255 255 255 / 0.12);
+  --voice-glow: rgb(212 175 55 / 0.2);
+  --voice-glass: rgb(11 10 16 / 0.76);
+  --voice-shade: rgb(11 10 16 / 0.94);
+  --voice-soft-shade: rgb(11 10 16 / 0.35);
+}
