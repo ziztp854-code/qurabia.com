@@ -6,6 +6,7 @@ import {
   getMyCommunityProfile,
   getPublicProfile,
   getUserIdentity,
+  getUserIdentities,
   updateMyCommunityProfile,
 } from './service';
 const mocks = vi.hoisted(() => {
@@ -24,6 +25,9 @@ const mocks = vi.hoisted(() => {
   return {
     session: vi.fn(),
     rate: vi.fn(),
+    preferences: vi.fn(),
+    updatePreferences: vi.fn(),
+    socialCounts: vi.fn(),
     db: {
       user: model(),
       profile: model(),
@@ -31,7 +35,7 @@ const mocks = vi.hoisted(() => {
       userCosmetic: model(),
       profileCosmetic: model(),
       communityBadge: model(),
-      userFollow: model(),
+      voicePreference: model(),
       voiceRoom: model(),
       auditLog: model(),
       $transaction: vi.fn(),
@@ -39,6 +43,11 @@ const mocks = vi.hoisted(() => {
     },
   };
 });
+vi.mock('@/lib/voice/repository', () => ({
+  getVoicePreferences: mocks.preferences,
+  updateVoicePreferences: mocks.updatePreferences,
+}));
+vi.mock('@/lib/profile/repository', () => ({ profileSocialCounts: mocks.socialCounts }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession: mocks.session }));
 vi.mock('@/lib/auth/prisma', () => ({ getPrismaClient: () => mocks.db }));
 vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: mocks.rate }));
@@ -118,10 +127,75 @@ beforeEach(() => {
   ] as const)
     mocks.db[name].findMany.mockResolvedValue([]);
   mocks.db.$queryRaw.mockResolvedValue([]);
-  mocks.db.userFollow.count.mockResolvedValue(0);
-  mocks.db.userFollow.findUnique.mockResolvedValue(null);
+  mocks.preferences.mockResolvedValue({ following: [], blockedUsers: [], privateProfile: false });
+  mocks.socialCounts.mockResolvedValue({ followers: 0, following: 0 });
+  mocks.db.voicePreference.upsert.mockResolvedValue({
+    state: { following: ['preserved-peer'], privateProfile: false },
+    revision: 2,
+  });
+  mocks.db.voicePreference.updateMany.mockResolvedValue({ count: 1 });
 });
 describe('community server authority', () => {
+  it('preserves canonical legacy privacy and social counts', async () => {
+    mocks.preferences.mockImplementation(async (id) => ({
+      following: id === 'actor' ? ['subject'] : [],
+      blockedUsers: [],
+      privateProfile: id === 'subject',
+    }));
+    expect(await getPublicProfile(123456789)).toBeNull();
+    mocks.preferences.mockResolvedValue({
+      following: ['subject'],
+      blockedUsers: [],
+      privateProfile: false,
+    });
+    mocks.socialCounts.mockResolvedValue({ followers: 7, following: 4 });
+    const profile = await getPublicProfile(123456789);
+    expect(profile?.followerCount).toBe(7);
+    expect(profile?.followingCount).toBe(4);
+    expect(profile?.isFollowing).toBe(true);
+  });
+  it('updates canonical privacy atomically without replacing existing follow relationships', async () => {
+    await updateMyCommunityProfile({ visibility: 'PRIVATE' });
+    expect(mocks.db.voicePreference.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          state: { following: ['preserved-peer'], privateProfile: true },
+        }),
+      }),
+    );
+    expect(mocks.db.profile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: expect.objectContaining({ visibility: 'PUBLIC' }) }),
+    );
+  });
+  it('preserves legacy avatar bytes but rejects adopting another account avatar route', async () => {
+    await expect(
+      updateMyCommunityProfile({ avatarUrl: '/api/profile/avatar/other?v=example' }),
+    ).rejects.toMatchObject({ code: 'AVATAR_NOT_OWNED' });
+    mocks.session.mockResolvedValue(null);
+    mocks.db.user.findUnique.mockResolvedValue({
+      ...row(),
+      profile: {
+        visibility: 'PUBLIC',
+        avatarContent: new Uint8Array([1, 2, 3]),
+        avatarUrl: '/api/profile/avatar/subject?v=existing',
+      },
+    });
+    const raster = await getCommunityRaster('avatar', '123456789');
+    expect([...raster.bytes]).toEqual([1, 2, 3]);
+    expect(raster.mime).toBe('image/webp');
+    expect(raster.privateAsset).toBe(true);
+  });
+  it('refreshes multiple room identities using one catalog query', async () => {
+    mocks.db.user.findMany.mockResolvedValue([
+      { ...row(), id: 'first' },
+      { ...row(), id: 'second' },
+    ]);
+    const result = await getUserIdentities(['first', 'second', 'first']);
+    expect([...result.keys()]).toEqual(['first', 'second']);
+    expect(mocks.db.user.findMany).toHaveBeenCalledTimes(1);
+    expect(mocks.db.profileCosmetic.findMany).toHaveBeenCalledTimes(1);
+  });
+
   it('exposes only authorized equipped visuals when the collection is hidden', async () => {
     const pieces = [
       { ...item(), id: 'background-royal', kind: 'BACKGROUND' },
@@ -318,17 +392,24 @@ describe('community server authority', () => {
       where.id === actor.id ? actor : { ...row(), profile: { visibility: 'PRIVATE' } },
     );
     expect(await followProfile(123456789, false)).toBeNull();
-    expect(mocks.db.userFollow.deleteMany).toHaveBeenCalledWith({
-      where: { followerId: actor.id, targetId: 'subject' },
+    expect(mocks.updatePreferences).toHaveBeenCalledWith(actor.id, {
+      type: 'follow',
+      id: 'subject',
+      enabled: false,
     });
     await expect(followProfile(123456789, true)).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    expect(mocks.db.userFollow.createMany).not.toHaveBeenCalled();
+    expect(mocks.updatePreferences).not.toHaveBeenCalledWith(actor.id, {
+      type: 'follow',
+      id: 'subject',
+      enabled: true,
+    });
   });
-  it('uses idempotent follow relation creation', async () => {
+  it('uses the existing voice follow graph', async () => {
     await followProfile(123456789, true);
-    expect(mocks.db.userFollow.createMany).toHaveBeenCalledWith({
-      data: [{ followerId: 'actor', targetId: 'subject' }],
-      skipDuplicates: true,
+    expect(mocks.updatePreferences).toHaveBeenCalledWith('actor', {
+      type: 'follow',
+      id: 'subject',
+      enabled: true,
     });
   });
   it('ADMIN cannot create or grant protected badges', async () => {

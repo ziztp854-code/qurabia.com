@@ -1,0 +1,624 @@
+/* Broadcast-room composition. Scoped selectors isolate legacy lobby styles. */
+.hero:global(.v-room-hero) {
+  min-height: 218px;
+  border-radius: 24px;
+  border-color: var(--voice-border);
+}
+.hero:global(.v-room-hero)::after {
+  background:
+    linear-gradient(90deg, var(--voice-soft-shade), var(--voice-shade) 85%),
+    linear-gradient(0deg, var(--voice-shade), transparent);
+}
+.hero :global(.v-room-hero-top) {
+  padding: 16px 24px 0;
+}
+.hero :global(.v-room-hero-content) {
+  padding: 12px 24px 20px;
+}
+.hero:global(.v-room-hero) h1 {
+  font-size: clamp(23px, 2.3vw, 34px);
+  line-height: 1.5;
+  margin-block: 6px;
+  overflow-wrap: anywhere;
+}
+.hero :global(.v-room-hero-meta) {
+  margin-block-start: 12px;
+  gap: 12px 20px;
+}
+.hero :global(.v-room-hero-meta > button) {
+  min-block-size: 44px;
+}
+.controls:global(.v-room-controls) {
+  border-block-start: 2px solid var(--voice-border);
+}
+.controls :global(.v-control) {
+  border-radius: 16px;
+}
+.controls :global(.v-control > span) {
+  font-size: 10px;
+}
+
+.layout {
+  gap: 24px;
+}
+
+.stageActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.layout :global(.v-stage-column) {
+  gap: 20px;
+}
+
+.layout :global(.v-chat-column) {
+  min-inline-size: 0;
+}
+
+.layout :global(.v-stage),
+.layout :global(.v-listeners) {
+  padding: 20px;
+  border-radius: 24px;
+  min-inline-size: 0;
+}
+
+.layout :global(.v-stage-heading) {
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-block-end: 16px;
+  margin-block-end: 20px;
+  border-block-end: 1px solid var(--voice-line);
+}
+
+.layout :global(.v-stage-heading h2),
+.layout :global(.v-listeners h2) {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.layout :global(.v-connection) {
+  min-block-size: 32px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+.layout :global(.v-stage .v-seats) {
+  max-inline-size: none;
+  max-width: none;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.layout :global(.v-seat) {
+  padding: 16px 8px 12px;
+  min-block-size: 180px;
+  border: 1px solid var(--voice-line);
+  border-radius: 24px;
+  background: linear-gradient(180deg, var(--voice-raised), var(--voice-bg));
+}
+
+.layout :global(.v-host-seat) {
+  border-color: var(--voice-border);
+  background: linear-gradient(160deg, var(--voice-glow), transparent 70%), var(--voice-bg);
+}
+
+.layout :global(.v-seat.is-speaking) {
+  border-color: var(--voice-cyan);
+  box-shadow: inset 0 -3px 0 var(--voice-cyan);
+}
+
+.layout :global(.v-seat-person),
+.layout :global(.v-empty-seat) {
+  min-block-size: 146px;
+  min-height: 146px;
+  border-radius: 10px;
+}
+
+.layout :global(.v-seat-avatar) {
+  inline-size: 72px;
+  block-size: 72px;
+  margin-block-end: 12px;
+}
+
+.layout :global(.v-seat-avatar .v-avatar) {
+  width: 66px !important;
+  height: 66px !important;
+}
+
+.layout :global(.v-seat-person strong),
+.layout :global(.v-empty-seat strong) {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.layout :global(.v-seat-person small),
+.layout :global(.v-empty-seat small) {
+  font-size: 11px;
+}
+
+.seatState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-block-size: 24px;
+  margin-block-start: 5px;
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+
+.layout :global(.is-speaking) .seatState {
+  color: var(--voice-cyan);
+}
+
+.seatState svg {
+  flex-shrink: 0;
+}
+
+.layout :global(.v-seat).emptySeat {
+  border-style: dashed;
+  background: transparent;
+  padding-block-end: 42px;
+}
+
+.layout :global(.v-empty-seat > span) {
+  inline-size: 66px;
+  block-size: 66px;
+  margin-block: 3px 15px;
+}
+
+.layout :global(.v-seat-lock) {
+  inset-block-end: 4px;
+  min-inline-size: 60px;
+  min-block-size: 44px;
+  font-size: 11px;
+}
+
+.layout :global(.v-stage-note) {
+  justify-content: flex-start;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.layout :global(.v-stage-note svg) {
+  flex-shrink: 0;
+}
+
+.layout :global(.v-listeners > header) {
+  gap: 16px;
+  margin-block-end: 18px;
+}
+
+.membersHeading {
+  min-inline-size: 0;
+}
+
+.membersHeading p {
+  margin-block-start: 4px;
+  font-size: 11px;
+  color: var(--voice-muted);
+}
+
+.layout :global(.v-listeners h2 span) {
+  min-inline-size: 28px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.layout :global(.v-listeners .v-search) {
+  min-block-size: 44px;
+  max-inline-size: 220px;
+  max-width: 220px;
+  flex: 1 1 160px;
+}
+
+.layout :global(.v-listeners .v-search input) {
+  min-block-size: 42px;
+  font-size: 12px;
+}
+
+.layout :global(.v-listener-grid) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr));
+  gap: 10px;
+}
+
+.layout :global(.v-listener-grid > button) {
+  flex-direction: row;
+  gap: 10px;
+  text-align: start;
+  min-inline-size: 0;
+  max-inline-size: none;
+  max-width: none;
+  min-block-size: 76px;
+  padding: 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 12px;
+  background: var(--voice-bg);
+}
+
+.layout :global(.v-listener-grid > button > span:first-child) {
+  flex-shrink: 0;
+}
+
+.memberInfo {
+  display: grid;
+  gap: 3px;
+  min-inline-size: 0;
+}
+
+.layout .memberInfo strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--voice-text);
+}
+
+.memberInfo small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+
+.layout :global(.v-listener-grid > p) {
+  grid-column: 1 / -1;
+  padding-block: 20px;
+  text-align: center;
+}
+
+.chat:global(.v-chat) {
+  min-inline-size: 0;
+  border-radius: 24px;
+  block-size: min(740px, calc(100dvh - 120px));
+  max-height: none;
+}
+
+.chat > header,
+.chat :global(.v-pinned),
+.chat :global(.v-reply-preview) {
+  flex-shrink: 0;
+}
+
+.chat:global(.v-chat) > header {
+  padding-inline: 16px;
+  min-block-size: 76px;
+  background: linear-gradient(110deg, var(--voice-glow), var(--voice-bg));
+}
+
+.chat:global(.v-chat) > header h2 {
+  font-size: 16px;
+}
+
+.chat:global(.v-chat) > header > span {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.chat :global(.v-messages) {
+  padding: 16px 12px 4px;
+  scrollbar-gutter: stable;
+}
+
+.chat :global(.v-message) {
+  gap: 8px;
+  margin-block-end: 14px;
+}
+
+.chat :global(.v-message-body) {
+  padding: 10px 12px 6px;
+  border: 1px solid var(--voice-line);
+  border-radius: 18px;
+  border-start-start-radius: 5px;
+  background: var(--voice-bg);
+}
+
+.chat :global(.v-my-message .v-message-body) {
+  background: var(--voice-glow);
+  border-color: var(--voice-border);
+}
+
+.chat :global(.v-message-meta) {
+  gap: 6px 10px;
+  margin-block-end: 4px;
+}
+
+.chat :global(.v-message-meta strong) {
+  font-size: 12px;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.chat :global(.v-message-meta time) {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat :global(.v-message-body > p) {
+  color: var(--voice-text);
+  font-size: 13px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.chat :global(.v-message-body blockquote) {
+  font-size: 11px;
+  max-block-size: 60px;
+  max-height: 60px;
+  line-height: 1.8;
+}
+
+.chat :global(.v-message-actions) {
+  gap: 0;
+  flex-wrap: wrap;
+  padding-block-start: 4px;
+}
+
+.chat :global(.v-message-actions button) {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  border-radius: 8px;
+}
+
+.chat :global(.v-chat-compose) {
+  display: grid;
+  gap: 8px;
+  margin: 8px 12px 12px;
+  padding: 10px;
+  border: 1px solid var(--voice-border);
+  border-radius: 18px;
+  background: var(--voice-bg);
+  flex-shrink: 0;
+}
+.chat :global(.v-chat-compose textarea) {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 52px;
+  max-block-size: 140px;
+  resize: vertical;
+  padding: 8px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--voice-text);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.chat :global(.v-chat-compose textarea)::placeholder {
+  color: var(--voice-muted);
+}
+.composeTools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.composeHint {
+  flex: 1;
+  color: var(--voice-muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.chat .giftAction {
+  color: var(--voice-gold-light);
+  background: var(--voice-glow);
+  border-radius: 12px;
+}
+.chat :global(.v-chat-compose .v-icon),
+.chat :global(.v-send) {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  border-radius: 12px;
+}
+.chat :global(.v-messages) {
+  flex: 1;
+  min-block-size: 0;
+  overscroll-behavior: contain;
+}
+
+.chat :global(.v-chat-empty) {
+  padding: 16px;
+  line-height: 1.9;
+}
+
+.chat :global(.v-chat-empty small),
+.chat :global(.v-pinned),
+.chat :global(.v-reply-preview) {
+  font-size: 11px;
+}
+
+.layout :global(.v-seat-person:focus-visible),
+.layout :global(.v-empty-seat:focus-visible),
+.layout :global(.v-listener-grid > button:focus-visible),
+.chat :global(button:focus-visible),
+.chat :global(input:focus-visible),
+.chat :global(textarea:focus-visible) {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .layout :global(.v-seat:has(.v-seat-person:hover)),
+  .layout :global(.v-listener-grid > button:hover) {
+    border-color: var(--voice-gold);
+  }
+}
+
+@media (min-width: 1021px) {
+  .layout:global(.v-room-columns) {
+    grid-template-columns: minmax(0, 1fr) clamp(330px, 29vw, 420px);
+  }
+}
+
+@media (min-width: 1021px) and (max-width: 1300px) {
+  .layout :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1020px) {
+  .layout:global(.v-chat-open) :global(.v-chat-column) {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .layout:global(.v-chat-open) .chat {
+    inline-size: 100%;
+    block-size: calc(100dvh - 48px);
+    height: calc(100dvh - 48px);
+    max-height: none;
+    max-inline-size: 640px;
+    min-block-size: 0;
+    min-height: 0;
+  }
+
+  .chat :global(.v-messages) {
+    min-block-size: 0;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero:global(.v-room-hero) {
+    min-height: 206px;
+    border-radius: 20px;
+  }
+  .hero :global(.v-room-hero-top) {
+    padding: 12px 16px 0;
+  }
+  .hero :global(.v-room-hero-content) {
+    padding: 10px 16px 16px;
+  }
+  .hero :global(.v-room-hero-meta) {
+    gap: 8px 12px;
+  }
+  .layout:global(.v-chat-open) :global(.v-chat-column) {
+    inset-block: 0;
+    padding: max(8px, env(safe-area-inset-top)) 0 0;
+    border-radius: 0;
+  }
+  .layout:global(.v-chat-open) .chat {
+    height: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    border-radius: 20px 20px 0 0;
+  }
+  .controls :global(.v-control > span) {
+    font-size: 8px;
+  }
+  .layout :global(.v-seat) {
+    min-block-size: 158px;
+    padding: 12px 4px 8px;
+    border-radius: 18px;
+  }
+  .layout :global(.v-seat-person),
+  .layout :global(.v-empty-seat) {
+    min-block-size: 132px;
+    min-height: 132px;
+  }
+  .layout :global(.v-seat-avatar) {
+    inline-size: 62px;
+    block-size: 62px;
+    margin-block-end: 8px;
+  }
+  .layout :global(.v-seat-avatar .v-avatar) {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  .layout :global(.v-empty-seat > span) {
+    inline-size: 56px;
+    block-size: 56px;
+    margin-block: 3px 11px;
+  }
+
+  .layout :global(.v-stage),
+  .layout :global(.v-listeners) {
+    padding: 16px 12px;
+    border-radius: 16px;
+  }
+
+  .layout :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .layout :global(.v-seat-person strong),
+  .layout :global(.v-empty-seat strong) {
+    font-size: 12px;
+  }
+
+  .layout :global(.v-listeners .v-search) {
+    max-inline-size: none;
+    max-width: none;
+  }
+
+  .layout :global(.v-listener-grid) {
+    grid-template-columns: repeat(auto-fill, minmax(min(126px, 100%), 1fr));
+    gap: 8px;
+  }
+
+  .layout :global(.v-listener-grid > button) {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .layout :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.layout :global(.v-stage-heading) button.connectionButton {
+  border: 0;
+  min-block-size: 44px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.connectionButton:focus-visible {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+.audioNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  margin-block-end: 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 14px;
+  background: var(--voice-card);
+  color: var(--voice-text);
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+.audioNotice p {
+  flex: 1 1 160px;
+  margin: 0;
+}
+.audioNotice > span {
+  color: var(--voice-muted);
+}
+.audioNotice > button {
+  min-block-size: 44px;
+}
+
+.layout :global(.v-stage-heading) button.diagnosticsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-block-size: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--voice-border);
+  border-radius: 12px;
+  background: var(--voice-soft-shade);
+  color: var(--voice-gold-light);
+  font-size: 12px;
+}

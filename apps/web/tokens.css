@@ -455,3 +455,59 @@
   --report-chart-blue: #2c81f1;
   --report-chart-purple: #8b3fda;
 }
+
+/* Tahaddi Live voice rooms — user-approved Premium Dark Arabic palette, scoped. */
+.v-app,
+.v-player,
+.v-room-scope {
+  --voice-bg: #080510;
+  --voice-card: #151021;
+  --voice-raised: #21172f;
+  --voice-gold: #ffbf50;
+  --voice-gold-light: #ffd978;
+  --voice-purple: #a855f7;
+  --voice-cyan: #00d5f5;
+  --voice-live: #ff2878;
+  --voice-live-strong: #dc245f;
+  --voice-text: #ffffff;
+  --voice-muted: #bdb3c9;
+  --voice-ink: #211509;
+  --voice-border: rgb(255 217 120 / 0.18);
+  --voice-line: rgb(255 255 255 / 0.1);
+  --voice-glass: rgb(8 5 16 / 0.82);
+  --voice-shade: rgb(8 5 16 / 0.92);
+  --voice-soft-shade: rgb(8 5 16 / 0.1);
+  --voice-glow: rgb(255 191 80 / 0.12);
+  --voice-danger: #ff9abf;
+  --voice-success: #7ce4bc;
+  --voice-shadow: 0 16px 50px rgb(0 0 0 / 0.26);
+  --background: var(--voice-bg);
+  --foreground: var(--voice-text);
+  --surface: var(--voice-card);
+  --surface-strong: var(--voice-raised);
+  --muted-foreground: var(--voice-muted);
+  --primary: var(--voice-gold);
+  --primary-foreground: var(--voice-ink);
+  --border: var(--voice-line);
+}
+
+/* Aflaqni room palette; keep the discovery lobby's existing identity. */
+.v-room-scope,
+.v-room-scope .v-room-app {
+  --voice-bg: #0b0a10;
+  --voice-card: #15131d;
+  --voice-raised: #211e2b;
+  --voice-gold: #d4af37;
+  --voice-gold-light: #e8cd7a;
+  --voice-live: #fe2c55;
+  --voice-live-strong: #fe2c55;
+  --voice-ink: #0b0a10;
+  --voice-text: #ffffff;
+  --voice-muted: #c7c3ce;
+  --voice-border: rgb(212 175 55 / 0.3);
+  --voice-line: rgb(255 255 255 / 0.12);
+  --voice-glow: rgb(212 175 55 / 0.2);
+  --voice-glass: rgb(11 10 16 / 0.76);
+  --voice-shade: rgb(11 10 16 / 0.94);
+  --voice-soft-shade: rgb(11 10 16 / 0.35);
+}

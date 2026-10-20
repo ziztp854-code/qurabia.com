@@ -61,7 +61,7 @@ export type PublicProfile = PublicIdentity & {
   isSelf: boolean;
   cosmetics: CommunityCosmetic[];
   achievements: CommunityBadge[];
-  rooms: { id: string; name: string; roomNumber: number; role: string }[];
+  rooms: { id: string; name: string; roomNumber: number | string; role: string; href?: string }[];
   appearance: AppearanceSelection;
   activeAppearance?: {
     background: CommunityCosmetic | null;

@@ -154,9 +154,13 @@ model User {
   profile            Profile?
   badges             UserBadge[]
   cosmetics          UserCosmetic[]
-  followers          UserFollow[] @relation("FollowTarget")
-  following          UserFollow[] @relation("FollowSource")
+  communityVoiceRooms CommunityVoiceRoom[]
   voiceRooms         VoiceRoom[]
+  voicePreference    VoicePreference?
+  voiceSentMessages VoiceDirectMessage[] @relation("VoiceMessageSender")
+  voiceReceivedMessages VoiceDirectMessage[] @relation("VoiceMessageRecipient")
+  voiceReports       VoiceReport[]
+  voiceCovers        VoiceCover[]
   questions          Question[]
   quizzes            Quiz[]
   liveParticipations LiveParticipant[]
@@ -567,6 +571,7 @@ model Profile {
   locale      String   @default("ar") @db.VarChar(12)
   timezone    String   @default("Asia/Riyadh") @db.VarChar(64)
   avatarUrl   String?
+  avatarContent Bytes?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -734,15 +739,6 @@ model KingdomReportEntry {
   @@index([worldId, playerId, readAt, eventAt, ordinal, reportId], map: "royal_report_unread_idx")
 }
 
-model UserFollow {
-  followerId String
-  targetId   String
-  createdAt DateTime @default(now())
-  follower User @relation("FollowSource", fields: [followerId], references: [id], onDelete: Cascade)
-  target User @relation("FollowTarget", fields: [targetId], references: [id], onDelete: Cascade)
-  @@id([followerId, targetId])
-  @@index([targetId, createdAt])
-}
 
 model CommunityBadge {
   id String @id @db.VarChar(80)
@@ -809,7 +805,7 @@ model UserCosmetic {
   @@index([userId, revokedAt, expiresAt])
 }
 
-model VoiceRoom {
+model CommunityVoiceRoom {
   id String @id @default(cuid())
   code String @unique @db.VarChar(9)
   name String @db.VarChar(100)
@@ -822,4 +818,68 @@ model VoiceRoom {
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   @@index([status, updatedAt])
   @@index([ownerId])
+}
+
+// Voice rooms are bounded transactional aggregates; revision guards concurrent seat changes.
+model VoiceRoom {
+  id          String   @id @default(cuid())
+  hostId      String
+  state       Json
+  revision    Int      @default(0)
+  active      Boolean  @default(true)
+  isPrivate   Boolean  @default(false)
+  passwordHash String?
+  inviteHash  String?  @db.Char(64)
+  inviteExpiresAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  host        User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  reports     VoiceReport[]
+  @@index([active, isPrivate, updatedAt])
+  @@index([hostId, active])
+}
+
+model VoicePreference {
+  userId    String @id
+  state     Json
+  revision  Int @default(0)
+  updatedAt DateTime @updatedAt
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VoiceReport {
+  id         String @id @default(cuid())
+  roomId     String
+  reporterId String
+  targetUserId String?
+  messageId  String?
+  reason     String @db.VarChar(500)
+  evidence   Json?
+  createdAt  DateTime @default(now())
+  room       VoiceRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  reporter   User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  @@index([roomId, createdAt])
+  @@index([reporterId, createdAt])
+}
+
+model VoiceCover {
+  id        String @id
+  ownerId   String
+  content   Bytes
+  createdAt DateTime @default(now())
+  owner     User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([ownerId])
+}
+
+model VoiceDirectMessage {
+  id String @id @default(cuid())
+  senderId String
+  recipientId String
+  text String @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  readAt DateTime?
+  sender User @relation("VoiceMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("VoiceMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, createdAt])
 }

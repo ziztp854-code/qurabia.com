@@ -1,0 +1,527 @@
+.dialog:global(.v-dialog) {
+  inline-size: min(640px, calc(100vw - 24px));
+  max-inline-size: 640px;
+  max-block-size: calc(100dvh - 32px);
+  overflow-y: auto;
+  border-radius: 24px;
+  color: var(--voice-text);
+  background: var(--voice-card);
+  border: 1px solid var(--voice-border);
+}
+.form {
+  display: grid;
+  gap: 16px;
+  min-inline-size: 0;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.trial {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--voice-glow);
+  color: var(--voice-gold-light);
+}
+.trial svg {
+  flex-shrink: 0;
+}
+.recipient {
+  display: grid;
+  gap: 8px;
+}
+.recipient select {
+  min-block-size: 48px;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 8px 12px;
+  background: var(--voice-bg);
+  color: var(--voice-text);
+  border: 1px solid var(--voice-border);
+  border-radius: 10px;
+  font: inherit;
+}
+.choices {
+  min-inline-size: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.choices legend {
+  margin-block-end: 10px;
+}
+.choices > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-inline-size: 0;
+  padding: 22px 6px 14px;
+  border: 1px solid var(--voice-line);
+  border-radius: 18px;
+  background: var(--voice-bg);
+  cursor: pointer;
+}
+.choice:has(input:checked) {
+  border-color: var(--voice-gold);
+  background: var(--voice-glow);
+}
+.dialog .choice input[type='radio'] {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  accent-color: var(--voice-gold);
+  inline-size: 16px;
+  block-size: 16px;
+  min-height: 16px;
+}
+.choice > span {
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  margin-block-end: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--voice-glow), transparent 72%);
+  font-size: 40px;
+  line-height: 1.5;
+}
+.choice strong {
+  font-size: 14px;
+}
+.choice small,
+.hint {
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.choice:has(input:focus-visible),
+.recipient select:focus-visible,
+.form button:focus-visible {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 3px;
+}
+.error {
+  color: var(--voice-danger);
+}
+.form button:disabled,
+.choices:disabled .choice {
+  opacity: 0.6;
+  cursor: default;
+}
+.receipt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--voice-border);
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--voice-glow), var(--voice-bg));
+  color: var(--voice-text);
+  overflow-wrap: anywhere;
+  animation: gift-in 240ms ease-out;
+}
+.giftEmoji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 52px;
+  block-size: 64px;
+  background: var(--voice-glow);
+  border: 1px solid var(--voice-border);
+  border-radius: 18px;
+  font-size: 32px;
+}
+.receipt > div {
+  min-inline-size: 0;
+}
+.receipt strong {
+  font-size: 14px;
+  color: var(--voice-gold-light);
+}
+.receipt p {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.receipt small {
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+@keyframes gift-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 480px) {
+  .choices > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .receipt {
+    animation: none;
+  }
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--voice-border);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 80% 50%, var(--voice-glow), transparent 70%), var(--voice-bg);
+}
+.previewArt {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 104px;
+  block-size: 104px;
+  border: 1px solid var(--voice-border);
+  border-radius: 32px;
+  font-size: 64px;
+  transform: rotate(-8deg);
+  box-shadow: var(--voice-shadow);
+}
+.preview > div {
+  min-inline-size: 0;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--voice-gold-light);
+  font-size: 11px;
+}
+.preview h3 {
+  font-size: 28px;
+  margin-block: 4px;
+}
+.preview p {
+  color: var(--voice-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .dialog:global(.v-dialog) {
+    max-block-size: calc(100dvh - 16px);
+  }
+  .preview {
+    gap: 16px;
+    padding: 16px;
+  }
+  .previewArt {
+    inline-size: 72px;
+    block-size: 72px;
+    font-size: 44px;
+    border-radius: 24px;
+  }
+  .preview h3 {
+    font-size: 23px;
+  }
+  .choice {
+    padding-block: 16px 10px;
+  }
+  .choice > span {
+    inline-size: 52px;
+    block-size: 52px;
+    margin-block-end: 4px;
+  }
+}
+
+/* Shared photographic sheet: one request for selection, preview and receipts. */
+.photo,
+.choice > .photo {
+  display: block;
+  flex: none;
+  background-image: url('/voice/gifts/studio-gifts.webp');
+  background-size: 200% 200%;
+  background-repeat: no-repeat;
+  border-radius: 16px;
+}
+.photo[data-gift='rose'] {
+  background-position: 0 0;
+}
+.photo[data-gift='applause'] {
+  background-position: 100% 0;
+}
+.photo[data-gift='star'] {
+  background-position: 0 100%;
+}
+.photo[data-gift='crown'] {
+  background-position: 100% 100%;
+}
+.previewArt.photo {
+  transform: none;
+}
+.giftEmoji.photo {
+  inline-size: 60px;
+  block-size: 60px;
+}
+@media (max-width: 480px) {
+  .choice > .photo {
+    inline-size: 84px;
+    block-size: 84px;
+  }
+  .choices > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.celebration {
+  position: fixed;
+  inset-block-start: 28%;
+  inset-inline: 0;
+  z-index: var(--z-toast, 100);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.celebrationCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-inline-size: min(340px, 100%);
+  min-inline-size: min(280px, 100%);
+  padding: 24px;
+  border: 1px solid var(--voice-border);
+  border-radius: 28px;
+  background: var(--voice-shade);
+  color: var(--voice-text);
+  box-shadow: var(--voice-shadow);
+  text-align: center;
+  animation: gift-arrival 3200ms var(--ease-out) both;
+}
+.celebrationCard > button {
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-end: 6px;
+  display: grid;
+  place-items: center;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--voice-muted);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.celebrationCard strong {
+  font: 700 16px/1.8 var(--font-arabic);
+  overflow-wrap: anywhere;
+}
+.celebrationCard > span:last-child {
+  font: 400 14px/1.8 var(--font-arabic);
+  color: var(--voice-gold-light);
+  overflow-wrap: anywhere;
+}
+.celebrationArt.photo {
+  inline-size: 150px;
+  block-size: 150px;
+  max-inline-size: 100%;
+  border-radius: 24px;
+  animation: gift-art-arrival 600ms var(--ease-out) both;
+}
+@keyframes gift-arrival {
+  0% {
+    opacity: 0;
+    transform: translateY(36px) scale(0.86);
+  }
+  12%,
+  85% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.97);
+  }
+}
+@keyframes gift-art-arrival {
+  from {
+    transform: scale(0.7) rotate(-10deg);
+  }
+  to {
+    transform: scale(1) rotate(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebrationCard,
+  .celebrationArt.photo {
+    animation: none;
+  }
+}
+
+/* Keep selection compact and the send action within reach on small screens. */
+.form > button[type='submit'] {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  min-block-size: 48px;
+  box-shadow: 0 -8px 20px var(--voice-bg);
+}
+@media (max-width: 480px) {
+  .form {
+    gap: 12px;
+  }
+  .preview {
+    padding: 12px;
+  }
+  .trial {
+    font-size: 12px;
+  }
+  .choices > div {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .choice {
+    padding: 26px 2px 8px;
+    border-radius: 12px;
+  }
+  .choice > .photo {
+    inline-size: min(52px, 100%);
+    block-size: auto;
+    aspect-ratio: 1;
+    border-radius: 10px;
+  }
+  .choice strong {
+    font-size: 12px;
+  }
+  .recipient select {
+    font-size: 16px;
+  }
+}
+
+.dialog :global(.dialog-header button) {
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  color: var(--voice-text);
+}
+.dialog :global(.dialog-header button svg) {
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+/* A bounded studio reveal keeps the photograph central and the room controls usable. */
+.celebrationCard {
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px 24px 20px;
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse at 50% 25%, var(--voice-glow), transparent 70%), var(--voice-card);
+  border-color: var(--voice-gold);
+}
+.giftAtmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  color: var(--voice-gold-light);
+}
+.giftAtmosphere i {
+  position: absolute;
+  inline-size: 190px;
+  aspect-ratio: 1;
+  inset-inline-start: calc(50% - 95px);
+  inset-block-start: 55px;
+  border: 1px solid var(--voice-border);
+  border-radius: 50%;
+  animation: gift-orbit 1100ms ease-out both;
+}
+.giftAtmosphere i:nth-child(2) {
+  animation-delay: 140ms;
+}
+.giftAtmosphere i:nth-child(3) {
+  animation-delay: 280ms;
+}
+.giftEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--voice-gold-light);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.giftTitle {
+  font: 800 26px/1.5 var(--font-arabic);
+  color: var(--voice-gold-light);
+}
+.celebrationArt.photo {
+  inline-size: 132px;
+  block-size: 132px;
+  margin-block: 8px;
+  box-shadow: 0 8px 30px var(--voice-glow);
+  border: 1px solid var(--voice-border);
+}
+.giftProgress {
+  position: absolute;
+  inset-inline: 24px;
+  inset-block-end: 0;
+  block-size: 2px;
+  background: var(--voice-gold);
+  transform-origin: right;
+  animation: gift-progress 3200ms linear both;
+}
+@keyframes gift-orbit {
+  from {
+    opacity: 0.7;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+@keyframes gift-progress {
+  to {
+    transform: scaleX(0);
+  }
+}
+@media (max-height: 600px) {
+  .celebration {
+    inset-block-start: 12%;
+  }
+  .celebrationCard {
+    gap: 4px;
+    padding-block: 12px;
+  }
+  .celebrationArt.photo {
+    inline-size: 80px;
+    block-size: 80px;
+    margin-block: 0;
+  }
+  .giftTitle {
+    font-size: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .giftAtmosphere,
+  .giftProgress {
+    display: none;
+  }
+  .celebrationCard,
+  .celebrationArt.photo {
+    animation: none;
+  }
+}

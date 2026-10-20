@@ -8,18 +8,12 @@ ADD COLUMN     "entranceSound" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "reduceEffects" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "showCollection" BOOLEAN NOT NULL DEFAULT true,
 ADD COLUMN     "showRooms" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN     "username" VARCHAR(30),
 ADD COLUMN     "visibility" VARCHAR(12) NOT NULL DEFAULT 'PUBLIC',
 ADD COLUMN     "xp" INTEGER NOT NULL DEFAULT 0;
 
--- CreateTable
-CREATE TABLE "UserFollow" (
-    "followerId" TEXT NOT NULL,
-    "targetId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "UserFollow_pkey" PRIMARY KEY ("followerId","targetId")
-);
+-- Existing profile usernames and stored avatars remain intact.
+ALTER TABLE "Profile" ALTER COLUMN "username" TYPE VARCHAR(30);
+ALTER TABLE "Profile" DROP CONSTRAINT "Profile_username_format";
 
 -- CreateTable
 CREATE TABLE "CommunityBadge" (
@@ -83,7 +77,7 @@ CREATE TABLE "UserCosmetic" (
 );
 
 -- CreateTable
-CREATE TABLE "VoiceRoom" (
+CREATE TABLE "CommunityVoiceRoom" (
     "id" TEXT NOT NULL,
     "code" VARCHAR(9) NOT NULL,
     "name" VARCHAR(100) NOT NULL,
@@ -94,11 +88,10 @@ CREATE TABLE "VoiceRoom" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "VoiceRoom_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "CommunityVoiceRoom_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX "UserFollow_targetId_createdAt_idx" ON "UserFollow"("targetId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "CommunityBadge_category_archived_idx" ON "CommunityBadge"("category", "archived");
@@ -119,22 +112,17 @@ CREATE INDEX "UserCosmetic_userId_revokedAt_expiresAt_idx" ON "UserCosmetic"("us
 CREATE UNIQUE INDEX "UserCosmetic_userId_cosmeticId_key" ON "UserCosmetic"("userId", "cosmeticId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VoiceRoom_code_key" ON "VoiceRoom"("code");
+CREATE UNIQUE INDEX "CommunityVoiceRoom_code_key" ON "CommunityVoiceRoom"("code");
 
 -- CreateIndex
-CREATE INDEX "VoiceRoom_status_updatedAt_idx" ON "VoiceRoom"("status", "updatedAt");
+CREATE INDEX "CommunityVoiceRoom_status_updatedAt_idx" ON "CommunityVoiceRoom"("status", "updatedAt");
 
 -- CreateIndex
-CREATE INDEX "VoiceRoom_ownerId_idx" ON "VoiceRoom"("ownerId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Profile_username_key" ON "Profile"("username");
+CREATE INDEX "CommunityVoiceRoom_ownerId_idx" ON "CommunityVoiceRoom"("ownerId");
 
 -- AddForeignKey
-ALTER TABLE "UserFollow" ADD CONSTRAINT "UserFollow_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserFollow" ADD CONSTRAINT "UserFollow_targetId_fkey" FOREIGN KEY ("targetId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CommunityBadge" ADD CONSTRAINT "CommunityBadge_effectId_fkey" FOREIGN KEY ("effectId") REFERENCES "ProfileCosmetic"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -155,14 +143,13 @@ ALTER TABLE "UserCosmetic" ADD CONSTRAINT "UserCosmetic_userId_fkey" FOREIGN KEY
 ALTER TABLE "UserCosmetic" ADD CONSTRAINT "UserCosmetic_cosmeticId_fkey" FOREIGN KEY ("cosmeticId") REFERENCES "ProfileCosmetic"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "VoiceRoom" ADD CONSTRAINT "VoiceRoom_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CommunityVoiceRoom" ADD CONSTRAINT "CommunityVoiceRoom_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
 -- Structural constraints supplement server-side validation.
 ALTER TABLE "Profile" ADD CONSTRAINT "Profile_visibility_check" CHECK ("visibility" IN ('PUBLIC','MEMBERS','PRIVATE'));
 ALTER TABLE "Profile" ADD CONSTRAINT "Profile_xp_check" CHECK ("xp" >= 0);
-ALTER TABLE "Profile" ADD CONSTRAINT "Profile_username_check" CHECK ("username" IS NULL OR "username" ~ '^[a-z][a-z0-9_]{2,29}$');
-ALTER TABLE "UserFollow" ADD CONSTRAINT "UserFollow_not_self_check" CHECK ("followerId" <> "targetId");
+ALTER TABLE "Profile" ADD CONSTRAINT "Profile_username_check" CHECK ("username" IS NULL OR "username" ~ '^[a-z0-9_]{3,30}$');
 ALTER TABLE "CommunityBadge" ADD CONSTRAINT "CommunityBadge_category_check" CHECK ("category" IN ('ADMIN','DISTINCTION','ACHIEVEMENT','COMMUNITY'));
 ALTER TABLE "CommunityBadge" ADD CONSTRAINT "CommunityBadge_rarity_check" CHECK ("rarity" IN ('common','rare','epic','legendary'));
 ALTER TABLE "ProfileCosmetic" ADD CONSTRAINT "ProfileCosmetic_kind_check" CHECK ("kind" IN ('FRAME','EFFECT','NAME_CARD','BACKGROUND','GLOW'));

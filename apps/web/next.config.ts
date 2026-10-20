@@ -6,6 +6,7 @@ import { withWorkflow } from 'workflow/next';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { resolveSentryBuildRelease } from './src/lib/observability/sentry-release';
+import voiceCloudOrigins from '../../config/voice-cloud-origins.json';
 
 function loadEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) return;
@@ -97,6 +98,19 @@ function buildContentSecurityPolicy(): string {
     connectSources.add(toWebSocketOrigin(origin));
   }
 
+  // A voice session survives App Router navigation to games. The policy belongs
+  // to the initial document, so the configured gateway must work on every entry route.
+  {
+    const origin = toOrigin(process.env.LIVEKIT_URL);
+    if (origin && /^(wss?|https?):/.test(origin)) {
+      const httpOrigin = origin.replace(/^ws/, 'http');
+      connectSources.add(httpOrigin);
+      connectSources.add(toWebSocketOrigin(httpOrigin));
+    }
+    if (process.env.LIVEKIT_MODE === 'cloud')
+      for (const cloudOrigin of voiceCloudOrigins) connectSources.add(cloudOrigin);
+  }
+
   return [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
@@ -122,7 +136,7 @@ function buildContentSecurityPolicy(): string {
  *  - X-Frame-Options DENY: block clickjacking on every route.
  *  - X-Content-Type-Options nosniff: block MIME sniffing.
  *  - Referrer-Policy strict-origin-when-cross-origin: sane default.
- *  - Permissions-Policy: disable powerful APIs we do not need.
+ *  - Permissions-Policy: allow same-origin audio for persistent voice across games.
  *  - COOP / DNS prefetch / cross-domain policies: match `vercel.json`.
  *  - CSP: only emitted on production builds that do not run on Vercel
  *    (Vercel already injects it from `vercel.json`; emitting it twice would
@@ -138,7 +152,8 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    value:
+      'camera=(), microphone=(self), speaker-selection=(self), geolocation=(), interest-cohort=()',
   },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
@@ -177,19 +192,15 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
-        source: '/voice/:path*',
-        headers: [
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=()',
-          },
-        ],
-      },
-      {
         // Only this standalone mini-game may be embedded by our own farm panel.
         source: '/games/sultan-farm/index.html',
         headers: [
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'camera=(), microphone=(), speaker-selection=(), geolocation=(), interest-cohort=()',
+          },
           {
             key: 'Content-Security-Policy',
             value:

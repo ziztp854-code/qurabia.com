@@ -1,0 +1,469 @@
+.profile {
+  --voice-cyan: var(--admin-verified);
+  --voice-ink: var(--technical-accent-foreground);
+  --voice-gold-light: var(--primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  overflow: hidden;
+}
+.cover {
+  min-block-size: 132px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline: clamp(24px, 5vw, 56px);
+  background: linear-gradient(115deg, var(--surface-soft), var(--surface-strong));
+  border-block-end: 1px solid var(--border);
+}
+.cover > span {
+  color: var(--primary);
+  font-family: var(--font-alexandria);
+  font-size: 48px;
+  font-weight: 800;
+  opacity: 0.35;
+}
+.body {
+  padding: 0 clamp(20px, 4vw, 40px) 28px;
+}
+.identityRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin-block-start: -48px;
+  position: relative;
+}
+.photoButton {
+  position: relative;
+  padding: 0;
+  background: var(--surface);
+  border: 5px solid var(--surface);
+  border-radius: 50%;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.photo {
+  inline-size: 120px;
+  block-size: 120px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-bright);
+  color: var(--primary);
+  font-size: 44px;
+  font-weight: 800;
+}
+.photo img {
+  object-fit: cover;
+}
+.camera {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 4px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  inline-size: 36px;
+  block-size: 36px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.nameBlock {
+  flex: 1;
+  min-inline-size: 0;
+  padding-block-end: 4px;
+}
+.eyebrow {
+  color: var(--text-soft);
+  font-size: 12px;
+  margin: 0 0 4px;
+}
+.nameBlock h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.6;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.nameBlock h2 > span {
+  display: inline;
+}
+.username {
+  color: var(--text-soft);
+  text-align: start;
+  unicode-bidi: plaintext;
+  inline-size: fit-content;
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.editButton {
+  margin-block-end: 8px;
+  flex-shrink: 0;
+  white-space: normal;
+  text-align: center;
+}
+.addUsername {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  min-block-size: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 14px;
+}
+.socialRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-block: 24px;
+  border-block-end: 1px solid var(--border);
+}
+.counts {
+  display: flex;
+  margin: 0;
+  gap: 0;
+}
+.counts > div {
+  display: flex;
+  flex-direction: column-reverse;
+  padding-inline: 28px;
+  border-inline-start: 1px solid var(--border);
+}
+.counts > div:first-child {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+.counts dt {
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.counts dd {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+.rank {
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-inline-size: 100%;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+.rank img {
+  object-fit: contain;
+}
+.about {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 24px;
+}
+.about h3 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+.bio,
+.emptyBio {
+  font-size: 15px;
+  line-height: 1.9;
+  margin: 0;
+  max-inline-size: 60ch;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.emptyBio,
+.joined {
+  color: var(--text-soft);
+}
+.joined {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 0;
+  flex-shrink: 0;
+  align-self: flex-start;
+  max-inline-size: 100%;
+  flex-wrap: wrap;
+}
+.joined svg {
+  flex-shrink: 0;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.links > a {
+  white-space: normal;
+  text-align: center;
+}
+.notice {
+  min-block-size: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--success);
+  font-size: 14px;
+  margin-block: 12px;
+}
+.dialog {
+  inline-size: min(100%, 560px);
+  max-block-size: calc(100dvh - 32px);
+}
+.dialog :global(.dialog-header p) {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+.dialog :global(.dialog-header button svg) {
+  inline-size: 20px;
+  block-size: 20px;
+  min-inline-size: 20px;
+  flex-shrink: 0;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.form :global(.field-message) {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+.form :global(.field-message.text-danger),
+.fieldError {
+  color: var(--danger);
+}
+.photoEditor {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+}
+.photoEditor .photo {
+  inline-size: 88px;
+  block-size: 88px;
+  flex-shrink: 0;
+  font-size: 36px;
+}
+.photoActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.photoActions p {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.fileInput:focus-visible {
+  position: static;
+  inline-size: 100%;
+  block-size: auto;
+  clip-path: none;
+}
+.fieldError {
+  margin: 0;
+  font-size: 14px;
+}
+.errorSummary {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-size: 14px;
+}
+.errorSummary a {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+.formActions {
+  display: flex;
+  gap: 12px;
+  padding-block-start: 8px;
+  border-block-start: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.formActions > button {
+  white-space: normal;
+}
+.profile button:focus-visible,
+.form a:focus-visible,
+.fileInput:focus-visible,
+.tools summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+.tools {
+  margin-block: 8px 24px;
+}
+.tools > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 60px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 700;
+}
+.tools > summary::after {
+  content: '+';
+  margin-inline-start: auto;
+  font-size: 24px;
+  color: var(--primary);
+}
+.tools[open] > summary::after {
+  content: '−';
+}
+.tools[open] > summary {
+  margin-block-end: 20px;
+}
+.loading {
+  min-block-size: 420px;
+  display: grid;
+  gap: 20px;
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+.loading > span {
+  min-block-size: 52px;
+}
+@media (max-width: 760px) {
+  .cover {
+    min-block-size: 112px;
+  }
+  .cover > span {
+    font-size: 40px;
+  }
+  .identityRow {
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    margin-block-start: -40px;
+    align-items: flex-start;
+  }
+  .photo {
+    inline-size: 96px;
+    block-size: 96px;
+    font-size: 36px;
+  }
+  .nameBlock {
+    padding-block-start: 44px;
+    min-inline-size: min(10em, 100%);
+  }
+  .eyebrow {
+    display: none;
+  }
+  .editButton {
+    inline-size: 100%;
+    margin-block: 8px 0;
+  }
+  .socialRow {
+    padding-block: 20px;
+    gap: 12px;
+  }
+  .counts > div {
+    padding-inline: 18px;
+  }
+  .counts dd {
+    font-size: 24px;
+  }
+  .rank {
+    gap: 6px;
+    font-size: 12px;
+  }
+  .rank img {
+    inline-size: 36px;
+    block-size: 44px;
+  }
+  .about {
+    flex-direction: column;
+    gap: 16px;
+    padding-block: 20px;
+  }
+  .links > a {
+    flex: 1;
+  }
+}
+@media (max-width: 380px) {
+  .identityRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .nameBlock {
+    padding-block-start: 0;
+  }
+  .socialRow {
+    flex-wrap: wrap;
+  }
+  .body {
+    padding-inline: 16px;
+  }
+  .photoEditor {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .photoEditor .photo {
+    inline-size: 64px;
+    block-size: 64px;
+  }
+}
+.emptyPhoto {
+  max-inline-size: 11ch;
+  padding: var(--space-2);
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.8;
+  text-align: center;
+}
+.photoButton > .equippedFrame {
+  position: absolute;
+  z-index: 1;
+  inset: -16px;
+  inline-size: calc(100% + 32px);
+  block-size: calc(100% + 32px);
+  pointer-events: none;
+}
+.camera {
+  z-index: 2;
+}
+.nameBlock h2 > .roleArtwork {
+  display: inline-block;
+  inline-size: 42px;
+  block-size: 42px;
+  margin-inline-start: var(--space-2);
+  vertical-align: middle;
+}
+.accountNumber {
+  margin-block-start: var(--space-4);
+}
+.accountNumber > div {
+  padding: 0;
+}

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ENTRANCE_TIERS } from './contracts';
+import { profileIdentitySchema } from '@/lib/profile/identity';
 
 const slug = z.string().regex(/^[a-z][a-z0-9-]{1,79}$/);
 export const nullableId = slug.nullable();
@@ -9,6 +10,7 @@ export function safeImageUrl(value: string): boolean {
     /^\/api\/community\/assets\/(?:badge|cosmetic)\/[a-z][a-z0-9-]{1,79}\?v=\d{1,16}$/.test(value)
   )
     return true;
+  if (/^\/api\/profile\/avatar\/[a-zA-Z0-9_-]+(?:\?v=[a-zA-Z0-9_-]+)?$/.test(value)) return true;
   if (value.startsWith('/'))
     return (
       /^\/(?:profile|ranks|uploads\/community)\/[a-zA-Z0-9/_.-]+\.(?:png|webp|jpg|jpeg)$/.test(
@@ -92,15 +94,9 @@ export const appearanceSchema = z
   .strict();
 export const profilePatchSchema = z
   .object({
-    displayName: z.string().trim().min(2).max(120).optional(),
-    username: z
-      .string()
-      .trim()
-      .toLowerCase()
-      .regex(/^[a-z][a-z0-9_]{2,29}$/)
-      .nullable()
-      .optional(),
-    bio: z.string().trim().max(500).nullable().optional(),
+    displayName: profileIdentitySchema.shape.displayName.optional(),
+    username: profileIdentitySchema.shape.username.nullable().optional(),
+    bio: profileIdentitySchema.shape.bio.nullable().optional(),
     avatarUrl: image.optional(),
     coverUrl: image.optional(),
     visibility: z.enum(['PUBLIC', 'MEMBERS', 'PRIVATE']).optional(),

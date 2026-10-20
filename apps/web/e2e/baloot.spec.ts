@@ -166,7 +166,8 @@ test('four players purchase, reconnect, complete eight tricks and deal the next 
     await expect.poll(() => states[0]()?.phase).toBe('ROUND_RESULT');
     expect(states[0]()!.trickHistory).toHaveLength(8);
     expect(states[0]()!.roundScore).not.toBeNull();
-    for (const state of states) expect(state()!.yourHand).toHaveLength(0);
+    // Each client receives its own final snapshot after the host enters ROUND_RESULT.
+    for (const state of states) await expect.poll(() => state()?.yourHand.length).toBe(0);
     await pages[0].screenshot({ path: testInfo.outputPath('round-result.png'), fullPage: true });
     await pages[0].getByRole('button', { name: 'ابدأ الصكة التالية', exact: true }).click();
     await expect.poll(() => states[0]()?.phase).toBe('BIDDING');

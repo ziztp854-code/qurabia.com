@@ -1,11 +1,15 @@
 import { formatNumber } from '@/lib/utils';
 import { notFound } from 'next/navigation';
+import { getUserIdentity } from '@/lib/community/service';
 import { DashboardLayout } from '@/components/layout';
-import { CommandProfile, isCommandProfileRole } from '@/components/profile/command-profile';
+import { isCommandProfileRole } from '@/components/profile/command-profile';
+import { ProfileActivity } from '@/components/profile/profile-activity';
 import { isAppRole } from '@/lib/auth/authorization';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { requireActiveUser } from '@/lib/auth/session';
 import { getDisplayPlanCode } from '@/lib/subscription/entitlements';
+import { ProfileOverview } from '@/components/profile/profile-overview';
+import { profileSocialCounts } from '@/lib/profile/repository';
 import {
   SPARK_SAMPLE_LIMIT,
   SPARK_WEEKS,
@@ -44,13 +48,17 @@ export default async function ProfilePage() {
     participantDates,
     userDates,
     roomDates,
+    social,
+    communityIdentity,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
         accountNumber: true,
+        name: true,
         image: true,
-        profile: { select: { avatarUrl: true, displayName: true } },
+        createdAt: true,
+        profile: { select: { avatarUrl: true, displayName: true, username: true, bio: true } },
       },
     }),
     prisma.quiz.count({ where: { ownerId: user.id } }),
@@ -99,6 +107,8 @@ export default async function ProfilePage() {
           select: { createdAt: true },
         })
       : Promise.resolve([]),
+    profileSocialCounts(user.id),
+    getUserIdentity(user.id),
   ]);
 
   if (!profile) notFound();
@@ -129,7 +139,7 @@ export default async function ProfilePage() {
     now,
   );
   const adsSeries = emptySeries(SPARK_WEEKS);
-  const displayName = user.name || profile?.profile?.displayName || 'مستخدم تحدّي';
+  const displayName = profile?.profile?.displayName || profile?.name || user.name || 'مستخدم تحدّي';
   const avatarSrc = profile?.profile?.avatarUrl || profile?.image || user.image || null;
 
   return (
@@ -138,7 +148,31 @@ export default async function ProfilePage() {
       breadcrumbLabel="الملف الشخصي"
       className="command-profile-layout"
     >
-      <CommandProfile
+      <ProfileOverview
+        accountNumber={profile.accountNumber}
+        communityIdentity={communityIdentity}
+        profile={{
+          displayName,
+          username: profile?.profile?.username ?? null,
+          bio: profile?.profile?.bio ?? '',
+          image: avatarSrc,
+        }}
+        role={user.role}
+        planCode={planCode}
+        followers={social.followers}
+        following={social.following}
+        joined={
+          profile
+            ? new Intl.DateTimeFormat('ar-SA', {
+                month: 'long',
+                year: 'numeric',
+                calendar: 'gregory',
+                timeZone: 'Asia/Riyadh',
+              }).format(profile.createdAt)
+            : '—'
+        }
+      />
+      <ProfileActivity
         accountNumber={profile.accountNumber}
         name={displayName}
         email={user.email || ''}
@@ -163,7 +197,7 @@ export default async function ProfilePage() {
             trend: sparkTrend(questionSeries),
           },
           {
-            label: 'المتابعون',
+            label: 'المشاركون في الجلسات',
             value: formatNumber(participantCount),
             hint: elevated ? 'إجمالي المنضمين عبر المنصة' : 'في جلساتك',
             series: followerSeries,

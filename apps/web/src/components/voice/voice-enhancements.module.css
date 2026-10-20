@@ -1,0 +1,521 @@
+.entrance {
+  position: fixed;
+  inset-inline-end: max(16px, env(safe-area-inset-right));
+  inset-block-end: calc(120px + env(safe-area-inset-bottom));
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--voice-gold);
+  border-inline-start-width: 4px;
+  border-radius: 16px;
+  background: var(--voice-card);
+  color: var(--voice-text);
+  box-shadow: var(--voice-shadow);
+  font:
+    0.85rem/1.7 var(--font-arabic),
+    sans-serif;
+  animation: welcome-in 220ms ease-out;
+}
+.entrance[hidden] {
+  display: none;
+}
+.seal {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--voice-glow);
+  color: var(--voice-gold);
+}
+.welcome {
+  flex: 1;
+  min-width: 0;
+}
+.welcome small {
+  color: var(--voice-gold-light);
+}
+.welcome p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.arrivalIcon {
+  flex: none;
+  color: var(--voice-gold);
+}
+.entrance button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--voice-muted);
+  cursor: pointer;
+}
+.entrance button:focus-visible {
+  outline: 2px solid var(--voice-gold-light);
+  outline-offset: 2px;
+}
+.check {
+  position: relative;
+}
+.check[open] {
+  flex-basis: 100%;
+}
+.check > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.checkPanel {
+  display: grid;
+  gap: 12px;
+  width: min(480px, 100%);
+  padding: 16px;
+  margin-block-start: 8px;
+  border: 1px solid var(--voice-border);
+  border-radius: 14px;
+  background: var(--voice-card);
+}
+.checkPanel header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--voice-gold-light);
+}
+.checkPanel header > svg {
+  flex: none;
+  margin-block-start: 4px;
+}
+.checkPanel header p,
+.checkPanel small {
+  color: var(--voice-muted);
+}
+.checkPanel p {
+  margin: 0;
+}
+.testActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.meter {
+  display: grid !important;
+  gap: 6px;
+}
+.meter meter {
+  width: 100%;
+  height: 18px;
+  accent-color: var(--voice-success);
+}
+.result {
+  color: var(--voice-gold-light);
+}
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 420px) {
+  .seal,
+  .arrivalIcon {
+    display: none;
+  }
+  .checkPanel {
+    padding: 12px;
+  }
+  .testActions > button {
+    flex: 1 1 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entrance {
+    animation: none;
+  }
+}
+
+.entrance[data-rank='sultan'],
+.entrance[data-rank='owner'] {
+  background:
+    radial-gradient(ellipse at 90% 50%, var(--voice-glow), transparent 75%), var(--voice-card);
+  border-inline-start-width: 6px;
+  box-shadow:
+    var(--voice-shadow),
+    0 0 28px var(--voice-glow);
+}
+.entrance[data-rank='prince'],
+.entrance[data-rank='admin'] {
+  border-color: var(--voice-cyan);
+}
+.entrance[data-rank='prince'] .welcome small,
+.entrance[data-rank='admin'] .welcome small {
+  color: var(--voice-cyan);
+}
+.entrance[data-rank='knight'] {
+  border-style: double;
+  border-inline-start-width: 6px;
+}
+.entrance[data-rank='member'] {
+  border-color: var(--voice-line);
+}
+.entrance:has(.seal img) :global(.v-avatar) {
+  display: none;
+}
+.entrance:has(.seal img) .seal {
+  display: grid;
+  width: 52px;
+  height: 56px;
+  background: transparent;
+}
+.seal img {
+  object-fit: contain;
+  width: 56px;
+  height: 56px;
+}
+
+/* Entrance ceremony: rank accents come only from verified account badges. */
+.entrance {
+  isolation: isolate;
+  overflow: hidden;
+  min-block-size: 76px;
+  border-radius: 20px;
+  animation: rank-arrival 420ms var(--ease-out) both;
+}
+.entranceLight {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, var(--voice-glow), transparent 75%);
+  animation: rank-sheen 1300ms ease-out both;
+}
+.entrance[data-rank='owner'] .seal,
+.entrance[data-rank='admin'] .seal {
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid currentColor;
+}
+.entrance[data-rank='admin'] .seal,
+.entrance[data-rank='prince'] .seal {
+  color: var(--voice-cyan);
+}
+.entrance[data-rank='member'] .entranceLight {
+  display: none;
+}
+@keyframes rank-arrival {
+  from {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+@keyframes rank-sheen {
+  from {
+    opacity: 0;
+    transform: translateX(60%);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+}
+@media (max-width: 420px) {
+  .entrance {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  .entrance[data-rank='owner'] .seal,
+  .entrance[data-rank='admin'] .seal {
+    display: grid;
+  }
+  .entrance[data-rank='owner'] :global(.v-avatar),
+  .entrance[data-rank='admin'] :global(.v-avatar) {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entrance {
+    animation: none;
+  }
+  .entranceLight {
+    display: none;
+  }
+}
+
+.connectionCheck {
+  flex: 1 1 100%;
+  min-inline-size: 0;
+}
+.checkResults {
+  list-style: none;
+  padding: 0;
+  margin-block: 12px;
+  display: grid;
+  gap: 8px;
+}
+.checkResults li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--voice-line);
+  border-radius: 12px;
+  background: var(--voice-card);
+}
+.checkResults li > svg {
+  flex: none;
+  margin-block-start: 4px;
+  color: var(--voice-gold-light);
+}
+.checkResults li[data-state='passed'] > svg {
+  color: var(--voice-success);
+}
+.checkResults li[data-state='failed'] > svg {
+  color: var(--voice-danger);
+}
+.checkResults li > div {
+  min-inline-size: 0;
+}
+.checkResults p {
+  margin: 0;
+  color: var(--voice-muted);
+}
+
+/* The platform owner has a bespoke goldsmith seal and a distinct arrival treatment. */
+.entrance[data-rank='owner'] {
+  inline-size: min(400px, calc(100vw - 32px));
+  min-block-size: 96px;
+  padding: 12px;
+  gap: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--voice-gold-light);
+  border-inline-start: 4px solid var(--voice-gold);
+  background:
+    radial-gradient(ellipse at 100% 0%, var(--voice-glow), transparent 65%),
+    linear-gradient(125deg, var(--voice-card), var(--voice-bg));
+  box-shadow:
+    var(--voice-shadow),
+    inset 0 0 0 3px var(--voice-soft-shade);
+}
+.entrance[data-rank='owner']:has(.seal img) .seal {
+  inline-size: 72px;
+  block-size: 72px;
+  border: 0;
+  background: transparent;
+}
+.entrance[data-rank='owner'] .seal img {
+  inline-size: 72px;
+  block-size: 72px;
+  max-inline-size: none;
+  filter: drop-shadow(0 4px 10px var(--voice-glow));
+}
+.entrance[data-rank='owner'] .welcome small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.entrance[data-rank='owner'] .welcome p {
+  font-size: 16px;
+  line-height: 1.9;
+}
+.ownerSignature {
+  display: block;
+  color: var(--voice-muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+.entrance[data-rank='owner'] .arrivalIcon {
+  display: none;
+}
+.entrance[data-rank='owner'] .entranceLight {
+  animation-duration: 1700ms;
+}
+@media (max-width: 420px) {
+  .entrance[data-rank='owner'] {
+    gap: 8px;
+    padding: 10px;
+  }
+  .entrance[data-rank='owner']:has(.seal img) .seal {
+    inline-size: 72px;
+    block-size: 72px;
+  }
+  .entrance[data-rank='owner'] .seal img {
+    inline-size: 72px;
+    block-size: 72px;
+  }
+  .entrance[data-rank='owner'] .welcome p {
+    font-size: 14px;
+  }
+  .ownerSignature {
+    font-size: 10px;
+  }
+}
+
+.entrance[data-rank='owner'] .entranceLight {
+  display: none;
+}
+.entrance[data-rank='owner'] .seal img {
+  object-fit: contain;
+  filter: none;
+}
+
+.entrance[data-rank='owner']:has(.seal img) .seal {
+  position: relative;
+  inline-size: 82px;
+  block-size: 76px;
+  padding-inline-end: 12px;
+}
+.entrance[data-rank='owner'] .seal img {
+  inline-size: 70px;
+  block-size: 76px;
+}
+.ownerVerification {
+  position: absolute;
+  inset-inline-end: -2px;
+  inset-block-start: 8px;
+  display: grid;
+  place-items: center;
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 50%;
+  background: var(--voice-card);
+  color: var(--voice-cyan);
+}
+.ownerVerification svg {
+  fill: var(--voice-cyan);
+  stroke: var(--voice-ink);
+  stroke-width: 2.2;
+}
+
+/* A brief ranked entrance, driven by server-projected account badges. */
+.entranceHeading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  line-height: 1.8;
+}
+.premiumLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--voice-gold-light);
+  font-size: 11px;
+  font-weight: 700;
+}
+.entrance[data-premium] {
+  inline-size: min(460px, calc(100vw - 32px));
+  gap: 12px;
+  padding-block: 14px;
+  min-block-size: 104px;
+  border-inline-start-width: 4px;
+  background:
+    radial-gradient(ellipse at 100% 0, var(--voice-glow), transparent 70%),
+    linear-gradient(120deg, var(--voice-card), var(--voice-bg));
+}
+.entrance[data-premium] .welcome p {
+  font-size: 15px;
+  line-height: 1.9;
+}
+.entrance[data-premium] .seal {
+  display: grid;
+  border: 0;
+  background: transparent;
+}
+.entrance[data-premium] .arrivalIcon {
+  display: none;
+}
+.entrance[data-premium]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 18px;
+  inset-block-end: 0;
+  block-size: 2px;
+  background: linear-gradient(90deg, transparent, var(--voice-gold), transparent);
+  pointer-events: none;
+}
+.entrance[data-rank='prince']::after,
+.entrance[data-rank='admin']::after {
+  background: linear-gradient(90deg, transparent, var(--voice-cyan), transparent);
+}
+@media (max-width: 420px) {
+  .entrance[data-premium] {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+  .entrance[data-premium] .welcome p {
+    font-size: 13px;
+  }
+  .entrance[data-premium] .seal,
+  .entrance[data-premium]:has(.seal img) .seal,
+  .entrance[data-premium] .seal img {
+    inline-size: 52px;
+    block-size: 56px;
+  }
+}
+
+/* Photographic ceremonies keep the existing server-driven arrival lifecycle. */
+.photographicEntrance.photographicEntrance {
+  position: relative;
+  inset: auto;
+  inset-inline: auto;
+  inset-block: auto;
+  transform: none;
+  animation: none;
+  margin: 0;
+  align-self: center;
+  flex: none;
+  z-index: 1;
+  width: min(420px, 100%);
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  min-block-size: 0;
+  pointer-events: none;
+}
+.photographicEntrance[hidden] { display: none; }
+.photographicEntrance > button {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  pointer-events: auto;
+  background: var(--voice-card);
+}
+.arrivalContext {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-block-size: 44px;
+  padding-inline: 44px;
+  text-align: center;
+  font-size: .7rem;
+  line-height: 1.5;
+  color: var(--voice-text);
+}

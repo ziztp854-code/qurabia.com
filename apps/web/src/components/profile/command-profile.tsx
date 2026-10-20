@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { AdminVerifiedName, ButtonLink, buttonVariants } from '@/components/ui';
+import { AdminVerifiedName, ButtonLink } from '@/components/ui';
 import {
   PERMISSION_LABELS,
   ROLE_LABELS,
@@ -443,11 +443,10 @@ export function CommandProfile({
           <Sparkles aria-hidden="true" />
           مظهري وخصوصيتي
         </ButtonLink>
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Load the document with the voice-only microphone policy. */}
-        <a href="/voice/" className={cn(buttonVariants({ variant: 'outline' }), styles.commandBtn)}>
+        <ButtonLink href="/voice" variant="outline" className={styles.commandBtn}>
           <Radio aria-hidden="true" />
           الغرف الصوتية
-        </a>
+        </ButtonLink>
       </nav>
 
       {permissions.length > 0 ? (

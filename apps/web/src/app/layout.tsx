@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { PresenceBeacon } from '@/components/presence/presence-beacon';
+import { VoiceSessionProvider } from '@/components/voice/voice-session-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { MotionProvider } from '@/components/motion/motion-provider';
 import { SpeedInsights } from '@/components/speed-insights';
@@ -162,7 +163,7 @@ export default function RootLayout({
         <ThemeProvider>
           <MotionProvider>
             <PresenceBeacon />
-            {children}
+            <VoiceSessionProvider>{children}</VoiceSessionProvider>
           </MotionProvider>
         </ThemeProvider>
         {process.env.VERCEL === '1' ? (

@@ -67,7 +67,7 @@ describe('CommandProfile', () => {
 
     expect(screen.getByText('لاعب تحدّي')).toBeInTheDocument();
     expect(screen.getByText('123456789')).toHaveAttribute('dir', 'ltr');
-    expect(screen.getByRole('link', { name: 'الغرف الصوتية' })).toHaveAttribute('href', '/voice/');
+    expect(screen.getByRole('link', { name: 'الغرف الصوتية' })).toHaveAttribute('href', '/voice');
     expect(screen.getByRole('link', { name: 'مظهري وخصوصيتي' })).toHaveAttribute(
       'href',
       '/profile/appearance',

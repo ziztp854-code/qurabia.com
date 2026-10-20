@@ -10,7 +10,7 @@
       "root": "apps/web",
       "framework": "nextjs",
       "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-      "buildCommand": "cd ../.. && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && pnpm --filter @tahaddi/domain build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build && pnpm --filter @tahaddi/web build"
+      "buildCommand": "cd ../.. && VOICE_SCHEMA_DEPLOY=1 node scripts/voice-production-schema.mjs && node scripts/voice-cloud-check.mjs && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && pnpm --filter @tahaddi/domain build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build && pnpm --filter @tahaddi/web build"
     },
     "realtime": {
       "root": ".",
@@ -54,37 +54,55 @@
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"
         },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+          "value": "camera=(), microphone=(self), speaker-selection=(self), geolocation=(), interest-cohort=()"
         },
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-        { "key": "Cross-Origin-Resource-Policy", "value": "same-origin" },
-        { "key": "X-DNS-Prefetch-Control", "value": "off" },
-        { "key": "X-Permitted-Cross-Domain-Policies", "value": "none" },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "key": "X-Permitted-Cross-Domain-Policies",
+          "value": "none"
+        },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://tiles.openfreemap.org https://elevation-tiles-prod.s3.amazonaws.com https://qurabia.com wss://qurabia.com https://*.qurabia.com wss://*.qurabia.com https://vercel.live https://o4512159885754368.ingest.de.sentry.io; worker-src 'self' blob:; frame-src 'self' https://vercel.live https://*.vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
-        }
-      ]
-    },
-    {
-      "source": "/voice/:path*",
-      "headers": [
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(self), geolocation=(), interest-cohort=()"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://tahaddi-live-hombip0z.livekit.cloud wss://tahaddi-live-hombip0z.livekit.cloud https://tahaddi-live-hombip0z.osaopaulo1a.production.livekit.cloud wss://tahaddi-live-hombip0z.osaopaulo1a.production.livekit.cloud https://tahaddi-live-hombip0z.osaopaulo1b.production.livekit.cloud wss://tahaddi-live-hombip0z.osaopaulo1b.production.livekit.cloud https://tahaddi-live-hombip0z.oashburn1a.production.livekit.cloud wss://tahaddi-live-hombip0z.oashburn1a.production.livekit.cloud https://tahaddi-live-hombip0z.oashburn1b.production.livekit.cloud wss://tahaddi-live-hombip0z.oashburn1b.production.livekit.cloud https://tahaddi-live-hombip0z.omarseille1a.production.livekit.cloud wss://tahaddi-live-hombip0z.omarseille1a.production.livekit.cloud https://tahaddi-live-hombip0z.omarseille1b.production.livekit.cloud wss://tahaddi-live-hombip0z.omarseille1b.production.livekit.cloud https://tahaddi-live-hombip0z.otokyo1a.production.livekit.cloud wss://tahaddi-live-hombip0z.otokyo1a.production.livekit.cloud https://tahaddi-live-hombip0z.otokyo1b.production.livekit.cloud wss://tahaddi-live-hombip0z.otokyo1b.production.livekit.cloud https://tahaddi-live-hombip0z.ophoenix1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ophoenix1a.production.livekit.cloud https://tahaddi-live-hombip0z.ophoenix1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ophoenix1b.production.livekit.cloud https://tahaddi-live-hombip0z.olondon1a.production.livekit.cloud wss://tahaddi-live-hombip0z.olondon1a.production.livekit.cloud https://tahaddi-live-hombip0z.olondon1b.production.livekit.cloud wss://tahaddi-live-hombip0z.olondon1b.production.livekit.cloud https://tahaddi-live-hombip0z.ochicago1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ochicago1a.production.livekit.cloud https://tahaddi-live-hombip0z.ochicago1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ochicago1b.production.livekit.cloud https://tahaddi-live-hombip0z.osingapore1a.production.livekit.cloud wss://tahaddi-live-hombip0z.osingapore1a.production.livekit.cloud https://tahaddi-live-hombip0z.osingapore1b.production.livekit.cloud wss://tahaddi-live-hombip0z.osingapore1b.production.livekit.cloud https://tahaddi-live-hombip0z.odubai1a.production.livekit.cloud wss://tahaddi-live-hombip0z.odubai1a.production.livekit.cloud https://tahaddi-live-hombip0z.odubai1b.production.livekit.cloud wss://tahaddi-live-hombip0z.odubai1b.production.livekit.cloud https://tahaddi-live-hombip0z.ohyderabad1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ohyderabad1a.production.livekit.cloud https://tahaddi-live-hombip0z.ohyderabad1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ohyderabad1b.production.livekit.cloud https://tahaddi-live-hombip0z.ojohannesburg1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ojohannesburg1a.production.livekit.cloud https://tahaddi-live-hombip0z.ojohannesburg1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ojohannesburg1b.production.livekit.cloud https://tahaddi-live-hombip0z.omumbai1a.production.livekit.cloud wss://tahaddi-live-hombip0z.omumbai1a.production.livekit.cloud https://tahaddi-live-hombip0z.omumbai1b.production.livekit.cloud wss://tahaddi-live-hombip0z.omumbai1b.production.livekit.cloud https://tahaddi-live-hombip0z.ofrankfurt1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ofrankfurt1a.production.livekit.cloud https://tahaddi-live-hombip0z.ofrankfurt1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ofrankfurt1b.production.livekit.cloud https://tahaddi-live-hombip0z.ojerusalem1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ojerusalem1a.production.livekit.cloud https://tahaddi-live-hombip0z.ojerusalem1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ojerusalem1b.production.livekit.cloud https://tahaddi-live-hombip0z.osydney1a.production.livekit.cloud wss://tahaddi-live-hombip0z.osydney1a.production.livekit.cloud https://tahaddi-live-hombip0z.osydney1b.production.livekit.cloud wss://tahaddi-live-hombip0z.osydney1b.production.livekit.cloud https://tahaddi-live-hombip0z.ozurich1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ozurich1a.production.livekit.cloud https://tahaddi-live-hombip0z.ozurich1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ozurich1b.production.livekit.cloud https://tahaddi-live-hombip0z.osanjose1a.production.livekit.cloud wss://tahaddi-live-hombip0z.osanjose1a.production.livekit.cloud https://tahaddi-live-hombip0z.osanjose1b.production.livekit.cloud wss://tahaddi-live-hombip0z.osanjose1b.production.livekit.cloud https://tahaddi-live-hombip0z.ojeddah1a.production.livekit.cloud wss://tahaddi-live-hombip0z.ojeddah1a.production.livekit.cloud https://tahaddi-live-hombip0z.ojeddah1b.production.livekit.cloud wss://tahaddi-live-hombip0z.ojeddah1b.production.livekit.cloud https://tahaddi-live-hombip0z.oosaka1a.production.livekit.cloud wss://tahaddi-live-hombip0z.oosaka1a.production.livekit.cloud https://tahaddi-live-hombip0z.oosaka1b.production.livekit.cloud wss://tahaddi-live-hombip0z.oosaka1b.production.livekit.cloud https://tahaddi-live-hombip0z.omontreal1a.production.livekit.cloud wss://tahaddi-live-hombip0z.omontreal1a.production.livekit.cloud https://tahaddi-live-hombip0z.omontreal1b.production.livekit.cloud wss://tahaddi-live-hombip0z.omontreal1b.production.livekit.cloud https://tahaddi-live-hombip0z.otoronto1a.production.livekit.cloud wss://tahaddi-live-hombip0z.otoronto1a.production.livekit.cloud https://tahaddi-live-hombip0z.otoronto1b.production.livekit.cloud wss://tahaddi-live-hombip0z.otoronto1b.production.livekit.cloud https://tahaddi-live-hombip0z.oqueretaro1a.production.livekit.cloud wss://tahaddi-live-hombip0z.oqueretaro1a.production.livekit.cloud https://tahaddi-live-hombip0z.oqueretaro1b.production.livekit.cloud wss://tahaddi-live-hombip0z.oqueretaro1b.production.livekit.cloud https://tiles.openfreemap.org https://elevation-tiles-prod.s3.amazonaws.com https://qurabia.com wss://qurabia.com https://*.qurabia.com wss://*.qurabia.com https://vercel.live https://o4512159885754368.ingest.de.sentry.io; worker-src 'self' blob:; frame-src 'self' https://vercel.live https://*.vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
         }
       ]
     },
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"
@@ -98,7 +116,14 @@
     {
       "source": "/games/sultan-farm/index.html",
       "headers": [
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), speaker-selection=(), geolocation=(), interest-cohort=()"
+        },
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
@@ -107,7 +132,12 @@
     },
     {
       "source": "/.well-known/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300"
+        }
+      ]
     }
   ]
 }

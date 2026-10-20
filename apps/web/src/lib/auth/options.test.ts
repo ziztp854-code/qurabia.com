@@ -20,9 +20,9 @@ import { authOptions, resolveNextAuthSecret } from './options';
 
 describe('resolveNextAuthSecret', () => {
   it('يفضّل AUTH_SECRET المستخدم في المنصة على NEXTAUTH_SECRET', () => {
-    expect(
-      resolveNextAuthSecret({ AUTH_SECRET: 'from-auth', NEXTAUTH_SECRET: 'from-next' }),
-    ).toBe('from-auth');
+    expect(resolveNextAuthSecret({ AUTH_SECRET: 'from-auth', NEXTAUTH_SECRET: 'from-next' })).toBe(
+      'from-auth',
+    );
   });
 
   it('يقبل NEXTAUTH_SECRET عندما لا يتوفر AUTH_SECRET', () => {
@@ -45,6 +45,36 @@ describe('authOptions identity claims', () => {
     authMocks.findUnique.mockReset();
   });
 
+  it('refreshes edited identity from storage without upgrading a revoked session', async () => {
+    authMocks.hasDatabaseUrl.mockReturnValue(true);
+    authMocks.findUnique.mockResolvedValue({
+      role: 'USER',
+      status: 'ACTIVE',
+      tokenVersion: 8,
+      name: 'الاسم الجديد',
+      image: '/api/profile/avatar/self?v=new',
+    });
+    const callback = authOptions.callbacks!.jwt!;
+    const token = await callback({
+      token: {
+        id: 'self',
+        role: 'USER',
+        status: 'ACTIVE',
+        tokenVersion: 7,
+        name: 'قديم',
+        picture: 'old',
+      },
+      trigger: 'update',
+      session: { name: 'injected', role: 'OWNER' },
+    } as never);
+    expect(token).toMatchObject({
+      role: 'USER',
+      tokenVersion: 7,
+      name: 'الاسم الجديد',
+      picture: '/api/profile/avatar/self?v=new',
+    });
+  });
+
   it('يحدّث الجلسات القديمة بدور المدير من قاعدة البيانات', async () => {
     authMocks.hasDatabaseUrl.mockReturnValue(true);
     authMocks.findUnique.mockResolvedValue({
@@ -59,7 +89,7 @@ describe('authOptions identity claims', () => {
 
     expect(authMocks.findUnique).toHaveBeenCalledWith({
       where: { id: 'admin-1' },
-      select: { role: true, status: true, tokenVersion: true },
+      select: { role: true, status: true, tokenVersion: true, name: true, image: true },
     });
     expect(token).toMatchObject({ role: 'ADMIN', status: 'ACTIVE', tokenVersion: 7 });
   });

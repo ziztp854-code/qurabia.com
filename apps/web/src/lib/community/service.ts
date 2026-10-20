@@ -2,6 +2,9 @@ import 'server-only';
 import { Prisma } from '@tahaddi/database';
 import { getDisplayPlanCode } from '@/lib/subscription/entitlements';
 import { planDefinition } from '@tahaddi/domain';
+import { getVoicePreferences, updateVoicePreferences } from '@/lib/voice/repository';
+import { profileSocialCounts } from '@/lib/profile/repository';
+import { VoiceHttpError } from '@/lib/voice/http';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { getCurrentSession } from '@/lib/auth/session';
 import { isSessionUserCurrent } from '@/lib/auth/session-user';
@@ -117,7 +120,11 @@ async function rate(scope: string, id: string, limit = 30) {
     throw new CommunityError('RATE_LIMITED', 429);
 }
 type CommunityReader = Pick<Prisma.TransactionClient, 'user' | 'profileCosmetic'>;
-async function resolve(row: IdentityRow, db: CommunityReader = getPrismaClient()) {
+async function resolve(
+  row: IdentityRow,
+  db: CommunityReader = getPrismaClient(),
+  prefetchedCatalog?: CommunityCosmetic[],
+) {
   const now = new Date();
   const badges = row.badges
     .filter((g) => active(g, now) && !g.badge.archived)
@@ -129,9 +136,14 @@ async function resolve(row: IdentityRow, db: CommunityReader = getPrismaClient()
   const owned = row.cosmetics
     .filter((g) => active(g, now) && !g.cosmetic.archived)
     .map((g) => ({ ...cosmetic(g.cosmetic), expiresAt: g.expiresAt?.toISOString() ?? null }));
-  const catalog = (
-    await db.profileCosmetic.findMany({ where: { archived: false }, orderBy: { createdAt: 'asc' } })
-  ).map(cosmetic);
+  const catalog =
+    prefetchedCatalog ??
+    (
+      await db.profileCosmetic.findMany({
+        where: { archived: false },
+        orderBy: { createdAt: 'asc' },
+      })
+    ).map(cosmetic);
   const unlocked = new Set(owned.map((item) => item.id));
   for (const b of badges) {
     if (b.frameId) unlocked.add(b.frameId);
@@ -176,7 +188,9 @@ function identity(row: IdentityRow, state: Awaited<ReturnType<typeof resolve>>):
     name: row.profile?.displayName || row.name || 'عضو تحدّي',
     username: row.profile?.username ?? null,
     avatarUrl: assetReference(
-      row.profile?.avatarUrl || row.image || null,
+      row.profile?.avatarContent && row.profile.avatarUrl?.startsWith('/api/profile/avatar/')
+        ? 'data:legacy-avatar'
+        : row.profile?.avatarUrl || row.image || null,
       'avatar',
       String(row.accountNumber),
       row.profile?.updatedAt,
@@ -201,28 +215,54 @@ export async function getUserIdentity(
   ].slice(0, 4);
   return result;
 }
+/** Bulk counterpart for LiveKit room/profile refreshes; one catalog read, no per-member queries. */
+export async function getUserIdentities(
+  userIds: readonly string[],
+  db: CommunityReader = getPrismaClient(),
+): Promise<Map<string, PublicIdentity>> {
+  const ids = [...new Set(userIds)];
+  if (!ids.length) return new Map();
+  const rows = await db.user.findMany({
+    where: { id: { in: ids }, status: 'ACTIVE' },
+    select: identitySelect,
+  });
+  const catalog = (
+    await db.profileCosmetic.findMany({ where: { archived: false }, orderBy: { createdAt: 'asc' } })
+  ).map(cosmetic);
+  const result = new Map<string, PublicIdentity>();
+  for (const row of rows) {
+    const entry = identity(row, await resolve(row, db, catalog));
+    entry.badges = [
+      ...(entry.primaryBadge ? [entry.primaryBadge] : []),
+      ...entry.badges.filter((b) => b.id !== entry.primaryBadge?.id),
+    ].slice(0, 4);
+    result.set(row.id, entry);
+  }
+  return result;
+}
 async function profileFor(row: IdentityRow, viewerId: string | null): Promise<PublicProfile> {
   const db = getPrismaClient();
   const state = await resolve(row);
   const self = viewerId === row.id;
-  const [followerCount, followingCount, following, rooms] = await Promise.all([
-    db.userFollow.count({ where: { targetId: row.id, follower: { status: 'ACTIVE' } } }),
-    db.userFollow.count({ where: { followerId: row.id, target: { status: 'ACTIVE' } } }),
-    viewerId
-      ? db.userFollow.findUnique({
-          where: { followerId_targetId: { followerId: viewerId, targetId: row.id } },
-        })
-      : null,
+  const [counts, targetPreferences, viewerPreferences, rooms] = await Promise.all([
+    profileSocialCounts(row.id),
+    getVoicePreferences(row.id),
+    viewerId ? getVoicePreferences(viewerId) : null,
     self || row.profile?.showRooms !== false
-      ? db.$queryRaw<
-          { id: string; name: string; code: string; role: string }[]
-        >`SELECT r.id,r.name,r.code,
-          CASE WHEN r."ownerId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role
-          FROM "VoiceRoom" r WHERE r.status='OPEN' AND (r."ownerId"=${row.id} OR EXISTS (
-            SELECT 1 FROM jsonb_array_elements(r.state->'members') m
-            WHERE m->'identity'->>'userId'=${row.id} AND m->>'role'='MODERATOR'
-              AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000
-          )) ORDER BY r."createdAt" DESC LIMIT 20`
+      ? db.$queryRaw<{ id: string; name: string; code: string; role: string; system: string }[]>`
+        SELECT r.id,COALESCE(r.state->'settings'->>'name','غرفة صوتية') AS name,r.id AS code,
+          CASE WHEN r."hostId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role,'live' AS system,r."createdAt"
+        FROM "VoiceRoom" r WHERE r.active=true
+          AND (r."hostId"=${row.id} OR EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'participants') m
+            WHERE m->>'id'=${row.id} AND m->>'role'='moderator' AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-90000))
+          AND (r."isPrivate"=false OR ${self} OR EXISTS(SELECT 1 FROM jsonb_array_elements(r.state->'participants') m
+            WHERE m->>'id'=${viewerId ?? ''} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-90000))
+        UNION ALL
+        SELECT r.id,r.name,r.code,CASE WHEN r."ownerId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role,'community' AS system,r."createdAt"
+        FROM "CommunityVoiceRoom" r WHERE r.status='OPEN' AND (r."ownerId"=${row.id} OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${row.id}
+            AND m->>'role'='MODERATOR' AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000
+        )) ORDER BY "createdAt" DESC LIMIT 20`
       : [],
   ]);
   const xp = row.profile?.xp ?? 0;
@@ -237,20 +277,23 @@ async function profileFor(row: IdentityRow, viewerId: string | null): Promise<Pu
       row.profile?.updatedAt,
     ),
     joinedAt: row.createdAt.toISOString(),
-    visibility: (row.profile?.visibility ?? 'PUBLIC') as ProfileVisibility,
+    visibility: (targetPreferences.privateProfile
+      ? 'PRIVATE'
+      : (row.profile?.visibility ?? 'PUBLIC')) as ProfileVisibility,
     rank: { code: planCode, name: planDefinition(planCode).name },
     level: Math.floor(xp / 100) + 1,
     xp,
-    followerCount,
-    followingCount,
-    isFollowing: Boolean(following),
+    followerCount: counts.followers,
+    followingCount: counts.following,
+    isFollowing: Boolean(viewerPreferences?.following.includes(row.id)),
     isSelf: self,
     cosmetics: self || row.profile?.showCollection !== false ? state.owned : [],
     achievements: state.badges.filter((b) => b.category === 'ACHIEVEMENT'),
     rooms: rooms.map((room) => ({
       id: room.id,
       name: room.name,
-      roomNumber: Number(room.code),
+      roomNumber: room.system === 'community' ? Number(room.code) : room.code,
+      href: `/${room.system === 'community' ? 'community-voice' : 'voice'}/${encodeURIComponent(room.id)}`,
       role: room.role,
     })),
     appearance: state.appearance,
@@ -272,7 +315,17 @@ export async function getPublicProfile(
   });
   if (!row || row.status !== 'ACTIVE') return null;
   const self = actor?.id === row.id;
-  const visibility = row.profile?.visibility ?? 'PUBLIC';
+  const targetPreferences = await getVoicePreferences(row.id);
+  const actorPreferences = actor ? await getVoicePreferences(actor.id) : null;
+  if (
+    !self &&
+    (targetPreferences.blockedUsers.includes(actor?.id ?? '') ||
+      actorPreferences?.blockedUsers.includes(row.id))
+  )
+    return null;
+  const visibility = targetPreferences.privateProfile
+    ? 'PRIVATE'
+    : (row.profile?.visibility ?? 'PUBLIC');
   if (!self && (visibility === 'PRIVATE' || (visibility === 'MEMBERS' && !actor))) return null;
   return profileFor(row, actor?.id ?? null);
 }
@@ -304,6 +357,12 @@ export async function updateMyCommunityProfile(input: unknown) {
   const parsed = profilePatchSchema.safeParse(input);
   if (!parsed.success) throw new CommunityError('INVALID_PROFILE');
   const data = parsed.data;
+  if (
+    data.avatarUrl?.startsWith('/api/profile/avatar/') &&
+    new URL(data.avatarUrl, 'https://local.invalid').pathname !==
+      `/api/profile/avatar/${encodeURIComponent(actor.id)}`
+  )
+    throw new CommunityError('AVATAR_NOT_OWNED', 403);
   const db = getPrismaClient();
   await db.$transaction(async (tx) => {
     const fresh = await tx.user.findUnique({
@@ -360,6 +419,31 @@ export async function updateMyCommunityProfile(input: unknown) {
         throw new CommunityError('BADGE_NOT_OWNED', 403);
     }
     const { appearance, ...fields } = data;
+    if (data.visibility !== undefined) {
+      const preferences = await tx.voicePreference.upsert({
+        where: { userId: actor.id },
+        create: { userId: actor.id, state: { privateProfile: data.visibility === 'PRIVATE' } },
+        update: {},
+      });
+      const updated = await tx.voicePreference.updateMany({
+        where: { userId: actor.id, revision: preferences.revision },
+        data: {
+          state: {
+            ...(preferences.state as Prisma.JsonObject),
+            privateProfile: data.visibility === 'PRIVATE',
+          },
+          revision: { increment: 1 },
+        },
+      });
+      if (!updated.count) throw new CommunityError('CONFLICT', 409);
+      // Reuse the existing voice privacy flag so legacy privacy controls remain authoritative.
+      fields.visibility = data.visibility === 'PRIVATE' ? 'PUBLIC' : data.visibility;
+    }
+    if (data.displayName !== undefined)
+      await tx.user.updateMany({
+        where: { id: actor.id, status: 'ACTIVE', tokenVersion: actor.tokenVersion },
+        data: { name: data.displayName },
+      });
     await tx.profile.upsert({
       where: { userId: actor.id },
       create: {
@@ -376,20 +460,20 @@ export async function updateMyCommunityProfile(input: unknown) {
 export async function followProfile(accountNumber: number, follow: boolean) {
   const actor = await requireCommunityActor();
   await rate('follow', actor.id);
-  const db = getPrismaClient();
-  const target = await db.user.findUnique({
+  const target = await getPrismaClient().user.findUnique({
     where: { accountNumber },
     select: { id: true, status: true },
   });
   if (!target) throw new CommunityError('NOT_FOUND', 404);
   if (target.id === actor.id) throw new CommunityError('SELF_FOLLOW');
-  if (follow) {
-    if (!(await getPublicProfile(accountNumber))) throw new CommunityError('NOT_FOUND', 404);
-    await db.userFollow.createMany({
-      data: [{ followerId: actor.id, targetId: target.id }],
-      skipDuplicates: true,
-    });
-  } else await db.userFollow.deleteMany({ where: { followerId: actor.id, targetId: target.id } });
+  if (follow && !(await getPublicProfile(accountNumber)))
+    throw new CommunityError('NOT_FOUND', 404);
+  try {
+    await updateVoicePreferences(actor.id, { type: 'follow', id: target.id, enabled: follow });
+  } catch (error) {
+    if (error instanceof VoiceHttpError) throw new CommunityError(error.code, error.status);
+    throw error;
+  }
   return getPublicProfile(accountNumber);
 }
 export async function getAdminCommunityData(): Promise<AdminCommunityData> {
@@ -552,6 +636,7 @@ export async function getCommunityRaster(kind: string, id: string) {
   const db = getPrismaClient();
   let value: string | null = null;
   let privateAsset = false;
+  let legacyBytes: Uint8Array | null = null;
   if (kind === 'badge')
     value =
       (
@@ -577,22 +662,41 @@ export async function getCommunityRaster(kind: string, id: string) {
         status: true,
         tokenVersion: true,
         image: true,
-        profile: { select: { visibility: true, avatarUrl: true, coverUrl: true } },
+        profile: {
+          select: { visibility: true, avatarUrl: true, coverUrl: true, avatarContent: true },
+        },
       },
     });
     if (!row || row.status !== 'ACTIVE') throw new CommunityError('NOT_FOUND', 404);
     const actor = await viewer();
-    const visibility = row.profile?.visibility ?? 'PUBLIC';
+    const targetPreferences = await getVoicePreferences(row.id);
+    const actorPreferences = actor ? await getVoicePreferences(actor.id) : null;
+    if (
+      actor?.id !== row.id &&
+      (targetPreferences.blockedUsers.includes(actor?.id ?? '') ||
+        actorPreferences?.blockedUsers.includes(row.id))
+    )
+      throw new CommunityError('NOT_FOUND', 404);
+    const visibility = targetPreferences.privateProfile
+      ? 'PRIVATE'
+      : (row.profile?.visibility ?? 'PUBLIC');
     if (actor?.id !== row.id && visibility !== 'PUBLIC') {
       if (!actor) throw new CommunityError('NOT_FOUND', 404);
       if (visibility === 'PRIVATE') {
         if (kind === 'cover') throw new CommunityError('NOT_FOUND', 404);
         const shared = await db.$queryRaw<
           { allowed: number }[]
-        >`SELECT 1 AS allowed FROM "VoiceRoom" r WHERE r.status='OPEN'
+        >`SELECT 1 AS allowed FROM "CommunityVoiceRoom" r WHERE r.status='OPEN'
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${actor.id} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000 AND (m->>'tokenVersion')::int=${actor.tokenVersion})
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${row.id} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000 AND (m->>'tokenVersion')::int=${row.tokenVersion}) LIMIT 1`;
-        if (!shared.length) throw new CommunityError('NOT_FOUND', 404);
+        if (!shared.length) {
+          const liveShared = await db.$queryRaw<
+            { allowed: number }[]
+          >`SELECT 1 AS allowed FROM "VoiceRoom" r WHERE r.active=true
+            AND EXISTS(SELECT 1 FROM jsonb_array_elements(r.state->'participants') m WHERE m->>'id'=${actor.id} AND (m->>'lastSeenAt')::numeric>extract(epoch FROM clock_timestamp())*1000-90000 AND COALESCE((m->>'tokenVersion')::int,0)=${actor.tokenVersion})
+            AND EXISTS(SELECT 1 FROM jsonb_array_elements(r.state->'participants') m WHERE m->>'id'=${row.id} AND (m->>'lastSeenAt')::numeric>extract(epoch FROM clock_timestamp())*1000-90000 AND COALESCE((m->>'tokenVersion')::int,0)=${row.tokenVersion}) LIMIT 1`;
+          if (!liveShared.length) throw new CommunityError('NOT_FOUND', 404);
+        }
       }
     }
     value =
@@ -600,7 +704,15 @@ export async function getCommunityRaster(kind: string, id: string) {
         ? (row.profile?.coverUrl ?? null)
         : row.profile?.avatarUrl || row.image || null;
     privateAsset = true;
+    if (
+      kind === 'avatar' &&
+      row.profile?.avatarContent &&
+      row.profile.avatarUrl?.startsWith('/api/profile/avatar/')
+    )
+      legacyBytes = new Uint8Array(row.profile.avatarContent);
   } else throw new CommunityError('NOT_FOUND', 404);
+  if (legacyBytes)
+    return { bytes: Buffer.from(legacyBytes), mime: 'image/webp', privateAsset: true };
   if (!value?.startsWith('data:')) throw new CommunityError('NOT_FOUND', 404);
   const match = /^data:(image\/(?:png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
   if (!match) throw new CommunityError('NOT_FOUND', 404);

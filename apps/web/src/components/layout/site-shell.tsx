@@ -34,7 +34,7 @@ import { ThemeToggle } from '../theme-toggle';
 import { AdminVerifiedName, Button, ButtonLink } from '../ui';
 import { SignOutButton } from '../auth/sign-out-button';
 
-// Voice needs a fresh document so its route-scoped microphone policy takes effect.
+// Keep App Router navigation so the existing voice session survives page changes.
 function NavigationLink({
   href,
   ...props
@@ -44,10 +44,6 @@ function NavigationLink({
   AnchorHTMLAttributes<HTMLAnchorElement>,
   'children' | 'className' | 'onClick' | 'aria-current' | 'aria-label'
 >) {
-  if (href === '/voice') {
-    // eslint-disable-next-line @next/next/no-html-link-for-pages -- A new document is required for the route-scoped microphone policy.
-    return <a href="/voice/" {...props} />;
-  }
   return <Link href={href} prefetch={false} {...props} />;
 }
 

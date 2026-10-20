@@ -28,27 +28,32 @@ async function nextHeaderRules(): Promise<HeaderRule[]> {
   }
   if (!headers) throw new Error('Missing Next.js header rules');
   return runInNewContext(`({${headers.getText(source)}}).headers()`, {
-    securityHeaders: [{ key: 'Permissions-Policy', value: 'microphone=()' }],
+    securityHeaders: [
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(self), speaker-selection=(self), geolocation=()',
+      },
+    ],
     isProduction: false,
   });
 }
 
 describe('voice microphone browser permissions', () => {
-  it('allows same-origin microphone capture only on voice documents on both hosting paths', async () => {
+  it('preserves same-origin persistent audio and denies capture inside the embedded game', async () => {
     const next = await nextHeaderRules();
     const vercel = JSON.parse(
       readFileSync(new NodeURL('../../../../../vercel.json', import.meta.url), 'utf8'),
     ) as { headers: HeaderRule[] };
     for (const rules of [next, vercel.headers]) {
-      const voice = rules.find((rule) => rule.source === '/voice/:path*');
-      expect(voice?.headers.find((header) => header.key === 'Permissions-Policy')?.value).toBe(
-        'camera=(), microphone=(self), geolocation=(), interest-cohort=()',
-      );
       const general = rules.find((rule) => ['/:path*', '/(.*)'].includes(rule.source));
+      const policy = general?.headers.find((header) => header.key === 'Permissions-Policy')?.value;
+      expect(policy).toContain('microphone=(self)');
+      expect(policy).toContain('speaker-selection=(self)');
+      expect(policy).toContain('camera=()');
+      const embedded = rules.find((rule) => rule.source === '/games/sultan-farm/index.html');
       expect(
-        general?.headers.find((header) => header.key === 'Permissions-Policy')?.value,
+        embedded?.headers.find((header) => header.key === 'Permissions-Policy')?.value,
       ).toContain('microphone=()');
-      expect(rules.indexOf(voice!)).toBeGreaterThan(rules.indexOf(general!));
     }
   });
 });

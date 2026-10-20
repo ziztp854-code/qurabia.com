@@ -1,0 +1,54 @@
+.name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: inherit;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-inline-size: 100%;
+  vertical-align: middle;
+}
+.name > bdi {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.badge,
+.verified {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: var(--voice-gold-light);
+}
+.verified {
+  color: var(--voice-cyan);
+}
+
+.verified svg {
+  inline-size: 17px;
+  block-size: 17px;
+  fill: var(--voice-cyan);
+  stroke: var(--voice-ink);
+  stroke-width: 2.2;
+}
+
+.ownerCrown {
+  inline-size: 24px;
+  block-size: 24px;
+  object-fit: contain;
+  flex: none;
+}
+
+.credentials {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
+  flex-wrap: wrap;
+  max-inline-size: 100%;
+}
+.credentials:empty {
+  display: none;
+}
+
+.realBadge { inline-size: 24px; block-size: 24px; flex: none; }
+.accountNumber { font-size: .68rem; color: var(--voice-muted); font-weight: 500; white-space: nowrap; }

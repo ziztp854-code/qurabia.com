@@ -33,7 +33,13 @@ import {
   getUserIdentity,
   updateMyCommunityProfile,
 } from './service';
-import { commandVoiceRoom, createVoiceRoom } from '@/lib/voice/repository';
+import { commandVoiceRoom, createVoiceRoom } from '@/lib/community-voice/repository';
+import {
+  getVoicePreferences,
+  createVoiceRoom as createSfuVoiceRoom,
+  joinVoiceRoom as joinSfuVoiceRoom,
+  getVoiceSnapshot as getSfuVoiceSnapshot,
+} from '@/lib/voice/repository';
 
 const connectionString = process.env.COMMUNITY_VOICE_TEST_DATABASE_URL;
 const suite = describe.skipIf(!connectionString);
@@ -98,6 +104,21 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
           ('legacy-player','لاعب قديم','player@example.test','USER',NOW())`);
         await migrationClient.query(`INSERT INTO "Profile" (id,"userId","displayName",bio,"updatedAt")
           VALUES ('legacy-profile','legacy-player','الاسم المحفوظ','نبذة محفوظة',NOW())`);
+        await migrationClient.query(`UPDATE "Profile" SET username = '123_legacy',
+          "avatarContent" = decode('89504e470d0a1a0a','hex') WHERE id = 'legacy-profile'`);
+        await migrationClient.query(`INSERT INTO "VoicePreference" ("userId",state,"updatedAt") VALUES
+          ('legacy-player','{"following":["legacy-owner"],"privateProfile":false}',NOW()),
+          ('legacy-owner','{"following":["legacy-player"],"privateProfile":true}',NOW())`);
+        await migrationClient.query(`INSERT INTO "VoiceRoom" (id,"hostId",state,revision,"isPrivate","passwordHash","inviteHash","updatedAt") VALUES
+          ('legacy-livekit-room','legacy-owner',
+          '{"settings":{"name":"غرفة صوتية قائمة","description":"بيانات لا تُستبدل","category":"general","cover":"","seatCount":6,"isPrivate":true,"allowMicRequests":true,"chatEnabled":true,"moderatorsCanManage":true},"host":{"id":"legacy-owner","name":"صاحب الموقع","image":null},"createdAt":1,"active":true,"lockedSeats":[],"participants":[],"messages":[],"bannedUsers":[]}',
+          11,true,'legacy-password-hash','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',NOW())`);
+        await migrationClient.query(`INSERT INTO "VoiceReport" (id,"roomId","reporterId",reason)
+          VALUES ('legacy-report','legacy-livekit-room','legacy-player','بلاغ محفوظ')`);
+        await migrationClient.query(`INSERT INTO "VoiceCover" (id,"ownerId",content)
+          VALUES ('legacy-cover','legacy-owner',decode('89504e470d0a1a0a','hex'))`);
+        await migrationClient.query(`INSERT INTO "VoiceDirectMessage" (id,"senderId","recipientId",text)
+          VALUES ('legacy-dm','legacy-player','legacy-owner','رسالة خاصة محفوظة')`);
       }
       await migrationClient.query(
         await readFile(new NodeURL(`${directory.name}/migration.sql`, migrations), 'utf8'),
@@ -130,6 +151,25 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     });
     expect(legacy.profile?.displayName).toBe('الاسم المحفوظ');
     expect(legacy.profile?.bio).toBe('نبذة محفوظة');
+    expect(legacy.profile?.username).toBe('123_legacy');
+    expect(Buffer.from(legacy.profile!.avatarContent!).toString('hex')).toBe('89504e470d0a1a0a');
+    const liveRoom = await db.voiceRoom.findUniqueOrThrow({ where: { id: 'legacy-livekit-room' } });
+    expect(liveRoom.hostId).toBe('legacy-owner');
+    expect(liveRoom.revision).toBe(11);
+    expect(liveRoom.isPrivate).toBe(true);
+    expect(liveRoom.passwordHash).toBe('legacy-password-hash');
+    expect(liveRoom.inviteHash).toBe('a'.repeat(64));
+    expect(await db.voiceReport.count({ where: { roomId: liveRoom.id } })).toBe(1);
+    expect(await db.voiceCover.count({ where: { id: 'legacy-cover' } })).toBe(1);
+    expect(
+      (await db.voiceDirectMessage.findUniqueOrThrow({ where: { id: 'legacy-dm' } })).text,
+    ).toBe('رسالة خاصة محفوظة');
+    expect((await getVoicePreferences('legacy-player')).following).toEqual(['legacy-owner']);
+    expect(await db.communityVoiceRoom.count()).toBe(0);
+    as(null);
+    expect(await getPublicProfile(owner.accountNumber)).toBeNull();
+    as(owner);
+    expect(await getPublicProfile(owner.accountNumber)).not.toBeNull();
     expect(owner.accountNumber).toBe(1);
     expect(String(legacy.accountNumber)).toMatch(/^[1-9]\d{8}$/);
     expect(await db.communityBadge.count()).toBeGreaterThanOrEqual(18);
@@ -159,18 +199,16 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     as(bob);
     await followProfile(alice.accountNumber, true);
     await followProfile(alice.accountNumber, true);
-    expect(await db.userFollow.count({ where: { followerId: bob.id, targetId: alice.id } })).toBe(
-      1,
-    );
+    expect(
+      (await getVoicePreferences(bob.id)).following.filter((id) => id === alice.id),
+    ).toHaveLength(1);
     as(alice);
     await updateMyCommunityProfile({ visibility: 'PRIVATE' });
     expect(await getPublicProfile(alice.accountNumber)).not.toBeNull();
     as(bob);
     expect(await getPublicProfile(alice.accountNumber)).toBeNull();
     await followProfile(alice.accountNumber, false);
-    expect(await db.userFollow.count({ where: { followerId: bob.id, targetId: alice.id } })).toBe(
-      0,
-    );
+    expect((await getVoicePreferences(bob.id)).following).not.toContain(alice.id);
     as(null);
     expect(await getPublicProfile(alice.accountNumber)).toBeNull();
     as(alice);
@@ -451,4 +489,69 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     expect(snapshot.room.members).toHaveLength(24);
     await commandVoiceRoom(room.id, voiceActor(host), { type: 'close', clientId: hostClient }, db);
   }, 15000);
+
+  it('refreshes granted display identity inside the existing SFU room without changing its roles', async () => {
+    const liveHost = await newUser('sfu-host');
+    const liveGuest = await newUser('sfu-guest');
+    as(owner);
+    await adminCommunityCommand({
+      operation: 'grantBadge',
+      accountNumber: liveGuest.accountNumber,
+      badgeId: 'gold-member',
+    });
+    as(liveGuest);
+    await updateMyCommunityProfile({
+      appearance: { ...appearance, effectId: 'entrance-gold', primaryBadgeId: 'gold-member' },
+    });
+    const created = await createSfuVoiceRoom(
+      {
+        id: liveHost.id,
+        name: 'مضيف الصوت القائم',
+        image: null,
+        tokenVersion: liveHost.tokenVersion,
+      },
+      {
+        name: 'غرفة SFU قائمة',
+        description: 'اختبار زخرفة دون استبدال الصوت',
+        category: 'مجالس',
+        cover: '',
+        seatCount: 6,
+        isPrivate: false,
+        allowMicRequests: true,
+        chatEnabled: true,
+        moderatorsCanManage: true,
+      },
+    );
+    await joinSfuVoiceRoom(
+      created.room.id,
+      {
+        id: liveGuest.id,
+        name: 'ضيف الصوت القائم',
+        image: null,
+        tokenVersion: liveGuest.tokenVersion,
+      },
+      {},
+    );
+    const snapshot = await getSfuVoiceSnapshot(created.room.id, liveHost.id, true);
+    const guest = snapshot.participants.find((member) => member.id === liveGuest.id)!;
+    expect(guest.communityIdentity?.effect?.id).toBe('entrance-gold');
+    expect(guest.accountNumber).toBe(liveGuest.accountNumber);
+    expect(guest.role).toBe('listener');
+    as(owner);
+    await adminCommunityCommand({
+      operation: 'revokeBadge',
+      accountNumber: liveGuest.accountNumber,
+      badgeId: 'gold-member',
+    });
+    const revoked = await getSfuVoiceSnapshot(created.room.id, liveHost.id, true);
+    expect(
+      revoked.participants.find((member) => member.id === liveGuest.id)?.communityIdentity?.effect,
+    ).toBeNull();
+    expect(revoked.participants.find((member) => member.id === liveGuest.id)?.role).toBe(
+      'listener',
+    );
+    expect((await db.voiceRoom.findUniqueOrThrow({ where: { id: created.room.id } })).active).toBe(
+      true,
+    );
+  });
 });
