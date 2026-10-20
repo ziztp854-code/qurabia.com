@@ -68,7 +68,15 @@ export const fixtureProfile: PublicProfile = {
   isSelf: true,
   cosmetics: fixtureCosmetics,
   achievements: [],
-  rooms: [{ id: 'fixture-room', name: 'مجلس المساء', roomNumber: 483921, role: 'OWNER' }],
+  rooms: [
+    {
+      id: 'fixture-room',
+      name: 'مجلس المساء',
+      roomNumber: 483921,
+      role: 'OWNER',
+      href: '/community-voice/fixture-room',
+    },
+  ],
   appearance: {
     frameId: 'gold-frame',
     effectId: 'gold-entry',

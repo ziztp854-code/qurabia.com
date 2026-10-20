@@ -14,8 +14,8 @@ import {
   Volume2,
   X,
 } from 'lucide-react';
-import type { VoiceMember } from '@/lib/voice/contracts';
-import { VOICE_REACTIONS, VOICE_SEAT_LIMIT } from '@/lib/voice/contracts';
+import type { VoiceMember } from '@/lib/community-voice/contracts';
+import { VOICE_REACTIONS, VOICE_SEAT_LIMIT } from '@/lib/community-voice/contracts';
 import { RealBadgeArtwork, RealFrameArtwork } from '@/components/community/realistic-art';
 import { Button, Dialog } from '@/components/ui';
 import { useVoiceRoom } from './use-voice-room';
@@ -189,7 +189,7 @@ export function VoiceRoomView({ controller }: { controller: Controller }) {
   if (!room)
     return (
       <div className={styles.voice}>
-        <Link href="/voice" className={styles.backLink}>
+        <Link href="/community-voice" className={styles.backLink}>
           العودة إلى المجالس
         </Link>
         <section className={styles.empty}>
@@ -207,7 +207,7 @@ export function VoiceRoomView({ controller }: { controller: Controller }) {
   return (
     <div className={styles.voice}>
       <div className={styles.topline}>
-        <Link href="/voice" className={styles.backLink}>
+        <Link href="/community-voice" className={styles.backLink}>
           تحدّي لايف / المجالس
         </Link>
         <span className={styles.connection} data-connected={connected}>
@@ -263,7 +263,7 @@ export function VoiceRoomView({ controller }: { controller: Controller }) {
       )}
       {status === 'left' && (
         <p className={styles.notice}>
-          انتهى اتصالك بهذه الغرفة. <Link href="/voice">عد إلى المجالس</Link> أو{' '}
+          انتهى اتصالك بهذه الغرفة. <Link href="/community-voice">عد إلى المجالس</Link> أو{' '}
           <button onClick={() => window.location.reload()}>حاول الدخول مجددًا</button>.
         </p>
       )}

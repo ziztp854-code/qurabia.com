@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   command: vi.fn(),
 }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession: mocks.session }));
-vi.mock('@/lib/voice/repository', () => ({
+vi.mock('@/lib/community-voice/repository', () => ({
   listVoiceRooms: mocks.list,
   createVoiceRoom: mocks.create,
   commandVoiceRoom: mocks.command,
@@ -20,7 +20,7 @@ const request = (
   origin = 'http://localhost:3000',
   headers: Record<string, string> = {},
 ) =>
-  new Request('http://localhost:3000/api/voice', {
+  new Request('http://localhost:3000/api/community-voice', {
     method: 'POST',
     headers: { Origin: origin, 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),

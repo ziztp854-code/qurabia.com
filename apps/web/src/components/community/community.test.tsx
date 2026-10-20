@@ -26,7 +26,7 @@ describe('community identity UI', () => {
     expect(screen.getByText('الفارس')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /مجلس المساء/ })).toHaveAttribute(
       'href',
-      '/voice/fixture-room',
+      '/community-voice/fixture-room',
     );
     expect(screen.queryByText('fixture-user')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'الإنجازات' }));

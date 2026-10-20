@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { VoiceCommand, VoiceRoomResponse, VoiceRoomSnapshot } from '@/lib/voice/contracts';
-import { VOICE_POLL_INTERVAL } from '@/lib/voice/contracts';
+import type { VoiceCommand, VoiceRoomResponse, VoiceRoomSnapshot } from '@/lib/community-voice/contracts';
+import { VOICE_POLL_INTERVAL } from '@/lib/community-voice/contracts';
 import { VoiceAudioMesh } from './audio-mesh';
 import { EntranceQueue, type EntranceAnnouncement } from './entrance-queue';
 
@@ -88,7 +88,7 @@ export function useVoiceRoom(roomId: string) {
       if (!active.current || !clientId.current) return null;
       const requestClientId = clientId.current;
       try {
-        const response = await fetch(`/api/voice/${encodeURIComponent(roomId)}`, {
+        const response = await fetch(`/api/community-voice/${encodeURIComponent(roomId)}`, {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -213,7 +213,7 @@ export function useVoiceRoom(roomId: string) {
     void heartbeat();
     const leaveOnPageHide = () => {
       mesh.current?.dispose();
-      void fetch(`/api/voice/${encodeURIComponent(roomId)}`, {
+      void fetch(`/api/community-voice/${encodeURIComponent(roomId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'leave', clientId: lifecycleClientId }),

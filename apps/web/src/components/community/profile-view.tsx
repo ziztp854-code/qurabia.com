@@ -24,7 +24,7 @@ import {
   previewImageUrl,
 } from './community-ui';
 import { RealFrameArtwork } from './realistic-art';
-import { EntranceEffectPreview } from '@/components/voice/entrance-effect';
+import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
 import styles from './community.module.css';
 
 type Tab = 'overview' | 'badges' | 'achievements' | 'collection';
@@ -256,7 +256,14 @@ export function CommunityProfilePage({
               {profile.showRooms && profile.rooms.length ? (
                 <div className={styles.roomList}>
                   {profile.rooms.map((room) => (
-                    <a key={room.id} href={`/voice/${encodeURIComponent(room.id)}`}>
+                    <a
+                      key={room.id}
+                      href={
+                        room.href && /^\/(?:community-voice|voice)\//.test(room.href)
+                          ? room.href
+                          : `/voice/${encodeURIComponent(room.id)}`
+                      }
+                    >
                       <Radio size={19} aria-hidden="true" />
                       <span>
                         <strong>{room.name}</strong>

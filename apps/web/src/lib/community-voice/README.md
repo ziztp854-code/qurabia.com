@@ -1,10 +1,10 @@
 # Voice rooms
 
-Voice is a separate feature at `/voice`; quiz and game transports remain unchanged.
+The experimental mesh voice pilot is a separate feature at `/community-voice`; quiz and game transports remain unchanged.
 
 The browser uses a bounded audio-only WebRTC mesh (six seats, twenty-four total
 participants). Authenticated, same-origin JSON commands transport SDP and ICE
-through `/api/voice/[roomId]`; the 1.2-second heartbeat returns recipient-only
+through `/api/community-voice/[roomId]`; the 1.2-second heartbeat returns recipient-only
 signals and trusted entrance events. Audio packets go directly between peers or
 through the configured TURN relay, never through the JSON polling endpoint.
 
@@ -36,7 +36,7 @@ before raising the six-seat or twenty-four-member limits.
 
 Microphone capture requires HTTPS (localhost is allowed by browsers) and an
 explicit user action. Denying capture leaves room chat and listening available.
-`Permissions-Policy` must allow `microphone=(self)` only on `/voice` routes.
+`Permissions-Policy` must allow `microphone=(self)` only on `/community-voice` routes.
 
 Public Cloudflare STUN is the default. Configure `VOICE_STUN_URLS` with a
 comma-separated list to replace it. STUN alone cannot connect every NAT/firewall.
@@ -54,6 +54,6 @@ fixtures do not establish real-device audio quality or SFU-scale performance.
 
 ## Validation
 
-`vitest run src/lib/voice src/app/api/voice` runs engine, input, HTTP and relay
+`vitest run src/lib/community-voice src/app/api/community-voice` runs engine, input, HTTP and relay
 credential tests. The community integration suite exercises migration and real
 PostgreSQL room mutations with isolated test accounts.

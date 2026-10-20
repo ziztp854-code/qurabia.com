@@ -1,9 +1,9 @@
 // Isolated presentation fixture. No microphone capture, network room or real identities.
 import { useState, type ComponentProps } from 'react';
-import { EntranceEffectPreview } from '../../src/components/voice/entrance-effect';
-import { VoiceRoomView } from '../../src/components/voice/voice-room';
-import type { VoiceMember, VoiceRoomSnapshot } from '../../src/lib/voice/contracts';
-import type { EntranceAnnouncement } from '../../src/components/voice/entrance-queue';
+import { EntranceEffectPreview } from '../../src/components/community-voice/entrance-effect';
+import { VoiceRoomView } from '../../src/components/community-voice/voice-room';
+import type { VoiceMember, VoiceRoomSnapshot } from '../../src/lib/community-voice/contracts';
+import type { EntranceAnnouncement } from '../../src/components/community-voice/entrance-queue';
 
 type Controller = ComponentProps<typeof VoiceRoomView>['controller'];
 const at = 1789920000000;

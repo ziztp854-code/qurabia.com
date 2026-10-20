@@ -80,6 +80,7 @@ export function RealBadgeArtwork({
     return (
       <span
         className={`${styles.missing} ${className ?? ''}`}
+        role="img"
         aria-label={`صورة ${name} غير مضافة`}
       >
         صورة غير مضافة

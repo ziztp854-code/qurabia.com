@@ -4,9 +4,9 @@ import {
   voiceFailure,
   voiceIdentity,
   voiceSuccess,
-} from '@/lib/voice/http';
-import { createVoiceRoomSchema } from '@/lib/voice/schema';
-import { createVoiceRoom, listVoiceRooms } from '@/lib/voice/repository';
+} from '@/lib/community-voice/http';
+import { createVoiceRoomSchema } from '@/lib/community-voice/schema';
+import { createVoiceRoom, listVoiceRooms } from '@/lib/community-voice/repository';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

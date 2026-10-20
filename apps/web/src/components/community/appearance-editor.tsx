@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Check, Eye, LockKeyhole, Save, Settings2, Sparkles } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/button';
-import { EntranceEffectPreview } from '@/components/voice/entrance-effect';
+import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
 import type {
   AppearanceSelection,
   CosmeticKind,
@@ -178,7 +178,7 @@ function AppearanceForm({
                   onChange={(event) => setUsername(event.target.value)}
                   minLength={3}
                   maxLength={30}
-                  pattern="[a-zA-Z][a-zA-Z0-9_]{2,29}"
+                  pattern="[a-zA-Z0-9_]{3,30}"
                   autoComplete="username"
                   aria-describedby="username-hint"
                 />

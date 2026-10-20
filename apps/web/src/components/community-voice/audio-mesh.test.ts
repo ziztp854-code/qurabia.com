@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { VoiceMember, VoiceRoomSnapshot, VoiceSignal } from '@/lib/voice/contracts';
+import type { VoiceMember, VoiceRoomSnapshot, VoiceSignal } from '@/lib/community-voice/contracts';
 import { VoiceAudioMesh } from './audio-mesh';
 
 const user = (id: string, seat: number | null, muted = true): VoiceMember => ({

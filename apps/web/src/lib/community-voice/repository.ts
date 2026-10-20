@@ -132,7 +132,7 @@ export async function listVoiceRooms(
       SELECT id, code, name, "imageUrl", "ownerId", "createdAt",
         (SELECT count(*)::integer FROM jsonb_array_elements(state->'members') member
           WHERE (member->>'lastSeenAt')::bigint > EXTRACT(EPOCH FROM clock_timestamp()) * 1000 - 45000) AS "memberCount"
-      FROM "VoiceRoom" WHERE status = 'OPEN' ORDER BY "updatedAt" DESC LIMIT 24`;
+      FROM "CommunityVoiceRoom" WHERE status = 'OPEN' ORDER BY "updatedAt" DESC LIMIT 24`;
     return rows.map((row) => ({ ...row, createdAt: row.createdAt.getTime() }));
   }, db);
 }
@@ -148,8 +148,8 @@ export async function createVoiceRoom(
     await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${actor.userId} FOR UPDATE`;
     const now = await nowAtDatabase(tx);
     const [openCount, recentCount] = await Promise.all([
-      tx.voiceRoom.count({ where: { ownerId: actor.userId, status: 'OPEN' } }),
-      tx.voiceRoom.count({
+      tx.communityVoiceRoom.count({ where: { ownerId: actor.userId, status: 'OPEN' } }),
+      tx.communityVoiceRoom.count({
         where: { ownerId: actor.userId, createdAt: { gt: new Date(now - 3_600_000) } },
       }),
     ]);
@@ -162,7 +162,12 @@ export async function createVoiceRoom(
     let code = '';
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const candidate = String(randomInt(100_000_000, 1_000_000_000));
-      if (!(await tx.voiceRoom.findUnique({ where: { code: candidate }, select: { id: true } }))) {
+      if (
+        !(await tx.communityVoiceRoom.findUnique({
+          where: { code: candidate },
+          select: { id: true },
+        }))
+      ) {
         code = candidate;
         break;
       }
@@ -171,7 +176,7 @@ export async function createVoiceRoom(
     const state = newVoiceState();
     const authority = { ownerId: actor.userId, status: 'OPEN' };
     applyVoiceCommand(state, authority, actor, { type: 'join', clientId: input.clientId }, now);
-    const row = await tx.voiceRoom.create({
+    const row = await tx.communityVoiceRoom.create({
       data: {
         code,
         name: input.name,
@@ -195,7 +200,7 @@ export async function commandVoiceRoom(
     const actor = await authorize(tx, identity);
     const [row] = await tx.$queryRaw<
       VoiceRow[]
-    >`SELECT id, code, name, "imageUrl", "ownerId", status, state, "createdAt", "updatedAt" FROM "VoiceRoom" WHERE id = ${roomId} OR code = ${roomId} FOR UPDATE`;
+    >`SELECT id, code, name, "imageUrl", "ownerId", status, state, "createdAt", "updatedAt" FROM "CommunityVoiceRoom" WHERE id = ${roomId} OR code = ${roomId} FOR UPDATE`;
     if (!row) throw new VoiceError(404, 'الغرفة غير موجودة.', 'ROOM_NOT_FOUND');
     const now = await nowAtDatabase(tx);
     const state = stateOf(row);
@@ -220,7 +225,7 @@ export async function commandVoiceRoom(
       if (!actor.identity) throw new VoiceError(401, 'الحساب غير متاح.', 'SESSION_REVOKED');
     }
     applyVoiceCommand(state, row, actor, command, now);
-    await tx.voiceRoom.update({
+    await tx.communityVoiceRoom.update({
       where: { id: row.id },
       data: { state: json(state), status: row.status },
     });

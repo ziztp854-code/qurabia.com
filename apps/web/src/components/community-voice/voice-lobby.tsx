@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowUpLeft, Plus, Users } from 'lucide-react';
-import type { VoiceRoomSummary } from '@/lib/voice/contracts';
+import type { VoiceRoomSummary } from '@/lib/community-voice/contracts';
 import { Button } from '@/components/ui';
 import styles from './voice.module.css';
 
@@ -20,7 +20,7 @@ export function VoiceLobby() {
     const controller = new AbortController();
     const load = async () => {
       try {
-        const response = await fetch('/api/voice', { signal: controller.signal });
+        const response = await fetch('/api/community-voice', { signal: controller.signal });
         const result = await response.json();
         if (!response.ok || !result.ok) throw new Error(result.error || 'تعذّر تحميل الغرف.');
         setRooms(result.rooms ?? result.data?.rooms ?? []);
@@ -46,14 +46,14 @@ export function VoiceLobby() {
     setCreating(true);
     setError('');
     try {
-      const response = await fetch('/api/voice', {
+      const response = await fetch('/api/community-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), clientId: crypto.randomUUID() }),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || 'تعذّر إنشاء الغرفة.');
-      router.push(`/voice/${encodeURIComponent(result.room.id)}`);
+      router.push(`/community-voice/${encodeURIComponent(result.room.id)}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'تعذّر إنشاء الغرفة.');
       setCreating(false);
@@ -105,7 +105,7 @@ export function VoiceLobby() {
           onSubmit={(event) => {
             event.preventDefault();
             if (/^[a-zA-Z0-9-]{1,64}$/.test(code.trim()))
-              router.push(`/voice/${encodeURIComponent(code.trim())}`);
+              router.push(`/community-voice/${encodeURIComponent(code.trim())}`);
           }}
           className={styles.createForm}
         >
@@ -145,7 +145,7 @@ export function VoiceLobby() {
           <div className={styles.roomGrid}>
             {rooms.map((room) => (
               <a
-                href={`/voice/${encodeURIComponent(room.id)}`}
+                href={`/community-voice/${encodeURIComponent(room.id)}`}
                 key={room.id}
                 className={styles.roomCard}
               >

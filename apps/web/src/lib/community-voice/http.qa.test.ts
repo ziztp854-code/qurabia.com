@@ -7,7 +7,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe('voice HTTP boundaries: independent QA', () => {
   it('requires the configured origin and rejects opaque or cross-site requests', () => {
     vi.stubEnv('NEXTAUTH_URL', 'https://qurabia.com');
-    const make = (headers: Record<string, string>) => new Request('https://qurabia.com/api/voice/room', { method: 'POST', headers });
+    const make = (headers: Record<string, string>) => new Request('https://qurabia.com/api/community-voice/room', { method: 'POST', headers });
     const cases: Record<string, string>[] = [{}, { origin: 'null' }, { origin: 'https://attacker.test' }, { origin: 'https://qurabia.com', 'sec-fetch-site': 'cross-site' }];
     for (const headers of cases) {
       expect(() => assertVoiceOrigin(make(headers))).toThrow();
@@ -16,7 +16,7 @@ describe('voice HTTP boundaries: independent QA', () => {
   });
 
   it('rejects unsafe body formats and byte overflow before interpreting commands', async () => {
-    const make = (body: string, type = 'application/json') => new Request('https://qurabia.com/api/voice/room', {
+    const make = (body: string, type = 'application/json') => new Request('https://qurabia.com/api/community-voice/room', {
       method: 'POST', headers: { 'Content-Type': type }, body,
     });
     expect(await readVoiceBody(make('{"type":"heartbeat"}'))).toEqual({ type: 'heartbeat' });

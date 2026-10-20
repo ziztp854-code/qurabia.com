@@ -3,7 +3,7 @@ import type {
   VoiceRoomSnapshot,
   VoiceSignal,
   VoiceIceServer,
-} from '@/lib/voice/contracts';
+} from '@/lib/community-voice/contracts';
 
 type Peer = {
   pc: RTCPeerConnection;

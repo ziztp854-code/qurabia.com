@@ -5,7 +5,7 @@ import {
   RealFrameArtwork,
 } from '../../src/components/community/realistic-art';
 import type { EntranceTier } from '../../src/lib/community/contracts';
-import { EntranceEffectPreview } from '../../src/components/voice/entrance-effect';
+import { EntranceEffectPreview } from '../../src/components/community-voice/entrance-effect';
 
 export function CommunityArtHarness() {
   const tiers: EntranceTier[] = ['ordinary', 'silver', 'gold', 'diamond', 'royal', 'legend'];
