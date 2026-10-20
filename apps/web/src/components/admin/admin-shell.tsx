@@ -1,5 +1,6 @@
 import {
   Activity,
+  Crown,
   BarChart3,
   FileQuestion,
   Gauge,
@@ -36,6 +37,7 @@ const navigation: readonly {
   { href: '/admin/audience', label: 'رادار الجمهور', icon: Radar, managersOnly: true },
   { href: '/admin/permissions', label: 'الصلاحيات', icon: ShieldCheck },
   { href: '/admin/stamps', label: 'أختام الأوسمة', icon: Stamp, permission: 'MANAGE_USERS' },
+  { href: '/admin/identity', label: 'الشارات والمقتنيات', icon: Crown, managersOnly: true },
   { href: '/admin/content', label: 'المحتوى', icon: FileQuestion, permission: 'MANAGE_CONTENT' },
   { href: '/admin/rooms', label: 'الغرف المباشرة', icon: Radio, permission: 'MANAGE_ROOMS' },
   { href: '/admin/kingdoms', label: 'تحدي الممالك', icon: ShieldCheck, managersOnly: true },

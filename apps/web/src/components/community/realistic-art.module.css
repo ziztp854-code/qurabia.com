@@ -1,0 +1,66 @@
+.badge,
+.frame {
+  display: inline-block;
+  flex-shrink: 0;
+  inline-size: 72px;
+  aspect-ratio: 1;
+  background-repeat: no-repeat;
+  vertical-align: middle;
+}
+.badge {
+  overflow: hidden;
+}
+.badge > img,
+.frame > img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+.frame {
+  inline-size: 140px;
+  pointer-events: none;
+}
+.missing {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 72px;
+  min-block-size: 56px;
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  background: var(--surface);
+  font-size: 0.65rem;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.entranceBoard {
+  container-type: inline-size;
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 3 / 1;
+  isolation: isolate;
+}
+.entrancePlate {
+  position: absolute;
+  inset-inline: 0;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+.customEntrance {
+  inset-block: 0;
+  block-size: 100%;
+}
+.customEntrance img {
+  object-fit: contain;
+}
+
+/* Built-in atlas gutters; uploaded individual images retain their full bounds. */
+.atlas {
+  clip-path: inset(5%);
+}

@@ -90,6 +90,39 @@ describe('managed account boundaries use the current server identity', () => {
     expect(mocks.prisma.user.findUnique.mock.invocationCallOrder[0]).toBeLessThan(mocks.prisma.user.findMany.mock.invocationCallOrder[0]!);
     expect(mocks.prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 20, take: 20, where: expect.objectContaining({ OR: expect.any(Array) }) }));
   });
+  it('searches the full account ID and uses the same filter for pagination totals', async () => {
+    const id = 'cmplayer000000000000000001';
+    await listManagedUsers(id, 1);
+    const where = expect.objectContaining({
+      status: { not: 'DELETED' },
+      OR: expect.arrayContaining([{ id }]),
+    });
+    expect(mocks.prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where }));
+    expect(mocks.prisma.user.count).toHaveBeenCalledWith({ where });
+  });
+  it.each(['1', '123456789'])('searches the numeric account ID %s', async (query) => {
+    await listManagedUsers(query, 1);
+    const where = expect.objectContaining({
+      OR: expect.arrayContaining([{ accountNumber: Number(query) }]),
+    });
+    expect(mocks.prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where }));
+    expect(mocks.prisma.user.count).toHaveBeenCalledWith({ where });
+  });
+  it.each(['0', '2', '012345678', '1234567890', '999999999999999999999', '1e8'])('does not treat %s as a numeric account ID', async (query) => {
+    await listManagedUsers(query, 1);
+    const args = mocks.prisma.user.findMany.mock.calls[0][0];
+    expect(args.where.OR.some((filter: object) => 'accountNumber' in filter)).toBe(false);
+  });
+  it('shows numeric IDs in the authorized account list', async () => {
+    mocks.prisma.user.findMany.mockResolvedValue([
+      { id: 'internal-owner', accountNumber: 1, name: 'Owner', role: 'OWNER', status: 'ACTIVE', createdAt: new Date('2026-01-01'), subscriptions: [] },
+      { id: 'internal-player', accountNumber: 123456789, name: 'Player', role: 'USER', status: 'ACTIVE', tokenVersion: 0, createdAt: new Date('2026-01-01'), subscriptions: [] },
+    ]);
+    const html = renderToStaticMarkup(await UsersPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain('<bdi dir="ltr">1</bdi>');
+    expect(html).toContain('<bdi dir="ltr">123456789</bdi>');
+    expect(html).not.toContain('<bdi dir="ltr">internal-');
+  });
   it('keeps director role / status updates and subscription actions operational', async () => {
     await expect(updateUserAccess(form())).rejects.toThrow('REDIRECT:/admin/users?result=UPDATED');
     expect(mocks.prisma.user.updateMany).toHaveBeenCalled();

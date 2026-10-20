@@ -1,0 +1,1070 @@
+.voice {
+  --voice-surface: color-mix(in srgb, var(--brand-navy) 78%, var(--background));
+  --voice-deep: color-mix(in srgb, var(--brand-navy) 28%, var(--background));
+  --voice-line: color-mix(in srgb, var(--brand-cream) 14%, transparent);
+  --voice-gold: var(--gold-100);
+  --voice-muted: var(--text-soft);
+  display: grid;
+  gap: var(--space-6, 1.5rem);
+  max-inline-size: 88rem;
+  margin-inline: auto;
+  color: var(--foreground);
+  min-inline-size: 0;
+  font-family: var(--font-arabic);
+}
+.voice *,
+.entrance * {
+  box-sizing: border-box;
+}
+.voice h1,
+.voice h2,
+.voice h3,
+.voice p {
+  margin: 0;
+}
+.voice h1 {
+  font-size: clamp(1.65rem, 3.5vw, 2.65rem);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.voice h2 {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.voice h3 {
+  font-size: 1.08rem;
+}
+.voice button,
+.voice input,
+.entrance {
+  font: inherit;
+}
+
+.voice button {
+  cursor: pointer;
+}
+.voice button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+.voice a {
+  color: inherit;
+  text-underline-offset: 0.3em;
+}
+.voice :is(button, input, a):focus-visible {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 4px;
+}
+.voice input {
+  min-inline-size: 0;
+  inline-size: 100%;
+  min-block-size: 46px;
+  background: var(--voice-deep);
+  border: 1px solid var(--voice-line);
+  border-radius: 0.65rem;
+  color: var(--foreground);
+  padding: 0.65rem 0.85rem;
+}
+.voice input::placeholder {
+  color: var(--voice-muted);
+  opacity: 1;
+}
+.eyebrow {
+  color: var(--voice-gold, var(--gold-100));
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.lobbyHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  border-block-end: 1px solid var(--voice-line);
+  gap: 1rem;
+  background: radial-gradient(
+    ellipse at 15% 80%,
+    color-mix(in srgb, var(--brand-gold) 10%, transparent),
+    transparent 58%
+  );
+}
+.lobbyHero p {
+  color: var(--voice-muted);
+  max-inline-size: 35rem;
+  line-height: 2;
+}
+.heroPhoto {
+  position: relative;
+  flex: 0 0 42%;
+  block-size: 18rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--voice-line);
+}
+.heroPhoto img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: 50% 60%;
+}
+
+.lobbyTools {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 1.5rem;
+}
+.createForm {
+  display: grid;
+  gap: 0.6rem;
+}
+.createForm label {
+  color: var(--voice-gold);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.createForm > div {
+  display: flex;
+  gap: 0.65rem;
+}
+.createForm button {
+  flex-shrink: 0;
+}
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-end: 1.25rem;
+}
+.sectionHeading > span {
+  color: var(--voice-muted);
+  font-size: 0.8rem;
+}
+.roomGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.roomCard {
+  position: relative;
+  padding: 1.25rem;
+  background: var(--voice-surface);
+  border: 1px solid var(--voice-line);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.9rem;
+  text-decoration: none;
+  transition:
+    border-color 0.18s,
+    transform 0.18s;
+}
+.roomCard:hover {
+  border-color: var(--brand-gold);
+  transform: translateY(-3px);
+}
+.roomArt {
+  display: grid;
+  place-items: center;
+  block-size: 8rem;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--brand-gold) 18%, var(--voice-deep)),
+    var(--voice-deep)
+  );
+  color: var(--voice-gold);
+}
+
+.roomArt img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.roomCard > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--voice-muted);
+  font-size: 0.8rem;
+}
+.roomCard > div > span,
+.roomCardLink {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.roomCardLink {
+  color: var(--voice-gold);
+  border-block-start: 1px solid var(--voice-line);
+  padding-block-start: 0.85rem;
+  justify-content: space-between;
+}
+.livePill {
+  inline-size: fit-content;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+  padding: 0.15rem 0.55rem;
+  border-radius: 2rem;
+}
+.empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  border: 1px dashed var(--voice-line);
+  border-radius: 1rem;
+  color: var(--voice-muted);
+}
+.empty > svg {
+  color: var(--voice-gold);
+}
+.empty h1,
+.empty h3 {
+  color: var(--foreground);
+}
+.footnote {
+  color: var(--voice-muted);
+  font-size: 0.76rem;
+  line-height: 1.9;
+}
+.topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.backLink {
+  text-decoration: none;
+  color: var(--voice-muted) !important;
+  font-size: 0.8rem;
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--warning);
+  font-size: 0.74rem;
+}
+.connection i {
+  inline-size: 0.45rem;
+  block-size: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.connection[data-connected='true'] {
+  color: var(--success);
+}
+.roomHeader {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  min-inline-size: 0;
+  padding-block-end: 1.5rem;
+  border-block-end: 1px solid var(--voice-line);
+}
+.roomHeader > div {
+  flex: 1;
+  min-inline-size: 0;
+}
+.roomHeader h1 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+.roomHeader > button {
+  flex-shrink: 0;
+}
+.roomLogo {
+  inline-size: 5rem;
+  block-size: 5rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--brand-gold) 35%, transparent);
+  border-radius: 1rem;
+  color: var(--voice-gold);
+  background: var(--voice-surface);
+  overflow: hidden;
+}
+
+.roomLogo img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.roomMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.76rem;
+  color: var(--voice-muted);
+}
+.roomMeta > span {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.roomLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 21rem;
+  align-items: start;
+  gap: 1.25rem;
+}
+.mainColumn {
+  display: grid;
+  min-inline-size: 0;
+  gap: 1.25rem;
+}
+.panel,
+.seatStage,
+.chatPanel {
+  border: 1px solid var(--voice-line);
+  border-radius: 1rem;
+  background: var(--voice-surface);
+  padding: 1.25rem;
+  min-inline-size: 0;
+}
+.seatStage {
+  position: relative;
+  isolation: isolate;
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--voice-deep) 89%, transparent),
+      color-mix(in srgb, var(--voice-deep) 96%, transparent)
+    ),
+    url('/community-assets/voice-majlis.webp');
+  background-position: center;
+  background-size: cover;
+  overflow: hidden;
+}
+.seatStage > .sectionHeading {
+  border-block-end: 1px solid var(--voice-line);
+  padding-block-end: 1rem;
+}
+.seatStage h2 {
+  color: var(--brand-cream);
+}
+.soundBars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  block-size: 2rem;
+}
+.soundBars i {
+  inline-size: 0.2rem;
+  block-size: 0.6rem;
+  background: var(--brand-gold);
+  border-radius: 1rem;
+}
+.soundBars i:nth-child(2n) {
+  block-size: 1.25rem;
+}
+.soundBars i:nth-child(3) {
+  block-size: 1.8rem;
+}
+.seats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 0.6rem;
+  margin-block: 1.8rem;
+}
+.seat {
+  background: transparent;
+  color: var(--foreground);
+  border: 0;
+  padding: 0.6rem 0.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.8rem;
+  min-inline-size: 0;
+}
+.seat:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-cream) 3%, transparent);
+}
+.seat > strong {
+  font-size: 0.88rem;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.seat > small {
+  color: var(--voice-muted);
+  font-size: 0.67rem;
+}
+.avatar {
+  --avatar-tone: var(--voice-muted);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 4.3rem;
+  block-size: 4.3rem;
+  flex-shrink: 0;
+  padding: 0.35rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--voice-deep, var(--background));
+  color: var(--avatar-tone);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+.avatar .avatarPhoto {
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.avatar .avatarEmpty {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0.35rem;
+  font-size: 0.55rem;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--voice-muted, var(--text-soft));
+  text-align: center;
+  border-radius: 50%;
+  background: var(--voice-deep, var(--background));
+}
+.avatar .frameArt {
+  position: absolute;
+  inset: -0.35rem;
+  inline-size: calc(100% + 0.7rem);
+  block-size: calc(100% + 0.7rem);
+  pointer-events: none;
+}
+.frameArt > * {
+  inline-size: 100%;
+  block-size: 100%;
+}
+.frameArt img {
+  object-fit: contain;
+  border-radius: 0;
+}
+.avatar .avatarBadge {
+  position: absolute;
+  inset-block-end: -0.4rem;
+  inset-inline-end: -0.35rem;
+  inline-size: 1.65rem;
+  block-size: 1.65rem;
+}
+.avatarBadge > * {
+  inline-size: 100%;
+  block-size: 100%;
+}
+.avatar[data-speaking='true']::after {
+  content: '';
+  position: absolute;
+  inset: -0.4rem;
+  border: 2px solid var(--success);
+  border-radius: 50%;
+  animation: talkingRing 1.15s ease-out infinite;
+  pointer-events: none;
+}
+
+.emptySeat {
+  color: var(--voice-muted);
+}
+.emptySeat .avatar {
+  border-style: dashed;
+  opacity: 0.75;
+}
+.emptySeat strong {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.micState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  color: var(--success);
+  font-size: 0.65rem;
+}
+.micState[data-muted='true'] {
+  color: var(--voice-muted);
+}
+.voiceControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding-block: 1rem;
+  border-block-start: 1px solid var(--voice-line);
+}
+.seatStage > .footnote {
+  text-align: center;
+}
+.audience {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.audienceMember {
+  display: flex;
+  align-items: center;
+  text-align: start;
+  gap: 0.7rem;
+  padding: 0.55rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  color: var(--foreground);
+  min-inline-size: 0;
+}
+.audienceMember:hover {
+  border-color: var(--voice-line);
+  background: var(--voice-deep);
+}
+.audienceMember .avatar {
+  inline-size: 2.7rem;
+  block-size: 2.7rem;
+  font-size: 1rem;
+}
+.audienceMember > span:last-child {
+  display: grid;
+  gap: 0.2rem;
+  min-inline-size: 0;
+}
+.audienceMember strong {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.audienceMember small {
+  color: var(--voice-muted);
+  font-size: 0.62rem;
+}
+.requests {
+  display: grid;
+  gap: 0.6rem;
+}
+.requests > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.7rem;
+  border-block-start: 1px solid var(--voice-line);
+  font-size: 0.85rem;
+}
+.chatPanel {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 36rem;
+}
+.chatPanel > .sectionHeading {
+  border-block-end: 1px solid var(--voice-line);
+  padding-block-end: 0.8rem;
+}
+.chatMessages {
+  block-size: 26rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding-inline-end: 0.3rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--voice-line) transparent;
+}
+.chatMessages article {
+  position: relative;
+  padding: 0.65rem 0.8rem;
+  background: color-mix(in srgb, var(--brand-cream) 3%, transparent);
+  border-radius: 0.65rem;
+}
+.chatMessages article > strong {
+  font-size: 0.71rem;
+  color: var(--voice-gold);
+}
+.chatMessages article > p {
+  font-size: 0.82rem;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chatMessages time {
+  display: block;
+  color: var(--voice-muted);
+  font-size: 0.58rem;
+  text-align: end;
+}
+.reactions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding-block: 0.7rem;
+  margin-block-start: auto;
+}
+.reactions button {
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  background: var(--voice-deep);
+  border: 1px solid var(--voice-line);
+  border-radius: 0.6rem;
+  color: var(--foreground);
+  font-size: 1.15rem;
+}
+.reactionFeed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  color: var(--voice-muted);
+}
+.reactionFeed:not(:empty) {
+  padding-block-end: 0.5rem;
+}
+.chatForm {
+  display: flex;
+  gap: 0.45rem;
+}
+.chatForm button {
+  min-inline-size: 46px;
+  padding-inline: 0.65rem;
+}
+.effectsToggle {
+  border: 0;
+  background: transparent;
+  color: var(--voice-muted);
+  min-block-size: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.68rem !important;
+  margin-block-start: 0.6rem;
+}
+.error,
+.notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--danger) 8%, var(--voice-deep));
+  border-radius: 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+.error button,
+.notice button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+}
+.notice {
+  flex-wrap: wrap;
+  border-color: var(--voice-line);
+  background: var(--voice-surface);
+}
+.memberCard {
+  --voice-muted: var(--text-soft);
+  --voice-deep: var(--background);
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  padding-block: 1rem;
+}
+.memberCard > .avatar {
+  inline-size: 5rem;
+  block-size: 5rem;
+}
+.memberCard h2 {
+  margin: 0;
+}
+.memberCard > bdi,
+.memberCard > span {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+.memberBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.memberBadges span {
+  border: 1px solid var(--border-gold);
+  color: var(--gold-100);
+  border-radius: 2rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.73rem;
+}
+.profileLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 44px;
+  padding-inline: 1rem;
+  color: var(--gold-100);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+.memberModeration {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 1rem;
+}
+.entranceRail {
+  block-size: clamp(7.2rem, 15vw, 11.7rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block: 0.5rem;
+}
+.entranceOverlay {
+  inline-size: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.entrance {
+  --entrance-tone: var(--brand-cream);
+  position: relative;
+  display: block;
+  inline-size: min(100%, 32rem);
+  flex-shrink: 0;
+  padding: 0;
+  color: var(--brand-ivory);
+  animation: enterOrdinary 0.5s ease-out both;
+  font-family: var(--font-arabic);
+}
+
+.entrance[data-entrance-tier='silver'] {
+  --entrance-tone: var(--brand-cream);
+  animation: enterSilver 0.6s ease-out both;
+}
+.entrance[data-entrance-tier='gold'] {
+  --entrance-tone: var(--gold-100);
+  animation: enterGold 0.55s ease-out both;
+}
+.entrance[data-entrance-tier='diamond'] {
+  --entrance-tone: var(--admin-verified-highlight);
+  animation: enterDiamond 0.65s ease-out both;
+}
+.entrance[data-entrance-tier='royal'] {
+  --entrance-tone: var(--gold-100);
+  animation: enterRoyal 0.75s ease-out both;
+}
+.entrance[data-entrance-tier='legend'] {
+  --entrance-tone: var(--gold-200);
+  animation: enterLegend 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.entranceAvatar {
+  position: absolute;
+  inset-inline-end: calc(var(--entrance-avatar-x, 21%) - 7%);
+  inset-block-start: var(--entrance-avatar-y, 55%);
+  transform: translateY(-50%);
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  inline-size: 14%;
+  aspect-ratio: 1;
+  block-size: auto;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--brand-cream);
+}
+.entranceAvatar img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.entranceCopy {
+  position: absolute;
+  inset-inline-start: 11%;
+  inset-inline-end: 37%;
+  inset-block-start: var(--entrance-avatar-y, 55%);
+  transform: translateY(-50%);
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  max-block-size: 60%;
+  min-inline-size: 0;
+  text-align: center;
+  text-shadow: 0 1px 2px var(--background);
+}
+.entranceCopy strong {
+  font-size: clamp(0.75rem, 3.8cqi, 1.1rem);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  max-inline-size: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.entranceCopy small {
+  color: var(--entrance-tone);
+  font-size: clamp(0.5rem, 2.2cqi, 0.68rem);
+  line-height: 1.2;
+}
+.entranceCopy > span {
+  font-size: clamp(0.48rem, 2cqi, 0.65rem);
+  line-height: 1.3;
+  color: var(--brand-cream);
+}
+.entrance[data-subdued='true'],
+.entrance[data-subdued='true'] * {
+  animation: none !important;
+}
+
+.entranceAvatar > span {
+  padding: 0.25rem;
+  font-size: 0.52rem;
+  text-align: center;
+  line-height: 1.4;
+  color: var(--brand-cream);
+}
+@keyframes talkingRing {
+  from {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.13);
+    opacity: 0;
+  }
+}
+@keyframes enterOrdinary {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes enterSilver {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes enterGold {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes enterDiamond {
+  from {
+    opacity: 0;
+    transform: perspective(500px) rotateY(-3deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(500px) rotateY(0);
+  }
+}
+@keyframes enterRoyal {
+  from {
+    opacity: 0;
+    transform: scaleX(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+@keyframes enterLegend {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.88);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-0.1rem) scale(1.02);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1100px) {
+  .roomLayout {
+    grid-template-columns: minmax(0, 1fr) 18.5rem;
+    gap: 1rem;
+  }
+  .roomHeader {
+    gap: 0.8rem;
+  }
+  .panel,
+  .seatStage,
+  .chatPanel {
+    padding: 1rem;
+  }
+}
+@media (max-width: 850px) {
+  .roomLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chatPanel {
+    min-block-size: 28rem;
+  }
+  .chatMessages {
+    block-size: 20rem;
+  }
+  .lobbyTools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .roomGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .heroPhoto {
+    flex-basis: 40%;
+    block-size: 15rem;
+  }
+}
+@media (max-width: 480px) {
+  .voice {
+    gap: 1rem;
+  }
+  .roomHeader {
+    flex-wrap: wrap;
+  }
+  .roomHeader > div {
+    flex-basis: calc(100% - 5rem);
+  }
+  .roomHeader > button {
+    margin-inline-start: auto;
+  }
+  .roomLogo {
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+  }
+  .roomMeta {
+    gap: 0.5rem;
+  }
+  .seats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-block: 1rem;
+  }
+  .seat {
+    padding: 0.65rem 0.15rem;
+  }
+  .voiceControls > button {
+    flex: 1 1 8rem;
+  }
+  .audience {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .roomGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lobbyHero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .heroPhoto {
+    display: block;
+    inline-size: 100%;
+    flex-basis: auto;
+    block-size: 12rem;
+  }
+  .createForm > div {
+    flex-wrap: wrap;
+  }
+  .createForm input {
+    flex: 1 1 8rem;
+  }
+  .createForm button {
+    flex: 1 1 auto;
+  }
+  .roomHeader h1 {
+    font-size: 1.2rem;
+  }
+  .entrance {
+    padding: 0;
+  }
+
+  .reactions {
+    gap: 0.1rem;
+  }
+  .reactions button {
+    min-inline-size: 44px;
+  }
+  .chatForm input {
+    font-size: 0.8rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice *,
+  .entrance,
+  .entrance * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .avatar[data-speaking='true']::after {
+    opacity: 1;
+  }
+}
+
+.memberBadges > span {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 0;
+}
+.memberBadges > span > [role='img'] {
+  inline-size: 3rem;
+  block-size: 3rem;
+}
+
+.entranceBadgeLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  max-inline-size: 100%;
+}
+.entranceBadgeLine > [role='img'],
+.entranceBadgeLine > span:has(img) {
+  inline-size: clamp(0.9rem, 4cqi, 1.3rem);
+  block-size: clamp(0.9rem, 4cqi, 1.3rem);
+  padding: 0;
+}

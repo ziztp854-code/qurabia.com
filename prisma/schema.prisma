@@ -133,6 +133,8 @@ enum MafiaActionType {
 
 model User {
   id                 String        @id @default(cuid())
+  /// Public ID: nine digits, or 1 for OWNER (enforced by the account-number migration).
+  accountNumber      Int           @unique @default(autoincrement())
   name               String?       @db.VarChar(120)
   email              String?       @unique @db.VarChar(320)
   emailVerified      DateTime?
@@ -150,6 +152,11 @@ model User {
   accounts           Account[]
   sessions           Session[]
   profile            Profile?
+  badges             UserBadge[]
+  cosmetics          UserCosmetic[]
+  followers          UserFollow[] @relation("FollowTarget")
+  following          UserFollow[] @relation("FollowSource")
+  voiceRooms         VoiceRoom[]
   questions          Question[]
   quizzes            Quiz[]
   liveParticipations LiveParticipant[]
@@ -543,6 +550,16 @@ model VerificationToken {
 }
 
 model Profile {
+  username    String?  @unique @db.VarChar(30)
+  coverUrl    String?
+  visibility  String   @default("PUBLIC") @db.VarChar(12)
+  showRooms   Boolean  @default(true)
+  showCollection Boolean @default(true)
+  appearance Json     @default("{}")
+  entranceEnabled Boolean @default(true)
+  entranceSound Boolean @default(false)
+  reduceEffects Boolean @default(false)
+  xp          Int      @default(0)
   id          String   @id @default(cuid())
   userId      String   @unique
   displayName String   @db.VarChar(120)
@@ -715,4 +732,94 @@ model KingdomReportEntry {
   @@index([worldId, playerId, eventAt, ordinal, reportId], map: "royal_report_timeline_idx")
   @@index([worldId, playerId, category, eventAt, ordinal, reportId], map: "royal_report_category_idx")
   @@index([worldId, playerId, readAt, eventAt, ordinal, reportId], map: "royal_report_unread_idx")
+}
+
+model UserFollow {
+  followerId String
+  targetId   String
+  createdAt DateTime @default(now())
+  follower User @relation("FollowSource", fields: [followerId], references: [id], onDelete: Cascade)
+  target User @relation("FollowTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  @@id([followerId, targetId])
+  @@index([targetId, createdAt])
+}
+
+model CommunityBadge {
+  id String @id @db.VarChar(80)
+  name String @db.VarChar(80)
+  description String @db.VarChar(500)
+  category String @db.VarChar(20)
+  rarity String @default("common") @db.VarChar(16)
+  assetUrl String?
+  sensitive Boolean @default(false)
+  archived Boolean @default(false)
+  effectId String?
+  frameId String?
+  effect ProfileCosmetic? @relation("BadgeEffect", fields: [effectId], references: [id], onDelete: SetNull)
+  frame ProfileCosmetic? @relation("BadgeFrame", fields: [frameId], references: [id], onDelete: SetNull)
+  grants UserBadge[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([category, archived])
+}
+
+model UserBadge {
+  id String @id @default(cuid())
+  userId String
+  badgeId String
+  grantedBy String
+  grantedAt DateTime @default(now())
+  expiresAt DateTime?
+  revokedAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge CommunityBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  @@unique([userId, badgeId])
+  @@index([userId, revokedAt, expiresAt])
+}
+
+model ProfileCosmetic {
+  id String @id @db.VarChar(80)
+  name String @db.VarChar(80)
+  description String @db.VarChar(500)
+  kind String @db.VarChar(16)
+  tier String @default("ordinary") @db.VarChar(16)
+  token String @default("neutral") @db.VarChar(20)
+  assetUrl String?
+  free Boolean @default(false)
+  archived Boolean @default(false)
+  grants UserCosmetic[]
+  effectBadges CommunityBadge[] @relation("BadgeEffect")
+  frameBadges CommunityBadge[] @relation("BadgeFrame")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([kind, archived])
+}
+
+model UserCosmetic {
+  id String @id @default(cuid())
+  userId String
+  cosmeticId String
+  grantedBy String
+  grantedAt DateTime @default(now())
+  expiresAt DateTime?
+  revokedAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cosmetic ProfileCosmetic @relation(fields: [cosmeticId], references: [id], onDelete: Cascade)
+  @@unique([userId, cosmeticId])
+  @@index([userId, revokedAt, expiresAt])
+}
+
+model VoiceRoom {
+  id String @id @default(cuid())
+  code String @unique @db.VarChar(9)
+  name String @db.VarChar(100)
+  imageUrl String?
+  ownerId String
+  state Json
+  status String @default("OPEN") @db.VarChar(12)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([status, updatedAt])
+  @@index([ownerId])
 }

@@ -6265,6 +6265,7 @@ tr:last-child td {
   }
   .sidebar nav {
     flex-direction: row;
+    flex-shrink: 0;
   }
   .sidebar nav a,
   .sidebar .button {

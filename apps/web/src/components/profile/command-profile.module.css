@@ -27,8 +27,13 @@
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, rgb(255 180 12 / 8%), transparent 24%, transparent 78%, rgb(255 180 12 / 8%));
+  background: linear-gradient(
+    90deg,
+    rgb(255 180 12 / 8%),
+    transparent 24%,
+    transparent 78%,
+    rgb(255 180 12 / 8%)
+  );
   pointer-events: none;
 }
 
@@ -143,10 +148,18 @@
   color: color-mix(in srgb, var(--rank-tone, var(--brand-gold)) 80%, var(--foreground));
 }
 
-.courtRankChip[data-plan='SPECTATOR'] { --rank-tone: var(--rank-spectator); }
-.courtRankChip[data-plan='KNIGHT'] { --rank-tone: var(--rank-knight); }
-.courtRankChip[data-plan='PRINCE'] { --rank-tone: var(--rank-prince); }
-.courtRankChip[data-plan='SULTAN'] { --rank-tone: var(--rank-sultan); }
+.courtRankChip[data-plan='SPECTATOR'] {
+  --rank-tone: var(--rank-spectator);
+}
+.courtRankChip[data-plan='KNIGHT'] {
+  --rank-tone: var(--rank-knight);
+}
+.courtRankChip[data-plan='PRINCE'] {
+  --rank-tone: var(--rank-prince);
+}
+.courtRankChip[data-plan='SULTAN'] {
+  --rank-tone: var(--rank-sultan);
+}
 
 .crownStage {
   display: grid;
@@ -175,9 +188,10 @@
   border-radius: 1rem;
 }
 
-.rankShowcaseImage {
+.rankShowcase > .rankShowcaseImage {
   inline-size: min(100%, 17rem);
   block-size: auto;
+  aspect-ratio: 1;
   border-radius: 1.1rem;
   border: 1px solid rgb(255 255 255 / 0.12);
   box-shadow: 0 18px 44px rgb(0 0 0 / 45%);
@@ -289,9 +303,8 @@
 }
 
 .badgeArt {
-  object-fit: cover;
-  mix-blend-mode: screen;
-  transform: scale(1.08);
+  inline-size: 100%;
+  block-size: 100%;
 }
 
 .badgeGlyph svg {
@@ -381,9 +394,7 @@
   padding: 1.05rem 1.1rem 0.85rem;
   border: 1px solid rgb(212 175 55 / 28%);
   border-radius: 1rem;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent 42%),
-    #101014;
+  background: linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent 42%), #101014;
 }
 
 .statLabel,
@@ -716,4 +727,11 @@
   .commandBtn:hover:not(:disabled) {
     transform: none;
   }
+}
+
+.photoMissing {
+  padding: var(--space-1);
+  font-size: 0.65rem;
+  line-height: 1.7;
+  text-align: center;
 }

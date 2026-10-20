@@ -17,7 +17,15 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type AnchorHTMLAttributes,
+} from 'react';
 import { primaryNavigation, publicNavigation } from '@/config/navigation';
 import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils';
@@ -25,6 +33,23 @@ import { BrandLogo, BrandMark } from '../brand';
 import { ThemeToggle } from '../theme-toggle';
 import { AdminVerifiedName, Button, ButtonLink } from '../ui';
 import { SignOutButton } from '../auth/sign-out-button';
+
+// Voice needs a fresh document so its route-scoped microphone policy takes effect.
+function NavigationLink({
+  href,
+  ...props
+}: {
+  href: string;
+} & Pick<
+  AnchorHTMLAttributes<HTMLAnchorElement>,
+  'children' | 'className' | 'onClick' | 'aria-current' | 'aria-label'
+>) {
+  if (href === '/voice') {
+    // eslint-disable-next-line @next/next/no-html-link-for-pages -- A new document is required for the route-scoped microphone policy.
+    return <a href="/voice/" {...props} />;
+  }
+  return <Link href={href} prefetch={false} {...props} />;
+}
 
 type HeaderVariant = 'default' | 'home';
 
@@ -124,15 +149,16 @@ export function Header({
               (item) => !['/games/kingdoms/world-map', '/contact', '/profile'].includes(item.href),
             )
             .map((item) => (
-              <Link
+              <NavigationLink
                 key={item.href}
+                aria-label={item.label}
                 href={item.href}
-                prefetch={false}
+
                 aria-current={activeHref === item.href ? 'page' : undefined}
               >
                 {isHome && <item.icon aria-hidden="true" />}
                 {item.label}
-              </Link>
+              </NavigationLink>
             ))}
         </nav>
         <div className="header-actions">
@@ -259,16 +285,17 @@ export function Header({
       {open && (
         <nav id={mobileMenuId} className="mobile-nav" aria-label="قائمة الجوال">
           {publicNavigation.map((item) => (
-            <Link
+            <NavigationLink
               key={item.href}
+              aria-label={item.label}
               href={item.href}
               aria-current={activeHref === item.href ? 'page' : undefined}
-              prefetch={false}
+
               onClick={() => setOpen(false)}
             >
               <item.icon aria-hidden="true" />
               {item.label}
-            </Link>
+            </NavigationLink>
           ))}
         </nav>
       )}
@@ -282,16 +309,17 @@ function HomeSidebar() {
       <BrandMark title="تحدي" />
       <nav aria-label="التنقل الجانبي">
         {publicNavigation.map((item) => (
-          <Link
+          <NavigationLink
+            aria-label={item.label}
             href={item.href}
             key={item.href}
-            prefetch={false}
+
             className={item.href === '/' ? 'active' : undefined}
             aria-current={item.href === '/' ? 'page' : undefined}
           >
             <item.icon aria-hidden="true" />
             <span>{item.label}</span>
-          </Link>
+          </NavigationLink>
         ))}
       </nav>
     </aside>
@@ -333,9 +361,9 @@ export function Footer({ variant = 'default' }: { variant?: HeaderVariant }) {
         <div>
           <strong>استكشف</strong>
           {publicNavigation.map((item) => (
-            <Link key={item.href} href={item.href} prefetch={false}>
+            <NavigationLink key={item.href} aria-label={item.label} href={item.href}>
               {item.label}
-            </Link>
+            </NavigationLink>
           ))}
         </div>
         <div>
@@ -486,15 +514,16 @@ export function DashboardLayout({
                 ? pathname === '/'
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
-              <Link
+              <NavigationLink
+                aria-label={item.label}
                 href={item.href}
                 key={item.href}
-                prefetch={false}
+
                 aria-current={isCurrent ? 'page' : undefined}
               >
                 <item.icon aria-hidden="true" />
                 <span>{item.label}</span>
-              </Link>
+              </NavigationLink>
             );
           })}
         </nav>
@@ -519,13 +548,7 @@ export function DashboardLayout({
   );
 }
 
-export function HostLayout({
-  children,
-  players = 0,
-}: {
-  children: ReactNode;
-  players?: number;
-}) {
+export function HostLayout({ children, players = 0 }: { children: ReactNode; players?: number }) {
   return (
     <div className="host-layout">
       <header>

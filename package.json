@@ -19,6 +19,7 @@
     "typecheck": "turbo typecheck",
     "test": "pnpm test:blender && node scripts/check-public-supabase-exposure.mjs --env-only && node scripts/check-no-ladder-prisma-models.mjs && turbo test",
     "test:blender": "node --test scripts/blender-cli.test.mjs",
+    "test:account-numbers": "node --test scripts/user-account-numbers.test.mjs",
     "test:3d": "pnpm --filter @tahaddi/web exec playwright test --config playwright.3d.config.ts",
     "blender:create:challenge-card": "node scripts/blender.mjs create",
     "blender:export": "node scripts/blender.mjs export",

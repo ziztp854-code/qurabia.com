@@ -177,6 +177,15 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
+        source: '/voice/:path*',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=()',
+          },
+        ],
+      },
+      {
         // Only this standalone mini-game may be embedded by our own farm panel.
         source: '/games/sultan-farm/index.html',
         headers: [

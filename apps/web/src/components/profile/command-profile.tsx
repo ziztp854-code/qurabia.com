@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { AdminVerifiedName, ButtonLink } from '@/components/ui';
+import { AdminVerifiedName, ButtonLink, buttonVariants } from '@/components/ui';
 import {
   PERMISSION_LABELS,
   ROLE_LABELS,
@@ -34,12 +34,13 @@ import { cn } from '@/lib/utils';
 import { planDefinition, type PlanCode } from '@tahaddi/domain';
 import { CommandSparkline } from './command-sparkline';
 import styles from './command-profile.module.css';
+import { RealBadgeArtwork } from '@/components/community/realistic-art';
 
-const RANK_IMAGE: Record<PlanCode, string> = {
-  SPECTATOR: '/ranks/spectator.png',
-  KNIGHT: '/ranks/knight.png',
-  PRINCE: '/ranks/prince.png',
-  SULTAN: '/ranks/sultan.png',
+const RANK_ART: Record<PlanCode, string> = {
+  SPECTATOR: 'distinguished-member',
+  KNIGHT: 'gold-member',
+  PRINCE: 'royal-member',
+  SULTAN: 'platform-founder',
 };
 
 export type CommandProfileStat = {
@@ -98,21 +99,12 @@ const BADGE_TONE_CLASS: Readonly<Record<CommandProfileBadgeTone, string>> = {
 };
 
 const BADGE_ART: Readonly<Record<string, string>> = {
-  command: '/profile/badge-owner.png',
-  verified: '/profile/badge-verified.png',
-  active: '/profile/badge-active.png',
-  builder: '/profile/badge-builder.png',
-  audience: '/profile/badge-audience.png',
+  command: 'platform-founder',
+  verified: 'general-manager',
+  active: 'distinguished-member',
+  builder: 'content-creator',
+  audience: 'distinguished-host',
 };
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'ت';
-  if (parts.length === 1) return Array.from(parts[0]).slice(0, 2).join('');
-  const first = Array.from(parts[0])[0] ?? '';
-  const second = Array.from(parts[1])[0] ?? '';
-  return `${first}${second}`;
-}
 
 export function isCommandProfileRole(role: unknown): role is 'ADMIN' | 'OWNER' {
   return isManagerRole(role);
@@ -129,7 +121,9 @@ function parseStatValue(value: string): number {
 function orderedPermissions(role: string): readonly AdminPermission[] {
   const granted = new Set(permissionsForRole(role));
   const ordered = PERMISSION_ORDER.filter((permission) => granted.has(permission));
-  const extras = permissionsForRole(role).filter((permission) => !PERMISSION_ORDER.includes(permission));
+  const extras = permissionsForRole(role).filter(
+    (permission) => !PERMISSION_ORDER.includes(permission),
+  );
   return [...ordered, ...extras];
 }
 
@@ -150,8 +144,8 @@ export function resolveCommandBadges({
     stats.find((item) => item.label === 'المتابعون')?.value ?? '0',
   );
   const liveRooms = parseStatValue(
-    platformStats.find((item) => item.label === 'الغرف الحية' || item.label === 'غرف حيّة')?.value ??
-      '0',
+    platformStats.find((item) => item.label === 'الغرف الحية' || item.label === 'غرف حيّة')
+      ?.value ?? '0',
   );
   const platformUsers = parseStatValue(
     platformStats.find((item) => item.label === 'حسابات المنصة')?.value ?? '0',
@@ -211,13 +205,7 @@ export function resolveCommandBadges({
   return badges;
 }
 
-export function CommandIdentityStrip({
-  name,
-  role,
-}: {
-  name: string;
-  role: AppRole;
-}) {
+export function CommandIdentityStrip({ name, role }: { name: string; role: AppRole }) {
   const elevated = isCommandProfileRole(role);
   return (
     <aside className={styles.strip} aria-label="هوية القيادة">
@@ -243,16 +231,14 @@ export function CommandIdentityStrip({
   );
 }
 
-function ProfileMark({
-  initials,
-  src,
-}: {
-  initials: string;
-  src?: string | null;
-}) {
+function ProfileMark({ name, src }: { name: string; src?: string | null }) {
   return (
-    <span className={styles.mark} aria-label={`الصورة الرمزية: ${initials}`}>
-      {src ? <Image src={src} alt="" fill sizes="4.75rem" unoptimized /> : initials}
+    <span className={styles.mark} aria-label={src ? `صورة ${name}` : 'لم تُضف صورة'}>
+      {src ? (
+        <Image src={src} alt="" fill sizes="4.75rem" unoptimized />
+      ) : (
+        <span className={styles.photoMissing}>لم تُضف صورة</span>
+      )}
     </span>
   );
 }
@@ -268,6 +254,7 @@ function StatTrendIcon({ trend }: { trend: SparkTrend }) {
 }
 
 export function CommandProfile({
+  accountNumber,
   name,
   email,
   role,
@@ -277,6 +264,7 @@ export function CommandProfile({
   image,
   planCode = 'SPECTATOR',
 }: {
+  accountNumber: number;
   name: string;
   email: string;
   role: string;
@@ -293,16 +281,22 @@ export function CommandProfile({
   const displayName = name.trim() || 'مستخدم تحدّي';
   const commandBadges = resolveCommandBadges({ role, status, stats, platformStats });
   const featuredBadge = commandBadges.find((badge) => badge.featured);
-  const startBadges = commandBadges.filter((badge) => badge.id === 'verified' || badge.id === 'active');
-  const endBadges = commandBadges.filter((badge) => badge.id === 'builder' || badge.id === 'audience');
+  const startBadges = commandBadges.filter(
+    (badge) => badge.id === 'verified' || badge.id === 'active',
+  );
+  const endBadges = commandBadges.filter(
+    (badge) => badge.id === 'builder' || badge.id === 'audience',
+  );
   const visibleStats = elevated ? [...stats, ...platformStats] : stats;
-  const initials = initialsFromName(displayName);
 
   return (
-    <section className={cn(styles.stage, elevated && styles.elevated)} aria-labelledby="profile-identity">
+    <section
+      className={cn(styles.stage, elevated && styles.elevated)}
+      aria-labelledby="profile-identity"
+    >
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <ProfileMark initials={initials} src={image} />
+          <ProfileMark name={displayName} src={image} />
           <div className={styles.identityCopy}>
             <h2 className={styles.displayName} id="profile-identity">
               <AdminVerifiedName isManager={elevated}>{displayName}</AdminVerifiedName>
@@ -312,6 +306,9 @@ export function CommandProfile({
                 {email}
               </p>
             ) : null}
+            <p className={styles.email}>
+              معرّف الحساب (ID): <bdi dir="ltr">{accountNumber}</bdi>
+            </p>
             <div className={styles.badges}>
               <span className={cn(styles.roleChip, elevated && styles.roleChipElevated)}>
                 {elevated ? <Crown aria-hidden="true" /> : <UserRound aria-hidden="true" />}
@@ -338,14 +335,10 @@ export function CommandProfile({
             data-plan={planCode}
             aria-label={`رتبتك ${planDefinition(planCode).name} — فتح قاعة الأوسمة`}
           >
-            <Image
+            <RealBadgeArtwork
               className={styles.rankShowcaseImage}
-              src={RANK_IMAGE[planCode]}
-              alt={`بطاقة رتبة ${planDefinition(planCode).name}`}
-              width={1024}
-              height={1536}
-              sizes="(max-width: 720px) 60vw, 20rem"
-              priority
+              badgeId={RANK_ART[planCode]}
+              name={`وسام رتبة ${planDefinition(planCode).name}`}
             />
             <span className={styles.rankShowcaseCaption}>
               رتبتك الحالية · {planDefinition(planCode).name}
@@ -369,9 +362,7 @@ export function CommandProfile({
                 <LeadershipBadgeCard key={badge.id} badge={badge} />
               ))}
             </div>
-            {featuredBadge ? (
-              <LeadershipBadgeCard badge={featuredBadge} featured />
-            ) : null}
+            {featuredBadge ? <LeadershipBadgeCard badge={featuredBadge} featured /> : null}
             <div className={styles.badgeCol}>
               {endBadges.map((badge) => (
                 <LeadershipBadgeCard key={badge.id} badge={badge} />
@@ -439,6 +430,26 @@ export function CommandProfile({
         </nav>
       )}
 
+      <nav className={styles.commands} aria-label="هويتي ومظهري">
+        <ButtonLink
+          href={`/people/${accountNumber}`}
+          variant="outline"
+          className={styles.commandBtn}
+        >
+          <UserRound aria-hidden="true" />
+          ملفي العام
+        </ButtonLink>
+        <ButtonLink href="/profile/appearance" variant="outline" className={styles.commandBtn}>
+          <Sparkles aria-hidden="true" />
+          مظهري وخصوصيتي
+        </ButtonLink>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Load the document with the voice-only microphone policy. */}
+        <a href="/voice/" className={cn(buttonVariants({ variant: 'outline' }), styles.commandBtn)}>
+          <Radio aria-hidden="true" />
+          الغرف الصوتية
+        </a>
+      </nav>
+
       {permissions.length > 0 ? (
         <section className={styles.permissions} aria-labelledby="profile-permissions">
           <h3 id="profile-permissions">
@@ -490,7 +501,6 @@ function LeadershipBadgeCard({
   badge: CommandProfileBadge;
   featured?: boolean;
 }) {
-  const Icon = badge.Icon;
   const art = BADGE_ART[badge.id];
   return (
     <article
@@ -501,17 +511,7 @@ function LeadershipBadgeCard({
       )}
     >
       <span className={styles.badgeGlyph} aria-hidden="true">
-        {art ? (
-          <Image
-            className={styles.badgeArt}
-            src={art}
-            alt=""
-            fill
-            sizes={featured ? '9rem' : '5rem'}
-          />
-        ) : (
-          <Icon />
-        )}
+        {art && <RealBadgeArtwork className={styles.badgeArt} badgeId={art} name={badge.label} />}
       </span>
       <div className={styles.badgeCopy}>
         <strong>{badge.label}</strong>

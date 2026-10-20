@@ -379,6 +379,10 @@
   color: var(--admin-muted);
 }
 
+.accountId {
+  overflow-wrap: anywhere;
+}
+
 .identity a {
   color: inherit;
   text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent);

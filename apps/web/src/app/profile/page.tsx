@@ -1,4 +1,5 @@
 import { formatNumber } from '@/lib/utils';
+import { notFound } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout';
 import { CommandProfile, isCommandProfileRole } from '@/components/profile/command-profile';
 import { isAppRole } from '@/lib/auth/authorization';
@@ -47,6 +48,7 @@ export default async function ProfilePage() {
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
+        accountNumber: true,
         image: true,
         profile: { select: { avatarUrl: true, displayName: true } },
       },
@@ -99,6 +101,8 @@ export default async function ProfilePage() {
       : Promise.resolve([]),
   ]);
 
+  if (!profile) notFound();
+
   const quizSeries = bucketByWeek(
     quizDates.map((row) => row.createdAt),
     SPARK_WEEKS,
@@ -135,6 +139,7 @@ export default async function ProfilePage() {
       className="command-profile-layout"
     >
       <CommandProfile
+        accountNumber={profile.accountNumber}
         name={displayName}
         email={user.email || ''}
         role={user.role}

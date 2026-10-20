@@ -12,6 +12,8 @@ export async function listManagedUsers(query: string, page: number) {
     ...(query
       ? {
           OR: [
+            { id: query },
+            ...(/^(?:1|[1-9]\d{8})$/.test(query) ? [{ accountNumber: Number(query) }] : []),
             { name: { contains: query, mode: 'insensitive' as const } },
             { email: { contains: query, mode: 'insensitive' as const } },
           ],
@@ -28,6 +30,7 @@ export async function listManagedUsers(query: string, page: number) {
       take: PAGE_SIZE,
       select: {
         id: true,
+        accountNumber: true,
         name: true,
         email: true,
         role: true,

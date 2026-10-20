@@ -8,15 +8,11 @@ const stats = [
   { label: 'المتابعون', value: '40', hint: 'في جلساتك', series: [2, 6, 9], tone: 'gold' as const },
 ];
 
-function originalImageSource(image: HTMLElement): string {
-  const renderedSource = image.getAttribute('src') ?? '';
-  return new URL(renderedSource, 'http://localhost').searchParams.get('url') ?? renderedSource;
-}
-
 describe('CommandProfile', () => {
   it('يعرض مشهد القيادة للمدير مع التاج والشارات والصلاحيات الفعلية', () => {
     render(
       <CommandProfile
+        accountNumber={1}
         name="عبدالعزيز بن سلطان العتيبي"
         email="owner@qurabia.com"
         role="OWNER"
@@ -31,9 +27,11 @@ describe('CommandProfile', () => {
       />,
     );
 
-    const rankArtwork = screen.getByRole('img', { name: 'بطاقة رتبة السلطان' });
-    expect(originalImageSource(rankArtwork)).toBe('/ranks/sultan.png');
+    const rankArtwork = screen.getByRole('img', { name: 'وسام رتبة السلطان' });
+    expect(rankArtwork).toHaveAttribute('data-badge-id', 'platform-founder');
     expect(screen.getByRole('heading', { name: /عبدالعزيز بن سلطان العتيبي/ })).toBeInTheDocument();
+    expect(screen.getByText('1')).toHaveAttribute('dir', 'ltr');
+    expect(screen.getByRole('link', { name: 'ملفي العام' })).toHaveAttribute('href', '/people/1');
     expect(screen.getByRole('heading', { name: /شارات القيادة/ })).toBeInTheDocument();
     expect(screen.getByText('مالك المنصة')).toBeInTheDocument();
     expect(screen.getByText('باني تحدّي')).toBeInTheDocument();
@@ -42,7 +40,9 @@ describe('CommandProfile', () => {
     expect(screen.getByText('المسابقات')).toBeInTheDocument();
     expect(screen.getByText('المتابعون')).toBeInTheDocument();
     expect(screen.getByText('حالة الإعلانات')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'المسابقات: مسار 3 أسابيع، الاتجاه صاعد' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'المسابقات: مسار 3 أسابيع، الاتجاه صاعد' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /إدارة المنصة/ })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('link', { name: /بنك الأسئلة/ })).toHaveAttribute('href', '/questions');
     expect(screen.getByRole('link', { name: /إدارة الصفحة/ })).toHaveAttribute('href', '/host');
@@ -56,6 +56,7 @@ describe('CommandProfile', () => {
   it('يخفي اختصار الإدارة وشارات القيادة عن المستخدم العادي', () => {
     render(
       <CommandProfile
+        accountNumber={123456789}
         name="لاعب تحدّي"
         email="player@qurabia.com"
         role="USER"
@@ -65,8 +66,14 @@ describe('CommandProfile', () => {
     );
 
     expect(screen.getByText('لاعب تحدّي')).toBeInTheDocument();
-    const rankArtwork = screen.getByRole('img', { name: 'بطاقة رتبة المشاهد' });
-    expect(originalImageSource(rankArtwork)).toBe('/ranks/spectator.png');
+    expect(screen.getByText('123456789')).toHaveAttribute('dir', 'ltr');
+    expect(screen.getByRole('link', { name: 'الغرف الصوتية' })).toHaveAttribute('href', '/voice/');
+    expect(screen.getByRole('link', { name: 'مظهري وخصوصيتي' })).toHaveAttribute(
+      'href',
+      '/profile/appearance',
+    );
+    const rankArtwork = screen.getByRole('img', { name: 'وسام رتبة المشاهد' });
+    expect(rankArtwork).toHaveAttribute('data-badge-id', 'distinguished-member');
     expect(screen.queryByRole('link', { name: /إدارة المنصة/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /بنك الأسئلة/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /مسابقة جديدة/ })).toBeInTheDocument();

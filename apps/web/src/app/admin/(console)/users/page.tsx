@@ -54,8 +54,13 @@ export default async function AdminUsersPage({
         </div>
         <form action="/admin/users" method="get">
           <label>
-            <span className="sr-only">البحث في المستخدمين</span>
-            <input name="q" type="search" defaultValue={query} placeholder="الاسم أو البريد" />
+            <span className="sr-only">البحث بالاسم أو البريد أو معرّف الحساب</span>
+            <input
+              name="q"
+              type="search"
+              defaultValue={query}
+              placeholder="الاسم أو البريد أو معرّف الحساب"
+            />
           </label>
         </form>
       </div>
@@ -87,6 +92,9 @@ export default async function AdminUsersPage({
                       <strong>{user.name || 'بلا اسم'}</strong>
                     </AdminVerifiedName>
                     <small>{user.email || 'بلا بريد'}</small>
+                    <small className={styles.accountId}>
+                      معرّف الحساب (ID): <bdi dir="ltr">{user.accountNumber}</bdi>
+                    </small>
                     <small>
                       {ROLE_LABELS[user.role]} ·{' '}
                       {user.status === 'ACTIVE'
