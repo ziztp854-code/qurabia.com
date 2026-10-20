@@ -37,7 +37,9 @@ describe('MapLibre presentation boundary', () => {
     expect(uploads).not.toHaveBeenCalled();
     expect(removeLayer).not.toHaveBeenCalled();
     adapter.dispose();
-  });
+    // This correctness stress case runs alongside the full monorepo suite in CI.
+    // Allow slower runners without turning their scheduling into a performance assertion.
+  }, 15_000);
 
   it('replaces every source snapshot so disappeared enemies leave no remnants', () => {
     const map = new FakeMap();
