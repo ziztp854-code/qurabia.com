@@ -10,3 +10,14 @@ Runtime delivery uses WebP (quality 90, alpha quality 100). No external image-ge
 - `voice-majlis.webp`: 1672 × 941, realistic default room image.
 
 Built-in artwork does not confer a grant or account role. Custom administrator-uploaded images take precedence where configured.
+
+Exclusive account overlays (user-approved reference, 21 October 2026):
+
+- `frame-owner-sapphire.webp`: 768 × 768, 178658 bytes, gold crown and blue sapphires.
+- `frame-amira-rose.webp`: 768 × 768, 213146 bytes, rose gold, pink gems and pearls.
+
+Generated from the user's approved board with transparent portrait holes and exterior alpha. Original masters are 1254 × 1254 PNGs in the session workspace (`exec-660e7202-f8ec-4945-8c62-aedfa23f09d9.png` and `exec-e96e3e04-edfa-4942-b33c-672d21c98de8.png`). Sharp only resizes and encodes WebP; the artwork itself is produced by the image-generation tool. Both center and corner alpha are zero. No third-party stock assets or additional client libraries are included. Existing atlas files remain unchanged.
+
+Artwork URLs are public for display; ownership and equip/grant permissions are enforced separately on the server and by database constraints. These frames confer no role or rank.
+
+Matching exclusive entrance banners: `entrance-owner-sapphire.webp` (1200 × 400, 133866 bytes) and `entrance-amira-rose.webp` (1200 × 400, 157756 bytes). Original generated PNGs are 2172 × 724 (`exec-f2885c6c-1f9e-4b77-ac08-4521f24a9c92.png`, `exec-efd480d3-3910-4e61-9a64-4a0cc5533d14.png`). Name and photograph are live account content, not baked into the scene. Existing bounded entrance animation, reduced-motion handling and user opt-out are reused.

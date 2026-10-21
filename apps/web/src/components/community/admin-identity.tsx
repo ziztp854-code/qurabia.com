@@ -2,6 +2,10 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import {
+  PUBLIC_ACCOUNT_NUMBER_PATTERN,
+  PUBLIC_ACCOUNT_NUMBER_INPUT_PATTERN,
+} from '@/lib/account-number';
+import {
   Archive,
   Award,
   ClipboardList,
@@ -149,8 +153,8 @@ export function AdminIdentity({
     const itemId = String(form.get('itemId') ?? '');
     const expiry = String(form.get('expiresAt') ?? '');
     const accountNumber = Number(form.get('accountNumber'));
-    if (!/^(?:1|[1-9]\d{8})$/.test(String(accountNumber))) {
-      setError('أدخل 1 لصاحب الموقع أو معرّف حساب من 9 أرقام.');
+    if (!PUBLIC_ACCOUNT_NUMBER_PATTERN.test(String(accountNumber))) {
+      setError('أدخل 1 لصاحب الموقع أو 2 أو 78 للحسابات الخاصة أو معرّفًا من 9 أرقام.');
       return;
     }
     void command(
@@ -534,7 +538,7 @@ export function AdminIdentity({
                 name="accountNumber"
                 dir="ltr"
                 inputMode="numeric"
-                pattern="1|[1-9][0-9]{8}"
+                pattern={PUBLIC_ACCOUNT_NUMBER_INPUT_PATTERN}
                 required
                 placeholder="123456789"
               />
@@ -651,7 +655,7 @@ export function AdminIdentity({
                   name="accountNumber"
                   dir="ltr"
                   inputMode="numeric"
-                  pattern="1|[1-9][0-9]{8}"
+                  pattern={PUBLIC_ACCOUNT_NUMBER_INPUT_PATTERN}
                   required
                 />
               </label>

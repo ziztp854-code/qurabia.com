@@ -9,6 +9,9 @@ import {
   PROFILE_IDENTITY_MIGRATION,
   ACCOUNT_NUMBERS_MIGRATION,
   COMMUNITY_IDENTITY_MIGRATION,
+  RESERVED_ACCOUNT_NUMBER_MIGRATION,
+  EXCLUSIVE_FRAMES_MIGRATION,
+  EXCLUSIVE_ENTRANCES_MIGRATION,
 } from './voice-production-schema.mjs';
 
 const old = '20260101000000_existing_schema';
@@ -302,6 +305,94 @@ test('new community permission does not relax missing legacy voice or profile gu
         identityMetadata(false, false),
       ),
     /Profile schema drift/,
+  );
+});
+
+test('allows the reviewed reserved-ID migration only with intact identity metadata', () => {
+  const available = [...communityRelease, RESERVED_ACCOUNT_NUMBER_MIGRATION];
+  const plan = (applied, flags) =>
+    voiceMigrationPlan(available, applied.map(complete), [...present, true], [true, true], {
+      ...identityMetadata(true, true),
+      reservedAccountNumber: flags,
+    });
+  assert.equal(plan(communityRelease, [false, false]), 'apply');
+  assert.equal(plan(available, [true, true]), 'ready');
+  for (const flags of [[], [true, false], [false, true]]) {
+    assert.throws(() => plan(communityRelease, flags), /Reserved account number schema drift/);
+    assert.throws(() => plan(available, flags), /Reserved account number schema drift/);
+  }
+  assert.throws(() => plan(communityRelease, [true, true]), /Reserved account number schema drift/);
+  assert.throws(() => plan(available, [false, false]), /Reserved account number schema drift/);
+  assert.throws(
+    () =>
+      voiceMigrationPlan(
+        [...live, RESERVED_ACCOUNT_NUMBER_MIGRATION],
+        live.map(complete),
+        [...present, true],
+        [true, true],
+      ),
+    /Reserved account number dependencies/,
+  );
+});
+
+test('guards the exclusive-frame release against partial metadata and missing dependencies', () => {
+  const previous = [...communityRelease, RESERVED_ACCOUNT_NUMBER_MIGRATION];
+  const available = [...previous, EXCLUSIVE_FRAMES_MIGRATION];
+  const plan = (applied, exclusiveFrames) =>
+    voiceMigrationPlan(available, applied.map(complete), [...present, true], [true, true], {
+      ...identityMetadata(true, true),
+      reservedAccountNumber: [true, true],
+      exclusiveFrames,
+    });
+  assert.equal(plan(previous, [false, false]), 'apply');
+  assert.equal(plan(available, [true, true]), 'ready');
+  for (const flags of [[], [true, false], [false, true]]) {
+    assert.throws(() => plan(previous, flags), /Exclusive frame schema drift/);
+    assert.throws(() => plan(available, flags), /Exclusive frame schema drift/);
+  }
+  assert.throws(
+    () =>
+      voiceMigrationPlan(
+        [...communityRelease, EXCLUSIVE_FRAMES_MIGRATION],
+        communityRelease.map(complete),
+        [...present, true],
+        [true, true],
+        identityMetadata(true, true),
+      ),
+    /Exclusive frame dependencies/,
+  );
+});
+
+test('checks exclusive entrance metadata independently of the frame migration', () => {
+  const previous = [
+    ...communityRelease,
+    RESERVED_ACCOUNT_NUMBER_MIGRATION,
+    EXCLUSIVE_FRAMES_MIGRATION,
+  ];
+  const available = [...previous, EXCLUSIVE_ENTRANCES_MIGRATION];
+  const plan = (applied, exclusiveEntrances) =>
+    voiceMigrationPlan(available, applied.map(complete), [...present, true], [true, true], {
+      ...identityMetadata(true, true),
+      reservedAccountNumber: [true, true],
+      exclusiveFrames: [true, true],
+      exclusiveEntrances,
+    });
+  assert.equal(plan(previous, [false, false]), 'apply');
+  assert.equal(plan(available, [true, true]), 'ready');
+  for (const flags of [[], [true, false], [false, true]]) {
+    assert.throws(() => plan(previous, flags), /Exclusive entrance schema drift/);
+    assert.throws(() => plan(available, flags), /Exclusive entrance schema drift/);
+  }
+  assert.throws(
+    () =>
+      voiceMigrationPlan(
+        [...communityRelease, EXCLUSIVE_ENTRANCES_MIGRATION],
+        communityRelease.map(complete),
+        [...present, true],
+        [true, true],
+        identityMetadata(true, true),
+      ),
+    /Exclusive entrance dependencies/,
   );
 });
 

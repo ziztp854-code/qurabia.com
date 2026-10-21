@@ -1,4 +1,4 @@
-/** Apply only allowlisted additive voice/profile/community migrations in the enabled production build. */
+/** Apply only reviewed, allowlisted voice/profile/community migrations in the enabled production build. */
 import { readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -10,6 +10,9 @@ export const VOICE_SOCIAL_MIGRATION = '20261019120000_voice_direct_messages';
 export const PROFILE_IDENTITY_MIGRATION = '20261019160000_profile_identity';
 export const ACCOUNT_NUMBERS_MIGRATION = '20261021220000_user_account_numbers';
 export const COMMUNITY_IDENTITY_MIGRATION = '20261021230000_community_identity_voice';
+export const RESERVED_ACCOUNT_NUMBER_MIGRATION = '20261022010000_reserved_account_number';
+export const EXCLUSIVE_FRAMES_MIGRATION = '20261022020000_exclusive_profile_frames';
+export const EXCLUSIVE_ENTRANCES_MIGRATION = '20261022030000_exclusive_entrances';
 const VOICE_TABLES = [
   'VoiceRoom',
   'VoicePreference',
@@ -41,6 +44,9 @@ const ALLOWLIST = [
   PROFILE_IDENTITY_MIGRATION,
   ACCOUNT_NUMBERS_MIGRATION,
   COMMUNITY_IDENTITY_MIGRATION,
+  RESERVED_ACCOUNT_NUMBER_MIGRATION,
+  EXCLUSIVE_FRAMES_MIGRATION,
+  EXCLUSIVE_ENTRANCES_MIGRATION,
 ];
 
 function verifyAdditiveMetadata(pending, name, actual, expectedLength, error) {
@@ -104,7 +110,43 @@ export function voiceMigrationPlan(
     )
       throw new Error('Community schema dependencies are missing from this release.');
   }
+  if (available.includes(RESERVED_ACCOUNT_NUMBER_MIGRATION)) {
+    if (!available.includes(ACCOUNT_NUMBERS_MIGRATION))
+      throw new Error('Reserved account number dependencies are missing from this release.');
+    verifyAdditiveMetadata(
+      pending,
+      RESERVED_ACCOUNT_NUMBER_MIGRATION,
+      identitySchema.reservedAccountNumber ?? [],
+      2,
+      'Reserved account number schema drift detected; refusing to repair it automatically.',
+    );
+  }
   const socialAvailable = available.includes(VOICE_SOCIAL_MIGRATION);
+  if (available.includes(EXCLUSIVE_FRAMES_MIGRATION)) {
+    if (
+      !available.includes(RESERVED_ACCOUNT_NUMBER_MIGRATION) ||
+      !available.includes(COMMUNITY_IDENTITY_MIGRATION)
+    )
+      throw new Error('Exclusive frame dependencies are missing from this release.');
+    verifyAdditiveMetadata(
+      pending,
+      EXCLUSIVE_FRAMES_MIGRATION,
+      identitySchema.exclusiveFrames ?? [],
+      2,
+      'Exclusive frame schema drift detected; refusing to repair it automatically.',
+    );
+  }
+  if (available.includes(EXCLUSIVE_ENTRANCES_MIGRATION)) {
+    if (!available.includes(EXCLUSIVE_FRAMES_MIGRATION))
+      throw new Error('Exclusive entrance dependencies are missing from this release.');
+    verifyAdditiveMetadata(
+      pending,
+      EXCLUSIVE_ENTRANCES_MIGRATION,
+      identitySchema.exclusiveEntrances ?? [],
+      2,
+      'Exclusive entrance schema drift detected; refusing to repair it automatically.',
+    );
+  }
   const expected = socialAvailable ? tables : tables.slice(0, 4);
   if (pending.length === 0) {
     if (!expected.every(Boolean))
@@ -165,6 +207,26 @@ async function main() {
       EXISTS(SELECT 1 FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid
         JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema()
         AND c.relname = 'User' AND k.conname = 'User_accountNumber_range_check') AS constraint_present`);
+    const reserved = await client.query(`SELECT
+      EXISTS(SELECT 1 FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema()
+        AND c.relname = 'User' AND k.conname = 'User_accountNumber_range_check'
+        AND position('cmrw9rfv9000204l72z55ai5b' IN pg_get_constraintdef(k.oid)) > 0
+        AND position('cmupvygjx000204jq4bir1i4x' IN pg_get_constraintdef(k.oid)) > 0) AS constraint_present,
+      EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = current_schema() AND p.proname = 'assign_user_account_number'
+        AND position('cmrw9rfv9000204l72z55ai5b' IN pg_get_functiondef(p.oid)) > 0
+        AND position('cmupvygjx000204jq4bir1i4x' IN pg_get_functiondef(p.oid)) > 0) AS function_present`);
+    const exclusive = await client.query(`SELECT EXISTS(
+      SELECT 1 FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema()
+      AND c.relname = name AND k.conname = name || '_exclusive_frames_check'
+    ) AS present FROM unnest(ARRAY['UserCosmetic', 'ProfileCosmetic']) AS name`);
+    const entrances = await client.query(`SELECT EXISTS(
+      SELECT 1 FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema()
+      AND c.relname = name AND k.conname = name || '_exclusive_entrances_check'
+    ) AS present FROM unnest(ARRAY['UserCosmetic', 'ProfileCosmetic']) AS name`);
     const community = await client.query(
       'SELECT to_regclass(quote_ident(name)) IS NOT NULL AS present FROM unnest($1::text[]) AS name',
       [COMMUNITY_TABLES],
@@ -180,6 +242,9 @@ async function main() {
       profile.rows.map((row) => row.present),
       {
         accountNumber: Object.values(account.rows[0]),
+        reservedAccountNumber: Object.values(reserved.rows[0]),
+        exclusiveFrames: exclusive.rows.map((row) => row.present),
+        exclusiveEntrances: entrances.rows.map((row) => row.present),
         communityTables: community.rows.map((row) => row.present),
         communityProfileColumns: communityProfile.rows.map((row) => row.present),
       },
@@ -191,7 +256,7 @@ async function main() {
     console.log('Voice/profile/community schema is already present.');
     return;
   }
-  console.log('Applying the allowlisted additive voice/profile/community migrations.');
+  console.log('Applying the reviewed allowlisted voice/profile/community migrations.');
   const result = spawnSync(
     'pnpm',
     [
@@ -217,6 +282,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
         'Voice schema drift detected; refusing to repair it automatically.',
         'Profile schema drift detected; refusing to repair it automatically.',
         'Account number schema drift detected; refusing to repair it automatically.',
+        'Reserved account number schema drift detected; refusing to repair it automatically.',
+        'Reserved account number dependencies are missing from this release.',
+        'Exclusive frame schema drift detected; refusing to repair it automatically.',
+        'Exclusive frame dependencies are missing from this release.',
+        'Exclusive entrance schema drift detected; refusing to repair it automatically.',
+        'Exclusive entrance dependencies are missing from this release.',
         'Community schema drift detected; refusing to repair it automatically.',
         'Community profile schema drift detected; refusing to repair it automatically.',
         'Community schema dependencies are missing from this release.',

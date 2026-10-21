@@ -4,6 +4,24 @@ import { RealBadgeArtwork, RealFrameArtwork, RealEntranceArtwork } from './reali
 import { CommunityAvatar, PhotoNameCard } from './community-ui';
 
 describe('real photographic community artwork', () => {
+  it.each(['owner-sapphire', 'amira-rose'])(
+    'keeps the %s exclusive entrance correctly aligned with live content',
+    (name) => {
+      const { container } = render(
+        <RealEntranceArtwork tier="royal" assetUrl={`/community-assets/entrance-${name}.webp`}>
+          <strong>الاسم الفعلي</strong>
+        </RealEntranceArtwork>,
+      );
+      const board = container.querySelector('[data-exclusive-entrance]') as HTMLElement;
+      expect(board.style.getPropertyValue('--entrance-avatar-x')).toBe('21%');
+      expect(board.style.getPropertyValue('--entrance-avatar-y')).toBe('47%');
+      expect(container.querySelector('img')).toHaveAttribute(
+        'src',
+        `/community-assets/entrance-${name}.webp`,
+      );
+      expect(screen.getByText('الاسم الفعلي')).toBeVisible();
+    },
+  );
   it('keeps legacy atlas URLs cropped while delivering current WebP assets', () => {
     const { container } = render(
       <>

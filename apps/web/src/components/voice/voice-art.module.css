@@ -9,3 +9,20 @@
   width: 100%;
   height: 100%;
 }
+.exclusiveAvatar:global(.v-avatar) {
+  background: transparent;
+  border-color: transparent;
+}
+.exclusiveAvatar > img,
+.exclusiveAvatar > span:not(.frameOverlay) {
+  position: absolute;
+  inset-inline-start: 18%;
+  inset-block-start: 23%;
+  width: 64%;
+  height: 64%;
+  border-radius: 50%;
+  background: var(--surface-strong);
+}
+.exclusiveAvatar > .frameOverlay {
+  inset: 0;
+}

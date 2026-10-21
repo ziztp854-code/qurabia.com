@@ -136,6 +136,121 @@ beforeEach(() => {
   mocks.db.voicePreference.updateMany.mockResolvedValue({ count: 1 });
 });
 describe('community server authority', () => {
+  it.each([
+    ['cmrw9nc29000004l7a6kkosgy', 'OWNER', 'frame-owner-sapphire'],
+    ['cmrw9rfv9000204l72z55ai5b', 'USER', 'frame-amira-rose'],
+  ])(
+    'resolves the exclusive frame for %s only while its real grant is active',
+    async (id, role, frameId) => {
+      const frame = { ...item(), id: frameId, kind: 'FRAME' };
+      const grant = {
+        cosmetic: frame,
+        grantedAt: new Date(),
+        expiresAt: null,
+        revokedAt: null as Date | null,
+      };
+      mocks.db.profileCosmetic.findMany.mockResolvedValue([frame]);
+      mocks.db.user.findUnique.mockResolvedValue({
+        ...row(),
+        id,
+        role,
+        profile: { appearance: { ...selection, frameId } },
+        cosmetics: [grant],
+      });
+      expect((await getUserIdentity(id!))?.frame?.id).toBe(frameId);
+      grant.revokedAt = new Date();
+      expect((await getUserIdentity(id!))?.frame).toBeNull();
+    },
+  );
+  it('resolves the account-exclusive entrance and rejects another account even with a forged grant', async () => {
+    const effect = { ...item(), id: 'entrance-amira-rose' };
+    const member = {
+      ...row(),
+      id: 'cmrw9rfv9000204l72z55ai5b',
+      profile: { appearance: { ...selection, effectId: effect.id } },
+      cosmetics: [{ cosmetic: effect, grantedAt: new Date(), expiresAt: null, revokedAt: null }],
+    };
+    mocks.db.profileCosmetic.findMany.mockResolvedValue([effect]);
+    mocks.db.user.findUnique.mockResolvedValue(member);
+    expect((await getUserIdentity(member.id))?.effect?.id).toBe(effect.id);
+    mocks.db.user.findUnique.mockResolvedValue({ ...member, id: 'other' });
+    expect((await getUserIdentity('other'))?.effect).toBeNull();
+  });
+  it('hides exclusive frames and rejects forged grants or free flags for other accounts', async () => {
+    const frame = { ...item(), id: 'frame-amira-rose', kind: 'FRAME', free: true };
+    mocks.db.profileCosmetic.findMany.mockResolvedValue([frame]);
+    mocks.db.user.findUnique.mockImplementation(async ({ where }) =>
+      where.id === actor.id
+        ? actor
+        : {
+            ...row(),
+            profile: { appearance: { ...selection, frameId: frame.id } },
+            cosmetics: [
+              { cosmetic: frame, grantedAt: new Date(), expiresAt: null, revokedAt: null },
+            ],
+          },
+    );
+    expect((await getUserIdentity('subject'))?.frame).toBeNull();
+    mocks.db.userBadge.findMany.mockResolvedValue([]);
+    mocks.db.userCosmetic.findMany.mockResolvedValue([{ cosmeticId: frame.id }]);
+    await expect(
+      updateMyCommunityProfile({ appearance: { ...selection, frameId: frame.id } }),
+    ).rejects.toMatchObject({ code: 'ITEM_NOT_OWNED' });
+  });
+  it('does not let an administrator grant exclusive frames to another account or change their catalog definitions', async () => {
+    mocks.db.user.findUnique.mockImplementation(async ({ where }) =>
+      where.id === actor.id ? { ...actor, role: 'OWNER' } : row(),
+    );
+    mocks.db.profileCosmetic.findUnique.mockResolvedValue({
+      ...item(),
+      id: 'frame-amira-rose',
+      kind: 'FRAME',
+    });
+    await expect(
+      adminCommunityCommand({
+        operation: 'grantCosmetic',
+        accountNumber: 78,
+        cosmeticId: 'frame-amira-rose',
+      }),
+    ).rejects.toMatchObject({ code: 'EXCLUSIVE_ITEM' });
+    await expect(
+      adminCommunityCommand({
+        operation: 'saveCosmetic',
+        id: 'frame-amira-rose',
+        name: 'Changed',
+        description: '',
+        kind: 'FRAME',
+        tier: 'royal',
+        token: 'royal',
+        free: true,
+      }),
+    ).rejects.toMatchObject({ code: 'EXCLUSIVE_ITEM' });
+    expect(mocks.db.userCosmetic.upsert).not.toHaveBeenCalled();
+    expect(mocks.db.profileCosmetic.upsert).not.toHaveBeenCalled();
+  });
+  it.each([
+    [123456800, 2],
+    [123456821, 78],
+  ])('keeps retired profile %s attached to reserved ID %s', async (old, current) => {
+    await getPublicProfile(old!);
+    expect(mocks.db.user.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { accountNumber: current } }),
+    );
+    await followProfile(old!, true);
+    expect(mocks.updatePreferences).toHaveBeenCalledWith('actor', {
+      type: 'follow',
+      id: 'subject',
+      enabled: true,
+    });
+    mocks.preferences.mockResolvedValue({ following: [], blockedUsers: [], privateProfile: true });
+    expect(await getPublicProfile(old!)).toBeNull();
+    await expect(getCommunityRaster('avatar', String(old))).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    expect(mocks.db.user.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { accountNumber: current } }),
+    );
+  });
   it('preserves canonical legacy privacy and social counts', async () => {
     mocks.preferences.mockImplementation(async (id) => ({
       following: id === 'actor' ? ['subject'] : [],

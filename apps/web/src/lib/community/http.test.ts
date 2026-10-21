@@ -51,10 +51,14 @@ describe('community HTTP boundaries', () => {
       status: 413,
     });
   });
-  it('accepts only owner or nine-digit public IDs', () => {
+  it('accepts reserved or nine-digit public IDs and resolves the retired alias', () => {
     expect(parseAccountNumber('1')).toBe(1);
+    expect(parseAccountNumber('2')).toBe(2);
+    expect(parseAccountNumber('78')).toBe(78);
+    expect(parseAccountNumber('123456821')).toBe(78);
+    expect(parseAccountNumber('123456800')).toBe(2);
     expect(parseAccountNumber('123456789')).toBe(123456789);
-    for (const value of ['01', '2', '-1', '1e8', '1000000000'])
+    for (const value of ['01', '02', '078', '79', '3', '-1', '1e8', '1000000000'])
       expect(() => parseAccountNumber(value)).toThrow('NOT_FOUND');
   });
   it('returns safe errors and never raw server exceptions', async () => {

@@ -1,0 +1,80 @@
+{
+  "browser": "Chromium local synthetic data",
+  "results": [
+    {
+      "number": 1,
+      "stage": "before",
+      "width": 390,
+      "overflow": false,
+      "frame": null
+    },
+    {
+      "number": 1,
+      "stage": "before",
+      "width": 1440,
+      "overflow": false,
+      "frame": null
+    },
+    {
+      "number": 1,
+      "stage": "after",
+      "width": 390,
+      "overflow": false,
+      "frame": "frame-owner-sapphire"
+    },
+    {
+      "number": 1,
+      "stage": "after",
+      "width": 1440,
+      "overflow": false,
+      "frame": "frame-owner-sapphire"
+    },
+    {
+      "number": 2,
+      "stage": "before",
+      "width": 390,
+      "overflow": false,
+      "frame": null
+    },
+    {
+      "number": 2,
+      "stage": "before",
+      "width": 1440,
+      "overflow": false,
+      "frame": null
+    },
+    {
+      "number": 2,
+      "stage": "after",
+      "width": 390,
+      "overflow": false,
+      "frame": "frame-amira-rose"
+    },
+    {
+      "number": 2,
+      "stage": "after",
+      "width": 1440,
+      "overflow": false,
+      "frame": "frame-amira-rose"
+    },
+    {
+      "number": 2,
+      "width": 320,
+      "textScale": "200%",
+      "reducedMotion": true,
+      "overflow": false
+    },
+    {
+      "number": 2,
+      "width": 430,
+      "textScale": "200%",
+      "reducedMotion": true,
+      "overflow": false
+    }
+  ],
+  "consoleErrors": [],
+  "axeViolations": [],
+  "axeIncomplete": [
+    "color-contrast"
+  ]
+}

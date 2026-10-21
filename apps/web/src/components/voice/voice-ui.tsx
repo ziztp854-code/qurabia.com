@@ -39,19 +39,44 @@ export function Avatar({
 }) {
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const photo = user.communityIdentity?.avatarUrl || user.image;
+  const exclusive = ['frame-owner-sapphire', 'frame-amira-rose'].includes(
+    user.communityIdentity?.frame?.id ?? '',
+  );
   return (
     <span
-      className={`v-avatar ${speaking ? 'v-speaking' : ''}`}
-      style={{ width: size, height: size, position: 'relative', overflow: user.communityIdentity?.frame ? 'visible' : undefined }}
+      className={`v-avatar ${speaking ? 'v-speaking' : ''} ${exclusive ? artStyles.exclusiveAvatar : ''}`}
+      style={{
+        width: size,
+        height: size,
+        position: 'relative',
+        overflow: user.communityIdentity?.frame ? 'visible' : undefined,
+      }}
     >
       {photo && photo !== failedPhoto ? (
-        <Image src={photo} alt="" width={size} height={size} unoptimized onError={() => setFailedPhoto(photo)} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+        <Image
+          src={photo}
+          alt=""
+          width={size}
+          height={size}
+          unoptimized
+          onError={() => setFailedPhoto(photo)}
+          style={{ borderRadius: '50%', objectFit: 'cover' }}
+        />
       ) : (
         <span aria-hidden="true">
-          <small style={{ fontSize: Math.max(5, size / 8), textAlign: 'center', lineHeight: 1.3 }}>لم تُضف صورة</small>
+          <small style={{ fontSize: Math.max(5, size / 8), textAlign: 'center', lineHeight: 1.3 }}>
+            لم تُضف صورة
+          </small>
         </span>
       )}
-      {user.communityIdentity?.frame && <span aria-hidden="true" className={artStyles.frameOverlay}><RealFrameArtwork tier={user.communityIdentity.frame.tier} assetUrl={user.communityIdentity.frame.assetUrl} /></span>}
+      {user.communityIdentity?.frame && (
+        <span aria-hidden="true" className={artStyles.frameOverlay}>
+          <RealFrameArtwork
+            tier={user.communityIdentity.frame.tier}
+            assetUrl={user.communityIdentity.frame.assetUrl}
+          />
+        </span>
+      )}
     </span>
   );
 }

@@ -1,4 +1,5 @@
 import 'server-only';
+import { canonicalAccountNumber, PUBLIC_ACCOUNT_NUMBER_PATTERN } from '@/lib/account-number';
 import { Prisma } from '@tahaddi/database';
 import { getDisplayPlanCode } from '@/lib/subscription/entitlements';
 import { planDefinition } from '@tahaddi/domain';
@@ -9,6 +10,7 @@ import { getPrismaClient } from '@/lib/auth/prisma';
 import { getCurrentSession } from '@/lib/auth/session';
 import { isSessionUserCurrent } from '@/lib/auth/session-user';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
+import { isExclusiveCosmetic, mayUseExclusiveCosmetic } from './exclusive-cosmetics';
 import {
   adminCommandSchema,
   appearanceSchema,
@@ -136,14 +138,15 @@ async function resolve(
   const owned = row.cosmetics
     .filter((g) => active(g, now) && !g.cosmetic.archived)
     .map((g) => ({ ...cosmetic(g.cosmetic), expiresAt: g.expiresAt?.toISOString() ?? null }));
-  const catalog =
+  const catalog = (
     prefetchedCatalog ??
     (
       await db.profileCosmetic.findMany({
         where: { archived: false },
         orderBy: { createdAt: 'asc' },
       })
-    ).map(cosmetic);
+    ).map(cosmetic)
+  ).filter((c) => mayUseExclusiveCosmetic(c.id, row.id, row.role));
   const unlocked = new Set(owned.map((item) => item.id));
   for (const b of badges) {
     if (b.frameId) unlocked.add(b.frameId);
@@ -308,6 +311,7 @@ export async function getPublicProfile(
 ): Promise<PublicProfile | null> {
   // A caller-supplied ID is never an authorization credential.
   void _viewerId;
+  accountNumber = canonicalAccountNumber(accountNumber);
   const actor = await viewer();
   const row = await getPrismaClient().user.findUnique({
     where: { accountNumber },
@@ -408,7 +412,13 @@ export async function updateMyCommunityProfile(input: unknown) {
         const id = data.appearance[key as keyof typeof keys];
         if (
           id &&
-          !catalog.some((c) => c.id === id && c.kind === kind && (c.free || unlocked.has(c.id)))
+          !catalog.some(
+            (c) =>
+              c.id === id &&
+              c.kind === kind &&
+              (c.free || unlocked.has(c.id)) &&
+              mayUseExclusiveCosmetic(c.id, fresh.id, fresh.role),
+          )
         )
           throw new CommunityError('ITEM_NOT_OWNED', 403);
       }
@@ -458,6 +468,7 @@ export async function updateMyCommunityProfile(input: unknown) {
   return getMyCommunityProfile();
 }
 export async function followProfile(accountNumber: number, follow: boolean) {
+  accountNumber = canonicalAccountNumber(accountNumber);
   const actor = await requireCommunityActor();
   await rate('follow', actor.id);
   const target = await getPrismaClient().user.findUnique({
@@ -560,6 +571,7 @@ export async function adminCommunityCommand(input: unknown) {
     } else if (command.operation === 'saveCosmetic') {
       const { operation, ...data } = command;
       void operation;
+      if (isExclusiveCosmetic(data.id)) throw new CommunityError('EXCLUSIVE_ITEM', 403);
       if (data.assetUrl?.startsWith('/api/community/assets/')) {
         const previous = await tx.profileCosmetic.findUnique({ where: { id: data.id } });
         if (
@@ -575,7 +587,7 @@ export async function adminCommunityCommand(input: unknown) {
     } else {
       const user = await tx.user.findUnique({
         where: { accountNumber: command.accountNumber },
-        select: { id: true, status: true },
+        select: { id: true, status: true, role: true },
       });
       if (!user || user.status !== 'ACTIVE') throw new CommunityError('NOT_FOUND', 404);
       targetUserId = user.id;
@@ -603,6 +615,8 @@ export async function adminCommunityCommand(input: unknown) {
         if (!item) throw new CommunityError('NOT_FOUND', 404);
         resourceId = item.id;
         if (command.operation === 'grantCosmetic') {
+          if (!mayUseExclusiveCosmetic(item.id, user.id, user.role))
+            throw new CommunityError('EXCLUSIVE_ITEM', 403);
           if (item.archived) throw new CommunityError('ARCHIVED_ITEM');
           await tx.userCosmetic.upsert({
             where: { userId_cosmeticId: { userId: user.id, cosmeticId: item.id } },
@@ -654,7 +668,8 @@ export async function getCommunityRaster(kind: string, id: string) {
         })
       )?.assetUrl ?? null;
   else if (kind === 'avatar' || kind === 'cover') {
-    if (!/^(?:1|[1-9]\d{8})$/.test(id)) throw new CommunityError('NOT_FOUND', 404);
+    if (!PUBLIC_ACCOUNT_NUMBER_PATTERN.test(id)) throw new CommunityError('NOT_FOUND', 404);
+    id = String(canonicalAccountNumber(Number(id)));
     const row = await db.user.findUnique({
       where: { accountNumber: Number(id) },
       select: {
