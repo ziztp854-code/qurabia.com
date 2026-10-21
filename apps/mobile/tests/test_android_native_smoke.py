@@ -51,6 +51,37 @@ class NativeSmokeGuards(unittest.TestCase):
                     "https://qa.example.test", "https://qa.example.test", email, password,
                 )
 
+    def test_read_only_probes_use_canonical_paths_without_requiring_a_redirect(self):
+        requested = []
+
+        class Response:
+            def __init__(self, url):
+                self.url = url
+                self.status = 200 if url.endswith("/api/auth/session/") else 401
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return b"{}" if self.status == 200 else b'{"error":"unauthenticated"}'
+
+        class Opener:
+            def open(self, request, timeout):
+                requested.append((request.get_method(), request.full_url))
+                return Response(request.full_url)
+
+        with patch.object(smoke.urllib.request, "build_opener", return_value=Opener()):
+            result = smoke.read_only_reachability("https://qa.example.test")
+        self.assertEqual(requested, [
+            ("GET", "https://qa.example.test/api/auth/session/"),
+            ("GET", "https://qa.example.test/api/voice/rooms/"),
+        ])
+        self.assertEqual(result["/api/auth/session/"]["status"], 200)
+        self.assertEqual(result["/api/voice/rooms/"]["status"], 401)
+
     def test_redirect_cannot_follow_external_or_cleartext_targets(self):
         handler = smoke.SameOriginRedirect("https://qa.example.test")
         request = urllib.request.Request("https://qa.example.test/api/auth/session")
