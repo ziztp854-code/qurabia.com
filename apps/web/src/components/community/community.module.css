@@ -6,6 +6,11 @@
   margin-inline: auto;
   color: var(--foreground);
 }
+:global(:root[data-theme='light']) .page {
+  --primary: var(--link);
+  --background: var(--canvas);
+  --surface: var(--surface-soft);
+}
 .page *,
 .empty *,
 .loading * {
@@ -73,10 +78,7 @@
 }
 .profileHero {
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--brand-gold) 30%, transparent);
   border-radius: var(--radius-xl);
-  background: var(--card);
-  box-shadow: var(--shadow-lg);
 }
 .cover {
   position: relative;
@@ -316,6 +318,12 @@
   cursor: pointer;
   font-weight: 700;
   font-size: 0.88rem;
+  transition: background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.tabs > :is(button, a):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }
 .tabs > [aria-current='page'] {
   color: var(--primary);
@@ -336,9 +344,10 @@
   gap: var(--space-4);
   min-inline-size: 0;
   padding: var(--space-6);
-  border: 1px solid var(--border);
+  border: 1px solid var(--royal-material-rim);
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: var(--royal-material-solid);
+  box-shadow: inset 0 1px 0 var(--royal-material-light);
 }
 .panel legend {
   display: inline-flex;

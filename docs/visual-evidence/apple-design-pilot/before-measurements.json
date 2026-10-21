@@ -1,0 +1,118 @@
+{
+  "browser": "151.0.7922.173",
+  "dpr": 1,
+  "height": 1000,
+  "errors": [],
+  "measurements": [
+    {
+      "stage": "before",
+      "surface": "room",
+      "width": 390,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 59,
+          "height": 88
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 59,
+          "height": 88
+        },
+        {
+          "name": "رفع اليد",
+          "width": 59,
+          "height": 88
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 59,
+          "height": 88
+        },
+        {
+          "name": "الهدايا",
+          "width": 59,
+          "height": 88
+        },
+        {
+          "name": "الدردشة",
+          "width": 59,
+          "height": 88
+        }
+      ]
+    },
+    {
+      "stage": "before",
+      "surface": "room",
+      "width": 1440,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "رفع اليد",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "الهدايا",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "width": 88,
+          "height": 75
+        }
+      ]
+    },
+    {
+      "stage": "before",
+      "surface": "profile",
+      "width": 390,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "before",
+      "surface": "profile",
+      "width": 1440,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "before",
+      "surface": "public-profile",
+      "width": 390,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "before",
+      "surface": "public-profile",
+      "width": 1440,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    }
+  ]
+}

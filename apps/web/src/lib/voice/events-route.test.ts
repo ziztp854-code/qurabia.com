@@ -56,3 +56,17 @@ it('keeps authoritative permission reconciliation on moderator mute and coalesce
   await GET(new Request('https://voice.test'), context);
   expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 2 }, true);
 });
+it('reconciles SFU permissions after granting a listener the microphone', async () => {
+  const command = { type: 'give-mic', userId: 'listener' };
+  const response = await POST(
+    new Request('https://voice.test/api/voice/rooms/room/events', {
+      method: 'POST',
+      headers: { origin: 'https://voice.test', 'Content-Type': 'application/json' },
+      body: JSON.stringify(command),
+    }),
+    context,
+  );
+  expect(response.status).toBe(200);
+  expect(mocks.command).toHaveBeenCalledWith('room', 'self', command);
+  expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 1, messages: [{ id: 'confirmed' }] });
+});

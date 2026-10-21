@@ -26,6 +26,7 @@ import {
 import { RealFrameArtwork } from './realistic-art';
 import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
 import styles from './community.module.css';
+import material from '@/components/ui/royal-material.module.css';
 
 type Tab = 'overview' | 'badges' | 'achievements' | 'collection';
 const tabs: { id: Tab; label: string }[] = [
@@ -124,7 +125,7 @@ export function CommunityProfilePage({
   return (
     <div className={styles.page}>
       <header
-        className={styles.profileHero}
+        className={`${styles.profileHero} ${material.surface}`}
         data-background-tier={background?.tier}
         data-name-card-tier={nameCard?.tier}
       >

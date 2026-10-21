@@ -2,18 +2,18 @@
   --voice-cyan: var(--admin-verified);
   --voice-ink: var(--technical-accent-foreground);
   --voice-gold-light: var(--primary);
-  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  background: var(--surface);
   overflow: hidden;
 }
 .cover {
-  min-block-size: 132px;
+  min-block-size: 148px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding-inline: clamp(24px, 5vw, 56px);
-  background: linear-gradient(115deg, var(--surface-soft), var(--surface-strong));
+  background:
+    radial-gradient(ellipse at 18% 0%, var(--royal-material-wash), transparent 65%),
+    linear-gradient(115deg, var(--royal-material-solid), var(--surface-strong));
   border-block-end: 1px solid var(--border);
 }
 .cover > span {
@@ -126,6 +126,7 @@
   gap: 20px;
   padding-block: 24px;
   border-block-end: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
 }
 .counts {
   display: flex;
@@ -211,6 +212,8 @@
 .links > a {
   white-space: normal;
   text-align: center;
+  min-block-size: 48px;
+  border-radius: var(--radius-md);
 }
 .notice {
   min-block-size: 24px;

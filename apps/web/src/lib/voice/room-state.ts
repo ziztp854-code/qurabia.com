@@ -151,6 +151,20 @@ export function applyVoiceEvent(
       }
       break;
     }
+    case 'give-mic': {
+      manage();
+      const participant = target(event.userId);
+      if (participant.role !== 'listener' || participant.seatIndex !== null)
+        throw new VoiceHttpError(409, 'هذا العضو ليس مستمعًا خارج المنصة.', 'NOT_LISTENER');
+      const free = Array.from({ length: state.settings.seatCount }, (_, i) => i).find(
+        (i) => !state.lockedSeats.includes(i) && !state.participants.some((p) => p.seatIndex === i),
+      );
+      if (free === undefined)
+        throw new VoiceHttpError(409, 'لا يوجد مقعد متاح لإعطاء المايك.', 'SEAT_UNAVAILABLE');
+      // Grant a seat/publication capability, never capture or unmute the device remotely.
+      setSeat(participant, free);
+      break;
+    }
     case 'approve-seat': {
       manage();
       const participant = target(event.userId);

@@ -67,6 +67,7 @@ import { MemberName } from './member-name';
 import roomStyles from './room-layout.module.css';
 import { VoiceGifts } from './voice-gifts';
 import liveStyles from './live-room.module.css';
+import material from '@/components/ui/royal-material.module.css';
 import { GiftCelebration } from './gift-celebration';
 import { requestVoiceMicrophone } from './microphone-permission';
 import { VoiceSocial } from './voice-social';
@@ -545,6 +546,13 @@ export function VoiceRoomView({
   const host = me?.role === 'host';
   const participants = snapshot?.participants || [];
   const selected = participants.find((p) => p.id === profileId);
+  const hasFreeMicSeat = Boolean(
+    room &&
+    Array.from({ length: room.seatCount }, (_, index) => index).some(
+      (index) =>
+        !room.lockedSeats.includes(index) && !participants.some((p) => p.seatIndex === index),
+    ),
+  );
   const requests = participants.filter((p) => p.requestedSeat !== null);
   const members = participants.filter((p) =>
     p.name.toLowerCase().includes(participantSearch.trim().toLowerCase()),
@@ -694,13 +702,23 @@ export function VoiceRoomView({
                     onClick={() => setProfileId(room.hostId)}
                     aria-label={`ملف المضيف ${room.hostName}`}
                   >
-                    <Avatar user={participants.find((p) => p.id === room.hostId) || { name: room.hostName, image: room.hostImage }} size={40} />
+                    <Avatar
+                      user={
+                        participants.find((p) => p.id === room.hostId) || {
+                          name: room.hostName,
+                          image: room.hostImage,
+                        }
+                      }
+                      size={40}
+                    />
                     <span>
                       <strong>
                         <MemberName
                           name={room.hostName}
                           badges={participants.find((p) => p.id === room.hostId)?.accountBadges}
-                          identity={participants.find((p) => p.id === room.hostId)?.communityIdentity}
+                          identity={
+                            participants.find((p) => p.id === room.hostId)?.communityIdentity
+                          }
                         />
                       </strong>
                       <small>مضيف المجلس</small>
@@ -870,25 +888,25 @@ export function VoiceRoomView({
                 >
                   <div className="v-stage-column" inert={chatOverlayOpen}>
                     <div className={liveStyles.entranceRail}>
-      <MemberEntrance
-        arrival={arrivals[0]}
-        selfId={user.id}
-        onDismiss={dismissArrival}
-        visible={
-          visible &&
-          Boolean(me && room?.active) &&
-          !profileId &&
-          !socialOpen &&
-          !membersOpen &&
-          !reportOpen &&
-          !settings &&
-          !audioSettingsOpen &&
-          !giftsOpen &&
-          !giftArrival &&
-          !closeRoom &&
-          !chatOverlayOpen
-        }
-      />
+                      <MemberEntrance
+                        arrival={arrivals[0]}
+                        selfId={user.id}
+                        onDismiss={dismissArrival}
+                        visible={
+                          visible &&
+                          Boolean(me && room?.active) &&
+                          !profileId &&
+                          !socialOpen &&
+                          !membersOpen &&
+                          !reportOpen &&
+                          !settings &&
+                          !audioSettingsOpen &&
+                          !giftsOpen &&
+                          !giftArrival &&
+                          !closeRoom &&
+                          !chatOverlayOpen
+                        }
+                      />
                     </div>
                     <section className="v-stage">
                       <div className="v-stage-heading" data-audio-state={audioState}>
@@ -973,7 +991,7 @@ export function VoiceRoomView({
                               {person ? (
                                 <>
                                   <button
-                                    className="v-seat-person"
+                                    className={`v-seat-person ${material.interactive}`}
                                     onClick={() => setProfileId(person.id)}
                                     aria-label={`${person.name}، ${roleLabels[person.role]}${speakers.includes(person.id) ? '، يتحدث الآن' : ''}${person.muted || person.moderatorMuted ? '، الميكروفون مكتوم' : ''}`}
                                   >
@@ -1002,7 +1020,8 @@ export function VoiceRoomView({
                                     <strong title={person.name}>
                                       <MemberName
                                         name={person.id === user.id ? 'أنت' : person.name}
-                                        badges={person.accountBadges} identity={person.communityIdentity}
+                                        badges={person.accountBadges}
+                                        identity={person.communityIdentity}
                                       />
                                     </strong>
                                     <small>{roleLabels[person.role]}</small>
@@ -1187,7 +1206,7 @@ export function VoiceRoomView({
               {room.active && (
                 <div
                   ref={controlsRef}
-                  className={`v-room-controls ${roomStyles.controls}`}
+                  className={`v-room-controls ${roomStyles.controls} ${material.surface} ${material.floating} ${material.deck}`}
                   inert={chatOverlayOpen}
                 >
                   <div className="v-controls-me">
@@ -1338,7 +1357,8 @@ export function VoiceRoomView({
                           <strong title={p.name}>
                             <MemberName
                               name={p.id === user.id ? 'أنت' : p.name}
-                              badges={p.accountBadges} identity={p.communityIdentity}
+                              badges={p.accountBadges}
+                              identity={p.communityIdentity}
                             />
                           </strong>
                           <small>
@@ -1375,7 +1395,11 @@ export function VoiceRoomView({
                     <div className="v-profile-head">
                       <Avatar user={selected} size={88} />
                       <h3>
-                        <MemberName name={selected.name} badges={selected.accountBadges} identity={selected.communityIdentity} />
+                        <MemberName
+                          name={selected.name}
+                          badges={selected.accountBadges}
+                          identity={selected.communityIdentity}
+                        />
                       </h3>
                       <p>
                         {roleLabels[selected.role]}
@@ -1482,6 +1506,23 @@ export function VoiceRoomView({
                           <ShieldCheck size={16} />
                           إدارة المشارك
                         </h4>
+                        {selected.role === 'listener' && selected.seatIndex === null && (
+                          <>
+                            <button
+                              type="button"
+                              className="v-button"
+                              disabled={actionBusy || !hasFreeMicSeat}
+                              onClick={() => void act({ type: 'give-mic', userId: selected.id })}
+                            >
+                              <Mic size={18} aria-hidden="true" /> إعطاء المايك
+                            </button>
+                            <p className="v-muted">
+                              {hasFreeMicSeat
+                                ? 'ينتقل إلى مقعد متاح، ويبقى المايك مكتومًا حتى يشغّله بنفسه.'
+                                : 'لا يوجد مقعد مفتوح متاح. حرّر مقعدًا أو افتح مقعدًا مقفلًا أولًا.'}
+                            </p>
+                          </>
+                        )}
                         <button
                           className="v-button v-outline"
                           disabled={actionBusy}

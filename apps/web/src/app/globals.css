@@ -5822,6 +5822,10 @@ tr:last-child td {
   gap: var(--space-4);
   margin-block-end: 1.5rem;
 }
+.dashboard-header:has(.theme-menu [aria-expanded='true']) {
+  position: relative;
+  z-index: var(--z-popover);
+}
 .dashboard-header-copy {
   display: grid;
   gap: 0.35rem;
