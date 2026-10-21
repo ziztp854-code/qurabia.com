@@ -33,7 +33,7 @@ test "$ready" = 1
 adb shell dumpsys meminfo "$package" > android-reports/meminfo-startup.txt
 adb shell getprop ro.build.version.sdk > android-reports/emulator-api.txt
 adb logcat -d -s AndroidRuntime:E ReactNativeJS:E '*:S' > android-reports/runtime-errors.txt
-if rg -q 'FATAL EXCEPTION|Unable to load script|Could not connect to development server|ReactNativeJS.*(Error|Exception)' android-reports/runtime-errors.txt; then
+if grep -Eq 'FATAL EXCEPTION|Unable to load script|Could not connect to development server|ReactNativeJS.*(Error|Exception)' android-reports/runtime-errors.txt; then
   cat android-reports/runtime-errors.txt
   exit 1
 fi

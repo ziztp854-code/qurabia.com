@@ -152,11 +152,11 @@ jobs:
         run: |
           apk=apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           test -s "$apk"
-          unzip -Z1 "$apk" | rg '^assets/index.android.bundle$'
+          unzip -Z1 "$apk" | grep -E '^assets/index.android.bundle$'
           "$ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$apk" | tee android-reports/apk-signature.txt
           "$ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt" dump badging "$apk" | tee android-reports/apk-badging.txt
-          rg "^package: name='com.qurabia.tahaddi'" android-reports/apk-badging.txt
-          rg '^application-debuggable$' android-reports/apk-badging.txt
+          grep -E "^package: name='com.qurabia.tahaddi'" android-reports/apk-badging.txt
+          grep -E '^application-debuggable$' android-reports/apk-badging.txt
           "$ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt" dump permissions "$apk" > android-reports/apk-permissions.txt
           sha256sum "$apk" > android-reports/apk-sha256.txt
           stat --printf='%s bytes\n' "$apk" > android-reports/apk-size.txt
