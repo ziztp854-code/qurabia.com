@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, BackHandler, Pressable, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
@@ -26,12 +26,18 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   const navigation=useNavigation();
   const keyboardVisible=useKeyboardVisible();
   const [error,setError]=useState('');
+  const logoutGuard=useRef(false);
+  const [logoutBusy,setLogoutBusy]=useState(false);
+  const currentRoomId=useRef<string|null>(null);
+  currentRoomId.current=rooms.snapshot?.room.id??null;
   const roomId=rooms.snapshot?.room.id;
   const memberId=rooms.snapshot?.me?.id;
   useEffect(()=>{
     if(!roomId||!memberId){void voice.leave().catch(()=>{});return;}
+    const generation=auth.client.sessionGeneration;
     void voice.connect(roomId,rooms.snapshot?.me||undefined).catch(cause=>{
-      setError(cause instanceof Error?cause.message:'تعذر توصيل الصوت.');
+      if(sameRoomSession(generation,roomId)&&!logoutGuard.current)
+        setError(cause instanceof Error?cause.message:'تعذر توصيل الصوت.');
     });
     // Media session lives at this level, independent of screens, drafts and lists.
     // Authoritative permission updates are handled in the separate effect below.
@@ -44,17 +50,31 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   useEffect(()=>{
     if(navigation.screen==='room'&&!rooms.snapshot)navigation.go('rooms');
   },[navigation.screen,rooms.snapshot,navigation.go]);
-  async function cleanupMembership(){
+  function sameSession(generation:number){
+    return auth.client.sessionGeneration===generation;
+  }
+  function sameRoomSession(generation:number,expectedRoomId:string){
+    return sameSession(generation)&&currentRoomId.current===expectedRoomId;
+  }
+  async function cleanupMembership(generation:number,expectedRoomId:string|null){
     const failures:string[]=[];
+    if(!sameSession(generation))return failures;
     try{await voice.leave();}
     catch{failures.push('تعذر إنهاء جلسة الصوت على الجهاز.');}
-    // A native SDK failure must never prevent the authoritative leave request.
+    // Never let an old callback leave a replacement account or a new room.
+    if(!sameSession(generation)||currentRoomId.current!==expectedRoomId)return failures;
     try{await rooms.leave();}
     catch{failures.push('تعذر تأكيد مغادرة الغرفة لدى الخادم.');}
     return failures;
   }
   async function leave(){
-    const failures=await cleanupMembership();
+    if(logoutGuard.current)return;
+    const generation=auth.client.sessionGeneration;
+    const expectedRoomId=currentRoomId.current;
+    const failures=await cleanupMembership(generation,expectedRoomId);
+    if(!sameSession(generation))return;
+    // Room cleanup clears the old snapshot. A replacement room must keep its UI.
+    if(currentRoomId.current&&currentRoomId.current!==expectedRoomId)return;
     navigation.go('rooms');
     if(failures.length){
       const message=failures.join(' ');
@@ -63,24 +83,39 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     }
   }
   async function signOut(){
+    if(logoutGuard.current)return;
+    logoutGuard.current=true;
+    setLogoutBusy(true);
     setError('');
-    const failures=await cleanupMembership();
+    const generation=auth.client.sessionGeneration;
+    const expectedRoomId=currentRoomId.current;
     try{
-      // Always revoke the session, independently of media or membership cleanup.
+      const failures=await cleanupMembership(generation,expectedRoomId);
+      // Login/expiry invalidates this generation. Never revoke a newer session.
+      if(!sameSession(generation))return;
+      if(failures.length)setError(failures.join(' '));
+      // Revoke despite cleanup failures, with replacement login hidden until done.
       await auth.signOut();
     } finally {
-      if(failures.length)setError(failures.join(' '));
+      logoutGuard.current=false;
+      setLogoutBusy(false);
     }
   }
   useEffect(()=>{
     const handler=BackHandler.addEventListener('hardwareBackPress',()=>{
+      if(logoutGuard.current)return true;
       if(navigation.screen==='room'){navigation.go('rooms');return true;}
       if(navigation.screen!=='home'){navigation.go('home');return true;}
       if(rooms.snapshot){
         Alert.alert('الخروج من تحدّي','توجد جلسة صوتية نشطة. هل تريد مغادرة الغرفة والخروج؟',[
           {text:'بقاء',style:'cancel'},
           {text:'مغادرة وخروج',style:'destructive',onPress:()=>{
-            void leave().then(()=>BackHandler.exitApp()).catch(cause=>setError(cause instanceof Error?cause.message:'تعذر مغادرة الغرفة.'));
+            const generation=auth.client.sessionGeneration;
+            void leave().then(()=>{
+              if(sameSession(generation)&&!currentRoomId.current&&!logoutGuard.current)BackHandler.exitApp();
+            }).catch(cause=>{
+              if(sameSession(generation))setError(cause instanceof Error?cause.message:'تعذر مغادرة الغرفة.');
+            });
           }},
         ]);
         return true;
@@ -93,22 +128,32 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     try{return auth.client.assetSource(path);}catch{return undefined;}
   }
   async function toggleMic(){
+    if(logoutGuard.current)return;
+    const generation=auth.client.sessionGeneration;
     const snapshot=rooms.snapshot;
     if(!snapshot||!canUseMicrophone(snapshot.room,snapshot.me))return;
+    const expectedRoomId=snapshot.room.id;
+    if(!sameRoomSession(generation,expectedRoomId))return;
     if(!audio.muted){
       await voice.setMuted(true);
+      if(!sameRoomSession(generation,expectedRoomId)||logoutGuard.current)return;
       await rooms.send({type:'mute',muted:true});
       return;
     }
     const next=await rooms.send({type:'mute',muted:false});
+    if(!sameRoomSession(generation,expectedRoomId)||logoutGuard.current)return;
     voice.updateParticipant(next.me);
-    try{await voice.setMuted(false);}
-    catch(cause){
+    try{
+      await voice.setMuted(false);
+    } catch(cause){
+      // A late permission/SDK failure belongs only to the original room/session.
+      if(!sameRoomSession(generation,expectedRoomId)||logoutGuard.current)return;
       await rooms.send({type:'mute',muted:true}).catch(()=>{});
+      if(!sameRoomSession(generation,expectedRoomId)||logoutGuard.current)return;
       throw cause;
     }
   }
-  const content=auth.status==='loading'?<Loading label="جارٍ استعادة الجلسة…"/>:
+  const content=logoutBusy?<Loading label="جارٍ تسجيل الخروج…"/>:auth.status==='loading'?<Loading label="جارٍ استعادة الجلسة…"/>:
     auth.status!=='authenticated'?<AuthScreen apiRequest={auth.client.request} signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
     <View style={ui.flex}>
       {navigation.screen==='profile'?<ProfileScreen user={auth.user} asset={asset}

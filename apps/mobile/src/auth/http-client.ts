@@ -29,6 +29,7 @@ export type NativeTransport = (url: string, init: {
 }) => Promise<TransportResponse>;
 export interface ApiClient {
   readonly origin: string;
+  readonly sessionGeneration: number;
   request<T>(path: string, options?: ApiRequestOptions): Promise<T>;
   form<T>(path: string, fields: Record<string, string>, options?: { signal?: AbortSignal; timeoutMs?: number }): Promise<T>;
   assetSource(uri: string): { uri: string; headers?: Record<string, string> };
@@ -59,6 +60,9 @@ export function createApiClient(config: {
     const url = apiUrl(path);
     await config.cookies.restore();
     const generation = config.cookies.generation;
+    const requireCurrentSession = () => {
+      if (generation !== config.cookies.generation) throw new ApiError('تغيّرت الجلسة. أعد العملية من الحساب الحالي.', 0, 'STALE_SESSION');
+    };
     const method = form ? 'POST' : options.method ?? 'GET';
     if (method === 'GET' && options.body !== undefined) throw new ApiError('GET لا يقبل بيانات كتابة.', 0, 'INVALID_REQUEST');
     const headers: Record<string, string> = { Accept: 'application/json', Origin: origin };
@@ -89,6 +93,7 @@ export function createApiClient(config: {
     try {
       // Explicit cookies + no shared OS cookie jar. Never follow a credential-bearing redirect.
       const response = await config.transport(url, { method, headers, body, credentials: 'omit', redirect: 'error', signal: controller.signal });
+      requireCurrentSession();
       if (response.status >= 300 && response.status < 400) {
         throw new ApiError('أعاد الخادم توجيهًا غير متوقع.', response.status, 'UNEXPECTED_REDIRECT');
       }
@@ -97,10 +102,13 @@ export function createApiClient(config: {
       }
       const setCookies = response.rawSetCookies ?? (response.headers.get('set-cookie') ? [response.headers.get('set-cookie')!] : []);
       await config.cookies.ingest(setCookies, generation);
-      if (response.status === 401 && !path.startsWith('/api/auth/') && generation === config.cookies.generation) {
-        await unauthorizedHandler?.();
-      }
+      requireCurrentSession();
+      const revokedByThisResponse = response.status === 401 && !path.startsWith('/api/auth/') && unauthorizedHandler !== null;
+      if (revokedByThisResponse) await unauthorizedHandler!();
       const text = await response.text();
+      // This response's own 401 intentionally invalidates the jar; preserve that original error.
+      // Every other response must still belong to the account that initiated the request.
+      if (!revokedByThisResponse) requireCurrentSession();
       let payload: unknown = null;
       try { payload = text ? JSON.parse(text) : null; } catch {
         throw new ApiError('استجابة الخادم ليست بيانات API صالحة.', response.status, 'INVALID_RESPONSE');
@@ -125,6 +133,7 @@ export function createApiClient(config: {
 
   return {
     origin,
+    get sessionGeneration() { return config.cookies.generation; },
     request: <T>(path: string, options: ApiRequestOptions = {}) => send<T>(path, options),
     form: <T>(path: string, fields: Record<string, string>, options: { signal?: AbortSignal; timeoutMs?: number } = {}) => send<T>(path, { method: 'POST', ...options }, fields),
     assetSource: (value: string) => {

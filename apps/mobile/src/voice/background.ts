@@ -15,6 +15,7 @@ const finishTasks = new Set<() => void>();
 /** A live HeadlessJS task permits RN timers to run while the room service is active. */
 export function registerVoiceBackgroundTask() {
   if (registered || Platform.OS !== 'android') return;
+  if (!nativeService) throw new Error('Android voice bridge is missing; install the complete native build.');
   registered = true;
   AppRegistry.registerHeadlessTask('TahaddiVoiceKeepAlive', () => async () => {
     await new Promise<void>((resolve) => {
