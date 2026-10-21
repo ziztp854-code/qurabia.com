@@ -168,7 +168,7 @@ class SameOriginRedirect(urllib.request.HTTPRedirectHandler):
 def read_only_reachability(base: str) -> dict:
     results = {}
     opener = urllib.request.build_opener(SameOriginRedirect(base))
-    for path, allowed in (("/api/auth/session", {200}), ("/api/voice/rooms", {200, 401})):
+    for path, allowed in (("/api/auth/session/", {200}), ("/api/voice/rooms/", {200, 401})):
         request = urllib.request.Request(base + path, headers={"Accept": "application/json"})
         started = time.monotonic()
         try:
@@ -274,7 +274,7 @@ def main() -> int:
             "state": "not_observed",
             "label": "",
             "method": "GET",
-            "path": "/api/auth/session",
+            "path": "/api/auth/session/",
             "verified_by": "native AuthScreen response-shape check observed through UIAutomator",
             "scope": "real Android HTTPS request without session cookies or credentials",
         }
