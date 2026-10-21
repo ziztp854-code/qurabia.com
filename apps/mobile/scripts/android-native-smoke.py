@@ -124,8 +124,26 @@ class Device:
             time.sleep(1)
         return observed
 
+    def scroll(self, direction: str):
+        sizes = re.findall(r"(\d+)x(\d+)", self.adb("shell", "wm", "size").stdout)
+        if not sizes:
+            raise RuntimeError("Cannot determine emulator display size")
+        width, height = map(int, sizes[-1])
+        top, bottom = str(int(height * 0.3)), str(int(height * 0.78))
+        start, end = (bottom, top) if direction == "up" else (top, bottom)
+        self.adb("shell", "input", "swipe", str(width // 2), start, str(width // 2), end, "400")
+
+    def reveal_node(self, test_id: str) -> ET.Element:
+        for _ in range(4):
+            node = find_node(self.ui(), test_id)
+            if node is not None:
+                return node
+            self.scroll("up")
+        return self.wait_node(test_id, timeout=10)
+
     def tap(self, test_id: str):
-        x, y = center(self.wait_node(test_id))
+        node = self.reveal_node(test_id) if test_id in ("login-submit", "settings-logout") else self.wait_node(test_id)
+        x, y = center(node)
         self.adb("shell", "input", "tap", str(x), str(y))
 
     def enter(self, test_id: str, value: str):
@@ -248,9 +266,8 @@ def main() -> int:
         started = time.monotonic()
         launched = device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
         (directory / "native-launch.txt").write_text(launched.stdout)
-        for test_id in ("login-email", "login-password", "login-submit"):
+        for test_id in ("login-email", "login-password"):
             device.wait_node(test_id)
-        report["checks"]["native_login_render"] = True
         report["login_render_observed_ms"] = round((time.monotonic() - started) * 1000, 1)
         report["login_render_measurement"] = "Wall-clock upper bound including UIAutomator polling; not native frame timing"
         report["native_read_only_https"] = {
@@ -265,6 +282,8 @@ def main() -> int:
         if report["native_read_only_https"]["state"] != "online":
             raise RuntimeError("The native Android read-only server connection was not verified online")
         report["checks"]["native_read_only_server_connection"] = True
+        device.reveal_node("login-submit")
+        report["checks"]["native_login_render"] = True
         device.tap("login-submit")
         validation = device.wait_node("login-error")
         validation_text = node_label(validation)
@@ -273,6 +292,8 @@ def main() -> int:
         report["checks"]["empty_credentials_validation"] = True
         report["read_only_https"] = read_only_reachability(base)
         if authenticated:
+            device.scroll("down")
+            device.scroll("down")
             device.enter("login-email", email)
             device.enter("login-password", password)
             device.hide_keyboard()
