@@ -1,0 +1,64 @@
+name: Android existing APK smoke
+on:
+  push:
+    branches: [codex/android-qa-diagnostic]
+    paths: ['.github/workflows/android-existing-apk-smoke.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify-tested-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: fcbdf15092ba8c5189ba75739904ffad84507b19
+          persist-credentials: false
+      - name: Test corrected accessibility instrumentation
+        run: python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
+      - name: Download exact previously built APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 39694929130 --repo ziztp854-code/qurabia.com --name tahaddi-debug-39694929130-1 --dir candidate
+          echo '1856583b81c9d6aa69e01b18a4b079ef08673ff412faf8528a268dde80f627b3  candidate/app-debug.apk' | sha256sum --check
+          mkdir -p android-reports
+          python3 - <<'PY'
+          import json,pathlib
+          pathlib.Path("android-reports/provenance.json").write_text(json.dumps({"apk_source_sha":"a1d4873ae1ac48f2cfb3789e10b934843e4d04b2","qa_source_sha":"fcbdf15092ba8c5189ba75739904ffad84507b19","apk_run_id":39694929130,"note":"Only two Python QA files differ; application source and dependencies are unchanged."},indent=2))
+          PY
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify exact APK on clean Android 36
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: GITHUB_SHA=a1d4873ae1ac48f2cfb3789e10b934843e4d04b2 bash apps/mobile/scripts/android-native-smoke.sh --apk candidate/app-debug.apk --reports android-reports/native
+      - name: Print bounded unauthenticated result
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path("android-reports/native/native-smoke-result.json")
+          if p.is_file(): print("EXISTING_APK_RESULT "+p.read_text())
+          PY
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: existing-apk-smoke-${{ github.run_id }}
+          path: android-reports
+          retention-days: 14
+          if-no-files-found: error
