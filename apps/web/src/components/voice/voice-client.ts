@@ -18,6 +18,27 @@ export async function voiceRequest<T>(
   options: { signal?: AbortSignal } = {},
 ): Promise<T> {
   const controller = new AbortController();
+  // Permission writes can wait for an authoritative SFU transaction (20s + pool
+  // admission). Keep reads short; do not report a committed grant as failed at 10s.
+  const permissionWrite =
+    body !== undefined &&
+    (/\/join$/.test(path) ||
+      /\/token$/.test(path) ||
+      /\/leave$/.test(path) ||
+      (/\/events$/.test(path) &&
+        typeof body === 'object' &&
+        body !== null &&
+        'type' in body &&
+        [
+          'give-mic',
+          'approve-seat',
+          'request-seat',
+          'leave-seat',
+          'role',
+          'moderator-mute',
+          'remove',
+          'close',
+        ].includes(String(body.type))));
   let timeout: ReturnType<typeof setTimeout>;
   let cancel: () => void;
   const deadline = new Promise<never>((_, reject) => {
@@ -25,11 +46,18 @@ export async function voiceRequest<T>(
       controller.abort(options.signal?.reason);
       reject(controller.signal.reason);
     };
-    timeout = setTimeout(() => {
-      const error = new VoiceRequestError('انتهت مهلة الطلب. حاول مرة أخرى.', 408, 'REQUEST_TIMEOUT');
-      controller.abort(error);
-      reject(error);
-    }, 10_000);
+    timeout = setTimeout(
+      () => {
+        const error = new VoiceRequestError(
+          'انتهت مهلة الطلب. حاول مرة أخرى.',
+          408,
+          'REQUEST_TIMEOUT',
+        );
+        controller.abort(error);
+        reject(error);
+      },
+      permissionWrite ? 45_000 : 10_000,
+    );
   });
   options.signal?.addEventListener('abort', cancel!, { once: true });
   try {

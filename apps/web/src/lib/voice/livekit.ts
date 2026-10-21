@@ -131,14 +131,23 @@ export async function reconcileVoiceMedia(
   void _snapshot; // Caller revisions are never used to grant media permissions.
   if (!voiceMediaConfig()) return;
   const startBy = Date.now() + 12_000;
-  return withVoiceMediaSnapshot(roomId, async (snapshot, ledger, checkpoint) => {
-    if (periodic && checkpoint && Date.now() - checkpoint.checkedAt < 2000) return;
-    // Leave room for the three sequential 2s RPC stages within the 20s DB lock.
-    // A delayed DB read must not start media writes after most of the lock budget.
-    if (Date.now() > startBy) throw new Error('VoiceMediaDeadlineExceeded');
-    await applyVoiceMediaPermissions(roomId, snapshot, ledger);
-    if (checkpoint) checkpoint.checkedAt = Date.now();
-  });
+  try {
+    await withVoiceMediaSnapshot(
+      roomId,
+      async (snapshot, ledger, checkpoint) => {
+        if (periodic && checkpoint && Date.now() - checkpoint.checkedAt < 2000) return;
+        // Leave room for the three sequential 2s RPC stages within the 20s DB lock.
+        // A delayed DB read must not start media writes after most of the lock budget.
+        if (Date.now() > startBy) throw new Error('VoiceMediaDeadlineExceeded');
+        await applyVoiceMediaPermissions(roomId, snapshot, ledger);
+        if (checkpoint) checkpoint.checkedAt = Date.now();
+      },
+      { skipBusy: periodic },
+    );
+  } catch (error) {
+    if (periodic && error instanceof VoiceHttpError && error.code === 'MEDIA_BUSY') return;
+    throw error;
+  }
 }
 
 function mediaClient(config: NonNullable<ReturnType<typeof voiceMediaConfig>>) {

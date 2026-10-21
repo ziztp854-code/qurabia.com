@@ -49,6 +49,11 @@ describe('voice HTTP trust boundary', () => {
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain('password');
     expect(response.headers.get('Cache-Control')).toContain('no-store');
+    jsonFailure(
+      Object.assign(new Error('postgresql://secret:password@example'), { code: 'P2028' }),
+    );
+    expect(log).toHaveBeenCalledWith('[voice] request failed', 'Error', 'P2028');
+    expect(JSON.stringify(log.mock.calls)).not.toContain('password');
     log.mockRestore();
   });
 });

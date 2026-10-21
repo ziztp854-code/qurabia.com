@@ -316,36 +316,39 @@ async function mutateRoom(
     pruneVoicePresence(state, Date.now());
     await pruneInactiveAccounts(state);
     await mutate(state, record);
-    const changed = await db.$transaction(async (tx) => {
-      // State changes and Cloud token issuance/revocation share one room lock.
-      await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
-      const result = await tx.voiceRoom.updateMany({
-        where: { id: roomId, revision: record.revision },
-        data: {
-          state: json(state),
-          revision: { increment: 1 },
-          active: state.active,
-          isPrivate: state.settings.isPrivate,
-          ...extra,
-        },
-      });
-      if (result.count && report) {
-        const message = report.messageId
-          ? state.messages.find((m) => m.id === report.messageId)
-          : undefined;
-        await tx.voiceReport.create({
+    const changed = await db.$transaction(
+      async (tx) => {
+        // State changes and Cloud token issuance/revocation share one room lock.
+        await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+        const result = await tx.voiceRoom.updateMany({
+          where: { id: roomId, revision: record.revision },
           data: {
-            roomId,
-            reporterId: userId,
-            targetUserId: report.userId ?? message?.userId,
-            messageId: report.messageId,
-            reason: report.reason,
-            evidence: json(message ?? { roomName: state.settings.name }),
+            state: json(state),
+            revision: { increment: 1 },
+            active: state.active,
+            isPrivate: state.settings.isPrivate,
+            ...extra,
           },
         });
-      }
-      return result.count;
-    });
+        if (result.count && report) {
+          const message = report.messageId
+            ? state.messages.find((m) => m.id === report.messageId)
+            : undefined;
+          await tx.voiceReport.create({
+            data: {
+              roomId,
+              reporterId: userId,
+              targetUserId: report.userId ?? message?.userId,
+              messageId: report.messageId,
+              reason: report.reason,
+              evidence: json(message ?? { roomName: state.settings.name }),
+            },
+          });
+        }
+        return result.count;
+      },
+      { timeout: 20_000, maxWait: 5_000 },
+    );
     if (changed) {
       const preferences = await getVoicePreferences(userId);
       return voiceSnapshot(
@@ -365,16 +368,19 @@ export async function getVoiceSnapshot(
   userId: string,
   heartbeat = false,
 ): Promise<VoiceSnapshot> {
-  if (heartbeat)
-    return mutateRoom(roomId, userId, (state) => {
-      const me = requireParticipant(state, userId);
-      me.lastSeenAt = Date.now();
-    });
   const record = await getPrismaClient().voiceRoom.findUnique({ where: { id: roomId } });
   if (!record) missing();
   const state = stateOf(record.state);
   pruneVoicePresence(state, Date.now());
   await pruneInactiveAccounts(state);
+  if (heartbeat) {
+    const me = requireParticipant(state, userId);
+    // Presence lives for 90s. Polling must not write/retry the room on every refresh.
+    if (Date.now() - me.lastSeenAt >= 10_000)
+      return mutateRoom(roomId, userId, (current) => {
+        requireParticipant(current, userId).lastSeenAt = Date.now();
+      });
+  }
   if (state.bannedUsers.includes(userId))
     throw new VoiceHttpError(403, 'لا يمكنك دخول هذه الغرفة.', 'FORBIDDEN');
   if (
@@ -521,10 +527,18 @@ export async function withVoiceMediaSnapshot<T>(
     ledger: VoiceMediaLedger,
     checkpoint: { checkedAt: number },
   ) => Promise<T>,
+  options: { skipBusy?: boolean } = {},
 ): Promise<T> {
   return getPrismaClient().$transaction(
     async (tx) => {
-      await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+      if (options.skipBusy) {
+        const [lock] = await tx.$queryRaw<
+          { acquired: boolean }[]
+        >`SELECT pg_try_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0)) AS acquired`;
+        if (!lock?.acquired) throw new VoiceHttpError(409, 'فحص الصوت جارٍ بالفعل.', 'MEDIA_BUSY');
+      } else {
+        await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+      }
       const record = await tx.voiceRoom.findUnique({ where: { id: roomId } });
       if (!record) missing();
       const state = stateOf(record.state);
@@ -551,16 +565,17 @@ export async function withVoiceMediaSnapshot<T>(
       const before = JSON.stringify(ledger);
       const checkpoint = { checkedAt: state.mediaReconciledAt ?? 0 };
       const result = await work(snapshot, ledger, checkpoint);
-      if (
-        JSON.stringify(ledger) !== before ||
-        checkpoint.checkedAt !== (state.mediaReconciledAt ?? 0)
-      ) {
+      if (JSON.stringify(ledger) !== before) {
         state.mediaReconciledAt = checkpoint.checkedAt;
         state.mediaGrants = ledger;
         await tx.voiceRoom.update({
           where: { id: roomId },
           data: { state: json(state), revision: { increment: 1 } },
         });
+      } else if (checkpoint.checkedAt !== (state.mediaReconciledAt ?? 0)) {
+        // A scheduler timestamp is not an account/seat/permission change. Patch only
+        // that JSON field; never rewrite membership/ledger without advancing revision.
+        await tx.$executeRaw`UPDATE "VoiceRoom" SET state = jsonb_set(state, '{mediaReconciledAt}', to_jsonb(${checkpoint.checkedAt}::bigint), true) WHERE id = ${roomId}`;
       }
       return result;
     },

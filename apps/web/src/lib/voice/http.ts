@@ -57,7 +57,19 @@ export function jsonFailure(error: unknown) {
     return jsonSuccess({ error: error.message, code: error.code }, error.status);
   if (error instanceof ZodError)
     return jsonSuccess({ error: 'تحقق من الحقول المطلوبة وحدودها.', code: 'INVALID_INPUT' }, 400);
-  console.error('[voice] request failed', error instanceof Error ? error.name : 'UnknownError');
+  const code =
+    error &&
+    typeof error === 'object' &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    /^P\d{4}$/.test(error.code)
+      ? error.code
+      : 'UNKNOWN';
+  console.error(
+    '[voice] request failed',
+    error instanceof Error ? error.name : 'UnknownError',
+    code,
+  );
   return jsonSuccess(
     { error: 'تعذّر إتمام الطلب. حاول مجددًا بعد قليل.', code: 'UNAVAILABLE' },
     503,

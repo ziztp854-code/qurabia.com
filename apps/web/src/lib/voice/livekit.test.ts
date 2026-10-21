@@ -13,6 +13,7 @@ import {
   notifyVoiceRoomChanged,
 } from './livekit';
 import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
+import { VoiceHttpError } from './http';
 const mocks = vi.hoisted(() => ({
   snapshot: undefined as unknown,
   list: vi.fn(),
@@ -23,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   mute: vi.fn(),
   ledger: {} as VoiceMediaLedger,
   checkpoint: { checkedAt: 0 },
+  busy: false,
 }));
 vi.mock('./message-delivery', () => ({ voiceMessageDelivery: mocks.delivery }));
 vi.mock('./repository', () => ({
@@ -33,7 +35,11 @@ vi.mock('./repository', () => ({
       ledger: VoiceMediaLedger,
       checkpoint: { checkedAt: number },
     ) => unknown,
-  ) => work(mocks.snapshot, mocks.ledger, mocks.checkpoint),
+    options?: { skipBusy?: boolean },
+  ) => {
+    if (mocks.busy && options?.skipBusy) throw new VoiceHttpError(409, 'busy', 'MEDIA_BUSY');
+    return work(mocks.snapshot, mocks.ledger, mocks.checkpoint);
+  },
 }));
 vi.mock('livekit-server-sdk', async (importOriginal) => {
   const actual = await importOriginal<typeof import('livekit-server-sdk')>();
@@ -71,6 +77,7 @@ beforeEach(() => {
   mocks.list.mockResolvedValue([]);
   mocks.ledger = {};
   mocks.checkpoint.checkedAt = 0;
+  mocks.busy = false;
 });
 describe('voice SFU admission', () => {
   it('fails closed with absent or insecure configuration', async () => {
@@ -323,6 +330,14 @@ it('does not checkpoint failed SFU reconciliations', async () => {
   mocks.list.mockRejectedValue(new Error('network'));
   await expect(reconcileVoiceMedia('room', undefined, true)).rejects.toThrow();
   expect(mocks.checkpoint.checkedAt).toBe(0);
+});
+it('skips an already running periodic check without skipping forced permission enforcement', async () => {
+  mocks.snapshot = { room: { active: true }, participants: [] };
+  mocks.busy = true;
+  await expect(reconcileVoiceMedia('room', undefined, true)).resolves.toBeUndefined();
+  expect(mocks.list).not.toHaveBeenCalled();
+  await reconcileVoiceMedia('room');
+  expect(mocks.list).toHaveBeenCalledTimes(1);
 });
 
 it('sends chat only to explicit authorized recipients and never broadcasts an empty recipient list', async () => {
