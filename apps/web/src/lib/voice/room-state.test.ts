@@ -68,7 +68,7 @@ describe('voice server room permissions', () => {
     ];
     for (const action of forbidden) expect(() => event(state, 'alice', action)).toThrow();
   });
-  it('requires microphone consent and prevents seat takeover', () => {
+  it('requires a pending request for request approval and prevents seat takeover', () => {
     const state = room();
     expect(() =>
       event(state, 'host', { type: 'approve-seat', userId: 'alice', seatIndex: 1 }),
@@ -79,6 +79,60 @@ describe('voice server room permissions', () => {
       event(state, 'host', { type: 'approve-seat', userId: 'bob', seatIndex: 1 }),
     ).toThrow('مشغول');
     expect(state.participants.find((p) => p.id === 'alice')?.role).toBe('speaker');
+  });
+  it('gives a listener a free unlocked microphone seat without remotely unmuting them', () => {
+    const state = room();
+    state.lockedSeats = [1];
+    const alice = state.participants.find((p) => p.id === 'alice')!;
+    alice.handRaised = true;
+    alice.moderatorMuted = true;
+    event(state, 'host', { type: 'give-mic', userId: 'alice' });
+    expect(alice).toMatchObject({
+      role: 'speaker',
+      seatIndex: 2,
+      muted: true,
+      moderatorMuted: true,
+      requestedSeat: null,
+      handRaised: false,
+    });
+    expect(() => event(state, 'alice', { type: 'mute', muted: false })).toThrow();
+    expect(() => event(state, 'host', { type: 'give-mic', userId: 'alice' })).toThrow(
+      'ليس مستمعًا',
+    );
+    expect(state.participants[0]).toMatchObject({ role: 'host', seatIndex: 0 });
+  });
+  it('restricts giving microphones to the host and explicitly authorized moderators', () => {
+    const state = room();
+    expect(() => event(state, 'alice', { type: 'give-mic', userId: 'bob' })).toThrow();
+    event(state, 'host', { type: 'role', userId: 'alice', role: 'moderator' });
+    state.settings.moderatorsCanManage = false;
+    expect(() => event(state, 'alice', { type: 'give-mic', userId: 'bob' })).toThrow();
+    expect(state.participants.find((p) => p.id === 'bob')?.seatIndex).toBeNull();
+    state.settings.moderatorsCanManage = true;
+    event(state, 'alice', { type: 'give-mic', userId: 'bob' });
+    expect(state.participants.find((p) => p.id === 'bob')).toMatchObject({
+      role: 'speaker',
+      seatIndex: 1,
+      muted: true,
+    });
+  });
+  it('never displaces an occupant or uses a locked seat when giving the microphone', () => {
+    const state = room();
+    state.settings.seatCount = 2;
+    state.lockedSeats = [1];
+    expect(() => event(state, 'host', { type: 'give-mic', userId: 'alice' })).toThrow(
+      'لا يوجد مقعد',
+    );
+    state.lockedSeats = [];
+    event(state, 'host', { type: 'give-mic', userId: 'bob' });
+    expect(() => event(state, 'host', { type: 'give-mic', userId: 'alice' })).toThrow(
+      'لا يوجد مقعد',
+    );
+    expect(state.participants.find((p) => p.id === 'alice')).toMatchObject({
+      role: 'listener',
+      seatIndex: null,
+    });
+    expect(state.participants.find((p) => p.id === 'bob')?.seatIndex).toBe(1);
   });
   it('enforces moderator mute until moderator releases it; never turns microphone on remotely', () => {
     const state = room();

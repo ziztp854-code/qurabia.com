@@ -18,6 +18,7 @@ import {
 } from '@/lib/profile/identity';
 import { formatNumber } from '@/lib/utils';
 import styles from './profile-overview.module.css';
+import material from '@/components/ui/royal-material.module.css';
 
 type Props = {
   accountNumber: number;
@@ -94,14 +95,14 @@ export function ProfileOverview({
 
   return (
     <>
-      <section className={styles.profile} aria-labelledby="social-profile-name">
+      <section className={`${styles.profile} ${material.surface}`} aria-labelledby="social-profile-name">
         <div className={styles.cover} aria-hidden="true">
           <span>تحدّي</span>
         </div>
         <div className={styles.body}>
           <div className={styles.identityRow}>
             <button
-              className={styles.photoButton}
+              className={`${styles.photoButton} ${material.interactive}`}
               onClick={edit}
               aria-label={profile.image ? 'تغيير الصورة الشخصية' : 'إضافة صورة شخصية'}
             >

@@ -1,0 +1,37 @@
+{
+  "conditions": "Chromium, local dev server, 390x1000, DPR1; idle requestAnimationFrame scheduling only, not physical device/audio/GPU certification; no baseline comparison",
+  "frames": 179,
+  "medianFrameMs": 16.699999999999818,
+  "p95FrameMs": 16.799999999999272,
+  "blur": "blur(12px) saturate(1.15)",
+  "controls": [
+    {
+      "name": "تشغيل المايك",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "name": "مغادرة المقعد",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "name": "رفع اليد",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "name": "كتم السماعات",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "name": "الهدايا",
+      "color": "rgb(255, 154, 191)"
+    },
+    {
+      "name": "الدردشة",
+      "color": "rgb(255, 255, 255)"
+    },
+    {
+      "name": "مغادرة",
+      "color": "rgb(255, 154, 191)"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "environment": "local synthetic database, no LiveKit configured",
+  "unauthorizedStatus": 403,
+  "grantStatus": 200,
+  "initiallyRequested": null,
+  "role": "speaker",
+  "seatIndex": 1,
+  "muted": true,
+  "mediaSyncPending": false,
+  "realAudioVerified": false
+}

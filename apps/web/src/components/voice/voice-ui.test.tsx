@@ -74,11 +74,11 @@ function snapshot(me = host): VoiceSnapshot {
 function response(value: unknown, status = 200) {
   return Promise.resolve({ ok: status < 400, status, json: async () => value } as Response);
 }
-function mockRoom(me = host) {
+function mockRoom(me = host, state = snapshot(me)) {
   const fetcher = vi.fn((url: string, init?: RequestInit) => {
     if (url.endsWith('/preferences')) return response(emptyPreferences);
-    if (url.endsWith('/events') && init?.body) return response({ ...snapshot(me), cursor: 11 });
-    return response(snapshot(me));
+    if (url.endsWith('/events') && init?.body) return response({ ...state, cursor: 11 });
+    return response(state);
   });
   vi.stubGlobal('fetch', fetcher);
   return fetcher;
@@ -168,6 +168,33 @@ describe('Voice lobby and creation', () => {
 });
 
 describe('Live room roles and state', () => {
+  it('lets a host give the microphone to a listener who has not requested it', async () => {
+    const state = snapshot();
+    state.participants = [host, { ...listener, requestedSeat: null }];
+    const fetcher = mockRoom(host, state);
+    render(<VoiceRoomView roomId={room.id} user={host} />);
+    fireEvent.click(await screen.findByRole('button', { name: /عرض أعضاء الغرفة/ }));
+    const members = await screen.findByRole('region', { name: 'أعضاء الغرفة' });
+    fireEvent.click(within(members).getByRole('button', { name: new RegExp(listener.name) }));
+    expect(await screen.findByText(/يبقى المايك مكتومًا حتى يشغّله بنفسه/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إعطاء المايك' }));
+    await waitFor(() =>
+      expect(
+        fetcher.mock.calls
+          .filter(([, init]) => init?.body)
+          .map(([, init]) => JSON.parse(init!.body as string)),
+      ).toContainEqual({ type: 'give-mic', userId: listener.id }),
+    );
+  });
+  it('disables giving the microphone when every remaining seat is locked', async () => {
+    mockRoom(host, { ...snapshot(), room: { ...room, lockedSeats: [1, 2, 3] } });
+    render(<VoiceRoomView roomId={room.id} user={host} />);
+    fireEvent.click(await screen.findByRole('button', { name: /عرض أعضاء الغرفة/ }));
+    const members = await screen.findByRole('region', { name: 'أعضاء الغرفة' });
+    fireEvent.click(within(members).getByRole('button', { name: new RegExp(listener.name) }));
+    expect(await screen.findByRole('button', { name: 'إعطاء المايك' })).toBeDisabled();
+    expect(screen.getByText(/لا يوجد مقعد مفتوح متاح/)).toBeInTheDocument();
+  });
   it('lists speakers and listeners together and searches members without removing their microphone seat', async () => {
     mockRoom();
     render(<VoiceRoomView roomId={room.id} user={host} />);

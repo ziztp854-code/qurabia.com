@@ -456,6 +456,20 @@
   --report-chart-purple: #8b3fda;
 }
 
+/* Original Tahaddi materials: restrained gold/navy, without external token imports. */
+:root {
+  --royal-material-solid: color-mix(in srgb, var(--brand-navy) 90%, var(--background));
+  --royal-material-tint: color-mix(in srgb, var(--royal-material-solid) 92%, transparent);
+  --royal-material-rim: color-mix(in srgb, var(--brand-gold) 38%, var(--border));
+  --royal-material-light: color-mix(in srgb, var(--foreground) 15%, transparent);
+  --royal-material-wash: color-mix(in srgb, var(--brand-gold) 8%, transparent);
+  --royal-material-shadow: var(--shadow-lg);
+}
+:root[data-theme='light'] {
+  --royal-material-solid: var(--surface-strong);
+  --royal-material-light: color-mix(in srgb, var(--surface-strong) 80%, transparent);
+}
+
 /* Tahaddi Live voice rooms — user-approved Premium Dark Arabic palette, scoped. */
 .v-app,
 .v-player,

@@ -2,6 +2,10 @@
 .liveRoom {
   --room-avatar-size: 64px;
   --room-controls-space: 170px;
+  /* The voice stage stays dark even when the surrounding site uses light mode. */
+  --royal-material-solid: var(--brand-navy);
+  --royal-material-tint: color-mix(in srgb, var(--brand-navy) 92%, transparent);
+  --royal-material-light: color-mix(in srgb, var(--voice-text) 15%, transparent);
 }
 .liveRoom[data-room-visible='true'] {
   position: relative;
@@ -266,10 +270,10 @@
   position: relative;
   min-inline-size: 0;
   min-block-size: 0;
-  padding: 4px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  padding: 12px 8px;
+  border: 1px solid var(--voice-line);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--royal-material-solid) 82%, var(--voice-bg));
   box-shadow: none;
 }
 .liveRoom :global(.v-seats:has(.v-host-seat) .v-host-seat) {
@@ -332,6 +336,9 @@
 }
 .liveRoom :global(.v-stage .is-speaking .v-seat-avatar) {
   box-shadow: 0 0 0 5px var(--voice-glow);
+}
+.liveRoom :global(.v-stage .v-seats .v-seat.is-speaking) {
+  border-color: var(--voice-gold);
 }
 .liveRoom :global(.v-stage .is-speaking .v-seat-avatar)::after {
   content: '';
@@ -755,8 +762,8 @@
 }
 .liveRoom :global(.v-room-app .v-room-controls) {
   position: fixed;
-  inset-block-end: 0;
-  inset-inline: 0;
+  inset-block-end: max(12px, env(safe-area-inset-bottom));
+  inset-inline: max(12px, env(safe-area-inset-left), env(safe-area-inset-right));
   z-index: 35;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
@@ -765,12 +772,10 @@
   gap: 8px;
   min-height: 0;
   min-block-size: 0;
-  max-inline-size: 1880px;
+  max-inline-size: 760px;
   margin-inline: auto;
-  padding: 10px 12px max(12px, env(safe-area-inset-bottom));
-  border-block-start: 1px solid var(--voice-border);
-  background: var(--voice-bg);
-  box-shadow: 0 -12px 30px var(--voice-soft-shade);
+  padding: 10px 12px;
+  border-radius: var(--radius-xl);
 }
 .liveRoom :global(.v-room-controls .v-controls-me) {
   display: none;
@@ -828,14 +833,14 @@
 }
 .liveRoom :global(.v-room-controls .v-gift-control) {
   background: transparent;
-  color: var(--voice-live);
+  color: var(--voice-danger);
 }
 .liveRoom :global(.v-room-controls .v-gift-control > svg) {
   background: var(--voice-live);
   color: var(--voice-ink);
 }
 .liveRoom :global(.v-room-controls .v-leave) {
-  color: var(--voice-live);
+  color: var(--voice-danger);
   background: transparent;
 }
 .liveRoom :global(.v-room-controls .v-control.is-selected) {

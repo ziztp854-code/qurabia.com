@@ -115,6 +115,7 @@ export type VoiceMediaLedger = Record<
 export type VoiceEvent =
   | { type: 'request-seat'; seatIndex?: number }
   | { type: 'approve-seat'; userId: string; seatIndex: number }
+  | { type: 'give-mic'; userId: string }
   | { type: 'deny-seat'; userId: string }
   | { type: 'leave-seat' }
   | { type: 'hand'; raised: boolean }

@@ -52,6 +52,7 @@ export const voiceEventSchema = z.discriminatedUnion('type', [
     .strict(),
   z.object({ type: z.literal('request-seat'), seatIndex: seatIndex.optional() }).strict(),
   z.object({ type: z.literal('approve-seat'), userId: id, seatIndex }).strict(),
+  z.object({ type: z.literal('give-mic'), userId: id }).strict(),
   z.object({ type: z.literal('deny-seat'), userId: id }).strict(),
   z.object({ type: z.literal('leave-seat') }).strict(),
   z.object({ type: z.literal('hand'), raised: z.boolean() }).strict(),

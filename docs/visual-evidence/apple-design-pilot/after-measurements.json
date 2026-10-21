@@ -1,0 +1,396 @@
+{
+  "browser": "151.0.7922.173",
+  "dpr": 1,
+  "height": 1000,
+  "errors": [],
+  "measurements": [
+    {
+      "stage": "after",
+      "surface": "room",
+      "width": 320,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 60,
+          "height": 88
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 84.671875,
+          "height": 88
+        },
+        {
+          "name": "رفع اليد",
+          "width": 84.65625,
+          "height": 88
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 84.65625,
+          "height": 71.5
+        },
+        {
+          "name": "الهدايا",
+          "width": 84.671875,
+          "height": 71.5
+        },
+        {
+          "name": "الدردشة",
+          "width": 84.65625,
+          "height": 71.5
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "surface": "room",
+      "width": 390,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 54.65625,
+          "height": 88
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 54.671875,
+          "height": 88
+        },
+        {
+          "name": "رفع اليد",
+          "width": 54.671875,
+          "height": 88
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 54.65625,
+          "height": 88
+        },
+        {
+          "name": "الهدايا",
+          "width": 54.671875,
+          "height": 88
+        },
+        {
+          "name": "الدردشة",
+          "width": 54.671875,
+          "height": 88
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "surface": "room",
+      "width": 430,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 60,
+          "height": 88
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 61.328125,
+          "height": 88
+        },
+        {
+          "name": "رفع اليد",
+          "width": 61.328125,
+          "height": 88
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 61.34375,
+          "height": 88
+        },
+        {
+          "name": "الهدايا",
+          "width": 61.328125,
+          "height": 88
+        },
+        {
+          "name": "الدردشة",
+          "width": 61.328125,
+          "height": 88
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "surface": "room",
+      "width": 768,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 95.703125,
+          "height": 75
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 95.71875,
+          "height": 75
+        },
+        {
+          "name": "رفع اليد",
+          "width": 95.71875,
+          "height": 75
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 95.703125,
+          "height": 75
+        },
+        {
+          "name": "الهدايا",
+          "width": 95.71875,
+          "height": 75
+        },
+        {
+          "name": "الدردشة",
+          "width": 95.71875,
+          "height": 75
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "width": 95.71875,
+          "height": 75
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "surface": "room",
+      "width": 1440,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "رفع اليد",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "الهدايا",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "width": 88,
+          "height": 75
+        }
+      ]
+    },
+    {
+      "stage": "after",
+      "surface": "room",
+      "width": 1920,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "مغادرة المقعد",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "رفع اليد",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "كتم السماعات",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "الهدايا",
+          "width": 88,
+          "height": 75
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "width": 88,
+          "height": 75
+        }
+      ]
+    },
+    {
+      "surface": "room",
+      "keyboardFocusInsideApp": true
+    },
+    {
+      "surface": "room",
+      "axeViolations": [],
+      "axeIncomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "surface": "room",
+      "lightAxeViolations": []
+    },
+    {
+      "surface": "room",
+      "reducedTransparency": {
+        "backdrop": "none",
+        "background": "rgb(17, 24, 39)"
+      },
+      "reducedSpeakingAnimation": "none"
+    },
+    {
+      "stage": "after",
+      "surface": "profile",
+      "width": 320,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "profile",
+      "width": 390,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "profile",
+      "width": 430,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "profile",
+      "width": 768,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "profile",
+      "width": 1440,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "profile",
+      "width": 1920,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "surface": "profile",
+      "keyboardFocusInsideApp": true
+    },
+    {
+      "surface": "profile",
+      "axeViolations": [],
+      "axeIncomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "surface": "profile",
+      "lightAxeViolations": []
+    },
+    {
+      "stage": "after",
+      "surface": "public-profile",
+      "width": 320,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "public-profile",
+      "width": 390,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "public-profile",
+      "width": 430,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "public-profile",
+      "width": 768,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "public-profile",
+      "width": 1440,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "stage": "after",
+      "surface": "public-profile",
+      "width": 1920,
+      "overflow": false,
+      "brokenImages": 0,
+      "controls": []
+    },
+    {
+      "surface": "public-profile",
+      "keyboardFocusInsideApp": true
+    },
+    {
+      "surface": "public-profile",
+      "axeViolations": [],
+      "axeIncomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "surface": "public-profile",
+      "lightAxeViolations": []
+    }
+  ]
+}
