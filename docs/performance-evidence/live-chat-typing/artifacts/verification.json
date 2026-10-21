@@ -1,0 +1,27 @@
+{
+  "sourceSha256": "6aaed1f3f23b3e928a3a5273c770c5703c0f976b00d4a9ddf9e6e64a7cb4fd5c",
+  "roomSha256": "d7f15c7aad6bb2031bc2e9662672bb1fcb1f7d659044ce080f2fdf7ebdabbb85",
+  "unit": {
+    "passed": 132,
+    "failed": 0,
+    "pending": 0,
+    "success": true,
+    "files": 21
+  },
+  "browserPerformance": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browserAcceptance": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "eslint": "passed",
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "prettier": "passed",
+  "realDevices": "not executed",
+  "realAudio": "not executed"
+}

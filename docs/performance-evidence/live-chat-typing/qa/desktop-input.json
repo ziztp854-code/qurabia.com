@@ -1,0 +1,35 @@
+{
+  "sourceSha256": {
+    "voice-chat.tsx": "6aaed1f3f23b3e928a3a5273c770c5703c0f976b00d4a9ddf9e6e64a7cb4fd5c",
+    "voice-room.tsx": "d7f15c7aad6bb2031bc2e9662672bb1fcb1f7d659044ce080f2fdf7ebdabbb85"
+  },
+  "browser": "151.0.7922.173",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "rapidCharacters": 100,
+  "arabicCharacters": 760,
+  "pasteCharacters": 460,
+  "nativeClipboard": true,
+  "syntheticCDPIME": true,
+  "beforeInsert": {
+    "value": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKL",
+    "start": 79,
+    "end": 79,
+    "focused": true
+  },
+  "afterInsert": {
+    "value": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqعrstuvwxyzABCDEFGHIJKL",
+    "start": 80,
+    "end": 80,
+    "focused": true
+  },
+  "posts": [
+    {
+      "type": "message",
+      "text": "اختبار"
+    }
+  ],
+  "errors": []
+}

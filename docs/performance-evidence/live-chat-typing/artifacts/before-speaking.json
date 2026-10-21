@@ -1,0 +1,1128 @@
+{
+  "stage": "before",
+  "scenario": "speaking",
+  "browserName": "chromium",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "mode": "Vite React development + Profiler + test-only render probes; no StrictMode",
+  "messageCount": 200,
+  "characters": 100,
+  "elapsedMs": 36885,
+  "apiRequests": 0,
+  "sourceSha256": "67bf70de01dbfafccf4296c88d5ced8e1d9b57250abe140f305d8ad30c5a984f",
+  "cdpDeltas": {
+    "TaskDuration": 31.522042000000003,
+    "ScriptDuration": 24.390955,
+    "LayoutDuration": 1.199031,
+    "RecalcStyleDuration": 1.964001,
+    "LayoutCount": 127,
+    "RecalcStyleCount": 464,
+    "JSHeapUsedSize": 57006688
+  },
+  "metrics": {
+    "active": false,
+    "renders": {
+      "VoiceRoomView": 10,
+      "Avatar": 21700,
+      "MemberName": 21680,
+      "VoiceChat": 108,
+      "MessageRow": 21600
+    },
+    "commits": [
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 109.5999999968335,
+        "baseDuration": 104.19999999832362,
+        "startTime": 4313.600000000559,
+        "commitTime": 4426.9000000003725
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 107.59999999962747,
+        "baseDuration": 111.39999999757856,
+        "startTime": 4518.800000000745,
+        "commitTime": 4630.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 336.2000000011176,
+        "baseDuration": 340.3999999994412,
+        "startTime": 4877.700000000186,
+        "commitTime": 5218.4000000003725
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 72.39999999664724,
+        "baseDuration": 78.59999999217689,
+        "startTime": 5548.300000000745,
+        "commitTime": 5623.100000000559
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 90.09999999962747,
+        "baseDuration": 96.09999999497086,
+        "startTime": 5800.200000000186,
+        "commitTime": 5892.600000000559
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 324.2000000011176,
+        "baseDuration": 329.59999999962747,
+        "startTime": 5999.600000000559,
+        "commitTime": 6327.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 87.79999999981374,
+        "baseDuration": 94.49999999627471,
+        "startTime": 6730.200000000186,
+        "commitTime": 6821.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 1308.8000000044703,
+        "baseDuration": 1303.5999999986961,
+        "startTime": 7092.4000000003725,
+        "commitTime": 8406.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 702.4000000013039,
+        "baseDuration": 706.5000000009313,
+        "startTime": 8975.5,
+        "commitTime": 9681.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 297.29999999701977,
+        "baseDuration": 301.7999999932945,
+        "startTime": 10098.200000000186,
+        "commitTime": 10397.600000000559
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 73.90000000037253,
+        "baseDuration": 81.20000000018626,
+        "startTime": 10677.800000000745,
+        "commitTime": 10754.100000000559
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 104.09999999869615,
+        "baseDuration": 100.29999999795109,
+        "startTime": 10872.900000000373,
+        "commitTime": 10980.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 75.10000000242144,
+        "baseDuration": 81.00000000279397,
+        "startTime": 11037,
+        "commitTime": 11115.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 299.70000000018626,
+        "baseDuration": 304.10000000242144,
+        "startTime": 11411.200000000186,
+        "commitTime": 11713
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 60.49999999627471,
+        "baseDuration": 66.19999999552965,
+        "startTime": 11956.600000000559,
+        "commitTime": 12020.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 72.50000000093132,
+        "baseDuration": 79.30000000074506,
+        "startTime": 12123,
+        "commitTime": 12198.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 62.20000000204891,
+        "baseDuration": 68.30000000447035,
+        "startTime": 12304.100000000559,
+        "commitTime": 12369.600000000559
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 317.10000000242144,
+        "baseDuration": 320.40000000130385,
+        "startTime": 12469.100000000559,
+        "commitTime": 12788.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 61.39999999757856,
+        "baseDuration": 67.6999999973923,
+        "startTime": 12979.100000000559,
+        "commitTime": 13043.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 63.90000000037253,
+        "baseDuration": 70.20000000018626,
+        "startTime": 13134.200000000186,
+        "commitTime": 13201.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 54.700000000186265,
+        "baseDuration": 60.90000000130385,
+        "startTime": 13318,
+        "commitTime": 13375.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 290.5,
+        "baseDuration": 295.59999999497086,
+        "startTime": 13477.900000000373,
+        "commitTime": 13770.100000000559
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 80.79999999981374,
+        "baseDuration": 76.90000000037253,
+        "startTime": 13961.5,
+        "commitTime": 14045.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 58.19999999459833,
+        "baseDuration": 60.69999999552965,
+        "startTime": 14100.200000000186,
+        "commitTime": 14161.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 84.3000000026077,
+        "baseDuration": 85.60000000335276,
+        "startTime": 14333,
+        "commitTime": 14420.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 294.5,
+        "baseDuration": 297.00000000279397,
+        "startTime": 14536.5,
+        "commitTime": 14833.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 66.9000000031665,
+        "baseDuration": 68.20000000298023,
+        "startTime": 15038.200000000186,
+        "commitTime": 15108.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 122.29999999981374,
+        "baseDuration": 122.90000000223517,
+        "startTime": 15204.400000000373,
+        "commitTime": 15329.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 67.50000000186265,
+        "baseDuration": 69.30000000074506,
+        "startTime": 15423.200000000186,
+        "commitTime": 15493
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 337.9999999962747,
+        "baseDuration": 339.49999999348074,
+        "startTime": 15593.400000000373,
+        "commitTime": 15933.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 101.59999999869615,
+        "baseDuration": 103.89999999385327,
+        "startTime": 16132.300000000745,
+        "commitTime": 16237.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 189.89999999850988,
+        "baseDuration": 190.09999999497086,
+        "startTime": 16392.700000000186,
+        "commitTime": 16591.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 326.50000000558794,
+        "baseDuration": 328.2000000104308,
+        "startTime": 16734.400000000373,
+        "commitTime": 17064.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 74.49999999627471,
+        "baseDuration": 70.79999999795109,
+        "startTime": 17262.60000000056,
+        "commitTime": 17340.60000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 75.80000000074506,
+        "baseDuration": 79.59999999497086,
+        "startTime": 17395.700000000186,
+        "commitTime": 17473.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 72.80000000167638,
+        "baseDuration": 76.90000000130385,
+        "startTime": 17666.300000000745,
+        "commitTime": 17741.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 283.3000000026077,
+        "baseDuration": 287,
+        "startTime": 17849.10000000056,
+        "commitTime": 18135.10000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 61.69999999832362,
+        "baseDuration": 65.99999999441206,
+        "startTime": 18352.300000000745,
+        "commitTime": 18416
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 92.80000000074506,
+        "baseDuration": 97.09999999776483,
+        "startTime": 18538.400000000373,
+        "commitTime": 18633.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 52.10000000055879,
+        "baseDuration": 57.10000000055879,
+        "startTime": 18740.400000000373,
+        "commitTime": 18794.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 286.59999999869615,
+        "baseDuration": 290.79999999608845,
+        "startTime": 18895.700000000186,
+        "commitTime": 19185.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 87.50000000279397,
+        "baseDuration": 91.29999999329448,
+        "startTime": 19443.5,
+        "commitTime": 19532.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 55.0999999968335,
+        "baseDuration": 60.39999999292195,
+        "startTime": 19645.60000000056,
+        "commitTime": 19703.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 64.09999999590218,
+        "baseDuration": 69.09999999497086,
+        "startTime": 19796.800000000745,
+        "commitTime": 19863.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 314.199999996461,
+        "baseDuration": 309.59999999403954,
+        "startTime": 19967.60000000056,
+        "commitTime": 20284.10000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 62.499999998137355,
+        "baseDuration": 90.699999993667,
+        "startTime": 20514.700000000186,
+        "commitTime": 20580.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 75.79999999888241,
+        "baseDuration": 103.49999999534339,
+        "startTime": 20684.60000000056,
+        "commitTime": 20763.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 57.5,
+        "baseDuration": 85.39999999664724,
+        "startTime": 20857.5,
+        "commitTime": 20917.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 299.1000000014901,
+        "baseDuration": 326.699999996461,
+        "startTime": 21017.400000000373,
+        "commitTime": 21320.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 88.29999999888241,
+        "baseDuration": 114.49999999534339,
+        "startTime": 21534.700000000186,
+        "commitTime": 21624.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 55.700000000186265,
+        "baseDuration": 83.39999999571592,
+        "startTime": 21750.60000000056,
+        "commitTime": 21809
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 76.00000000093132,
+        "baseDuration": 104.0999999968335,
+        "startTime": 21916.900000000373,
+        "commitTime": 21995.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 329.199999996461,
+        "baseDuration": 356.899999990128,
+        "startTime": 22122.300000000745,
+        "commitTime": 22454.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 94.29999999888241,
+        "baseDuration": 112.89999999292195,
+        "startTime": 22677,
+        "commitTime": 22774.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 73.50000000465661,
+        "baseDuration": 70.50000000465661,
+        "startTime": 22878.200000000186,
+        "commitTime": 22954.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 65.29999999795109,
+        "baseDuration": 67.10000000242144,
+        "startTime": 23006.300000000745,
+        "commitTime": 23073.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 297.49999999813735,
+        "baseDuration": 298.5999999959022,
+        "startTime": 23252.300000000745,
+        "commitTime": 23553.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 64.49999999813735,
+        "baseDuration": 66.79999999701977,
+        "startTime": 23778,
+        "commitTime": 23846
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 68.59999999962747,
+        "baseDuration": 70.29999999981374,
+        "startTime": 23937.400000000373,
+        "commitTime": 24008.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 57.600000001490116,
+        "baseDuration": 60.70000000670552,
+        "startTime": 24133.10000000056,
+        "commitTime": 24192.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 281.1000000014901,
+        "baseDuration": 282.1000000014901,
+        "startTime": 24297.60000000056,
+        "commitTime": 24581.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 63.599999997764826,
+        "baseDuration": 65.49999999720603,
+        "startTime": 24821.400000000373,
+        "commitTime": 24887.400000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 56.59999999962747,
+        "baseDuration": 58.70000000204891,
+        "startTime": 24972.800000000745,
+        "commitTime": 25031.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 93.79999999608845,
+        "baseDuration": 93.99999999813735,
+        "startTime": 25133.900000000373,
+        "commitTime": 25231.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 522.5000000037253,
+        "baseDuration": 521.5000000074506,
+        "startTime": 25408.10000000056,
+        "commitTime": 25934.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 94.6999999973923,
+        "baseDuration": 89.29999999329448,
+        "startTime": 26268,
+        "commitTime": 26366.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 450.89999999664724,
+        "baseDuration": 451.10000000242144,
+        "startTime": 26455.300000000745,
+        "commitTime": 26908.900000000373
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 363.70000000018626,
+        "baseDuration": 365.0000000009313,
+        "startTime": 27484.700000000186,
+        "commitTime": 27852.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 72.40000000409782,
+        "baseDuration": 74.59999999869615,
+        "startTime": 28127.800000000745,
+        "commitTime": 28202.60000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 69.50000000279397,
+        "baseDuration": 71.1000000052154,
+        "startTime": 28296.10000000056,
+        "commitTime": 28369.60000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 284.6999999983236,
+        "baseDuration": 286.80000000074506,
+        "startTime": 28653.10000000056,
+        "commitTime": 28939.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 59.70000000111759,
+        "baseDuration": 62.99999999906868,
+        "startTime": 29181.60000000056,
+        "commitTime": 29244.5
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 66.1999999973923,
+        "baseDuration": 69.29999999888241,
+        "startTime": 29509.700000000186,
+        "commitTime": 29578.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 305.4999999990687,
+        "baseDuration": 308.29999999981374,
+        "startTime": 29749.200000000186,
+        "commitTime": 30057
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 58.99999999906868,
+        "baseDuration": 60.79999999888241,
+        "startTime": 30464,
+        "commitTime": 30525.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 70.50000000093132,
+        "baseDuration": 71.60000000428408,
+        "startTime": 30672.900000000373,
+        "commitTime": 30745.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 323,
+        "baseDuration": 318.70000000018626,
+        "startTime": 31048.300000000745,
+        "commitTime": 31374.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 61.900000002235174,
+        "baseDuration": 100.4000000031665,
+        "startTime": 31447.5,
+        "commitTime": 31512
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 68.5,
+        "baseDuration": 106.49999999906868,
+        "startTime": 31885.800000000745,
+        "commitTime": 31956.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 291.300000003539,
+        "baseDuration": 328.70000000298023,
+        "startTime": 32302.800000000745,
+        "commitTime": 32598
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 83.70000000018626,
+        "baseDuration": 122.10000000242144,
+        "startTime": 32995.5,
+        "commitTime": 33082.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 309.09999999869615,
+        "baseDuration": 345.7999999979511,
+        "startTime": 33400.90000000037,
+        "commitTime": 33712.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 65.6000000005588,
+        "baseDuration": 103.40000000130385,
+        "startTime": 34095.5,
+        "commitTime": 34164.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 121.90000000037253,
+        "baseDuration": 159.40000000596046,
+        "startTime": 34308.90000000037,
+        "commitTime": 34433.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 282.69999999925494,
+        "baseDuration": 319.7000000011176,
+        "startTime": 34549,
+        "commitTime": 34834.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 67.40000000130385,
+        "baseDuration": 105.6999999973923,
+        "startTime": 35029.60000000056,
+        "commitTime": 35099.90000000037
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 70.40000000130385,
+        "baseDuration": 108.60000000242144,
+        "startTime": 35178.800000000745,
+        "commitTime": 35252
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 74.49999999906868,
+        "baseDuration": 71.09999999497086,
+        "startTime": 35340.10000000056,
+        "commitTime": 35417.10000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 75.8000000026077,
+        "baseDuration": 77.60000000149012,
+        "startTime": 35473.40000000037,
+        "commitTime": 35552
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 309.8999999985099,
+        "baseDuration": 313.3999999957159,
+        "startTime": 35690.10000000056,
+        "commitTime": 36003.90000000037
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 76.59999999869615,
+        "baseDuration": 77.49999999813735,
+        "startTime": 36223.300000000745,
+        "commitTime": 36304.40000000037
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 95.19999999832362,
+        "baseDuration": 97.6999999973923,
+        "startTime": 36411.10000000056,
+        "commitTime": 36509.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 80.30000000074506,
+        "baseDuration": 82.60000000335276,
+        "startTime": 36610.200000000186,
+        "commitTime": 36693.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 387.4999999990687,
+        "baseDuration": 389.0999999968335,
+        "startTime": 36825.10000000056,
+        "commitTime": 37216.40000000037
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 88.29999999888241,
+        "baseDuration": 88.89999999757856,
+        "startTime": 37536,
+        "commitTime": 37627.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 71.19999999925494,
+        "baseDuration": 73.79999999795109,
+        "startTime": 37750.700000000186,
+        "commitTime": 37825.300000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 339.3999999985099,
+        "baseDuration": 341.699999993667,
+        "startTime": 37955.10000000056,
+        "commitTime": 38297.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 64.49999999906868,
+        "baseDuration": 67.29999999795109,
+        "startTime": 38500.90000000037,
+        "commitTime": 38567.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 105.9000000031665,
+        "baseDuration": 91.69999999925494,
+        "startTime": 38671,
+        "commitTime": 38779.10000000056
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 64.40000000223517,
+        "baseDuration": 70.20000000204891,
+        "startTime": 38888.5,
+        "commitTime": 38955.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 298.8999999957159,
+        "baseDuration": 303.39999999757856,
+        "startTime": 39030.40000000037,
+        "commitTime": 39331.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 76,
+        "baseDuration": 78.70000000111759,
+        "startTime": 39522.200000000186,
+        "commitTime": 39600.800000000745
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 88.10000000335276,
+        "baseDuration": 93.20000000298023,
+        "startTime": 39695.40000000037,
+        "commitTime": 39786.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 80.1000000005588,
+        "baseDuration": 85.60000000335276,
+        "startTime": 39892.800000000745,
+        "commitTime": 39978.200000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 342.1000000042841,
+        "baseDuration": 346.60000000242144,
+        "startTime": 40087.700000000186,
+        "commitTime": 40432.700000000186
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 63.10000000055879,
+        "baseDuration": 68.30000000353903,
+        "startTime": 40675.60000000056,
+        "commitTime": 40741.40000000037
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 64.00000000093132,
+        "baseDuration": 68.80000000074506,
+        "startTime": 40856.10000000056,
+        "commitTime": 40924
+      },
+      {
+        "id": "room",
+        "phase": "update",
+        "actualDuration": 61.09999999590218,
+        "baseDuration": 65.59999999497086,
+        "startTime": 41031.10000000056,
+        "commitTime": 41095.10000000056
+      }
+    ],
+    "latencies": [
+      269.29999999981374,
+      455.79999999981374,
+      146.29999999981374,
+      167.1000000005588,
+      474.09999999962747,
+      153.90000000037253,
+      1492.9000000003725,
+      795.7000000001863,
+      394.5,
+      156.3999999994412,
+      204,
+      433.09999999962747,
+      142.6000000005588,
+      148.1000000005588,
+      145.5,
+      446.40000000037253,
+      134.5,
+      150.70000000018626,
+      141.80000000074506,
+      435.90000000037253,
+      181.09999999962747,
+      168.40000000037253,
+      437.1000000005588,
+      136.20000000018626,
+      201.40000000037253,
+      143.20000000018626,
+      523.5999999996275,
+      240.29999999981374,
+      337.29999999981374,
+      461.29999999981374,
+      189.70000000018626,
+      133.90000000037253,
+      403.90000000037253,
+      173.59999999962747,
+      169.6000000005588,
+      114.70000000018626,
+      439.6000000005588,
+      160.79999999981374,
+      124.09999999962747,
+      135.5,
+      456.29999999981374,
+      138.8999999994412,
+      144,
+      129.70000000018626,
+      434.3999999994412,
+      181.70000000018626,
+      133.1000000005588,
+      166.90000000037253,
+      457,
+      171.6000000005588,
+      179.70000000018626,
+      432.29999999981374,
+      129.5,
+      136.40000000037253,
+      131.90000000037253,
+      410.1000000005588,
+      135.1000000005588,
+      127.70000000018626,
+      228.6000000005588,
+      707.2000000001863,
+      658.7000000001863,
+      460.5,
+      157.70000000018626,
+      139.29999999981374,
+      436.20000000018626,
+      140.09999999962747,
+      142,
+      460.20000000018626,
+      122,
+      146.5,
+      217.09999999962747,
+      137.3999999994412,
+      385.29999999981374,
+      153.70000000018626,
+      415.20000000018626,
+      126.40000000037253,
+      189.20000000018626,
+      417,
+      141.59999999962747,
+      145.70000000018626,
+      189,
+      460.29999999981374,
+      174.09999999962747,
+      176.20000000018626,
+      179.8999999994412,
+      591.6000000005588,
+      176.80000000074506,
+      154.59999999962747,
+      487.20000000018626,
+      146.59999999962747,
+      197.1000000005588,
+      128,
+      446.5,
+      159,
+      162,
+      164,
+      483.40000000037253,
+      157.70000000018626,
+      163.5,
+      138.5
+    ],
+    "longTasks": [
+      166,
+      222,
+      421,
+      351,
+      62,
+      139,
+      409,
+      396,
+      109,
+      1451,
+      1177,
+      50,
+      571,
+      84,
+      132,
+      139,
+      146,
+      377,
+      112,
+      124,
+      114,
+      390,
+      113,
+      121,
+      108,
+      365,
+      114,
+      132,
+      138,
+      362,
+      113,
+      175,
+      114,
+      431,
+      187,
+      273,
+      406,
+      111,
+      146,
+      120,
+      346,
+      126,
+      149,
+      98,
+      379,
+      140,
+      103,
+      108,
+      395,
+      114,
+      116,
+      105,
+      373,
+      150,
+      112,
+      140,
+      399,
+      138,
+      107,
+      132,
+      369,
+      109,
+      115,
+      105,
+      362,
+      107,
+      107,
+      192,
+      626,
+      148,
+      584,
+      771,
+      77,
+      71,
+      121,
+      116,
+      198,
+      367,
+      112,
+      314,
+      54,
+      406,
+      348,
+      124,
+      355,
+      149,
+      383,
+      619,
+      355,
+      636,
+      319,
+      178,
+      356,
+      118,
+      122,
+      110,
+      145,
+      389,
+      134,
+      146,
+      148,
+      526,
+      146,
+      126,
+      423,
+      111,
+      170,
+      107,
+      395,
+      134,
+      141,
+      142,
+      421,
+      132,
+      131,
+      114
+    ],
+    "speakerEvents": 10,
+    "value": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
+    "focused": true,
+    "caret": 100,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+    "devicePixelRatio": 1,
+    "hardwareConcurrency": 5
+  },
+  "errors": []
+}

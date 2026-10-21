@@ -1,0 +1,166 @@
+{
+  "before-isolated": {
+    "p50Ms": 179.34999999962747,
+    "p95Ms": 525.7000000001863,
+    "maxMs": 709.7000000001863,
+    "longTaskCount": 116,
+    "maxLongTaskMs": 769,
+    "reactActualDurationMs": 16083.699999984354,
+    "commits": 102,
+    "renders": {
+      "VoiceChat": 102,
+      "MessageRow": 20400,
+      "Avatar": 20210,
+      "MemberName": 20208,
+      "VoiceRoomView": 1
+    },
+    "elapsedMs": 33842,
+    "apiRequests": 3,
+    "cdpDeltas": {
+      "TaskDuration": 28.153466,
+      "ScriptDuration": 23.307048,
+      "LayoutDuration": 0.468518,
+      "RecalcStyleDuration": 0.539707,
+      "LayoutCount": 108,
+      "RecalcStyleCount": 421,
+      "JSHeapUsedSize": 120801416
+    }
+  },
+  "before-speaking": {
+    "p50Ms": 172.60000000009313,
+    "p95Ms": 523.5999999996275,
+    "maxMs": 1492.9000000003725,
+    "longTaskCount": 116,
+    "maxLongTaskMs": 1451,
+    "reactActualDurationMs": 17555.19999998808,
+    "commits": 108,
+    "renders": {
+      "VoiceRoomView": 10,
+      "Avatar": 21700,
+      "MemberName": 21680,
+      "VoiceChat": 108,
+      "MessageRow": 21600
+    },
+    "elapsedMs": 36885,
+    "apiRequests": 0,
+    "cdpDeltas": {
+      "TaskDuration": 31.522042000000003,
+      "ScriptDuration": 24.390955,
+      "LayoutDuration": 1.199031,
+      "RecalcStyleDuration": 1.964001,
+      "LayoutCount": 127,
+      "RecalcStyleCount": 464,
+      "JSHeapUsedSize": 57006688
+    }
+  },
+  "composer-only-isolated": {
+    "p50Ms": 9.600000000093132,
+    "p95Ms": 18,
+    "maxMs": 556.7000000001863,
+    "longTaskCount": 1,
+    "maxLongTaskMs": 505,
+    "reactActualDurationMs": 566.8999999975786,
+    "commits": 100,
+    "renders": {
+      "VoiceChatComposer": 100,
+      "VoiceRoomView": 1,
+      "Avatar": 210,
+      "MemberName": 208,
+      "VoiceChat": 1,
+      "MessageRow": 200
+    },
+    "elapsedMs": 2230,
+    "apiRequests": 1,
+    "cdpDeltas": {
+      "TaskDuration": 1.855792,
+      "ScriptDuration": 0.845739,
+      "LayoutDuration": 0.040737,
+      "RecalcStyleDuration": 0.013288,
+      "LayoutCount": 103,
+      "RecalcStyleCount": 202,
+      "JSHeapUsedSize": 24297740
+    }
+  },
+  "composer-only-speaking": {
+    "p50Ms": 13.399999999906868,
+    "p95Ms": 235.20000000018626,
+    "maxMs": 1328.0999999996275,
+    "longTaskCount": 26,
+    "maxLongTaskMs": 1017,
+    "reactActualDurationMs": 7430.699999993667,
+    "commits": 110,
+    "renders": {
+      "VoiceRoomView": 15,
+      "Avatar": 3150,
+      "MemberName": 3120,
+      "VoiceChat": 15,
+      "MessageRow": 3000,
+      "VoiceChatComposer": 110
+    },
+    "elapsedMs": 14582,
+    "apiRequests": 5,
+    "cdpDeltas": {
+      "TaskDuration": 12.410371000000001,
+      "ScriptDuration": 9.682122,
+      "LayoutDuration": 0.086324,
+      "RecalcStyleDuration": 0.111829,
+      "LayoutCount": 113,
+      "RecalcStyleCount": 319,
+      "JSHeapUsedSize": 69570000
+    }
+  },
+  "after-isolated": {
+    "p50Ms": 11.25,
+    "p95Ms": 23.90000000037253,
+    "maxMs": 41.30000000074506,
+    "longTaskCount": 1,
+    "maxLongTaskMs": 66,
+    "reactActualDurationMs": 204.40000000223517,
+    "commits": 101,
+    "renders": {
+      "VoiceChatComposer": 101,
+      "VoiceRoomView": 1,
+      "Avatar": 10,
+      "MemberName": 8,
+      "VoiceChat": 1
+    },
+    "elapsedMs": 1938,
+    "apiRequests": 1,
+    "cdpDeltas": {
+      "TaskDuration": 1.64301,
+      "ScriptDuration": 0.441751,
+      "LayoutDuration": 0.05197,
+      "RecalcStyleDuration": 0.016526,
+      "LayoutCount": 103,
+      "RecalcStyleCount": 216,
+      "JSHeapUsedSize": 4784408
+    }
+  },
+  "after-speaking": {
+    "p50Ms": 11.700000000186265,
+    "p95Ms": 33.59999999962747,
+    "maxMs": 147,
+    "longTaskCount": 13,
+    "maxLongTaskMs": 344,
+    "reactActualDurationMs": 1016.9000000022352,
+    "commits": 109,
+    "renders": {
+      "VoiceRoomView": 11,
+      "Avatar": 110,
+      "MemberName": 88,
+      "VoiceChat": 11,
+      "VoiceChatComposer": 109
+    },
+    "elapsedMs": 3575,
+    "apiRequests": 1,
+    "cdpDeltas": {
+      "TaskDuration": 3.1901490000000003,
+      "ScriptDuration": 1.461562,
+      "LayoutDuration": 0.05648,
+      "RecalcStyleDuration": 0.08222,
+      "LayoutCount": 113,
+      "RecalcStyleCount": 264,
+      "JSHeapUsedSize": -214012
+    }
+  }
+}

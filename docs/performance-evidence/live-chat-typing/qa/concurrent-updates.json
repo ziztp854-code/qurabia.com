@@ -1,0 +1,72 @@
+{
+  "sourceSha256": {
+    "voice-chat.tsx": "6aaed1f3f23b3e928a3a5273c770c5703c0f976b00d4a9ddf9e6e64a7cb4fd5c",
+    "voice-room.tsx": "d7f15c7aad6bb2031bc2e9662672bb1fcb1f7d659044ce080f2fdf7ebdabbb85"
+  },
+  "browser": "151.0.7922.173",
+  "characters": 207,
+  "participantCount": 7,
+  "heartbeatReads": 5,
+  "updates": [
+    {
+      "kind": "message",
+      "draftLength": 15
+    },
+    {
+      "kind": "owner-entrance",
+      "draftLength": 15
+    }
+  ],
+  "animation": {
+    "animations": [
+      {
+        "playState": "running",
+        "duration": 1800
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      },
+      {
+        "playState": "running",
+        "duration": 650
+      }
+    ],
+    "label": "عبدالعزيز بن سلطان، المضيف، يتحدث الآن"
+  },
+  "draft": {
+    "value": "الكتابة مستمرة أثناء وصول الرسائل ودخول الأعضاء وحركة المتحدث النشط. الكتابة مستمرة أثناء وصول الرسائل ودخول الأعضاء وحركة المتحدث النشط. الكتابة مستمرة أثناء وصول الرسائل ودخول الأعضاء وحركة المتحدث النشط. ",
+    "start": 207,
+    "end": 207,
+    "focused": true
+  },
+  "audioScope": "UI muted=false and mocked AudioSession connected; no microphone capture, actual audio or SFU"
+}

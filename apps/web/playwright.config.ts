@@ -11,6 +11,9 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   testIgnore: [
+    // Standalone room fixtures use their own loopback servers/configurations.
+    'chat-typing-performance.spec.ts',
+    'live-chat-typing.spec.ts',
     'live-room-responsive.spec.ts',
     'globe-scene.spec.ts',
     'village-scene.spec.ts',

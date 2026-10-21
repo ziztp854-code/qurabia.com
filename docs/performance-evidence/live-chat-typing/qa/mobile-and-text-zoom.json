@@ -1,0 +1,149 @@
+{
+  "sourceSha256": {
+    "voice-chat.tsx": "6aaed1f3f23b3e928a3a5273c770c5703c0f976b00d4a9ddf9e6e64a7cb4fd5c",
+    "voice-room.tsx": "d7f15c7aad6bb2031bc2e9662672bb1fcb1f7d659044ce080f2fdf7ebdabbb85"
+  },
+  "browser": "151.0.7922.173",
+  "dpr": 1,
+  "keyboard": "Synthetic visualViewport resize only; physical OS keyboard untested",
+  "geometry": [
+    {
+      "width": 390,
+      "height": 844,
+      "fontSize": "32px",
+      "overflowX": false,
+      "visibleSeatHeight": 96.796875,
+      "seat": {
+        "x": 109,
+        "y": 192.015625,
+        "width": 172,
+        "height": 96.796875,
+        "right": 281,
+        "bottom": 288.8125
+      },
+      "seatCollisions": [],
+      "avatarAspectRatios": [
+        0
+      ],
+      "controls": [
+        {
+          "x": 314.84375,
+          "y": 735,
+          "width": 56.15625,
+          "height": 88,
+          "right": 371,
+          "bottom": 823
+        },
+        {
+          "x": 255.671875,
+          "y": 735,
+          "width": 56.171875,
+          "height": 88,
+          "right": 311.84375,
+          "bottom": 823
+        },
+        {
+          "x": 196.5,
+          "y": 735,
+          "width": 56.171875,
+          "height": 88,
+          "right": 252.671875,
+          "bottom": 823
+        },
+        {
+          "x": 137.34375,
+          "y": 735,
+          "width": 56.15625,
+          "height": 88,
+          "right": 193.5,
+          "bottom": 823
+        },
+        {
+          "x": 78.171875,
+          "y": 735,
+          "width": 56.171875,
+          "height": 88,
+          "right": 134.34375,
+          "bottom": 823
+        },
+        {
+          "x": 19,
+          "y": 733.001220703125,
+          "width": 56.171875,
+          "height": 88,
+          "right": 75.171875,
+          "bottom": 821.001220703125
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "fontSize": "32px",
+      "overflowX": false,
+      "visibleSeatHeight": 181.03125,
+      "seat": {
+        "x": 576.703125,
+        "y": 322.265625,
+        "width": 172,
+        "height": 181.03125,
+        "right": 748.703125,
+        "bottom": 503.296875
+      },
+      "seatCollisions": [],
+      "avatarAspectRatios": [
+        0
+      ],
+      "controls": [
+        {
+          "x": 436,
+          "y": 802,
+          "width": 88,
+          "height": 75,
+          "right": 524,
+          "bottom": 877
+        },
+        {
+          "x": 532,
+          "y": 802,
+          "width": 88,
+          "height": 75,
+          "right": 620,
+          "bottom": 877
+        },
+        {
+          "x": 628,
+          "y": 802,
+          "width": 88,
+          "height": 75,
+          "right": 716,
+          "bottom": 877
+        },
+        {
+          "x": 724,
+          "y": 802,
+          "width": 88,
+          "height": 75,
+          "right": 812,
+          "bottom": 877
+        },
+        {
+          "x": 820,
+          "y": 802,
+          "width": 88,
+          "height": 75,
+          "right": 908,
+          "bottom": 877
+        },
+        {
+          "x": 916,
+          "y": 802,
+          "width": 88,
+          "height": 75,
+          "right": 1004,
+          "bottom": 877
+        }
+      ]
+    }
+  ]
+}

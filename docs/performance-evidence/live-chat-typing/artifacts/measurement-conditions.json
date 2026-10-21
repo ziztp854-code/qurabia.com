@@ -1,0 +1,30 @@
+{
+  "environment": {
+    "os": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "cpuModel": "Intel Xeon Platinum 8573C (cloud guest)",
+    "cgroupCpuMax": "400000 100000 (4 CPU quota)",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "DPR": 1,
+    "physicalDevices": false,
+    "actualAudio": false,
+    "HTTP": "synthetic same-origin fixture",
+    "AudioSession": "synthetic connected-state adapter; no microphone/media capture",
+    "ReactMode": "Vite development; React Profiler + test-only function/JSX render probes; no StrictMode",
+    "latencyDefinition": "capture input event performance.now() to first following requestAnimationFrame callback, after React discrete-event commit; frame opportunity, not compositor presentation, not INP",
+    "cpuDefinition": "CDP Performance TaskDuration/ScriptDuration cumulative renderer main-thread seconds; not host CPU utilization percentage"
+  },
+  "before-isolated": {
+    "heartbeat": "GET/events held by route during measurement; real production 10s read timeout not changed; one background room render, 2 additional chat commits",
+    "harnessResult": "raw measurement complete with 100 correct characters, then teardown error apiResponse.json: Response has been disposed from pending synthetic poll after gate release",
+    "rootCauseScope": "100 keystrokes plus two background commits; 20400 message article evaluations. Do not label 102 commits as exactly 100 input commits."
+  },
+  "before-speaking": {
+    "heartbeat": "initial poll timer moved from 2000ms to 600000ms in temporary test-only transform loaded by this server instance; no production edits; after edit it was removed from retained fixture",
+    "speakerEvents": 10,
+    "harnessResult": "1 passed; full raw sample retained",
+    "comparisonLimit": "This sample is a load observation. Do not present latency difference as controlled before/after unless heartbeat condition is matched."
+  }
+}
