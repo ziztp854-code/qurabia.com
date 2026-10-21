@@ -109,7 +109,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     }
   }
   const content=auth.status==='loading'?<Loading label="جارٍ استعادة الجلسة…"/>:
-    auth.status!=='authenticated'?<AuthScreen signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
+    auth.status!=='authenticated'?<AuthScreen apiRequest={auth.client.request} signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
     <View style={ui.flex}>
       {navigation.screen==='profile'?<ProfileScreen user={auth.user} asset={asset}
         onRefresh={auth.refreshSession} onSignOut={signOut}/>:
