@@ -3,17 +3,22 @@
 The Android client reuses the existing NextAuth v4 routes without changing their
 contracts:
 
-1. GET /api/auth/csrf, retaining its HttpOnly CSRF cookie.
-2. POST /api/auth/callback/credentials as application/x-www-form-urlencoded with
+1. GET /api/auth/csrf/, retaining its HttpOnly CSRF cookie.
+2. POST /api/auth/callback/credentials/ as application/x-www-form-urlencoded with
    csrfToken, email, password, a fixed same-origin callbackUrl and json=true.
-3. GET /api/auth/session, accepting an active identity and future expiry only.
-4. POST /api/auth/signout with a fresh CSRF token, then erase local credentials.
+3. GET /api/auth/session/, accepting an active identity and future expiry only.
+4. POST /api/auth/signout/ with a fresh CSRF token, then erase local credentials.
 
 No password, CSRF token, callback cookie or serialized profile is persisted.
 Opaque server-issued session cookie chunks are encrypted with expo-secure-store,
 bound to the configured HTTPS origin, and rotated from session responses. Session
 expiry and revocation remain authoritative on the server. This is a native
 credential store, not JavaScript access to a browser's HttpOnly cookies.
+
+The API client canonicalizes extensionless /api/ paths with a trailing slash before
+query parameters to match the existing Next.js trailingSlash:true configuration.
+File-like paths retain the Next.js extension exception. Known same-origin binary
+asset routes use the same canonical form. Redirects remain forbidden.
 
 All authenticated JSON requests use expo/fetch with credentials=omit (a private
 jar, not Android's shared WebView cookie store) and redirect=error. Origin is the

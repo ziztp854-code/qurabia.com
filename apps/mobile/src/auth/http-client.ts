@@ -36,6 +36,17 @@ export interface ApiClient {
   setUnauthorizedHandler(handler: (() => Promise<void>) | null): void;
 }
 
+/** Match next.config trailingSlash:true without following redirects or changing query data. */
+function canonicalApiPathname(pathname: string): string {
+  const untrailed = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  const leaf = untrailed.slice(untrailed.lastIndexOf('/') + 1);
+  // Next adds a slash to extensionless paths, removes one from .word file paths,
+  // and leaves other dotted segments alone.
+  if (leaf && !leaf.includes('.')) return untrailed + '/';
+  if (/\.\w+$/.test(leaf)) return untrailed;
+  return pathname;
+}
+
 export function createApiClient(config: {
   origin: string;
   transport: NativeTransport;
@@ -53,6 +64,7 @@ export function createApiClient(config: {
     if (url.origin !== origin || !url.pathname.startsWith('/api/')) {
       throw new ApiError('مسار API غير مسموح.', 0, 'UNTRUSTED_URL');
     }
+    url.pathname = canonicalApiPathname(url.pathname);
     return url.href;
   }
 
@@ -140,7 +152,9 @@ export function createApiClient(config: {
       if (value.includes('\\') || /[\r\n]/.test(value) || value.startsWith('//')) throw new ApiError('رابط صورة غير مسموح.', 0, 'UNTRUSTED_URL');
       const url = new URL(value, origin);
       if (url.protocol !== 'https:' || url.username || url.password) throw new ApiError('رابط صورة غير مسموح.', 0, 'UNTRUSTED_URL');
-      const protectedAsset = /^\/api\/(?:voice\/emojis\/assets\/[^/]+|profile\/avatar\/[^/]+|community\/assets\/[^/]+\/[^/]+)$/.test(url.pathname);
+      const assetPath = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname;
+      const protectedAsset = /^\/api\/(?:voice\/emojis\/assets\/[^/]+|profile\/avatar\/[^/]+|community\/assets\/[^/]+\/[^/]+)$/.test(assetPath);
+      if (url.origin === origin && protectedAsset) url.pathname = canonicalApiPathname(url.pathname);
       const cookie = url.origin === origin && protectedAsset ? config.cookies.header() : '';
       return cookie ? { uri: url.href, headers: { Cookie: cookie } } : { uri: url.href };
     },

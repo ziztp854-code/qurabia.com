@@ -32,7 +32,7 @@ function harness(phase: 'transport' | 'body', lateStatus = 200) {
     ({ url, status, rawSetCookies, headers: { get: () => null }, text: async () => JSON.stringify(value) });
   const transport: NativeTransport = async (url, init) => {
     const path = new URL(url).pathname;
-    if (path === '/api/voice/rooms/late') {
+    if (path === '/api/voice/rooms/late/') {
       if (phase === 'transport') {
         entered.resolve();
         return releaseTransport.promise;
@@ -43,15 +43,15 @@ function harness(phase: 'transport' | 'body', lateStatus = 200) {
         text: () => { staleBodyRead = true; entered.resolve(); return releaseBody.promise; },
       };
     }
-    if (path === '/api/auth/csrf') {
+    if (path === '/api/auth/csrf/') {
       return response(url, { csrfToken }, ['__Host-next-auth.csrf-token=' + csrfToken + '%7Chash; Path=/; HttpOnly; Secure']);
     }
-    if (path === '/api/auth/callback/credentials') {
+    if (path === '/api/auth/callback/credentials/') {
       currentId = new URLSearchParams(init.body as string).get('email')!.startsWith('new@') ? 'new-account' : 'old-account';
       return response(url, { url: 'https://test.example/voice' }, [cookie(currentId)]);
     }
-    if (path === '/api/auth/session') return response(url, session(currentId));
-    if (path === '/api/auth/signout') {
+    if (path === '/api/auth/session/') return response(url, session(currentId));
+    if (path === '/api/auth/signout/') {
       return response(url, { url: 'https://test.example/auth/sign-in' }, [
         '__Secure-next-auth.session-token=; Path=/; HttpOnly; Secure; Max-Age=0',
       ]);
@@ -64,7 +64,7 @@ function harness(phase: 'transport' | 'body', lateStatus = 200) {
     client, cookies, manager, records, entered,
     release() {
       if (phase === 'transport') releaseTransport.resolve({
-        url: 'https://test.example/api/voice/rooms/late',
+        url: 'https://test.example/api/voice/rooms/late/',
         status: lateStatus, headers: { get: () => null },
         rawSetCookies: [cookie('late-old-account-cookie')],
         text: async () => { staleBodyRead = true; return JSON.stringify(session('old-account')); },
@@ -80,7 +80,7 @@ test('late transport response cannot replace cookies, return old account data or
     const h = harness('transport', lateStatus);
     await h.manager.signIn('old@example.test', 'test-only-password');
     const oldGeneration = h.client.sessionGeneration;
-    const pending = h.client.request('/api/voice/rooms/late');
+    const pending = h.client.request('/api/voice/rooms/late/');
     const rejection = assert.rejects(pending, stale);
     await h.entered.promise;
     await h.manager.signOut();
@@ -102,7 +102,7 @@ test('late transport response cannot replace cookies, return old account data or
 test('success body deferred across logout and replacement login is rejected after text resolves', async () => {
   const h = harness('body');
   await h.manager.signIn('old@example.test', 'test-only-password');
-  const pending = h.client.request('/api/voice/rooms/late');
+  const pending = h.client.request('/api/voice/rooms/late/');
   const rejection = assert.rejects(pending, stale);
   await h.entered.promise;
   assert.equal(h.bodyWasRead(), true);
@@ -121,7 +121,7 @@ test('the current response own unauthorized handler preserves its original HTTP 
   const h = harness('transport');
   await h.manager.signIn('old@example.test', 'test-only-password');
   const generation = h.client.sessionGeneration;
-  await assert.rejects(h.client.request('/api/voice/rooms/revoked'),
+  await assert.rejects(h.client.request('/api/voice/rooms/revoked/'),
     (error: unknown) => error instanceof ApiError && error.status === 401 && error.code === 'SESSION_REVOKED');
   assert.ok(h.client.sessionGeneration > generation);
   assert.equal(h.cookies.header(), '');
@@ -153,7 +153,7 @@ test('an epoch change during encrypted cookie persistence rejects that response'
     }),
   });
   delayWrite = true;
-  const pending = client.request('/api/voice/rooms/late');
+  const pending = client.request('/api/voice/rooms/late/');
   const rejection = assert.rejects(pending, stale);
   await entered.promise;
   // Invalidation is synchronous, so the previous response is stale even while its write drains.
@@ -164,4 +164,104 @@ test('an epoch change during encrypted cookie persistence rejects that response'
   await rejection;
   assert.match(cookies.header(), /session-token=new-account/);
   assert.doesNotMatch([...records.values()].join(''), /old-account/);
+});
+
+
+test('extensionless GET and credentials POST use canonical URLs before an unchanged query', async () => {
+  const calls: { url: string; init: Parameters<NativeTransport>[1] }[] = [];
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async (url, init) => {
+      calls.push({ url, init });
+      return { url, status: 200, headers: { get: () => null }, text: async () => '{"ok":true}' };
+    },
+  });
+  await client.request('/api/auth/session');
+  await client.form('/api/auth/callback/credentials?next=%2Fvoice&attempt=1', {
+    csrfToken, email: 'member@example.test', password: 'test-only-password', json: 'true',
+  });
+  await client.request('/api/voice/rooms/id/events?cursor=a%2Fb&take=50', {
+    method: 'POST', body: { type: 'mute', muted: true },
+  });
+  await client.request('/api/auth/session/?check=1');
+  assert.deepEqual(calls.map(({ url }) => url), [
+    'https://test.example/api/auth/session/',
+    'https://test.example/api/auth/callback/credentials/?next=%2Fvoice&attempt=1',
+    'https://test.example/api/voice/rooms/id/events/?cursor=a%2Fb&take=50',
+    'https://test.example/api/auth/session/?check=1',
+  ]);
+  assert.equal(calls[0].init.method, 'GET');
+  assert.equal(calls[1].init.method, 'POST');
+  assert.equal(calls[1].init.headers['Content-Type'], 'application/x-www-form-urlencoded');
+  assert.equal(new URLSearchParams(calls[1].init.body as string).get('csrfToken'), csrfToken);
+  for (const { init } of calls) {
+    assert.equal(init.redirect, 'error');
+    assert.equal(init.credentials, 'omit');
+    assert.equal(init.headers.Origin, 'https://test.example');
+  }
+});
+
+test('Next file-like API paths keep no trailing slash while unusual dotted segments are unchanged', async () => {
+  const urls: string[] = [];
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async (url) => {
+      urls.push(url);
+      return { url, status: 200, headers: { get: () => null }, text: async () => '{}' };
+    },
+  });
+  await client.request('/api/export.json');
+  await client.request('/api/export.json/?download=1');
+  await client.request('/api/voice/rooms/name.other-id?still=1');
+  assert.deepEqual(urls, [
+    'https://test.example/api/export.json',
+    'https://test.example/api/export.json?download=1',
+    'https://test.example/api/voice/rooms/name.other-id?still=1',
+  ]);
+});
+
+test('only known same-origin protected asset URLs are canonicalized and receive a cookie', async () => {
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  await cookies.restore();
+  await cookies.ingest([cookie('current-account')]);
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async () => { throw new Error('assetSource must not issue an API request'); },
+  });
+  const emoji = client.assetSource('/api/voice/emojis/assets/id?still=1');
+  assert.equal(emoji.uri, 'https://test.example/api/voice/emojis/assets/id/?still=1');
+  assert.match(emoji.headers?.Cookie ?? '', /session-token=current-account/);
+  assert.equal(client.assetSource('/api/profile/avatar/id/').uri, 'https://test.example/api/profile/avatar/id/');
+  assert.equal(client.assetSource('/api/community/assets/avatar/photo.webp/').uri, 'https://test.example/api/community/assets/avatar/photo.webp');
+  assert.deepEqual(client.assetSource('/voice/covers/public.webp'), { uri: 'https://test.example/voice/covers/public.webp' });
+  assert.deepEqual(client.assetSource('https://cdn.test.example/api/voice/emojis/assets/id?still=1'), {
+    uri: 'https://cdn.test.example/api/voice/emojis/assets/id?still=1',
+  });
+});
+
+test('canonicalization does not follow or allow even a same-origin redirect response', async () => {
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  let calls = 0;
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async (url, init) => {
+      calls += 1;
+      assert.equal(url, 'https://test.example/api/auth/session/');
+      assert.equal(init.redirect, 'error');
+      return { url, status: 308, headers: { get: (name) => name === 'location' ? 'https://test.example/elsewhere/' : null }, text: async () => '{}' };
+    },
+  });
+  await assert.rejects(client.request('/api/auth/session'),
+    (error: unknown) => error instanceof ApiError && error.code === 'UNEXPECTED_REDIRECT');
+  assert.equal(calls, 1);
 });

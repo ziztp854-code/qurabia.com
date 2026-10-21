@@ -233,7 +233,7 @@ jobs:
           # No cookie processor, credentials, or authentication requests are used.
           opener = urllib.request.build_opener(NoRedirect)
           origin = "https://qurabia.com"
-          checks = [("/api/auth/session", 200), ("/api/voice/rooms", 401)]
+          checks = [("/api/auth/session/", 200), ("/api/voice/rooms/", 401)]
           evidence = []
           failures = 0
           for endpoint, expected_status in checks:
@@ -262,7 +262,7 @@ jobs:
                   entry["shape"] = "object" if isinstance(data, dict) else "other"
                   entry["keys"] = sorted(data)[:20] if isinstance(data, dict) else []
                   valid = status == expected_status and isinstance(data, dict)
-                  if endpoint == "/api/auth/session":
+                  if endpoint == "/api/auth/session/":
                       valid = valid and data == {}
                   else:
                       valid = valid and isinstance(data.get("error"), str) and isinstance(data.get("code"), str)
