@@ -7,6 +7,19 @@ import {
   validRaster,
 } from './validation';
 describe('community input boundaries', () => {
+  it('accepts reserved grant targets and canonicalizes retired numbers without accepting other short IDs', () => {
+    const grant = (accountNumber: number) => ({
+      operation: 'grantBadge',
+      accountNumber,
+      badgeId: 'gold-member',
+    });
+    for (const accountNumber of [1, 2, 78, 123456789])
+      expect(adminCommandSchema.parse(grant(accountNumber))).toMatchObject({ accountNumber });
+    expect(adminCommandSchema.parse(grant(123456800))).toMatchObject({ accountNumber: 2 });
+    expect(adminCommandSchema.parse(grant(123456821))).toMatchObject({ accountNumber: 78 });
+    for (const accountNumber of [0, 3, 77, 79, 2.5, 99999999, 1000000000])
+      expect(adminCommandSchema.safeParse(grant(accountNumber)).success).toBe(false);
+  });
   it('rejects account/role/XP injection and normalizes usernames', () => {
     for (const input of [{ userId: 'other' }, { role: 'OWNER' }, { xp: 99999 }])
       expect(profilePatchSchema.safeParse(input).success).toBe(false);

@@ -157,9 +157,12 @@ export function RealEntranceArtwork({
   const index = Math.max(0, FRAME_TIERS.indexOf(tier));
   const crop = ENTRANCE_CROPS[index];
   const image = customImage(assetUrl, ENTRANCE_ATLAS);
+  const exclusive = /^\/community-assets\/entrance-(?:owner-sapphire|amira-rose)\.webp$/.test(
+    image ?? '',
+  );
   const style = {
-    '--entrance-avatar-x': `${crop.avatarX}%`,
-    '--entrance-avatar-y': `${crop.avatarY}%`,
+    '--entrance-avatar-x': exclusive ? '21%' : `${crop.avatarX}%`,
+    '--entrance-avatar-y': exclusive ? '47%' : `${crop.avatarY}%`,
   } as CSSProperties;
   const artworkStyle: CSSProperties = image
     ? {}
@@ -185,6 +188,7 @@ export function RealEntranceArtwork({
       dir="rtl"
       data-entrance-tier={tier}
       data-subdued={subdued || undefined}
+      data-exclusive-entrance={exclusive || undefined}
       style={style}
     >
       <span

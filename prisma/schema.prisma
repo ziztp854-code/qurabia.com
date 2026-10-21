@@ -133,7 +133,7 @@ enum MafiaActionType {
 
 model User {
   id                 String        @id @default(cuid())
-  /// Public ID: nine digits, or 1 for OWNER (enforced by the account-number migration).
+  /// Public ID: OWNER 1, explicitly reserved accounts 2 and 78, otherwise nine digits; database-enforced.
   accountNumber      Int           @unique @default(autoincrement())
   name               String?       @db.VarChar(120)
   email              String?       @unique @db.VarChar(320)

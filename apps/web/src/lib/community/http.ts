@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { CommunityError } from './service';
+import { canonicalAccountNumber, PUBLIC_ACCOUNT_NUMBER_PATTERN } from '@/lib/account-number';
 
 export function assertCommunityOrigin(request: Request) {
   const origin = request.headers.get('origin');
@@ -46,6 +47,6 @@ export async function communityResponse(run: () => Promise<unknown>) {
   }
 }
 export function parseAccountNumber(value: string) {
-  if (!/^(?:1|[1-9]\d{8})$/.test(value)) throw new CommunityError('NOT_FOUND', 404);
-  return Number(value);
+  if (!PUBLIC_ACCOUNT_NUMBER_PATTERN.test(value)) throw new CommunityError('NOT_FOUND', 404);
+  return canonicalAccountNumber(Number(value));
 }

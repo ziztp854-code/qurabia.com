@@ -851,6 +851,13 @@
   line-height: 1.4;
   color: var(--brand-cream);
 }
+.entrance[data-exclusive-entrance] .entranceAvatar {
+  z-index: 2;
+}
+.entrance[data-exclusive-entrance] .entranceCopy {
+  inset-inline-start: 7%;
+  inset-inline-end: 40%;
+}
 @keyframes talkingRing {
   from {
     transform: scale(0.98);

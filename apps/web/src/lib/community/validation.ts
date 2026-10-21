@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { canonicalAccountNumber, PUBLIC_ACCOUNT_NUMBER_PATTERN } from '@/lib/account-number';
 import { ENTRANCE_TIERS } from './contracts';
 import { profileIdentitySchema } from '@/lib/profile/identity';
 
@@ -143,7 +144,8 @@ const grantSchema = z
     accountNumber: z
       .number()
       .int()
-      .refine((n) => n === 1 || (n >= 100000000 && n <= 999999999)),
+      .refine((n) => PUBLIC_ACCOUNT_NUMBER_PATTERN.test(String(n)))
+      .transform(canonicalAccountNumber),
     badgeId: slug.optional(),
     cosmeticId: slug.optional(),
     expiresAt: z.iso.datetime().nullable().optional(),

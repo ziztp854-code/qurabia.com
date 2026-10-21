@@ -100,7 +100,7 @@ describe('managed account boundaries use the current server identity', () => {
     expect(mocks.prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where }));
     expect(mocks.prisma.user.count).toHaveBeenCalledWith({ where });
   });
-  it.each(['1', '123456789'])('searches the numeric account ID %s', async (query) => {
+  it.each(['1', '2', '78', '123456789'])('searches the numeric account ID %s', async (query) => {
     await listManagedUsers(query, 1);
     const where = expect.objectContaining({
       OR: expect.arrayContaining([{ accountNumber: Number(query) }]),
@@ -108,10 +108,18 @@ describe('managed account boundaries use the current server identity', () => {
     expect(mocks.prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where }));
     expect(mocks.prisma.user.count).toHaveBeenCalledWith({ where });
   });
-  it.each(['0', '2', '012345678', '1234567890', '999999999999999999999', '1e8'])('does not treat %s as a numeric account ID', async (query) => {
+  it.each(['0', '3', '77', '79', '078', '012345678', '1234567890', '999999999999999999999', '1e8'])('does not treat %s as a numeric account ID', async (query) => {
     await listManagedUsers(query, 1);
     const args = mocks.prisma.user.findMany.mock.calls[0][0];
     expect(args.where.OR.some((filter: object) => 'accountNumber' in filter)).toBe(false);
+  });
+  it('resolves retired account numbers for both listing and pagination', async () => {
+    for (const [query, accountNumber] of [['123456800', 2], ['123456821', 78]] as const) {
+      await listManagedUsers(query, 1);
+      const where = expect.objectContaining({ OR: expect.arrayContaining([{ accountNumber }]) });
+      expect(mocks.prisma.user.findMany).toHaveBeenLastCalledWith(expect.objectContaining({ where }));
+      expect(mocks.prisma.user.count).toHaveBeenLastCalledWith({ where });
+    }
   });
   it('shows numeric IDs in the authorized account list', async () => {
     mocks.prisma.user.findMany.mockResolvedValue([

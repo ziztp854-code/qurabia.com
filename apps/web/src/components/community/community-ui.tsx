@@ -36,6 +36,11 @@ export function CommunityAvatar({
       data-tier={frame?.tier ?? 'ordinary'}
       data-glow-tier={glow?.tier}
       data-has-frame={frame ? true : undefined}
+      data-exclusive-frame={
+        frame?.id === 'frame-owner-sapphire' || frame?.id === 'frame-amira-rose'
+          ? frame.id
+          : undefined
+      }
     >
       {imageUrl ? (
         <Image
@@ -167,6 +172,7 @@ export async function communityRequest<T>(url: string, init?: RequestInit): Prom
       INVALID_PROFILE: 'تحقق من الاسم واسم المستخدم وروابط الصور.',
       INVALID_COMMAND: 'تحقق من معرّف العنصر وحقوله.',
       ITEM_NOT_OWNED: 'هذا المقتنى غير متاح لحسابك أو انتهى استحقاقه.',
+      EXCLUSIVE_ITEM: 'هذا المقتنى حصري للحساب المخصص له.',
       BADGE_NOT_OWNED: 'هذه الشارة غير متاحة لحسابك.',
       IMAGE_TOO_LARGE: 'يجب ألا تتجاوز الصورة 100 كيلوبايت.',
       INVALID_IMAGE: 'الصورة غير صالحة أو تتجاوز المقاسات المسموحة.',

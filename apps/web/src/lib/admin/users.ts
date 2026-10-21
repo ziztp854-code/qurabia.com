@@ -1,4 +1,5 @@
 import 'server-only';
+import { canonicalAccountNumber, PUBLIC_ACCOUNT_NUMBER_PATTERN } from '@/lib/account-number';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { requirePermission } from '@/lib/auth/session';
 
@@ -13,7 +14,9 @@ export async function listManagedUsers(query: string, page: number) {
       ? {
           OR: [
             { id: query },
-            ...(/^(?:1|[1-9]\d{8})$/.test(query) ? [{ accountNumber: Number(query) }] : []),
+            ...(PUBLIC_ACCOUNT_NUMBER_PATTERN.test(query)
+              ? [{ accountNumber: canonicalAccountNumber(Number(query)) }]
+              : []),
             { name: { contains: query, mode: 'insensitive' as const } },
             { email: { contains: query, mode: 'insensitive' as const } },
           ],

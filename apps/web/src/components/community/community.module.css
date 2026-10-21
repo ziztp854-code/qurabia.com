@@ -318,7 +318,8 @@
   cursor: pointer;
   font-weight: 700;
   font-size: 0.88rem;
-  transition: background-color var(--duration-fast) var(--ease-out),
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out);
 }
 .tabs > :is(button, a):focus-visible {
@@ -852,6 +853,29 @@
   block-size: calc(100% + 12px);
   object-fit: contain;
   pointer-events: none;
+}
+/* Transparent jewelry overlays: keep the real portrait inside the circular opening. */
+.avatar[data-exclusive-frame] {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.avatar[data-exclusive-frame] > img:not(.avatarFrame),
+.avatar[data-exclusive-frame] > .avatarPlaceholder {
+  position: absolute;
+  inset-inline-start: 18%;
+  inset-block-start: 23%;
+  inline-size: 64%;
+  block-size: 64%;
+  border-radius: 50%;
+  background: var(--surface-strong);
+}
+.avatar[data-exclusive-frame] > .avatarFrame {
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 0;
 }
 .profileHero[data-background-tier='silver'] .cover {
   background:
