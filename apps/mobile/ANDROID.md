@@ -28,8 +28,10 @@ Workflow: .github/workflows/android-debug.yml
 2. تثبيت mobile واعتماديات workspace الخاصة به بـ frozen-lockfile وignore-scripts؛
    لا تُشغّل دورة تثبيت خادم Prisma أو أدوات الويب.
 3. بناء domain، وفحص TypeScript، وتشغيل اختبارات join-flow ومساعدات البناء.
-4. تسجيل توصيات Expo المثبت نفسه وتشغيل expo install --check؛ لا يوجد إصلاح
-   تلقائي للإصدارات أو تجاهل لفشل التوافق.
+4. تسجيل خريطة Expo المثبت نفسه وتشغيل EXPO_OFFLINE=1 expo install --check؛ لا يوجد إصلاح
+   تلقائي للإصدارات أو تجاهل لفشل التوافق. هذا فحص حتمي لخريطة SDK المحلية،
+   دون توصيات API الأحدث. يبقى minimumReleaseAge مفعّلًا دون استثناء، ولا يُضبط
+   Offline لباقي خطوات البناء. حُفظ إصدار Expo الأصلي 57.0.23 مع تصحيح حزم native.
 5. اختبار Metro والأصول عبر expo export ثم expo prebuild --platform android --no-install.
 
 يعدّل prepare-android-debug.cjs الملفات الأصلية المولدة فقط، مع التوقف إذا

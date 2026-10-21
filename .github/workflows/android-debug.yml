@@ -66,7 +66,9 @@ jobs:
       - name: Run existing mobile tests
         run: pnpm --filter @tahaddi/mobile exec tsx --test src/join-flow.test.ts 2>&1 | tee android-reports/mobile-tests.log
 
-      - name: Validate installed Expo native dependency versions
+      - name: Validate compatibility with the installed Expo SDK map
+        env:
+          EXPO_OFFLINE: '1'
         run: |
           pnpm --filter @tahaddi/mobile exec node -e 'const fs=require("node:fs"),path=require("node:path");const all=JSON.parse(fs.readFileSync(path.join(path.dirname(require.resolve("expo/package.json")),"bundledNativeModules.json"),"utf8"));console.log(JSON.stringify(Object.fromEntries(["react","react-native","react-native-safe-area-context","expo-font","expo-status-bar"].map(k=>[k,all[k]])),null,2))' | tee android-reports/expo-recommended-versions.json
           pnpm --filter @tahaddi/mobile exec expo install --check 2>&1 | tee android-reports/expo-dependency-check.log
