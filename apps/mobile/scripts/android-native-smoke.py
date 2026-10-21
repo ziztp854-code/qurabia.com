@@ -80,6 +80,34 @@ def node_label(node: ET.Element) -> str:
     ).strip()
 
 
+def scoped_error_labels(xml: str, test_id: str) -> list[str]:
+    """Read only labels fully contained by the identified error notice.
+
+    React Native accessibility flattening may expose alert text as a sibling
+    of its testID ViewGroup. Its screen bounds still belong to that notice.
+    """
+    container = find_node(xml, test_id)
+    if container is None:
+        return []
+    rectangle = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", container.attrib["bounds"])
+    left, top, right, bottom = map(int, rectangle.groups())
+    labels = []
+    for node in ET.fromstring(xml).iter():
+        if node.attrib.get("visible-to-user", "true") == "false":
+            continue
+        bounds = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+        if not bounds:
+            continue
+        x1, y1, x2, y2 = map(int, bounds.groups())
+        if not (left <= x1 < x2 <= right and top <= y1 < y2 <= bottom):
+            continue
+        for key in ("text", "content-desc"):
+            label = node.attrib.get(key, "").strip()
+            if label and label not in labels:
+                labels.append(label)
+    return labels
+
+
 class Device:
     def __init__(self, serial: str | None):
         self.prefix = ["adb"] + (["-s", serial] if serial else [])
@@ -123,6 +151,21 @@ class Device:
                 return {"state": "failed", "label": label}
             time.sleep(1)
         return observed
+
+    def validation_status(self, expected: str, timeout: float = 20) -> dict:
+        deadline = time.monotonic() + timeout
+        observed = []
+        while time.monotonic() < deadline:
+            try:
+                observed = scoped_error_labels(self.ui(), "login-error")
+                if expected in observed:
+                    return {"matched": True, "expected": expected, "observed": observed,
+                            "scope": "text fully inside the login-error notice bounds"}
+            except (RuntimeError, ET.ParseError):
+                pass
+            time.sleep(1)
+        return {"matched": False, "expected": expected, "observed": observed,
+                "scope": "text fully inside the login-error notice bounds"}
 
     def scroll(self, direction: str):
         sizes = re.findall(r"(\d+)x(\d+)", self.adb("shell", "wm", "size").stdout)
@@ -285,9 +328,10 @@ def main() -> int:
         device.reveal_node("login-submit")
         report["checks"]["native_login_render"] = True
         device.tap("login-submit")
-        validation = device.wait_node("login-error")
-        validation_text = node_label(validation)
-        if "أدخل البريد الإلكتروني وكلمة المرور." not in validation_text:
+        report["native_local_validation"] = device.validation_status(
+            "أدخل البريد الإلكتروني وكلمة المرور."
+        )
+        if not report["native_local_validation"]["matched"]:
             raise RuntimeError("Native empty-credentials validation did not show the expected local error")
         report["checks"]["empty_credentials_validation"] = True
         report["read_only_https"] = read_only_reachability(base)
