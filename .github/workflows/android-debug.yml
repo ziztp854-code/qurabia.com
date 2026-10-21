@@ -2,7 +2,7 @@ name: Android Debug APK
 
 on:
   push:
-    branches: [codex/android-apk-ci]
+    branches: [codex/android-apk-ci, codex/android-native-v2]
     paths: ['.github/workflows/android-debug.yml', 'apps/mobile/**', 'packages/domain/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'tsconfig.base.json']
   pull_request:
     paths: ['.github/workflows/android-debug.yml', 'apps/mobile/**', 'packages/domain/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'tsconfig.base.json']
@@ -63,8 +63,17 @@ jobs:
           pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json 2>&1 | tee android-reports/domain-build.log
           pnpm --filter @tahaddi/mobile typecheck 2>&1 | tee android-reports/typecheck.log
 
-      - name: Run existing mobile tests
-        run: pnpm --filter @tahaddi/mobile exec tsx --test src/join-flow.test.ts 2>&1 | tee android-reports/mobile-tests.log
+      - name: Run all native mobile TypeScript tests
+        working-directory: apps/mobile
+        run: |
+          test -d src
+          test -d tests
+          mapfile -d '' mobile_tests < <(find src tests -type f -name '*.test.ts' -print0 | sort -z)
+          test "${#mobile_tests[@]}" -gt 0
+          pnpm exec tsx --test "${mobile_tests[@]}" 2>&1 | tee ../../android-reports/mobile-tests.log
+
+      - name: Test native Android smoke guards
+        run: python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py' 2>&1 | tee android-reports/native-smoke-guards.log
 
       - name: Validate compatibility with the installed Expo SDK map
         env:
@@ -158,8 +167,8 @@ jobs:
           grep -E "^package: name='com.qurabia.tahaddi'" android-reports/apk-badging.txt
           grep -E '^application-debuggable$' android-reports/apk-badging.txt
           "$ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt" dump permissions "$apk" > android-reports/apk-permissions.txt
-          sha256sum "$apk" > android-reports/apk-sha256.txt
-          stat --printf='%s bytes\n' "$apk" > android-reports/apk-size.txt
+          sha256sum "$apk" | tee android-reports/apk-sha256.txt
+          stat --printf='%s bytes\n' "$apk" | tee android-reports/apk-size.txt
           git rev-parse HEAD > android-reports/source-sha.txt
 
       - name: Upload installable Debug APK
@@ -179,7 +188,8 @@ jobs:
             echo "### Tahaddi Android debug"
             echo "[Download APK artifact]($ARTIFACT_URL)"
             echo
-            echo "This builds the current native quiz-code launcher. Voice, authentication and chat are not implemented in this Android client."
+            echo "This builds the native Android client. Native implementation and runtime acceptance are separate: inspect all test reports before claiming authenticated voice/chat or device compatibility."
+            echo "No staging account is configured. CI does not authenticate to production or mutate production data. Public GET reachability does not verify a logged-in session or a media connection."
             cat android-reports/apk-size.txt android-reports/apk-sha256.txt
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -197,7 +207,72 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: bash apps/mobile/scripts/android-smoke.sh
+          script: bash apps/mobile/scripts/android-native-smoke.sh --reports android-reports/native
+
+      - name: Check public HTTPS endpoints without authentication
+        if: ${{ !cancelled() && steps.apk.outcome == 'success' }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, response, code, message, headers, target):
+                  return None
+
+          # No cookie processor, credentials, or authentication requests are used.
+          opener = urllib.request.build_opener(NoRedirect)
+          origin = "https://qurabia.com"
+          checks = [("/api/auth/session", 200), ("/api/voice/rooms", 401)]
+          evidence = []
+          failures = 0
+          for endpoint, expected_status in checks:
+              entry = {"endpoint": endpoint, "method": "GET", "authenticated": False}
+              try:
+                  request = urllib.request.Request(
+                      origin + endpoint,
+                      headers={"Accept": "application/json", "User-Agent": "TahaddiAndroidCI/1.0"},
+                      method="GET",
+                  )
+                  try:
+                      response = opener.open(request, timeout=25)
+                  except urllib.error.HTTPError as error:
+                      response = error
+                  with response:
+                      status = response.status
+                      content_type = response.headers.get_content_type()
+                      payload = response.read(65537)
+                  entry["status"] = status
+                  entry["content_type"] = content_type
+                  if len(payload) > 65536:
+                      raise ValueError("Unexpected payload size")
+                  if content_type != "application/json":
+                      raise ValueError("Expected JSON")
+                  data = json.loads(payload)
+                  entry["shape"] = "object" if isinstance(data, dict) else "other"
+                  entry["keys"] = sorted(data)[:20] if isinstance(data, dict) else []
+                  valid = status == expected_status and isinstance(data, dict)
+                  if endpoint == "/api/auth/session":
+                      valid = valid and data == {}
+                  else:
+                      valid = valid and isinstance(data.get("error"), str) and isinstance(data.get("code"), str)
+                  entry["passed"] = valid
+              except Exception:
+                  # Do not write response bodies, headers, cookies, or exception text.
+                  entry["passed"] = False
+                  entry["error"] = "reachability_or_json_contract_failed"
+              if not entry["passed"]:
+                  failures += 1
+              evidence.append(entry)
+              print(json.dumps(entry))
+          pathlib.Path("android-reports/public-https-readonly.json").write_text(
+              json.dumps({"scope": "unauthenticated_GET_only", "checks": evidence}, indent=2) + "\n"
+          )
+          raise SystemExit(1 if failures else 0)
+          PY
 
       - name: Upload test and build evidence
         if: always()
