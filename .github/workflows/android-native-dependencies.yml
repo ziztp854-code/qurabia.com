@@ -17,34 +17,18 @@ jobs:
         with:
           node-version: '24.14.0'
       - run: npm install --global pnpm@11.26.0 --ignore-scripts
-      - run: pnpm --filter @tahaddi/mobile... install --lockfile-only --ignore-scripts
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
-      - name: Generate lockfile with the installed Expo map
+      - name: Build domain and check mobile TypeScript
         run: |
-          pnpm --filter @tahaddi/mobile exec node <<'NODE'
-          const fs=require('node:fs'),path=require('node:path');
-          const file='package.json',pkg=JSON.parse(fs.readFileSync(file,'utf8'));
-          const map=JSON.parse(fs.readFileSync(path.join(path.dirname(require.resolve('expo/package.json')),'bundledNativeModules.json'),'utf8'));
-          for(const k of ['expo-secure-store','expo-crypto','expo-image']) {
-            if(typeof map[k]!=='string')throw new Error('Missing Expo native map for '+k);
-            pkg.dependencies[k]=map[k];
-          }
-          fs.writeFileSync(file,JSON.stringify(pkg,null,2)+'\n');
-          console.log('INSTALLED_EXPO '+require('expo/package.json').version);
-          console.log('EXPO_NATIVE_MAP '+JSON.stringify(Object.fromEntries(['expo-secure-store','expo-crypto','expo-image'].map(k=>[k,map[k]]))));
-          NODE
-          pnpm --filter @tahaddi/mobile... install --lockfile-only --ignore-scripts
-          pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
-          git diff --check
-      - name: Relay exact generated files for reviewed commit
+          pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
+          pnpm --filter @tahaddi/mobile typecheck
+      - name: Run native logic regressions
+        working-directory: apps/mobile
+        shell: bash
         run: |
-          node <<'NODE'
-          const fs=require('node:fs');
-          for(const path of ['apps/mobile/package.json','pnpm-lock.yaml']) {
-            const text=fs.readFileSync(path,'utf8');
-            const encoded=Buffer.from(text).toString('base64');
-            for(let offset=0,index=0;offset<encoded.length;offset+=12000,index++)
-              console.log('NATIVE_FILE '+JSON.stringify({path,index,chunk:encoded.slice(offset,offset+12000)}));
-            console.log('NATIVE_FILE_END '+JSON.stringify({path,bytes:Buffer.byteLength(text),chunks:Math.ceil(encoded.length/12000)}));
-          }
-          NODE
+          mapfile -d '' files < <(find src tests -name '*.test.ts' -print0)
+          test "${#files[@]}" -gt 0
+          pnpm exec tsx --test "${files[@]}"
+      - name: Run smoke safety guards
+        run: python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
+      - run: git diff --check
