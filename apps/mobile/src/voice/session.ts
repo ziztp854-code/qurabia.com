@@ -368,6 +368,8 @@ export class NativeVoiceSession {
   }
 
   leave(): Promise<void> {
+    if (this.closing && !this.snapshot.roomId && !this.room && !this.connecting)
+      return this.cleanupQueue;
     this.closing = true;
     ++this.generation;
     this.desiredMuted = true;
@@ -377,18 +379,21 @@ export class NativeVoiceSession {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = undefined;
     const room = this.room;
+    try { room?.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.stop(); }
+    catch { /* The track may already have ended; disconnect still runs below. */ }
     this.room = null;
     this.connecting = null;
     room?.removeAllListeners();
     this.patch({ roomId: null, state: 'disconnected', speakers: [], canPublish: false, audioOutputs: [], selectedOutput: '' });
     this.cleanupQueue = this.cleanupQueue.catch(() => {}).then(async () => {
-      try { await room?.disconnect(true); }
-      finally {
-        await this.audioOperation(async () => {
-          try { await AudioSession.stopAudioSession(); }
-          finally { await voiceBackground.stop(); }
-        });
-      }
+      let failed = false;
+      try { await room?.disconnect(true); } catch { failed = true; }
+      await this.audioOperation(async () => {
+        try { await AudioSession.stopAudioSession(); } catch { failed = true; }
+        try { await voiceBackground.stop(); } catch { failed = true; }
+      }).catch(() => { failed = true; });
+      if (failed && this.closing)
+        this.patch({ error: 'توقّف الالتقاط محليًا؛ تعذّر تأكيد اكتمال تنظيف إحدى خدمات الصوت.' });
     });
     return this.cleanupQueue;
   }
