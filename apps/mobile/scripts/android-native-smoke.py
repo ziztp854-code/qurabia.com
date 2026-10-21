@@ -73,6 +73,13 @@ def find_node(xml: str, test_id: str) -> ET.Element | None:
     return None
 
 
+def node_label(node: ET.Element) -> str:
+    return " ".join(
+        child.attrib.get("text", "") + " " + child.attrib.get("content-desc", "")
+        for child in node.iter()
+    ).strip()
+
+
 class Device:
     def __init__(self, serial: str | None):
         self.prefix = ["adb"] + (["-s", serial] if serial else [])
@@ -102,6 +109,20 @@ class Device:
                 pass
             time.sleep(1)
         raise RuntimeError("Timed out waiting for native UI: " + test_id)
+
+    def connection_status(self, timeout: float = 45) -> dict:
+        deadline = time.monotonic() + timeout
+        observed = {"state": "pending", "label": ""}
+        while time.monotonic() < deadline:
+            node = self.wait_node("server-status", timeout=min(15, max(1, deadline - time.monotonic())))
+            label = node_label(node)
+            observed["label"] = label
+            if "تم الاتصال بخادم تحدّي" in label:
+                return {"state": "online", "label": label}
+            if "تعذر الاتصال بخادم تحدّي" in label:
+                return {"state": "failed", "label": label}
+            time.sleep(1)
+        return observed
 
     def tap(self, test_id: str):
         x, y = center(self.wait_node(test_id))
@@ -197,7 +218,7 @@ def main() -> int:
     directory.mkdir(parents=True, exist_ok=True)
     report = {
         "status": "failed",
-        "scope": "native unauthenticated Android smoke with real read-only HTTPS reachability",
+        "scope": "native unauthenticated Android smoke with verified native and runner read-only HTTPS reachability",
         "source_sha": os.environ.get("GITHUB_SHA"),
         "checks": {},
         "limitations": [
@@ -232,12 +253,19 @@ def main() -> int:
         report["checks"]["native_login_render"] = True
         report["login_render_observed_ms"] = round((time.monotonic() - started) * 1000, 1)
         report["login_render_measurement"] = "Wall-clock upper bound including UIAutomator polling; not native frame timing"
+        report["native_read_only_https"] = {
+            **device.connection_status(),
+            "method": "GET",
+            "path": "/api/auth/session",
+            "verified_by": "native AuthScreen response-shape check observed through UIAutomator",
+            "scope": "real Android HTTPS request without session cookies or credentials",
+        }
+        if report["native_read_only_https"]["state"] != "online":
+            raise RuntimeError("The native Android read-only server connection was not verified online")
+        report["checks"]["native_read_only_server_connection"] = True
         device.tap("login-submit")
         validation = device.wait_node("login-error")
-        validation_text = " ".join(
-            node.attrib.get("text", "") + " " + node.attrib.get("content-desc", "")
-            for node in validation.iter()
-        )
+        validation_text = node_label(validation)
         if "أدخل البريد الإلكتروني وكلمة المرور." not in validation_text:
             raise RuntimeError("Native empty-credentials validation did not show the expected local error")
         report["checks"]["empty_credentials_validation"] = True
