@@ -52,6 +52,11 @@ export class NativeVoiceSession {
   };
 
   constructor(private readonly request: VoiceApiRequest) {
+    this.attachSubscriptions();
+  }
+
+  private attachSubscriptions() {
+    if (this.subscriptions.length) return;
     this.subscriptions.push(voiceBackground.onStopped(() => {
       if (!this.closing && this.snapshot.roomId) {
         void this.fail('توقفت خدمة الصوت في الخلفية. افتح الغرفة وأعد الاتصال.');
@@ -172,6 +177,7 @@ export class NativeVoiceSession {
     await oldRoom?.disconnect(true).catch(() => {});
     await this.cleanupQueue;
     if (generation !== this.generation) return;
+    this.attachSubscriptions();
     this.tokenAbort?.abort();
     const abort = new AbortController();
     this.tokenAbort = abort;
@@ -404,11 +410,12 @@ export class NativeVoiceSession {
   }
 
   async dispose() {
-    await this.leave();
+    // Detach synchronously so a development effect remount can attach safely.
     this.subscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
     this.dataListeners.clear();
     this.reconnectListeners.clear();
     this.listeners.clear();
+    await this.leave();
   }
 }
 
