@@ -138,6 +138,56 @@ class NativeSmokeGuards(unittest.TestCase):
         self.assertEqual(result["state"], "failed")
         self.assertIn("تعذر الاتصال", result["label"])
 
+    def test_real_flattened_android_alert_is_scoped_to_its_notice_bounds(self):
+        # Actual API 36 UIAutomator geometry from run 39694929130:
+        # the error ViewGroup has no children; its alert is a sibling.
+        xml = """<hierarchy><node class="android.view.ViewGroup" bounds="[0,128][1080,2337]">
+          <node class="android.view.ViewGroup" resource-id="login-error"
+                text="" content-desc="" bounds="[87,1896][993,2013]" />
+          <node class="android.view.View" text="أدخل البريد الإلكتروني وكلمة المرور."
+                bounds="[110,1919][970,1988]" />
+          <node text="نص آخر خارج التنبيه" bounds="[110,1800][970,1850]" />
+        </node></hierarchy>"""
+        self.assertEqual(smoke.scoped_error_labels(xml, "login-error"),
+                         ["أدخل البريد الإلكتروني وكلمة المرور."])
+
+    def test_nested_error_label_remains_valid_when_inside_its_notice(self):
+        xml = """<hierarchy>
+          <node resource-id="login-error" bounds="[20,100][500,200]">
+            <node text="أدخل البريد الإلكتروني وكلمة المرور." bounds="[30,110][490,190]" />
+          </node>
+        </hierarchy>"""
+        self.assertIn("أدخل البريد الإلكتروني وكلمة المرور.",
+                      smoke.scoped_error_labels(xml, "login-error"))
+
+    def test_wrong_error_text_inside_the_notice_cannot_satisfy_validation(self):
+        xml = """<hierarchy>
+          <node resource-id="login-error" bounds="[20,100][500,200]" />
+          <node text="تعذر الاتصال بالخادم." bounds="[30,110][490,190]" />
+        </hierarchy>"""
+        self.assertNotIn("أدخل البريد الإلكتروني وكلمة المرور.",
+                         smoke.scoped_error_labels(xml, "login-error"))
+
+    def test_correct_text_outside_or_partly_outside_or_hidden_is_rejected(self):
+        for bounds, visibility in (
+            ("[30,210][490,290]", "true"),
+            ("[30,90][490,190]", "true"),
+            ("[30,110][490,190]", "false"),
+        ):
+            xml = f"""<hierarchy>
+              <node resource-id="login-error" bounds="[20,100][500,200]" />
+              <node text="أدخل البريد الإلكتروني وكلمة المرور."
+                    bounds="{bounds}" visible-to-user="{visibility}" />
+            </hierarchy>"""
+            with self.subTest(bounds=bounds, visibility=visibility):
+                self.assertEqual(smoke.scoped_error_labels(xml, "login-error"), [])
+
+    def test_matching_text_without_the_error_control_never_uses_a_global_fallback(self):
+        xml = """<hierarchy>
+          <node text="أدخل البريد الإلكتروني وكلمة المرور." bounds="[30,110][490,190]" />
+        </hierarchy>"""
+        self.assertEqual(smoke.scoped_error_labels(xml, "login-error"), [])
+
     def test_ui_text_does_not_substitute_for_the_expected_native_control(self):
         xml = """<hierarchy>
           <node text="login-submit" resource-id="different-control" bounds="[0,0][100,50]" />
