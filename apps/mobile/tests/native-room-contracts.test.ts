@@ -155,7 +155,7 @@ test('seat selection skips locked and occupied seats and rejects unavailable pre
   room.room.lockedSeats = [1];
   assert.equal(availableSeat(room), 2);
   assert.equal(availableSeat(room, 3), 3);
-  for (const preferred of [-1, 0, 1, 4]) assert.equal(availableSeat(room, preferred), 2);
+  for (const preferred of [-1, 0, 0.5, 1, 4, Number.NaN]) assert.equal(availableSeat(room, preferred), 2);
   room.room.lockedSeats = [1, 2, 3];
   assert.equal(availableSeat(room), undefined);
 });
