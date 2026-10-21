@@ -1,0 +1,35 @@
+name: Android accessibility evidence
+on:
+  push:
+    branches: [codex/android-qa-diagnostic]
+    paths: ['.github/workflows/android-accessibility-evidence.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect-recorded-xml:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Download unauthenticated report from exact tested run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 39694929130 --repo ziztp854-code/qurabia.com --name android-reports-39694929130-1 --dir recorded
+      - name: Inspect only local validation accessibility structure
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,xml.etree.ElementTree as ET
+          path=pathlib.Path("recorded/native/native-window.xml")
+          if not path.is_file():
+              candidates=list(pathlib.Path("recorded").rglob("native-window.xml"))
+              assert len(candidates)==1
+              path=candidates[0]
+          root=ET.fromstring(path.read_text())
+          parents={child:parent for parent in root.iter() for child in parent}
+          keys=["resource-id","class","text","content-desc","bounds","visible-to-user","clickable"]
+          def desc(node): return {k:node.attrib.get(k,"") for k in keys}
+          for node in root.iter():
+              value=node.attrib.get("text","")+" "+node.attrib.get("content-desc","")
+              if node.attrib.get("resource-id","").endswith("login-error") or "أدخل البريد" in value:
+                  print("ACCESSIBILITY_EVIDENCE "+json.dumps({"node":desc(node),"parent":desc(parents[node]) if node in parents else None,"children":[desc(x) for x in node.iter() if x is not node]},ensure_ascii=False))
+          PY
