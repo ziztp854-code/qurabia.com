@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-10-21T03:40:21.270Z",
+  "container": "voice-approval-integration-cae3bf8eb559",
+  "containerIdentityVerified": true,
+  "containerRemoved": true,
+  "privateEnvironmentAndStateRemoved": true,
+  "runtimeDirectoryRemoved": true,
+  "applicationDatabaseTouched": false,
+  "postCleanupVerification": {
+    "runtimeAbsent": true,
+    "envAbsent": true,
+    "stateAbsent": true,
+    "port55442Open": false
+  }
+}

@@ -1,0 +1,140 @@
+/* Presentation only. The room viewport observer supplies CSS-pixel dimensions. */
+@media (min-width: 1021px) {
+  .desktopRoom[data-room-visible='true'] {
+    --room-desktop-height: calc(
+      var(--room-viewport-height, 100dvh) - var(--room-controls-height, 100px) -
+        max(12px, env(safe-area-inset-bottom)) - 20px
+    );
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-workspace),
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
+    inline-size: 100%;
+    max-inline-size: none;
+    max-width: none;
+    min-inline-size: 0;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 32vw, 440px);
+    grid-template-areas: 'header header' 'heading chat' 'stage chat' 'audio chat' 'close chat';
+    gap: 16px 24px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage-column) {
+    min-block-size: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 4px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage-column > .v-stage),
+  .desktopRoom[data-room-visible='true'] :global(.v-stage-column > .v-requests) {
+    flex: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column) {
+    min-block-size: 0;
+    block-size: auto;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
+    position: static;
+    flex: 1 1 0;
+    min-block-size: 280px;
+    block-size: auto;
+    max-block-size: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
+    min-block-size: 0;
+    max-block-size: 220px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience-list]) {
+    flex: 1 1 auto;
+    align-content: start;
+    grid-auto-rows: max-content;
+    min-block-size: 0;
+    max-block-size: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience-nav]),
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience-header]),
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience] > button) {
+    flex: none;
+  }
+}
+
+@media (min-width: 1021px) and (min-height: 640px) {
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
+    block-size: var(--room-desktop-height);
+    /* Large text may need more than the viewport budget. Keep the seat scrollport
+       usable and let the room grow instead of collapsing it to a narrow strip. */
+    min-block-size: min-content;
+    grid-template-rows: auto auto minmax(180px, 1fr) auto auto;
+    align-content: stretch;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
+    min-block-size: 0;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-heading]) {
+    min-inline-size: 0;
+    padding-block-start: 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
+    grid-template-columns: clamp(220px, 18vw, 320px) minmax(0, 1fr) clamp(320px, 27vw, 480px);
+    grid-template-areas:
+      'header header header'
+      'audience heading chat'
+      'audience stage chat'
+      'audience audio chat'
+      'audience close chat';
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
+    position: static;
+    max-block-size: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
+    flex: none;
+    align-self: stretch;
+  }
+}
+
+@media (min-width: 1920px) {
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
+    gap: 20px 32px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+/* Short windows keep natural page flow so content and expanded audio stay reachable. */
+@media (min-width: 1021px) and (max-height: 639px) {
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
+    block-size: max(360px, var(--room-desktop-height));
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience-list]) {
+    max-block-size: 280px;
+  }
+}

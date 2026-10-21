@@ -1,0 +1,73 @@
+{
+  "at": "2026-10-21T04:07:25.309082+00:00",
+  "suite": "closure-final-suite.json",
+  "suiteSourceStillMatches": true,
+  "protectedBaselineFilesUnchanged": {
+    "apps/web/src/components/voice/live-room-desktop.module.css": true,
+    "apps/web/src/components/voice/live-room-mobile.module.css": true,
+    "apps/web/src/components/voice/live-room.module.css": true,
+    "apps/web/src/components/voice/member-name.module.css": true,
+    "apps/web/src/components/voice/voice-room-audience.tsx": true,
+    "apps/web/e2e/live-room-responsive.spec.ts": true,
+    "apps/web/src/components/voice/voice-client.ts": true,
+    "apps/web/src/components/voice/voice-session-provider.test.tsx": true,
+    "pnpm-lock.yaml": true
+  },
+  "ownedTcpPortsClosed": {
+    "3117": true,
+    "3417": true,
+    "17880": true,
+    "17881": true,
+    "17882": true,
+    "17890": true,
+    "55442": true,
+    "55443": true,
+    "56380": true
+  },
+  "ownedRtcUdpAbsent": true,
+  "temporaryRuntimeAbsent": {
+    "/tmp/tahaddi-approval-webrtc": true,
+    "/tmp/tahaddi-closure-webrtc": true,
+    "/tmp/voice-approval-load.env": true,
+    "/tmp/voice-approval-integration-ZESkw9": true,
+    "/tmp/voice-approval-central-check.py": true
+  },
+  "mjsSyntax": {
+    "tests/voice-acceptance/critical-integration-run.mjs": true,
+    "tests/voice-acceptance/load-api-server.mjs": true,
+    "tests/voice-acceptance/load-api.mjs": true,
+    "tests/voice-acceptance/run-integration.mjs": true,
+    "tests/voice-acceptance/sdk-fd-runtime-probe.mjs": true,
+    "tests/voice-acceptance/sdk-fd-snapshot.mjs": true,
+    "tests/voice-acceptance/stability-soak.mjs": true,
+    "tests/voice-acceptance/webrtc-audio-metric.mjs": true,
+    "tests/voice-acceptance/webrtc-audio-metric.test.mjs": true,
+    "tests/voice-acceptance/webrtc-client.mjs": true,
+    "tests/voice-acceptance/webrtc-diagnostic.mjs": true,
+    "tests/voice-acceptance/webrtc-local-setup.mjs": true,
+    "tests/voice-acceptance/webrtc-orchestrator.mjs": true
+  },
+  "evidenceJsonValid": true,
+  "evidenceHasNoJwt": true,
+  "build": {
+    "command": "NODE_ENV=production pnpm --filter @tahaddi/web build",
+    "exitCode": 0,
+    "log": "/workspace/scratch/closure-final-build.log",
+    "logSha256": "c9e8b8c7d416a29f6194b8bd8b919e87c7d184ddb9b975c233f9d633dbeb6b9c",
+    "includesTypeScript": true
+  },
+  "eslint": {
+    "exitCode": 0,
+    "files": [
+      "apps/web/src/components/voice/voice-room.tsx",
+      "apps/web/vitest.voice-closure.config.ts",
+      "apps/web/vitest.voice-heartbeat.config.ts"
+    ],
+    "log": "/workspace/scratch/closure-final-eslint.log"
+  },
+  "leaveDeadlineMs": 45000,
+  "audioSessionSourceChangedThisPhase": false,
+  "sdkFilesModified": false,
+  "pushOrDeployment": false,
+  "generatedNextInstructionFilesAbsent": true
+}

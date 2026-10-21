@@ -1,0 +1,91 @@
+{
+  "scope": "Prior acceptance runtime only; paths and counts, never secret values",
+  "jwtPatternChecks": [
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/run-attempt2.log",
+      "jwtLikeMatches": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/sfu-attempt2.log",
+      "jwtLikeMatches": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/config-sample.yaml",
+      "jwtLikeMatches": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/run.log",
+      "jwtLikeMatches": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/sfu.log",
+      "jwtLikeMatches": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/native-client-logs/b.log",
+      "jwtLikeMatches": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/native-client-logs/a.log",
+      "jwtLikeMatches": 0
+    }
+  ],
+  "previousPrivateKeysAbsent": true,
+  "sdkPatchFiles": [],
+  "sdkFilesWritten": false,
+  "temporarySdkReinstallRequired": false,
+  "checkedAt": "2026-10-21T03:55:54.325486+00:00",
+  "previousRuntimeInUse": false,
+  "priorOwnerConfirmedNotUsedByCurrentTests": true,
+  "oldRuntimeOwnershipAndPinnedBinaryVerified": true,
+  "ownedOldRuntimeFilesRemoved": [
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/config-sample.yaml",
+      "sha256": "4f32b0a0f713b48d0a3c432671e0bf3ecd462f796e5b9f749f76274885d86b24",
+      "bytes": 21699
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/config.go",
+      "sha256": "bd3ff9842ddcb84aa6a4992d7b9a8cc6a24265e255e154c6fbd6e51b3783e47a",
+      "bytes": 42573
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/livekit-server",
+      "sha256": "5153d7ce95fb2f2ffb455a0e4ac464be2c94a38c77c99fd728f9c61748a11381",
+      "bytes": 81133440
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/run-attempt2.log",
+      "sha256": "46955b2302b07b2266a80e48dad4b7e83c2079fdb8b08b9743ca04f4466f6e1c",
+      "bytes": 59
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/run.log",
+      "sha256": "6ddd0f041225e9ddb01012309bb27b0e7ba6b042b8a77d46abe54624cc196aaf",
+      "bytes": 636
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/sfu-attempt2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/sfu.log",
+      "sha256": "9f61d052d517230dd70a8f2fc261b451567d427dce49ea6105b8a10e097392b7",
+      "bytes": 257
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/native-client-logs/a.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/tahaddi-approval-webrtc/native-client-logs/b.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "oldRuntimeDirectoryAbsent": true,
+  "sharedDockerCacheTouched": false,
+  "userFilesTouched": false
+}

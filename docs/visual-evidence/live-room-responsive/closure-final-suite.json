@@ -1,0 +1,57 @@
+{
+  "at": "2026-10-21T04:05:41.670981+00:00",
+  "command": "pnpm test --concurrency=2",
+  "exitCode": 0,
+  "durationSeconds": 385.164,
+  "webFreshDurationSeconds": 383.63,
+  "total": {
+    "passed": 3417,
+    "failed": 0,
+    "skipped": 103
+  },
+  "fresh": {
+    "passed": 2814,
+    "failed": 0,
+    "skipped": 93
+  },
+  "cached": {
+    "passed": 603,
+    "failed": 0,
+    "skipped": 10
+  },
+  "turbo": {
+    "successful": 15,
+    "total": 15,
+    "cached": 14
+  },
+  "criticalWebFilesFresh": {
+    "src/components/voice/audio-session.test.tsx": "@tahaddi/web:test:  ✓ src/components/voice/audio-session.test.tsx (16 tests) 1488ms",
+    "src/components/voice/voice-client.test.ts": "@tahaddi/web:test:  ✓ src/components/voice/voice-client.test.ts (8 tests) 30ms",
+    "src/components/voice/voice-session-provider.test.tsx": "@tahaddi/web:test:  ✓ src/components/voice/voice-session-provider.test.tsx (14 tests) 19587ms",
+    "src/components/voice/voice-ui.test.tsx": "@tahaddi/web:test:  ✓ src/components/voice/voice-ui.test.tsx (18 tests) 8611ms",
+    "src/components/voice/use-room-viewport.test.tsx": "@tahaddi/web:test:  ✓ src/components/voice/use-room-viewport.test.tsx (3 tests) 151ms",
+    "src/lib/voice/admission.test.ts": "@tahaddi/web:test:  ✓ src/lib/voice/admission.test.ts (4 tests) 38ms",
+    "src/lib/voice/livekit.test.ts": "@tahaddi/web:test:  ✓ src/lib/voice/livekit.test.ts (25 tests) 103ms",
+    "src/lib/voice/events-route.test.ts": "@tahaddi/web:test:  ✓ src/lib/voice/events-route.test.ts (5 tests) 59ms",
+    "src/lib/voice/http.test.ts": "@tahaddi/web:test:  ✓ src/lib/voice/http.test.ts (3 tests) 56ms",
+    "src/lib/voice/room-state.test.ts": "@tahaddi/web:test:  ✓ src/lib/voice/room-state.test.ts (23 tests) 68ms",
+    "src/app/api/voice/webhook/route.test.ts": "@tahaddi/web:test:  ✓ src/app/api/voice/webhook/route.test.ts (5 tests) 49ms"
+  },
+  "criticalSnapshotSha256": {
+    "src/components/voice/audio-session.test.tsx": "11e0a8f21207d34f177edab42f3cb940b824629aecf5ab306bbcc0966e535886",
+    "src/components/voice/voice-client.test.ts": "5c19d2abef8e5f460c30e4ec2a2f4fb079ff1af187bc905015b4a8fbd48b7c4a",
+    "src/components/voice/voice-session-provider.test.tsx": "87dc05c017e1e025da3792c22400858d0759c1d42d20e25547eaa03e156ade0b",
+    "src/components/voice/voice-ui.test.tsx": "0a58b4989aaa54d28d8b7130208e04a0f20e1cacadd140827d507d274bbbc01f",
+    "src/components/voice/use-room-viewport.test.tsx": "22c1b0a3e7b09587312d75fb0b9335f261fd815dca46aa024d642d831457c1ac",
+    "src/lib/voice/admission.test.ts": "a02dbdc3914695940f8e290d3abb08fac9f9366a84e78a5181ba532c6e7f65c3",
+    "src/lib/voice/livekit.test.ts": "12bfa705d3e353274e4b455ef6d9a6c162592ec894b65c7ce4da13f8d92d85cc",
+    "src/lib/voice/events-route.test.ts": "78f63046dde629cfc2ff4e03260f8e5fc5ce5aa51a6af6858d9307c2814061b0",
+    "src/lib/voice/http.test.ts": "6751fb95be593fb042c08f6d6dc8ad291145a0e2c65ff68dd581f6503164e7bf",
+    "src/lib/voice/room-state.test.ts": "65e29edbdcf0174420b45060e64e772b369ab049bad7d46a320e4a527ec2c27f",
+    "src/app/api/voice/webhook/route.test.ts": "227f018b218be9048898a8d9981ebb851f04a7c0c7fe9c240939fa62cab47596"
+  },
+  "productionRoomSourceSha256": "d7f15c7aad6bb2031bc2e9662672bb1fcb1f7d659044ce080f2fdf7ebdabbb85",
+  "log": "/workspace/scratch/closure-final-suite.log",
+  "logSha256": "1388bcb22c9fda3311bb7c74dcad85d2d00d0a3dfe666b3d07e4d822d3be78f3",
+  "note": "Fresh web and Blender prelude; cached non-web packages are historical results, not fresh executions. Opt-in database/Redis activation is recorded separately."
+}

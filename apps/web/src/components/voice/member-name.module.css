@@ -4,6 +4,7 @@
   justify-content: inherit;
   flex-wrap: wrap;
   gap: 4px;
+  min-inline-size: 0;
   max-inline-size: 100%;
   vertical-align: middle;
 }
@@ -41,8 +42,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  flex: none;
-  white-space: nowrap;
+  flex: 0 1 auto;
+  min-inline-size: 0;
+  justify-content: inherit;
   flex-wrap: wrap;
   max-inline-size: 100%;
 }
@@ -51,4 +53,13 @@
 }
 
 .realBadge { inline-size: 24px; block-size: 24px; flex: none; }
-.accountNumber { font-size: .68rem; color: var(--voice-muted); font-weight: 500; white-space: nowrap; }
+.accountNumber {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  font-size: .68rem;
+  color: var(--voice-muted);
+  font-weight: 500;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}

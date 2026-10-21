@@ -371,10 +371,32 @@ describe('persistent microphone across game routes', () => {
     vi.useFakeTimers();
     try {
       fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
+      const leaveSignal = fetcher.mock.calls.find(([url]) => String(url).endsWith('/leave'))?.[1]
+        ?.signal as AbortSignal;
+      // Stopping local capture is immediate; only authoritative server departure
+      // waits for the permission-write deadline, independently covered by voice-client.
+      expect(sdk.disconnect).toHaveBeenCalledWith(true);
+      expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'مغادرة الصوت' })).toBeDisabled();
+      expect(leaveSignal.aborted).toBe(false);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(10_000);
       });
+      expect(screen.getByRole('button', { name: 'مغادرة الصوت' })).toBeDisabled();
+      expect(leaveSignal.aborted).toBe(false);
+      expect(sdk.connect).toHaveBeenCalledTimes(1);
+      expect(requests('/leave')).toHaveLength(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(34_999);
+      });
+      expect(screen.getByRole('button', { name: 'مغادرة الصوت' })).toBeDisabled();
+      expect(leaveSignal.aborted).toBe(false);
+      expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
       expect(screen.getByRole('button', { name: 'مغادرة الصوت' })).toBeEnabled();
+      expect(leaveSignal.aborted).toBe(true);
       expect(screen.queryByText('متصل بالصوت')).not.toBeInTheDocument();
       expect(sdk.connect).toHaveBeenCalledTimes(1);
       expect(requests('/token')).toHaveLength(1);
@@ -406,8 +428,11 @@ describe('persistent microphone across game routes', () => {
 });
 
 it('renders server-confirmed chat immediately and does not let an older heartbeat erase or duplicate it', async () => {
-  const view = render(<App />);
-  await connected();
+  // Load the lazy room before controlling timers. The two heartbeat phases need
+  // 2s + 2.5s of app time, not nearly the entire 5s wall-clock test budget.
+  await import('./voice-room');
+  vi.useFakeTimers();
+  let view: ReturnType<typeof render> | undefined;
   const message = {
     id: 'server-live-message',
     userId: 'other',
@@ -421,21 +446,35 @@ it('renders server-confirmed chat immediately and does not let an older heartbea
   };
   const bytes = new TextEncoder().encode(JSON.stringify({ roomId: room.id, cursor: 12, message }));
   try {
+    await act(async () => {
+      view = render(<App />);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText('متصل بالصوت')).toBeInTheDocument();
+    expect(sdk.microphone).toHaveBeenCalledWith(true, expect.anything());
     act(() => sdk.events.get('data')?.(bytes, undefined, 0, 'tahaddi-voice-message-v1'));
     expect(screen.getByText(message.text)).toBeInTheDocument();
     act(() => sdk.events.get('data')?.(bytes, undefined, 0, 'tahaddi-voice-message-v1'));
     expect(screen.getAllByText(message.text)).toHaveLength(1);
-    await waitFor(() => expect(requests('/events').length).toBeGreaterThan(0), { timeout: 3500 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(requests('/events').length).toBeGreaterThan(0);
     expect(screen.getAllByText(message.text)).toHaveLength(1);
     current = { ...current, cursor: 13, messages: [] };
-    await waitFor(() => expect(screen.queryByText(message.text)).not.toBeInTheDocument(), {
-      timeout: 3500,
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2500);
     });
+    expect(screen.queryByText(message.text)).not.toBeInTheDocument();
     expect(sdk.connect).toHaveBeenCalledTimes(1);
   } finally {
-    view.unmount();
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    try {
+      view?.unmount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   }
 });

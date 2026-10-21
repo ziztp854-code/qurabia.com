@@ -1,0 +1,42 @@
+[
+  {
+    "width": 320,
+    "height": 700,
+    "arrival": {
+      "top": 259.40625,
+      "bottom": 402.0625,
+      "left": 12,
+      "right": 308
+    },
+    "header": {
+      "top": 0,
+      "bottom": 113
+    },
+    "dock": {
+      "top": 564.5,
+      "bottom": 688
+    },
+    "pointerEvents": "none",
+    "dismissPointerEvents": "auto"
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "arrival": {
+      "top": 229.265625,
+      "bottom": 413.265625,
+      "left": 452.703125,
+      "right": 872.703125
+    },
+    "header": {
+      "top": 0,
+      "bottom": 77
+    },
+    "dock": {
+      "top": 790,
+      "bottom": 888
+    },
+    "pointerEvents": "none",
+    "dismissPointerEvents": "auto"
+  }
+]

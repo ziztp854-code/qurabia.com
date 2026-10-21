@@ -1,0 +1,23 @@
+{
+  "run": "3b1a2e491ece",
+  "startedAt": "2026-10-21T03:33:29.906Z",
+  "isolation": {
+    "host": "127.0.0.1",
+    "port": 55442,
+    "container": "voice-approval-integration-3b1a2e491ece",
+    "databases": {
+      "voice": "voice_test_approval_3b1a2e491ece",
+      "community": "community_voice_test",
+      "profile": "profile_test_approval_3b1a2e491ece",
+      "load": "voice_test_load_approval_3b1a2e491ece"
+    },
+    "storage": "new tmpfs only; no host data mounts",
+    "applicationDatabaseUsed": false,
+    "image": "sha256:79bd7c99e923138f136f8009d6bffa66e21e9d4fda5c0c561b00fc9c90cfe537"
+  },
+  "results": [],
+  "retainedForLoad": false,
+  "setupError": "Error: Command failed: docker --host=unix:///var/run/docker.sock exec voice-approval-integration-3b1a2e491ece psql --username postgres --dbname postgres --set ON_ERROR_STOP=1 --command CREATE DATABASE \"voice_test_approval_3b1a2e491ece\"\npsql: error: connection to server on socket \"/var/run/postgresql/.s.PGSQL.5432\" failed: FATAL:  the database system is starting up\n\n    at genericNodeError (node:internal/errors:985:15)\n    at wrappedFn (node:internal/errors:539:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:509:28)\n    at maybeClose (node:internal/child_process:1141:16)\n    at ChildProcess._handle.onexit (node:internal/child_process:306:5)",
+  "finishedAt": "2026-10-21T03:33:43.610Z",
+  "cleanedUp": true
+}

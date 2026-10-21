@@ -1,0 +1,231 @@
+{
+  "recordedAtRiyadh": "2026-10-21T06:34:17.408969+03:00",
+  "command": "pnpm test --concurrency=2",
+  "cwd": "/workspace/qurabia.com",
+  "exitCode": 0,
+  "scope": "One complete workspace invocation after final deterministic chat test change; existing test/source files unchanged by this reviewer. No browser or load test competing during this heavy run.",
+  "log": "/workspace/scratch/voice-approval-suite.log",
+  "logSha256": "4f2aa3fcbf961b92cce3a39e0ccc7e08480227a5a512122c4a619212a0935b3f",
+  "head": "2eee844eea20cb07389723e157e684bcc7c14410",
+  "total": {
+    "passed": 3417,
+    "failed": 0,
+    "skipped": 103
+  },
+  "fresh": {
+    "passed": 2814,
+    "failed": 0,
+    "skipped": 93
+  },
+  "cached": {
+    "passed": 603,
+    "failed": 0,
+    "skipped": 10
+  },
+  "packages": [
+    {
+      "name": "Blender CLI",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 2,
+      "execution": "fresh",
+      "runner": "node --test (root prelude)"
+    },
+    {
+      "name": "@tahaddi/web",
+      "passed": 2803,
+      "failed": 0,
+      "skipped": 91,
+      "execution": "fresh",
+      "files": {
+        "passed": 411,
+        "skipped": 12,
+        "total": 423
+      },
+      "durationSeconds": 297.38
+    },
+    {
+      "name": "@tahaddi/realtime",
+      "passed": 354,
+      "failed": 0,
+      "skipped": 10,
+      "execution": "cached"
+    },
+    {
+      "name": "@tahaddi/domain",
+      "passed": 86,
+      "failed": 0,
+      "skipped": 0,
+      "execution": "cached"
+    },
+    {
+      "name": "@mamluk/world-map-core",
+      "passed": 78,
+      "failed": 0,
+      "skipped": 0,
+      "execution": "cached"
+    },
+    {
+      "name": "@mamluk/maplibre-adapter",
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0,
+      "execution": "cached"
+    },
+    {
+      "name": "@tahaddi/mobile",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "execution": "cached"
+    }
+  ],
+  "noAssertionScriptsExcluded": [
+    "@tahaddi/config:test",
+    "@tahaddi/contracts:test",
+    "@tahaddi/database:test"
+  ],
+  "turbo": {
+    "successful": 15,
+    "total": 15,
+    "cached": 14,
+    "fresh": 1,
+    "durationSeconds": 298.713,
+    "tasks": [
+      {
+        "package": "@tahaddi/database",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/domain",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@mamluk/world-map-core",
+        "task": "build",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/config",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/contracts",
+        "task": "build",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/config",
+        "task": "build",
+        "cache": "hit"
+      },
+      {
+        "package": "@mamluk/world-map-core",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/domain",
+        "task": "build",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/database",
+        "task": "build",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/contracts",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@mamluk/maplibre-adapter",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@mamluk/maplibre-adapter",
+        "task": "build",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/realtime",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/mobile",
+        "task": "test",
+        "cache": "hit"
+      },
+      {
+        "package": "@tahaddi/web",
+        "task": "test",
+        "cache": "miss"
+      }
+    ]
+  },
+  "fiveHistoricalTimeouts": [
+    {
+      "file": "apps/web/src/components/mamluk-map/mamluk-world-map.test.tsx",
+      "test": "does not offer village management after current authoritative ownership changes",
+      "previousObservedDurationMs": 12515,
+      "current": "passed in fresh unfiltered 17-test file",
+      "currentFileDurationMs": 4346
+    },
+    {
+      "file": "apps/web/src/components/mamluk-map/mamluk-world-map.test.tsx",
+      "test": "focuses server-provided village coordinates and exposes management only after an approved own-city payload",
+      "previousObservedDurationMs": 8571,
+      "current": "passed in fresh unfiltered 17-test file",
+      "currentFileDurationMs": 4346
+    },
+    {
+      "file": "apps/web/src/components/voice/voice-ui.test.tsx",
+      "test": "creates a persisted room with the selected privacy, category and microphone settings",
+      "previousObservedDurationMs": 10811,
+      "current": "passed",
+      "currentObservedDurationMs": 462,
+      "currentFileDurationMs": 6339
+    },
+    {
+      "file": "apps/web/src/components/voice/voice-ui.test.tsx",
+      "test": "keeps entered details and shows server validation failure without routing away",
+      "previousObservedDurationMs": 11162,
+      "current": "passed in fresh unfiltered 18-test file",
+      "currentFileDurationMs": 6339
+    },
+    {
+      "file": "apps/web/src/components/voice/voice-session-provider.test.tsx",
+      "test": "renders server-confirmed chat immediately and does not let an older heartbeat erase or duplicate it",
+      "previousObservedDurationMs": 13464,
+      "current": "passed",
+      "currentObservedDurationMs": 575,
+      "currentFileDurationMs": 15741
+    }
+  ],
+  "policy": {
+    "vitestDefaultTestTimeoutMs": 5000,
+    "voicePermissionClientDeadlineMs": 45000,
+    "changedByThisReview": false,
+    "cpuCountVisible": 5,
+    "cgroupCpuQuota": "400000 100000",
+    "configuredVitestMaxWorkers": 4
+  },
+  "testSnapshotSha256": {
+    "apps/web/src/components/voice/voice-session-provider.test.tsx": "87dc05c017e1e025da3792c22400858d0759c1d42d20e25547eaa03e156ade0b",
+    "apps/web/src/components/voice/voice-ui.test.tsx": "0a58b4989aaa54d28d8b7130208e04a0f20e1cacadd140827d507d274bbbc01f",
+    "apps/web/src/components/mamluk-map/mamluk-world-map.test.tsx": "b15cd1304adb9bd686910953119b4c14ba01ec678085ff5791e2e8f323532696",
+    "apps/web/vitest.config.ts": "c13cdd572af6a194f15736c223763724c14c126de69786153e85d073cb852300"
+  },
+  "limits": [
+    "A green suite is not real SFU/device audio proof.",
+    "Cached results are not fresh executions.",
+    "103 skips belong to this invocation; any later isolated integration run is a separate result.",
+    "One clean run plus prior isolated passes supports environment/test scheduling fragility; it does not establish that future overloaded CI cannot time out."
+  ]
+}

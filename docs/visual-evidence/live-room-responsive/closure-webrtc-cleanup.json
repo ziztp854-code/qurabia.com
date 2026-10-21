@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-10-21T03:58:26.118754+00:00",
+  "ownedSfuPid": 66727,
+  "sfuStoppedWithSigterm": true,
+  "serverSessionExitCode": 0,
+  "ownedPorts": [
+    17880,
+    17881,
+    17882,
+    17890
+  ],
+  "ownedListenersRemaining": [],
+  "removedOwnedFiles": [
+    "diagnostic-server.log",
+    "livekit-server",
+    "livekit.yaml",
+    "native-client-logs/a.log",
+    "native-client-logs/b.log",
+    "probe-logs/probe-a.log",
+    "probe-logs/probe-b.log",
+    "runtime.json",
+    "stability-client-logs/stability-a.log",
+    "stability-client-logs/stability-b.log"
+  ],
+  "temporaryRuntimeRemoved": true,
+  "sharedSdkOrImageFilesRemoved": false,
+  "lateCandidateDiagnostic": {
+    "count": 3,
+    "at": [
+      "2026-10-21T03:57:01.653Z",
+      "2026-10-21T03:57:01.700Z",
+      "2026-10-21T03:57:01.701Z"
+    ],
+    "message": "Pion dropped candidate with ufrag that did not match current ufrags during stability recovery; all three observed recovery criteria passed. This diagnostic alone is not evidence of an application audio defect."
+  }
+}

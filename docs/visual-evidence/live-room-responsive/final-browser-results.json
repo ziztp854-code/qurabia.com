@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-21",
+  "reviewer": "/root/final_browser",
+  "browser": "Chromium 151, headless, one worker, DPR1",
+  "scope": "Actual VoiceRoomView with production CSS/assets and synthetic HTTP/AudioSession; local presentation and event/focus verification only.",
+  "commands": [
+    {
+      "command": "LIVE_ROOM_STAGE=final node node_modules/@playwright/test/cli.js test --config playwright.live-room.config.ts",
+      "result": "5 passed; added sixth case interrupted due test trying to scroll mobile-only-hidden stage note. Assertion scoped to desktop, no production change for that test issue."
+    },
+    {
+      "command": "LIVE_ROOM_STAGE=final node node_modules/@playwright/test/cli.js test --config playwright.live-room.config.ts --grep 'long Arabic|final requested sizes'",
+      "result": "2 passed before grid fix. Further inspection of measured8px stage exposed missing visible-intersection assertion despite center hit."
+    },
+    {
+      "command": "LIVE_ROOM_STAGE=final node node_modules/@playwright/test/cli.js test --config playwright.live-room.config.ts --grep 'long Arabic|final requested sizes'",
+      "result": "2 passed after production CSS grid fix and stronger assertion: visible seat height>=44px, expanded seats/avatar-square/composer/note reachability."
+    },
+    {
+      "command": "LIVE_ROOM_STAGE=final node node_modules/@playwright/test/cli.js test --config playwright.live-room.config.ts --grep 'long Arabic'",
+      "result": "1 passed19.6s; additional actual typed-message, native-center-scroll, focus and center-hit reachability check for send under200%text at320/1440. No production changes for this added check."
+    },
+    {
+      "command": "LIVE_ROOM_STAGE=final node node_modules/@playwright/test/cli.js test --config playwright.live-room.config.ts",
+      "result": "FINAL CURRENT REVISION:6passed57.1s,0failed,0skipped,0interrupted. All six cases and fourteen viewport matrix rerun after final desktop grid fix."
+    }
+  ],
+  "finalDistinctScenarios": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "notExecuted": [
+      "Real two-physical-device audio",
+      "Real SFU/media transport",
+      "Physical OS/mobile keyboard",
+      "Authenticated production browser session"
+    ]
+  },
+  "discoveredDefect": {
+    "scenario": "1440x900, long Arabic identity, computed-font-size200%",
+    "before": {
+      "stageClientHeight": 8,
+      "stageScrollHeight": 616,
+      "visibleSeatHeight": 8
+    },
+    "fixOwnedBy": "/root",
+    "fix": "Desktop grid stage minimum180px plus intrinsic main minimum; presentation only",
+    "after": {
+      "stageClientHeight": 180,
+      "stageScrollHeight": 616,
+      "visibleSeatHeight": 180
+    },
+    "evidenceBefore": "final-stress-pre-grid-fix.json",
+    "imageBefore": "final-text200-seat-clipped-pre-grid-fix-1440.png",
+    "evidenceAfter": "final-stress.json",
+    "imageAfter": "final-text200-seat-reachability-1440.png"
+  },
+  "requestedSizesEvidence": "final-browser-verification.json",
+  "comparisonImagesReviewed": [
+    "before-390x844.png",
+    "after-390x844.png",
+    "before-1440x900.png",
+    "after-1440x900.png",
+    "final-requested-resting-390x844.png",
+    "final-requested-resting-1440x900.png"
+  ],
+  "limitations": [
+    "Fake audio adapter is not real microphone/audio proof.",
+    "visualViewport simulation is not a physical keyboard.",
+    "200% text uses computed-font-size doubling, not physical browser accessibility settings.",
+    "Expanded content intentionally scrolls inside main/stage; the evidence checks scroll reachability rather than demanding all8seats simultaneous."
+  ],
+  "cleanup": "Final complete Playwright run exited0; owned Chromium/server cleaned up; loopback3417 connection refused after run.",
+  "engineering": "ESLint scoped spec exit0; git diff --check exit0; production source was not edited by this agent.",
+  "additional200PercentSend": {
+    "320": {
+      "top": 169.375,
+      "bottom": 217.375,
+      "dockTop": 391,
+      "reachable": true,
+      "focused": true,
+      "windowScroll": 0
+    },
+    "1440": {
+      "top": 672.75,
+      "bottom": 720.75,
+      "dockTop": 738,
+      "reachable": true,
+      "focused": true,
+      "windowScroll": 153
+    }
+  },
+  "validationScopeAfterGridFix": "Complete six-case suite and all14 viewport matrix passed on current revision after final desktop CSS fix; additional requested390x844 and1440x900 expanded-seat geometry/reachability and text200% checks included.",
+  "finalCurrentRevisionRun": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "interrupted": 0,
+    "durationSeconds": 57.1,
+    "viewports": 14,
+    "log": "/workspace/scratch/final-live-room-browser-complete-current.log",
+    "revisionScope": "Current working tree including final desktop grid min180px and intrinsic main minimum. No source changes during final complete run."
+  }
+}

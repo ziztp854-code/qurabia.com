@@ -23,8 +23,13 @@ export function VoiceRoomAudience({
   inert?: boolean;
 }) {
   return (
-    <aside className={styles.audienceRail} aria-label="الحاضرون والتنقل" inert={inert}>
-      <nav className={styles.audienceNav} aria-label="تنقل المجلس">
+    <aside
+      className={styles.audienceRail}
+      data-room-audience
+      aria-label="الحاضرون والتنقل"
+      inert={inert}
+    >
+      <nav className={styles.audienceNav} data-room-audience-nav aria-label="تنقل المجلس">
         <Link href="/voice">
           <Headphones size={18} aria-hidden="true" /> استكشاف الغرف
         </Link>
@@ -32,7 +37,7 @@ export function VoiceRoomAudience({
           <Users size={18} aria-hidden="true" /> غرفي المفضلة
         </Link>
       </nav>
-      <header className={styles.audienceHeader}>
+      <header className={styles.audienceHeader} data-room-audience-header>
         <h2>
           الحاضرون <span>{number(participants.length)}</span>
         </h2>
@@ -45,7 +50,7 @@ export function VoiceRoomAudience({
           <Users size={18} aria-hidden="true" />
         </button>
       </header>
-      <div className={styles.audienceList}>
+      <div className={styles.audienceList} data-room-audience-list>
         {participants.slice(0, 24).map((person) => {
           const muted = person.muted || person.moderatorMuted;
           const speaking = speakers.includes(person.id);
@@ -73,7 +78,11 @@ export function VoiceRoomAudience({
             >
               <Avatar user={person} size={40} speaking={speaking} />
               <span className={styles.audienceIdentity}>
-                <MemberName name={person.name} badges={person.accountBadges} identity={person.communityIdentity} />
+                <MemberName
+                  name={person.name}
+                  badges={person.accountBadges}
+                  identity={person.communityIdentity}
+                />
                 <small>
                   {roleLabels[person.role]} · {state}
                 </small>

@@ -1,0 +1,2004 @@
+{
+  "scope": "Native SDK initialization and three local AudioSource cycles; no SFU or network joins",
+  "testOnlyGcAvailable": true,
+  "samples": [
+    {
+      "stage": "module-imported-before-native-initialization",
+      "at": 1792554800085,
+      "pid": 64323,
+      "listedEntries": 28,
+      "stableCount": 27,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 5,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 4,
+        "unix": 3
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "source-1-active",
+      "at": 1792554800100,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "source-1-closed-settled-100ms",
+      "at": 1792554800205,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "source-2-active",
+      "at": 1792554800211,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "source-2-closed-settled-100ms",
+      "at": 1792554800317,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "source-3-active",
+      "at": 1792554800325,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "source-3-closed-settled-100ms",
+      "at": 1792554800431,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "all-sources-closed-settled-1000ms",
+      "at": 1792554801436,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "all-references-dropped-after-test-only-gc",
+      "at": 1792554801551,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    },
+    {
+      "stage": "native-dispose-settled-100ms",
+      "at": 1792554801655,
+      "pid": 64323,
+      "listedEntries": 36,
+      "stableCount": 35,
+      "types": {
+        "dev-null": 2,
+        "pipe": 10,
+        "anon_inode:[eventpoll]": 9,
+        "anon_inode:[io_uring]": 3,
+        "anon_inode:[eventfd]": 6,
+        "unix": 5
+      },
+      "descriptors": [
+        {
+          "fd": 0,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 1,
+          "type": "pipe",
+          "target": "pipe:[178438]"
+        },
+        {
+          "fd": 10,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 11,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 12,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 13,
+          "type": "pipe",
+          "target": "pipe:[177010]"
+        },
+        {
+          "fd": 14,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 15,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 16,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 17,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 18,
+          "type": "pipe",
+          "target": "pipe:[178445]"
+        },
+        {
+          "fd": 19,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 2,
+          "type": "pipe",
+          "target": "pipe:[178439]"
+        },
+        {
+          "fd": 20,
+          "type": "dev-null",
+          "target": "/dev/null"
+        },
+        {
+          "fd": 21,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 22,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 23,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 24,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 25,
+          "type": "unix",
+          "target": "socket:[178451]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 26,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 27,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 28,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 29,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 3,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 30,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 31,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 32,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        },
+        {
+          "fd": 33,
+          "type": "anon_inode:[eventpoll]",
+          "target": "anon_inode:[eventpoll]"
+        },
+        {
+          "fd": 34,
+          "type": "unix",
+          "target": "socket:[178450]",
+          "protocol": "unix",
+          "state": "03"
+        },
+        {
+          "fd": 4,
+          "type": "anon_inode:[io_uring]",
+          "target": "anon_inode:[io_uring]"
+        },
+        {
+          "fd": 5,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 6,
+          "type": "pipe",
+          "target": "pipe:[178442]"
+        },
+        {
+          "fd": 7,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 8,
+          "type": "pipe",
+          "target": "pipe:[178443]"
+        },
+        {
+          "fd": 9,
+          "type": "anon_inode:[eventfd]",
+          "target": "anon_inode:[eventfd]"
+        }
+      ]
+    }
+  ],
+  "afterWarmupDifference": {
+    "dev-null": 0,
+    "pipe": 0,
+    "anon_inode:[eventpoll]": 0,
+    "anon_inode:[io_uring]": 0,
+    "anon_inode:[eventfd]": 0,
+    "unix": 0
+  },
+  "coldToWarmDifference": {
+    "dev-null": 0,
+    "pipe": 0,
+    "anon_inode:[eventpoll]": 4,
+    "anon_inode:[io_uring]": 0,
+    "anon_inode:[eventfd]": 2,
+    "unix": 2
+  },
+  "checks": {
+    "threeAudioSourcesClosed": true,
+    "postWarmupDescriptorTypesStable": true,
+    "testOnlyGcDoesNotReleaseSharedRuntime": true
+  },
+  "passed": true
+}

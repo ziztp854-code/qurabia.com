@@ -1,0 +1,65 @@
+{
+  "scope": "Actual production AudioSession/VoiceSessionProvider/hooks with a probed fake LiveKit SDK and synthetic HTTP; no SFU, real audio or heap proof.",
+  "cycles": {},
+  "audioCycles": {
+    "cycles": 60,
+    "successfulReconnects": 6,
+    "createdConnections": 66,
+    "disconnects": 66,
+    "stoppedTracks": 66,
+    "postCycleActiveConnections": 0,
+    "postCycleSdkListeners": 0,
+    "pendingTimers": 0,
+    "remoteAudioElements": 0
+  },
+  "pendingTokenCycles": {
+    "cycles": 30,
+    "aborted": 30,
+    "createdConnections": 0,
+    "pendingTimers": 0
+  },
+  "permissionRetryCycles": {
+    "cycles": 30,
+    "requests": 30,
+    "createdConnections": 0,
+    "pendingTimers": 0
+  },
+  "storageLeaseCycles": {
+    "cycles": 20,
+    "stoppedTracks": 20,
+    "remainingLease": null,
+    "pendingTimers": 0
+  },
+  "lateDeviceCompletion": {
+    "trackEnabled": false,
+    "stopped": true,
+    "activeConnections": 0,
+    "pendingTimers": 0
+  },
+  "providerCycles": {
+    "cycles": 20,
+    "connections": 20,
+    "stoppedTracks": 20,
+    "postCycleSdkListeners": 0,
+    "postCycleGlobalListeners": 0,
+    "pendingTimers": 0,
+    "activeLocks": 0
+  },
+  "inFlightHeartbeat": {
+    "mediaStoppedSynchronously": true,
+    "readAbortedImmediately": true,
+    "remainingReadDeadlineMs": 0,
+    "pollingRestarted": false,
+    "postDeadlineTimers": 0,
+    "postDeadlineConnections": 0
+  },
+  "viewportOverlayCycles": {
+    "cycles": 30,
+    "pendingFrames": 0,
+    "observers": 0,
+    "viewportAdds": 60,
+    "viewportRemovals": 60,
+    "remainingGlobalListeners": 0,
+    "pendingTimers": 0
+  }
+}

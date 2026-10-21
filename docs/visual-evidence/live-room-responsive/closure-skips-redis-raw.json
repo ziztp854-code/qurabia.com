@@ -1,0 +1,234 @@
+{
+  "numFailedTestSuites": 0,
+  "numFailedTests": 0,
+  "numPassedTestSuites": 2,
+  "numPassedTests": 10,
+  "numPendingTestSuites": 0,
+  "numPendingTests": 0,
+  "numRuntimeErrorTestSuites": 0,
+  "numTodoTests": 0,
+  "numTotalTestSuites": 2,
+  "numTotalTests": 10,
+  "openHandles": [],
+  "snapshot": {
+    "added": 0,
+    "didUpdate": false,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0
+  },
+  "startTime": 1792554869462,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 21,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration creates unique six-digit codes atomically",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "creates unique six-digit codes atomically",
+          "startAt": 1792554870838
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 31,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration proves a single classic winner for simultaneous valid presses",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "proves a single classic winner for simultaneous valid presses",
+          "startAt": 1792554870860
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 16,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration records every points press once with unique sequence and persists exact scoring",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "records every points press once with unique sequence and persists exact scoring",
+          "startAt": 1792554870891
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 10,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration rejects early, stale, expired, duplicate and non-member presses",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "rejects early, stale, expired, duplicate and non-member presses",
+          "startAt": 1792554870907
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 6,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration recovers deadline transitions from the persistent schedule after a service restart",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "recovers deadline transitions from the persistent schedule after a service restart",
+          "startAt": 1792554870918
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 6,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration requires the host owner and never reveals private identities on a public snapshot",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 6,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "requires the host owner and never reveals private identities on a public snapshot",
+          "startAt": 1792554870924
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 11,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration resumes the same identity, preserves other tabs and forbids forged tokens",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 4,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "resumes the same identity, preserves other tabs and forbids forged tokens",
+          "startAt": 1792554870930
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 91,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration does not lose simultaneous participant registrations under CAS contention",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 1,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "does not lose simultaneous participant registrations under CAS contention",
+          "startAt": 1792554870941
+        },
+        {
+          "ancestorTitles": [
+            "Fastest Button Redis atomic integration"
+          ],
+          "duration": 5,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button Redis atomic integration retains the recorded winner name after host removal without keeping the participant eligible",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 2,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "retains the recorded winner name after host removal without keeping the participant eligible",
+          "startAt": 1792554871032
+        }
+      ],
+      "endTime": 1792554871063,
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+      "startTime": 1792554869819,
+      "status": "passed",
+      "summary": ""
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Fastest Button real multiplayer sockets"
+          ],
+          "duration": 2518,
+          "failing": false,
+          "failureDetails": [],
+          "failureMessages": [],
+          "fullName": "Fastest Button real multiplayer sockets broadcasts one winner to every role and restores the same disconnected participant",
+          "invocations": 1,
+          "location": null,
+          "numPassingAsserts": 10,
+          "retryMessages": [],
+          "retryReasons": [],
+          "status": "passed",
+          "title": "broadcasts one winner to every role and restores the same disconnected participant",
+          "startAt": 1792554871882
+        }
+      ],
+      "endTime": 1792554874505,
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/realtime/src/fastest-button/fastest-button.websocket.spec.ts",
+      "startTime": 1792554871073,
+      "status": "passed",
+      "summary": ""
+    }
+  ],
+  "wasInterrupted": false
+}

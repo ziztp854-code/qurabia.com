@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-21T03:45:48.985626+00:00",
+  "mjsSyntax": {
+    "tests/voice-acceptance/load-api-server.mjs": true,
+    "tests/voice-acceptance/load-api.mjs": true,
+    "tests/voice-acceptance/run-integration.mjs": true,
+    "tests/voice-acceptance/webrtc-client.mjs": true,
+    "tests/voice-acceptance/webrtc-local-setup.mjs": true,
+    "tests/voice-acceptance/webrtc-orchestrator.mjs": true
+  },
+  "ownedTcpPortsClosed": {
+    "3117": true,
+    "3417": true,
+    "17880": true,
+    "17881": true,
+    "17882": true,
+    "17890": true,
+    "55442": true
+  },
+  "ownedRtcUdpListenersAbsent": true,
+  "temporarySecretsAbsent": {
+    "/tmp/voice-approval-load.env": true,
+    "/tmp/voice-approval-integration-ZESkw9": true,
+    "/tmp/tahaddi-approval-webrtc/runtime.json": true,
+    "/tmp/tahaddi-approval-webrtc/livekit.yaml": true
+  },
+  "productionAudioChangedThisPhase": false,
+  "leaveDeadlineMs": 45000,
+  "pushOrDeployment": false
+}

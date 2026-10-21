@@ -1,0 +1,164 @@
+{
+  "run": "cae3bf8eb559",
+  "startedAt": "2026-10-21T03:34:03.010Z",
+  "isolation": {
+    "host": "127.0.0.1",
+    "port": 55442,
+    "container": "voice-approval-integration-cae3bf8eb559",
+    "databases": {
+      "voice": "voice_test_approval_cae3bf8eb559",
+      "community": "community_voice_test",
+      "profile": "profile_test_approval_cae3bf8eb559",
+      "load": "voice_test_load_approval_cae3bf8eb559"
+    },
+    "storage": "new tmpfs only; no host data mounts",
+    "applicationDatabaseUsed": false,
+    "image": "sha256:79bd7c99e923138f136f8009d6bffa66e21e9d4fda5c0c561b00fc9c90cfe537"
+  },
+  "results": [
+    {
+      "suite": "voice",
+      "file": "src/lib/voice/repository-quota.integration.test.ts",
+      "exitCode": 0,
+      "elapsedMs": 2481,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "total": 7,
+      "tests": [
+        {
+          "name": "voice room quota with independent PostgreSQL clients admits only one concurrent creation when the host already has four active rooms",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "voice room quota with independent PostgreSQL clients rejects a sixth active room but admits a replacement after a room is closed",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "voice room quota with independent PostgreSQL clients allows a different host to create while the first host creation is blocked",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "voice room quota with independent PostgreSQL clients rolls back a failed insert and releases the quota lock for another client",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "voice room quota with independent PostgreSQL clients keeps repeated fresh presence reads off the room write lock",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "voice room quota with independent PostgreSQL clients does not invalidate user writes for scheduler-only checkpoints but versions real ledger changes",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "voice room quota with independent PostgreSQL clients skips busy periodic checks while forced permission work still waits for the shared lock",
+          "status": "passed",
+          "failureMessages": []
+        }
+      ],
+      "logFile": "/workspace/scratch/approval-integration-voice-cae3bf8eb559.log"
+    },
+    {
+      "suite": "community",
+      "file": "src/lib/community/community.integration.test.ts",
+      "exitCode": 0,
+      "elapsedMs": 4787,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "total": 9,
+      "tests": [
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma retains legacy rows and custom account-number semantics after both migrations",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma persists own profile settings, preserves names, and never serializes account secrets",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma checks privacy against the current session and permits unfollowing a newly private target",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma enforces owned cosmetics, resolves badge-linked items, revokes active appearance, and audits writes",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma excludes expired grants and reserves sensitive badges for the actual owner",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma serializes competing room creation, joins, seat claims, and recipient-only signaling",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma deduplicates reconnect entrances, rejects an old tab, and prunes suspended members",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma enforces the 24-member limit when the last places are claimed concurrently",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "community and voice with real PostgreSQL migrations and Prisma refreshes granted display identity inside the existing SFU room without changing its roles",
+          "status": "passed",
+          "failureMessages": []
+        }
+      ],
+      "logFile": "/workspace/scratch/approval-integration-community-cae3bf8eb559.log"
+    },
+    {
+      "suite": "profile",
+      "file": "src/lib/profile/repository.database.integration.test.ts",
+      "exitCode": 0,
+      "elapsedMs": 2744,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "total": 4,
+      "tests": [
+        {
+          "name": "profile identity on real local PostgreSQL counts actual follows with inactive and reciprocal blocking excluded",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "profile identity on real local PostgreSQL creates a missing profile, persists identity/photo, serves it, and supports removal",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "profile identity on real local PostgreSQL atomically resolves concurrent username claims and rolls back the losing display-name write",
+          "status": "passed",
+          "failureMessages": []
+        },
+        {
+          "name": "profile identity on real local PostgreSQL refreshes an existing room host/participant identity from the edited profile without reconnecting",
+          "status": "passed",
+          "failureMessages": []
+        }
+      ],
+      "logFile": "/workspace/scratch/approval-integration-profile-cae3bf8eb559.log"
+    }
+  ],
+  "retainedForLoad": false,
+  "finishedAt": "2026-10-21T03:34:18.885Z",
+  "wasRetainedForLoad": true,
+  "cleanedUp": true,
+  "cleanupEvidence": "approval-integration-cleanup.json"
+}

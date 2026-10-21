@@ -1,0 +1,12 @@
+{
+  "scope": "Actual production AudioSession/VoiceSessionProvider/hooks with a probed fake LiveKit SDK and synthetic HTTP; no SFU, real audio or heap proof.",
+  "cycles": {},
+  "inFlightHeartbeat": {
+    "mediaStoppedSynchronously": true,
+    "readAbortedImmediately": true,
+    "remainingReadDeadlineMs": 0,
+    "pollingRestarted": false,
+    "postDeadlineTimers": 0,
+    "postDeadlineConnections": 0
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "rawEvidence": "docs/visual-evidence/live-room-responsive/closure-webrtc-pcm-diagnostic.json",
+  "sha256": "6eb13cb2e33a5eb71801689e7c468607be07a636990bd2ed8a31f9ecf0a47519",
+  "estimator": "Hann-windowed FFT, same frequency tolerance plus 80% band energy concentration",
+  "rows": [
+    {
+      "at": "2026-10-21T03:51:45.545Z",
+      "client": "a",
+      "expectedHz": 660,
+      "frames": 45,
+      "frequencyHz": 662.109375,
+      "zeroCrossingHz": 688.8888888888889,
+      "rms": 6920.435446081383,
+      "bandPower440": 0.0004173693817330615,
+      "bandPower660": 0.9857198263355577,
+      "oldOraclePass": false,
+      "newOraclePass": true
+    },
+    {
+      "at": "2026-10-21T03:51:45.545Z",
+      "client": "b",
+      "expectedHz": 440,
+      "frames": 45,
+      "frequencyHz": 437.98828125,
+      "zeroCrossingHz": 483.3333333333333,
+      "rms": 6834.640614108966,
+      "bandPower440": 0.9825026405430505,
+      "bandPower660": 0.00044894114926991453,
+      "oldOraclePass": false,
+      "newOraclePass": true
+    },
+    {
+      "at": "2026-10-21T03:51:48.775Z",
+      "client": "a",
+      "expectedHz": 660,
+      "frames": 45,
+      "frequencyHz": 662.109375,
+      "zeroCrossingHz": 676.6666666666666,
+      "rms": 6985.0269727998,
+      "bandPower440": 0.000680085175321591,
+      "bandPower660": 0.9820733964663606,
+      "oldOraclePass": true,
+      "newOraclePass": true
+    },
+    {
+      "at": "2026-10-21T03:51:48.775Z",
+      "client": "b",
+      "expectedHz": 440,
+      "frames": 45,
+      "frequencyHz": 437.98828125,
+      "zeroCrossingHz": 434.44444444444446,
+      "rms": 6895.222636939504,
+      "bandPower440": 0.9847130622706387,
+      "bandPower660": 0.00023832536415736646,
+      "oldOraclePass": true,
+      "newOraclePass": true
+    },
+    {
+      "at": "2026-10-21T03:51:52.793Z",
+      "client": "a",
+      "expectedHz": 660,
+      "frames": 46,
+      "frequencyHz": 665.0390625,
+      "zeroCrossingHz": 786.9565217391304,
+      "rms": 6630.302542564175,
+      "bandPower440": 0.0011805275212828665,
+      "bandPower660": 0.9562814109204006,
+      "oldOraclePass": false,
+      "newOraclePass": true
+    },
+    {
+      "at": "2026-10-21T03:51:52.793Z",
+      "client": "b",
+      "expectedHz": 440,
+      "frames": 45,
+      "frequencyHz": 436.5234375,
+      "zeroCrossingHz": 496.6666666666667,
+      "rms": 6739.936981993971,
+      "bandPower440": 0.9650911325218652,
+      "bandPower660": 0.0010999405813680412,
+      "oldOraclePass": false,
+      "newOraclePass": true
+    }
+  ]
+}

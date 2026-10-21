@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-21T03:50:29.880885+00:00",
+  "files": {
+    "apps/web/src/components/voice/live-room-desktop.module.css": "b7da25d79f4a933a6b4ce006e5faaff79e6a2528b6f62cf858d14a26dc6a4e82",
+    "apps/web/src/components/voice/live-room-mobile.module.css": "c8623ecc5e2a030bca7d905f5f18131d2c2afa7c315e266dcb5d73f81ea309f3",
+    "apps/web/src/components/voice/live-room.module.css": "2d1163ede203699508f6f654a54b875c683dc0358ad59dbf96e1ebbefa9300a6",
+    "apps/web/src/components/voice/member-name.module.css": "90d218054949fcccdfd45be81eb0b94e1ab09cd772fd9baeb95aebee71e86f7f",
+    "apps/web/src/components/voice/voice-room-audience.tsx": "ba67226079a645d6dea9f9aefae782048ad70564da80b623dd597d92b9336676",
+    "apps/web/e2e/live-room-responsive.spec.ts": "be9322aef901ab7afdf20e3b24390ec461d164b10b1b3265de427864b0d57ac7",
+    "apps/web/src/components/voice/voice-client.ts": "e5147e6836e7380538394af7e5d44f9632d06388ed683c175e127edade334f92",
+    "apps/web/src/components/voice/voice-session-provider.test.tsx": "87dc05c017e1e025da3792c22400858d0759c1d42d20e25547eaa03e156ade0b",
+    "tests/voice-acceptance/webrtc-client.mjs": "b17845f13c2140d737be9f5fc59857af5cc3ca3528c211c41fb0bfca5b428605",
+    "tests/voice-acceptance/webrtc-orchestrator.mjs": "41f032c763d82d92f5c2181e1c96567b691a1f8db198cb1626b82de9df16f1b6",
+    "tests/voice-acceptance/webrtc-local-setup.mjs": "15d0abbca2a5297458287b6ab63594533ae27f891b437810dcb5dcb407b87f20",
+    "pnpm-lock.yaml": "0fe735e7cfe466858124bc1fd157f9c4a8a743bb5fc78d6b0be283302664c9cb"
+  }
+}

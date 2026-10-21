@@ -1,0 +1,964 @@
+{
+  "numTotalTestSuites": 18,
+  "numPassedTestSuites": 18,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 71,
+  "numPassedTests": 71,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1792554832237,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "abandoned village PostgreSQL transactions"
+          ],
+          "fullName": "abandoned village PostgreSQL transactions charges one army once for concurrent identical commands and persists the original layout",
+          "status": "passed",
+          "title": "charges one army once for concurrent identical commands and persists the original layout",
+          "duration": 506.1016000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "abandoned village PostgreSQL transactions"
+          ],
+          "fullName": "abandoned village PostgreSQL transactions serializes two actors and two workers against one finite inventory without duplicate collection",
+          "status": "passed",
+          "title": "serializes two actors and two workers against one finite inventory without duplicate collection",
+          "duration": 156.00696999999946,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "abandoned village PostgreSQL transactions"
+          ],
+          "fullName": "abandoned village PostgreSQL transactions atomically initializes the approved real world once, preserves player data, rejects stale plans, and uses the real repository command",
+          "status": "passed",
+          "title": "atomically initializes the approved real world once, preserves player data, rejects stale plans, and uses the real repository command",
+          "duration": 447.54266499999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "abandoned village PostgreSQL transactions"
+          ],
+          "fullName": "abandoned village PostgreSQL transactions rejects unprovisioned worlds, mismatched registries, revoked sessions and foreign origins",
+          "status": "passed",
+          "title": "rejects unprovisioned worlds, mismatched registries, revoked sessions and foreign origins",
+          "duration": 117.53376500000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554836248,
+      "endTime": 1792554837475.5337,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Commander additive state migration"
+          ],
+          "fullName": "Commander additive state migration backfills only missing commanders and preserves existing players, armies, villages and timers",
+          "status": "passed",
+          "title": "backfills only missing commanders and preserves existing players, armies, villages and timers",
+          "duration": 73.44359800000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554839369,
+      "endTime": 1792554839442.4436,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/kingdoms/commander-migration.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Palace garden isolated PostgreSQL persistence"
+          ],
+          "fullName": "Palace garden isolated PostgreSQL persistence preserves depleted abandoned stock and a pending expedition when saving a garden colour",
+          "status": "passed",
+          "title": "preserves depleted abandoned stock and a pending expedition when saving a garden colour",
+          "duration": 247.74237100000005,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Palace garden isolated PostgreSQL persistence"
+          ],
+          "fullName": "Palace garden isolated PostgreSQL persistence serializes Alice and Bob saves without losing either garden or gameplay",
+          "status": "passed",
+          "title": "serializes Alice and Bob saves without losing either garden or gameplay",
+          "duration": 86.84619999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554841161,
+      "endTime": 1792554841495.8462,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/kingdoms/palace-garden.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive backfills retained reports once, excludes other recipients and rejects IDOR",
+          "status": "passed",
+          "title": "backfills retained reports once, excludes other recipients and rejects IDOR",
+          "duration": 176.72897300000022,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive keeps read receipt idempotent and recipient-owned across concurrent tabs and reconnect",
+          "status": "passed",
+          "title": "keeps read receipt idempotent and recipient-owned across concurrent tabs and reconnect",
+          "duration": 93.22550000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive archives >2000 events, handles repeated saves, stable pagination, search and category indexes at 5000 records",
+          "status": "passed",
+          "title": "archives >2000 events, handles repeated saves, stable pagination, search and category indexes at 5000 records",
+          "duration": 4582.699737,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive archives command effects in the same transaction and a replay creates no reports",
+          "status": "passed",
+          "title": "archives command effects in the same transaction and a replay creates no reports",
+          "duration": 107.67752199999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive archives actual aggregated production with the command and does not duplicate on retry",
+          "status": "passed",
+          "title": "archives actual aggregated production with the command and does not duplicate on retry",
+          "duration": 65.338573,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive never records Tick noise, strips recipient lists and private enemy commanders",
+          "status": "passed",
+          "title": "never records Tick noise, strips recipient lists and private enemy commanders",
+          "duration": 6.79097400000046,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Royal Reports durable PostgreSQL archive"
+          ],
+          "fullName": "Royal Reports durable PostgreSQL archive revalidates revoked session on the server",
+          "status": "passed",
+          "title": "revalidates revoked session on the server",
+          "duration": 12.06897300000037,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554844093,
+      "endTime": 1792554849138.069,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/kingdoms/reports-repository.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization preserves a full-storage quest claim and archives one receipt after concurrent retries",
+          "status": "passed",
+          "title": "preserves a full-storage quest claim and archives one receipt after concurrent retries",
+          "duration": 460.75249399999984,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization farm: serializes distinct simultaneous planting keys on the same plot",
+          "status": "passed",
+          "title": "farm: serializes distinct simultaneous planting keys on the same plot",
+          "duration": 95.80842399999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization farm: concurrent harvest retries credit once and a receipt survives replanting",
+          "status": "passed",
+          "title": "farm: concurrent harvest retries credit once and a receipt survives replanting",
+          "duration": 92.15987899999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization farm: policy 1 distinct concurrent harvest keys credit one frozen contract",
+          "status": "passed",
+          "title": "farm: policy 1 distinct concurrent harvest keys credit one frozen contract",
+          "duration": 74.88813500000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization farm: policy 2 distinct concurrent harvest keys credit one frozen contract",
+          "status": "passed",
+          "title": "farm: policy 2 distinct concurrent harvest keys credit one frozen contract",
+          "duration": 65.00424399999974,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization charges once and creates one commander for concurrent identical recruitment requests",
+          "status": "passed",
+          "title": "charges once and creates one commander for concurrent identical recruitment requests",
+          "duration": 52.534474000000046,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization reserves a commander for one army when two different march requests race",
+          "status": "passed",
+          "title": "reserves a commander for one army when two different march requests race",
+          "duration": 64.50780900000018,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects another player assigning a commander and does not leak the commander in their view",
+          "status": "passed",
+          "title": "rejects another player assigning a commander and does not leak the commander in their view",
+          "duration": 67.64882899999975,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization credits one alliance event reward under simultaneous identical request keys",
+          "status": "passed",
+          "title": "credits one alliance event reward under simultaneous identical request keys",
+          "duration": 72.88539599999967,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization credits one alliance event reward under simultaneous different request keys",
+          "status": "passed",
+          "title": "credits one alliance event reward under simultaneous different request keys",
+          "duration": 48.46837199999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization reserves one gathering army under simultaneous identical request keys",
+          "status": "passed",
+          "title": "reserves one gathering army under simultaneous identical request keys",
+          "duration": 59.1959139999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization two simultaneous workers share one finite deposit without double collection",
+          "status": "passed",
+          "title": "two simultaneous workers share one finite deposit without double collection",
+          "duration": 50.13025599999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization derives established village progression consistently from legacy persisted JSON",
+          "status": "passed",
+          "title": "derives established village progression consistently from legacy persisted JSON",
+          "duration": 47.10084800000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization persists every overdue queue completion and XP once across repeated worker ticks",
+          "status": "passed",
+          "title": "persists every overdue queue completion and XP once across repeated worker ticks",
+          "duration": 44.610571000000164,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects client-supplied villageLevel before any persistent resource mutation",
+          "status": "passed",
+          "title": "rejects client-supplied villageLevel before any persistent resource mutation",
+          "duration": 12.205937000000176,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects client-supplied villagePower before any persistent resource mutation",
+          "status": "passed",
+          "title": "rejects client-supplied villagePower before any persistent resource mutation",
+          "duration": 16.291557999999895,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects client-supplied xp before any persistent resource mutation",
+          "status": "passed",
+          "title": "rejects client-supplied xp before any persistent resource mutation",
+          "duration": 15.368205000000216,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects client-supplied resources before any persistent resource mutation",
+          "status": "passed",
+          "title": "rejects client-supplied resources before any persistent resource mutation",
+          "duration": 24.50384299999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects client-supplied battleResult before any persistent resource mutation",
+          "status": "passed",
+          "title": "rejects client-supplied battleResult before any persistent resource mutation",
+          "duration": 27.132657999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization enqueues a retried second construction once and debits its reserved cost once",
+          "status": "passed",
+          "title": "enqueues a retried second construction once and debits its reserved cost once",
+          "duration": 74.13219100000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization serializes competing construction costs without spending the same balance twice",
+          "status": "passed",
+          "title": "serializes competing construction costs without spending the same balance twice",
+          "duration": 53.91695299999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization authorizes queue cancellation and refunds once under concurrent retries",
+          "status": "passed",
+          "title": "authorizes queue cancellation and refunds once under concurrent retries",
+          "duration": 121.9052459999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization applies simultaneous identical idempotency keys exactly once",
+          "status": "passed",
+          "title": "applies simultaneous identical idempotency keys exactly once",
+          "duration": 41.33797700000014,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects replay key reuse with a different payload",
+          "status": "passed",
+          "title": "rejects replay key reuse with a different payload",
+          "duration": 35.48598200000015,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization serializes different keys spending the same resource balance",
+          "status": "passed",
+          "title": "serializes different keys spending the same resource balance",
+          "duration": 46.22497800000019,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization allows only one of two players to accept the same escrow offer",
+          "status": "passed",
+          "title": "allows only one of two players to accept the same escrow offer",
+          "duration": 98.73678900000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects revoked identities before replay and rejects ordinary-player admin access",
+          "status": "passed",
+          "title": "rejects revoked identities before replay and rejects ordinary-player admin access",
+          "duration": 37.49070699999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization two simultaneous workers complete one due training event exactly once",
+          "status": "passed",
+          "title": "two simultaneous workers complete one due training event exactly once",
+          "duration": 35.650399999999536,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rolls back the entire transaction and receipt when a command is invalid",
+          "status": "passed",
+          "title": "rolls back the entire transaction and receipt when a command is invalid",
+          "duration": 18.2690819999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization idempotently creates a world and records one admin audit event",
+          "status": "passed",
+          "title": "idempotently creates a world and records one admin audit event",
+          "duration": 43.945716000000175,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization audits configuration changes once and prevents a replay from mutating again",
+          "status": "passed",
+          "title": "audits configuration changes once and prevents a replay from mutating again",
+          "duration": 66.82034399999975,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization serializes administrator relocation and audits the actual administrator once",
+          "status": "passed",
+          "title": "serializes administrator relocation and audits the actual administrator once",
+          "duration": 50.29635899999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization passes locked pause state to administrator relocation and leaves the village untouched",
+          "status": "passed",
+          "title": "passes locked pause state to administrator relocation and leaves the village untouched",
+          "duration": 34.41483900000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Kingdoms PostgreSQL serialization"
+          ],
+          "fullName": "Kingdoms PostgreSQL serialization rejects a session revoked while its command waits for the world lock",
+          "status": "passed",
+          "title": "rejects a session revoked while its command waits for the world lock",
+          "duration": 28.734043000000383,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554851362,
+      "endTime": 1792554853541.7341,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/kingdoms/repository.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Village onboarding account persistence"
+          ],
+          "fullName": "Village onboarding account persistence persists completion on the account and preserves the first server timestamp",
+          "status": "passed",
+          "title": "persists completion on the account and preserves the first server timestamp",
+          "duration": 167.12386100000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Village onboarding account persistence"
+          ],
+          "fullName": "Village onboarding account persistence gives simultaneous completions the same timestamp",
+          "status": "passed",
+          "title": "gives simultaneous completions the same timestamp",
+          "duration": 24.110721000000012,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Village onboarding account persistence"
+          ],
+          "fullName": "Village onboarding account persistence rejects revoked and suspended sessions at persistence time",
+          "status": "passed",
+          "title": "rejects revoked and suspended sessions at persistence time",
+          "duration": 26.340402999999696,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554855685,
+      "endTime": 1792554855902.3403,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/kingdoms/village-onboarding.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots rejects synthetic campaign geography from production browsing and discovery",
+          "status": "passed",
+          "title": "rejects synthetic campaign geography from production browsing and discovery",
+          "duration": 336.2626089999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots executes real bounded JSONB queries and removes hole/hidden enemies before projection",
+          "status": "passed",
+          "title": "executes real bounded JSONB queries and removes hole/hidden enemies before projection",
+          "duration": 129.00176899999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots refuses nonmembers and revoked tokens and lists only authorized geographic campaigns",
+          "status": "passed",
+          "title": "refuses nonmembers and revoked tokens and lists only authorized geographic campaigns",
+          "duration": 113.74653400000034,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots holds revision, grants and ownership constant while another transaction updates the world",
+          "status": "passed",
+          "title": "holds revision, grants and ownership constant while another transaction updates the world",
+          "duration": 111.7436230000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots applies the database result limit and recognizes both dateline coordinates",
+          "status": "passed",
+          "title": "applies the database result limit and recognizes both dateline coordinates",
+          "duration": 72.14210699999967,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots accepts full-precision browser bounds and echoes their unchanged WGS84 values",
+          "status": "passed",
+          "title": "accepts full-precision browser bounds and echoes their unchanged WGS84 values",
+          "duration": 54.742947000000186,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots provisions public actual villages once while keeping private enemy intelligence hidden",
+          "status": "passed",
+          "title": "provisions public actual villages once while keeping private enemy intelligence hidden",
+          "duration": 660.0848639999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots allocates newly founded actual villages inside the existing authoritative game transaction",
+          "status": "passed",
+          "title": "allocates newly founded actual villages inside the existing authoritative game transaction",
+          "duration": 109.27348699999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots projects live own forces and due buildings in the same relocated atlas snapshot",
+          "status": "passed",
+          "title": "projects live own forces and due buildings in the same relocated atlas snapshot",
+          "duration": 104.0419539999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots never provisions legacy worlds for outsiders or revoked sessions",
+          "status": "passed",
+          "title": "never provisions legacy worlds for outsiders or revoked sessions",
+          "duration": 28.303006000000096,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots lazily provisions direct concurrent legacy location and overview reads once",
+          "status": "passed",
+          "title": "lazily provisions direct concurrent legacy location and overview reads once",
+          "duration": 70.38747199999989,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots aggregates only real public villages in bounded world cells and rejects outsiders",
+          "status": "passed",
+          "title": "aggregates only real public villages in bounded world cells and rejects outsiders",
+          "duration": 177.68784200000027,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Mamluk geography PostgreSQL snapshots"
+          ],
+          "fullName": "Mamluk geography PostgreSQL snapshots aggregates ten thousand actual villages without truncating counts or leaking private state",
+          "status": "passed",
+          "title": "aggregates ten thousand actual villages without truncating counts or leaking private state",
+          "duration": 3313.886971,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554858285,
+      "endTime": 1792554863566.887,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/mamluk-map/repository.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "atomic village relocation PostgreSQL integration"
+          ],
+          "fullName": "atomic village relocation PostgreSQL integration commits once, supports exact retries and replaces old viewport geometry atomically",
+          "status": "passed",
+          "title": "commits once, supports exact retries and replaces old viewport geometry atomically",
+          "duration": 291.8971099999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "atomic village relocation PostgreSQL integration"
+          ],
+          "fullName": "atomic village relocation PostgreSQL integration serializes competing submissions so exactly one location is committed",
+          "status": "passed",
+          "title": "serializes competing submissions so exactly one location is committed",
+          "duration": 56.11445500000036,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "atomic village relocation PostgreSQL integration"
+          ],
+          "fullName": "atomic village relocation PostgreSQL integration fails closed for another owner, another world and a revoked session",
+          "status": "passed",
+          "title": "fails closed for another owner, another world and a revoked session",
+          "duration": 44.829863999999816,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "atomic village relocation PostgreSQL integration"
+          ],
+          "fullName": "atomic village relocation PostgreSQL integration allows a renderable high-latitude location without breaking bounded vision",
+          "status": "passed",
+          "title": "allows a renderable high-latitude location without breaking bounded vision",
+          "duration": 85.82896699999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "atomic village relocation PostgreSQL integration"
+          ],
+          "fullName": "atomic village relocation PostgreSQL integration preserves the once-use flag through ordinary game commands without exposing internal metadata",
+          "status": "passed",
+          "title": "preserves the once-use flag through ordinary game commands without exposing internal metadata",
+          "duration": 114.59844000000021,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554865802,
+      "endTime": 1792554866395.5984,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "OpenClaw disposable PostgreSQL transaction boundary"
+          ],
+          "fullName": "OpenClaw disposable PostgreSQL transaction boundary permits exactly one of two simultaneous owner approvals",
+          "status": "passed",
+          "title": "permits exactly one of two simultaneous owner approvals",
+          "duration": 207.25146300000006,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "OpenClaw disposable PostgreSQL transaction boundary"
+          ],
+          "fullName": "OpenClaw disposable PostgreSQL transaction boundary rolls back the pending claim when a reviewed question has changed",
+          "status": "passed",
+          "title": "rolls back the pending claim when a reviewed question has changed",
+          "duration": 46.969141000000036,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1792554868015,
+      "endTime": 1792554868268.9692,
+      "status": "passed",
+      "message": "",
+      "name": "/workspace/qurabia.com/apps/web/src/lib/openclaw-admin/database.integration.test.ts"
+    }
+  ]
+}

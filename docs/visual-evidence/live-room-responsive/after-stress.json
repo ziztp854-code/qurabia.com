@@ -1,0 +1,156 @@
+{
+  "speakingGeometry": {
+    "before": {
+      "x": 74,
+      "y": 390.90625,
+      "width": 172,
+      "height": 120.6875
+    },
+    "speaking": {
+      "x": 74,
+      "y": 390.90625,
+      "width": 172,
+      "height": 120.6875
+    }
+  },
+  "records": [
+    {
+      "width": 320,
+      "height": 700,
+      "textOnlyZoom": {
+        "overflowX": false,
+        "textarea": {
+          "clientHeight": 74,
+          "lineHeight": 54.4,
+          "padding": 20
+        },
+        "dock": [
+          {
+            "top": 401,
+            "bottom": 522,
+            "left": 209,
+            "right": 301
+          },
+          {
+            "top": 401,
+            "bottom": 522,
+            "left": 114,
+            "right": 206
+          },
+          {
+            "top": 401,
+            "bottom": 522,
+            "left": 19,
+            "right": 111
+          },
+          {
+            "top": 525,
+            "bottom": 679,
+            "left": 209,
+            "right": 301
+          },
+          {
+            "top": 525,
+            "bottom": 679,
+            "left": 114,
+            "right": 206
+          },
+          {
+            "top": 525,
+            "bottom": 679,
+            "left": 19,
+            "right": 111
+          }
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "textOnlyZoom": {
+        "overflowX": false,
+        "textarea": {
+          "clientHeight": 74,
+          "lineHeight": 54.4,
+          "padding": 20
+        },
+        "dock": [
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 436,
+            "right": 524
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 532,
+            "right": 620
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 628,
+            "right": 716
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 724,
+            "right": 812
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 820,
+            "right": 908
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 916,
+            "right": 1004
+          }
+        ]
+      }
+    }
+  ],
+  "computedColors": {
+    ".v-chat": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgba(11, 10, 16, 0.76)",
+      "backgroundImage": "none",
+      "outline": "rgb(255, 255, 255) none 3px",
+      "borderColor": "rgba(255, 255, 255, 0.12)"
+    },
+    ".v-message-body": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "color(srgb 0.129412 0.117647 0.168627 / 0.65)",
+      "backgroundImage": "none",
+      "outline": "rgb(255, 255, 255) none 3px",
+      "borderColor": "rgba(255, 255, 255, 0.12)"
+    },
+    ".v-message-body > p": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "backgroundImage": "none",
+      "outline": "rgb(255, 255, 255) none 3px",
+      "borderColor": "rgb(255, 255, 255)"
+    },
+    ".v-room-controls": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "color(srgb 0.0666667 0.0941176 0.152941 / 0.92)",
+      "backgroundImage": "linear-gradient(145deg, color(srgb 0.831373 0.686275 0.215686 / 0.08), rgba(0, 0, 0, 0) 48%), none",
+      "outline": "rgb(255, 255, 255) none 3px",
+      "borderColor": "rgba(212, 175, 55, 0.3) color(srgb 0.855026 0.730281 0.325703 / 0.442) color(srgb 0.855026 0.730281 0.325703 / 0.442)"
+    },
+    ".v-room-controls button": {
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "backgroundImage": "none",
+      "outline": "rgb(255, 255, 255) none 3px",
+      "borderColor": "rgb(255, 255, 255)"
+    }
+  },
+  "limitation": "Computed-font-size doubling emulates text-only zoom; no physical browser/OS text scaling certification."
+}

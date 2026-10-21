@@ -221,6 +221,7 @@
   display: contents;
 }
 .liveRoom :global(.v-stage-column) {
+  position: relative;
   grid-area: stage;
   display: flex;
   flex-direction: column;
@@ -284,6 +285,7 @@
 }
 .liveRoom :global(.v-stage .v-seat-person),
 .liveRoom :global(.v-stage .v-empty-seat) {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -454,7 +456,12 @@
   margin-block: 12px 0;
 }
 .speakerWave {
-  display: none;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: calc(var(--room-avatar-size) - 22px);
+  display: flex;
+  visibility: hidden;
+  pointer-events: none;
   align-items: center;
   justify-content: center;
   gap: 3px;
@@ -462,7 +469,7 @@
   color: var(--voice-gold);
 }
 .liveRoom :global(.is-speaking) .speakerWave {
-  display: flex;
+  visibility: visible;
 }
 .speakerWave i {
   inline-size: 3px;
@@ -471,6 +478,10 @@
   background: currentColor;
   transform: scaleY(0.35);
   animation: voiceWave 650ms ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.liveRoom :global(.is-speaking) .speakerWave i {
+  animation-play-state: running;
 }
 .speakerWave i:nth-child(3n + 2) {
   animation-delay: -180ms;
@@ -683,7 +694,7 @@
   min-block-size: 48px;
 }
 .liveRoom :global(.v-chat .v-chat-compose) {
-  position: static;
+  position: relative;
   display: grid;
   flex: none;
   gap: 8px;
@@ -697,9 +708,9 @@
 .liveRoom :global(.v-chat .v-chat-compose textarea) {
   min-inline-size: 0;
   inline-size: 100%;
-  block-size: 52px;
-  min-block-size: 52px;
-  min-height: 52px;
+  block-size: max(52px, calc(1lh + 22px));
+  min-block-size: max(52px, calc(1lh + 22px));
+  min-height: max(52px, calc(1lh + 22px));
   max-block-size: 120px;
   padding: 10px 12px;
   border: 1px solid var(--voice-line);
@@ -791,6 +802,8 @@
   flex-direction: column;
   gap: 5px;
   inline-size: auto;
+  max-width: none;
+  max-inline-size: none;
   min-width: 48px;
   min-height: 64px;
   min-inline-size: 48px;
@@ -807,6 +820,7 @@
   display: block;
   color: inherit;
   max-inline-size: 100%;
+  max-width: 100%;
   white-space: normal;
   font-size: 12px;
   line-height: 1.5;
@@ -879,9 +893,12 @@
   grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
 }
 .liveRoom .entranceRail :global(aside[aria-label='ترحيب بالأعضاء']) {
-  position: relative;
-  inset-block: auto;
-  inset-inline: auto;
+  position: absolute;
+  inset-block-start: 0;
+  inset-block-end: auto;
+  inset-inline: 0;
+  max-inline-size: 100%;
+  margin-inline: auto;
   transform: none;
 }
 @media (min-width: 480px) {
@@ -1167,12 +1184,15 @@
   display: grid;
   place-items: center;
   min-inline-size: 0;
-  position: relative;
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 2;
   isolation: isolate;
   flex: none;
-  block-size: 210px;
-  min-block-size: 210px;
-  padding-block: 10px;
+  block-size: 0;
+  min-block-size: 0;
+  padding: 0;
   box-sizing: border-box;
   pointer-events: none;
 }

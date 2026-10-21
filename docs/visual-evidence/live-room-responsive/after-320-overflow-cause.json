@@ -1,0 +1,26 @@
+{
+  "initial": {
+    "docHeight": 794,
+    "rootScroll": 794,
+    "labelBottom": 793.703125,
+    "composePosition": "static"
+  },
+  "contained": {
+    "docHeight": 700,
+    "rootScroll": 700,
+    "labelBottom": 793.703125,
+    "composePosition": "relative"
+  },
+  "restored": {
+    "docHeight": 794,
+    "rootScroll": 794,
+    "labelBottom": 793.703125,
+    "composePosition": "static"
+  },
+  "hiddenLabel": {
+    "docHeight": 700,
+    "rootScroll": 700,
+    "labelBottom": 0,
+    "composePosition": "static"
+  }
+}

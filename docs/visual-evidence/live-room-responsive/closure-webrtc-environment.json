@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-21T03:55:43.214Z",
+  "server": {
+    "image": "livekit/livekit-server@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a",
+    "imageId": "sha256:818b3f378abba97c23b7be81d7917e4ee69eb629a3388e8a6a892d5c3da1c0d3",
+    "version": "livekit-server version 1.13.10",
+    "binarySha256": "5153d7ce95fb2f2ffb455a0e4ac464be2c94a38c77c99fd728f9c61748a11381"
+  },
+  "transportConfigBeforeAndAfterOracleFixIdentical": true,
+  "configWithoutCredentials": "port: 17880\nbind_addresses: [127.0.0.1]\nrtc:\n  tcp_port: 0\n  udp_port: 17882\n  use_external_ip: false\n  node_ip: 127.0.0.1\n  enable_loopback_candidate: true\n  interfaces:\n    includes: [lo]\n  ips:\n    includes: [127.0.0.1/32]",
+  "ownedListeners": [
+    "udp UNCONN 0      0      127.0.0.1:17882 0.0.0.0:* users:((\"livekit-server\",pid=66727,fd=3))",
+    "tcp LISTEN 0      0      127.0.0.1:17880 0.0.0.0:* users:((\"livekit-server\",pid=66727,fd=6))"
+  ],
+  "scriptsSha256": {
+    "webrtc-client.mjs": "26a34b9f02988a74758f8e22fe0c161a7529d5b005370ecf28af606248dea8a5",
+    "webrtc-orchestrator.mjs": "04e21ab938973b8bf78c61fc08374d09a25d7cdfebaf8221622ab5e48b470b1d",
+    "webrtc-local-setup.mjs": "15d0abbca2a5297458287b6ab63594533ae27f891b437810dcb5dcb407b87f20",
+    "webrtc-audio-metric.mjs": "0a94f509c93e54760ede57b27d0862fcd124d18a80cbb2ee7e3d8d558b271051",
+    "webrtc-audio-metric.test.mjs": "d78bac6d00de74a4c5e301bfd761d828fcc6b21a155ce213f193c81a35fcb64c"
+  }
+}

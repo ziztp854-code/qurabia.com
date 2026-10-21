@@ -1,0 +1,578 @@
+{
+  "scope": "Real NextAuth credentials, production room HTTP handlers and real isolated PostgreSQL. Media deliberately unconfigured; no SFU, capture, audible speech or physical devices are measured by this script.",
+  "physicalDevicesTested": false,
+  "mediaTested": false,
+  "clientDeadlineMs": 45000,
+  "workload": {
+    "actors": 4,
+    "host": 1,
+    "cycles": 5,
+    "parallelRequestsPerWave": 4,
+    "phases": [
+      "join",
+      "fresh-http-context-recovery",
+      "idempotent-rejoin",
+      "leave"
+    ]
+  },
+  "checks": {
+    "real_credentials_sessions": true,
+    "no_duplicate_members": true,
+    "each_leave_returns_membership_to_host": true,
+    "database_matches_api": true,
+    "exact_owned_cleanup": true
+  },
+  "samples": [
+    {
+      "phase": "join",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 246.3651179999997
+    },
+    {
+      "phase": "join",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 308.03773999999976
+    },
+    {
+      "phase": "join",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 371.7911270000004
+    },
+    {
+      "phase": "join",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 401.3187349999989
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 185.19791599999917
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 194.32582700000057
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 197.8273709999994
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 205.04241100000036
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 193.0613940000003
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 244.24630099999922
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 278.0716819999998
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 301.3069429999996
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 201.1542440000012
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 254.96977400000105
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 294.11348700000053
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 326.49484400000074
+    },
+    {
+      "phase": "join",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 212.7779359999986
+    },
+    {
+      "phase": "join",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 327.1619520000004
+    },
+    {
+      "phase": "join",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 391.1450820000009
+    },
+    {
+      "phase": "join",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 415.7551930000009
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 210.13973299999998
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 219.0503009999993
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 228.1803719999989
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 232.77204700000038
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 188.20913699999983
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 229.17347100000006
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 246.30819300000076
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 264.5197559999997
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 196.9865950000003
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 249.82786599999963
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 276.7263439999988
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 329.98582799999895
+    },
+    {
+      "phase": "join",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 213.36211100000037
+    },
+    {
+      "phase": "join",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 242.78375099999903
+    },
+    {
+      "phase": "join",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 276.6297790000008
+    },
+    {
+      "phase": "join",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 304.0517290000007
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 132.96589099999983
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 147.7677480000002
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 147.95958299999984
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 150.25856999999996
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 128.1244200000001
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 167.8824540000005
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 195.86684900000182
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 218.15438399999948
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 134.0100560000028
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 180.10453500000222
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 256.49884499999825
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 279.02356399999917
+    },
+    {
+      "phase": "join",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 369.0602480000016
+    },
+    {
+      "phase": "join",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 420.53200899999865
+    },
+    {
+      "phase": "join",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 472.00417899999957
+    },
+    {
+      "phase": "join",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 496.9794030000012
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 116.60637399999905
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 121.28561799999807
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 125.34355100000175
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 128.7146649999995
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 159.24994199999855
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 240.29843000000255
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 283.15298600000096
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 305.9607950000027
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 156.26084600000104
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 198.94536700000026
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 224.65349699999933
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 246.6075830000009
+    },
+    {
+      "phase": "join",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 215.69551000000138
+    },
+    {
+      "phase": "join",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 293.5599750000001
+    },
+    {
+      "phase": "join",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 420.77031999999963
+    },
+    {
+      "phase": "join",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 456.18711299999995
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 400.1598180000001
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 408.83858899999905
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 413.26696399999855
+    },
+    {
+      "phase": "session-recovery",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 416.83650599999964
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 317.74854499999856
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 343.02237199999945
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 406.5128960000002
+    },
+    {
+      "phase": "rejoin",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 450.53453199999785
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-0",
+      "ok": true,
+      "durationMs": 300.3074000000015
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-3",
+      "ok": true,
+      "durationMs": 388.73766700000124
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-1",
+      "ok": true,
+      "durationMs": 434.01995700000043
+    },
+    {
+      "phase": "leave",
+      "actor": "actor-2",
+      "ok": true,
+      "durationMs": 472.5897269999987
+    }
+  ],
+  "errors": [],
+  "checkpoints": [
+    {
+      "cycle": 1,
+      "participantCount": 1,
+      "expectedParticipantCount": 1,
+      "persistedParticipantCount": 1,
+      "noDuplicates": true
+    },
+    {
+      "cycle": 2,
+      "participantCount": 1,
+      "expectedParticipantCount": 1,
+      "persistedParticipantCount": 1,
+      "noDuplicates": true
+    },
+    {
+      "cycle": 3,
+      "participantCount": 1,
+      "expectedParticipantCount": 1,
+      "persistedParticipantCount": 1,
+      "noDuplicates": true
+    },
+    {
+      "cycle": 4,
+      "participantCount": 1,
+      "expectedParticipantCount": 1,
+      "persistedParticipantCount": 1,
+      "noDuplicates": true
+    },
+    {
+      "cycle": 5,
+      "participantCount": 1,
+      "expectedParticipantCount": 1,
+      "persistedParticipantCount": 1,
+      "noDuplicates": true
+    }
+  ],
+  "durationMs": 7544.256266,
+  "passed": true,
+  "cleanupErrors": [],
+  "summary": {
+    "join": {
+      "requests": 20,
+      "errors": 0,
+      "p50Ms": 327.1619520000004,
+      "p95Ms": 472.00417899999957,
+      "maxMs": 496.9794030000012
+    },
+    "session-recovery": {
+      "requests": 20,
+      "errors": 0,
+      "p50Ms": 194.32582700000057,
+      "p95Ms": 413.26696399999855,
+      "maxMs": 416.83650599999964
+    },
+    "rejoin": {
+      "requests": 20,
+      "errors": 0,
+      "p50Ms": 244.24630099999922,
+      "p95Ms": 406.5128960000002,
+      "maxMs": 450.53453199999785
+    },
+    "leave": {
+      "requests": 20,
+      "errors": 0,
+      "p50Ms": 254.96977400000105,
+      "p95Ms": 434.01995700000043,
+      "maxMs": 472.5897269999987
+    }
+  }
+}

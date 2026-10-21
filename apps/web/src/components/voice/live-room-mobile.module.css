@@ -1,0 +1,92 @@
+/* Mobile overrides stay on the room surface; audio and room state are unchanged. */
+@media (max-width: 1020px) {
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-column) {
+    inset-block: auto;
+    inset-block-start: var(--room-viewport-top, 0px);
+    block-size: var(--room-viewport-height, 100dvh);
+    box-sizing: border-box;
+    min-block-size: 0;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat) {
+    /* Keep every composer action reachable even in a very short visual viewport. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 12px;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-pinned),
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-reply-preview) {
+    max-block-size: min(64px, calc(var(--room-viewport-height, 100dvh) / 6));
+  }
+}
+
+@media (max-width: 760px) {
+  .mobileRoom[data-room-visible='true'] {
+    padding-block-start: env(safe-area-inset-top, 0px);
+    padding-inline: max(12px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
+    /* Give focus/scrollIntoView the actual visible area above the fixed deck. */
+    max-block-size: max(
+      0px,
+      calc(
+        var(--room-viewport-height, 100dvh) - var(--room-controls-space, 100px) -
+          env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+      )
+    );
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-padding-block: 12px;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-main > *),
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns > *),
+  .mobileRoom[data-room-visible='true'] :global(.v-stage-column > *),
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
+    flex-shrink: 0;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-stage-column) {
+    /* Keep arrival overlays anchored to the seats rather than the room header. */
+    display: flex;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-compose textarea),
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-compose button) {
+    scroll-margin-block: 12px;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
+    /* Six actions fit at 320px; enlarged text makes the actions wrap into rows. */
+    grid-template-columns: repeat(auto-fit, minmax(max(44px, 3em), 1fr));
+    gap: 3px;
+    padding: 8px 6px;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control) {
+    min-width: 44px;
+    min-inline-size: 44px;
+  }
+}
+
+@media (max-width: 1020px) and (max-height: 500px) {
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat > header) {
+    min-block-size: 48px;
+    padding-block: 6px;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-compose) {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-compose textarea) {
+    block-size: max(44px, calc(1lh + 14px));
+    min-block-size: max(44px, calc(1lh + 14px));
+    min-height: max(44px, calc(1lh + 14px));
+    max-block-size: 80px;
+    padding-block: 6px;
+  }
+}

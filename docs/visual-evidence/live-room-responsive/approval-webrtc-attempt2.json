@@ -1,0 +1,138 @@
+{
+  "scope": "Two independent native Node processes, real local SFU/WebRTC media transport, generated440/660Hz PCM; no physical microphones or devices, no application/NextAuth/database admission.",
+  "physicalDevicesTested": false,
+  "appAdmissionTested": false,
+  "server": {
+    "image": "livekit/livekit-server@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a",
+    "imageId": "sha256:818b3f378abba97c23b7be81d7917e4ee69eb629a3388e8a6a892d5c3da1c0d3",
+    "version": "livekit-server version 1.13.10",
+    "binarySha256": "5153d7ce95fb2f2ffb455a0e4ac464be2c94a38c77c99fd728f9c61748a11381"
+  },
+  "roomName": "voice-approval-12091180-23b4-4bd8-b2f9-dd0483de1783",
+  "startedAt": "2026-10-21T03:41:44.068Z",
+  "checks": {},
+  "observations": {
+    "processes": [
+      {
+        "ready": true,
+        "pid": 56029,
+        "baseline": {
+          "pid": 56029,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 29,
+          "baselineFds": 29,
+          "failures": []
+        }
+      },
+      {
+        "ready": true,
+        "pid": 56040,
+        "baseline": {
+          "pid": 56040,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 29,
+          "baselineFds": 29,
+          "failures": []
+        }
+      }
+    ],
+    "joins": [
+      {
+        "connectedAt": 1792554104579,
+        "connectPublishMs": 184.873249,
+        "diagnostic": {
+          "pid": 56029,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 0,
+          "localPublications": 1,
+          "remotePublications": 0,
+          "roomListeners": 5,
+          "ffiListeners": 2,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": false,
+          "sourceQueueMs": 9,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 107,
+          "baselineFds": 29,
+          "failures": []
+        }
+      },
+      {
+        "connectedAt": 1792554104558,
+        "connectPublishMs": 163.49443200000002,
+        "diagnostic": {
+          "pid": 56040,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 1,
+          "localPublications": 1,
+          "remotePublications": 0,
+          "roomListeners": 5,
+          "ffiListeners": 2,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": false,
+          "sourceQueueMs": 9,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 106,
+          "baselineFds": 29,
+          "failures": []
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "roomDeleted": true
+  },
+  "passed": false,
+  "error": "Bounded native test did not observe 660Hz PCM decoded by A",
+  "finishedAt": "2026-10-21T03:41:58.348Z"
+}

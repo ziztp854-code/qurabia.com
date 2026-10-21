@@ -1,0 +1,852 @@
+{
+  "scope": "Two independent native Node processes, real local SFU/WebRTC media transport, generated440/660Hz PCM; no physical microphones or devices, no application/NextAuth/database admission.",
+  "physicalDevicesTested": false,
+  "appAdmissionTested": false,
+  "server": {
+    "image": "livekit/livekit-server@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a",
+    "imageId": "sha256:818b3f378abba97c23b7be81d7917e4ee69eb629a3388e8a6a892d5c3da1c0d3",
+    "version": "livekit-server version 1.13.10",
+    "binarySha256": "5153d7ce95fb2f2ffb455a0e4ac464be2c94a38c77c99fd728f9c61748a11381"
+  },
+  "roomName": "voice-approval-4dfe75fa-356d-4297-af57-50d789a732d2",
+  "startedAt": "2026-10-21T03:40:23.102Z",
+  "checks": {
+    "independentProcesses": true,
+    "bidirectionalDecodedPcm": true,
+    "generatedCapturePauseStopsRemoteEnergy": true,
+    "generatedCaptureResume": true,
+    "actualSignalingWebSocketRecovery": true,
+    "localGeneratedCaptureStoppedBeforeDisconnect": true,
+    "remoteAudioQuietAfterLeaveDrain": true,
+    "observedNativeResourcesReleasedAfterLeave": true,
+    "explicitLeaveRejoin": true,
+    "threeChurnCyclesReturnToNativeBaseline": true,
+    "naturalChildProcessExit": true
+  },
+  "observations": {
+    "processes": [
+      {
+        "ready": true,
+        "pid": 54777,
+        "baseline": {
+          "pid": 54777,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 29,
+          "baselineFds": 29,
+          "failures": []
+        }
+      },
+      {
+        "ready": true,
+        "pid": 54788,
+        "baseline": {
+          "pid": 54788,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 29,
+          "baselineFds": 29,
+          "failures": []
+        }
+      }
+    ],
+    "joins": [
+      {
+        "connectedAt": 1792554023741,
+        "connectPublishMs": 222.20144899999997,
+        "diagnostic": {
+          "pid": 54777,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 0,
+          "localPublications": 1,
+          "remotePublications": 0,
+          "roomListeners": 5,
+          "ffiListeners": 2,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": false,
+          "sourceQueueMs": 8,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 107,
+          "baselineFds": 29,
+          "failures": []
+        }
+      },
+      {
+        "connectedAt": 1792554023739,
+        "connectPublishMs": 217.073922,
+        "diagnostic": {
+          "pid": 54788,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 1,
+          "localPublications": 1,
+          "remotePublications": 0,
+          "roomListeners": 5,
+          "ffiListeners": 2,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 0,
+          "sourceClosed": false,
+          "sourceQueueMs": 9,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 53,
+          "baselineFds": 29,
+          "failures": []
+        }
+      }
+    ],
+    "bidirectional": {
+      "a": {
+        "audio": {
+          "since": 1792554024868,
+          "measuredAt": 1792554025319,
+          "frames": 45,
+          "sampleCount": 21600,
+          "rms": 6835.670803186548,
+          "frequencyHz": 672.2222222222222,
+          "lastFrameAt": 1792554025310,
+          "lastEnergeticFrameAt": 1792554025310
+        },
+        "diagnostic": {
+          "pid": 54777,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 1,
+          "localPublications": 1,
+          "remotePublications": 1,
+          "roomListeners": 7,
+          "ffiListeners": 2,
+          "streams": 1,
+          "consumerJobs": 1,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 144,
+          "sourceClosed": false,
+          "sourceQueueMs": 8,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 107,
+          "baselineFds": 29,
+          "failures": []
+        },
+        "events": []
+      },
+      "b": {
+        "audio": {
+          "since": 1792554024871,
+          "measuredAt": 1792554025325,
+          "frames": 45,
+          "sampleCount": 21600,
+          "rms": 6820.572439105337,
+          "frequencyHz": 445.55555555555554,
+          "lastFrameAt": 1792554025320,
+          "lastEnergeticFrameAt": 1792554025320
+        },
+        "diagnostic": {
+          "pid": 54788,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 1,
+          "localPublications": 1,
+          "remotePublications": 1,
+          "roomListeners": 7,
+          "ffiListeners": 2,
+          "streams": 1,
+          "consumerJobs": 1,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 150,
+          "sourceClosed": false,
+          "sourceQueueMs": 2,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 53,
+          "baselineFds": 29,
+          "failures": []
+        },
+        "events": []
+      }
+    },
+    "generatedCapturePause": {
+      "pause": {
+        "issuedAt": 1792554025375,
+        "pausedAt": 1792554025376,
+        "generatedFrames": 149
+      },
+      "drainGraceMs": 250,
+      "measurement": {
+        "audio": {
+          "since": 1792554025625,
+          "measuredAt": 1792554026131,
+          "frames": 50,
+          "sampleCount": 24000,
+          "rms": 0,
+          "frequencyHz": 0,
+          "lastFrameAt": 1792554026120,
+          "lastEnergeticFrameAt": 1792554025441
+        },
+        "diagnostic": {
+          "pid": 54788,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 1,
+          "localPublications": 1,
+          "remotePublications": 1,
+          "roomListeners": 7,
+          "ffiListeners": 2,
+          "streams": 1,
+          "consumerJobs": 1,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 223,
+          "sourceClosed": false,
+          "sourceQueueMs": 2,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 53,
+          "baselineFds": 29,
+          "failures": []
+        },
+        "events": []
+      }
+    },
+    "signalingRecovery": {
+      "drop": {
+        "droppedWebSockets": 1,
+        "droppedAt": 1792554026653
+      },
+      "recoveredAt": 1792554031771,
+      "recoveryMs": 5118,
+      "recoveredA": {
+        "audio": {
+          "since": 1792554028415,
+          "measuredAt": 1792554028869,
+          "frames": 44,
+          "sampleCount": 21120,
+          "rms": 6274.942190995184,
+          "frequencyHz": 638.6363636363636,
+          "lastFrameAt": 1792554028852,
+          "lastEnergeticFrameAt": 1792554028852
+        },
+        "diagnostic": {
+          "pid": 54777,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 1,
+          "localPublications": 1,
+          "remotePublications": 1,
+          "roomListeners": 7,
+          "ffiListeners": 2,
+          "streams": 1,
+          "consumerJobs": 1,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 390,
+          "sourceClosed": false,
+          "sourceQueueMs": 3,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 119,
+          "baselineFds": 29,
+          "failures": []
+        },
+        "events": [
+          {
+            "event": "reconnecting",
+            "at": 1792554026656
+          },
+          {
+            "event": "reconnected",
+            "at": 1792554027705
+          }
+        ]
+      }
+    },
+    "churnCycles": [
+      {
+        "cycle": 1,
+        "local": {
+          "issuedAt": 1792554031772,
+          "disconnectedAt": 1792554031900,
+          "sourceStop": {
+            "issuedAt": 1792554031772,
+            "stoppedAt": 1792554031772,
+            "localCaptureStopMs": 0.6085180000009132,
+            "generatedFrames": 527
+          },
+          "diagnostic": {
+            "pid": 54777,
+            "connected": false,
+            "connectionState": null,
+            "remoteParticipants": 0,
+            "localPublications": 0,
+            "remotePublications": 0,
+            "roomListeners": 0,
+            "ffiListeners": 0,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": false,
+            "paused": false,
+            "generatedFrames": 527,
+            "sourceClosed": true,
+            "sourceQueueMs": 0,
+            "sourceTimerActive": false,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 106,
+            "baselineFds": 29,
+            "lastSourceStop": {
+              "issuedAt": 1792554031772,
+              "stoppedAt": 1792554031772,
+              "localCaptureStopMs": 0.6085180000009132,
+              "generatedFrames": 527
+            },
+            "failures": []
+          }
+        },
+        "remoteAfterLeave": {
+          "audio": {
+            "since": 1792554032022,
+            "measuredAt": 1792554032514,
+            "frames": 0,
+            "sampleCount": 0,
+            "rms": 0,
+            "frequencyHz": 0,
+            "lastFrameAt": null,
+            "lastEnergeticFrameAt": 1792554031782
+          },
+          "diagnostic": {
+            "pid": 54788,
+            "connected": true,
+            "connectionState": 1,
+            "remoteParticipants": 0,
+            "localPublications": 1,
+            "remotePublications": 0,
+            "roomListeners": 6,
+            "ffiListeners": 1,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": true,
+            "paused": false,
+            "generatedFrames": 630,
+            "sourceClosed": false,
+            "sourceQueueMs": 4,
+            "sourceTimerActive": true,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 45,
+            "baselineFds": 29,
+            "failures": []
+          },
+          "events": []
+        },
+        "drainGraceMs": 250,
+        "rejoin": {
+          "connectedAt": 1792554032676,
+          "connectPublishMs": 153.49837599999955,
+          "diagnostic": {
+            "pid": 54777,
+            "connected": true,
+            "connectionState": 1,
+            "remoteParticipants": 1,
+            "localPublications": 1,
+            "remotePublications": 1,
+            "roomListeners": 5,
+            "ffiListeners": 2,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": true,
+            "paused": false,
+            "generatedFrames": 527,
+            "sourceClosed": false,
+            "sourceQueueMs": 10,
+            "sourceTimerActive": true,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 119,
+            "baselineFds": 29,
+            "lastSourceStop": {
+              "issuedAt": 1792554031772,
+              "stoppedAt": 1792554031772,
+              "localCaptureStopMs": 0.6085180000009132,
+              "generatedFrames": 527
+            },
+            "failures": []
+          }
+        }
+      },
+      {
+        "cycle": 2,
+        "local": {
+          "issuedAt": 1792554034028,
+          "disconnectedAt": 1792554034126,
+          "sourceStop": {
+            "issuedAt": 1792554034028,
+            "stoppedAt": 1792554034035,
+            "localCaptureStopMs": 6.578422000000501,
+            "generatedFrames": 655
+          },
+          "diagnostic": {
+            "pid": 54777,
+            "connected": false,
+            "connectionState": null,
+            "remoteParticipants": 0,
+            "localPublications": 0,
+            "remotePublications": 0,
+            "roomListeners": 0,
+            "ffiListeners": 0,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": false,
+            "paused": false,
+            "generatedFrames": 655,
+            "sourceClosed": true,
+            "sourceQueueMs": 0,
+            "sourceTimerActive": false,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 52,
+            "baselineFds": 29,
+            "lastSourceStop": {
+              "issuedAt": 1792554034028,
+              "stoppedAt": 1792554034035,
+              "localCaptureStopMs": 6.578422000000501,
+              "generatedFrames": 655
+            },
+            "failures": []
+          }
+        },
+        "remoteAfterLeave": {
+          "audio": {
+            "since": 1792554034285,
+            "measuredAt": 1792554034738,
+            "frames": 0,
+            "sampleCount": 0,
+            "rms": 0,
+            "frequencyHz": 0,
+            "lastFrameAt": null,
+            "lastEnergeticFrameAt": 1792554034041
+          },
+          "diagnostic": {
+            "pid": 54788,
+            "connected": true,
+            "connectionState": 1,
+            "remoteParticipants": 0,
+            "localPublications": 1,
+            "remotePublications": 0,
+            "roomListeners": 6,
+            "ffiListeners": 1,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": true,
+            "paused": false,
+            "generatedFrames": 839,
+            "sourceClosed": false,
+            "sourceQueueMs": 5,
+            "sourceTimerActive": true,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 44,
+            "baselineFds": 29,
+            "failures": []
+          },
+          "events": []
+        },
+        "drainGraceMs": 250,
+        "rejoin": {
+          "connectedAt": 1792554034831,
+          "connectPublishMs": 92.16328799999974,
+          "diagnostic": {
+            "pid": 54777,
+            "connected": true,
+            "connectionState": 1,
+            "remoteParticipants": 1,
+            "localPublications": 1,
+            "remotePublications": 1,
+            "roomListeners": 5,
+            "ffiListeners": 2,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": true,
+            "paused": false,
+            "generatedFrames": 655,
+            "sourceClosed": false,
+            "sourceQueueMs": 10,
+            "sourceTimerActive": true,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 119,
+            "baselineFds": 29,
+            "lastSourceStop": {
+              "issuedAt": 1792554034028,
+              "stoppedAt": 1792554034035,
+              "localCaptureStopMs": 6.578422000000501,
+              "generatedFrames": 655
+            },
+            "failures": []
+          }
+        }
+      },
+      {
+        "cycle": 3,
+        "local": {
+          "issuedAt": 1792554044554,
+          "disconnectedAt": 1792554044655,
+          "sourceStop": {
+            "issuedAt": 1792554044554,
+            "stoppedAt": 1792554044561,
+            "localCaptureStopMs": 6.990368999999191,
+            "generatedFrames": 1044
+          },
+          "diagnostic": {
+            "pid": 54777,
+            "connected": false,
+            "connectionState": null,
+            "remoteParticipants": 0,
+            "localPublications": 0,
+            "remotePublications": 0,
+            "roomListeners": 0,
+            "ffiListeners": 0,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": false,
+            "paused": false,
+            "generatedFrames": 1044,
+            "sourceClosed": true,
+            "sourceQueueMs": 0,
+            "sourceTimerActive": false,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 97,
+            "baselineFds": 29,
+            "lastSourceStop": {
+              "issuedAt": 1792554044554,
+              "stoppedAt": 1792554044561,
+              "localCaptureStopMs": 6.990368999999191,
+              "generatedFrames": 1044
+            },
+            "failures": []
+          }
+        },
+        "remoteAfterLeave": {
+          "audio": {
+            "since": 1792554044811,
+            "measuredAt": 1792554045401,
+            "frames": 0,
+            "sampleCount": 0,
+            "rms": 0,
+            "frequencyHz": 0,
+            "lastFrameAt": null,
+            "lastEnergeticFrameAt": 1792554044510
+          },
+          "diagnostic": {
+            "pid": 54788,
+            "connected": true,
+            "connectionState": 1,
+            "remoteParticipants": 0,
+            "localPublications": 1,
+            "remotePublications": 0,
+            "roomListeners": 6,
+            "ffiListeners": 1,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": true,
+            "paused": false,
+            "generatedFrames": 1306,
+            "sourceClosed": false,
+            "sourceQueueMs": 6,
+            "sourceTimerActive": true,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 44,
+            "baselineFds": 29,
+            "failures": []
+          },
+          "events": []
+        },
+        "drainGraceMs": 250,
+        "rejoin": {
+          "connectedAt": 1792554046138,
+          "connectPublishMs": 731.6717389999976,
+          "diagnostic": {
+            "pid": 54777,
+            "connected": true,
+            "connectionState": 1,
+            "remoteParticipants": 1,
+            "localPublications": 1,
+            "remotePublications": 1,
+            "roomListeners": 5,
+            "ffiListeners": 2,
+            "streams": 0,
+            "consumerJobs": 0,
+            "producing": true,
+            "paused": false,
+            "generatedFrames": 1044,
+            "sourceClosed": false,
+            "sourceQueueMs": 8,
+            "sourceTimerActive": true,
+            "activeHandleTypes": [
+              "Pipe"
+            ],
+            "fdCount": 107,
+            "baselineFds": 29,
+            "lastSourceStop": {
+              "issuedAt": 1792554044554,
+              "stoppedAt": 1792554044561,
+              "localCaptureStopMs": 6.990368999999191,
+              "generatedFrames": 1044
+            },
+            "failures": []
+          }
+        }
+      }
+    ],
+    "leaveA": {
+      "cycle": 1,
+      "local": {
+        "issuedAt": 1792554031772,
+        "disconnectedAt": 1792554031900,
+        "sourceStop": {
+          "issuedAt": 1792554031772,
+          "stoppedAt": 1792554031772,
+          "localCaptureStopMs": 0.6085180000009132,
+          "generatedFrames": 527
+        },
+        "diagnostic": {
+          "pid": 54777,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 527,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 106,
+          "baselineFds": 29,
+          "lastSourceStop": {
+            "issuedAt": 1792554031772,
+            "stoppedAt": 1792554031772,
+            "localCaptureStopMs": 0.6085180000009132,
+            "generatedFrames": 527
+          },
+          "failures": []
+        }
+      },
+      "remoteAfterLeave": {
+        "audio": {
+          "since": 1792554032022,
+          "measuredAt": 1792554032514,
+          "frames": 0,
+          "sampleCount": 0,
+          "rms": 0,
+          "frequencyHz": 0,
+          "lastFrameAt": null,
+          "lastEnergeticFrameAt": 1792554031782
+        },
+        "diagnostic": {
+          "pid": 54788,
+          "connected": true,
+          "connectionState": 1,
+          "remoteParticipants": 0,
+          "localPublications": 1,
+          "remotePublications": 0,
+          "roomListeners": 6,
+          "ffiListeners": 1,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": true,
+          "paused": false,
+          "generatedFrames": 630,
+          "sourceClosed": false,
+          "sourceQueueMs": 4,
+          "sourceTimerActive": true,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 45,
+          "baselineFds": 29,
+          "failures": []
+        },
+        "events": []
+      },
+      "drainGraceMs": 250
+    },
+    "finalLeaves": [
+      {
+        "issuedAt": 1792554049912,
+        "disconnectedAt": 1792554050017,
+        "sourceStop": {
+          "issuedAt": 1792554049912,
+          "stoppedAt": 1792554049917,
+          "localCaptureStopMs": 4.2536699999982375,
+          "generatedFrames": 1211
+        },
+        "diagnostic": {
+          "pid": 54777,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 1211,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 103,
+          "baselineFds": 29,
+          "lastSourceStop": {
+            "issuedAt": 1792554049912,
+            "stoppedAt": 1792554049917,
+            "localCaptureStopMs": 4.2536699999982375,
+            "generatedFrames": 1211
+          },
+          "failures": []
+        }
+      },
+      {
+        "issuedAt": 1792554049912,
+        "disconnectedAt": 1792554050016,
+        "sourceStop": {
+          "issuedAt": 1792554049912,
+          "stoppedAt": 1792554049920,
+          "localCaptureStopMs": 7.98576999999932,
+          "generatedFrames": 1496
+        },
+        "diagnostic": {
+          "pid": 54788,
+          "connected": false,
+          "connectionState": null,
+          "remoteParticipants": 0,
+          "localPublications": 0,
+          "remotePublications": 0,
+          "roomListeners": 0,
+          "ffiListeners": 0,
+          "streams": 0,
+          "consumerJobs": 0,
+          "producing": false,
+          "paused": false,
+          "generatedFrames": 1496,
+          "sourceClosed": true,
+          "sourceQueueMs": 0,
+          "sourceTimerActive": false,
+          "activeHandleTypes": [
+            "Pipe"
+          ],
+          "fdCount": 40,
+          "baselineFds": 29,
+          "lastSourceStop": {
+            "issuedAt": 1792554049912,
+            "stoppedAt": 1792554049920,
+            "localCaptureStopMs": 7.98576999999932,
+            "generatedFrames": 1496
+          },
+          "failures": []
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "serverParticipants": 0,
+    "clients": [
+      {
+        "pid": 54777,
+        "code": 0,
+        "signal": null
+      },
+      {
+        "pid": 54788,
+        "code": 0,
+        "signal": null
+      }
+    ],
+    "relayConnections": 0,
+    "roomDeleted": true
+  },
+  "passed": true,
+  "finishedAt": "2026-10-21T03:40:50.111Z",
+  "networkIsolation": {
+    "loopbackOnly": false,
+    "reason": "Top-level bind_addresses restricted signaling only; RTC UDP bound host interfaces and RTC TCP bound wildcard. No external clients used. Corrected test-only RTC interface/IP filters and disabled TCP fallback before justified rerun."
+  }
+}

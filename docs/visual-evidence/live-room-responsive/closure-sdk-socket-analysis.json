@@ -1,0 +1,409 @@
+{
+  "checkedAt": "2026-10-21T03:59:40.952622+00:00",
+  "source": "closure-stability-result.json",
+  "resolverConfiguration": [
+    "172.31.1.29"
+  ],
+  "phases": {
+    "finalNaturalSettle": [
+      {
+        "pid": 67741,
+        "stableCount": 58,
+        "types": {
+          "dev-null": 2,
+          "file": 2,
+          "anon_inode:[eventfd]": 6,
+          "anon_inode:[eventpoll]": 10,
+          "anon_inode:[io_uring]": 3,
+          "pipe": 10,
+          "unix": 6,
+          "udp": 19
+        },
+        "udp": [
+          {
+            "fd": 47,
+            "type": "udp",
+            "target": "socket:[190471]",
+            "protocol": "udp",
+            "local": "1E011FAC:ABEB",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:44011",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 48,
+            "type": "udp",
+            "target": "socket:[187975]",
+            "protocol": "udp",
+            "local": "1E011FAC:8E32",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:36402",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 49,
+            "type": "udp",
+            "target": "socket:[188931]",
+            "protocol": "udp",
+            "local": "1E011FAC:AF64",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:44900",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 50,
+            "type": "udp",
+            "target": "socket:[190024]",
+            "protocol": "udp",
+            "local": "1E011FAC:9951",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:39249",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 51,
+            "type": "udp",
+            "target": "socket:[187978]",
+            "protocol": "udp",
+            "local": "1E011FAC:BEFF",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:48895",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 55,
+            "type": "udp",
+            "target": "socket:[190473]",
+            "protocol": "udp",
+            "local": "1E011FAC:8C74",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35956",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 57,
+            "type": "udp",
+            "target": "socket:[187979]",
+            "protocol": "udp",
+            "local": "1E011FAC:AA4C",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:43596",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 58,
+            "type": "udp",
+            "target": "socket:[186350]",
+            "protocol": "udp",
+            "local": "1E011FAC:816A",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:33130",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 62,
+            "type": "udp",
+            "target": "socket:[188013]",
+            "protocol": "udp",
+            "local": "1E011FAC:8A54",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35412",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 64,
+            "type": "udp",
+            "target": "socket:[190528]",
+            "protocol": "udp",
+            "local": "1E011FAC:E298",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:58008",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 68,
+            "type": "udp",
+            "target": "socket:[188973]",
+            "protocol": "udp",
+            "local": "1E011FAC:CA22",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:51746",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 72,
+            "type": "udp",
+            "target": "socket:[188975]",
+            "protocol": "udp",
+            "local": "1E011FAC:894D",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35149",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 75,
+            "type": "udp",
+            "target": "socket:[186352]",
+            "protocol": "udp",
+            "local": "1E011FAC:8EC1",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:36545",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 77,
+            "type": "udp",
+            "target": "socket:[187983]",
+            "protocol": "udp",
+            "local": "1E011FAC:E585",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:58757",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 78,
+            "type": "udp",
+            "target": "socket:[190047]",
+            "protocol": "udp",
+            "local": "1E011FAC:E6ED",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:59117",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 79,
+            "type": "udp",
+            "target": "socket:[186354]",
+            "protocol": "udp",
+            "local": "1E011FAC:8315",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:33557",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 80,
+            "type": "udp",
+            "target": "socket:[186356]",
+            "protocol": "udp",
+            "local": "1E011FAC:939C",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:37788",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 82,
+            "type": "udp",
+            "target": "socket:[186358]",
+            "protocol": "udp",
+            "local": "1E011FAC:D9C1",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:55745",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 83,
+            "type": "udp",
+            "target": "socket:[190049]",
+            "protocol": "udp",
+            "local": "1E011FAC:E19E",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:57758",
+            "remoteDecoded": "172.31.1.29:53"
+          }
+        ]
+      },
+      {
+        "pid": 67752,
+        "stableCount": 39,
+        "types": {
+          "dev-null": 2,
+          "file": 2,
+          "anon_inode:[eventfd]": 6,
+          "anon_inode:[eventpoll]": 10,
+          "anon_inode:[io_uring]": 3,
+          "pipe": 10,
+          "unix": 6
+        },
+        "udp": []
+      }
+    ],
+    "referenceDropWithoutGc": [
+      {
+        "pid": 67741,
+        "stableCount": 43,
+        "types": {
+          "dev-null": 2,
+          "file": 2,
+          "anon_inode:[eventfd]": 6,
+          "anon_inode:[eventpoll]": 10,
+          "anon_inode:[io_uring]": 3,
+          "pipe": 10,
+          "unix": 6,
+          "udp": 4
+        },
+        "udp": [
+          {
+            "fd": 62,
+            "type": "udp",
+            "target": "socket:[188013]",
+            "protocol": "udp",
+            "local": "1E011FAC:8A54",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35412",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 64,
+            "type": "udp",
+            "target": "socket:[190528]",
+            "protocol": "udp",
+            "local": "1E011FAC:E298",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:58008",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 68,
+            "type": "udp",
+            "target": "socket:[188973]",
+            "protocol": "udp",
+            "local": "1E011FAC:CA22",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:51746",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 72,
+            "type": "udp",
+            "target": "socket:[188975]",
+            "protocol": "udp",
+            "local": "1E011FAC:894D",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35149",
+            "remoteDecoded": "172.31.1.29:53"
+          }
+        ]
+      },
+      {
+        "pid": 67752,
+        "stableCount": 39,
+        "types": {
+          "dev-null": 2,
+          "file": 2,
+          "anon_inode:[eventfd]": 6,
+          "anon_inode:[eventpoll]": 10,
+          "anon_inode:[io_uring]": 3,
+          "pipe": 10,
+          "unix": 6
+        },
+        "udp": []
+      }
+    ],
+    "forcedGcDiagnostic": [
+      {
+        "pid": 67741,
+        "stableCount": 43,
+        "types": {
+          "dev-null": 2,
+          "file": 2,
+          "anon_inode:[eventfd]": 6,
+          "anon_inode:[eventpoll]": 10,
+          "anon_inode:[io_uring]": 3,
+          "pipe": 10,
+          "unix": 6,
+          "udp": 4
+        },
+        "udp": [
+          {
+            "fd": 62,
+            "type": "udp",
+            "target": "socket:[188013]",
+            "protocol": "udp",
+            "local": "1E011FAC:8A54",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35412",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 64,
+            "type": "udp",
+            "target": "socket:[190528]",
+            "protocol": "udp",
+            "local": "1E011FAC:E298",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:58008",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 68,
+            "type": "udp",
+            "target": "socket:[188973]",
+            "protocol": "udp",
+            "local": "1E011FAC:CA22",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:51746",
+            "remoteDecoded": "172.31.1.29:53"
+          },
+          {
+            "fd": 72,
+            "type": "udp",
+            "target": "socket:[188975]",
+            "protocol": "udp",
+            "local": "1E011FAC:894D",
+            "remote": "1D011FAC:0035",
+            "state": "01",
+            "localDecoded": "172.31.1.30:35149",
+            "remoteDecoded": "172.31.1.29:53"
+          }
+        ]
+      },
+      {
+        "pid": 67752,
+        "stableCount": 39,
+        "types": {
+          "dev-null": 2,
+          "file": 2,
+          "anon_inode:[eventfd]": 6,
+          "anon_inode:[eventpoll]": 10,
+          "anon_inode:[io_uring]": 3,
+          "pipe": 10,
+          "unix": 6
+        },
+        "udp": []
+      }
+    ]
+  },
+  "observedRemainingUdp": 4,
+  "allRemainingUdpConnectedToConfiguredDns": true,
+  "remainingUdpToSfuMediaPort17882": 0,
+  "dnsQueryNamesCaptured": false,
+  "dnsLifetimeBoundProven": false,
+  "nativeRuntimeOnly": true,
+  "productionSdkPatchRequired": false
+}

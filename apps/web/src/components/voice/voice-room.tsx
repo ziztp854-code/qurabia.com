@@ -67,6 +67,9 @@ import { MemberName } from './member-name';
 import roomStyles from './room-layout.module.css';
 import { VoiceGifts } from './voice-gifts';
 import liveStyles from './live-room.module.css';
+import mobileStyles from './live-room-mobile.module.css';
+import desktopStyles from './live-room-desktop.module.css';
+import { useRoomViewport } from './use-room-viewport';
 import material from '@/components/ui/royal-material.module.css';
 import { GiftCelebration } from './gift-celebration';
 import { requestVoiceMicrophone } from './microphone-permission';
@@ -143,34 +146,11 @@ export function VoiceRoomView({
   const headerMenuRef = useRef<HTMLDetailsElement>(null);
   const audioSettingsLauncher = useRef<HTMLButtonElement | null>(null);
   const [mediaStopped, setMediaStopped] = useState(false);
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    const controls = controlsRef.current;
-    if (
-      !visible ||
-      loading ||
-      joinRequired ||
-      authRequired ||
-      !snapshot?.room.active ||
-      !surface ||
-      !controls
-    )
-      return;
-    const updateInset = () => {
-      // offsetHeight stays in CSS pixels when text or page scaling wraps the controls.
-      const height = controls.offsetHeight;
-      if (height > 0) surface.style.setProperty('--room-controls-space', `${height + 16}px`);
-    };
-    updateInset();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateInset);
-    observer?.observe(controls);
-    window.addEventListener('resize', updateInset);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', updateInset);
-      surface.style.removeProperty('--room-controls-space');
-    };
-  }, [visible, snapshot?.room.active, roomId, loading, joinRequired, authRequired]);
+  useRoomViewport(
+    surfaceRef,
+    controlsRef,
+    visible && !loading && !joinRequired && !authRequired && Boolean(snapshot?.room.active),
+  );
   const openAudioSettings = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
       audioSettingsLauncher.current = event.currentTarget;
@@ -202,6 +182,7 @@ export function VoiceRoomView({
   const chatOverlayOpen = chatOpen && compactChat && !profileId && !reportOpen && !giftsOpen;
   useVoiceOverlay(chatOverlayOpen && visible, chatRef, closeChat);
   const leaving = useRef(false);
+  const stopHeartbeat = useRef<(() => void) | null>(null);
   const snapshotRef = useRef<VoiceSnapshot | null>(null);
   const liveMessages = useRef<VoiceLiveMessage[]>([]);
   const apply = useCallback((data: VoiceSnapshot) => {
@@ -289,34 +270,49 @@ export function VoiceRoomView({
     [event],
   );
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshController = useRef<AbortController | null>(null);
+  const refreshGeneration = useRef(0);
   const refreshing = useRef(false);
   const refreshAgain = useRef(false);
+  const stopRefresh = useCallback(() => {
+    refreshGeneration.current++;
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = null;
+    refreshAgain.current = false;
+    refreshing.current = false;
+    refreshController.current?.abort();
+    refreshController.current = null;
+  }, []);
   const refreshRoom = useCallback(() => {
     refreshAgain.current = true;
     if (refreshTimer.current || refreshing.current || leaving.current) return;
+    const generation = refreshGeneration.current;
     async function refresh() {
-      if (leaving.current) return;
+      if (leaving.current || generation !== refreshGeneration.current) return;
       refreshTimer.current = null;
       refreshing.current = true;
       refreshAgain.current = false;
+      const controller = new AbortController();
+      refreshController.current = controller;
       try {
-        apply(await voiceRequest<VoiceSnapshot>(`rooms/${roomId}`));
+        const next = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}`, undefined, 'GET', {
+          signal: controller.signal,
+        });
+        if (generation === refreshGeneration.current) apply(next);
       } catch {
         /* The heartbeat handles admission and disconnect failures. */
       } finally {
-        refreshing.current = false;
-        if (refreshAgain.current && !leaving.current)
-          refreshTimer.current = setTimeout(refresh, 750);
+        if (refreshController.current === controller && generation === refreshGeneration.current) {
+          refreshController.current = null;
+          refreshing.current = false;
+          if (refreshAgain.current && !leaving.current)
+            refreshTimer.current = setTimeout(refresh, 750);
+        }
       }
     }
     refreshTimer.current = setTimeout(refresh, 750);
   }, [roomId, apply]);
-  useEffect(
-    () => () => {
-      if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    },
-    [],
-  );
+  useEffect(() => stopRefresh, [roomId, stopRefresh]);
   async function join() {
     setJoining(true);
     setError('');
@@ -397,12 +393,22 @@ export function VoiceRoomView({
   const admitted = Boolean(snapshot?.me);
   const activeRoom = Boolean(snapshot?.room.active);
   useEffect(() => {
-    if (!admitted || !activeRoom || joinRequired) return;
+    if (!admitted || !activeRoom || joinRequired || leaving.current) return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    const stop = () => {
+      stopped = true;
+      clearTimeout(timer);
+      controller.abort();
+      if (stopHeartbeat.current === stop) stopHeartbeat.current = null;
+    };
+    stopHeartbeat.current = stop;
     async function poll() {
       try {
-        const next = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}/events`);
+        const next = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}/events`, undefined, 'GET', {
+          signal: controller.signal,
+        });
         if (!stopped) {
           apply(next);
           if (!next.me && next.room.active && !leaving.current) {
@@ -429,7 +435,14 @@ export function VoiceRoomView({
               return;
             }
             try {
-              const roomState = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}`);
+              const roomState = await voiceRequest<VoiceSnapshot>(
+                `rooms/${roomId}`,
+                undefined,
+                'GET',
+                {
+                  signal: controller.signal,
+                },
+              );
               if (!stopped && !roomState.room.active) {
                 apply(roomState);
                 setJoinRequired(false);
@@ -444,10 +457,7 @@ export function VoiceRoomView({
       }
     }
     timer = setTimeout(() => void poll(), 2000);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
+    return stop;
   }, [roomId, admitted, activeRoom, joinRequired, apply]);
   useEffect(() => {
     const sequence = ++mountSequence.current;
@@ -520,6 +530,8 @@ export function VoiceRoomView({
   }
   async function leave(navigate = true, rejectOnFailure = false) {
     leaving.current = true;
+    stopHeartbeat.current?.();
+    stopRefresh();
     setActionBusy(true);
     // Local privacy must not depend on the server acknowledging departure.
     audioController.current?.stop();
@@ -561,7 +573,7 @@ export function VoiceRoomView({
   return (
     <div
       ref={surfaceRef}
-      className={`${liveStyles.liveRoom} v-room-scope`}
+      className={`${liveStyles.liveRoom} ${mobileStyles.mobileRoom} ${desktopStyles.desktopRoom} v-room-scope`}
       data-room-visible={visible}
     >
       {visible && room && (
@@ -844,7 +856,7 @@ export function VoiceRoomView({
                   <X size={21} />
                 </button>
               </header>
-              <div className={liveStyles.roomHeading} inert={chatOverlayOpen}>
+              <div className={liveStyles.roomHeading} data-room-heading inert={chatOverlayOpen}>
                 <span>
                   <Headphones size={14} /> {room.category}
                   {room.isPrivate && ' · خاصة'}

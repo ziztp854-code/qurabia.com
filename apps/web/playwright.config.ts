@@ -11,6 +11,7 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   testIgnore: [
+    'live-room-responsive.spec.ts',
     'globe-scene.spec.ts',
     'village-scene.spec.ts',
     'kingdoms-city-scenes.spec.ts',

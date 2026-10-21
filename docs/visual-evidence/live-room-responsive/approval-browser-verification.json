@@ -1,0 +1,552 @@
+{
+  "browser": "151.0.7922.173",
+  "scope": "Actual VoiceRoomView and production CSS/assets, synthetic HTTP data and AudioSession adapter. Local Chromium, DPR1; no real microphone, SFU, hardware keyboard or physical-device validation.",
+  "records": [
+    {
+      "width": 390,
+      "height": 844,
+      "geometry": {
+        "seats": [
+          {
+            "x": 100,
+            "y": 179.015625,
+            "width": 190,
+            "height": 122.796875,
+            "right": 290,
+            "bottom": 301.8125
+          },
+          {
+            "x": 262.671875,
+            "y": 323.8125,
+            "width": 115.328125,
+            "height": 189.1875,
+            "right": 378,
+            "bottom": 513
+          },
+          {
+            "x": 137.34375,
+            "y": 323.8125,
+            "width": 115.328125,
+            "height": 189.1875,
+            "right": 252.671875,
+            "bottom": 513
+          },
+          {
+            "x": 12,
+            "y": 323.8125,
+            "width": 115.34375,
+            "height": 189.1875,
+            "right": 127.34375,
+            "bottom": 513
+          },
+          {
+            "x": 262.671875,
+            "y": 535,
+            "width": 115.328125,
+            "height": 189.1875,
+            "right": 378,
+            "bottom": 724.1875
+          },
+          {
+            "x": 137.34375,
+            "y": 535,
+            "width": 115.328125,
+            "height": 189.1875,
+            "right": 252.671875,
+            "bottom": 724.1875
+          },
+          {
+            "x": 12,
+            "y": 535,
+            "width": 115.34375,
+            "height": 189.1875,
+            "right": 127.34375,
+            "bottom": 724.1875
+          },
+          {
+            "x": 262.671875,
+            "y": 746.1875,
+            "width": 115.328125,
+            "height": 189.1875,
+            "right": 378,
+            "bottom": 935.375
+          }
+        ],
+        "avatars": [
+          {
+            "x": 163,
+            "y": 192.015625,
+            "width": 64,
+            "height": 64,
+            "right": 227,
+            "bottom": 256.015625
+          },
+          {
+            "x": 292.34375,
+            "y": 336.8125,
+            "width": 56,
+            "height": 56,
+            "right": 348.34375,
+            "bottom": 392.8125
+          },
+          {
+            "x": 167.015625,
+            "y": 336.8125,
+            "width": 56,
+            "height": 56,
+            "right": 223.015625,
+            "bottom": 392.8125
+          },
+          {
+            "x": 41.671875,
+            "y": 336.8125,
+            "width": 56,
+            "height": 56,
+            "right": 97.671875,
+            "bottom": 392.8125
+          },
+          {
+            "x": 292.34375,
+            "y": 548,
+            "width": 56,
+            "height": 56,
+            "right": 348.34375,
+            "bottom": 604
+          },
+          {
+            "x": 167.015625,
+            "y": 548,
+            "width": 56,
+            "height": 56,
+            "right": 223.015625,
+            "bottom": 604
+          },
+          {
+            "x": 41.671875,
+            "y": 548,
+            "width": 56,
+            "height": 56,
+            "right": 97.671875,
+            "bottom": 604
+          },
+          {
+            "x": 292.34375,
+            "y": 759.1875,
+            "width": 56,
+            "height": 56,
+            "right": 348.34375,
+            "bottom": 815.1875
+          }
+        ],
+        "stage": {
+          "x": 12,
+          "y": 171.015625,
+          "width": 366,
+          "height": 816.359375,
+          "right": 378,
+          "bottom": 987.375
+        },
+        "chat": {
+          "x": 12,
+          "y": 999.375,
+          "width": 366,
+          "height": 489.515625,
+          "right": 378,
+          "bottom": 1488.890625
+        },
+        "dock": {
+          "x": 12,
+          "y": 725,
+          "width": 366,
+          "height": 107,
+          "right": 378,
+          "bottom": 832
+        },
+        "main": {
+          "x": 12,
+          "y": 0,
+          "width": 366,
+          "height": 721,
+          "right": 378,
+          "bottom": 721
+        },
+        "seatCollisions": [],
+        "stageChatOverlap": false,
+        "pageOverflowX": false,
+        "documentHeight": 844,
+        "dpr": 1,
+        "controls": [
+          {
+            "x": 314.84375,
+            "y": 735,
+            "width": 56.15625,
+            "height": 88,
+            "right": 371,
+            "bottom": 823
+          },
+          {
+            "x": 255.671875,
+            "y": 735,
+            "width": 56.171875,
+            "height": 88,
+            "right": 311.84375,
+            "bottom": 823
+          },
+          {
+            "x": 196.5,
+            "y": 735,
+            "width": 56.171875,
+            "height": 88,
+            "right": 252.671875,
+            "bottom": 823
+          },
+          {
+            "x": 137.34375,
+            "y": 735,
+            "width": 56.15625,
+            "height": 88,
+            "right": 193.5,
+            "bottom": 823
+          },
+          {
+            "x": 78.171875,
+            "y": 735,
+            "width": 56.171875,
+            "height": 88,
+            "right": 134.34375,
+            "bottom": 823
+          },
+          {
+            "x": 19,
+            "y": 735,
+            "width": 56.171875,
+            "height": 88,
+            "right": 75.171875,
+            "bottom": 823
+          }
+        ]
+      },
+      "seatReachability": [
+        {
+          "reachable": true,
+          "top": 336.8125,
+          "bottom": 448
+        },
+        {
+          "reachable": true,
+          "top": 336.8125,
+          "bottom": 448
+        },
+        {
+          "reachable": true,
+          "top": 336.8125,
+          "bottom": 448
+        },
+        {
+          "reachable": true,
+          "top": 548,
+          "bottom": 659.1875
+        },
+        {
+          "reachable": true,
+          "top": 548,
+          "bottom": 659.1875
+        },
+        {
+          "reachable": true,
+          "top": 548,
+          "bottom": 659.1875
+        },
+        {
+          "reachable": true,
+          "top": 305.1875,
+          "bottom": 416.375
+        }
+      ],
+      "composer": {
+        "reachable": true,
+        "top": 447.890625,
+        "bottom": 499.890625,
+        "dockTop": 725
+      },
+      "note": null
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "geometry": {
+        "seats": [
+          {
+            "x": 567.703125,
+            "y": 309.265625,
+            "width": 190,
+            "height": 207.03125,
+            "right": 757.703125,
+            "bottom": 516.296875
+          },
+          {
+            "x": 786.875,
+            "y": 546.296875,
+            "width": 212.328125,
+            "height": 189.1875,
+            "right": 999.203125,
+            "bottom": 735.484375
+          },
+          {
+            "x": 556.53125,
+            "y": 546.296875,
+            "width": 212.34375,
+            "height": 189.1875,
+            "right": 768.875,
+            "bottom": 735.484375
+          },
+          {
+            "x": 326.1875,
+            "y": 546.296875,
+            "width": 212.34375,
+            "height": 189.1875,
+            "right": 538.53125,
+            "bottom": 735.484375
+          },
+          {
+            "x": 786.875,
+            "y": 765.484375,
+            "width": 212.328125,
+            "height": 189.1875,
+            "right": 999.203125,
+            "bottom": 954.671875
+          },
+          {
+            "x": 556.53125,
+            "y": 765.484375,
+            "width": 212.34375,
+            "height": 189.1875,
+            "right": 768.875,
+            "bottom": 954.671875
+          },
+          {
+            "x": 326.1875,
+            "y": 765.484375,
+            "width": 212.34375,
+            "height": 189.1875,
+            "right": 538.53125,
+            "bottom": 954.671875
+          },
+          {
+            "x": 786.875,
+            "y": 984.671875,
+            "width": 212.328125,
+            "height": 189.1875,
+            "right": 999.203125,
+            "bottom": 1173.859375
+          }
+        ],
+        "avatars": [
+          {
+            "x": 618.703125,
+            "y": 322.265625,
+            "width": 88,
+            "height": 88,
+            "right": 706.703125,
+            "bottom": 410.265625
+          },
+          {
+            "x": 865.046875,
+            "y": 559.296875,
+            "width": 56,
+            "height": 56,
+            "right": 921.046875,
+            "bottom": 615.296875
+          },
+          {
+            "x": 634.703125,
+            "y": 559.296875,
+            "width": 56,
+            "height": 56,
+            "right": 690.703125,
+            "bottom": 615.296875
+          },
+          {
+            "x": 404.359375,
+            "y": 559.296875,
+            "width": 56,
+            "height": 56,
+            "right": 460.359375,
+            "bottom": 615.296875
+          },
+          {
+            "x": 865.046875,
+            "y": 778.484375,
+            "width": 56,
+            "height": 56,
+            "right": 921.046875,
+            "bottom": 834.484375
+          },
+          {
+            "x": 634.703125,
+            "y": 778.484375,
+            "width": 56,
+            "height": 56,
+            "right": 690.703125,
+            "bottom": 834.484375
+          },
+          {
+            "x": 404.359375,
+            "y": 778.484375,
+            "width": 56,
+            "height": 56,
+            "right": 460.359375,
+            "bottom": 834.484375
+          },
+          {
+            "x": 865.046875,
+            "y": 997.671875,
+            "width": 56,
+            "height": 56,
+            "right": 921.046875,
+            "bottom": 1053.671875
+          }
+        ],
+        "stage": {
+          "x": 326.1875,
+          "y": 233.265625,
+          "width": 673.015625,
+          "height": 1060.390625,
+          "right": 999.203125,
+          "bottom": 1293.65625
+        },
+        "chat": {
+          "x": 1027.203125,
+          "y": 93,
+          "width": 388.796875,
+          "height": 677,
+          "right": 1416,
+          "bottom": 770
+        },
+        "dock": {
+          "x": 340,
+          "y": 790,
+          "width": 760,
+          "height": 98,
+          "right": 1100,
+          "bottom": 888
+        },
+        "main": {
+          "x": 24,
+          "y": 0,
+          "width": 1392,
+          "height": 770,
+          "right": 1416,
+          "bottom": 770
+        },
+        "seatCollisions": [],
+        "stageChatOverlap": false,
+        "pageOverflowX": false,
+        "documentHeight": 900,
+        "dpr": 1,
+        "controls": [
+          {
+            "x": 436,
+            "y": 802,
+            "width": 88,
+            "height": 75,
+            "right": 524,
+            "bottom": 877
+          },
+          {
+            "x": 532,
+            "y": 802,
+            "width": 88,
+            "height": 75,
+            "right": 620,
+            "bottom": 877
+          },
+          {
+            "x": 628,
+            "y": 802,
+            "width": 88,
+            "height": 75,
+            "right": 716,
+            "bottom": 877
+          },
+          {
+            "x": 724,
+            "y": 802,
+            "width": 88,
+            "height": 75,
+            "right": 812,
+            "bottom": 877
+          },
+          {
+            "x": 820,
+            "y": 802,
+            "width": 88,
+            "height": 75,
+            "right": 908,
+            "bottom": 877
+          },
+          {
+            "x": 916,
+            "y": 802,
+            "width": 88,
+            "height": 75,
+            "right": 1004,
+            "bottom": 877
+          }
+        ]
+      },
+      "seatReachability": [
+        {
+          "reachable": true,
+          "top": 499.296875,
+          "bottom": 610.484375
+        },
+        {
+          "reachable": true,
+          "top": 499.296875,
+          "bottom": 610.484375
+        },
+        {
+          "reachable": true,
+          "top": 499.296875,
+          "bottom": 610.484375
+        },
+        {
+          "reachable": true,
+          "top": 364.484375,
+          "bottom": 475.671875
+        },
+        {
+          "reachable": true,
+          "top": 364.484375,
+          "bottom": 475.671875
+        },
+        {
+          "reachable": true,
+          "top": 364.484375,
+          "bottom": 475.671875
+        },
+        {
+          "reachable": true,
+          "top": 498.671875,
+          "bottom": 609.859375
+        }
+      ],
+      "composer": {
+        "reachable": true,
+        "top": 649,
+        "bottom": 701,
+        "dockTop": 790
+      },
+      "note": {
+        "top": 570.859375,
+        "bottom": 590.65625,
+        "mainTop": 0,
+        "mainBottom": 770,
+        "columnTop": 229.265625,
+        "columnBottom": 610,
+        "dockTop": 790
+      }
+    }
+  ]
+}

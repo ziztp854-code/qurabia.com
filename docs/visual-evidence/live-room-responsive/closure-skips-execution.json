@@ -1,0 +1,695 @@
+{
+  "startedAt": "2026-10-21T03:53:45.812Z",
+  "scope": "81 adjacent production contracts; zero direct LiveKit/PCM/heartbeat tests among the remaining 83. No source assertions or skip guards changed.",
+  "run": "a13744d8f384",
+  "freshExecution": true,
+  "cacheUsed": false,
+  "isolation": {
+    "loopbackOnly": true,
+    "newContainersOnly": true,
+    "existingApplicationDatabaseTouched": false,
+    "hostDataMounts": false,
+    "pgPort": 55443,
+    "redisPort": 56380,
+    "images": {
+      "postgres": "sha256:79bd7c99e923138f136f8009d6bffa66e21e9d4fda5c0c561b00fc9c90cfe537",
+      "redis": "sha256:f84b0c4678011602b9b98c227a4dcd5468bf8b088b02fdd4165cb7758bad8058"
+    },
+    "migrationDirectories": 32
+  },
+  "sourceGroups": [
+    {
+      "name": "postgres",
+      "exitCode": 0,
+      "durationMs": 36800,
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0,
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "src/lib/kingdoms/reports-repository.integration.test.ts",
+        "src/lib/kingdoms/abandoned-repository.integration.test.ts",
+        "src/lib/kingdoms/palace-garden.integration.test.ts",
+        "src/lib/kingdoms/repository.integration.test.ts",
+        "src/lib/kingdoms/commander-migration.integration.test.ts",
+        "src/lib/kingdoms/village-onboarding.integration.test.ts",
+        "src/lib/mamluk-map/village-relocation-repository.integration.test.ts",
+        "src/lib/mamluk-map/repository.integration.test.ts",
+        "src/lib/openclaw-admin/database.integration.test.ts",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=json",
+        "--outputFile",
+        "docs/visual-evidence/live-room-responsive/closure-skips-postgres-raw.json"
+      ],
+      "tests": [
+        {
+          "file": "apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts",
+          "name": "abandoned village PostgreSQL transactions charges one army once for concurrent identical commands and persists the original layout",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 506.1016000000004
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts",
+          "name": "abandoned village PostgreSQL transactions serializes two actors and two workers against one finite inventory without duplicate collection",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 156.00696999999946
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts",
+          "name": "abandoned village PostgreSQL transactions atomically initializes the approved real world once, preserves player data, rejects stale plans, and uses the real repository command",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 447.54266499999994
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts",
+          "name": "abandoned village PostgreSQL transactions rejects unprovisioned worlds, mismatched registries, revoked sessions and foreign origins",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 117.53376500000013
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/commander-migration.integration.test.ts",
+          "name": "Commander additive state migration backfills only missing commanders and preserves existing players, armies, villages and timers",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 73.44359800000007
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/palace-garden.integration.test.ts",
+          "name": "Palace garden isolated PostgreSQL persistence preserves depleted abandoned stock and a pending expedition when saving a garden colour",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 247.74237100000005
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/palace-garden.integration.test.ts",
+          "name": "Palace garden isolated PostgreSQL persistence serializes Alice and Bob saves without losing either garden or gameplay",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 86.84619999999995
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive backfills retained reports once, excludes other recipients and rejects IDOR",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 176.72897300000022
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive keeps read receipt idempotent and recipient-owned across concurrent tabs and reconnect",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 93.22550000000001
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive archives >2000 events, handles repeated saves, stable pagination, search and category indexes at 5000 records",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 4582.699737
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive archives command effects in the same transaction and a replay creates no reports",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 107.67752199999995
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive archives actual aggregated production with the command and does not duplicate on retry",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 65.338573
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive never records Tick noise, strips recipient lists and private enemy commanders",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 6.79097400000046
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts",
+          "name": "Royal Reports durable PostgreSQL archive revalidates revoked session on the server",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 12.06897300000037
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization preserves a full-storage quest claim and archives one receipt after concurrent retries",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 460.75249399999984
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization farm: serializes distinct simultaneous planting keys on the same plot",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 95.80842399999983
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization farm: concurrent harvest retries credit once and a receipt survives replanting",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 92.15987899999982
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization farm: policy 1 distinct concurrent harvest keys credit one frozen contract",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 74.88813500000015
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization farm: policy 2 distinct concurrent harvest keys credit one frozen contract",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 65.00424399999974
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization charges once and creates one commander for concurrent identical recruitment requests",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 52.534474000000046
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization reserves a commander for one army when two different march requests race",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 64.50780900000018
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects another player assigning a commander and does not leak the commander in their view",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 67.64882899999975
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization credits one alliance event reward under simultaneous identical request keys",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 72.88539599999967
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization credits one alliance event reward under simultaneous different request keys",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 48.46837199999982
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization reserves one gathering army under simultaneous identical request keys",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 59.1959139999999
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization two simultaneous workers share one finite deposit without double collection",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 50.13025599999992
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization derives established village progression consistently from legacy persisted JSON",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 47.10084800000004
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization persists every overdue queue completion and XP once across repeated worker ticks",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 44.610571000000164
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects client-supplied villageLevel before any persistent resource mutation",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 12.205937000000176
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects client-supplied villagePower before any persistent resource mutation",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 16.291557999999895
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects client-supplied xp before any persistent resource mutation",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 15.368205000000216
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects client-supplied resources before any persistent resource mutation",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 24.50384299999996
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects client-supplied battleResult before any persistent resource mutation",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 27.132657999999992
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization enqueues a retried second construction once and debits its reserved cost once",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 74.13219100000015
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization serializes competing construction costs without spending the same balance twice",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 53.91695299999992
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization authorizes queue cancellation and refunds once under concurrent retries",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 121.9052459999998
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization applies simultaneous identical idempotency keys exactly once",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 41.33797700000014
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects replay key reuse with a different payload",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 35.48598200000015
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization serializes different keys spending the same resource balance",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 46.22497800000019
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization allows only one of two players to accept the same escrow offer",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 98.73678900000004
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects revoked identities before replay and rejects ordinary-player admin access",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 37.49070699999993
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization two simultaneous workers complete one due training event exactly once",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 35.650399999999536
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rolls back the entire transaction and receipt when a command is invalid",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 18.2690819999998
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization idempotently creates a world and records one admin audit event",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 43.945716000000175
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization audits configuration changes once and prevents a replay from mutating again",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 66.82034399999975
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization serializes administrator relocation and audits the actual administrator once",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 50.29635899999994
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization passes locked pause state to administrator relocation and leaves the village untouched",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 34.41483900000003
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/repository.integration.test.ts",
+          "name": "Kingdoms PostgreSQL serialization rejects a session revoked while its command waits for the world lock",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 28.734043000000383
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/village-onboarding.integration.test.ts",
+          "name": "Village onboarding account persistence persists completion on the account and preserves the first server timestamp",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 167.12386100000003
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/village-onboarding.integration.test.ts",
+          "name": "Village onboarding account persistence gives simultaneous completions the same timestamp",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 24.110721000000012
+        },
+        {
+          "file": "apps/web/src/lib/kingdoms/village-onboarding.integration.test.ts",
+          "name": "Village onboarding account persistence rejects revoked and suspended sessions at persistence time",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 26.340402999999696
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots rejects synthetic campaign geography from production browsing and discovery",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 336.2626089999999
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots executes real bounded JSONB queries and removes hole/hidden enemies before projection",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 129.00176899999997
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots refuses nonmembers and revoked tokens and lists only authorized geographic campaigns",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 113.74653400000034
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots holds revision, grants and ownership constant while another transaction updates the world",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 111.7436230000003
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots applies the database result limit and recognizes both dateline coordinates",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 72.14210699999967
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots accepts full-precision browser bounds and echoes their unchanged WGS84 values",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 54.742947000000186
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots provisions public actual villages once while keeping private enemy intelligence hidden",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 660.0848639999999
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots allocates newly founded actual villages inside the existing authoritative game transaction",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 109.27348699999993
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots projects live own forces and due buildings in the same relocated atlas snapshot",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 104.0419539999998
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots never provisions legacy worlds for outsiders or revoked sessions",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 28.303006000000096
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots lazily provisions direct concurrent legacy location and overview reads once",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 70.38747199999989
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots aggregates only real public villages in bounded world cells and rejects outsiders",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 177.68784200000027
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/repository.integration.test.ts",
+          "name": "Mamluk geography PostgreSQL snapshots aggregates ten thousand actual villages without truncating counts or leaking private state",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 3313.886971
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts",
+          "name": "atomic village relocation PostgreSQL integration commits once, supports exact retries and replaces old viewport geometry atomically",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 291.8971099999999
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts",
+          "name": "atomic village relocation PostgreSQL integration serializes competing submissions so exactly one location is committed",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 56.11445500000036
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts",
+          "name": "atomic village relocation PostgreSQL integration fails closed for another owner, another world and a revoked session",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 44.829863999999816
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts",
+          "name": "atomic village relocation PostgreSQL integration allows a renderable high-latitude location without breaking bounded vision",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 85.82896699999992
+        },
+        {
+          "file": "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts",
+          "name": "atomic village relocation PostgreSQL integration preserves the once-use flag through ordinary game commands without exposing internal metadata",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 114.59844000000021
+        },
+        {
+          "file": "apps/web/src/lib/openclaw-admin/database.integration.test.ts",
+          "name": "OpenClaw disposable PostgreSQL transaction boundary permits exactly one of two simultaneous owner approvals",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 207.25146300000006
+        },
+        {
+          "file": "apps/web/src/lib/openclaw-admin/database.integration.test.ts",
+          "name": "OpenClaw disposable PostgreSQL transaction boundary rolls back the pending claim when a reviewed question has changed",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 46.969141000000036
+        }
+      ]
+    },
+    {
+      "name": "redis",
+      "exitCode": 0,
+      "durationMs": 5483,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--no-cache",
+        "--runTestsByPath",
+        "src/fastest-button/fastest-button.integration.spec.ts",
+        "src/fastest-button/fastest-button.websocket.spec.ts",
+        "--json",
+        "--outputFile",
+        "docs/visual-evidence/live-room-responsive/closure-skips-redis-raw.json"
+      ],
+      "tests": [
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration creates unique six-digit codes atomically",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 21
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration proves a single classic winner for simultaneous valid presses",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 31
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration records every points press once with unique sequence and persists exact scoring",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 16
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration rejects early, stale, expired, duplicate and non-member presses",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 10
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration recovers deadline transitions from the persistent schedule after a service restart",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 6
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration requires the host owner and never reveals private identities on a public snapshot",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 6
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration resumes the same identity, preserves other tabs and forbids forged tokens",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 11
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration does not lose simultaneous participant registrations under CAS contention",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 91
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts",
+          "name": "Fastest Button Redis atomic integration retains the recorded winner name after host removal without keeping the participant eligible",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 5
+        },
+        {
+          "file": "apps/realtime/src/fastest-button/fastest-button.websocket.spec.ts",
+          "name": "Fastest Button real multiplayer sockets broadcasts one winner to every role and restores the same disconnected participant",
+          "status": "passed",
+          "failureMessages": [],
+          "durationMs": 2518
+        }
+      ]
+    }
+  ],
+  "testSourceSha256Before": {
+    "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts": "169004d06bd87d54db0376ec7c531bc3292ec89f5611ea2006627e0accce9281",
+    "apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts": "98dc992483ab1cc495158b7bfa9a1febfaaf64d66ca380cf8da3381f96593734",
+    "apps/web/src/lib/kingdoms/palace-garden.integration.test.ts": "4c7bcf3f60ad85036f5e49a88c264a199cc5c73247ec7be13ff8b0b477c6de9d",
+    "apps/web/src/lib/kingdoms/repository.integration.test.ts": "1eedd66258c8807b0e4bebc743ce11af022929095d88d578f6552ed4271ea9a7",
+    "apps/web/src/lib/kingdoms/commander-migration.integration.test.ts": "193cb117e10dd700b7eca8838cc994da00eadcf9cd65119983e67108d5e618dc",
+    "apps/web/src/lib/kingdoms/village-onboarding.integration.test.ts": "2f27cee289cf42aa118592a884e064e77cc3c4250b8dff129719fd5ba0d69106",
+    "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts": "81c467ec28b93b1e01109c87ca707deb33b8d3fb9da1da48ee9e10dc0f071c77",
+    "apps/web/src/lib/mamluk-map/repository.integration.test.ts": "82b9dfca7fe5d2449c049b6d56118563c173eadb8410450ae9033e104aef0de0",
+    "apps/web/src/lib/openclaw-admin/database.integration.test.ts": "a83cd9365e259eaad2862b9876fd6fe67e05d4154ab906519d870e4f4f761497",
+    "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts": "5866e632e0aef55292ed6a1fae3d928a36417188d662cea5f7da8bba39dd3899",
+    "apps/realtime/src/fastest-button/fastest-button.websocket.spec.ts": "677c7381bc359c82d4b2fa79452be15c579cd79f7519598b089113a2d9182648",
+    "scripts/blender-cli.test.mjs": "942576dcba41a97fc5c0eab4e2e5a080fbad9d871c27654826850b047068dc81"
+  },
+  "cleanup": [
+    {
+      "name": "voice-closure-redis-a13744d8f384",
+      "identityVerified": true,
+      "removed": true
+    },
+    {
+      "name": "voice-closure-pg-a13744d8f384",
+      "identityVerified": true,
+      "removed": true
+    }
+  ],
+  "finishedAt": "2026-10-21T03:54:35.197Z",
+  "testSourceSha256After": {
+    "apps/web/src/lib/kingdoms/reports-repository.integration.test.ts": "169004d06bd87d54db0376ec7c531bc3292ec89f5611ea2006627e0accce9281",
+    "apps/web/src/lib/kingdoms/abandoned-repository.integration.test.ts": "98dc992483ab1cc495158b7bfa9a1febfaaf64d66ca380cf8da3381f96593734",
+    "apps/web/src/lib/kingdoms/palace-garden.integration.test.ts": "4c7bcf3f60ad85036f5e49a88c264a199cc5c73247ec7be13ff8b0b477c6de9d",
+    "apps/web/src/lib/kingdoms/repository.integration.test.ts": "1eedd66258c8807b0e4bebc743ce11af022929095d88d578f6552ed4271ea9a7",
+    "apps/web/src/lib/kingdoms/commander-migration.integration.test.ts": "193cb117e10dd700b7eca8838cc994da00eadcf9cd65119983e67108d5e618dc",
+    "apps/web/src/lib/kingdoms/village-onboarding.integration.test.ts": "2f27cee289cf42aa118592a884e064e77cc3c4250b8dff129719fd5ba0d69106",
+    "apps/web/src/lib/mamluk-map/village-relocation-repository.integration.test.ts": "81c467ec28b93b1e01109c87ca707deb33b8d3fb9da1da48ee9e10dc0f071c77",
+    "apps/web/src/lib/mamluk-map/repository.integration.test.ts": "82b9dfca7fe5d2449c049b6d56118563c173eadb8410450ae9033e104aef0de0",
+    "apps/web/src/lib/openclaw-admin/database.integration.test.ts": "a83cd9365e259eaad2862b9876fd6fe67e05d4154ab906519d870e4f4f761497",
+    "apps/realtime/src/fastest-button/fastest-button.integration.spec.ts": "5866e632e0aef55292ed6a1fae3d928a36417188d662cea5f7da8bba39dd3899",
+    "apps/realtime/src/fastest-button/fastest-button.websocket.spec.ts": "677c7381bc359c82d4b2fa79452be15c579cd79f7519598b089113a2d9182648",
+    "scripts/blender-cli.test.mjs": "942576dcba41a97fc5c0eab4e2e5a080fbad9d871c27654826850b047068dc81"
+  },
+  "sourceAssertionsAndGuardsUnchanged": true,
+  "total": {
+    "passed": 81,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cleanupVerification": {
+    "ownedLoopbackPortsClosed": {
+      "55443": true,
+      "56380": true
+    },
+    "secretsWrittenToDisk": false,
+    "sourceTestFilesUnchanged": true
+  }
+}
