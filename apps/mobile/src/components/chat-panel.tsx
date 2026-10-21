@@ -78,7 +78,7 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
           <Body style={ui.caption} numberOfLines={1}>{emoji.label}</Body>
         </Pressable>)}</View>
       </View>)}
-      <Action tone="secondary" label="تحديث الفيسات" busy={catalog.loading} onPress={()=>{void catalog.reload().catch(()=>{});}}/>
+      <Action tone="secondary" label="تحديث الفيسات" busy={catalog.loading} onPress={()=>{catalog.reload();}}/>
     </Sheet>
     <Sheet visible={!!selected} title={selected?'رسالة '+selected.name:'الرسالة'} onClose={()=>setSelected(null)}>
       <View style={ui.wrap}>{VOICE_EMOJIS.slice(0,6).map(([value,label])=><Action key={value} label={value+' '+label}
