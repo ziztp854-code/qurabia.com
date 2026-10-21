@@ -254,12 +254,14 @@ def main() -> int:
         report["login_render_observed_ms"] = round((time.monotonic() - started) * 1000, 1)
         report["login_render_measurement"] = "Wall-clock upper bound including UIAutomator polling; not native frame timing"
         report["native_read_only_https"] = {
-            **device.connection_status(),
+            "state": "not_observed",
+            "label": "",
             "method": "GET",
             "path": "/api/auth/session",
             "verified_by": "native AuthScreen response-shape check observed through UIAutomator",
             "scope": "real Android HTTPS request without session cookies or credentials",
         }
+        report["native_read_only_https"].update(device.connection_status())
         if report["native_read_only_https"]["state"] != "online":
             raise RuntimeError("The native Android read-only server connection was not verified online")
         report["checks"]["native_read_only_server_connection"] = True
