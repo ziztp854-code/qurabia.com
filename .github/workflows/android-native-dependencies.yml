@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: '24.14.0'
       - run: npm install --global pnpm@11.26.0 --ignore-scripts
+      - run: pnpm --filter @tahaddi/mobile... install --lockfile-only --ignore-scripts
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
       - name: Generate lockfile with the installed Expo map
         run: |
