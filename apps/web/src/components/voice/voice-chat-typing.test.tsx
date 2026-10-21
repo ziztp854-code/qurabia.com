@@ -79,7 +79,7 @@ describe('voice chat typing isolation', () => {
     );
   });
 
-  it('does not rerender message authors for 100 draft edits or emoji insertion', () => {
+  it('does not rerender message authors for 100 draft edits or emoji insertion', async () => {
     render(<VoiceChat {...props} onEvent={vi.fn()} />);
     const input = screen.getByRole('textbox', { name: 'رسالتك' });
     const initialRenders = renderMemberName.mock.calls.length;
@@ -87,7 +87,8 @@ describe('voice chat typing isolation', () => {
       fireEvent.change(input, { target: { value: 'a'.repeat(length) } });
     }
     fireEvent.click(screen.getByRole('button', { name: 'إضافة رمز تعبيري' }));
-    expect(input).toHaveValue(`${'a'.repeat(100)} ✨`);
+    fireEvent.click(await screen.findByRole('button', { name: 'إدراج بريق' }));
+    expect(input).toHaveValue(`${'a'.repeat(100)}✨`);
     expect(renderMemberName.mock.calls.length).toBe(initialRenders);
   });
 
@@ -159,7 +160,12 @@ describe('voice chat typing isolation', () => {
 
   it('updates quoted text when the referenced message changes', () => {
     const onEvent = vi.fn();
-    const reply = { ...message, id: 'reply', text: 'هذا رد', replyTo: message.id };
+    const reply = {
+      ...message,
+      id: 'reply',
+      text: 'هذا رد',
+      replyTo: message.id,
+    };
     const view = render(<VoiceChat {...props} messages={[message, reply]} onEvent={onEvent} />);
     expect(document.querySelector('blockquote')).toHaveTextContent(message.text);
     view.rerender(
@@ -179,7 +185,9 @@ describe('voice chat typing isolation', () => {
     const input = screen.getByRole('textbox', { name: 'رسالتك' });
     const initialRenders = renderMemberName.mock.calls.length;
     fireEvent.compositionStart(input);
-    fireEvent.change(input, { target: { value: 'أهلًا\nرسالة عربية طويلة أثناء البث' } });
+    fireEvent.change(input, {
+      target: { value: 'أهلًا\nرسالة عربية طويلة أثناء البث' },
+    });
     fireEvent.compositionEnd(input, { data: 'البث' });
     expect(input).toHaveValue('أهلًا\nرسالة عربية طويلة أثناء البث');
     expect(renderMemberName.mock.calls.length).toBe(initialRenders);
@@ -188,6 +196,7 @@ describe('voice chat typing isolation', () => {
     await waitFor(() => expect(input).toHaveValue(''));
     expect(onEvent).toHaveBeenCalledExactlyOnceWith({
       type: 'message',
+      requestId: expect.any(String),
       text: 'أهلًا\nرسالة عربية طويلة أثناء البث',
       replyTo: 'message-1',
     });
@@ -197,7 +206,9 @@ describe('voice chat typing isolation', () => {
   it('preserves the draft, focused textarea, and caret through messages and participant updates', () => {
     const onEvent = vi.fn();
     const view = render(<VoiceChat {...props} onEvent={onEvent} />);
-    const input = screen.getByRole('textbox', { name: 'رسالتك' }) as HTMLTextAreaElement;
+    const input = screen.getByRole('textbox', {
+      name: 'رسالتك',
+    }) as HTMLTextAreaElement;
     const draft = 'هذه مسودة عربية طويلة أثناء تحديث المشاركين والرسائل. '.repeat(10);
     fireEvent.change(input, { target: { value: draft } });
     input.focus();

@@ -13,6 +13,7 @@ export const COMMUNITY_IDENTITY_MIGRATION = '20261021230000_community_identity_v
 export const RESERVED_ACCOUNT_NUMBER_MIGRATION = '20261022010000_reserved_account_number';
 export const EXCLUSIVE_FRAMES_MIGRATION = '20261022020000_exclusive_profile_frames';
 export const EXCLUSIVE_ENTRANCES_MIGRATION = '20261022030000_exclusive_entrances';
+export const VOICE_EMOJI_MIGRATION = '20261022040000_voice_emojis';
 const VOICE_TABLES = [
   'VoiceRoom',
   'VoicePreference',
@@ -47,6 +48,7 @@ const ALLOWLIST = [
   RESERVED_ACCOUNT_NUMBER_MIGRATION,
   EXCLUSIVE_FRAMES_MIGRATION,
   EXCLUSIVE_ENTRANCES_MIGRATION,
+  VOICE_EMOJI_MIGRATION,
 ];
 
 function verifyAdditiveMetadata(pending, name, actual, expectedLength, error) {
@@ -147,6 +149,17 @@ export function voiceMigrationPlan(
       'Exclusive entrance schema drift detected; refusing to repair it automatically.',
     );
   }
+  if (available.includes(VOICE_EMOJI_MIGRATION)) {
+    if (!available.includes(VOICE_MIGRATION))
+      throw new Error('Voice emoji dependencies are missing from this release.');
+    verifyAdditiveMetadata(
+      pending,
+      VOICE_EMOJI_MIGRATION,
+      identitySchema.voiceEmojis ?? [],
+      9,
+      'Voice emoji schema drift detected; refusing to repair it automatically.',
+    );
+  }
   const expected = socialAvailable ? tables : tables.slice(0, 4);
   if (pending.length === 0) {
     if (!expected.every(Boolean))
@@ -235,6 +248,20 @@ async function main() {
       `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'Profile' AND column_name = name) AS present FROM unnest($1::text[]) AS name`,
       [COMMUNITY_PROFILE_COLUMNS],
     );
+    const emojis = await client.query(`SELECT
+      to_regclass('"VoiceEmojiPack"') IS NOT NULL AS packs,
+      to_regclass('"VoiceEmoji"') IS NOT NULL AS emojis,
+      to_regclass('"VoiceChatCommand"') IS NOT NULL AS receipts,
+      EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema()
+        AND table_name = 'VoiceEmoji' AND column_name = 'content' AND data_type = 'bytea') AS content,
+      EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema()
+        AND table_name = 'VoiceEmoji' AND column_name = 'poster' AND data_type = 'bytea') AS poster,
+      to_regclass('"VoiceEmoji_packId_idx"') IS NOT NULL AS pack_index,
+      to_regclass('"VoiceChatCommand_pkey"') IS NOT NULL AS receipt_index,
+      EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid = to_regclass('"VoiceEmoji"')
+        AND confrelid = to_regclass('"VoiceEmojiPack"') AND contype = 'f') AS pack_fk,
+      EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid = to_regclass('"VoiceChatCommand"')
+        AND confrelid = to_regclass('"VoiceRoom"') AND contype = 'f') AS room_fk`);
     plan = voiceMigrationPlan(
       available,
       rows,
@@ -247,6 +274,7 @@ async function main() {
         exclusiveEntrances: entrances.rows.map((row) => row.present),
         communityTables: community.rows.map((row) => row.present),
         communityProfileColumns: communityProfile.rows.map((row) => row.present),
+        voiceEmojis: Object.values(emojis.rows[0]),
       },
     );
   } finally {
@@ -295,6 +323,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
         'Partial voice tables exist without a completed migration.',
         'The production database is not configured.',
         'Voice schema migration did not complete.',
+        'Voice emoji dependencies are missing from this release.',
+        'Voice emoji schema drift detected; refusing to repair it automatically.',
       ].includes(error.message);
     console.error(
       safe

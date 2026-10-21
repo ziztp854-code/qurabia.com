@@ -1,0 +1,67 @@
+.admin {
+  color: var(--foreground);
+  display: grid;
+  gap: var(--space-5);
+  max-inline-size: 960px;
+  margin-inline: auto;
+  padding: var(--space-4);
+}
+.admin h1 {
+  color: var(--primary);
+}
+.admin h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.admin form,
+.packs article {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-inline-size: 0;
+}
+.admin label {
+  display: grid;
+  gap: var(--space-2);
+}
+.admin input,
+.admin select {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: var(--space-2);
+  min-block-size: 44px;
+  background: var(--input);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+.admin button {
+  min-block-size: 44px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-bright);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.admin button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.admin :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.admin small {
+  color: var(--text-soft);
+}
+.packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-3);
+}

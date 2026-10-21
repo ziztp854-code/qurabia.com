@@ -193,7 +193,7 @@ describe('voice server room permissions', () => {
     event(state, 'bob', { type: 'reaction', messageId: state.messages[0].id, emoji: '❤️' });
     expect(state.messages[0].reactions['❤️']).toEqual(['bob']);
     event(state, 'bob', { type: 'reaction', messageId: state.messages[0].id, emoji: '❤️' });
-    expect(state.messages[0].reactions['❤️']).toEqual([]);
+    expect(state.messages[0].reactions['❤️']).toBeUndefined();
     expect(() =>
       event(state, 'bob', { type: 'pin-message', messageId: state.messages[0].id, pinned: true }),
     ).toThrow();

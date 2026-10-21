@@ -36,6 +36,7 @@ export type VoiceParticipant = VoiceIdentity & {
   lastGiftAt?: number;
 };
 export type VoiceMessage = {
+  clientId?: string;
   id: string;
   userId: string;
   name: string;
@@ -124,9 +125,9 @@ export type VoiceEvent =
   | { type: 'lock-seat'; seatIndex: number; locked: boolean }
   | { type: 'remove'; userId: string }
   | { type: 'role'; userId: string; role: 'moderator' | 'speaker' | 'listener' }
-  | { type: 'message'; text: string; replyTo?: string }
+  | { type: 'message'; text: string; replyTo?: string; requestId?: string }
   | { type: 'gift'; giftId: VoiceGiftId; recipientId: string }
-  | { type: 'reaction'; messageId: string; emoji: string }
+  | { type: 'reaction'; messageId: string; emoji: string; requestId?: string }
   | { type: 'pin-message'; messageId: string; pinned: boolean }
   | { type: 'delete-message'; messageId: string }
   | { type: 'report'; messageId?: string; userId?: string; reason: string }
@@ -134,7 +135,11 @@ export type VoiceEvent =
 export type VoiceCreateInput = VoiceRoomSettings & { password?: string };
 export type VoiceJoinInput = { password?: string; invite?: string };
 export type VoicePreferencesAction =
-  | { type: 'favorite' | 'follow' | 'block' | 'mute'; id: string; enabled: boolean }
+  | {
+      type: 'favorite' | 'follow' | 'block' | 'mute';
+      id: string;
+      enabled: boolean;
+    }
   | {
       type: 'privacy';
       privateProfile?: boolean;

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { VOICE_CATEGORIES } from './types';
 import { VOICE_GIFTS } from './gifts';
+import {
+  isUnicodeReaction,
+  isCustomReaction,
+  messageEmojiCount,
+  MAX_MESSAGE_EMOJIS,
+} from './emojis';
 const id = z.string().min(1).max(160);
 const seatIndex = z.number().int().min(0).max(15);
 // Covers are served by our own asset/upload pipeline; remote URLs and SVG are excluded.
@@ -50,14 +56,25 @@ export const voiceEventSchema = z.discriminatedUnion('type', [
       recipientId: id,
     })
     .strict(),
-  z.object({ type: z.literal('request-seat'), seatIndex: seatIndex.optional() }).strict(),
+  z
+    .object({
+      type: z.literal('request-seat'),
+      seatIndex: seatIndex.optional(),
+    })
+    .strict(),
   z.object({ type: z.literal('approve-seat'), userId: id, seatIndex }).strict(),
   z.object({ type: z.literal('give-mic'), userId: id }).strict(),
   z.object({ type: z.literal('deny-seat'), userId: id }).strict(),
   z.object({ type: z.literal('leave-seat') }).strict(),
   z.object({ type: z.literal('hand'), raised: z.boolean() }).strict(),
   z.object({ type: z.literal('mute'), muted: z.boolean() }).strict(),
-  z.object({ type: z.literal('moderator-mute'), userId: id, muted: z.boolean() }).strict(),
+  z
+    .object({
+      type: z.literal('moderator-mute'),
+      userId: id,
+      muted: z.boolean(),
+    })
+    .strict(),
   z.object({ type: z.literal('lock-seat'), seatIndex, locked: z.boolean() }).strict(),
   z.object({ type: z.literal('remove'), userId: id }).strict(),
   z
@@ -70,18 +87,34 @@ export const voiceEventSchema = z.discriminatedUnion('type', [
   z
     .object({
       type: z.literal('message'),
-      text: z.string().trim().min(1).max(1000),
+      text: z
+        .string()
+        .trim()
+        .min(1)
+        .max(1000)
+        .refine((text) => messageEmojiCount(text) <= MAX_MESSAGE_EMOJIS),
       replyTo: id.optional(),
+      requestId: z.uuid().optional(),
     })
     .strict(),
   z
     .object({
       type: z.literal('reaction'),
       messageId: id,
-      emoji: z.enum(['❤️', '👏', '😂', '🔥', '👍', '✨']),
+      emoji: z
+        .string()
+        .max(42)
+        .refine((value) => isUnicodeReaction(value) || isCustomReaction(value)),
+      requestId: z.uuid().optional(),
     })
     .strict(),
-  z.object({ type: z.literal('pin-message'), messageId: id, pinned: z.boolean() }).strict(),
+  z
+    .object({
+      type: z.literal('pin-message'),
+      messageId: id,
+      pinned: z.boolean(),
+    })
+    .strict(),
   z.object({ type: z.literal('delete-message'), messageId: id }).strict(),
   z
     .object({
@@ -95,7 +128,11 @@ export const voiceEventSchema = z.discriminatedUnion('type', [
 ]);
 export const preferencesActionSchema = z.union([
   z
-    .object({ type: z.enum(['favorite', 'follow', 'block', 'mute']), id, enabled: z.boolean() })
+    .object({
+      type: z.enum(['favorite', 'follow', 'block', 'mute']),
+      id,
+      enabled: z.boolean(),
+    })
     .strict(),
   z
     .object({

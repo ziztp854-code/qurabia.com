@@ -1,3 +1,4 @@
+import { customEmojiIds } from './emojis';
 import { voiceAccountBadges, voiceBadgeAccountSelect } from './account-badges';
 import { syncVoiceCommunityIdentity, voiceCommunityIdentities } from './community-identity';
 import 'server-only';
@@ -51,10 +52,17 @@ function syncMemberProfile(
 async function pruneInactiveAccounts(state: VoiceRoomState) {
   const accounts = await getPrismaClient().user.findMany({
     where: {
-      id: { in: [...new Set([state.host.id, ...state.participants.map((p) => p.id)])] },
+      id: {
+        in: [...new Set([state.host.id, ...state.participants.map((p) => p.id)])],
+      },
       status: 'ACTIVE',
     },
-    select: { id: true, tokenVersion: true, ...voiceBadgeAccountSelect, ...profileSelect },
+    select: {
+      id: true,
+      tokenVersion: true,
+      ...voiceBadgeAccountSelect,
+      ...profileSelect,
+    },
   });
   const byId = new Map(accounts.map((account) => [account.id, account]));
   const communityIdentities = await voiceCommunityIdentities(accounts.map((account) => account.id));
@@ -102,7 +110,9 @@ async function assertCoverOwner(cover: string, ownerId: string) {
     throw new VoiceHttpError(403, 'اختر غلافًا رفعته من حسابك.', 'COVER_FORBIDDEN');
 }
 export async function getVoicePreferences(userId: string): Promise<VoicePreferences> {
-  const stored = await getPrismaClient().voicePreference.findUnique({ where: { userId } });
+  const stored = await getPrismaClient().voicePreference.findUnique({
+    where: { userId },
+  });
   return stored ? { ...defaultPreferences(), ...(stored.state as object) } : defaultPreferences();
 }
 async function mutatePreferences(
@@ -117,7 +127,9 @@ async function mutatePreferences(
     update: {},
   });
   for (let attempt = 0; attempt < 8; attempt++) {
-    const stored = await db.voicePreference.findUniqueOrThrow({ where: { userId } });
+    const stored = await db.voicePreference.findUniqueOrThrow({
+      where: { userId },
+    });
     const state = { ...defaultPreferences(), ...(stored.state as object) };
     mutate(state);
     const writePreference = (client: Pick<Prisma.TransactionClient, 'voicePreference'>) =>
@@ -197,7 +209,10 @@ export async function listVoiceRooms(userId: string): Promise<VoiceList> {
     orderBy: { updatedAt: 'desc' },
     take: 200,
   });
-  const aggregates = records.map((record) => ({ record, state: stateOf(record.state) }));
+  const aggregates = records.map((record) => ({
+    record,
+    state: stateOf(record.state),
+  }));
   const accountIds = [
     ...new Set(
       aggregates.flatMap(({ state }) => [state.host.id, ...state.participants.map((p) => p.id)]),
@@ -278,7 +293,11 @@ export async function createVoiceRoom(
   const room = await db.$transaction(async (tx) => {
     // Serialize quota checks across app instances without holding a lock while hashing.
     await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-create:${user.id}`}, 0))`;
-    if ((await tx.voiceRoom.count({ where: { hostId: user.id, active: true } })) >= 5)
+    if (
+      (await tx.voiceRoom.count({
+        where: { hostId: user.id, active: true },
+      })) >= 5
+    )
       throw new VoiceHttpError(409, 'لديك خمس غرف نشطة. أغلق غرفة قبل إنشاء أخرى.');
     return tx.voiceRoom.create({
       data: {
@@ -305,8 +324,13 @@ async function mutateRoom(
       inviteExpiresAt: Date | null;
     },
   ) => Promise<void> | void,
-  extra?: { passwordHash?: string | null; inviteHash?: string; inviteExpiresAt?: Date },
+  extra?: {
+    passwordHash?: string | null;
+    inviteHash?: string;
+    inviteExpiresAt?: Date;
+  },
   report?: Extract<VoiceEvent, { type: 'report' }>,
+  commandId?: string,
 ) {
   const db = getPrismaClient();
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -315,11 +339,31 @@ async function mutateRoom(
     const state = stateOf(record.state);
     pruneVoicePresence(state, Date.now());
     await pruneInactiveAccounts(state);
+    if (commandId) {
+      requireParticipant(state, userId);
+      if (
+        await db.voiceChatCommand.findUnique({
+          where: {
+            roomId_userId_requestId: { roomId, userId, requestId: commandId },
+          },
+        })
+      )
+        return getVoiceSnapshot(roomId, userId);
+    }
     await mutate(state, record);
     const changed = await db.$transaction(
       async (tx) => {
         // State changes and Cloud token issuance/revocation share one room lock.
         await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+        if (
+          commandId &&
+          (await tx.voiceChatCommand.findUnique({
+            where: {
+              roomId_userId_requestId: { roomId, userId, requestId: commandId },
+            },
+          }))
+        )
+          return 2;
         const result = await tx.voiceRoom.updateMany({
           where: { id: roomId, revision: record.revision },
           data: {
@@ -345,10 +389,15 @@ async function mutateRoom(
             },
           });
         }
+        if (result.count && commandId)
+          await tx.voiceChatCommand.create({
+            data: { roomId, userId, requestId: commandId },
+          });
         return result.count;
       },
       { timeout: 20_000, maxWait: 5_000 },
     );
+    if (changed === 2) return getVoiceSnapshot(roomId, userId);
     if (changed) {
       const preferences = await getVoicePreferences(userId);
       return voiceSnapshot(
@@ -368,7 +417,9 @@ export async function getVoiceSnapshot(
   userId: string,
   heartbeat = false,
 ): Promise<VoiceSnapshot> {
-  const record = await getPrismaClient().voiceRoom.findUnique({ where: { id: roomId } });
+  const record = await getPrismaClient().voiceRoom.findUnique({
+    where: { id: roomId },
+  });
   if (!record) missing();
   const state = stateOf(record.state);
   pruneVoicePresence(state, Date.now());
@@ -457,14 +508,40 @@ export async function joinVoiceRoom(roomId: string, user: VoiceIdentity, input: 
   return snapshot;
 }
 export async function sendVoiceEvent(roomId: string, userId: string, event: VoiceEvent) {
+  const commandId =
+    event.type === 'message' || event.type === 'reaction' ? event.requestId : undefined;
+  // Check membership before looking up receipts; a removed account cannot replay old commands.
+  if (commandId) {
+    await requireVoiceMembership(roomId, userId);
+    if (
+      await getPrismaClient().voiceChatCommand.findUnique({
+        where: {
+          roomId_userId_requestId: { roomId, userId, requestId: commandId },
+        },
+      })
+    )
+      return getVoiceSnapshot(roomId, userId);
+  }
+  const ids = customEmojiIds(
+    event.type === 'message' ? event.text : event.type === 'reaction' ? event.emoji : '',
+  );
+  // Plain text does not query or wait for the emoji catalog.
+  const allowed = ids.length
+    ? await getPrismaClient().voiceEmoji.findMany({
+        where: { id: { in: ids }, pack: { enabled: true } },
+        select: { id: true },
+      })
+    : [];
   const now = Date.now();
   const messageId = randomUUID();
   return mutateRoom(
     roomId,
     userId,
-    (state) => applyVoiceEvent(state, userId, event, now, messageId),
+    (state) =>
+      applyVoiceEvent(state, userId, event, now, messageId, new Set(allowed.map((e) => e.id))),
     undefined,
     event.type === 'report' ? event : undefined,
+    commandId,
   );
 }
 export async function leaveVoiceRoom(roomId: string, userId: string) {
@@ -511,7 +588,10 @@ export async function createVoiceInvite(roomId: string, userId: string, origin: 
       if (state.host.id !== userId || !state.active)
         throw new VoiceHttpError(403, 'روابط الدعوة متاحة للمضيف فقط.', 'FORBIDDEN');
     },
-    { inviteHash: hashToken(invite), inviteExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+    {
+      inviteHash: hashToken(invite),
+      inviteExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
   );
   return {
     invite,
@@ -544,7 +624,10 @@ export async function withVoiceMediaSnapshot<T>(
       const state = stateOf(record.state);
       pruneVoicePresence(state, Date.now());
       const accounts = await tx.user.findMany({
-        where: { id: { in: state.participants.map((p) => p.id) }, status: 'ACTIVE' },
+        where: {
+          id: { in: state.participants.map((p) => p.id) },
+          status: 'ACTIVE',
+        },
         select: { id: true, tokenVersion: true },
       });
       const versions = new Map(accounts.map((account) => [account.id, account.tokenVersion]));
@@ -582,3 +665,4 @@ export async function withVoiceMediaSnapshot<T>(
     { timeout: 20_000, maxWait: 10_000 },
   );
 }
+

@@ -12,6 +12,7 @@ import {
   RESERVED_ACCOUNT_NUMBER_MIGRATION,
   EXCLUSIVE_FRAMES_MIGRATION,
   EXCLUSIVE_ENTRANCES_MIGRATION,
+  VOICE_EMOJI_MIGRATION,
 } from './voice-production-schema.mjs';
 
 const old = '20260101000000_existing_schema';
@@ -55,6 +56,42 @@ test('allows only absent additive profile columns; rejects partial or missing ap
 });
 const absent = [false, false, false, false];
 const present = [true, true, true, true];
+
+test('allows the reviewed emoji migration and refuses partial or missing emoji structures', () => {
+  const previous = [old, VOICE_MIGRATION];
+  const available = [...previous, VOICE_EMOJI_MIGRATION];
+  const plan = (applied, voiceEmojis) =>
+    voiceMigrationPlan(available, applied.map(complete), present, [], { voiceEmojis });
+  assert.equal(plan(previous, Array(9).fill(false)), 'apply');
+  assert.equal(plan(available, Array(9).fill(true)), 'ready');
+  assert.throws(() => plan(previous, []), /Voice emoji schema drift/);
+  for (let index = 0; index < 9; index++) {
+    const before = Array(9).fill(false);
+    before[index] = true;
+    const after = Array(9).fill(true);
+    after[index] = false;
+    assert.throws(() => plan(previous, before), /Voice emoji schema drift/);
+    assert.throws(() => plan(available, after), /Voice emoji schema drift/);
+  }
+  assert.throws(
+    () =>
+      voiceMigrationPlan([old, VOICE_EMOJI_MIGRATION], [complete(old)], present, [], {
+        voiceEmojis: Array(9).fill(false),
+      }),
+    /Voice emoji dependencies/,
+  );
+  assert.throws(
+    () =>
+      voiceMigrationPlan(
+        [...available, '20990101000000_unreviewed'],
+        previous.map(complete),
+        present,
+        [],
+        { voiceEmojis: Array(9).fill(false) },
+      ),
+    /Unrelated migrations/,
+  );
+});
 
 test('permits only the single additive voice migration and recognizes an already-applied schema', () => {
   assert.equal(voiceMigrationPlan([old, VOICE_MIGRATION], [complete(old)], absent), 'apply');

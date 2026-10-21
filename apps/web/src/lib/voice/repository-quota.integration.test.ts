@@ -55,6 +55,77 @@ function namedClient(applicationName: string) {
 }
 
 describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL clients', () => {
+  it('commits one message for concurrent requests and never resurrects it after deletion', async () => {
+    const owner = { ...host, id: `emoji-replay-${fixtureId}` };
+    fixtureUsers.push(owner.id);
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    const snapshot = await createVoiceRoom(owner, input);
+    const command = { type: 'message' as const, text: 'هلا 😂', requestId: randomUUID() };
+    const results = await Promise.all([
+      context.run(clients[0], () => sendVoiceEvent(snapshot.room.id, owner.id, command)),
+      context.run(clients[1], () => sendVoiceEvent(snapshot.room.id, owner.id, command)),
+    ]);
+    const current = await getVoiceSnapshot(snapshot.room.id, owner.id);
+    expect(current.messages).toHaveLength(1);
+    expect(results.every((result) => result.messages.length === 1)).toBe(true);
+    expect(await clients[2].voiceChatCommand.count({ where: { roomId: snapshot.room.id } })).toBe(
+      1,
+    );
+    await sendVoiceEvent(snapshot.room.id, owner.id, {
+      type: 'delete-message',
+      messageId: current.messages[0].id,
+    });
+    expect((await sendVoiceEvent(snapshot.room.id, owner.id, command)).messages).toHaveLength(0);
+  });
+
+  it('resolves exclusive assets server-side and deduplicates reaction commands across clients', async () => {
+    const owner = { ...host, id: `emoji-asset-${fixtureId}` };
+    fixtureUsers.push(owner.id);
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    const snapshot = await createVoiceRoom(owner, input);
+    const pack = await clients[2].voiceEmojiPack.create({
+      data: { name: 'حزمة الاختبار', createdBy: owner.id },
+    });
+    try {
+      const emoji = await clients[2].voiceEmoji.create({
+        data: {
+          packId: pack.id,
+          label: 'فيس الاختبار',
+          content: new Uint8Array([1]),
+          poster: new Uint8Array([1]),
+        },
+      });
+      const token = `:td_${emoji.id}:`;
+      const message = await sendVoiceEvent(snapshot.room.id, owner.id, {
+        type: 'message',
+        text: token,
+        requestId: randomUUID(),
+      });
+      const reaction = {
+        type: 'reaction' as const,
+        messageId: message.messages[0].id,
+        emoji: token,
+        requestId: randomUUID(),
+      };
+      await Promise.all([
+        context.run(clients[0], () => sendVoiceEvent(snapshot.room.id, owner.id, reaction)),
+        context.run(clients[1], () => sendVoiceEvent(snapshot.room.id, owner.id, reaction)),
+      ]);
+      expect(
+        (await getVoiceSnapshot(snapshot.room.id, owner.id)).messages[0].reactions[token],
+      ).toEqual([owner.id]);
+      await clients[2].voiceEmojiPack.update({ where: { id: pack.id }, data: { enabled: false } });
+      await expect(
+        sendVoiceEvent(snapshot.room.id, owner.id, {
+          type: 'message',
+          text: token,
+          requestId: randomUUID(),
+        }),
+      ).rejects.toMatchObject({ code: 'INVALID_EMOJI' });
+    } finally {
+      await clients[2].voiceEmojiPack.delete({ where: { id: pack.id } });
+    }
+  });
   beforeAll(async () => {
     clients.push(
       namedClient(appNames[0]),

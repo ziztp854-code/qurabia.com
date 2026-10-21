@@ -44,7 +44,11 @@ export async function POST(request: Request, context: Context) {
       announceVoiceChange(
         local ? snapshot : await synchronizeVoiceMedia(roomId, snapshot),
         event.type === 'message' || event.type === 'gift'
-          ? snapshot.messages.at(-1)?.id
+          ? event.type === 'message' && event.requestId
+            ? snapshot.messages.find(
+                (message) => message.userId === user.id && message.clientId === event.requestId,
+              )?.id
+            : snapshot.messages.at(-1)?.id
           : undefined,
       ),
     );

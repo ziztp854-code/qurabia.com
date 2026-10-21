@@ -1,6 +1,15 @@
 'use client';
 
-import { memo, useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  lazy,
+  Suspense,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { Flag, Gift, MessageCircle, Pin, Reply, Send, SmilePlus, Trash2, X } from 'lucide-react';
 import type { VoiceEvent, VoiceMessage, VoiceParticipant } from '@/lib/voice/types';
 import { Avatar } from './voice-ui';
@@ -9,6 +18,10 @@ import { number } from './voice-client';
 import roomStyles from './room-layout.module.css';
 import { MemberName } from './member-name';
 import { GiftReceipt } from './voice-gifts';
+import { EmojiContent } from './emoji-content';
+import { messageEmojiCount, MAX_MESSAGE_EMOJIS } from '@/lib/voice/emojis';
+import emojiStyles from './emoji.module.css';
+const EmojiPicker = lazy(() => import('./emoji-picker'));
 
 export const VoiceChat = memo(function VoiceChat({
   messages,
@@ -35,6 +48,7 @@ export const VoiceChat = memo(function VoiceChat({
 }) {
   const draggable = useVoiceMediaQuery('(max-width: 760px)');
   const [reply, setReply] = useState<VoiceMessage | null>(null);
+  const [reactionTarget, setReactionTarget] = useState<string | null>(null);
   const [newCount, setNewCount] = useState(0);
   const [report, setReport] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState('');
@@ -120,7 +134,7 @@ export const VoiceChat = memo(function VoiceChat({
           <Pin size={15} />
           <span>
             <strong>{pinned.name}</strong>
-            {pinned.text}
+            <EmojiContent text={pinned.text} />
           </span>
         </div>
       )}
@@ -159,6 +173,7 @@ export const VoiceChat = memo(function VoiceChat({
             onProfile={onProfile}
             onReply={setReply}
             onReport={setReport}
+            onChooseReaction={setReactionTarget}
           />
         ))}
       </div>
@@ -180,7 +195,11 @@ export const VoiceChat = memo(function VoiceChat({
           onSubmit={(e) => {
             e.preventDefault();
             setReportBusy(true);
-            void onEvent({ type: 'report', messageId: report, reason: reportReason })
+            void onEvent({
+              type: 'report',
+              messageId: report,
+              reason: reportReason,
+            })
               .then(() => {
                 setReport(null);
                 setReportReason('');
@@ -212,6 +231,26 @@ export const VoiceChat = memo(function VoiceChat({
           </button>
         </form>
       )}
+      {reactionTarget && me && enabled && (
+        <div className={emojiStyles.reactionAnchor}>
+          <Suspense fallback={<p role="status">تحميل لوحة الفيسات…</p>}>
+            <EmojiPicker
+              key={me.id}
+              userId={me.id}
+              close={() => setReactionTarget(null)}
+              onSelect={(emoji) => {
+                void act({
+                  type: 'reaction',
+                  messageId: reactionTarget,
+                  emoji,
+                  requestId: crypto.randomUUID(),
+                });
+                setReactionTarget(null);
+              }}
+            />
+          </Suspense>
+        </div>
+      )}
       <VoiceChatComposer
         reply={reply}
         me={me}
@@ -240,6 +279,7 @@ type ChatMessageRowProps = {
   onProfile: (id: string) => void;
   onReply: (message: VoiceMessage) => void;
   onReport: (id: string) => void;
+  onChooseReaction: (id: string) => void;
 };
 
 const ChatMessageRow = memo(
@@ -253,6 +293,7 @@ const ChatMessageRow = memo(
     onProfile,
     onReply,
     onReport,
+    onChooseReaction,
   }: ChatMessageRowProps) {
     return (
       <article className={`v-message ${message.userId === selfId ? 'v-my-message' : ''}`}>
@@ -280,8 +321,18 @@ const ChatMessageRow = memo(
             </time>
             {message.pinned && <Pin size={12} />}
           </div>
-          {message.replyTo && <blockquote>{replyText || 'رد على رسالة سابقة'}</blockquote>}
-          {message.gift ? <GiftReceipt message={message} /> : <p>{message.text}</p>}
+          {message.replyTo && (
+            <blockquote>
+              <EmojiContent text={replyText || 'رد على رسالة سابقة'} />
+            </blockquote>
+          )}
+          {message.gift ? (
+            <GiftReceipt message={message} />
+          ) : (
+            <p>
+              <EmojiContent text={message.text} />
+            </p>
+          )}
           {Object.entries(message.reactions).length > 0 && (
             <div className="v-reactions">
               {Object.entries(message.reactions).map(([emoji, users]) => (
@@ -289,9 +340,16 @@ const ChatMessageRow = memo(
                   key={emoji}
                   aria-label={`تفاعل ${emoji}، ${users.length}`}
                   aria-pressed={Boolean(selfId && users.includes(selfId))}
-                  onClick={() => void onAct({ type: 'reaction', messageId: message.id, emoji })}
+                  onClick={() =>
+                    void onAct({
+                      type: 'reaction',
+                      messageId: message.id,
+                      emoji,
+                      requestId: crypto.randomUUID(),
+                    })
+                  }
                 >
-                  {emoji} {users.length}
+                  <EmojiContent text={emoji} /> {users.length}
                 </button>
               ))}
             </div>
@@ -300,10 +358,7 @@ const ChatMessageRow = memo(
             <button aria-label={`الرد على ${message.name}`} onClick={() => onReply(message)}>
               <Reply size={14} />
             </button>
-            <button
-              aria-label="إعجاب بالرسالة"
-              onClick={() => void onAct({ type: 'reaction', messageId: message.id, emoji: '👍' })}
-            >
+            <button aria-label="اختيار تفاعل للرسالة" onClick={() => onChooseReaction(message.id)}>
               <SmilePlus size={14} />
             </button>
             {canModerate && (
@@ -347,6 +402,7 @@ const ChatMessageRow = memo(
       previous.onProfile === next.onProfile &&
       previous.onReply === next.onReply &&
       previous.onReport === next.onReport &&
+      previous.onChooseReaction === next.onChooseReaction &&
       (previous.message === next.message ||
         JSON.stringify(previous.message) === JSON.stringify(next.message)) &&
       (previous.author === next.author ||
@@ -377,22 +433,53 @@ function VoiceChatComposer({
 }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
+  const busy = useRef(false);
+  function insertEmoji(value: string) {
+    const field = input.current;
+    const start = field?.selectionStart ?? text.length;
+    const end = field?.selectionEnd ?? start;
+    const next = text.slice(0, start) + value + text.slice(end);
+    if (next.length > 1000 || messageEmojiCount(next) > MAX_MESSAGE_EMOJIS) {
+      onError('الحد الأقصى 12 فيسًا و1000 حرف للرسالة.');
+      return;
+    }
+    setText(next);
+    setPicker(false);
+    requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(start + value.length, start + value.length);
+    });
+  }
   async function send(event: FormEvent) {
     event.preventDefault();
-    if (!text.trim() || sending || !enabled || !me) return;
+    if (!text.trim() || busy.current || !enabled || !me) return;
+    if (messageEmojiCount(text) > MAX_MESSAGE_EMOJIS) {
+      onError('الحد الأقصى 12 فيسًا للرسالة.');
+      return;
+    }
+    const fingerprint = JSON.stringify([text.trim(), reply?.id]);
+    if (pending.current?.fingerprint !== fingerprint)
+      pending.current = { fingerprint, requestId: crypto.randomUUID() };
+    busy.current = true;
     setSending(true);
     try {
       await onEvent({
         type: 'message',
         text: text.trim(),
+        requestId: pending.current.requestId,
         ...(reply ? { replyTo: reply.id } : {}),
       });
       setText('');
+      pending.current = null;
       onSent();
     } catch (err) {
       onError(err instanceof Error ? err.message : 'تعذر إرسال الرسالة.');
     } finally {
       setSending(false);
+      busy.current = false;
     }
   }
   return (
@@ -408,11 +495,22 @@ function VoiceChatComposer({
           </button>
         </div>
       )}
-      <form className="v-chat-compose" onSubmit={send}>
+      <form className={`v-chat-compose ${emojiStyles.anchor}`} onSubmit={send}>
+        {picker && me && enabled && (
+          <Suspense fallback={<p role="status">تحميل لوحة الفيسات…</p>}>
+            <EmojiPicker
+              key={me.id}
+              userId={me.id}
+              onSelect={insertEmoji}
+              close={() => setPicker(false)}
+            />
+          </Suspense>
+        )}
         <label className="v-sr-only" htmlFor="voice-message">
           رسالتك
         </label>
         <textarea
+          ref={input}
           rows={2}
           id="voice-message"
           value={text}
@@ -440,7 +538,9 @@ function VoiceChatComposer({
             type="button"
             aria-label="إضافة رمز تعبيري"
             disabled={!enabled || !me || sending}
-            onClick={() => setText((t) => `${t} ✨`)}
+            aria-expanded={picker}
+            aria-haspopup="dialog"
+            onClick={() => setPicker((value) => !value)}
           >
             <SmilePlus size={19} />
           </button>

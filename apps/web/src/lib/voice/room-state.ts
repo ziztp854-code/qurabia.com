@@ -1,5 +1,12 @@
 import { VoiceHttpError } from './http';
 import { voiceGift, VOICE_GIFT_INTERVAL } from './gifts';
+import {
+  customEmojiIds,
+  isUnicodeReaction,
+  isCustomReaction,
+  messageEmojiCount,
+  MAX_MESSAGE_EMOJIS,
+} from './emojis';
 import type {
   VoiceEvent,
   VoiceIdentity,
@@ -66,6 +73,7 @@ export function applyVoiceEvent(
   event: VoiceEvent,
   now: number,
   messageId: string,
+  allowedEmojiIds: ReadonlySet<string> = new Set(),
 ) {
   const actor = requireParticipant(state, userId);
   actor.lastSeenAt = now;
@@ -118,7 +126,11 @@ export function applyVoiceEvent(
         replyTo: null,
         pinned: false,
         reactions: {},
-        gift: { id: gift.id, recipientId: recipient.id, recipientName: recipient.name },
+        gift: {
+          id: gift.id,
+          recipientId: recipient.id,
+          recipientName: recipient.name,
+        },
       });
       actor.lastGiftAt = now;
       state.messages = state.messages.slice(-200);
@@ -250,6 +262,15 @@ export function applyVoiceEvent(
       break;
     }
     case 'message': {
+      if (
+        messageEmojiCount(event.text) > MAX_MESSAGE_EMOJIS ||
+        customEmojiIds(event.text).some((id) => !allowedEmojiIds.has(id))
+      )
+        throw new VoiceHttpError(
+          400,
+          'تجاوزت حد الفيسات أو اخترت فيسًا غير متاح.',
+          'INVALID_EMOJI',
+        );
       if (!state.settings.chatEnabled)
         throw new VoiceHttpError(403, 'الدردشة معطلة في هذه الغرفة.', 'CHAT_DISABLED');
       if (event.replyTo && !state.messages.some((m) => m.id === event.replyTo))
@@ -259,6 +280,7 @@ export function applyVoiceEvent(
       state.messages.push({
         id: messageId,
         userId,
+        ...(event.requestId ? { clientId: event.requestId } : {}),
         name: actor.name,
         image: actor.image,
         text: event.text,
@@ -271,12 +293,26 @@ export function applyVoiceEvent(
       break;
     }
     case 'reaction': {
+      if (!state.settings.chatEnabled)
+        throw new VoiceHttpError(403, 'الدردشة معطلة في هذه الغرفة.', 'CHAT_DISABLED');
+      if (
+        (!isUnicodeReaction(event.emoji) && !isCustomReaction(event.emoji)) ||
+        customEmojiIds(event.emoji).some((id) => !allowedEmojiIds.has(id))
+      )
+        throw new VoiceHttpError(400, 'هذا التفاعل غير متاح.', 'INVALID_EMOJI');
       const message = state.messages.find((m) => m.id === event.messageId);
       if (!message) throw new VoiceHttpError(404, 'الرسالة غير موجودة.');
       const ids = message.reactions[event.emoji] ?? [];
+      if (
+        !ids.includes(userId) &&
+        !message.reactions[event.emoji] &&
+        Object.keys(message.reactions).length >= 20
+      )
+        throw new VoiceHttpError(429, 'وصلت الرسالة إلى حد أنواع التفاعلات.', 'REACTION_LIMIT');
       message.reactions[event.emoji] = ids.includes(userId)
         ? ids.filter((id) => id !== userId)
         : [...ids, userId];
+      if (!message.reactions[event.emoji].length) delete message.reactions[event.emoji];
       break;
     }
     case 'pin-message': {

@@ -69,7 +69,11 @@ describe('chat transport invariants during typing', () => {
     fireEvent.click(send);
     fireEvent.click(send);
     expect(onEvent).toHaveBeenCalledOnce();
-    expect(onEvent).toHaveBeenCalledWith({ type: 'message', text: 'مرحبًا بالمجلس' });
+    expect(onEvent).toHaveBeenCalledWith({
+      type: 'message',
+      text: 'مرحبًا بالمجلس',
+      requestId: expect.any(String),
+    });
     expect(input).toHaveValue('  مرحبًا بالمجلس  ');
     expect(send).toBeDisabled();
 
@@ -97,7 +101,11 @@ describe('chat transport invariants during typing', () => {
       cursor: 1,
       messages: Array.from({ length: 199 }, (_, index) => message(`old-${index}`, index)),
     } as unknown as VoiceSnapshot;
-    const earlier = { roomId: 'room', cursor: 2, message: message('new-a', 200) };
+    const earlier = {
+      roomId: 'room',
+      cursor: 2,
+      message: message('new-a', 200),
+    };
     const later = { roomId: 'room', cursor: 3, message: message('new-b', 201) };
     const merged = withLiveMessages(snapshot, [later, earlier, later]);
     expect(merged.messages).toHaveLength(200);

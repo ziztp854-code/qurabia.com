@@ -835,6 +835,7 @@ model VoiceRoom {
   updatedAt   DateTime @updatedAt
   host        User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
   reports     VoiceReport[]
+  chatCommands VoiceChatCommand[]
   @@index([active, isPrivate, updatedAt])
   @@index([hostId, active])
 }
@@ -882,4 +883,33 @@ model VoiceDirectMessage {
   recipient User @relation("VoiceMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
   @@index([senderId, recipientId, createdAt])
   @@index([recipientId, createdAt])
+}
+
+model VoiceEmojiPack {
+  id        String @id @default(uuid())
+  name      String
+  enabled   Boolean @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+  emojis    VoiceEmoji[]
+}
+
+model VoiceEmoji {
+  id       String @id @default(uuid())
+  packId   String
+  pack     VoiceEmojiPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  label    String
+  animated Boolean @default(false)
+  content  Bytes
+  poster   Bytes
+  @@index([packId])
+}
+
+model VoiceChatCommand {
+  roomId    String
+  room      VoiceRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  requestId String
+  createdAt DateTime @default(now())
+  @@id([roomId, userId, requestId])
 }

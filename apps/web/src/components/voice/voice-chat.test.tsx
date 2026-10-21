@@ -42,7 +42,11 @@ describe('room composer', () => {
     expect(input).toHaveValue('أهلًا\nكيف الحال؟');
     fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }));
     await waitFor(() => expect(input).toHaveValue(''));
-    expect(onEvent).toHaveBeenLastCalledWith({ type: 'message', text: 'أهلًا\nكيف الحال؟' });
+    expect(onEvent).toHaveBeenLastCalledWith({
+      type: 'message',
+      text: 'أهلًا\nكيف الحال؟',
+      requestId: expect.any(String),
+    });
   });
   it('opens gifts without submitting or losing the draft and respects membership', () => {
     const onGift = vi.fn();

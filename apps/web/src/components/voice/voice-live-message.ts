@@ -7,6 +7,7 @@ const packetSchema = z
     message: z
       .object({
         id: z.string().min(1).max(191),
+        clientId: z.uuid().optional(),
         userId: z.string().min(1).max(191),
         name: z.string().max(120),
         image: z.string().max(2048).nullable(),
@@ -14,7 +15,7 @@ const packetSchema = z
         createdAt: z.number().int().nonnegative(),
         replyTo: z.string().max(191).nullable(),
         pinned: z.boolean(),
-        reactions: z.record(z.string().max(32), z.array(z.string().max(191)).max(500)),
+        reactions: z.record(z.string().max(42), z.array(z.string().max(191)).max(500)),
         gift: z
           .object({
             id: z.enum(['rose', 'applause', 'star', 'crown']),
@@ -27,7 +28,11 @@ const packetSchema = z
       .strict(),
   })
   .strict();
-export type VoiceLiveMessage = { roomId: string; cursor: number; message: VoiceMessage };
+export type VoiceLiveMessage = {
+  roomId: string;
+  cursor: number;
+  message: VoiceMessage;
+};
 export function readVoiceLiveMessage(bytes: Uint8Array, roomId: string): VoiceLiveMessage | null {
   if (bytes.length > 16_384) return null;
   try {
