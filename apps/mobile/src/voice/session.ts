@@ -247,8 +247,7 @@ export class NativeVoiceSession {
       });
       await room.connect(grant.url, grant.token, { autoSubscribe: true });
       if (generation !== this.generation) {
-        room.removeAllListeners();
-        await room.disconnect(true);
+        await this.retireRoom(room);
         return;
       }
       this.attempt = 0;
@@ -259,9 +258,7 @@ export class NativeVoiceSession {
       await this.synchronizeMicrophone();
       for (const listener of this.reconnectListeners) listener();
     } catch (error) {
-      room?.removeAllListeners();
-      await room?.disconnect(true);
-      if (this.room === room) this.room = null;
+      await this.retireRoom(room);
       if (generation !== this.generation || abort.signal.aborted) return;
       if (terminalVoiceError(error) || !voiceBackground.available && Platform.OS === 'android')
         await this.fail(error instanceof Error ? error.message : 'تعذر تشغيل خدمة الصوت.');
@@ -270,6 +267,17 @@ export class NativeVoiceSession {
         this.scheduleRetry(generation);
       }
     }
+  }
+
+  private async retireRoom(room: Room | null) {
+    if (!room) return;
+    // Reset ownership and stop capture before a potentially rejecting SDK cleanup.
+    if (this.room === room) this.room = null;
+    try { room.removeAllListeners(); } catch { /* Already disposed by the SDK. */ }
+    try { room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track?.stop(); }
+    catch { /* Continue teardown even when the native track already ended. */ }
+    try { await room.disconnect(true); }
+    catch { /* A rejected disconnect must not bypass terminal errors or recovery. */ }
   }
 
   private scheduleRetry(generation: number) {
