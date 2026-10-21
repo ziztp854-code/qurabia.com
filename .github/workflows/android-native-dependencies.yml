@@ -18,13 +18,32 @@ jobs:
           node-version: '24.14.0'
       - run: npm install --global pnpm@11.26.0 --ignore-scripts
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
-      - name: Query exact compatible dependency versions
+      - name: Generate lockfile with the installed Expo map
         run: |
           pnpm --filter @tahaddi/mobile exec node <<'NODE'
-          const fs = require('node:fs'), path=require('node:path');
-          const map = JSON.parse(fs.readFileSync(path.join(path.dirname(require.resolve('expo/package.json')), 'bundledNativeModules.json'),'utf8'));
-          console.log('EXPO_NATIVE_MAP '+JSON.stringify(Object.fromEntries(['expo-secure-store','expo-crypto'].map(k=>[k,map[k]]))));
+          const fs=require('node:fs'),path=require('node:path');
+          const file='package.json',pkg=JSON.parse(fs.readFileSync(file,'utf8'));
+          const map=JSON.parse(fs.readFileSync(path.join(path.dirname(require.resolve('expo/package.json')),'bundledNativeModules.json'),'utf8'));
+          for(const k of ['expo-secure-store','expo-crypto','expo-image']) {
+            if(typeof map[k]!=='string')throw new Error('Missing Expo native map for '+k);
+            pkg.dependencies[k]=map[k];
+          }
+          fs.writeFileSync(file,JSON.stringify(pkg,null,2)+'\n');
+          console.log('INSTALLED_EXPO '+require('expo/package.json').version);
+          console.log('EXPO_NATIVE_MAP '+JSON.stringify(Object.fromEntries(['expo-secure-store','expo-crypto','expo-image'].map(k=>[k,map[k]]))));
           NODE
-          for spec in '@livekit/react-native@3.1.0' '@livekit/react-native-webrtc@150.1.0' 'livekit-client@2.23.0' '@livekit/react-native-expo-plugin@1.1.0' '@config-plugins/react-native-webrtc@latest' '@expo-google-fonts/cairo@0.4.1'; do
-            npm view "$spec" version peerDependencies dependencies --json
-          done
+          pnpm --filter @tahaddi/mobile... install --lockfile-only --ignore-scripts
+          pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
+          git diff --check
+      - name: Relay exact generated files for reviewed commit
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          for(const path of ['apps/mobile/package.json','pnpm-lock.yaml']) {
+            const text=fs.readFileSync(path,'utf8');
+            const encoded=Buffer.from(text).toString('base64');
+            for(let offset=0,index=0;offset<encoded.length;offset+=12000,index++)
+              console.log('NATIVE_FILE '+JSON.stringify({path,index,chunk:encoded.slice(offset,offset+12000)}));
+            console.log('NATIVE_FILE_END '+JSON.stringify({path,bytes:Buffer.byteLength(text),chunks:Math.ceil(encoded.length/12000)}));
+          }
+          NODE
