@@ -2,6 +2,7 @@
 import importlib.util
 import pathlib
 import unittest
+from unittest.mock import patch
 import urllib.request
 
 SCRIPT = pathlib.Path(__file__).resolve().parents[1] / "scripts" / "android-native-smoke.py"
@@ -71,6 +72,40 @@ class NativeSmokeGuards(unittest.TestCase):
         self.assertIsNotNone(node)
         self.assertEqual(smoke.center(node), (60, 60))
         self.assertIsNone(smoke.find_node(xml, "missing-control"))
+
+    def test_server_status_reads_nested_accessibility_text(self):
+        xml = """<node resource-id="server-status" bounds="[0,0][100,50]">
+          <node text="تم الاتصال بخادم تحدّي" />
+        </node>"""
+        self.assertIn("تم الاتصال بخادم تحدّي", smoke.node_label(smoke.find_node(xml, "server-status")))
+
+    def test_native_connectivity_waits_for_real_online_status_instead_of_accepting_pending(self):
+        pending = smoke.ET.fromstring('<node text="جارٍ التحقق من الاتصال بالخادم…" />')
+        online = smoke.ET.fromstring('<node text="تم الاتصال بخادم تحدّي" />')
+
+        class DeviceFixture:
+            calls = 0
+
+            def wait_node(self, test_id, timeout):
+                self.calls += 1
+                return pending if self.calls == 1 else online
+
+        device = DeviceFixture()
+        with patch.object(smoke.time, "sleep"):
+            result = smoke.Device.connection_status(device, timeout=5)
+        self.assertEqual(result["state"], "online")
+        self.assertEqual(device.calls, 2)
+
+    def test_failed_native_probe_is_reported_failed_without_becoming_runner_success(self):
+        failed = smoke.ET.fromstring('<node text="تعذر الاتصال بخادم تحدّي" />')
+
+        class DeviceFixture:
+            def wait_node(self, test_id, timeout):
+                return failed
+
+        result = smoke.Device.connection_status(DeviceFixture(), timeout=5)
+        self.assertEqual(result["state"], "failed")
+        self.assertIn("تعذر الاتصال", result["label"])
 
     def test_ui_text_does_not_substitute_for_the_expected_native_control(self):
         xml = """<hierarchy>
