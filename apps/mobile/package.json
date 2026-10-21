@@ -10,7 +10,7 @@
     "build:ios": "npx eas-cli@latest build --platform ios --profile production",
     "submit:ios": "npx eas-cli@latest submit --platform ios --profile production",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm --filter @tahaddi/domain build && tsx --test src/join-flow.test.ts"
+    "test": "tsc -p ../../packages/domain/tsconfig.json && node scripts/test-native.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/readex-pro": "0.4.1",

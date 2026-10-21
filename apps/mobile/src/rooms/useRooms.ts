@@ -284,7 +284,8 @@ export function useRooms(request: ApiRequest, { enabled }: { enabled: boolean })
       stopped = true;
       clearTimeout(timer);
       listener.remove();
-      if (readRef.current?.roomId === roomId) readRef.current.controller.abort();
+      const activeRead = readRef.current;
+      if (activeRead && activeRead.roomId === roomId) activeRead.controller.abort();
     };
   }, [enabled, roomId, refreshSnapshot, refresh]);
 
