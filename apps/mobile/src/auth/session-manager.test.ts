@@ -26,10 +26,10 @@ function setup(options: { failLogout?: boolean; callback?: string; csrfCookie?: 
     let payload: unknown;
     let cookies: string[] = [];
     let status = 200;
-    if (path === '/api/auth/csrf') {
+    if (path === '/api/auth/csrf/') {
       payload = { csrfToken };
       if (options.csrfCookie !== false) cookies = ['__Host-next-auth.csrf-token=' + csrfToken + '%7Chash; Path=/; Secure; HttpOnly'];
-    } else if (path === '/api/auth/callback/credentials') {
+    } else if (path === '/api/auth/callback/credentials/') {
       const form = new URLSearchParams(init.body as string);
       assert.equal(init.method, 'POST');
       assert.equal(init.headers['Content-Type'], 'application/x-www-form-urlencoded');
@@ -41,10 +41,10 @@ function setup(options: { failLogout?: boolean; callback?: string; csrfCookie?: 
       assert.equal(form.get('callbackUrl'), 'https://test.example/voice');
       payload = { url: options.callback ?? 'https://test.example/voice' };
       cookies = [cookie];
-    } else if (path === '/api/auth/session') {
+    } else if (path === '/api/auth/session/') {
       assert.match(init.headers.Cookie, /session-token=opaque-encrypted-session/);
       payload = options.revoked ? {} : session;
-    } else if (path === '/api/auth/signout') {
+    } else if (path === '/api/auth/signout/') {
       if (options.failLogout) throw new Error('network is offline');
       assert.match(init.headers.Cookie, /session-token=/);
       assert.equal(new URLSearchParams(init.body as string).get('csrfToken'), csrfToken);
@@ -67,14 +67,14 @@ test('credentials protocol sends CSRF cookie + form, validates server session an
   await manager.signIn(' MEMBER@example.test ', 'test-only-password');
   assert.equal(manager.getSnapshot().user?.id, session.user.id);
   assert.equal(manager.getSnapshot().status, 'authenticated');
-  assert.deepEqual(requests.map((request) => request.path), ['/api/auth/csrf', '/api/auth/callback/credentials', '/api/auth/session']);
+  assert.deepEqual(requests.map((request) => request.path), ['/api/auth/csrf/', '/api/auth/callback/credentials/', '/api/auth/session/']);
   assert.doesNotMatch([...data.values()].join(''), /test-only-password|csrf-token|member@example/);
 });
 
 test('missing CSRF response cookie fails closed before posting credentials', async () => {
   const { manager, requests, data } = setup({ csrfCookie: false });
   await assert.rejects(manager.signIn('member@example.test', 'test-only-password'), (error: unknown) => error instanceof ApiError && error.code === 'CSRF_UNAVAILABLE');
-  assert.deepEqual(requests.map((request) => request.path), ['/api/auth/csrf']);
+  assert.deepEqual(requests.map((request) => request.path), ['/api/auth/csrf/']);
   assert.equal(manager.getSnapshot().status, 'unauthenticated');
   assert.equal(data.size, 0);
 });
@@ -101,7 +101,7 @@ test('logout posts CSRF and clears local encrypted session even when the server 
     const { manager, jar, data, requests } = setup({ failLogout });
     await manager.signIn('member@example.test', 'test-only-password');
     await manager.signOut();
-    assert.ok(requests.some((request) => request.path === '/api/auth/signout'));
+    assert.ok(requests.some((request) => request.path === '/api/auth/signout/'));
     assert.equal(manager.getSnapshot().status, 'unauthenticated');
     assert.equal(jar.header(), '');
     assert.equal(data.size, 0);
@@ -112,7 +112,7 @@ test('logout posts CSRF and clears local encrypted session even when the server 
 test('authenticated API 401 clears credentials and forces reauthentication', async () => {
   const { manager, client, jar, data } = setup();
   await manager.signIn('member@example.test', 'test-only-password');
-  await assert.rejects(client.request('/api/voice/rooms'), (error: unknown) => error instanceof ApiError && error.status === 401);
+  await assert.rejects(client.request('/api/voice/rooms/'), (error: unknown) => error instanceof ApiError && error.status === 401);
   assert.equal(manager.getSnapshot().status, 'unauthenticated');
   assert.equal(jar.header(), '');
   assert.equal(data.size, 0);
