@@ -44,14 +44,12 @@ jobs:
       - name: Install pinned pnpm
         run: npm install --global pnpm@11.26.0 --ignore-scripts
 
-      - name: Confirm declared package versions exist
+      - name: Record pinned toolchain and mobile dependency declarations
         run: |
           {
             node --version
             pnpm --version
-            npm view expo@57.0.23 version
-            npm view react-native@0.87.1 version
-            npm view react@19.3.0 version
+            node -p 'JSON.stringify(require("./apps/mobile/package.json").dependencies, null, 2)'
           } 2>&1 | tee android-reports/registry.log
 
       - name: Install mobile dependency closure without server lifecycle scripts
@@ -117,7 +115,20 @@ jobs:
 
       - name: Generate Android source and prepare standalone debug
         run: |
+          cp apps/mobile/package.json "$RUNNER_TEMP/mobile-package-before-prebuild.json"
           pnpm --filter @tahaddi/mobile exec expo prebuild --platform android --no-install 2>&1 | tee android-reports/prebuild.log
+          node <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const original = fs.readFileSync(process.env.RUNNER_TEMP + '/mobile-package-before-prebuild.json', 'utf8');
+          const before = JSON.parse(original);
+          const after = JSON.parse(fs.readFileSync('apps/mobile/package.json', 'utf8'));
+          const expected = structuredClone(before);
+          expected.scripts.android = 'expo run:android';
+          expected.scripts.ios = 'expo run:ios';
+          assert.deepEqual(after, expected, 'Unexpected prebuild manifest change beyond the two Expo run scripts');
+          fs.writeFileSync('apps/mobile/package.json', original);
+          NODE
           node apps/mobile/scripts/prepare-android-debug.cjs
           git diff --exit-code -- apps/mobile/package.json pnpm-lock.yaml
           cd apps/mobile/android
