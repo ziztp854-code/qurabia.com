@@ -37,24 +37,40 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     // Authoritative permission updates are handled in the separate effect below.
   },[voice,roomId,memberId]);
   useEffect(()=>{voice.updateParticipant(rooms.snapshot?.me||null);},[voice,rooms.snapshot]);
-  useEffect(()=>()=>{void voice.leave().catch(()=>{});},[voice]);
+  useEffect(()=>()=>{void voice.dispose().catch(()=>{});},[voice]);
   useEffect(()=>{
-    if(auth.status!=='authenticated'){navigation.go('home');setError('');}
+    if(auth.status!=='authenticated')navigation.go('home');
   },[auth.status,navigation.go]);
   useEffect(()=>{
     if(navigation.screen==='room'&&!rooms.snapshot)navigation.go('rooms');
   },[navigation.screen,rooms.snapshot,navigation.go]);
+  async function cleanupMembership(){
+    const failures:string[]=[];
+    try{await voice.leave();}
+    catch{failures.push('تعذر إنهاء جلسة الصوت على الجهاز.');}
+    // A native SDK failure must never prevent the authoritative leave request.
+    try{await rooms.leave();}
+    catch{failures.push('تعذر تأكيد مغادرة الغرفة لدى الخادم.');}
+    return failures;
+  }
   async function leave(){
-    await voice.leave();
-    await rooms.leave();
+    const failures=await cleanupMembership();
     navigation.go('rooms');
+    if(failures.length){
+      const message=failures.join(' ');
+      setError(message);
+      throw new Error(message);
+    }
   }
   async function signOut(){
-    await voice.leave();
-    if(rooms.snapshot){
-      try{await rooms.leave();}catch{/* Logout revokes the session even if membership cleanup is offline. */}
+    setError('');
+    const failures=await cleanupMembership();
+    try{
+      // Always revoke the session, independently of media or membership cleanup.
+      await auth.signOut();
+    } finally {
+      if(failures.length)setError(failures.join(' '));
     }
-    await auth.signOut();
   }
   useEffect(()=>{
     const handler=BackHandler.addEventListener('hardwareBackPress',()=>{
@@ -93,9 +109,8 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     }
   }
   const content=auth.status==='loading'?<Loading label="جارٍ استعادة الجلسة…"/>:
-    auth.status!=='authenticated'?<AuthScreen signIn={auth.signIn} authError={auth.error}/>:
+    auth.status!=='authenticated'?<AuthScreen signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
     <View style={ui.flex}>
-      <Notice message={error}/>
       {navigation.screen==='profile'?<ProfileScreen user={auth.user} asset={asset}
         onRefresh={auth.refreshSession} onSignOut={signOut}/>:
         navigation.screen==='room'&&rooms.snapshot?<RoomScreen snapshot={rooms.snapshot} rooms={rooms}
@@ -123,7 +138,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
       </View>}
     </View>;
   return <UiProvider fontsReady={fontsReady}>
-    <SafeAreaView style={styles.root} edges={['top','bottom','left','right']}>{content}</SafeAreaView>
+    <SafeAreaView style={styles.root} edges={['top','bottom','left','right']}><Notice message={error}/>{content}</SafeAreaView>
   </UiProvider>;
 }
 const styles=StyleSheet.create({
