@@ -30,7 +30,7 @@ export function canManageRoom(snapshot: VoiceSnapshot): boolean {
 }
 
 export function availableSeat(snapshot: VoiceSnapshot, preferred?: number): number | undefined {
-  const available = (index: number) => index >= 0 && index < snapshot.room.seatCount &&
+  const available = (index: number) => Number.isInteger(index) && index >= 0 && index < snapshot.room.seatCount &&
     !snapshot.room.lockedSeats.includes(index) &&
     !snapshot.participants.some((person) => person.seatIndex === index);
   if (preferred !== undefined && available(preferred)) return preferred;
