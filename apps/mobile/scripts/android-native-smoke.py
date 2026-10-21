@@ -231,8 +231,15 @@ def main() -> int:
             device.wait_node(test_id)
         report["checks"]["native_login_render"] = True
         report["login_render_observed_ms"] = round((time.monotonic() - started) * 1000, 1)
+        report["login_render_measurement"] = "Wall-clock upper bound including UIAutomator polling; not native frame timing"
         device.tap("login-submit")
-        device.wait_node("login-error")
+        validation = device.wait_node("login-error")
+        validation_text = " ".join(
+            node.attrib.get("text", "") + " " + node.attrib.get("content-desc", "")
+            for node in validation.iter()
+        )
+        if "أدخل البريد الإلكتروني وكلمة المرور." not in validation_text:
+            raise RuntimeError("Native empty-credentials validation did not show the expected local error")
         report["checks"]["empty_credentials_validation"] = True
         report["read_only_https"] = read_only_reachability(base)
         if authenticated:
