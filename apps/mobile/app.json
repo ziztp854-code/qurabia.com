@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "تحدّي",
+    "name": "تحدّي لايف",
     "slug": "tahaddi-mobile",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "tahaddi",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#070A0F",
+    "backgroundColor": "#080510",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#070A0F"
+      "backgroundColor": "#080510"
     },
     "ios": {
       "bundleIdentifier": "com.qurabia.tahaddi",
@@ -21,7 +21,9 @@
       },
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ar",
-        "CFBundleLocalizations": ["ar"]
+        "CFBundleLocalizations": [
+          "ar"
+        ]
       }
     },
     "android": {
@@ -30,7 +32,26 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#070A0F"
       },
-      "predictiveBackGestureEnabled": true
-    }
+      "predictiveBackGestureEnabled": true,
+      "versionCode": 2,
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "plugins": [
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ],
+      [
+        "@livekit/react-native-expo-plugin",
+        {
+          "android": {
+            "audioType": "communication"
+          }
+        }
+      ],
+      "./plugins/withVoiceAndroid.cjs"
+    ]
   }
 }
