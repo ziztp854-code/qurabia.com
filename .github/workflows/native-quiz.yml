@@ -1,0 +1,45 @@
+name: Native quiz integration
+on:
+  push:
+    branches: [fix/native-quiz-reconcile]
+    paths: ['apps/mobile/**', 'apps/web/src/app/api/live/join/**', 'apps/web/src/app/live/actions.ts', 'apps/web/src/lib/live/join-quiz-session.ts', 'apps/web/src/lib/architecture/**', 'pnpm-lock.yaml', '.github/workflows/native-quiz.yml']
+  pull_request:
+    branches: [feat/android-premium-design]
+    paths: ['apps/mobile/**', 'apps/web/src/app/api/live/join/**', 'apps/web/src/app/live/actions.ts', 'apps/web/src/lib/live/join-quiz-session.ts', 'apps/web/src/lib/architecture/**', 'pnpm-lock.yaml', '.github/workflows/native-quiz.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-quiz-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts-and-bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: '1'
+      EXPO_OFFLINE: '1'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_NO_DOTENV: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24.14.0'
+      - run: npm install --global pnpm@11.26.0 --ignore-scripts
+      - run: pnpm --filter @tahaddi/mobile... --filter @tahaddi/web... install --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter @mamluk/world-map-core build
+      - run: pnpm --filter @mamluk/maplibre-adapter build
+      - run: pnpm --filter @tahaddi/domain build
+      - run: pnpm --filter @tahaddi/mobile typecheck
+      - run: pnpm --filter @tahaddi/mobile test
+      - run: pnpm --filter @tahaddi/mobile exec expo install --check
+      - run: pnpm --filter @tahaddi/web typecheck
+      - name: Check join API and registry
+        run: pnpm --filter @tahaddi/web exec vitest run src/app/api/live/join/route.test.ts src/lib/architecture/registry.test.ts
+      - name: Bundle actual native entry
+        run: pnpm --filter @tahaddi/mobile exec expo export --platform android --output-dir /tmp/native-quiz-export
+      - name: Frozen declarations remain unchanged
+        run: git diff --exit-code -- apps/mobile/package.json pnpm-lock.yaml

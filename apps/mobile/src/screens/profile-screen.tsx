@@ -4,9 +4,9 @@ import { Action, Avatar, Body, FormScreen, Notice, Panel, Title, ui } from '../c
 import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import { theme } from '../theme';
 
-export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
+export function ProfileScreen({user,asset,onRefresh,onSignOut,onOpenQuiz}:{
   user:SessionUser|null;asset:(path:string)=>ImageSourcePropType|undefined;
-  onRefresh:()=>Promise<unknown>;onSignOut:()=>Promise<void>;
+  onRefresh:()=>Promise<unknown>;onSignOut:()=>Promise<void>;onOpenQuiz?:()=>void;
 }) {
   const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   async function run(action:()=>Promise<unknown>){if(busy)return;setBusy(true);setError('');
@@ -53,6 +53,7 @@ export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
             onPress={()=>{void run(onSignOut);}}/>
         </View>
       </Panel>
+      {onOpenQuiz&&<Action testID="open-quiz" label="المسابقات" tone="secondary" onPress={onOpenQuiz} disabled={busy}/>}
       <Notice message={error}/>
       <Body muted style={styles.footer}>حافظ على خصوصية حسابك على الأجهزة المشتركة.</Body>
     </View>

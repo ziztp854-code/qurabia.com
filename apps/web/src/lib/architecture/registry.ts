@@ -19,6 +19,11 @@ export const API_REGISTRY: ApiRecord[] = [
     auth: 'Host/Player access token مربوط بالجلسة', file: 'apps/web/src/app/api/live/[sessionId]/room/route.ts',
   },
   {
+    id: 'api-live-join', method: 'POST', route: '/api/live/join', group: 'Live',
+    consumer: 'تطبيق الجوال عند انضمام اللاعب برمز الغرفة', service: 'Live Join', source: 'LiveSession / LiveParticipant',
+    auth: 'زائر؛ Rate Limit حسب IP ويعيد Player access token', file: 'apps/web/src/app/api/live/join/route.ts',
+  },
+  {
     id: 'api-live-tick', method: 'POST', route: '/api/live/[sessionId]/tick', group: 'Live',
     consumer: 'واجهة اللعب المباشر', service: 'Live Engine', source: 'LiveSession / LiveParticipant',
     auth: 'Origin نفس الموقع وRate Limit حسب IP؛ الحضور عبر هوية موثقة في room', file: 'apps/web/src/app/api/live/[sessionId]/tick/route.ts',
