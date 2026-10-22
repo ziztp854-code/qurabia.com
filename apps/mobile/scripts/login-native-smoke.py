@@ -403,6 +403,15 @@ def reveal_room_control(device, module, test_id: str):
     raise RoomCreateFailure("control_not_revealed")
 
 
+def modal_footer_state(device) -> dict:
+    # Observe only. BACK is deliberately never used in the native room modal.
+    keyboard = keyboard_state(device)
+    root = ET.fromstring(device.ui())
+    present = any(node.attrib.get("text") == "أنشئ مساحتك الصوتية" for node in root.iter())
+    return {"keyboard": keyboard, "action": "tap_fixed_footer_with_ime",
+            "sent_back": False, "modal_present": present}
+
+
 def create_native_host_room(device, module, report: dict, prefix: str):
     def mark(stage: str):
         report["phase"] = prefix + "_" + stage
@@ -427,11 +436,20 @@ def create_native_host_room(device, module, report: dict, prefix: str):
     state = report["room_ui_snapshots"][report["phase"]]
     if not state.get("room_name_matches"):
         raise RoomCreateFailure("room_name_not_entered")
-    hide_keyboard_if_shown(device)
-    mark("keyboard_dismissed")
+    modal = modal_footer_state(device)
+    report.setdefault("keyboard_actions", {})[prefix + "_modal_save"] = modal
+    if not modal["modal_present"]:
+        raise RoomCreateFailure("room_modal_not_present")
+    mark("keyboard_retained_for_footer")
     mark("save_reveal")
-    node = reveal_room_control(device, module, "room-save")
+    node = device.wait_node("room-save", timeout=15)
     mark("save_ready")
+    footer_state = report["room_ui_snapshots"][report["phase"]]
+    if not footer_state.get("modal_title_present"):
+        raise RoomCreateFailure("room_modal_not_present")
+    if not all(footer_state.get("controls", {}).get("room-save", {}).get(key, False)
+               for key in ("present", "enabled", "visible", "center_on_screen")):
+        raise RoomCreateFailure("room_save_footer_unavailable")
     x, y = module.center(node)
     device.adb("shell", "input", "tap", str(x), str(y))
     mark("save_tapped")
