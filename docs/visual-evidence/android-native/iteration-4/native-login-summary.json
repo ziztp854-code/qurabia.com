@@ -1,0 +1,61 @@
+{
+  "status": "failed",
+  "source_sha": "2b8560e1406034e73b236424ad21ad206f47ecdb",
+  "phase": "manual_create_save_ready",
+  "checks": {
+    "native_isolated_https": true,
+    "wrong_password_rejected_with_safe_arabic_error": true,
+    "email_preserved_after_rejected_login": true,
+    "real_csrf_credentials_session_and_rooms": true,
+    "secure_session_survives_process_restart": true
+  },
+  "failure_category": "room_save_field_overlaps_ime",
+  "create_http_evidence": {
+    "room_create_attempts": 0,
+    "room_create_response_status": 0,
+    "room_create_server_errors": 0
+  },
+  "host_server_counters": {
+    "room_create_ok": 0,
+    "room_close_ok": 0,
+    "leave_while_active": 0,
+    "signout_while_active": 0,
+    "owned_rooms": 0,
+    "active_rooms": 0,
+    "closed_rooms": 0,
+    "closed_with_members": 0,
+    "inconsistent_rooms": 0
+  },
+  "room_save_geometry": {
+    "manual_create": {
+      "keyboard": "shown",
+      "screen_bounds_px": [
+        0,
+        0,
+        1080,
+        2400
+      ],
+      "field_bounds_px": [
+        66,
+        1231,
+        1014,
+        1378
+      ],
+      "ime_bounds_px": [
+        0,
+        128,
+        1080,
+        2400
+      ],
+      "overlaps_ime": true,
+      "reachable": false,
+      "reason": "field_overlaps_ime"
+    }
+  },
+  "limitations": [
+    "Separate test APK trusts an ephemeral localhost CA; distributed production APK does not.",
+    "Emulator authentication does not prove physical-device or production deployment behavior.",
+    "No SFU is configured: room commands/database closure are tested, not audio capture or SFU participant eviction.",
+    "Production rate limiter, real-user credentials and production writes are not exercised."
+  ]
+}

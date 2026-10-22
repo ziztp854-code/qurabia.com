@@ -1,0 +1,1 @@
+a6463f9cca0318630e7c6a617f5c2754e2fa0447ee03b793c70a8b67f9c5e1da  apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk

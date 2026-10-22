@@ -1,0 +1,293 @@
+{
+  "status": "failed",
+  "source_sha": "2b8560e1406034e73b236424ad21ad206f47ecdb",
+  "label": "current",
+  "scope": "emulated visual presentation with explicitly public static fixtures",
+  "screens": [
+    {
+      "file": "current-320dp-home.png",
+      "case": "320dp",
+      "page": "home",
+      "width_px": 960,
+      "height_px": 1920,
+      "density_dpi": 480,
+      "width_dp": 320.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-320dp-rooms.png",
+      "case": "320dp",
+      "page": "rooms",
+      "width_px": 960,
+      "height_px": 1920,
+      "density_dpi": 480,
+      "width_dp": 320.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-320dp-profile.png",
+      "case": "320dp",
+      "page": "profile",
+      "width_px": 960,
+      "height_px": 1920,
+      "density_dpi": 480,
+      "width_dp": 320.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-320dp-room.png",
+      "case": "320dp",
+      "page": "room",
+      "width_px": 960,
+      "height_px": 1920,
+      "density_dpi": 480,
+      "width_dp": 320.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-home.png",
+      "case": "360dp",
+      "page": "home",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-rooms.png",
+      "case": "360dp",
+      "page": "rooms",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-profile.png",
+      "case": "360dp",
+      "page": "profile",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-room.png",
+      "case": "360dp",
+      "page": "room",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-427dp-home.png",
+      "case": "427dp",
+      "page": "home",
+      "width_px": 1280,
+      "height_px": 2560,
+      "density_dpi": 480,
+      "width_dp": 426.67,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-427dp-rooms.png",
+      "case": "427dp",
+      "page": "rooms",
+      "width_px": 1280,
+      "height_px": 2560,
+      "density_dpi": 480,
+      "width_dp": 426.67,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-427dp-profile.png",
+      "case": "427dp",
+      "page": "profile",
+      "width_px": 1280,
+      "height_px": 2560,
+      "density_dpi": 480,
+      "width_dp": 426.67,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-427dp-room.png",
+      "case": "427dp",
+      "page": "room",
+      "width_px": 1280,
+      "height_px": 2560,
+      "density_dpi": 480,
+      "width_dp": 426.67,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-800dp-home.png",
+      "case": "800dp",
+      "page": "home",
+      "width_px": 1600,
+      "height_px": 2560,
+      "density_dpi": 320,
+      "width_dp": 800.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-800dp-rooms.png",
+      "case": "800dp",
+      "page": "rooms",
+      "width_px": 1600,
+      "height_px": 2560,
+      "density_dpi": 320,
+      "width_dp": 800.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-800dp-profile.png",
+      "case": "800dp",
+      "page": "profile",
+      "width_px": 1600,
+      "height_px": 2560,
+      "density_dpi": 320,
+      "width_dp": 800.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-800dp-room.png",
+      "case": "800dp",
+      "page": "room",
+      "width_px": 1600,
+      "height_px": 2560,
+      "density_dpi": 320,
+      "width_dp": 800.0,
+      "font_scale": 1.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-font2-home.png",
+      "case": "360dp-font2",
+      "page": "home",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 2.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-font2-rooms.png",
+      "case": "360dp-font2",
+      "page": "rooms",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 2.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-font2-profile.png",
+      "case": "360dp-font2",
+      "page": "profile",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 2.0,
+      "public_fixture_only": true
+    },
+    {
+      "file": "current-360dp-font2-room.png",
+      "case": "360dp-font2",
+      "page": "room",
+      "width_px": 1080,
+      "height_px": 2160,
+      "density_dpi": 480,
+      "width_dp": 360.0,
+      "font_scale": 2.0,
+      "public_fixture_only": true
+    }
+  ],
+  "phase": "360dp_search_keyboard",
+  "limitations": [
+    "This is a separate non-distributed preview entry, not authenticated application evidence.",
+    "No authentication, sessions, writes, voice, server connection or SFU operation is tested.",
+    "Screenshots require human visual review; successful capture is not visual acceptance.",
+    "Only public fixtures are captured; no UI XML or raw logs are archived."
+  ],
+  "apk_sha256": "8b269e0184d8aeeed1f19a39815e3f38de93242e43719188ddecec93fca17791",
+  "device": {
+    "model": "sdk_gphone64_x86_64",
+    "android_api": "36"
+  },
+  "layout_checks": [
+    {
+      "case": "320dp",
+      "first_room_title_and_host_above_fold": true
+    },
+    {
+      "case": "360dp",
+      "first_room_title_and_host_above_fold": true
+    },
+    {
+      "case": "427dp",
+      "first_room_title_and_host_above_fold": true
+    },
+    {
+      "case": "800dp",
+      "first_room_title_and_host_above_fold": true
+    }
+  ],
+  "keyboard_geometry": {
+    "search": {
+      "keyboard": "shown",
+      "screen_bounds_px": [
+        0,
+        0,
+        1080,
+        2160
+      ],
+      "field_bounds_px": [
+        48,
+        646,
+        1032,
+        790
+      ],
+      "ime_bounds_px": [
+        0,
+        115,
+        1080,
+        2160
+      ],
+      "overlaps_ime": true,
+      "reachable": false,
+      "reason": "field_overlaps_ime",
+      "bounds_px": [
+        48,
+        646,
+        1032,
+        790
+      ],
+      "height_dp": 48.0,
+      "fully_inside_app_viewport": true
+    }
+  },
+  "failure": "keyboard_input_field_overlaps_ime"
+}
