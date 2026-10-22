@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Switch, View, type ImageSourcePropType } from 'react-native';
 import type { VoiceCreateInput, VoiceRoom } from '../api/contracts';
 import type { useRooms } from '../rooms/useRooms';
@@ -11,6 +11,7 @@ const covers = [
   ['friends','مجلس الأصدقاء'],['coffee','قهوة وسوالف'],['gaming','مساحة التحدي'],
   ['oud','جلسة طرب'],['discussion','نقاشات حرة'],['quiz','مسابقات مباشرة'],
 ] as const;
+const filters = ['الكل', ...categories];
 export function RoomsScreen({ model, onJoined, asset, home = false, displayName = '' }: {
   model: RoomsModel; onJoined: () => void; asset: (path: string) => ImageSourcePropType | undefined;
   home?: boolean; displayName?: string;
@@ -36,54 +37,79 @@ export function RoomsScreen({ model, onJoined, asset, home = false, displayName 
   }
   return <View style={ui.flex}>
     <FlatList testID="rooms-list" data={filtered} keyExtractor={room => room.id}
-      contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled"
+      contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={model.refreshing} onRefresh={() => { void model.refresh().catch(()=>{}); }}
         tintColor={theme.colors.gold} colors={[theme.colors.gold]}/>}
-      ListHeaderComponent={<View style={ui.gap}>
-        {home && <Panel><Body muted>أهلًا {displayName || 'بك'}</Body>
-          <Title>مجلسك يبدأ هنا</Title><Body muted>اكتشف الغرف الحية، أو اجمع أصحابك في مساحة من صنعك.</Body></Panel>}
-        <View style={ui.row}><View style={ui.grow}><Body style={ui.gold}>تحدّي لايف</Body><Title>غرف على الهواء</Title></View>
+      ListHeaderComponent={<View style={styles.header}>
+        <View style={ui.row}>
+          <View style={styles.brandMark} accessible={false}><Image source={require('../../assets/tahaddi-crown.webp')}
+            resizeMode="contain" style={styles.crown}/></View>
+          <View style={ui.grow}><Body weight="bold" style={styles.brandName}>تحدّي لايف</Body>
+            <Body muted style={ui.caption} numberOfLines={1}>{home?'أهلًا، '+(displayName || 'بك'):'مساحة للصوت والحديث'}</Body></View>
           <Action compact testID="rooms-refresh" tone="secondary" label="تحديث" busy={model.refreshing}
-            onPress={() => { void model.refresh().catch(()=>{}); }}/></View>
+            onPress={() => { void model.refresh().catch(()=>{}); }}/>
+        </View>
+        <Panel style={home?styles.welcome:styles.discover}>
+          <Title>{home?'مجلسك يبدأ هنا':'غرف على الهواء'}</Title>
+          <Body muted style={ui.small}>{home?'حديث يجمعك بأصحابك.':
+            'اختر ما يشبه اهتمامك، وانضم إلى الحديث.'}</Body>
+          <Action testID="room-create" label="أنشئ غرفة صوتية" onPress={() => setCreating(true)}/>
+        </Panel>
         <Field label="ابحث عن مجلس" value={query} onChangeText={setQuery} placeholder="اسم الغرفة أو المضيف"
           returnKeyType="search" autoCorrect={false}/>
-        <View style={ui.wrap}>{['الكل', ...categories].map(item => <Pressable key={item}
-          accessibilityRole="button" accessibilityState={{selected: category === item}}
-          onPress={() => setCategory(item)}
-          style={({pressed}) => [styles.chip,category === item && styles.chipSelected,pressed && styles.pressed]}>
-          <Body style={[ui.small,category === item && styles.chipText]}>{item}</Body></Pressable>)}</View>
+        <FlatList horizontal inverted data={filters} keyExtractor={item=>item}
+          style={styles.filterRail} contentContainerStyle={styles.filterContent} showsHorizontalScrollIndicator={false}
+          renderItem={({item})=><Pressable accessibilityRole="button" accessibilityState={{selected:category===item}}
+            onPress={()=>setCategory(item)} android_ripple={{color:theme.colors.press}}
+            style={({pressed})=>[styles.chip,category===item&&styles.chipSelected,pressed&&styles.pressed]}>
+            <Body weight={category===item?'bold':'regular'} style={[ui.small,category===item&&styles.chipText]}>{item}</Body>
+          </Pressable>}/>
         <Notice message={model.error}/>
-        <Action testID="room-create" label="أنشئ غرفة صوتية" onPress={() => setCreating(true)}/>
-        <Body muted style={ui.small}>{filtered.length.toLocaleString('ar-SA')} غرفة في القائمة الحالية</Body>
+        <View style={ui.row}><Title small>{category==='الكل'?'اكتشف المجالس':category}</Title>
+          <View style={ui.grow}/><Body muted style={ui.caption}>{filtered.length.toLocaleString('ar-SA')} غرفة</Body></View>
       </View>}
-      renderItem={({item}) => <RoomCard room={item} source={asset(item.cover)} onPress={() => {
+      renderItem={({item,index}) => <RoomCard room={item} source={asset(item.cover)} featured={home&&index===0} onPress={() => {
         if(model.snapshot?.room.id === item.id) onJoined();
         else {setError('');setPassword('');setSelected(item);}
       }}/>}
       ListEmptyComponent={model.loading ? <Loading/> : <Empty
-        title={query ? 'لا توجد نتائج' : 'لا توجد غرف معروضة'}
-        description={query ? 'جرّب اسمًا آخر أو اختر تصنيفًا مختلفًا.' : 'اسحب القائمة للتحديث، أو أنشئ غرفتك الأولى.'}/>}
+        title={query ? 'لا توجد نتائج' : 'المجلس القادم قد يكون مجلسك'}
+        description={query ? 'جرّب اسمًا آخر أو اختر تصنيفًا مختلفًا.' : 'لا توجد غرف في هذا التصنيف الآن. حدّث القائمة أو أنشئ غرفة صوتية.'}/>}
       ItemSeparatorComponent={() => <View style={{height: theme.spacing.md}}/>}/>
-    <Sheet title={selected?.name || 'الانضمام إلى الغرفة'} visible={!!selected} onClose={() => {if(!busy) setSelected(null);}}>
+    <Sheet title={selected?.name || 'الانضمام إلى الغرفة'} visible={!!selected} onClose={() => {if(!busy) setSelected(null);}}
+      footer={<><Notice message={error}/><Action label="انضم إلى الغرفة" busy={busy} onPress={() => { void join(); }}/></>}>
       <Body muted>{selected?.description || 'انضم إلى الحديث مع أعضاء الغرفة.'}</Body>
       {!!selected?.passwordRequired && <Field label="كلمة مرور الغرفة" secureTextEntry value={password} onChangeText={setPassword} ltr/>}
-      <Notice message={error}/><Action label="انضم إلى الغرفة" busy={busy} onPress={() => { void join(); }}/>
     </Sheet>
     <RoomEditor visible={creating} onClose={() => setCreating(false)} asset={asset} onSave={async input => {
       await model.create(input);setCreating(false);onJoined();
     }}/>
   </View>;
 }
-function RoomCard({room,source,onPress}: {room:VoiceRoom;source?:ImageSourcePropType;onPress:()=>void}) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={room.name + '، المضيف ' + room.hostName}
-    onPress={onPress} style={({pressed}) => [styles.room,pressed && styles.pressed]}>
-    {!!source && <Image source={source} style={styles.cover} resizeMode="cover" accessible={false}/>}
+function RoomCard({room,source,onPress,featured=false}: {
+  room:VoiceRoom;source?:ImageSourcePropType;onPress:()=>void;featured?:boolean;
+}) {
+  const [failed,setFailed]=useState(false);
+  const sourceKey=typeof source==='number'?String(source):JSON.stringify(source);
+  useEffect(()=>setFailed(false),[sourceKey]);
+  return <Pressable accessibilityRole="button"
+    accessibilityLabel={room.name+'، '+(room.active?'على الهواء':'غير نشطة')+'، المضيف '+room.hostName+'، '+room.participantCount+' مشارك'}
+    onPress={onPress} android_ripple={{color:theme.colors.press}}
+    style={({pressed}) => [styles.room,featured&&styles.featuredRoom,pressed&&styles.pressed]}>
+    <View style={[styles.artwork,featured&&styles.featuredArtwork]}>
+      {source&&!failed?<Image source={source} onError={()=>setFailed(true)} style={styles.cover} resizeMode="cover" accessible={false}/>:
+        <Image source={require('../../assets/tahaddi-crown.webp')} style={styles.coverFallback} resizeMode="contain" accessible={false}/>}
+      <View style={styles.privacy}><Body style={ui.caption}>{room.isPrivate?'خاصة':'عامة'}</Body></View>
+    </View>
     <View style={styles.roomBody}>
-      <View style={ui.row}><Body style={[ui.small,ui.gold]}>{room.category}</Body>
-        <View style={ui.grow}/><Body style={[ui.caption,{color:theme.colors.success}]}>{room.isPrivate ? 'خاصة' : 'عامة'}</Body></View>
-      <Title small>{room.name}</Title><Body muted numberOfLines={2}>{room.description}</Body>
-      <View style={ui.row}><Body muted style={ui.small}>بضيافة {room.hostName}</Body><View style={ui.grow}/>
-        <Body style={ui.small}>{room.participantCount.toLocaleString('ar-SA')} مشارك</Body></View>
+      <View style={ui.row}><Body style={[ui.caption,ui.gold]}>{room.category}</Body>
+        <View style={ui.grow}/><View style={styles.liveLabel}><View accessible={false}
+          style={[styles.dot,{backgroundColor:room.active?theme.colors.live:theme.colors.muted}]}/>
+          <Body style={ui.caption}>{room.active?'مباشر':'متوقفة'}</Body></View></View>
+      <Title small numberOfLines={2}>{room.name}</Title>
+      {!!room.description&&<Body muted style={ui.small} numberOfLines={2}>{room.description}</Body>}
+      <View style={styles.roomFooter}><Body muted style={[ui.caption,ui.grow]} numberOfLines={1}>بضيافة {room.hostName}</Body>
+        <Body weight="semibold" style={ui.caption}>{room.participantCount.toLocaleString('ar-SA')} مشارك</Body></View>
     </View>
   </Pressable>;
 }
@@ -112,46 +138,79 @@ export function RoomEditor({visible,onClose,onSave,asset,initial}:{
     catch(cause){setError(cause instanceof Error?cause.message:'تعذر حفظ الغرفة.');}
     finally{setBusy(false);}
   }
-  return <Sheet visible={visible} title={initial?'إعدادات الغرفة':'أنشئ مساحتك الصوتية'} onClose={() => {if(!busy)onClose();}}>
-    <Field testID="room-name-input" label="اسم الغرفة" value={name} onChangeText={setName} maxLength={80}/>
-    <Field label="عن الغرفة" value={description} onChangeText={setDescription} maxLength={500} multiline/>
-    <Body weight="semibold">التصنيف</Body><View style={ui.wrap}>{categories.map(value => <Action key={value} compact
-      label={value} tone={category===value?'primary':'secondary'} onPress={() => setCategory(value)}/>)}</View>
-    <Body weight="semibold">الغلاف</Body><View style={ui.wrap}>{covers.map(([id,label]) => {
-      const path='/voice/covers/'+id+'.webp';const source=asset(path);
-      return <Pressable key={id} accessibilityRole="button" accessibilityLabel={label}
-        accessibilityState={{selected:cover===path}} onPress={() => setCover(path)}
-        style={[styles.coverChoice,cover===path&&styles.coverSelected]}>
-        {!!source&&<Image source={source} style={styles.coverThumb} accessible={false}/>}
-        <Body style={ui.caption}>{label}</Body></Pressable>;
-    })}</View>
-    <Body weight="semibold">عدد المقاعد</Body><View style={ui.wrap}>{[2,4,6,8,12,16].map(value => <Action key={value} compact
-      label={value.toLocaleString('ar-SA')} tone={seatCount===value?'primary':'secondary'} onPress={() => setSeatCount(value)}/>)}</View>
-    <Toggle label="غرفة خاصة" value={isPrivate} onValueChange={setPrivate}/>
-    {isPrivate&&<Field label={initial?'كلمة مرور جديدة (اختيارية)':'كلمة مرور (اختيارية)'}
-      value={password} onChangeText={setPassword} secureTextEntry maxLength={128} ltr/>}
-    <Toggle label="السماح بطلب الميكروفون" value={allowMicRequests} onValueChange={setMicRequests}/>
-    <Toggle label="تفعيل الدردشة" value={chatEnabled} onValueChange={setChat}/>
-    <Toggle label="السماح للمشرفين بالإدارة" value={moderatorsCanManage} onValueChange={setModerators}/>
-    <Notice message={error}/><Action testID="room-save" label={initial?'حفظ الإعدادات':'إنشاء الغرفة'} busy={busy}
-      onPress={() => {void save();}}/>
-    <Body muted style={ui.caption}>تبدأ جلستك والميكروفون مكتوم.</Body>
+  return <Sheet visible={visible} title={initial?'إعدادات الغرفة':'أنشئ مساحتك الصوتية'} onClose={() => {if(!busy)onClose();}}
+    footer={<><Notice testID="room-editor-error" message={error}/>
+      <Action testID="room-save" label={initial?'حفظ الإعدادات':'إنشاء الغرفة'} busy={busy} onPress={() => {void save();}}/>
+      <Body muted style={[ui.caption,ui.center]}>تبدأ جلستك والميكروفون مكتوم.</Body></>}>
+    <View style={styles.editorSection}>
+      <Field testID="room-name-input" label="اسم الغرفة" value={name} onChangeText={setName} maxLength={80}
+        placeholder="اسم يجمع أصحاب المجلس"/>
+      <Field label="عن الغرفة" value={description} onChangeText={setDescription} maxLength={500}
+        placeholder="عن ماذا سيكون الحديث؟" multiline/>
+    </View>
+    <View style={styles.editorSection}><Title small>طابع المجلس</Title>
+      <Body muted style={ui.small}>اختر التصنيف والغلاف الأقرب لحديثك.</Body>
+      <View style={ui.wrap}>{categories.map(value => <Pressable key={value} accessibilityRole="button"
+        accessibilityState={{selected:category===value}} accessibilityLabel={value} onPress={()=>setCategory(value)}
+        style={({pressed})=>[styles.chip,category===value&&styles.chipSelected,pressed&&styles.pressed]}>
+        <Body style={[ui.small,category===value&&styles.chipText]}>{value}</Body></Pressable>)}</View>
+      <View style={styles.coverGrid}>{covers.map(([id,label]) => {
+        const path='/voice/covers/'+id+'.webp';const source=asset(path);
+        return <Pressable key={id} accessibilityRole="button" accessibilityLabel={label}
+          accessibilityState={{selected:cover===path}} onPress={() => setCover(path)}
+          style={({pressed})=>[styles.coverChoice,cover===path&&styles.coverSelected,pressed&&styles.pressed]}>
+          {!!source&&<Image source={source} style={styles.coverThumb} accessible={false}/>}
+          <View style={styles.coverCaption}><Body style={ui.caption}>{label}</Body>
+            {cover===path&&<Body weight="bold" style={[ui.caption,ui.gold]}>محدد</Body>}</View>
+        </Pressable>;
+      })}</View>
+    </View>
+    <View style={styles.editorSection}><Title small>المقاعد والمشاركة</Title>
+      <Body weight="semibold">عدد المقاعد</Body><View style={ui.wrap}>{[2,4,6,8,12,16].map(value => <Action key={value} compact
+        label={value.toLocaleString('ar-SA')} tone={seatCount===value?'primary':'secondary'} onPress={() => setSeatCount(value)}/>)}</View>
+      <Toggle label="غرفة خاصة" value={isPrivate} onValueChange={setPrivate}/>
+      {isPrivate&&<Field label={initial?'كلمة مرور جديدة (اختيارية)':'كلمة مرور (اختيارية)'}
+        value={password} onChangeText={setPassword} secureTextEntry maxLength={128} ltr/>}
+      <Toggle label="السماح بطلب الميكروفون" value={allowMicRequests} onValueChange={setMicRequests}/>
+      <Toggle label="تفعيل الدردشة" value={chatEnabled} onValueChange={setChat}/>
+      <Toggle label="السماح للمشرفين بالإدارة" value={moderatorsCanManage} onValueChange={setModerators}/>
+    </View>
   </Sheet>;
 }
 function Toggle({label,value,onValueChange}:{label:string;value:boolean;onValueChange:(value:boolean)=>void}) {
-  return <View style={ui.row}><Body style={ui.grow}>{label}</Body><Switch accessibilityLabel={label}
+  return <View style={styles.toggle}><Body style={ui.grow}>{label}</Body><Switch accessibilityLabel={label}
     value={value} onValueChange={onValueChange} trackColor={{false:theme.colors.controlBorder,true:theme.colors.gold}}
     thumbColor={theme.colors.text}/></View>;
 }
 const styles=StyleSheet.create({
-  chip:{minHeight:48,paddingHorizontal:16,paddingVertical:8,borderRadius:theme.radius.pill,
-    backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.controlBorder},
-  chipSelected:{backgroundColor:theme.colors.gold,borderColor:theme.colors.gold},
-  chipText:{color:theme.colors.ink},pressed:{opacity:0.75},
-  room:{borderRadius:theme.radius.lg,overflow:'hidden',backgroundColor:theme.colors.surface,
+  header:{gap:12},brandMark:{width:48,height:48,borderRadius:theme.radius.md,
+    borderWidth:1,borderColor:theme.colors.border,backgroundColor:theme.colors.goldSoft,alignItems:'center',justifyContent:'center'},
+  crown:{width:36,height:28},brandName:{fontSize:theme.type.section,lineHeight:30},
+  welcome:{gap:12,borderColor:theme.colors.border,padding:theme.spacing.md},
+  discover:{gap:12,padding:theme.spacing.md},
+  filterRail:{flexGrow:0},filterContent:{gap:theme.spacing.sm,paddingVertical:2},
+  chip:{minHeight:theme.touch,paddingHorizontal:theme.spacing.md,paddingVertical:10,borderRadius:theme.radius.pill,
+    justifyContent:'center',backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.controlBorder},
+  chipSelected:{backgroundColor:theme.colors.goldSoft,borderColor:theme.colors.gold},
+  chipText:{color:theme.colors.goldLight},pressed:{opacity:0.78},
+  room:{flexDirection:'row-reverse',borderRadius:theme.radius.lg,overflow:'hidden',backgroundColor:theme.colors.surface,
     borderWidth:1,borderColor:theme.colors.borderSoft},
-  cover:{width:'100%',height:136},roomBody:{padding:theme.spacing.md,gap:theme.spacing.sm},
-  coverChoice:{width:'47%',minHeight:82,padding:8,gap:4,borderRadius:theme.radius.sm,
-    borderWidth:1,borderColor:theme.colors.controlBorder},
-  coverSelected:{borderColor:theme.colors.gold,borderWidth:2},coverThumb:{width:'100%',height:68,borderRadius:8},
+  featuredRoom:{borderColor:theme.colors.border},
+  artwork:{width:88,minHeight:148,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceStrong},
+  featuredArtwork:{width:104,minHeight:168},
+  cover:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},coverFallback:{width:52,height:40},
+  privacy:{position:'absolute',bottom:8,right:8,left:8,backgroundColor:theme.colors.overlay,borderRadius:8,
+    paddingVertical:2,paddingHorizontal:4,alignItems:'center'},
+  roomBody:{flex:1,minWidth:0,padding:12,gap:4},
+  liveLabel:{flexDirection:'row-reverse',alignItems:'center',gap:4},
+  dot:{width:6,height:6,borderRadius:3},
+  roomFooter:{flexDirection:'row-reverse',flexWrap:'wrap',alignItems:'center',gap:8,
+    paddingTop:8,marginTop:4,borderTopWidth:1,borderTopColor:theme.colors.borderSoft},
+  editorSection:{gap:theme.spacing.md,paddingBottom:theme.spacing.lg,borderBottomWidth:1,borderBottomColor:theme.colors.borderSoft},
+  coverGrid:{flexDirection:'row-reverse',flexWrap:'wrap',justifyContent:'space-between',gap:12},
+  coverChoice:{width:'47%',minHeight:100,overflow:'hidden',borderRadius:theme.radius.sm,
+    borderWidth:2,borderColor:theme.colors.controlBorder,backgroundColor:theme.colors.surfaceStrong},
+  coverSelected:{borderColor:theme.colors.gold},coverThumb:{width:'100%',height:72},
+  coverCaption:{padding:8,gap:4},toggle:{flexDirection:'row-reverse',alignItems:'center',gap:theme.spacing.md,minHeight:56,
+    paddingVertical:8,borderBottomWidth:1,borderBottomColor:theme.colors.borderSoft},
 });
