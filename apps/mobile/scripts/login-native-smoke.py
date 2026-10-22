@@ -223,13 +223,23 @@ def confirm_native_alert(device, module, title: str, button: str, timeout: float
             previous = evidence.get("seen", {})
             evidence["seen"] = {key: value or previous.get(key, False)
                                 for key, value in observation.items()}
-        title_matches = any(node.attrib.get("resource-id") in {"android:id/alertTitle", PACKAGE + ":id/alertTitle"} and
-                            node.attrib.get("text") == title for node in root.iter())
-        if title_matches:
-            for node in root.iter():
-                if (node.attrib.get("resource-id") in {"android:id/button1", "android:id/button2",
-                                                      "android:id/button3", PACKAGE + ":id/button1",
-                                                      PACKAGE + ":id/button2", PACKAGE + ":id/button3"} and
+        # RN/AppCompat may omit alertTitle's resource ID from accessibility.
+        # Require the exact expected title and a real Android alert button inside
+        # the same app-owned window; text alone must never authorize a tap.
+        windows = [node for node in root if node.attrib.get("package") == PACKAGE]
+        for window in windows:
+            title_matches = any(
+                node.attrib.get("package") == PACKAGE and
+                node.attrib.get("class") == "android.widget.TextView" and
+                node.attrib.get("text") == title
+                for node in window.iter())
+            if not title_matches:
+                continue
+            for node in window.iter():
+                if (node.attrib.get("package") == PACKAGE and
+                        node.attrib.get("resource-id") in {"android:id/button1", "android:id/button2",
+                                                          "android:id/button3", PACKAGE + ":id/button1",
+                                                          PACKAGE + ":id/button2", PACKAGE + ":id/button3"} and
                         node.attrib.get("text") == button and node.attrib.get("enabled") == "true"):
                     x, y = module.center(node)
                     device.adb("shell", "input", "tap", str(x), str(y))
