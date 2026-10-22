@@ -4,6 +4,7 @@ import type {
   VoiceCreateInput, VoiceEvent, VoiceJoinInput, VoiceList, VoiceSnapshot, VoiceUpdateInput,
 } from '../api/contracts';
 import { createRoomsApi, type ApiRequest } from './api';
+import { canEndRoom, endRoom } from './end';
 import { isMembershipFailure, nextSnapshot, roomErrorMessage } from './state';
 
 export type RoomConnection = 'idle' | 'connecting' | 'online' | 'offline';
@@ -30,6 +31,7 @@ export function useRooms(request: ApiRequest, { enabled }: { enabled: boolean })
   const mounted = useRef(true);
   const generation = useRef(0);
   const membershipBusy = useRef(false);
+  const ending = useRef<{ roomId: string; promise: Promise<void> } | null>(null);
   const listSequence = useRef(0);
   const listAbort = useRef<AbortController | null>(null);
   const readRef = useRef<{
@@ -194,6 +196,39 @@ export function useRooms(request: ApiRequest, { enabled }: { enabled: boolean })
     }
   }, [api, clearMembership, refresh]);
 
+  const end = useCallback((): Promise<void> => {
+    const pending = ending.current;
+    if (pending) return pending.promise;
+    const current = snapshotRef.current;
+    if (!enabledRef.current || !current) return Promise.reject(new Error('انضم إلى الغرفة أولًا.'));
+    if (!canEndRoom(current)) return Promise.reject(new Error('إنهاء البث متاح للمضيف فقط.'));
+    if (membershipBusy.current) return Promise.reject(new Error('انتظر اكتمال الطلب الحالي.'));
+    membershipBusy.current = true;
+    setBusy(true);
+    setError(null);
+    const capturedGeneration = generation.current;
+    const isCurrent = () => mounted.current && enabledRef.current &&
+      generation.current === capturedGeneration && snapshotRef.current?.room.id === current.room.id;
+    const promise = endRoom(api, current, isCurrent).then(() => {
+      // A late ACK must never remove a replacement room or a replacement session.
+      if (!isCurrent()) return;
+      clearMembership();
+      setConnection('idle');
+      setRooms((previous) => previous.filter((room) => room.id !== current.room.id));
+      void refresh().catch(() => undefined);
+    }).catch((cause: unknown) => {
+      // An unconfirmed close retains membership, its heartbeat, and the retry UI.
+      if (isCurrent()) setError(roomErrorMessage(cause));
+      throw cause;
+    }).finally(() => {
+      if (ending.current?.promise === promise) ending.current = null;
+      membershipBusy.current = false;
+      if (mounted.current) setBusy(false);
+    });
+    ending.current = { roomId: current.room.id, promise };
+    return promise;
+  }, [api, clearMembership, refresh]);
+
   const mutate = useCallback(async (
     operation: (roomId: string) => Promise<VoiceSnapshot>,
   ): Promise<VoiceSnapshot> => {
@@ -291,7 +326,7 @@ export function useRooms(request: ApiRequest, { enabled }: { enabled: boolean })
 
   return {
     rooms, stats, snapshot, loading, refreshing, busy, error, connection,
-    refresh, refreshSnapshot, create, join, leave, send, update, adoptSnapshot, clearError,
+    refresh, refreshSnapshot, create, join, leave, end, send, update, adoptSnapshot, clearError,
   };
 }
 

@@ -37,6 +37,10 @@ export function createRoomsApi(request: ApiRequest) {
       request<VoiceSnapshot>(roomPath(roomId) + '/events', {
         method: 'POST', body: event, timeoutMs: 45_000,
       }),
+    end: (roomId: string) =>
+      request<VoiceSnapshot>(roomPath(roomId) + '/events', {
+        method: 'POST', body: { type: 'close' }, timeoutMs: 45_000,
+      }),
     update: (roomId: string, input: VoiceUpdateInput) =>
       request<VoiceSnapshot>(roomPath(roomId), {
         method: 'PATCH', body: input, timeoutMs: 45_000,
