@@ -1,0 +1,52 @@
+name: Mobile SDK compatibility
+
+on:
+  pull_request:
+    paths:
+      - apps/mobile/package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - package.json
+      - .github/workflows/mobile-sdk-compat.yml
+  push:
+    branches: [main]
+    paths:
+      - apps/mobile/package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - package.json
+      - .github/workflows/mobile-sdk-compat.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-sdk-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  expo-sdk-compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CI: '1'
+      EXPO_OFFLINE: '1'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_NO_DOTENV: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24.14.0'
+      - name: Install pinned package manager
+        run: npm install --global pnpm@11.26.0 --ignore-scripts
+      - name: Install the locked mobile dependency closure
+        run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
+      # Use the merge commit so the updated mobile baseline from PR #73 is tested.
+      - name: Check React and native dependencies against the installed Expo SDK
+        run: pnpm --filter @tahaddi/mobile exec expo install --check
+      - name: Ensure compatibility checking did not edit dependency declarations
+        run: git diff --exit-code -- apps/mobile/package.json pnpm-lock.yaml
