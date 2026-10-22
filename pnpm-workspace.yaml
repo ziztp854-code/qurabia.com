@@ -41,3 +41,17 @@ overrides:
   sharp: 0.35.4
   typescript: 5.9.3
   'undici@<7.29.0': 7.29.0
+# Keep React declaration resolution contextual in this mixed web/native workspace.
+packageExtensions:
+  'next@16.3.8':
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  '@react-three/fiber@9.7.0':
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true

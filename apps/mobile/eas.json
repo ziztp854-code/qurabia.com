@@ -9,6 +9,20 @@
     },
     "production": {
       "autoIncrement": true
+    },
+    "release-apk": {
+      "extends": "production",
+      "credentialsSource": "local",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "release-aab": {
+      "extends": "production",
+      "credentialsSource": "local",
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {
