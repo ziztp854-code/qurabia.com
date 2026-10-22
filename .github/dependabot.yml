@@ -3,6 +3,11 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    # Expo owns the tested React/native version map in this workspace.
+    # Upgrade apps/mobile deliberately with its SDK compatibility and Android checks.
+    # Security updates still require review; exclude-paths affects version updates only.
+    exclude-paths:
+      - apps/mobile/**
     schedule:
       interval: weekly
       day: monday
