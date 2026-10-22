@@ -43,57 +43,80 @@ def main() -> int:
     prefix = ["adb"] + (["-s", args.serial] if args.serial else [])
     report = {"status": "failed", "reason": "not_ready", "observations": 0,
               "required_stable_seconds": 10, "timeout_seconds": 90, "conditions": {},
+              "transient_count": 0, "stage": "emulator_guard",
               "scope": "CI emulator boot readiness; no app or ANR remediation claim"}
     started = time.monotonic()
     deadline = started + 90
 
-    def adb(*command):
-        remaining = max(1, min(10, deadline - time.monotonic()))
-        return subprocess.run(prefix + list(command), capture_output=True, text=True, timeout=remaining)
+    def adb(stage, *command):
+        report["stage"] = stage
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ReadinessFailure("boot_readiness_timeout")
+        return subprocess.run(prefix + list(command), capture_output=True, text=True,
+                              timeout=min(30, remaining))
 
     try:
-        if adb("shell", "getprop", "ro.kernel.qemu").stdout.strip() != "1":
+        if adb("emulator_guard", "shell", "getprop", "ro.kernel.qemu").stdout.strip() != "1":
             raise ReadinessFailure("dedicated_emulator_required")
         stable_since = None
         fingerprint = None
         while time.monotonic() < deadline:
             report["observations"] += 1
-            boot = adb("shell", "getprop", "sys.boot_completed").stdout.strip() == "1"
-            animation = adb("shell", "getprop", "init.svc.bootanim").stdout.strip() == "stopped"
-            systemui = adb("shell", "pidof", "com.android.systemui").returncode == 0
-            package = adb("shell", "cmd", "package", "path", "com.android.systemui")
-            packages = package.returncode == 0 and package.stdout.strip().startswith("package:")
-            launcher = False
-            current = None
-            if boot and systemui:
-                dumped = adb("shell", "uiautomator", "dump", REMOTE_XML)
-                if dumped.returncode == 0:
-                    xml = adb("exec-out", "cat", REMOTE_XML)
-                    if xml.returncode == 0:
-                        anr, launcher, current = inspect_ui(xml.stdout)
-                        if anr:
-                            raise ReadinessFailure("system_ui_anr_observed")
-            conditions = {"boot_completed": boot, "boot_animation_stopped": animation,
-                          "system_ui_alive": systemui, "package_manager_ready": packages,
-                          "launcher_visible": launcher}
+            conditions = {"boot_completed": False, "boot_animation_stopped": False,
+                          "system_ui_alive": False, "package_manager_ready": False,
+                          "launcher_visible": False}
             report["conditions"] = conditions
-            now = time.monotonic()
-            if all(conditions.values()):
-                if current != fingerprint:
-                    stable_since, fingerprint = now, current
-                if stable_since is not None and now - stable_since >= 10:
-                    report.update(status="ready", reason="stable_launcher",
-                                  stable_seconds=round(now - stable_since, 1))
-                    return 0
-            else:
+            try:
+                conditions["boot_completed"] = adb(
+                    "boot_completed", "shell", "getprop", "sys.boot_completed").stdout.strip() == "1"
+                conditions["boot_animation_stopped"] = adb(
+                    "boot_animation", "shell", "getprop", "init.svc.bootanim").stdout.strip() == "stopped"
+                conditions["system_ui_alive"] = adb(
+                    "system_ui_process", "shell", "pidof", "com.android.systemui").returncode == 0
+                package = adb("package_manager", "shell", "cmd", "package", "path", "com.android.systemui")
+                conditions["package_manager_ready"] = (
+                    package.returncode == 0 and package.stdout.strip().startswith("package:"))
+                current = None
+                if conditions["boot_completed"] and conditions["system_ui_alive"]:
+                    dumped = adb("ui_dump", "shell", "uiautomator", "dump", REMOTE_XML)
+                    if dumped.returncode == 0:
+                        xml = adb("ui_read", "exec-out", "cat", REMOTE_XML)
+                        if xml.returncode == 0:
+                            report["stage"] = "ui_parse"
+                            anr, launcher, current = inspect_ui(xml.stdout)
+                            conditions["launcher_visible"] = launcher
+                            if anr:
+                                raise ReadinessFailure("system_ui_anr_observed")
+                now = time.monotonic()
+                if all(conditions.values()):
+                    if current != fingerprint:
+                        stable_since, fingerprint = now, current
+                    if stable_since is not None and now - stable_since >= 10:
+                        report.update(status="ready", reason="stable_launcher",
+                                      stable_seconds=round(now - stable_since, 1))
+                        return 0
+                else:
+                    stable_since = fingerprint = None
+            except (subprocess.TimeoutExpired, ET.ParseError) as error:
+                # Retry only observation within the original budget, never app tests.
+                report["transient_count"] += 1
+                report["last_exception_type"] = (
+                    "TimeoutExpired" if isinstance(error, subprocess.TimeoutExpired) else "ParseError")
+                report["last_exception_stage"] = report["stage"]
                 stable_since = fingerprint = None
             time.sleep(min(1, max(0, deadline - time.monotonic())))
         raise ReadinessFailure("boot_readiness_timeout")
     except ReadinessFailure as error:
         report["reason"] = error.args[0]
         return 1
-    except (subprocess.SubprocessError, OSError, ET.ParseError):
+    except (subprocess.SubprocessError, OSError, ET.ParseError) as error:
         report["reason"] = "readiness_observation_failed"
+        report["last_exception_type"] = (
+            "TimeoutExpired" if isinstance(error, subprocess.TimeoutExpired) else
+            "ParseError" if isinstance(error, ET.ParseError) else
+            "OSError" if isinstance(error, OSError) else "SubprocessError")
+        report["last_exception_stage"] = report["stage"]
         return 1
     finally:
         try:

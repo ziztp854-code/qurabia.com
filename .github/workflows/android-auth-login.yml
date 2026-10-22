@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: android-auth-${{ github.ref }}
   cancel-in-progress: true
@@ -30,29 +31,35 @@ jobs:
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
       - name: Check types and affected regressions
         run: |
-          pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
-          pnpm --filter @tahaddi/mobile typecheck
-          pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
-          # Retain the verified 165c native-unit result only for this exact reviewed
-          # artwork pair when every other native/unit dependency is unchanged.
-          git fetch --no-tags --depth=1 origin 165c044e1035e59b8adaec1dc2fdb4a51789173d
-          if git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/src apps/mobile/tests apps/mobile/scripts/test-native.cjs apps/mobile/tsconfig.json packages package.json pnpm-lock.yaml pnpm-workspace.yaml ':!apps/mobile/src/screens/auth-screen.tsx' ':!apps/mobile/src/screens/profile-screen.tsx' ':!apps/mobile/tests/*.py' &&
-             diff <(git show 165c044e1035e59b8adaec1dc2fdb4a51789173d:apps/mobile/package.json | jq -S 'del(.version)') <(jq -S 'del(.version)' apps/mobile/package.json) &&
-             test "$(git rev-parse HEAD:apps/mobile/src/screens/auth-screen.tsx)" = fd6591af1f2a1346affd6de27bd598905e7ec453 &&
-             test "$(git rev-parse HEAD:apps/mobile/src/screens/profile-screen.tsx)" = a3eb0aec450e252f37cec85186f01d27e87c5697; then
-            echo "Native unit evidence retained: 84 passed at 165c044; exact reviewed artwork only, core dependencies unchanged."
+          git fetch --no-tags --depth=1 origin eb1216d468453abc5b91ed2c36fad99878b17374
+          if git diff --quiet eb1216d468453abc5b91ed2c36fad99878b17374 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/android-emulator-ready.py' ':!apps/mobile/tests/test_android_emulator_ready.py'; then
+            echo "TypeScript, 22 login guards and 5 visual guards retained from successful eb1216d fast job 119633992170; runtime and those test sources unchanged."
+            python3 apps/mobile/tests/test_android_emulator_ready.py
           else
-            pnpm --filter @tahaddi/mobile test
+            pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
+            pnpm --filter @tahaddi/mobile typecheck
+            pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
+            # Retain the verified 165c native-unit result only for this exact reviewed
+            # artwork pair when every other native/unit dependency is unchanged.
+            git fetch --no-tags --depth=1 origin 165c044e1035e59b8adaec1dc2fdb4a51789173d
+            if git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/src apps/mobile/tests apps/mobile/scripts/test-native.cjs apps/mobile/tsconfig.json packages package.json pnpm-lock.yaml pnpm-workspace.yaml ':!apps/mobile/src/screens/auth-screen.tsx' ':!apps/mobile/src/screens/profile-screen.tsx' ':!apps/mobile/tests/*.py' &&
+               diff <(git show 165c044e1035e59b8adaec1dc2fdb4a51789173d:apps/mobile/package.json | jq -S 'del(.version)') <(jq -S 'del(.version)' apps/mobile/package.json) &&
+               test "$(git rev-parse HEAD:apps/mobile/src/screens/auth-screen.tsx)" = fd6591af1f2a1346affd6de27bd598905e7ec453 &&
+               test "$(git rev-parse HEAD:apps/mobile/src/screens/profile-screen.tsx)" = a3eb0aec450e252f37cec85186f01d27e87c5697; then
+              echo "Native unit evidence retained: 84 passed at 165c044; exact reviewed artwork only, core dependencies unchanged."
+            else
+              pnpm --filter @tahaddi/mobile test
+            fi
+            if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/prepare-android-debug.cjs apps/mobile/scripts/prepare-android-debug.test.cjs; then
+              node --test apps/mobile/scripts/prepare-android-debug.test.cjs
+            fi
+            if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/android-native-smoke.py apps/mobile/scripts/android-native-smoke.sh apps/mobile/tests/test_android_native_smoke.py; then
+              python3 apps/mobile/tests/test_android_native_smoke.py
+            fi
+            python3 apps/mobile/tests/login-guards.py
+            python3 apps/mobile/tests/test_android_emulator_ready.py
+            python3 apps/mobile/tests/visual-guards.py
           fi
-          if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/prepare-android-debug.cjs apps/mobile/scripts/prepare-android-debug.test.cjs; then
-            node --test apps/mobile/scripts/prepare-android-debug.test.cjs
-          fi
-          if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/android-native-smoke.py apps/mobile/scripts/android-native-smoke.sh apps/mobile/tests/test_android_native_smoke.py; then
-            python3 apps/mobile/tests/test_android_native_smoke.py
-          fi
-          python3 apps/mobile/tests/login-guards.py
-          python3 apps/mobile/tests/test_android_emulator_ready.py
-          python3 apps/mobile/tests/visual-guards.py
       - name: Check patch whitespace and scope
         run: |
           git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
@@ -87,6 +94,17 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      - name: Check one-time public APK reuse
+        id: reuse
+        run: |
+          git fetch --no-tags --depth=1 origin eb1216d468453abc5b91ed2c36fad99878b17374
+          if test "$(git rev-parse HEAD^)" = eb1216d468453abc5b91ed2c36fad99878b17374 &&
+             git diff --quiet eb1216d468453abc5b91ed2c36fad99878b17374 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/android-emulator-ready.py' ':!apps/mobile/tests/test_android_emulator_ready.py'; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Prepare diagnostics and tracked source archive
         run: |
@@ -195,7 +213,34 @@ jobs:
           cd apps/mobile/android
           ./gradlew --version | tee ../../../android-reports/gradle-version.log
 
+      - name: Download the unchanged 0.3.1 delivery APK
+        if: steps.reuse.outputs.eligible == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: tahaddi-debug-39720949793-1
+          path: android-reuse
+          run-id: 39720949793
+          github-token: ${{ github.token }}
+
+      - name: Verify and stage the unchanged public APK
+        if: steps.reuse.outputs.eligible == 'true'
+        run: |
+          echo 'bd03c5814ca80f48b53af2f95501d3515ca5b1be051ddef15078cc9fe0773941  android-reuse/app-debug.apk' | sha256sum --check
+          mkdir -p apps/mobile/android/app/build/outputs/apk/debug
+          cp android-reuse/app-debug.apk apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          node - <<'NODE'
+          const fs=require('fs');
+          fs.writeFileSync('android-reports/apk-provenance.json',JSON.stringify({
+            kind:'unchanged delivery APK reused for harness validation',
+            apk_source_sha:'eb1216d468453abc5b91ed2c36fad99878b17374',
+            validation_source_sha:process.env.GITHUB_SHA,
+            original_run_id:39720949793,
+            sha256:'bd03c5814ca80f48b53af2f95501d3515ca5b1be051ddef15078cc9fe0773941'
+          },null,2)+'\n');
+          NODE
+
       - name: Assemble Debug APK
+        if: steps.reuse.outputs.eligible != 'true'
         working-directory: apps/mobile/android
         env:
           NODE_ENV: production

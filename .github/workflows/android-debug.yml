@@ -21,6 +21,8 @@ defaults:
 
 jobs:
   debug-apk:
+    # This repository's design branch already runs the full push integration job.
+    if: github.event_name != 'pull_request' || github.head_ref != 'feat/android-premium-design' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
