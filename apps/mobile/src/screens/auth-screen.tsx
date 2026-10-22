@@ -3,6 +3,7 @@ import { Image, StyleSheet, View, type TextInput } from 'react-native';
 import { Action, Body, Field, FormScreen, Notice, Panel, Title, ui } from '../components/ui';
 import { theme } from '../theme';
 import type { ApiRequest } from '../rooms/api';
+import { presentConnectionError, presentLoginError, presentSessionNotice } from './auth-error';
 
 export function AuthScreen({ signIn, authError, apiRequest }: {
   apiRequest: ApiRequest;
@@ -32,7 +33,7 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
       .catch((cause:unknown)=>{
         if(controller.signal.aborted)return;
         setServerState('error');
-        setServerError(cause instanceof Error?cause.message:'تحقق من اتصال الإنترنت ثم أعد المحاولة.');
+        setServerError(presentConnectionError(cause));
       });
     return()=>controller.abort();
   },[apiRequest,serverAttempt]);
@@ -45,7 +46,7 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
     setError('');
     setBusy(true);
     try { await signIn(email.trim(), password); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'تعذر تسجيل الدخول. حاول مرة أخرى.'); }
+    catch (cause) { setError(presentLoginError(cause).message); }
     finally { setBusy(false); }
   }
   return <FormScreen>
@@ -56,7 +57,7 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
       <Body testID="server-status" accessibilityLiveRegion="polite" style={[ui.caption,ui.center,{
         color:serverState==='online'?theme.colors.success:serverState==='error'?theme.colors.danger:theme.colors.muted,
       }]}>{serverState==='online'?'تم الاتصال بخادم تحدّي':serverState==='error'
-        ?'تعذر الاتصال بخادم تحدّي':'جارٍ التحقق من الاتصال بالخادم…'}</Body>
+        ?'لم يكتمل التحقق من الاتصال بالخادم':'جارٍ التحقق من الاتصال بالخادم…'}</Body>
       {serverState==='error'&&<>
         <Notice message={serverError}/>
         <Action testID="server-retry" label="إعادة التحقق من الاتصال" tone="secondary" compact
@@ -76,7 +77,7 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
           onChangeText={setPassword} autoComplete="current-password" textContentType="password"
           secureTextEntry autoCapitalize="none" autoCorrect={false} ltr returnKeyType="go"
           onSubmitEditing={() => { void submit(); }} editable={!busy}/>
-        <Notice testID="login-error" message={error || authError}/>
+        <Notice testID="login-error" message={error || presentSessionNotice(authError)}/>
         <Action testID="login-submit" label="تسجيل الدخول" busy={busy} onPress={() => { void submit(); }}/>
       </View>
     </Panel>

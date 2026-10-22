@@ -1,4 +1,4 @@
-import { ApiError, type ApiClient } from './http-client';
+import { ApiError, authCallbackError, type ApiClient } from './http-client';
 import type { CookieVault } from './cookie-vault';
 
 export type SessionUser = {
@@ -70,7 +70,7 @@ export function createSessionManager(client: ApiClient, cookies: CookieVault): S
     const value = await client.request<{ csrfToken?: unknown }>('/api/auth/csrf');
     if (typeof value.csrfToken !== 'string' || !/^[a-zA-Z0-9_-]{16,256}$/.test(value.csrfToken) ||
         !/(?:^|; )(?:__Host-)?next-auth\.csrf-token=/.test(cookies.header())) {
-      throw new ApiError('تعذّر بدء جلسة دخول آمنة. حاول مجددًا.', 0, 'CSRF_UNAVAILABLE');
+      throw new ApiError('تعذّر بدء جلسة دخول آمنة. حاول مجددًا.', 0, 'CSRF_UNAVAILABLE', 'auth-csrf');
     }
     return value.csrfToken;
   }
@@ -130,13 +130,13 @@ export function createSessionManager(client: ApiClient, cookies: CookieVault): S
         const result = await client.form<{ url?: unknown }>('/api/auth/callback/credentials', {
           csrfToken, email: normalized, password, callbackUrl: client.origin + '/voice', json: 'true',
         });
-        if (typeof result.url !== 'string') throw new ApiError('استجابة دخول غير صالحة.', 0, 'INVALID_RESPONSE');
-        const callback = new URL(result.url, client.origin);
-        if (callback.origin !== client.origin || callback.username || callback.password || callback.searchParams.has('error')) {
-          throw new ApiError('تعذّر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.', 401, 'INVALID_CREDENTIALS');
-        }
+        // NextAuth may return HTTP 200 with a CSRF/error URL; never treat that as a successful callback.
+        const callbackFailure = authCallbackError(result, client.origin, 200);
+        if (callbackFailure) throw callbackFailure;
         const session = await readSession();
-        if (!session || !cookies.hasSession()) throw new ApiError('تعذّر تأكيد الجلسة. تحقق من البيانات وحاول مجددًا.', 401, 'INVALID_CREDENTIALS');
+        if (!session || !cookies.hasSession()) {
+          throw new ApiError('تعذّر إكمال جلسة تسجيل الدخول بأمان. أعد المحاولة.', 200, 'SESSION_NOT_ESTABLISHED', 'auth-session');
+        }
         if (operation === generation) publish(authenticated(session));
       } catch (error) {
         if (operation === generation) {

@@ -1,0 +1,38 @@
+name: Android authentication regression
+on:
+  push:
+    branches: [fix/android-auth-login]
+    paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
+  pull_request:
+    branches: [codex/android-native-v2]
+    paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-auth-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24.14.0'
+      - run: npm install --global pnpm@11.26.0 --ignore-scripts
+      - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
+      - name: Check types and run all native regressions
+        run: |
+          pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
+          pnpm --filter @tahaddi/mobile typecheck
+          pnpm --filter @tahaddi/mobile test
+          node --test apps/mobile/scripts/prepare-android-debug.test.cjs
+          python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
+      - name: Check patch whitespace and scope
+        run: |
+          git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
+          git diff --check fcbdf15092ba8c5189ba75739904ffad84507b19 HEAD
