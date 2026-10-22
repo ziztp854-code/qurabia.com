@@ -1,0 +1,35 @@
+{
+  "status": "failed",
+  "source_sha": "c958485ccc8828fa8dc0848d08c655a229a9a1e9",
+  "phase": "manual_create_wait_room",
+  "checks": {
+    "native_isolated_https": true,
+    "wrong_password_rejected_with_safe_arabic_error": true,
+    "email_preserved_after_rejected_login": true,
+    "real_csrf_credentials_session_and_rooms": true,
+    "secure_session_survives_process_restart": true
+  },
+  "failure_category": "runtime_check_failed",
+  "create_http_evidence": {
+    "room_create_attempts": 0,
+    "room_create_response_status": 0,
+    "room_create_server_errors": 0
+  },
+  "host_server_counters": {
+    "room_create_ok": 0,
+    "room_close_ok": 0,
+    "leave_while_active": 0,
+    "signout_while_active": 0,
+    "owned_rooms": 0,
+    "active_rooms": 0,
+    "closed_rooms": 0,
+    "closed_with_members": 0,
+    "inconsistent_rooms": 0
+  },
+  "limitations": [
+    "Separate test APK trusts an ephemeral localhost CA; distributed production APK does not.",
+    "Emulator authentication does not prove physical-device or production deployment behavior.",
+    "No SFU is configured: room commands/database closure are tested, not audio capture or SFU participant eviction.",
+    "Production rate limiter, real-user credentials and production writes are not exercised."
+  ]
+}
