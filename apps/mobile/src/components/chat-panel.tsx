@@ -5,7 +5,7 @@ import type { VoiceMessage, VoiceParticipant, VoiceSnapshot } from '../api/contr
 import type { useVoiceChat } from '../chat/use-voice-chat';
 import type { useEmojiCatalog } from '../chat/use-emoji-catalog';
 import { emojiAssetPath, emojiToken, tokenizeEmoji, VOICE_EMOJIS, VOICE_GIFTS } from '../chat/emojis';
-import { Action, Body, Empty, Notice, Sheet, Title, ui } from './ui';
+import { Action, Avatar, Body, Empty, Notice, Sheet, Title, ui } from './ui';
 import { theme } from '../theme';
 
 export type ChatModel = ReturnType<typeof useVoiceChat>;
@@ -38,7 +38,8 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
     catch(cause){setError(cause instanceof Error?cause.message:'تعذر إضافة التفاعل.');}
   }
   return <View style={styles.panel}>
-    <View style={styles.heading}><Title small>حديث المجلس</Title><Body muted style={ui.caption}>{chat.messages.length.toLocaleString('ar-SA')} رسالة</Body></View>
+    <View style={styles.heading}><Title small style={styles.chatTitle}>حديث المجلس</Title>
+      <View style={styles.messageCount}><Body muted style={[ui.caption,styles.countLabel]}>{chat.messages.length.toLocaleString('ar-SA')} رسالة</Body></View></View>
     <FlatList data={messages} inverted keyExtractor={message=>message.id} initialNumToRender={20}
       maxToRenderPerBatch={12} windowSize={5} keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.messages} style={ui.flex}
@@ -50,12 +51,19 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
     {!!reply&&<View style={ui.row}><Body muted style={[ui.small,ui.grow]} numberOfLines={1}>رد على {reply.name}: {reply.text}</Body>
       <Action compact tone="secondary" label="إلغاء الرد" onPress={()=>setReply(null)}/></View>}
     {snapshot.room.chatEnabled?<View style={styles.composer}>
-      <View style={ui.row}>
-        <Action compact tone="secondary" label="الفيسات" onPress={()=>setPicker(true)}/>
-        <Action compact tone="secondary" label="هدية" disabled={snapshot.participants.length<2}
-          onPress={()=>setGiftTo(snapshot.participants.find(person=>person.id!==snapshot.me?.id)||null)}/>
+      <View style={styles.composerTools}>
+        <Pressable accessibilityRole="button" accessibilityLabel="الفيسات" android_ripple={{color:theme.colors.press}}
+          style={({pressed})=>[styles.quickAction,pressed&&styles.pressed]} onPress={()=>setPicker(true)}>
+          <Body weight="semibold" style={styles.quickActionLabel}>الفيسات</Body>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="هدية" android_ripple={{color:theme.colors.press}}
+          accessibilityState={{disabled:snapshot.participants.length<2}} disabled={snapshot.participants.length<2}
+          style={({pressed})=>[styles.quickAction,pressed&&styles.pressed,snapshot.participants.length<2&&styles.disabled]}
+          onPress={()=>setGiftTo(snapshot.participants.find(person=>person.id!==snapshot.me?.id)||null)}>
+          <Body weight="semibold" style={styles.quickActionLabel}>هدية</Body>
+        </Pressable>
       </View>
-      <View style={ui.row}>
+      <View style={styles.composerField}>
         <TextInput ref={input} testID="chat-input" accessibilityLabel="اكتب رسالة" value={draft} onChangeText={setDraft}
           placeholder="اكتب رسالة…" placeholderTextColor={theme.colors.muted} maxLength={1000} multiline
           textAlign="right" selectionColor={theme.colors.gold} style={styles.input}
@@ -111,29 +119,62 @@ const MessageItem=memo(function MessageItem({message,own,asset,still,onPress}:{
   const segments=useMemo(()=>tokenizeEmoji(message.text),[message.text]);
   return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={message.name+': '+message.text}
     style={({pressed})=>[styles.message,own&&styles.ownMessage,pressed&&styles.pressed]}>
-    <View style={ui.row}><Body weight="semibold" style={[ui.small,ui.gold]}>{message.name}</Body>
-      {message.pinned&&<Body muted style={ui.caption}>مثبتة</Body>}
-      <View style={ui.grow}/><Body muted style={ui.caption}>{new Date(message.createdAt).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})}</Body></View>
+    <View style={styles.messageHeading}>
+      <Avatar name={message.name} source={message.image?asset(message.image):undefined} size={28}/>
+      <Body weight="semibold" numberOfLines={1} style={[ui.small,styles.author,own&&styles.ownAuthor]}>{message.name}</Body>
+      {message.pinned&&<Body muted style={[ui.caption,styles.pinned]}>مثبتة</Body>}
+      <Body muted style={[ui.caption,styles.timestamp]}>{new Date(message.createdAt).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})}</Body></View>
     <View style={styles.messageText}>{segments.map((segment,index)=>segment.type==='text'
       ?<Body key={index}>{segment.text}</Body>
       :<ExpoImage key={index} source={asset(emojiAssetPath(segment.id,still))}
-        style={styles.customEmoji} contentFit="contain" accessibilityLabel="فيس"/>)}</View>
-    {!!message.gift&&<Body style={ui.small}>هدية إلى {message.gift.recipientName}</Body>}
-    <View style={ui.wrap}>{Object.entries(message.reactions).filter(([,users])=>users.length>0).map(([value,users])=><Body
-      key={value} style={ui.caption}>{value} {users.length.toLocaleString('ar-SA')}</Body>)}</View>
+        style={styles.messageEmoji} contentFit="contain" accessibilityLabel="فيس"/>)}</View>
+    {!!message.gift&&<View style={styles.giftReceipt}><Body style={[ui.small,ui.gold]}>هدية إلى {message.gift.recipientName}</Body></View>}
+    <View style={ui.wrap}>{Object.entries(message.reactions).filter(([,users])=>users.length>0).map(([value,users])=><View
+      key={value} style={styles.reactionPill}>
+      {tokenizeEmoji(value).map((segment,index)=>segment.type==='text'
+        ?<Body key={index} style={ui.caption}>{segment.text}</Body>
+        :<ExpoImage key={index} source={asset(emojiAssetPath(segment.id,still))}
+          style={styles.reactionEmoji} contentFit="contain" accessibilityLabel="فيس"/>)}
+      <Body style={[ui.caption,styles.reactionCount]}>{users.length.toLocaleString('ar-SA')}</Body>
+    </View>)}</View>
   </Pressable>;
 });
 const styles=StyleSheet.create({
-  panel:{flex:1,minHeight:100,gap:8},heading:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between'},
-  messages:{paddingVertical:8,gap:8},message:{padding:12,borderRadius:16,backgroundColor:theme.colors.surface,
-    borderWidth:1,borderColor:theme.colors.borderSoft,gap:4},ownMessage:{borderColor:theme.colors.border},
+  panel:{flex:1,minHeight:100,gap:8},
+  heading:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},
+  chatTitle:{fontSize:18,lineHeight:28},
+  messageCount:{paddingHorizontal:10,paddingVertical:3,borderRadius:theme.radius.pill,
+    backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.borderSoft},
+  countLabel:{lineHeight:18},
+  messages:{paddingVertical:8,gap:10},
+  message:{alignSelf:'flex-start',maxWidth:'94%',minWidth:'66%',padding:12,borderRadius:20,
+    borderTopLeftRadius:6,backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.borderSoft,gap:6},
+  ownMessage:{alignSelf:'flex-end',borderTopLeftRadius:20,borderTopRightRadius:6,
+    backgroundColor:theme.colors.goldSoft,borderColor:theme.colors.border},
+  messageHeading:{flexDirection:'row-reverse',alignItems:'center',gap:6},
+  author:{flex:1,minWidth:0,color:theme.colors.text,lineHeight:22},ownAuthor:{color:theme.colors.gold},
+  timestamp:{fontSize:10,lineHeight:18,flexShrink:0},pinned:{fontSize:10,lineHeight:18},
   messageText:{flexDirection:'row-reverse',flexWrap:'wrap',alignItems:'center',gap:2},
-  composer:{gap:8,paddingTop:8,borderTopWidth:1,borderTopColor:theme.colors.borderSoft},
-  input:{flex:1,minHeight:48,maxHeight:124,paddingHorizontal:12,paddingVertical:8,
-    color:theme.colors.text,fontSize:16,borderWidth:1,borderColor:theme.colors.controlBorder,borderRadius:16,
-    backgroundColor:theme.colors.surface,writingDirection:'rtl'},
-  emojiButton:{minWidth:52,minHeight:52,alignItems:'center',justifyContent:'center'},
+  messageEmoji:{width:32,height:32},
+  giftReceipt:{paddingHorizontal:10,paddingVertical:6,borderRadius:theme.radius.sm,
+    borderWidth:1,borderColor:theme.colors.border,backgroundColor:theme.colors.surface},
+  reactionPill:{flexDirection:'row-reverse',alignItems:'center',gap:4,paddingHorizontal:8,paddingVertical:3,
+    borderRadius:theme.radius.pill,backgroundColor:theme.colors.surfaceStrong,
+    borderWidth:1,borderColor:theme.colors.borderSoft},
+  reactionEmoji:{width:20,height:20},reactionCount:{lineHeight:20,color:theme.colors.goldLight},
+  composer:{gap:2,padding:8,borderWidth:1,borderColor:theme.colors.controlBorder,
+    borderRadius:theme.radius.lg,backgroundColor:theme.colors.input},
+  composerTools:{flexDirection:'row-reverse',alignItems:'center',gap:4},
+  quickAction:{minWidth:64,minHeight:48,paddingHorizontal:12,alignItems:'center',justifyContent:'center',
+    borderRadius:theme.radius.sm},
+  quickActionLabel:{fontSize:13,lineHeight:20,color:theme.colors.muted},
+  composerField:{flexDirection:'row-reverse',alignItems:'flex-end',gap:8},
+  input:{flex:1,minWidth:0,minHeight:48,maxHeight:124,paddingHorizontal:8,paddingVertical:10,
+    color:theme.colors.text,fontSize:16,backgroundColor:theme.colors.input,writingDirection:'rtl'},
+  emojiButton:{minWidth:52,minHeight:52,alignItems:'center',justifyContent:'center',
+    borderRadius:theme.radius.sm,backgroundColor:theme.colors.surfaceStrong},
   emoji:{fontSize:28,lineHeight:40},customEmoji:{width:48,height:48},
-  customEmojiButton:{minWidth:76,minHeight:80,padding:8,alignItems:'center',gap:4},
-  pressed:{opacity:0.75},
+  customEmojiButton:{minWidth:76,minHeight:80,padding:8,alignItems:'center',gap:4,
+    borderRadius:theme.radius.sm,backgroundColor:theme.colors.surfaceStrong},
+  pressed:{opacity:0.75},disabled:{opacity:0.5},
 });
