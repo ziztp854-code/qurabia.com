@@ -72,7 +72,7 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
           style={({pressed})=>[styles.extraAction,pressed&&styles.pressed]}>
           <ExpoImage source={require('../../assets/icons/add.svg')} style={styles.extraIcon}
             tintColor={theme.colors.goldLight} accessible={false} contentFit="contain"/>
-        </Pressable>}}
+        </Pressable>}
         <TextInput ref={input} testID="chat-input" accessibilityLabel="اكتب رسالة" value={draft} onChangeText={setDraft}
           placeholder="اكتب رسالة…" placeholderTextColor={theme.colors.muted} maxLength={1000} multiline
           textAlign="right" selectionColor={theme.colors.gold} style={styles.input}
