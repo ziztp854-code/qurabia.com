@@ -31,33 +31,40 @@ jobs:
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
       - name: Check types and affected regressions
         run: |
-          git fetch --no-tags --depth=1 origin c8820ed64c0b381cdb6b55ec799464c90a1f86d7
-          if git diff --quiet c8820ed64c0b381cdb6b55ec799464c90a1f86d7 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc; then
-            echo "Retained unchanged-source evidence: TypeScript and 29 checks at eb1216d, five readiness tests at c8820ed, native unit proof at 165c044."
-          else
-            pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
-            pnpm --filter @tahaddi/mobile typecheck
-            pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
-            # Retain the verified 165c native-unit result only for this exact reviewed
-            # artwork pair when every other native/unit dependency is unchanged.
-            git fetch --no-tags --depth=1 origin 165c044e1035e59b8adaec1dc2fdb4a51789173d
-            if git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/src apps/mobile/tests apps/mobile/scripts/test-native.cjs apps/mobile/tsconfig.json packages package.json pnpm-lock.yaml pnpm-workspace.yaml ':!apps/mobile/src/screens/auth-screen.tsx' ':!apps/mobile/src/screens/profile-screen.tsx' ':!apps/mobile/tests/*.py' &&
-               diff <(git show 165c044e1035e59b8adaec1dc2fdb4a51789173d:apps/mobile/package.json | jq -S 'del(.version)') <(jq -S 'del(.version)' apps/mobile/package.json) &&
-               test "$(git rev-parse HEAD:apps/mobile/src/screens/auth-screen.tsx)" = fd6591af1f2a1346affd6de27bd598905e7ec453 &&
-               test "$(git rev-parse HEAD:apps/mobile/src/screens/profile-screen.tsx)" = a3eb0aec450e252f37cec85186f01d27e87c5697; then
-              echo "Native unit evidence retained: 84 passed at 165c044; exact reviewed artwork only, core dependencies unchanged."
-            else
-              pnpm --filter @tahaddi/mobile test
-            fi
-            if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/prepare-android-debug.cjs apps/mobile/scripts/prepare-android-debug.test.cjs; then
-              node --test apps/mobile/scripts/prepare-android-debug.test.cjs
-            fi
-            if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/android-native-smoke.py apps/mobile/scripts/android-native-smoke.sh apps/mobile/tests/test_android_native_smoke.py; then
-              python3 apps/mobile/tests/test_android_native_smoke.py
-            fi
+          git fetch --no-tags --depth=1 origin 2b8560e1406034e73b236424ad21ad206f47ecdb
+          if git diff --quiet 2b8560e1406034e73b236424ad21ad206f47ecdb HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/native_ime_geometry.py' ':!apps/mobile/scripts/login-native-smoke.py' ':!apps/mobile/scripts/visual-native-smoke.py' ':!apps/mobile/tests/login-guards.py' ':!apps/mobile/tests/visual-guards.py'; then
             python3 apps/mobile/tests/login-guards.py
-            python3 apps/mobile/tests/test_android_emulator_ready.py
             python3 apps/mobile/tests/visual-guards.py
+            echo "Retained exact unchanged application evidence at 2b8560e: TypeScript, 84 native unit checks, five readiness checks and public Android36 startup. New IME parser tests ran above."
+          else
+            git fetch --no-tags --depth=1 origin c8820ed64c0b381cdb6b55ec799464c90a1f86d7
+            if git diff --quiet c8820ed64c0b381cdb6b55ec799464c90a1f86d7 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc; then
+              echo "Retained unchanged-source evidence: TypeScript and 29 checks at eb1216d, five readiness tests at c8820ed, native unit proof at 165c044."
+            else
+              pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
+              pnpm --filter @tahaddi/mobile typecheck
+              pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
+              # Retain the verified 165c native-unit result only for this exact reviewed
+              # artwork pair when every other native/unit dependency is unchanged.
+              git fetch --no-tags --depth=1 origin 165c044e1035e59b8adaec1dc2fdb4a51789173d
+              if git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/src apps/mobile/tests apps/mobile/scripts/test-native.cjs apps/mobile/tsconfig.json packages package.json pnpm-lock.yaml pnpm-workspace.yaml ':!apps/mobile/src/screens/auth-screen.tsx' ':!apps/mobile/src/screens/profile-screen.tsx' ':!apps/mobile/tests/*.py' &&
+                 diff <(git show 165c044e1035e59b8adaec1dc2fdb4a51789173d:apps/mobile/package.json | jq -S 'del(.version)') <(jq -S 'del(.version)' apps/mobile/package.json) &&
+                 test "$(git rev-parse HEAD:apps/mobile/src/screens/auth-screen.tsx)" = fd6591af1f2a1346affd6de27bd598905e7ec453 &&
+                 test "$(git rev-parse HEAD:apps/mobile/src/screens/profile-screen.tsx)" = a3eb0aec450e252f37cec85186f01d27e87c5697; then
+                echo "Native unit evidence retained: 84 passed at 165c044; exact reviewed artwork only, core dependencies unchanged."
+              else
+                pnpm --filter @tahaddi/mobile test
+              fi
+              if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/prepare-android-debug.cjs apps/mobile/scripts/prepare-android-debug.test.cjs; then
+                node --test apps/mobile/scripts/prepare-android-debug.test.cjs
+              fi
+              if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/android-native-smoke.py apps/mobile/scripts/android-native-smoke.sh apps/mobile/tests/test_android_native_smoke.py; then
+                python3 apps/mobile/tests/test_android_native_smoke.py
+              fi
+              python3 apps/mobile/tests/login-guards.py
+              python3 apps/mobile/tests/test_android_emulator_ready.py
+              python3 apps/mobile/tests/visual-guards.py
+            fi
           fi
       - name: Check patch whitespace and scope
         run: |
@@ -97,11 +104,11 @@ jobs:
       - name: Check one-time public APK reuse
         id: reuse
         run: |
-          git fetch --no-tags --depth=1 origin c8820ed64c0b381cdb6b55ec799464c90a1f86d7
+          git fetch --no-tags --depth=1 origin 2b8560e1406034e73b236424ad21ad206f47ecdb
           # Read the raw commit object: revision traversal stops at shallow HEAD.
           parent_sha="$(git cat-file -p HEAD | sed -n 's/^parent //p')"
-          if test "$parent_sha" = c8820ed64c0b381cdb6b55ec799464c90a1f86d7 &&
-             git diff --quiet c8820ed64c0b381cdb6b55ec799464c90a1f86d7 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc; then
+          if test "$parent_sha" = 2b8560e1406034e73b236424ad21ad206f47ecdb &&
+             git diff --quiet 2b8560e1406034e73b236424ad21ad206f47ecdb HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/native_ime_geometry.py' ':!apps/mobile/scripts/login-native-smoke.py' ':!apps/mobile/scripts/visual-native-smoke.py' ':!apps/mobile/tests/login-guards.py' ':!apps/mobile/tests/visual-guards.py'; then
             echo "eligible=true" >> "$GITHUB_OUTPUT"
             echo "Delivery reuse approved by direct-parent and unchanged-runtime proofs."
           else
@@ -216,29 +223,29 @@ jobs:
           cd apps/mobile/android
           ./gradlew --version | tee ../../../android-reports/gradle-version.log
 
-      - name: Download the unchanged 0.3.1 delivery APK
+      - name: Download the unchanged 0.3.2 delivery APK
         if: steps.reuse.outputs.eligible == 'true'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: tahaddi-debug-39722808100-1
+          name: tahaddi-debug-39728465981-1
           path: android-reuse
-          run-id: 39722808100
+          run-id: 39728465981
           github-token: ${{ github.token }}
 
       - name: Verify and stage the unchanged public APK
         if: steps.reuse.outputs.eligible == 'true'
         run: |
-          echo 'bd03c5814ca80f48b53af2f95501d3515ca5b1be051ddef15078cc9fe0773941  android-reuse/app-debug.apk' | sha256sum --check
+          echo 'a6463f9cca0318630e7c6a617f5c2754e2fa0447ee03b793c70a8b67f9c5e1da  android-reuse/app-debug.apk' | sha256sum --check
           mkdir -p apps/mobile/android/app/build/outputs/apk/debug
           cp android-reuse/app-debug.apk apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           node - <<'NODE'
           const fs=require('fs');
           fs.writeFileSync('android-reports/apk-provenance.json',JSON.stringify({
             kind:'unchanged delivery APK reused for harness validation',
-            apk_source_sha:'c8820ed64c0b381cdb6b55ec799464c90a1f86d7',
+            apk_source_sha:'2b8560e1406034e73b236424ad21ad206f47ecdb',
             validation_source_sha:process.env.GITHUB_SHA,
-            original_run_id:39722808100,
-            sha256:'bd03c5814ca80f48b53af2f95501d3515ca5b1be051ddef15078cc9fe0773941'
+            original_run_id:39728465981,
+            sha256:'a6463f9cca0318630e7c6a617f5c2754e2fa0447ee03b793c70a8b67f9c5e1da'
           },null,2)+'\n');
           NODE
 
@@ -314,6 +321,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Install and launch on Android 36 without Metro
+        if: steps.reuse.outputs.eligible != 'true'
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: 36
@@ -392,7 +400,7 @@ jobs:
           PY
 
       - name: Record unauthenticated emulator preview and diagnostics
-        if: always()
+        if: ${{ always() && steps.reuse.outputs.eligible != 'true' }}
         run: |
           node <<'NODE'
           const fs=require('node:fs');
