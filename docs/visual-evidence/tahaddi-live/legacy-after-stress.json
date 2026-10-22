@@ -1,0 +1,224 @@
+{
+  "speakingGeometry": {
+    "before": {
+      "x": 77,
+      "y": 339.671875,
+      "width": 166,
+      "height": 167.4375
+    },
+    "speaking": {
+      "x": 77,
+      "y": 339.671875,
+      "width": 166,
+      "height": 167.4375
+    }
+  },
+  "records": [
+    {
+      "width": 320,
+      "height": 700,
+      "textOnlyZoom": {
+        "overflowX": false,
+        "textarea": {
+          "clientHeight": 74,
+          "lineHeight": 54.4,
+          "padding": 20
+        },
+        "dock": [
+          {
+            "top": 480,
+            "bottom": 581,
+            "left": 209.671875,
+            "right": 303
+          },
+          {
+            "top": 480,
+            "bottom": 581,
+            "left": 113.34375,
+            "right": 206.671875
+          },
+          {
+            "top": 480,
+            "bottom": 581,
+            "left": 17,
+            "right": 110.34375
+          },
+          {
+            "top": 584,
+            "bottom": 685,
+            "left": 209.671875,
+            "right": 303
+          },
+          {
+            "top": 584,
+            "bottom": 685,
+            "left": 113.34375,
+            "right": 206.671875
+          },
+          {
+            "top": 584,
+            "bottom": 685,
+            "left": 17,
+            "right": 110.34375
+          }
+        ]
+      },
+      "seatAtTextZoom": {
+        "reachable": true,
+        "visibleHeight": 280.359375,
+        "seat": {
+          "top": 92.015625,
+          "bottom": 372.375,
+          "width": 166,
+          "height": 280.359375
+        },
+        "column": {
+          "top": 82.015625,
+          "bottom": 835.765625,
+          "clientHeight": 754,
+          "scrollHeight": 754,
+          "scrollTop": 0
+        }
+      },
+      "sendAtTextZoom": {
+        "reachable": true,
+        "focused": true,
+        "send": {
+          "top": 234.765625,
+          "bottom": 282.765625,
+          "left": 23,
+          "right": 71
+        },
+        "dock": {
+          "top": 473,
+          "bottom": 692,
+          "left": 10,
+          "right": 310
+        },
+        "windowScroll": 0
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "textOnlyZoom": {
+        "overflowX": false,
+        "textarea": {
+          "clientHeight": 74,
+          "lineHeight": 54.4,
+          "padding": 20
+        },
+        "dock": [
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 436,
+            "right": 524
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 532,
+            "right": 620
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 628,
+            "right": 716
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 724,
+            "right": 812
+          },
+          {
+            "top": 750,
+            "bottom": 877,
+            "left": 820,
+            "right": 908
+          },
+          {
+            "top": 787.5,
+            "bottom": 839.5,
+            "left": 916,
+            "right": 1004
+          }
+        ]
+      },
+      "seatAtTextZoom": {
+        "reachable": true,
+        "visibleHeight": 187.71875,
+        "seat": {
+          "top": 339.484375,
+          "bottom": 555.265625,
+          "width": 239.796875,
+          "height": 215.78125
+        },
+        "column": {
+          "top": 353.6875,
+          "bottom": 541.40625,
+          "clientHeight": 188,
+          "scrollHeight": 898,
+          "scrollTop": 103
+        }
+      },
+      "sendAtTextZoom": {
+        "reachable": true,
+        "focused": true,
+        "send": {
+          "top": 662,
+          "bottom": 710,
+          "left": 1069,
+          "right": 1117
+        },
+        "dock": {
+          "top": 739,
+          "bottom": 888,
+          "left": 340,
+          "right": 1100
+        },
+        "windowScroll": 0
+      }
+    }
+  ],
+  "computedColors": {
+    ".v-chat": {
+      "color": "rgb(250, 249, 247)",
+      "backgroundColor": "rgb(3, 11, 18)",
+      "backgroundImage": "none",
+      "outline": "rgb(250, 249, 247) none 3px",
+      "borderColor": "rgba(255, 255, 255, 0.1)"
+    },
+    ".v-message-body": {
+      "color": "rgb(250, 249, 247)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "backgroundImage": "none",
+      "outline": "rgb(250, 249, 247) none 3px",
+      "borderColor": "rgb(250, 249, 247)"
+    },
+    ".v-message-body > p": {
+      "color": "rgb(250, 249, 247)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "backgroundImage": "none",
+      "outline": "rgb(250, 249, 247) none 3px",
+      "borderColor": "rgb(250, 249, 247)"
+    },
+    ".v-room-controls": {
+      "color": "rgb(250, 249, 247)",
+      "backgroundColor": "rgb(3, 11, 18)",
+      "backgroundImage": "none",
+      "outline": "rgb(250, 249, 247) none 3px",
+      "borderColor": "rgba(255, 255, 255, 0.1) color(srgb 0.855026 0.730281 0.325703 / 0.442) color(srgb 0.855026 0.730281 0.325703 / 0.442)"
+    },
+    ".v-room-controls button": {
+      "color": "rgb(250, 249, 247)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "backgroundImage": "none",
+      "outline": "rgb(250, 249, 247) none 3px",
+      "borderColor": "rgb(250, 249, 247)"
+    }
+  },
+  "limitation": "Computed-font-size doubling emulates text-only zoom; no physical browser/OS text scaling certification."
+}

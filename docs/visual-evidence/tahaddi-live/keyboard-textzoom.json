@@ -1,0 +1,13 @@
+{
+  "keyboard": {
+    "top": 20,
+    "bottom": 350,
+    "focused": true
+  },
+  "textZoom": {
+    "height": 74,
+    "required": 74.4,
+    "overflowX": false
+  },
+  "limitation": "VisualViewport and computed font-size emulation, not physical-device keyboard/OS certification."
+}

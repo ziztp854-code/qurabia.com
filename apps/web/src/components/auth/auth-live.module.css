@@ -1,0 +1,146 @@
+.live {
+  position: relative;
+  isolation: isolate;
+  min-block-size: 100dvh;
+  padding-block: 36px;
+  color: var(--voice-text);
+  background:
+    radial-gradient(ellipse at 50% 28%, var(--voice-glow), transparent 46%), var(--voice-bg);
+}
+.live :global(.auth-panel) {
+  inline-size: min(100%, 460px);
+  border: 1px solid var(--voice-border);
+  border-radius: 24px;
+  padding: 32px;
+  background: var(--voice-glass);
+  box-shadow: var(--voice-shadow);
+}
+.identity {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  margin-block-end: 12px;
+}
+.identity > span {
+  color: var(--voice-gold-light);
+  font-size: 32px;
+  font-weight: 800;
+}
+.identity p {
+  color: var(--voice-gold-light);
+  font-size: 15px;
+  margin-block: 4px 12px;
+}
+.live h1 {
+  color: var(--voice-text);
+  font-size: 22px;
+}
+.live :global(.auth-panel) > div > p {
+  color: var(--voice-muted);
+}
+.live :global(.auth-form) button[type='submit'] {
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--voice-gold-light), var(--voice-gold));
+  color: var(--voice-ink);
+}
+.live :global(.auth-footer) {
+  color: var(--voice-muted);
+}
+.live :global(.auth-footer) a {
+  color: var(--voice-gold-light);
+}
+@media (max-width: 600px) {
+  .live {
+    padding: 24px 18px;
+  }
+  .live :global(.auth-panel) {
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+}
+
+/* The real credentials form remains central, with a clear compact hierarchy. */
+.live {
+  align-content: center;
+  gap: 18px;
+}
+.live :global(.auth-panel) {
+  gap: 18px;
+  padding: 28px;
+}
+.live :global(.auth-panel) > div:nth-child(2) {
+  text-align: center;
+}
+.live :global(.auth-panel) > div:nth-child(2) > p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.live :global(.auth-form) {
+  gap: 14px;
+}
+.live :global(.auth-form) > button {
+  min-block-size: 46px;
+}
+.live :global(.auth-footer) {
+  justify-content: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.identity {
+  margin-block-end: 0;
+}
+.identity > span {
+  font-size: 30px;
+  line-height: 1.6;
+}
+.identity p {
+  font-size: 13px;
+  margin-block: 0;
+}
+@media (max-width: 600px) {
+  .live :global(.auth-panel) {
+    padding: 24px 18px;
+    gap: 16px;
+  }
+  .live h1 {
+    font-size: 20px;
+  }
+}
+
+/* Place the password action in the input row, including enlarged Arabic labels. */
+.live :global(.password-field) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+}
+.live :global(.password-field > .field) {
+  display: contents;
+}
+.live :global(.password-field .field-label) {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin-block-end: 0.4rem;
+}
+.live :global(.password-field .field-control) {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding-inline-end: 48px;
+}
+.live :global(.password-field .field-message) {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+.live :global(.password-field .field-action) {
+  position: static;
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+  inline-size: 44px;
+  block-size: 44px;
+  z-index: 1;
+}
+.live :global(.field-control),
+.live :global(.field-control input) {
+  min-block-size: max(46px, 1.8em);
+  line-height: 1.7;
+}

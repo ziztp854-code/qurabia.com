@@ -1,24 +1,69 @@
-/* Presentation only. The room viewport observer supplies CSS-pixel dimensions. */
+/* Desktop broadcast desk. Audio, membership, and moderation remain in VoiceRoom. */
 @media (min-width: 1021px) {
   .desktopRoom[data-room-visible='true'] {
+    --room-avatar-size: 58px;
     --room-desktop-height: calc(
       var(--room-viewport-height, 100dvh) - var(--room-controls-height, 100px) -
-        max(12px, env(safe-area-inset-bottom)) - 20px
+        max(12px, env(safe-area-inset-bottom)) - 76px
     );
+    padding-inline: 20px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-topbar) {
+    display: flex;
+    flex-wrap: wrap;
+    min-block-size: 56px;
+    block-size: auto;
+    height: auto;
+    padding: 4px 0;
+    gap: 24px;
+    background: transparent;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-topbar .v-brand > span) {
+    font-size: 18px;
+    color: var(--voice-gold);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-topbar .v-brand small) {
+    display: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-topbar .v-topnav) {
+    font-size: 12px;
+    gap: 20px;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-workspace),
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
     inline-size: 100%;
-    max-inline-size: none;
-    max-width: none;
+    max-inline-size: 1880px;
+    max-width: 1880px;
     min-inline-size: 0;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
-    grid-template-columns: minmax(0, 1fr) clamp(320px, 32vw, 440px);
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 29vw, 390px);
     grid-template-areas: 'header header' 'heading chat' 'stage chat' 'audio chat' 'close chat';
-    gap: 16px 24px;
+    gap: 12px 18px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-heading]) {
+    text-align: start;
+    padding-block-start: 0;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-heading] h1) {
+    margin-block: 2px;
+    font-size: clamp(20px, 1.8vw, 28px);
+    line-height: 1.6;
+    color: var(--voice-text);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-heading] p) {
+    font-size: 12px;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage-column) {
@@ -27,12 +72,84 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
-    padding: 4px;
+    padding: 3px;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage-column > .v-stage),
   .desktopRoom[data-room-visible='true'] :global(.v-stage-column > .v-requests) {
     flex: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-stage-heading) {
+    margin-block-end: 12px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px 10px;
+    align-items: stretch;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat) {
+    border-radius: 12px;
+    padding: 6px;
+    background: linear-gradient(160deg, var(--voice-card), var(--voice-bg));
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-seats .v-seat-person),
+  .desktopRoom[data-room-visible='true'] :global(.v-seats .v-empty-seat) {
+    gap: 1px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-person > strong),
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-person > small),
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-state) {
+    /* The mic badge and accessible participant name retain the actual state. */
+    display: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-is-empty) {
+    padding-block-end: 6px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > small) {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-lock) {
+    position: absolute;
+    inset-inline-end: 2px;
+    inset-block-end: 2px;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    margin: 0;
+    font-size: 10px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-seats .v-seat.is-speaking) {
+    border-color: var(--voice-purple);
+    box-shadow: 0 0 0 1px var(--voice-purple);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-seats .v-host-seat) {
+    grid-column: auto;
+    order: initial;
+    justify-self: stretch;
+    inline-size: auto;
+    border-color: var(--voice-gold);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > span) {
+    inline-size: 44px;
+    block-size: 44px;
+    border: 1px solid var(--voice-line);
+    color: var(--voice-muted);
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat-column) {
@@ -46,6 +163,53 @@
     min-block-size: 280px;
     block-size: auto;
     max-block-size: none;
+    border-radius: 14px;
+    background: var(--voice-bg);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat > header) {
+    min-block-size: 48px;
+    padding: 8px 12px;
+    background: var(--voice-card);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message) {
+    gap: 5px;
+    margin-block-end: 8px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
+    padding: 4px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-avatar-button) {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-meta) {
+    margin-block-end: 0;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose) {
+    padding: 8px;
+    gap: 6px;
+    background: var(--voice-card);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose textarea) {
+    min-block-size: max(44px, calc(1lh + 22px));
+    block-size: max(44px, calc(1lh + 22px));
+    border-radius: 12px;
+    background: var(--voice-bg);
   }
 
   .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
@@ -55,6 +219,9 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
+    border-radius: 14px;
+    padding: 12px;
+    background: var(--voice-bg);
   }
 
   .desktopRoom[data-room-visible='true'] :global([data-room-audience-list]) {
@@ -73,13 +240,45 @@
   .desktopRoom[data-room-visible='true'] :global([data-room-audience] > button) {
     flex: none;
   }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
+    max-inline-size: 760px;
+    border-block-start: 1px solid var(--voice-line);
+    border-radius: 16px;
+    background: var(--voice-bg);
+    box-shadow: var(--voice-shadow);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-room-controls .v-leave) {
+    align-self: center;
+    min-block-size: 44px;
+    border-radius: 999px;
+    padding-inline: 14px;
+    color: var(--voice-text);
+    background: var(--voice-live-strong);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-room-controls .v-leave > svg) {
+    display: none;
+  }
+}
+
+@media (min-width: 1021px) and (hover: hover) {
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-actions) {
+    display: none;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message:hover .v-message-actions),
+  .desktopRoom[data-room-visible='true']
+    :global(.v-chat .v-message:focus-within .v-message-actions) {
+    display: flex;
+  }
 }
 
 @media (min-width: 1021px) and (min-height: 640px) {
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
     block-size: var(--room-desktop-height);
-    /* Large text may need more than the viewport budget. Keep the seat scrollport
-       usable and let the room grow instead of collapsing it to a narrow strip. */
+    /* Larger text can grow the document; seats retain their own scroll area. */
     min-block-size: min-content;
     grid-template-rows: auto auto minmax(180px, 1fr) auto auto;
     align-content: stretch;
@@ -88,16 +287,11 @@
   .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
     min-block-size: 0;
   }
-
-  .desktopRoom[data-room-visible='true'] :global([data-room-heading]) {
-    min-inline-size: 0;
-    padding-block-start: 0;
-  }
 }
 
 @media (min-width: 1280px) {
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
-    grid-template-columns: clamp(220px, 18vw, 320px) minmax(0, 1fr) clamp(320px, 27vw, 480px);
+    grid-template-columns: clamp(164px, 14vw, 224px) minmax(0, 1fr) clamp(300px, 25vw, 420px);
     grid-template-areas:
       'header header header'
       'audience heading chat'
@@ -117,18 +311,7 @@
   }
 }
 
-@media (min-width: 1920px) {
-  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
-    gap: 20px 32px;
-  }
-
-  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 24px;
-  }
-}
-
-/* Short windows keep natural page flow so content and expanded audio stay reachable. */
+/* Short windows use natural document flow so moderation stays reachable. */
 @media (min-width: 1021px) and (max-height: 639px) {
   .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
     block-size: max(360px, var(--room-desktop-height));

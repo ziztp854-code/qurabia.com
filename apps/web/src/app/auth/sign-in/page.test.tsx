@@ -37,3 +37,15 @@ it('keeps the host flow and rejects an external callback destination', async () 
   expect(screen.getByRole('heading', { name: 'دخول المضيفين' })).toBeInTheDocument();
   expect(screen.getByText('/dashboard')).toBeInTheDocument();
 });
+
+it('keeps a voice-room destination and renders the live sign-in identity', async () => {
+  render(
+    await SignInPage({
+      searchParams: Promise.resolve({ next: '/voice/room-royal?invite=welcome' }),
+    }),
+  );
+
+  expect(screen.getByRole('heading', { name: 'تسجيل الدخول' })).toBeInTheDocument();
+  expect(screen.getByText('تحدي لايف')).toBeInTheDocument();
+  expect(screen.getByText('/voice/room-royal?invite=welcome')).toBeInTheDocument();
+});

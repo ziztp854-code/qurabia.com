@@ -48,7 +48,7 @@ import type {
 import { AudioSession, type VoiceAudioHandle } from './audio-session';
 import { MemberEntrance, voiceArrivals, type VoiceArrival } from './member-entrance';
 import { PersistentVoiceDock } from './persistent-voice-dock';
-import { Avatar, EmptyState, LiveBadge, VoiceShell, VoiceCover } from './voice-ui';
+import { Avatar, EmptyState, LiveBadge, VoiceShell } from './voice-ui';
 import {
   captureInvite,
   clearSavedInvite,
@@ -116,8 +116,9 @@ export function VoiceRoomView({
     if (!open) setProfileId(null);
   }, []);
   const [chatOpen, setChatOpen] = useState(false);
+  const chatToggle = useRef<HTMLButtonElement>(null);
   const [membersOpen, setMembersOpen] = useState(false);
-  const [showEmptySeats, setShowEmptySeats] = useState(false);
+  const [showEmptySeats, setShowEmptySeats] = useState(true);
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const [giftArrival, setGiftArrival] = useState<VoiceMessage | null>(null);
   const dismissGift = useCallback(() => setGiftArrival(null), []);
@@ -180,7 +181,7 @@ export function VoiceRoomView({
   const [reportOpen, setReportOpen] = useState(false);
   const [reportUserId, setReportUserId] = useState<string | null>(null);
   const chatOverlayOpen = chatOpen && compactChat && !profileId && !reportOpen && !giftsOpen;
-  useVoiceOverlay(chatOverlayOpen && visible, chatRef, closeChat);
+  useVoiceOverlay(chatOverlayOpen && visible, chatRef, closeChat, chatToggle);
   const leaving = useRef(false);
   const stopHeartbeat = useRef<(() => void) | null>(null);
   const snapshotRef = useRef<VoiceSnapshot | null>(null);
@@ -576,11 +577,7 @@ export function VoiceRoomView({
       className={`${liveStyles.liveRoom} ${mobileStyles.mobileRoom} ${desktopStyles.desktopRoom} v-room-scope`}
       data-room-visible={visible}
     >
-      {visible && room && (
-        <div className={liveStyles.backdrop} aria-hidden="true">
-          <VoiceCover src={room.cover} sizes="100vw" priority />
-        </div>
-      )}
+      {visible && room && <div className={liveStyles.backdrop} aria-hidden="true" />}
       {snapshot && (
         <PersistentVoiceDock
           snapshot={{ ...snapshot, me }}
@@ -1305,6 +1302,7 @@ export function VoiceRoomView({
                       <span>الهدايا</span>
                     </button>
                     <button
+                      ref={chatToggle}
                       className={`v-control v-chat-toggle ${chatOpen ? 'is-selected' : ''}`}
                       aria-expanded={chatOpen}
                       onClick={() => setChatOpen((v) => !v)}

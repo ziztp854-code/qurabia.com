@@ -1,0 +1,1169 @@
+{
+  "stage": "after",
+  "scope": "Actual VoiceRoomView + production CSS/assets, synthetic snapshot/preferences and mocked AudioSession; local headless Chromium; DPR 1; zoom 100%; no authentication, microphone, SFU or physical device proof.",
+  "browser": "154.0.8037.57",
+  "results": [
+    {
+      "width": 320,
+      "height": 700,
+      "documentWidth": 320,
+      "documentHeight": 700,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 257.84375,
+          "y": 614,
+          "width": 45.15625,
+          "height": 71,
+          "right": 303,
+          "bottom": 685
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 209.671875,
+          "y": 614,
+          "width": 45.171875,
+          "height": 71,
+          "right": 254.84375,
+          "bottom": 685
+        },
+        {
+          "name": "رفع اليد",
+          "x": 161.5,
+          "y": 614,
+          "width": 45.171875,
+          "height": 71,
+          "right": 206.671875,
+          "bottom": 685
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 113.34375,
+          "y": 614,
+          "width": 45.15625,
+          "height": 71,
+          "right": 158.5,
+          "bottom": 685
+        },
+        {
+          "name": "الهدايا",
+          "x": 65.171875,
+          "y": 614,
+          "width": 45.171875,
+          "height": 71,
+          "right": 110.34375,
+          "bottom": 685
+        },
+        {
+          "name": "الدردشة",
+          "x": 17,
+          "y": 614,
+          "width": 45.171875,
+          "height": 71,
+          "right": 62.171875,
+          "bottom": 685
+        }
+      ],
+      "main": {
+        "x": 14,
+        "y": 0,
+        "width": 292,
+        "height": 599,
+        "right": 306,
+        "bottom": 599
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 700,
+        "right": 320,
+        "bottom": 700
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "documentWidth": 375,
+      "documentHeight": 812,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 303.671875,
+          "y": 726,
+          "width": 54.328125,
+          "height": 71,
+          "right": 358,
+          "bottom": 797
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 246.34375,
+          "y": 726,
+          "width": 54.328125,
+          "height": 71,
+          "right": 300.671875,
+          "bottom": 797
+        },
+        {
+          "name": "رفع اليد",
+          "x": 189.015625,
+          "y": 726,
+          "width": 54.328125,
+          "height": 71,
+          "right": 243.34375,
+          "bottom": 797
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 131.671875,
+          "y": 726,
+          "width": 54.34375,
+          "height": 71,
+          "right": 186.015625,
+          "bottom": 797
+        },
+        {
+          "name": "الهدايا",
+          "x": 74.34375,
+          "y": 726,
+          "width": 54.328125,
+          "height": 71,
+          "right": 128.671875,
+          "bottom": 797
+        },
+        {
+          "name": "الدردشة",
+          "x": 17.015625,
+          "y": 726,
+          "width": 54.328125,
+          "height": 71,
+          "right": 71.34375,
+          "bottom": 797
+        }
+      ],
+      "main": {
+        "x": 14,
+        "y": 0,
+        "width": 347,
+        "height": 711,
+        "right": 361,
+        "bottom": 711
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 375,
+        "height": 812,
+        "right": 375,
+        "bottom": 812
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "documentHeight": 844,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 316.171875,
+          "y": 758,
+          "width": 56.828125,
+          "height": 71,
+          "right": 373,
+          "bottom": 829
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 256.34375,
+          "y": 758,
+          "width": 56.828125,
+          "height": 71,
+          "right": 313.171875,
+          "bottom": 829
+        },
+        {
+          "name": "رفع اليد",
+          "x": 196.515625,
+          "y": 758,
+          "width": 56.828125,
+          "height": 71,
+          "right": 253.34375,
+          "bottom": 829
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 136.671875,
+          "y": 758,
+          "width": 56.84375,
+          "height": 71,
+          "right": 193.515625,
+          "bottom": 829
+        },
+        {
+          "name": "الهدايا",
+          "x": 76.84375,
+          "y": 758,
+          "width": 56.828125,
+          "height": 71,
+          "right": 133.671875,
+          "bottom": 829
+        },
+        {
+          "name": "الدردشة",
+          "x": 17.015625,
+          "y": 758,
+          "width": 56.828125,
+          "height": 71,
+          "right": 73.84375,
+          "bottom": 829
+        }
+      ],
+      "main": {
+        "x": 14,
+        "y": 0,
+        "width": 362,
+        "height": 743,
+        "right": 376,
+        "bottom": 743
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "right": 390,
+        "bottom": 844
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "documentWidth": 430,
+      "documentHeight": 932,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 349.5,
+          "y": 857,
+          "width": 63.5,
+          "height": 60,
+          "right": 413,
+          "bottom": 917
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 283,
+          "y": 857,
+          "width": 63.5,
+          "height": 60,
+          "right": 346.5,
+          "bottom": 917
+        },
+        {
+          "name": "رفع اليد",
+          "x": 216.5,
+          "y": 857,
+          "width": 63.5,
+          "height": 60,
+          "right": 280,
+          "bottom": 917
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 150,
+          "y": 857,
+          "width": 63.5,
+          "height": 60,
+          "right": 213.5,
+          "bottom": 917
+        },
+        {
+          "name": "الهدايا",
+          "x": 83.5,
+          "y": 857,
+          "width": 63.5,
+          "height": 60,
+          "right": 147,
+          "bottom": 917
+        },
+        {
+          "name": "الدردشة",
+          "x": 17,
+          "y": 857,
+          "width": 63.5,
+          "height": 60,
+          "right": 80.5,
+          "bottom": 917
+        }
+      ],
+      "main": {
+        "x": 14,
+        "y": 0,
+        "width": 402,
+        "height": 842,
+        "right": 416,
+        "bottom": 842
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 932,
+        "right": 430,
+        "bottom": 932
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "documentWidth": 768,
+      "documentHeight": 1530,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 25,
+          "y": 926,
+          "width": 95.703125,
+          "height": 75,
+          "right": 120.703125,
+          "bottom": 1001
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 128.703125,
+          "y": 926,
+          "width": 95.71875,
+          "height": 75,
+          "right": 224.421875,
+          "bottom": 1001
+        },
+        {
+          "name": "رفع اليد",
+          "x": 232.421875,
+          "y": 926,
+          "width": 95.71875,
+          "height": 75,
+          "right": 328.140625,
+          "bottom": 1001
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 336.140625,
+          "y": 926,
+          "width": 95.703125,
+          "height": 75,
+          "right": 431.84375,
+          "bottom": 1001
+        },
+        {
+          "name": "الهدايا",
+          "x": 439.84375,
+          "y": 926,
+          "width": 95.71875,
+          "height": 75,
+          "right": 535.5625,
+          "bottom": 1001
+        },
+        {
+          "name": "الدردشة",
+          "x": 543.5625,
+          "y": 926,
+          "width": 95.71875,
+          "height": 75,
+          "right": 639.28125,
+          "bottom": 1001
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 647.28125,
+          "y": 926,
+          "width": 95.71875,
+          "height": 75,
+          "right": 743,
+          "bottom": 1001
+        }
+      ],
+      "main": {
+        "x": 24,
+        "y": 0,
+        "width": 720,
+        "height": 1416.15625,
+        "right": 744,
+        "bottom": 1416.15625
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 1530.15625,
+        "right": 768,
+        "bottom": 1530.15625
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "documentHeight": 1530,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 55,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 153,
+          "bottom": 367
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 161,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 259,
+          "bottom": 367
+        },
+        {
+          "name": "رفع اليد",
+          "x": 267,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 365,
+          "bottom": 367
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 373,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 471,
+          "bottom": 367
+        },
+        {
+          "name": "الهدايا",
+          "x": 479,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 577,
+          "bottom": 367
+        },
+        {
+          "name": "الدردشة",
+          "x": 585,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 683,
+          "bottom": 367
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 691,
+          "y": 292,
+          "width": 98,
+          "height": 75,
+          "right": 789,
+          "bottom": 367
+        }
+      ],
+      "main": {
+        "x": 24,
+        "y": 0,
+        "width": 796,
+        "height": 1416.15625,
+        "right": 820,
+        "bottom": 1416.15625
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 844,
+        "height": 1530.15625,
+        "right": 844,
+        "bottom": 1530.15625
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1020,
+      "height": 768,
+      "documentWidth": 1020,
+      "documentHeight": 1534,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 143,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 241,
+          "bottom": 745
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 249,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 347,
+          "bottom": 745
+        },
+        {
+          "name": "رفع اليد",
+          "x": 355,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 453,
+          "bottom": 745
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 461,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 559,
+          "bottom": 745
+        },
+        {
+          "name": "الهدايا",
+          "x": 567,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 665,
+          "bottom": 745
+        },
+        {
+          "name": "الدردشة",
+          "x": 673,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 771,
+          "bottom": 745
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 779,
+          "y": 670,
+          "width": 98,
+          "height": 75,
+          "right": 877,
+          "bottom": 745
+        }
+      ],
+      "main": {
+        "x": 24,
+        "y": 0,
+        "width": 972,
+        "height": 1420.1875,
+        "right": 996,
+        "bottom": 1420.1875
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1020,
+        "height": 1534.1875,
+        "right": 1020,
+        "bottom": 1534.1875
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1021,
+      "height": 768,
+      "documentWidth": 1021,
+      "documentHeight": 768,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 226.5,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 314.5,
+          "bottom": 745
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 322.5,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 410.5,
+          "bottom": 745
+        },
+        {
+          "name": "رفع اليد",
+          "x": 418.5,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 506.5,
+          "bottom": 745
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 514.5,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 602.5,
+          "bottom": 745
+        },
+        {
+          "name": "الهدايا",
+          "x": 610.5,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 698.5,
+          "bottom": 745
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 706.5,
+          "y": 686.5,
+          "width": 88,
+          "height": 44,
+          "right": 794.5,
+          "bottom": 730.5
+        }
+      ],
+      "main": {
+        "x": 20,
+        "y": 0,
+        "width": 981,
+        "height": 641,
+        "right": 1001,
+        "bottom": 641
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1021,
+        "height": 768,
+        "right": 1021,
+        "bottom": 768
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1279,
+      "height": 900,
+      "documentWidth": 1279,
+      "documentHeight": 900,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 355.5,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 443.5,
+          "bottom": 877
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 451.5,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 539.5,
+          "bottom": 877
+        },
+        {
+          "name": "رفع اليد",
+          "x": 547.5,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 635.5,
+          "bottom": 877
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 643.5,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 731.5,
+          "bottom": 877
+        },
+        {
+          "name": "الهدايا",
+          "x": 739.5,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 827.5,
+          "bottom": 877
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 835.5,
+          "y": 818.5,
+          "width": 88,
+          "height": 44,
+          "right": 923.5,
+          "bottom": 862.5
+        }
+      ],
+      "main": {
+        "x": 20,
+        "y": 0,
+        "width": 1239,
+        "height": 773,
+        "right": 1259,
+        "bottom": 773
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1279,
+        "height": 900,
+        "right": 1279,
+        "bottom": 900
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "documentWidth": 1280,
+      "documentHeight": 900,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 356,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 444,
+          "bottom": 877
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 452,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 540,
+          "bottom": 877
+        },
+        {
+          "name": "رفع اليد",
+          "x": 548,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 636,
+          "bottom": 877
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 644,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 732,
+          "bottom": 877
+        },
+        {
+          "name": "الهدايا",
+          "x": 740,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 828,
+          "bottom": 877
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 836,
+          "y": 818.5,
+          "width": 88,
+          "height": 44,
+          "right": 924,
+          "bottom": 862.5
+        }
+      ],
+      "main": {
+        "x": 20,
+        "y": 0,
+        "width": 1240,
+        "height": 773,
+        "right": 1260,
+        "bottom": 773
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 900,
+        "right": 1280,
+        "bottom": 900
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "documentWidth": 1366,
+      "documentHeight": 768,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 399,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 487,
+          "bottom": 745
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 495,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 583,
+          "bottom": 745
+        },
+        {
+          "name": "رفع اليد",
+          "x": 591,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 679,
+          "bottom": 745
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 687,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 775,
+          "bottom": 745
+        },
+        {
+          "name": "الهدايا",
+          "x": 783,
+          "y": 672,
+          "width": 88,
+          "height": 73,
+          "right": 871,
+          "bottom": 745
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 879,
+          "y": 686.5,
+          "width": 88,
+          "height": 44,
+          "right": 967,
+          "bottom": 730.5
+        }
+      ],
+      "main": {
+        "x": 20,
+        "y": 0,
+        "width": 1326,
+        "height": 641,
+        "right": 1346,
+        "bottom": 641
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1366,
+        "height": 768,
+        "right": 1366,
+        "bottom": 768
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "documentWidth": 1440,
+      "documentHeight": 900,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 436,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 524,
+          "bottom": 877
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 532,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 620,
+          "bottom": 877
+        },
+        {
+          "name": "رفع اليد",
+          "x": 628,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 716,
+          "bottom": 877
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 724,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 812,
+          "bottom": 877
+        },
+        {
+          "name": "الهدايا",
+          "x": 820,
+          "y": 804,
+          "width": 88,
+          "height": 73,
+          "right": 908,
+          "bottom": 877
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 916,
+          "y": 818.5,
+          "width": 88,
+          "height": 44,
+          "right": 1004,
+          "bottom": 862.5
+        }
+      ],
+      "main": {
+        "x": 20,
+        "y": 0,
+        "width": 1400,
+        "height": 773,
+        "right": 1420,
+        "bottom": 773
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 900,
+        "right": 1440,
+        "bottom": 900
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "documentWidth": 1920,
+      "documentHeight": 1080,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 676,
+          "y": 984,
+          "width": 88,
+          "height": 73,
+          "right": 764,
+          "bottom": 1057
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 772,
+          "y": 984,
+          "width": 88,
+          "height": 73,
+          "right": 860,
+          "bottom": 1057
+        },
+        {
+          "name": "رفع اليد",
+          "x": 868,
+          "y": 984,
+          "width": 88,
+          "height": 73,
+          "right": 956,
+          "bottom": 1057
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 964,
+          "y": 984,
+          "width": 88,
+          "height": 73,
+          "right": 1052,
+          "bottom": 1057
+        },
+        {
+          "name": "الهدايا",
+          "x": 1060,
+          "y": 984,
+          "width": 88,
+          "height": 73,
+          "right": 1148,
+          "bottom": 1057
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 1156,
+          "y": 998.5,
+          "width": 88,
+          "height": 44,
+          "right": 1244,
+          "bottom": 1042.5
+        }
+      ],
+      "main": {
+        "x": 20,
+        "y": 0,
+        "width": 1880,
+        "height": 953,
+        "right": 1900,
+        "bottom": 953
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "right": 1920,
+        "bottom": 1080
+      },
+      "brokenImages": []
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "documentWidth": 2560,
+      "documentHeight": 1440,
+      "overflowX": false,
+      "direction": "rtl",
+      "controls": [
+        {
+          "name": "تشغيل الميكروفون",
+          "x": 996,
+          "y": 1344,
+          "width": 88,
+          "height": 73,
+          "right": 1084,
+          "bottom": 1417
+        },
+        {
+          "name": "مغادرة المقعد",
+          "x": 1092,
+          "y": 1344,
+          "width": 88,
+          "height": 73,
+          "right": 1180,
+          "bottom": 1417
+        },
+        {
+          "name": "رفع اليد",
+          "x": 1188,
+          "y": 1344,
+          "width": 88,
+          "height": 73,
+          "right": 1276,
+          "bottom": 1417
+        },
+        {
+          "name": "كتم السماعات",
+          "x": 1284,
+          "y": 1344,
+          "width": 88,
+          "height": 73,
+          "right": 1372,
+          "bottom": 1417
+        },
+        {
+          "name": "الهدايا",
+          "x": 1380,
+          "y": 1344,
+          "width": 88,
+          "height": 73,
+          "right": 1468,
+          "bottom": 1417
+        },
+        {
+          "name": "مغادرة الغرفة",
+          "x": 1476,
+          "y": 1358.5,
+          "width": 88,
+          "height": 44,
+          "right": 1564,
+          "bottom": 1402.5
+        }
+      ],
+      "main": {
+        "x": 340,
+        "y": 0,
+        "width": 1880,
+        "height": 1313,
+        "right": 2220,
+        "bottom": 1313
+      },
+      "room": {
+        "x": 0,
+        "y": 0,
+        "width": 2560,
+        "height": 1440,
+        "right": 2560,
+        "bottom": 1440
+      },
+      "brokenImages": []
+    }
+  ],
+  "errors": []
+}

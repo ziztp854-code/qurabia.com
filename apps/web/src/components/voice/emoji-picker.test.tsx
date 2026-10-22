@@ -3,6 +3,32 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import EmojiPicker from './emoji-picker';
 afterEach(() => vi.unstubAllGlobals());
 describe('emoji picker', () => {
+  it('contains keyboard focus, closes with Escape, and restores its trigger', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise(() => {})),
+    );
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
+    trigger.focus();
+    const close = vi.fn();
+    const view = render(<EmojiPicker userId="keyboard-user" onSelect={vi.fn()} close={close} />);
+    expect(screen.getByRole('searchbox')).toHaveFocus();
+    const dialog = screen.getByRole('dialog');
+    const controls = dialog.querySelectorAll<HTMLElement>('button, input');
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    last.focus();
+    fireEvent.keyDown(last, { key: 'Tab' });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(first, { key: 'Tab', shiftKey: true });
+    expect(last).toHaveFocus();
+    fireEvent.keyDown(last, { key: 'Escape' });
+    expect(close).toHaveBeenCalledOnce();
+    view.unmount();
+    expect(trigger).toHaveFocus();
+    trigger.remove();
+  });
   it('keeps Unicode available while catalog loading is pending, and scopes favorites to the account', async () => {
     vi.stubGlobal(
       'fetch',

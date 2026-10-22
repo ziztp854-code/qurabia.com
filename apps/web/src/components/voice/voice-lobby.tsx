@@ -34,7 +34,8 @@ import {
   VoiceCover,
   type VoiceView,
 } from './voice-ui';
-import { coverPath, emptyPreferences, number, voiceRequest } from './voice-client';
+import { emptyPreferences, number, voiceRequest } from './voice-client';
+import styles from './voice-lobby.module.css';
 
 export function VoiceLobby({
   user,
@@ -46,6 +47,7 @@ export function VoiceLobby({
   const router = useRouter();
   const [view, setView] = useState<VoiceView>(initialView);
   const [category, setCategory] = useState('الكل');
+  const [order, setOrder] = useState<'live' | 'popular' | 'new'>('live');
   const [search, setSearch] = useState('');
   const [create, setCreate] = useState(false);
   const [data, setData] = useState<VoiceList | null>(null);
@@ -138,9 +140,15 @@ export function VoiceLobby({
       ),
     [data, category, search, view, user, preferences],
   );
-  const active = [...filtered].sort((a, b) => b.participantCount - a.participantCount);
+  const active = [...filtered].sort((a, b) =>
+    order === 'new'
+      ? b.createdAt - a.createdAt
+      : order === 'popular'
+        ? b.participantCount - a.participantCount
+        : Number(b.active) - Number(a.active) || b.participantCount - a.participantCount,
+  );
   const titles: Record<VoiceView, string> = {
-    explore: 'اختر أجواءك.. وخلّ صوتك حاضر',
+    explore: 'اكتشف البثوث',
     mine: 'غرفك، بطابعك',
     favorites: 'غرف قريبة لقلبك',
     following: 'أصوات تتابعها',
@@ -163,268 +171,250 @@ export function VoiceLobby({
           : []
       }
     >
-      {user && (
-        <div className="v-profile-actions">
-          <VoiceSocial user={user} preferences={preferences} onPreference={preference} />
-        </div>
-      )}
-      {view === 'explore' && (
-        <section className="v-hero" aria-labelledby="voice-hero-title">
-          <VoiceCover
-            src={coverPath('studio')}
-            alt="ميكروفون وسماعات في استوديو بإضاءة ذهبية"
-            priority
-            sizes="(max-width: 800px) 100vw, 80vw"
-          />
-          <div className="v-hero-content">
-            <span className="v-hero-kicker">
-              <AudioLines size={17} />
-              هنا، للصوت مساحة
-            </span>
-            <h1 id="voice-hero-title">
-              غرف صوتية <span>حيّة.</span>
-            </h1>
-            <p>هويتنا عربية.. صوت يجمعنا</p>
-            <div className="v-hero-buttons">
-              <button className="v-button" onClick={createRoom}>
-                <Plus size={19} />
-                إنشاء غرفة
+      <div className={styles.discovery}>
+        {view === 'explore' && (
+          <nav className={styles.tabs} aria-label="ترتيب الغرف">
+            {(
+              [
+                ['live', 'مباشر'],
+                ['popular', 'الأكثر شعبية'],
+                ['new', 'جديد'],
+              ] as const
+            ).map(([id, label]) => (
+              <button key={id} aria-pressed={order === id} onClick={() => setOrder(id)}>
+                {label}
               </button>
-              <a className="v-button v-outline" href="#rooms">
-                استكشاف الغرف
-                <ChevronLeft size={17} />
-              </a>
-            </div>
-            <div className="v-hero-stats">
-              <span>
-                <Radio size={17} />
-                <strong>{data ? number(data.stats.activeRooms) : '—'}</strong>غرف نشطة
-              </span>
-              <span>
-                <Headphones size={17} />
-                <strong>{data ? number(data.stats.listeners) : '—'}</strong>مستمع الآن
-              </span>
-            </div>
+            ))}
+          </nav>
+        )}
+        {user && (
+          <div className="v-profile-actions">
+            <VoiceSocial user={user} preferences={preferences} onPreference={preference} />
           </div>
-          <div className="v-hero-seal">
-            <span>
-              للحوار طابع آخر<small>TAHADDI LIVE</small>
-            </span>
-          </div>
-        </section>
-      )}
-      {favoriteNotice && (
-        <p className="v-favorite-notice" role="status">
-          <Radio size={17} />
-          {favoriteNotice}
-          <button className="v-text-button" onClick={() => setFavoriteNotice('')}>
-            إغلاق
-          </button>
-        </p>
-      )}
-      <section id="rooms" className="v-discovery">
-        <div className="v-section-heading">
-          <div>
-            <p className="v-eyebrow">{view === 'explore' ? 'على موجتك' : 'مساحتك الصوتية'}</p>
-            <h2>{titles[view]}</h2>
+        )}
+        {view === 'explore' && (
+          <section className={styles.invitation} aria-labelledby="voice-hero-title">
+            <div>
+              <span className={styles.kicker}>تحدي لايف</span>
+              <h1 id="voice-hero-title">للّقاء طابع آخر</h1>
+              <p>صوتك يصنع الفرق</p>
+              <button className="v-button" onClick={createRoom}>
+                أنشئ غرفتك <Plus size={16} />
+              </button>
+            </div>
+          </section>
+        )}
+        {favoriteNotice && (
+          <p className="v-favorite-notice" role="status">
+            <Radio size={17} />
+            {favoriteNotice}
+            <button className="v-text-button" onClick={() => setFavoriteNotice('')}>
+              إغلاق
+            </button>
+          </p>
+        )}
+        <section id="rooms" className="v-discovery">
+          <div className="v-section-heading">
+            <div>
+              <p className="v-eyebrow">{view === 'explore' ? 'على موجتك' : 'مساحتك الصوتية'}</p>
+              <h2>{titles[view]}</h2>
+            </div>
+            {view !== 'settings' && view !== 'history' && (
+              <span className="v-room-count">{data ? number(filtered.length) : '—'} غرفة</span>
+            )}
           </div>
           {view !== 'settings' && view !== 'history' && (
-            <span className="v-room-count">{data ? number(filtered.length) : '—'} غرفة</span>
-          )}
-        </div>
-        {view !== 'settings' && view !== 'history' && (
-          <>
-            <label className="v-search v-mobile-search">
-              <Search size={18} />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث عن غرفة أو مضيف…"
-                aria-label="ابحث عن غرفة أو مضيف"
-              />
-            </label>
-            <div className="v-categories" role="group" aria-label="تصنيفات الغرف">
-              {['الكل', ...VOICE_CATEGORIES].map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  aria-pressed={category === c}
-                  className={category === c ? 'is-selected' : ''}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        {error && (
-          <div className="v-error" role="alert">
-            {error}
-            <button className="v-text-button" onClick={() => setRefresh((n) => n + 1)}>
-              إعادة المحاولة
-            </button>
-          </div>
-        )}
-        {view === 'settings' ? (
-          <section className="v-settings-panel">
-            <ShieldCheck size={28} />
-            <h3>أنت تتحكم بتجربتك</h3>
-            <p>
-              اختيار الميكروفون والسماعات ومستوى الاستماع متاح داخل الغرفة، بعد السماح بالوصول إلى
-              أجهزة الصوت.
-            </p>
-            {user ? (
-              <>
-                <Switch
-                  label="إشعارات الغرف المفضلة أثناء فتح هذه الصفحة"
-                  checked={preferences.notifyFavorites}
-                  onChange={(checked) =>
-                    void preference({ type: 'privacy', notifyFavorites: checked })
-                  }
+            <>
+              <label className="v-search v-mobile-search">
+                <Search size={18} />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ابحث عن غرفة أو مضيف…"
+                  aria-label="ابحث عن غرفة أو مضيف"
                 />
-                <Link href="/profile" className="v-button v-outline">
-                  إدارة حسابي
-                </Link>
-              </>
-            ) : (
-              <Link className="v-button" href="/auth/sign-in?next=%2Fvoice">
-                سجّل الدخول لحفظ تفضيلاتك
-              </Link>
-            )}
-            <p className="v-muted">لا نسجّل محادثاتك الصوتية.</p>
-          </section>
-        ) : view === 'history' ? (
-          preferences.history.length ? (
-            <div className="v-history-list">
-              {preferences.history.map((h) => (
-                <Link key={`${h.roomId}-${h.visitedAt}`} href={`/voice/${h.roomId}`}>
-                  <History />
-                  <span>
-                    <strong>{h.name}</strong>
-                    <small>
-                      {new Date(h.visitedAt).toLocaleString('ar-SA', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </small>
-                  </span>
-                  <ChevronLeft />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="لقاءاتك القادمة تبدأ من هنا">
-              عندما تدخل غرفة، ستجدها في سجل الزيارات.
-              <button className="v-text-button" onClick={() => setView('explore')}>
-                استكشاف الغرف
-              </button>
-            </EmptyState>
-          )
-        ) : loading ? (
-          <div className="v-loading" role="status">
-            <AudioLines />
-            نبحث عن الأصوات الحاضرة…
-          </div>
-        ) : !data ? (
-          <EmptyState title={user ? 'تعذر تحميل الغرف' : 'اللقاء يبدأ بحسابك'}>
-            {user
-              ? 'لم نتمكن من جلب الغرف الآن. أعد المحاولة بعد لحظات.'
-              : 'سجّل الدخول لمشاهدة الغرف والانضمام إلى مجتمع تحدي لايف.'}
-            {user ? (
-              <button className="v-button" onClick={() => setRefresh((n) => n + 1)}>
+              </label>
+              <div className="v-categories" role="group" aria-label="تصنيفات الغرف">
+                {['الكل', ...VOICE_CATEGORIES].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(c)}
+                    aria-pressed={category === c}
+                    className={category === c ? 'is-selected' : ''}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {error && (
+            <div className="v-error" role="alert">
+              {error}
+              <button className="v-text-button" onClick={() => setRefresh((n) => n + 1)}>
                 إعادة المحاولة
               </button>
+            </div>
+          )}
+          {view === 'settings' ? (
+            <section className="v-settings-panel">
+              <ShieldCheck size={28} />
+              <h3>أنت تتحكم بتجربتك</h3>
+              <p>
+                اختيار الميكروفون والسماعات ومستوى الاستماع متاح داخل الغرفة، بعد السماح بالوصول إلى
+                أجهزة الصوت.
+              </p>
+              {user ? (
+                <>
+                  <Switch
+                    label="إشعارات الغرف المفضلة أثناء فتح هذه الصفحة"
+                    checked={preferences.notifyFavorites}
+                    onChange={(checked) =>
+                      void preference({ type: 'privacy', notifyFavorites: checked })
+                    }
+                  />
+                  <Link href="/profile" className="v-button v-outline">
+                    إدارة حسابي
+                  </Link>
+                </>
+              ) : (
+                <Link className="v-button" href="/auth/sign-in?next=%2Fvoice">
+                  سجّل الدخول لحفظ تفضيلاتك
+                </Link>
+              )}
+              <p className="v-muted">لا نسجّل محادثاتك الصوتية.</p>
+            </section>
+          ) : view === 'history' ? (
+            preferences.history.length ? (
+              <div className="v-history-list">
+                {preferences.history.map((h) => (
+                  <Link key={`${h.roomId}-${h.visitedAt}`} href={`/voice/${h.roomId}`}>
+                    <History />
+                    <span>
+                      <strong>{h.name}</strong>
+                      <small>
+                        {new Date(h.visitedAt).toLocaleString('ar-SA', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </small>
+                    </span>
+                    <ChevronLeft />
+                  </Link>
+                ))}
+              </div>
             ) : (
-              <Link className="v-button" href="/auth/sign-in?next=%2Fvoice">
-                تسجيل الدخول
-              </Link>
-            )}
-          </EmptyState>
-        ) : !filtered.length ? (
-          <EmptyState
-            title={
-              search || category !== 'الكل'
-                ? 'لا توجد غرف تطابق بحثك'
-                : view === 'mine'
-                  ? 'مساحتك الأولى بانتظارك'
-                  : view === 'favorites'
-                    ? 'لم تضف غرفة إلى المفضلة بعد'
-                    : view === 'following'
-                      ? 'تابع المضيفين من داخل غرفهم'
-                      : 'المجلس ينتظر أول صوت'
-            }
-          >
-            {search || category !== 'الكل'
-              ? 'جرّب تصنيفًا آخر أو ابحث باسم مختلف.'
-              : 'أنشئ غرفة، شارك رابطها، وابدأ الحديث.'}
-            <button className="v-button" onClick={createRoom}>
-              <Plus size={18} />
-              إنشاء غرفة
-            </button>
-          </EmptyState>
-        ) : (
-          <>
-            {view === 'explore' && !search && category === 'الكل' && active.length > 0 && (
-              <div className="v-featured-row">
-                <div className="v-featured-label">
-                  <span>
-                    <AudioLines size={20} />
-                    الأكثر نشاطًا الآن
-                  </span>
-                  <p>لقاءات حيّة تستحق الانضمام</p>
-                </div>
-                <div className="v-featured-room">
-                  <VoiceCover src={active[0].cover} sizes="60vw" />
-                  <div>
-                    <LiveRoomInfo name={active[0].name} people={active[0].participantCount} />
-                    <Link href={`/voice/${active[0].id}`} className="v-button">
-                      انضم للغرفة
-                      <Headphones size={18} />
-                    </Link>
+              <EmptyState title="لقاءاتك القادمة تبدأ من هنا">
+                عندما تدخل غرفة، ستجدها في سجل الزيارات.
+                <button className="v-text-button" onClick={() => setView('explore')}>
+                  استكشاف الغرف
+                </button>
+              </EmptyState>
+            )
+          ) : loading ? (
+            <div className="v-loading" role="status">
+              <AudioLines />
+              نبحث عن الأصوات الحاضرة…
+            </div>
+          ) : !data ? (
+            <EmptyState title={user ? 'تعذر تحميل الغرف' : 'اللقاء يبدأ بحسابك'}>
+              {user
+                ? 'لم نتمكن من جلب الغرف الآن. أعد المحاولة بعد لحظات.'
+                : 'سجّل الدخول لمشاهدة الغرف والانضمام إلى مجتمع تحدي لايف.'}
+              {user ? (
+                <button className="v-button" onClick={() => setRefresh((n) => n + 1)}>
+                  إعادة المحاولة
+                </button>
+              ) : (
+                <Link className="v-button" href="/auth/sign-in?next=%2Fvoice">
+                  تسجيل الدخول
+                </Link>
+              )}
+            </EmptyState>
+          ) : !filtered.length ? (
+            <EmptyState
+              title={
+                search || category !== 'الكل'
+                  ? 'لا توجد غرف تطابق بحثك'
+                  : view === 'mine'
+                    ? 'مساحتك الأولى بانتظارك'
+                    : view === 'favorites'
+                      ? 'لم تضف غرفة إلى المفضلة بعد'
+                      : view === 'following'
+                        ? 'تابع المضيفين من داخل غرفهم'
+                        : 'المجلس ينتظر أول صوت'
+              }
+            >
+              {search || category !== 'الكل'
+                ? 'جرّب تصنيفًا آخر أو ابحث باسم مختلف.'
+                : 'أنشئ غرفة، شارك رابطها، وابدأ الحديث.'}
+              <button className="v-button" onClick={createRoom}>
+                <Plus size={18} />
+                إنشاء غرفة
+              </button>
+            </EmptyState>
+          ) : (
+            <>
+              {view === 'explore' && !search && category === 'الكل' && active.length > 0 && (
+                <div className="v-featured-row">
+                  <div className="v-featured-label">
+                    <span>
+                      <AudioLines size={20} />
+                      الأكثر نشاطًا الآن
+                    </span>
+                    <p>لقاءات حيّة تستحق الانضمام</p>
+                  </div>
+                  <div className="v-featured-room">
+                    <VoiceCover src={active[0].cover} sizes="60vw" />
+                    <div>
+                      <LiveRoomInfo name={active[0].name} people={active[0].participantCount} />
+                      <Link href={`/voice/${active[0].id}`} className="v-button">
+                        انضم للغرفة
+                        <Headphones size={18} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              )}
+              <div className="v-grid-heading">
+                <h3>{view === 'explore' ? 'غرف مقترحة لك' : 'الغرف المباشرة'}</h3>
+                <span>{order === 'new' ? 'الأحدث أولًا' : 'بترتيب النشاط الحالي'}</span>
               </div>
-            )}
-            <div className="v-grid-heading">
-              <h3>
-                {view === 'explore' ? 'غرف مقترحة لك' : 'الغرف المباشرة'}
-              </h3>
-              <span>بترتيب النشاط الحالي</span>
-            </div>
-            <div className="v-room-grid">
-              {active.map((room) => (
-                <RoomCard
-                  key={room.id}
-                  room={room}
-                  favorite={preferences.favorites.includes(room.id)}
-                  onFavorite={() =>
-                    void preference({
-                      type: 'favorite',
-                      id: room.id,
-                      enabled: !preferences.favorites.includes(room.id),
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-      <section className="v-value-strip">
-        <span>
-          <Mic />
-          صوت بلا حواجز<small>استمع، شارك، وكن جزءًا من الحوار</small>
-        </span>
-        <span>
-          <Heart />
-          مجتمع يشبهك<small>مساحات متنوعة وشخصيات تجمعنا</small>
-        </span>
-        <span>
-          <ShieldCheck />
-          راحة وخصوصية<small>إشراف واضح، وتحكم في تجربتك</small>
-        </span>
-      </section>
+              <div className="v-room-grid">
+                {active.map((room) => (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    favorite={preferences.favorites.includes(room.id)}
+                    onFavorite={() =>
+                      void preference({
+                        type: 'favorite',
+                        id: room.id,
+                        enabled: !preferences.favorites.includes(room.id),
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+        <section className="v-value-strip">
+          <span>
+            <Mic />
+            صوت بلا حواجز<small>استمع، شارك، وكن جزءًا من الحوار</small>
+          </span>
+          <span>
+            <Heart />
+            مجتمع يشبهك<small>مساحات متنوعة وشخصيات تجمعنا</small>
+          </span>
+          <span>
+            <ShieldCheck />
+            راحة وخصوصية<small>إشراف واضح، وتحكم في تجربتك</small>
+          </span>
+        </section>
+      </div>
       <CreateRoom open={create} onOpenChange={setCreate} />
     </VoiceShell>
   );

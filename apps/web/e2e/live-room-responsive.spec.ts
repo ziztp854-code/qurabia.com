@@ -3,7 +3,9 @@ import { test, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 const stage = process.env.LIVE_ROOM_STAGE || 'after';
-const evidence = path.resolve(process.cwd(), '../../docs/visual-evidence/live-room-responsive');
+const evidence = process.env.LIVE_ROOM_EVIDENCE_DIR
+  ? path.resolve(process.env.LIVE_ROOM_EVIDENCE_DIR)
+  : path.resolve(process.cwd(), '../../docs/visual-evidence/live-room-responsive');
 const artifact = (name: string) =>
   path.join(evidence, stage === 'final' ? name.replace(/^after-/, 'final-') : name);
 const viewports = [
@@ -191,7 +193,8 @@ test('chat remains usable under keyboard viewport resize, focus and text zoom', 
     await expect(page.locator('.v-room-controls .v-chat-toggle')).toBeFocused();
   }
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.getByRole('button', { name: /عرض المقاعد الشاغرة/ }).click();
+  const expandSeats = page.getByRole('button', { name: /عرض المقاعد الشاغرة/ });
+  if (await expandSeats.count()) await expandSeats.click();
   await expect(page.locator('.v-seats')).toHaveAttribute('data-show-empty', 'true');
   const seats = await page
     .locator('.v-seat')
@@ -627,7 +630,8 @@ test('final requested sizes keep expanded seats, chat and controls separate and 
       timeout: 5000,
     });
     await page.screenshot({ path: artifact(`final-requested-resting-${width}x${height}.png`) });
-    await page.getByRole('button', { name: /عرض المقاعد الشاغرة/ }).click();
+    const expandSeats = page.getByRole('button', { name: /عرض المقاعد الشاغرة/ });
+    if (await expandSeats.count()) await expandSeats.click();
     const geometry = await page.evaluate(() => {
       const bounds = (element: Element) => {
         const r = element.getBoundingClientRect();

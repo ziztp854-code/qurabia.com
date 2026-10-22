@@ -19,10 +19,11 @@ export function useVoiceOverlay(
   open: boolean,
   panel: RefObject<HTMLElement | null>,
   close: () => void,
+  returnFocus?: RefObject<HTMLElement | null>,
 ) {
   useEffect(() => {
     if (!open) return;
-    const previous = document.activeElement as HTMLElement | null;
+    const previous = returnFocus?.current ?? (document.activeElement as HTMLElement | null);
     const overflow = document.body.style.overflow;
     const elements = () =>
       [
@@ -71,7 +72,7 @@ export function useVoiceOverlay(
       document.body.style.overflow = overflow;
       document.removeEventListener('keydown', key);
       document.removeEventListener('focusin', contain);
-      previous?.focus();
+      if (previous?.isConnected) previous.focus();
     };
-  }, [open, panel, close]);
+  }, [open, panel, close, returnFocus]);
 }

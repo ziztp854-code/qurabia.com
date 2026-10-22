@@ -1,0 +1,192 @@
+/* Social identity keeps real account metadata and actions within a compact portrait layout. */
+.page {
+  max-inline-size: 1000px;
+  color: var(--voice-text);
+  --primary: var(--voice-gold);
+  --foreground: var(--voice-text);
+  --muted-foreground: var(--voice-muted);
+  --surface: var(--voice-card);
+  --surface-strong: var(--voice-raised);
+  --background: var(--voice-bg);
+}
+.profileHero {
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--voice-glow), transparent 56%), var(--voice-bg);
+  border: 1px solid var(--voice-border);
+  box-shadow: none;
+}
+.cover {
+  min-block-size: 76px;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+}
+.cover::after,
+.cover > span {
+  display: none;
+}
+.page .heroBody {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 0 24px 4px;
+  margin-block-start: -48px;
+}
+.page .heroBody > span:first-child {
+  inline-size: 104px;
+  block-size: 104px;
+  border-radius: 50%;
+  border-color: var(--voice-gold-light);
+  box-shadow: 0 0 24px var(--voice-glow);
+}
+.page .heroName {
+  flex: none;
+  justify-items: center;
+  inline-size: 100%;
+  text-align: center;
+  gap: 3px;
+}
+.heroName > p,
+.heroName > div {
+  justify-content: center;
+}
+.heroName h1 {
+  font-size: 23px;
+}
+.heroName > p:first-child {
+  display: none;
+}
+.page .heroActions {
+  justify-content: stretch;
+  justify-items: stretch;
+  inline-size: 340px;
+  max-inline-size: 100%;
+  gap: 4px;
+}
+.heroActions > button,
+.heroActions > a {
+  inline-size: 100%;
+  border-radius: 12px;
+  min-block-size: 44px;
+}
+.heroActions > p:empty {
+  display: none;
+}
+.page .metrics {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  inline-size: min(100%, 400px);
+  gap: 12px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+}
+.page .metrics > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+  text-align: center;
+}
+.metrics svg {
+  display: none;
+}
+.metrics strong {
+  font-variant-numeric: tabular-nums;
+}
+.metrics span {
+  font-size: 11px;
+}
+.accountTools > div {
+  justify-content: center;
+  padding: 8px 16px 14px;
+  gap: 8px;
+}
+.accountTools > div > div {
+  gap: 6px;
+  font-size: 11px;
+}
+.accountTools button {
+  min-block-size: 44px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.accountTools > div > span:empty {
+  display: none;
+}
+.tabs {
+  border-block-end: 1px solid var(--voice-line);
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.tabs button {
+  border-radius: 0;
+  background: transparent;
+  border-block-end: 2px solid transparent;
+}
+.tabs button[aria-current='page'] {
+  color: var(--voice-gold-light);
+  background: transparent;
+  border-block-end-color: var(--voice-gold);
+}
+@media (max-width: 600px) {
+  .page {
+    gap: 14px;
+  }
+  .profileHero {
+    border-radius: 16px;
+  }
+  .cover {
+    min-block-size: 64px;
+  }
+  .page .heroBody {
+    padding-inline: 16px;
+    gap: 8px;
+    margin-block-start: -40px;
+  }
+  .page .heroBody > span:first-child {
+    inline-size: 88px;
+    block-size: 88px;
+  }
+  .heroName h1 {
+    font-size: 21px;
+  }
+  .metrics span {
+    font-size: 10px;
+  }
+  .accountTools > div {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+  .tabs {
+    gap: 0;
+  }
+  .tabs button {
+    flex: 1;
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .page .heroBody > span:first-child {
+    inline-size: 112px;
+    block-size: 112px;
+  }
+  .page .heroBody > span:first-child > span {
+    max-inline-size: 100%;
+    padding: 6px;
+    overflow-wrap: anywhere;
+    line-height: 1.3;
+  }
+  .page .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

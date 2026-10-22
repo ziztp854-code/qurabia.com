@@ -139,6 +139,7 @@ describe('Voice lobby and creation', () => {
       isPrivate: true,
       password: 'secret-password',
       allowMicRequests: false,
+      seatCount: 9,
     });
     expect(close).toHaveBeenCalledWith(false);
   });

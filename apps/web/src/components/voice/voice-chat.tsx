@@ -437,6 +437,11 @@ function VoiceChatComposer({
   const input = useRef<HTMLTextAreaElement>(null);
   const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
   const busy = useRef(false);
+  const replyingTo = reply?.id;
+  const canCompose = enabled && Boolean(me);
+  useEffect(() => {
+    if (replyingTo && canCompose) input.current?.focus();
+  }, [replyingTo, canCompose]);
   function insertEmoji(value: string) {
     const field = input.current;
     const start = field?.selectionStart ?? text.length;
@@ -511,7 +516,7 @@ function VoiceChatComposer({
         </label>
         <textarea
           ref={input}
-          rows={2}
+          rows={1}
           id="voice-message"
           value={text}
           maxLength={1000}
