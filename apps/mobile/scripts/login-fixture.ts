@@ -54,6 +54,65 @@ async function main() {
     authenticated_sessions: 0, anonymous_sessions: 0, foreign_sessions: 0,
     signout_ok: 0, rooms_ok: 0,
   };
+  const hostEvidence = {
+    room_create_ok: 0, room_close_ok: 0,
+    leave_while_active: 0, signout_while_active: 0,
+  };
+  async function ownedRoomState() {
+    const records = await db.voiceRoom.findMany({
+      where: { hostId: id }, select: { active: true, state: true },
+    });
+    const counts = {
+      owned_rooms: records.length, active_rooms: 0, closed_rooms: 0,
+      closed_with_members: 0, inconsistent_rooms: 0,
+    };
+    for (const record of records) {
+      const state = record.state as { active?: boolean; participants?: unknown[] };
+      if (record.active !== state?.active) counts.inconsistent_rooms++;
+      if (record.active) counts.active_rooms++;
+      else {
+        counts.closed_rooms++;
+        if (!Array.isArray(state?.participants) || state.participants.length !== 0)
+          counts.closed_with_members++;
+      }
+    }
+    return { ...hostEvidence, ...counts };
+  }
+  async function observeHostRequest(pathname: string, method: string | undefined) {
+    if (method !== 'POST') return;
+    const canonical = pathname.replace(/\/$/, '');
+    if (canonical === '/api/auth/signout' && (
+        hostEvidence.room_create_ok > hostEvidence.room_close_ok ||
+        await db.voiceRoom.count({ where: { hostId: id, active: true } })))
+      hostEvidence.signout_while_active++;
+    const leave = canonical.match(/^\/api\/voice\/rooms\/([^/]+)\/leave$/);
+    if (leave && await db.voiceRoom.count({
+      where: { id: decodeURIComponent(leave[1]), hostId: id, active: true },
+    })) hostEvidence.leave_while_active++;
+  }
+  async function observeHostResponse(
+    pathname: string, method: string | undefined, status: number, body: Buffer,
+    eventType: string | undefined,
+  ) {
+    const canonical = pathname.replace(/\/$/, '');
+    if (method !== 'POST') return;
+    if (status !== 200 && status !== 201) return;
+    if (canonical !== '/api/voice/rooms' && eventType !== 'close') return;
+    let snapshot: { room?: { id?: string; hostId?: string; active?: boolean };
+      participants?: unknown[] };
+    try { snapshot = JSON.parse(body.toString()); } catch { return; }
+    const roomId = snapshot.room?.id;
+    if (!roomId || snapshot.room?.hostId !== id) return;
+    const owned = await db.voiceRoom.findFirst({ where: { id: roomId, hostId: id } });
+    if (!owned) return;
+    if (canonical === '/api/voice/rooms' && status === 201 && owned.active)
+      hostEvidence.room_create_ok++;
+    if (canonical === '/api/voice/rooms/' + encodeURIComponent(roomId) + '/events' &&
+        eventType === 'close' && status === 200 && !owned.active &&
+        snapshot.room?.active === false && Array.isArray(snapshot.participants) &&
+        snapshot.participants.length === 0)
+      hostEvidence.room_close_ok++;
+  }
   async function cleanup() {
     if (closing) return;
     closing = true;
@@ -62,6 +121,7 @@ async function main() {
     await Promise.all([proxy && new Promise<void>(r => proxy!.close(() => r())),
       backend && new Promise<void>(r => backend!.close(() => r()))]);
     await app?.close();
+    await db.voiceRoom.deleteMany({ where: { hostId: id } });
     await db.user.deleteMany({ where: { id } });
     await db.$disconnect();
   }
@@ -85,13 +145,32 @@ async function main() {
     });
     proxy = https.createServer({
       cert: await fs.readFile(certFile), key: await fs.readFile(keyFile),
-    }, (req, res) => {
+    }, async (req, res) => {
       const pathname = (req.url || '').split('?')[0];
       if (pathname === '/__mobile_login_evidence' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(evidence)); return;
       }
+      if (pathname === '/__mobile_host_evidence' && req.method === 'GET') {
+        void ownedRoomState().then(value => {
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+          res.end(JSON.stringify(value));
+        }).catch(() => { res.writeHead(503); res.end(); });
+        return;
+      }
       if (!pathname.startsWith('/api/')) { res.writeHead(404); res.end(); return; }
+      // Audit before forwarding: host close must be confirmed before leave/signout.
+      try { await observeHostRequest(pathname, req.method); }
+      catch { res.writeHead(503); res.end(); return; }
+      // Only event command bodies are inspected, in memory, to distinguish close.
+      // Credentials/cookies/tokens and room IDs never enter the evidence payload.
+      const eventChunks: Buffer[] = [];
+      let eventBytes = 0;
+      if (req.method === 'POST' && /^\/api\/voice\/rooms\/[^/]+\/events\/?$/.test(pathname))
+        req.on('data', chunk => {
+          eventBytes += chunk.length;
+          if (eventBytes <= 65_536) eventChunks.push(chunk);
+        });
       const upstream = http.request({
         hostname: '127.0.0.1', port: 3000, path: req.url, method: req.method,
         headers: { ...req.headers, 'accept-encoding': 'identity', host: 'localhost:3443',
@@ -104,7 +183,7 @@ async function main() {
           if (size > 2_097_152) { response.destroy(); res.destroy(); return; }
           chunks.push(chunk);
         });
-        response.on('end', () => {
+        response.on('end', async () => {
           const body = Buffer.concat(chunks), status = response.statusCode || 502;
           const canonical = pathname.replace(/\/$/, '');
           if (status === 200) {
@@ -122,6 +201,18 @@ async function main() {
               } catch { /* malformed response is never counted as success */ }
             }
           } else if (canonical === '/api/auth/callback/credentials') evidence.credentials_rejected++;
+          try {
+            let eventType: string | undefined;
+            if (eventChunks.length && eventBytes <= 65_536) {
+              try { eventType = JSON.parse(Buffer.concat(eventChunks).toString()).type; }
+              catch { eventType = undefined; }
+            }
+            await observeHostResponse(pathname, req.method, status, body, eventType);
+          } catch {
+            // A failed independent DB audit must not be recorded as a successful close.
+            res.writeHead(502); res.end(); return;
+          }
+          if (res.destroyed) return;
           res.writeHead(status, response.headers); res.end(body);
         });
         response.on('error', () => { res.destroy(); });
@@ -135,7 +226,8 @@ async function main() {
     });
     // Warm the real route compiler before the native client's 15-second GET timeout.
     mark('route_warmup');
-    for (const endpoint of ['/api/auth/csrf/', '/api/auth/session/', '/api/voice/rooms/']) {
+    for (const endpoint of ['/api/auth/csrf/', '/api/auth/session/', '/api/voice/rooms/',
+      '/api/voice/rooms/qa-warmup/events/']) {
       await new Promise<void>((resolve, reject) => {
         const request = https.get('https://localhost:3443' + endpoint, { family: 4 }, response => {
           response.resume();
