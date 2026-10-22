@@ -3,6 +3,7 @@
 import contextlib
 import importlib.util
 import io
+import html
 import json
 import pathlib
 import tempfile
@@ -186,6 +187,49 @@ class LoginIsolationGuards(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث", timeout=1)
         device.adb.assert_not_called()
+
+
+    def test_room_scroll_stays_inside_the_actual_short_modal_viewport(self):
+        first = ('<hierarchy><node class="android.widget.ScrollView" scrollable="true" '
+                 'bounds="[0,1600][1080,2100]"/></hierarchy>')
+        second = ('<hierarchy><node class="android.widget.ScrollView" scrollable="true" '
+                  'bounds="[0,1600][1080,2100]"><node resource-id="room-save" '
+                  'enabled="true" bounds="[100,1800][980,1950]"/></node></hierarchy>')
+        device = mock.Mock()
+        device.ui.side_effect = [first, second]
+        module = smoke.load_device()
+        node = smoke.reveal_room_control(device, module, "room-save")
+        self.assertEqual(node.attrib["resource-id"], "room-save")
+        command = device.adb.call_args.args
+        self.assertEqual(command[:3], ("shell", "input", "swipe"))
+        for x, y in [(int(command[3]), int(command[4])), (int(command[5]), int(command[6]))]:
+            self.assertTrue(0 < x < 1080 and 1600 < y < 2100)
+        self.assertGreater(int(command[4]), int(command[6]))
+
+    def test_room_snapshot_discards_values_and_create_http_rejects_private_fields(self):
+        module = smoke.load_device()
+        device = mock.Mock()
+        device.ui.return_value = ('<hierarchy><node class="android.widget.ScrollView" '
+            'scrollable="true" bounds="[0,1600][1080,2100]"><node resource-id="room-name-input" '
+            'enabled="true" text="' + self.account["email"] + '" bounds="[100,1700][980,1800]"/>'
+            '<node text="' + html.escape(self.account["password"], quote=True) + '"/></node></hierarchy>')
+        device.adb.return_value.stdout = "Physical size: 1080x2400"
+        device.adb.return_value.returncode = 0
+        state = smoke.safe_room_snapshot(device, module)
+        encoded = json.dumps(state)
+        self.assertNotIn(self.account["email"], encoded)
+        self.assertNotIn(self.account["password"], encoded)
+        self.assertFalse(state["room_name_matches"])
+        self.assertEqual(state["scroll_viewports"], [[0, 1600, 1080, 2100]])
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps({
+            "room_create_attempts": 1, "room_create_response_status": 400,
+            "room_create_server_errors": 0, "email": self.account["email"],
+        }).encode()
+        with mock.patch.object(smoke.ssl, "create_default_context"), \
+             mock.patch.object(smoke.urllib.request, "urlopen", return_value=response):
+            with self.assertRaises(ValueError):
+                smoke.create_http_evidence("local-fixture-ca.pem")
 
 
 if __name__ == "__main__":

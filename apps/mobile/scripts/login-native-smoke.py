@@ -14,6 +14,8 @@ import pathlib
 import re
 import ssl
 import stat
+import subprocess
+import xml.etree.ElementTree as ET
 import sys
 import time
 import urllib.request
@@ -179,16 +181,154 @@ def confirm_native_alert(device, module, title: str, button: str, timeout: float
     raise RuntimeError("Expected native host confirmation was not observed")
 
 
-def create_native_host_room(device):
-    device.reveal_node("room-create")
-    device.tap("room-create")
-    device.reveal_node("room-name-input")
+CREATE_HTTP_KEYS = {"room_create_attempts", "room_create_response_status", "room_create_server_errors"}
+
+
+def create_http_evidence(ca: str) -> dict:
+    context = ssl.create_default_context(cafile=ca)
+    with urllib.request.urlopen(ORIGIN + "/__mobile_create_evidence",
+                                context=context, timeout=20) as response:
+        value = json.loads(response.read(8192))
+    if (not isinstance(value, dict) or set(value) != CREATE_HTTP_KEYS or
+            any(type(number) is not int or number < 0 for number in value.values()) or
+            value["room_create_response_status"] not in ({0} | set(range(100, 600))) or
+            value["room_create_server_errors"] > value["room_create_attempts"]):
+        raise ValueError("Unexpected safe room-create HTTP evidence")
+    return value
+
+
+class RoomCreateFailure(RuntimeError):
+    def __init__(self, kind: str):
+        super().__init__("Isolated room creation check failed")
+        self.kind = kind
+
+
+def rectangle(node) -> tuple[int, int, int, int] | None:
+    match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+    if not match:
+        return None
+    left, top, right, bottom = map(int, match.groups())
+    return (left, top, right, bottom) if right > left and bottom > top else None
+
+
+def room_scroll_nodes(root) -> list:
+    return [node for node in root.iter() if node.attrib.get("scrollable") == "true" and
+            node.attrib.get("class", "").endswith(("ScrollView", "RecyclerView")) and
+            node.attrib.get("visible-to-user", "true") != "false" and rectangle(node)]
+
+
+def safe_room_snapshot(device, module) -> dict:
+    root = ET.fromstring(device.ui())
+    xml = ET.tostring(root, encoding="unicode")
+    sizes = re.findall(r"(\d+)x(\d+)", device.adb("shell", "wm", "size").stdout)
+    width, height = map(int, sizes[-1]) if sizes else (0, 0)
+    scrolls = room_scroll_nodes(root)
+    raw_scrolls = [node for node in root.iter() if node.attrib.get("scrollable") == "true" and
+                   node.attrib.get("class", "").endswith(("ScrollView", "RecyclerView"))]
+    viewports = [list(rectangle(node)) for node in scrolls][-4:]
+    controls = {}
+    for test_id in ("room-create", "room-name-input", "room-save", "room-title", "end-broadcast"):
+        node = module.find_node(xml, test_id)
+        bounds = rectangle(node) if node is not None else None
+        cx, cy = ((bounds[0] + bounds[2]) // 2, (bounds[1] + bounds[3]) // 2) if bounds else (-1, -1)
+        controls[test_id] = {
+            "present": node is not None,
+            "enabled": node is not None and node.attrib.get("enabled") == "true",
+            "focused": node is not None and node.attrib.get("focused") == "true",
+            "visible": node is not None and node.attrib.get("visible-to-user", "true") != "false",
+            "center_on_screen": 0 <= cx < width and 0 <= cy < height,
+            "center_inside_scroll": any(left <= cx < right and top <= cy < bottom
+                                        for left, top, right, bottom in viewports),
+        }
+    name = module.find_node(xml, "room-name-input")
+    # Room content remains in memory; report only length and equality.
+    name_value = name.attrib.get("text", "") if name is not None else ""
+    labels = {node.attrib.get("text", "") for node in root.iter()}
+    return {
+        "process_alive": device.adb("shell", "pidof", PACKAGE, check=False).returncode == 0,
+        "modal_title_present": "أنشئ مساحتك الصوتية" in labels,
+        "room_name_length": len(name_value),
+        "room_name_matches": name_value == "MobileHostClose",
+        "known_notice": {
+            "name_required": "اكتب اسمًا للغرفة من ٣ أحرف على الأقل." in labels,
+            "private_password_short": "كلمة المرور يجب أن تكون ٦ أحرف على الأقل." in labels,
+            "generic_save_failure": "تعذر حفظ الغرفة." in labels,
+        },
+        "scroll_viewports": viewports,
+        "scroll_candidate_count": len(raw_scrolls),
+        "invalid_scroll_bounds": any(rectangle(node) is None for node in raw_scrolls),
+        "controls": controls,
+    }
+
+
+def reveal_room_control(device, module, test_id: str):
+    # Native Modal may have a short scroll viewport. Keep gestures inside its
+    # real ScrollView rather than swiping at fixed full-display coordinates.
+    for _ in range(16):
+        root = ET.fromstring(device.ui())
+        xml = ET.tostring(root, encoding="unicode")
+        node = module.find_node(xml, test_id)
+        scrolls = room_scroll_nodes(root)
+        if node is not None and node.attrib.get("visible-to-user", "true") != "false":
+            cx, cy = module.center(node)
+            if not scrolls or any(left <= cx < right and top <= cy < bottom
+                                  for left, top, right, bottom in map(rectangle, scrolls)):
+                if node.attrib.get("enabled") == "true":
+                    return node
+        if not scrolls:
+            raw_scrolls = [item for item in root.iter() if item.attrib.get("scrollable") == "true" and
+                           item.attrib.get("class", "").endswith(("ScrollView", "RecyclerView"))]
+            raise RoomCreateFailure("scroll_view_invalid_bounds" if raw_scrolls else "scroll_view_unavailable")
+        left, top, right, bottom = rectangle(scrolls[-1])
+        height = bottom - top
+        if height < 40:
+            raise RoomCreateFailure("scroll_view_too_short")
+        cx = (left + right) // 2
+        device.adb("shell", "input", "swipe", str(cx), str(bottom - height // 5),
+                   str(cx), str(top + height // 5), "400")
+    raise RoomCreateFailure("control_not_revealed")
+
+
+def create_native_host_room(device, module, report: dict, prefix: str):
+    def mark(stage: str):
+        report["phase"] = prefix + "_" + stage
+        try:
+            report.setdefault("room_ui_snapshots", {})[report["phase"]] = safe_room_snapshot(device, module)
+        except Exception:
+            report.setdefault("room_ui_snapshots", {})[report["phase"]] = {"ui_readable": False}
+
+    def tap(test_id: str):
+        node = reveal_room_control(device, module, test_id)
+        x, y = module.center(node)
+        device.adb("shell", "input", "tap", str(x), str(y))
+
+    mark("create_button")
+    tap("room-create")
+    mark("modal_opened")
+    node = reveal_room_control(device, module, "room-name-input")
+    mark("name_ready")
+    x, y = module.center(node)
+    device.adb("shell", "input", "tap", str(x), str(y))
+    # Existing enter helper safely quotes the constant fixture title.
     device.enter("room-name-input", "MobileHostClose")
+    mark("name_entered")
+    state = report["room_ui_snapshots"][report["phase"]]
+    if not state.get("room_name_matches"):
+        raise RoomCreateFailure("room_name_not_entered")
     hide_keyboard_if_shown(device)
-    device.reveal_node("room-save")
-    device.tap("room-save")
+    mark("keyboard_dismissed")
+    mark("save_reveal")
+    node = reveal_room_control(device, module, "room-save")
+    mark("save_ready")
+    x, y = module.center(node)
+    device.adb("shell", "input", "tap", str(x), str(y))
+    mark("save_tapped")
+    report["phase"] = prefix + "_wait_room"
     device.wait_node("room-title", timeout=90)
+    mark("room_observed")
+    report["phase"] = prefix + "_wait_host_control"
     device.wait_node("end-broadcast", timeout=45)
+    mark("host_ready")
 
 
 def main() -> int:
@@ -317,7 +457,7 @@ def main() -> int:
             raise RuntimeError("App reopened by reauthenticating instead of restoring its session")
         report["checks"]["secure_session_survives_process_restart"] = True
         report["phase"] = "manual_host_room_create"
-        create_native_host_room(device)
+        create_native_host_room(device, module, report, "manual_create")
         manual_active = host_counters(args.ca)
         report["host_counter_snapshots"]["manual_active"] = manual_active
         assert_host_state(manual_active, host_initial, created=1, closed=0)
@@ -330,7 +470,7 @@ def main() -> int:
         assert_host_state(manual_closed, host_initial, created=1, closed=1)
         report["checks"]["native_host_end_closes_database_room_and_clears_membership"] = True
         report["phase"] = "logout_host_room_create"
-        create_native_host_room(device)
+        create_native_host_room(device, module, report, "logout_create")
         logout_active = host_counters(args.ca)
         report["host_counter_snapshots"]["logout_active"] = logout_active
         assert_host_state(logout_active, host_initial, created=2, closed=1)
@@ -365,17 +505,32 @@ def main() -> int:
         report["phase"] = "complete"
         report["status"] = "passed"
         return 0
-    except Exception:
+    except Exception as failure:
+        report["failure_category"] = (failure.kind if isinstance(failure, RoomCreateFailure) else
+            "command_timeout" if isinstance(failure, subprocess.TimeoutExpired) else
+            "invalid_ui_xml" if isinstance(failure, ET.ParseError) else
+            "invalid_evidence" if isinstance(failure, ValueError) else
+            "runtime_check_failed" if isinstance(failure, RuntimeError) else
+            "os_error" if isinstance(failure, OSError) else "unexpected_error")
         if device is not None and "account" in locals() and "module" in locals():
             try:
                 report.setdefault("ui_snapshots", {})["failure_observed"] = safe_ui_snapshot(
                     device, module, account["email"], len(account["password"]))
             except Exception:
                 report.setdefault("ui_snapshots", {})["failure_observed"] = {"ui_readable": False}
+        if device is not None and "module" in locals():
+            try:
+                report.setdefault("room_ui_snapshots", {})["failure_observed"] = safe_room_snapshot(device, module)
+            except Exception:
+                report.setdefault("room_ui_snapshots", {})["failure_observed"] = {"ui_readable": False}
         # Exception text can contain native command arguments or server data.
         report["error"] = "Isolated native login check failed at the recorded phase"
         return 1
     finally:
+        try:
+            report["create_http_evidence"] = create_http_evidence(args.ca)
+        except Exception:
+            report["create_http_evidence"] = {"available": False}
         try:
             report["server_counters"] = counters(args.ca)
             report["host_server_counters"] = host_counters(args.ca)
