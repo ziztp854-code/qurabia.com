@@ -45,6 +45,7 @@ jobs:
         run: npm install --global pnpm@11.26.0 --ignore-scripts
       - name: Install the locked mobile dependency closure
         run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
+      # Use the merge commit so the updated mobile baseline from PR #73 is tested.
       - name: Check React and native dependencies against the installed Expo SDK
         run: pnpm --filter @tahaddi/mobile exec expo install --check
       - name: Ensure compatibility checking did not edit dependency declarations
