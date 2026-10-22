@@ -53,7 +53,7 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
     <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
       style={styles.studioBackdrop}>
       <Image source={require('../../assets/voice-covers/studio.webp')} resizeMode="cover"
-        style={StyleSheet.absoluteFillObject} accessible={false}/>
+        style={styles.artwork} accessible={false}/>
       <View style={styles.studioScrim}/>
     </View>
     <FormScreen>
@@ -119,11 +119,12 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
   </View>;
 }
 const styles = StyleSheet.create({
+  artwork: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0},
   screen: {flex: 1, backgroundColor: theme.colors.background},
   studioBackdrop: {position: 'absolute', top: 0, left: 0, right: 0, height: 240,
     overflow: 'hidden', borderBottomLeftRadius: theme.radius.lg, borderBottomRightRadius: theme.radius.lg,
     backgroundColor: theme.colors.surfaceStrong, borderBottomWidth: 1, borderBottomColor: theme.colors.borderSoft},
-  studioScrim: {...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.background, opacity: 0.48},
+  studioScrim: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.colors.background, opacity: 0.48},
   frame: {width: '100%', maxWidth: 480, alignSelf: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.sm},
   brand: {minHeight: 88, flexDirection: 'row-reverse', alignItems: 'center', gap: theme.spacing.md,
     padding: theme.spacing.sm, borderRadius: theme.radius.lg, overflow: 'hidden'},

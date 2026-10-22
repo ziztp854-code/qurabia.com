@@ -22,7 +22,7 @@ export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
         <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
           style={styles.cover}>
           <Image source={require('../../assets/voice-covers/studio.webp')} resizeMode="cover"
-            style={StyleSheet.absoluteFillObject} accessible={false}/>
+            style={styles.artwork} accessible={false}/>
           <View style={styles.coverScrim}/>
         </View>
         <View style={styles.identity}>
@@ -59,6 +59,7 @@ export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
   </FormScreen>;
 }
 const styles = StyleSheet.create({
+  artwork: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0},
   frame: {width: '100%', maxWidth: 560, alignSelf: 'center', gap: theme.spacing.md},
   pageHeading: {gap: theme.spacing.xs, paddingVertical: theme.spacing.sm},
   profileCard: {padding: 0, gap: 0, overflow: 'hidden', borderColor: theme.colors.border,
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16, elevation: 2},
   cover: {height: 88, overflow: 'hidden', backgroundColor: theme.colors.surfaceStrong,
     borderBottomWidth: 1, borderBottomColor: theme.colors.border},
-  coverScrim: {...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.background, opacity: 0.22},
+  coverScrim: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.colors.background, opacity: 0.22},
   identity: {alignItems: 'center', paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg, gap: theme.spacing.xs},
   avatarFrame: {marginTop: -44, padding: theme.spacing.xs, borderRadius: theme.radius.pill,
