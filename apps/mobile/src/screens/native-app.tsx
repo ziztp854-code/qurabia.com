@@ -16,6 +16,7 @@ import { RoomsScreen } from './rooms-screen';
 import { RoomScreen } from './room-screen';
 import { ProfileScreen } from './profile-screen';
 import { theme } from '../theme';
+import { shouldDismissQuiz } from '../quiz/access';
 import { QuizApp } from '../quiz/quiz-app';
 import { BottomTabs } from '../components/bottom-tabs';
 import { bundledRoomArt } from '../assets/room-art';
@@ -31,6 +32,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   const keyboardVisible=useKeyboardVisible();
   const [error,setError]=useState('');
   const [quizOpen,setQuizOpen]=useState(false);
+  const quizAccount=useRef({authenticated:auth.status==='authenticated',generation:auth.client.sessionGeneration});
   const logoutGuard=useRef(false);
   const [exitBusy,setExitBusy]=useState(false);
   const [logoutBusy,setLogoutBusy]=useState(false);
@@ -53,8 +55,11 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   useEffect(()=>{voice.updateParticipant(rooms.snapshot?.me||null);},[voice,rooms.snapshot]);
   useEffect(()=>()=>{void voice.dispose().catch(()=>{});},[voice]);
   useEffect(()=>{
-    if(auth.status!=='authenticated'){navigation.go('home');setQuizOpen(false);}
-  },[auth.status,navigation.go]);
+    if(auth.status!=='authenticated')navigation.go('home');
+    const next={authenticated:auth.status==='authenticated',generation:auth.client.sessionGeneration};
+    if(shouldDismissQuiz(quizAccount.current,next))setQuizOpen(false);
+    quizAccount.current=next;
+  },[auth.status,auth.client.sessionGeneration,navigation.go]);
   useEffect(()=>{
     if(navigation.screen==='room'&&!rooms.snapshot)navigation.go('rooms');
   },[navigation.screen,rooms.snapshot,navigation.go]);
@@ -203,7 +208,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     }
   }
   const content=logoutBusy?<Loading label="جارٍ تسجيل الخروج…"/>:auth.status==='loading'?<Loading label="جارٍ استعادة الجلسة…"/>:
-    auth.status!=='authenticated'?<AuthScreen apiRequest={auth.client.request} signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
+    auth.status!=='authenticated'?<AuthScreen apiRequest={auth.client.request} signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error} onOpenQuiz={()=>setQuizOpen(true)}/>:
     <View style={ui.flex} pointerEvents={exitBusy?'none':'auto'}>
       {navigation.screen==='profile'?<ProfileScreen user={auth.user} asset={asset}
         onRefresh={auth.refreshSession} onSignOut={signOut} onOpenQuiz={()=>setQuizOpen(true)}/>:
@@ -226,7 +231,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   return <UiProvider fontsReady={fontsReady}>
     <KeyboardViewport>
     <SafeAreaView style={styles.root} edges={['top','bottom','left','right']}><Notice message={error}/>{content}</SafeAreaView>
-    {quizOpen&&auth.status==='authenticated'&&<QuizApp fontsReady={fontsReady} onClose={()=>setQuizOpen(false)}/>}
+    {quizOpen&&<QuizApp fontsReady={fontsReady} onClose={()=>setQuizOpen(false)}/>}
     </KeyboardViewport>
   </UiProvider>;
 }

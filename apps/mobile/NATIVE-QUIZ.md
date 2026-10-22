@@ -2,7 +2,7 @@
 
 This change recovers the native quiz feature from PR #18 on top of the newer Arabic native authentication/voice application. It does not replace App.tsx, the account cookie vault, the LiveKit owner, or the voice-room APIs.
 
-Open **حسابي → المسابقات**. Join by an official room link/code and player name, browse the existing games directory, or play the classic quiz phases. The quiz modal has its own Android back handling and keyboard viewport. Closing it unmounts polling and aborts outstanding reads. A quiz player identity is ephemeral component state, separate from the account.
+Open **الانضمام إلى مسابقة دون حساب** from sign-in, or **حسابي → المسابقات** when signed in. Join by an official room link/code and player name, browse the existing games directory, or play the classic quiz phases. The quiz modal has its own Android back handling and keyboard viewport. Closing it unmounts polling and aborts outstanding reads. A quiz player identity is ephemeral component state, separate from the account.
 
 The new public POST /api/live/join/ endpoint and the existing token-authorized room endpoint must be available on the same configured HTTPS API origin. The web server and native bundle therefore need coordinated delivery after review. No deployment is performed by this PR. Unsupported game rooms continue to open on the website from the directory.
 

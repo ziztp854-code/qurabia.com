@@ -5,8 +5,9 @@ import { theme } from '../theme';
 import type { ApiRequest } from '../rooms/api';
 import { presentConnectionError, presentLoginError, presentSessionNotice } from './auth-error';
 
-export function AuthScreen({ signIn, authError, apiRequest }: {
+export function AuthScreen({ signIn, authError, apiRequest, onOpenQuiz }: {
   apiRequest: ApiRequest;
+  onOpenQuiz?: () => void;
   signIn: (email: string, password: string) => Promise<void>; authError: string | null;
 }) {
   const [email, setEmail] = useState('');
@@ -108,6 +109,9 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
           </View>
         </View>
       </Panel>
+
+      {onOpenQuiz&&<Action testID="guest-open-quiz" label="الانضمام إلى مسابقة دون حساب" tone="secondary"
+        disabled={busy} onPress={onOpenQuiz}/>}
 
       <View style={styles.footer}>
         <View accessible={false} style={styles.footerRule}/>
