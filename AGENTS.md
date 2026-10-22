@@ -48,6 +48,13 @@
 - `packages/contracts` and `packages/domain`: shared event contracts, validation, and scoring/session rules.
 - `prisma` and database config: migrations, schema constraints, and PostgreSQL alignment.
 
+## CodeGraph
+
+- For code exploration, architecture analysis, refactoring, debugging, and dependency tracing, use CodeGraph (`codegraph_explore` MCP tool, or `codegraph callers|callees|impact`) when available and its index covers the relevant repository paths and reflects the checked-out source revision.
+- Before modifying an existing system: inspect definitions and callers/callees, trace UI → API → domain/engine → persistence → realtime where applicable, and reuse existing implementations before creating new abstractions. Use applicable graph results to guide this work and verify them against source.
+- If CodeGraph is unavailable, the index is missing, stale or incomplete for the task, or a query fails, continue with ordinary source search (`rg`/`rg --files`) and direct file inspection; do not block the task or install tools solely to satisfy this guidance. Do not claim CodeGraph was used unless an actual graph query ran.
+- Skip CodeGraph for trivial edits (copy, single words, images, small obvious CSS). Never commit generated CodeGraph index data; when an existing relevant index needs refreshing and CodeGraph is available, prefer `codegraph sync` over a full re-index, then verify the results against the checked-out source.
+
 ## Qurabia full-site pack
 
 - Apply [the integrated full-site guide](docs/qurabia-codex-guide.md) when working on Qurabia product features. Existing project rules and the current user request take precedence.
