@@ -30,6 +30,9 @@ async function main() {
   // JWT signing, session validation and database access are the real implementations.
   process.env.AUTH_SECRET ||= randomUUID() + randomUUID();
   const webDir = path.resolve(process.cwd(), process.cwd().endsWith('/apps/web') ? '.' : 'apps/web');
+  // Next's workflow plugin discovers src/app from cwd, independently of next({ dir }).
+  // Match the web app's normal pnpm dev working directory without changing its config.
+  process.chdir(webDir);
   const requireWeb = createRequire(path.join(webDir, 'package.json'));
   const next = requireWeb('next');
   const { createPrismaClient } = requireWeb('@tahaddi/database');
@@ -91,7 +94,7 @@ async function main() {
       if (!pathname.startsWith('/api/')) { res.writeHead(404); res.end(); return; }
       const upstream = http.request({
         hostname: '127.0.0.1', port: 3000, path: req.url, method: req.method,
-        headers: { ...req.headers, host: 'localhost:3443',
+        headers: { ...req.headers, 'accept-encoding': 'identity', host: 'localhost:3443',
           'x-forwarded-host': 'localhost:3443', 'x-forwarded-proto': 'https' },
       }, response => {
         const chunks: Buffer[] = [];
