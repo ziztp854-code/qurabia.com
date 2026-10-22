@@ -63,6 +63,32 @@ jobs:
           chmod 600 "$RUNNER_TEMP/login-ca.key" "$RUNNER_TEMP/login-leaf.key"
           openssl verify -CAfile "$RUNNER_TEMP/login-ca.pem" "$RUNNER_TEMP/login-leaf.pem"
 
+      - name: Add bounded startup error diagnostics to this test checkout only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("apps/mobile/scripts/login-fixture.ts")
+          s=p.read_text()
+          old="  } catch {\n    console.error('MOBILE_LOGIN_FIXTURE_FAILED:' + phase);"
+          new="""  } catch (error) {
+              const message = error instanceof Error ? error.message : '';
+              const signatures: Record<string, RegExp> = {
+                module_missing: /Cannot find (module|package)|MODULE_NOT_FOUND/i,
+                config_load: /next.config|configuration|config file/i,
+                module_syntax: /Unexpected token|Cannot use import|require is not defined|ES module/i,
+                typescript: /typescript|tsconfig|transpile/i,
+                webpack: /webpack/i, turbopack: /turbopack/i,
+                workflow: /workflow/i, port: /EADDRINUSE|listen|address/i,
+                read_only: /EACCES|EPERM|permission/i,
+                missing_build: /production build|BUILD_ID/i,
+              };
+              for (const [label, pattern] of Object.entries(signatures))
+                console.error('MOBILE_LOGIN_STARTUP_CHECK:' + label + ':' + pattern.test(message));
+              console.error('MOBILE_LOGIN_FIXTURE_FAILED:' + phase);"""
+          assert old in s
+          p.write_text(s.replace(old,new))
+          PY
+
       - name: Start the real isolated NextAuth HTTPS fixture
         run: |
           NODE_ENV=development VITEST=1 \
@@ -87,7 +113,7 @@ jobs:
               log=temp/"login-fixture-private.log"
               if log.is_file():
                   for line in log.read_text(errors="replace").splitlines():
-                      if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
+                      if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)|MOBILE_LOGIN_STARTUP_CHECK:[a-z_]+:(true|false)",line):
                           print(line)
               raise SystemExit("Isolated fixture did not become ready; private server log is not uploaded")
           print("Isolated localhost HTTPS fixture ready; private account file retained outside artifacts")
@@ -125,7 +151,7 @@ jobs:
           logfile=temp/"login-fixture-private.log"
           if logfile.is_file():
               for line in logfile.read_text(errors="replace").splitlines():
-                  if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
+                  if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)|MOBILE_LOGIN_STARTUP_CHECK:[a-z_]+:(true|false)",line):
                       print(line)
           PY
 
