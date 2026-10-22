@@ -9,8 +9,8 @@
     "ios": "expo start --ios",
     "build:ios": "npx eas-cli@latest build --platform ios --profile production",
     "submit:ios": "npx eas-cli@latest submit --platform ios --profile production",
-    "typecheck": "tsc --noEmit",
-    "test": "tsc -p ../../packages/domain/tsconfig.json && node scripts/test-native.cjs"
+    "typecheck": "pnpm --filter @tahaddi/contracts build && tsc --noEmit",
+    "test": "pnpm --filter @tahaddi/contracts build && tsc -p ../../packages/domain/tsconfig.json && node scripts/test-native.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/readex-pro": "0.4.1",
@@ -33,7 +33,8 @@
   "devDependencies": {
     "@types/react": "~19.2.18",
     "tsx": "^4.23.13",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@tahaddi/contracts": "workspace:*"
   },
   "expo": {
     "install": {

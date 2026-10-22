@@ -16,6 +16,7 @@ import { RoomsScreen } from './rooms-screen';
 import { RoomScreen } from './room-screen';
 import { ProfileScreen } from './profile-screen';
 import { theme } from '../theme';
+import { QuizApp } from '../quiz/quiz-app';
 import { BottomTabs } from '../components/bottom-tabs';
 import { bundledRoomArt } from '../assets/room-art';
 
@@ -29,6 +30,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   const navigation=useNavigation();
   const keyboardVisible=useKeyboardVisible();
   const [error,setError]=useState('');
+  const [quizOpen,setQuizOpen]=useState(false);
   const logoutGuard=useRef(false);
   const [exitBusy,setExitBusy]=useState(false);
   const [logoutBusy,setLogoutBusy]=useState(false);
@@ -51,7 +53,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   useEffect(()=>{voice.updateParticipant(rooms.snapshot?.me||null);},[voice,rooms.snapshot]);
   useEffect(()=>()=>{void voice.dispose().catch(()=>{});},[voice]);
   useEffect(()=>{
-    if(auth.status!=='authenticated')navigation.go('home');
+    if(auth.status!=='authenticated'){navigation.go('home');setQuizOpen(false);}
   },[auth.status,navigation.go]);
   useEffect(()=>{
     if(navigation.screen==='room'&&!rooms.snapshot)navigation.go('rooms');
@@ -204,7 +206,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     auth.status!=='authenticated'?<AuthScreen apiRequest={auth.client.request} signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
     <View style={ui.flex} pointerEvents={exitBusy?'none':'auto'}>
       {navigation.screen==='profile'?<ProfileScreen user={auth.user} asset={asset}
-        onRefresh={auth.refreshSession} onSignOut={signOut}/>:
+        onRefresh={auth.refreshSession} onSignOut={signOut} onOpenQuiz={()=>setQuizOpen(true)}/>:
         navigation.screen==='room'&&rooms.snapshot?<RoomScreen snapshot={rooms.snapshot} rooms={rooms}
           exiting={exitBusy} keyboardVisible={keyboardVisible} voice={audio} chat={chat} catalog={emojis} asset={asset} onToggleMic={toggleMic}
           onLeave={leave} onEnd={async()=>{const id=rooms.snapshot?.room.id;if(id)await endBroadcast(id);}} onAudioOutput={device=>voice.setAudioOutput(device)}
@@ -224,6 +226,7 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   return <UiProvider fontsReady={fontsReady}>
     <KeyboardViewport>
     <SafeAreaView style={styles.root} edges={['top','bottom','left','right']}><Notice message={error}/>{content}</SafeAreaView>
+    {quizOpen&&auth.status==='authenticated'&&<QuizApp fontsReady={fontsReady} onClose={()=>setQuizOpen(false)}/>}
     </KeyboardViewport>
   </UiProvider>;
 }

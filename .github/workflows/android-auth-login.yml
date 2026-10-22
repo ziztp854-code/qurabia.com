@@ -1,7 +1,7 @@
 name: Android native, broadcast and visual checks
 on:
   push:
-    branches: [fix/android-auth-login, fix/android-host-broadcast-close, feat/android-premium-design]
+    branches: [fix/native-quiz-reconcile, fix/android-auth-login, fix/android-host-broadcast-close, feat/android-premium-design]
     paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
   pull_request:
     branches: [codex/android-native-v2, fix/android-auth-login, fix/android-host-broadcast-close]
