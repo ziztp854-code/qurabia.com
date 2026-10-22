@@ -1,0 +1,138 @@
+name: Android isolated auth protocol preflight
+on:
+  push:
+    branches: [fix/android-auth-readonly-diagnostics]
+    paths: ['.github/workflows/android-auth-protocol-check.yml']
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  real-nextauth-protocol:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: mobile_login_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - '127.0.0.1:5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mobile_login_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: '1'
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/mobile_login_test
+      MOBILE_LOGIN_TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:5432/mobile_login_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ae064e09ad2fba212395f38ab88f5df0eafdcb73
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24.14.0'
+      - run: npm install --global pnpm@11.26.0 --ignore-scripts
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare isolated database and ephemeral localhost TLS
+        run: |
+          pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build
+          pnpm exec prisma migrate deploy
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 2 \
+            -keyout "$RUNNER_TEMP/login-ca.key" -out "$RUNNER_TEMP/login-ca.pem" \
+            -subj '/CN=Tahaddi isolated Android login CA' \
+            -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' >/dev/null 2>&1
+          openssl req -newkey rsa:2048 -sha256 -nodes \
+            -keyout "$RUNNER_TEMP/login-leaf.key" -out "$RUNNER_TEMP/login-leaf.csr" \
+            -subj '/CN=localhost' >/dev/null 2>&1
+          cat > "$RUNNER_TEMP/login-leaf.ext" <<'EOF'
+          subjectAltName=DNS:localhost,IP:127.0.0.1
+          basicConstraints=critical,CA:FALSE
+          keyUsage=critical,digitalSignature,keyEncipherment
+          extendedKeyUsage=serverAuth
+          EOF
+          openssl x509 -req -sha256 -days 2 -in "$RUNNER_TEMP/login-leaf.csr" \
+            -CA "$RUNNER_TEMP/login-ca.pem" -CAkey "$RUNNER_TEMP/login-ca.key" -CAcreateserial \
+            -out "$RUNNER_TEMP/login-leaf.pem" -extfile "$RUNNER_TEMP/login-leaf.ext" >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/login-ca.key" "$RUNNER_TEMP/login-leaf.key"
+          openssl verify -CAfile "$RUNNER_TEMP/login-ca.pem" "$RUNNER_TEMP/login-leaf.pem"
+
+      - name: Start the real isolated NextAuth HTTPS fixture
+        run: |
+          NODE_ENV=development VITEST=1 \
+          AUTH_URL=https://localhost:3443 NEXTAUTH_URL=https://localhost:3443 \
+          NODE_EXTRA_CA_CERTS="$RUNNER_TEMP/login-ca.pem" \
+          node --import tsx apps/mobile/scripts/login-fixture.ts \
+            --credentials "$RUNNER_TEMP/login-private.json" \
+            --cert "$RUNNER_TEMP/login-leaf.pem" --key "$RUNNER_TEMP/login-leaf.key" \
+            > "$RUNNER_TEMP/login-fixture-private.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/login-fixture.pid"
+          python3 - <<'PY'
+          import os,pathlib,re,time
+          temp=pathlib.Path(os.environ["RUNNER_TEMP"])
+          ready=temp/"login-private.json"
+          pid=int((temp/"login-fixture.pid").read_text().strip())
+          for _ in range(300):
+              if ready.is_file(): break
+              try: os.kill(pid,0)
+              except ProcessLookupError: break
+              time.sleep(1)
+          if not ready.is_file():
+              log=temp/"login-fixture-private.log"
+              if log.is_file():
+                  for line in log.read_text(errors="replace").splitlines():
+                      if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
+                          print(line)
+              raise SystemExit("Isolated fixture did not become ready; private server log is not uploaded")
+          print("Isolated localhost HTTPS fixture ready; private account file retained outside artifacts")
+          PY
+
+      - name: Reproduce old rejection and verify real NextAuth protocol
+        run: |
+          git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
+          mkdir -p "$RUNNER_TEMP/login-baseline"
+          for file in cookie-vault.ts http-client.ts session-manager.ts; do
+            git show "fcbdf15092ba8c5189ba75739904ffad84507b19:apps/mobile/src/auth/$file" > "$RUNNER_TEMP/login-baseline/$file"
+          done
+          NODE_EXTRA_CA_CERTS="$RUNNER_TEMP/login-ca.pem" \
+          GITHUB_SHA=ae064e09ad2fba212395f38ab88f5df0eafdcb73 node --import tsx apps/mobile/scripts/login-http-integration.ts \
+            --credentials "$RUNNER_TEMP/login-private.json" \
+            --baseline "$RUNNER_TEMP/login-baseline" --reports android-reports/login
+
+      - name: Stop fixture and remove private test material
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,signal,time
+          temp=pathlib.Path(os.environ["RUNNER_TEMP"])
+          pidfile=temp/"login-fixture.pid"
+          if pidfile.is_file():
+              pid=int(pidfile.read_text().strip())
+              try: os.kill(pid,signal.SIGTERM)
+              except ProcessLookupError: pass
+              for _ in range(20):
+                  try: os.kill(pid,0)
+                  except ProcessLookupError: break
+                  time.sleep(1)
+          for name in ["login-private.json","login-ca.key","login-leaf.key","login-leaf.csr","tahaddi-login-test-only.apk"]:
+              (temp/name).unlink(missing_ok=True)
+          logfile=temp/"login-fixture-private.log"
+          if logfile.is_file():
+              for line in logfile.read_text(errors="replace").splitlines():
+                  if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
+                      print(line)
+          PY
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: isolated-protocol-evidence
+          path: android-reports/login
+          if-no-files-found: warn
+          retention-days: 14
