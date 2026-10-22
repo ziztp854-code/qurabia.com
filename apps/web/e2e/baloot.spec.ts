@@ -87,8 +87,8 @@ test('four players purchase, reconnect, complete eight tricks and deal the next 
         .poll(() => pages[0].evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))
         .toBe(true);
       await pages[0]
-        .locator('[class*="__shell"]')
-        .last()
+        .getByRole('region', { name: 'طاولة بلوت مباشرة', exact: true })
+        .locator('..')
         .screenshot({ path: testInfo.outputPath('table-320-text-200.png') });
       await pages[0].evaluate(() => {
         document.documentElement.style.fontSize = '';
@@ -102,8 +102,8 @@ test('four players purchase, reconnect, complete eight tricks and deal the next 
     ).toHaveAttribute('aria-pressed', 'true');
     expect(states[0]()!.stateVersion).toBe(purchaseVersion);
     await pages[0]
-      .locator('[class*="__shell"]')
-      .last()
+      .getByRole('region', { name: 'طاولة بلوت مباشرة', exact: true })
+      .locator('..')
       .screenshot({ path: testInfo.outputPath('expanded-table.png') });
     await pages[0].getByRole('button', { name: 'الحجم العادي', exact: true }).click();
     const fullscreen = pages[0].getByRole('button', { name: 'ملء الشاشة', exact: true });
@@ -152,8 +152,8 @@ test('four players purchase, reconnect, complete eight tricks and deal the next 
       const version = state.stateVersion;
       if (play === 2) {
         await pages[seat]
-          .locator('[class*="__shell"]')
-          .last()
+          .getByRole('region', { name: 'طاولة بلوت مباشرة', exact: true })
+          .locator('..')
           .screenshot({ path: testInfo.outputPath('inside-table.png') });
       }
 

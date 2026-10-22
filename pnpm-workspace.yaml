@@ -43,7 +43,7 @@ overrides:
   'undici@<7.29.0': 7.29.0
 # Keep React declaration resolution contextual in this mixed web/native workspace.
 packageExtensions:
-  'next@16.3.8':
+  'next@16':
     peerDependencies:
       '@types/react': '*'
     peerDependenciesMeta:
