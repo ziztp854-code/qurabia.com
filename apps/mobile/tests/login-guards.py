@@ -379,7 +379,8 @@ class LoginIsolationGuards(unittest.TestCase):
             from types import SimpleNamespace
             value = ("Physical size: 1080x2400" if args == ("shell", "wm", "size") else
                      "mInputShown=true" if args == ("shell", "dumpsys", "input_method") else
-                     "  Window #0 Window{abc u0 InputMethod}:\n    Frames: frame=[0,1400][1080,2400]")
+                     "  Window #0 Window{abc u0 InputMethod}:\n    Frames: frame=[0,128][1080,2400]\n"
+                     "    InsetsSource: {3 mType=ime mFrame=[0,1400][1080,2400] mVisible=true}")
             return SimpleNamespace(returncode=0, stdout=value)
         device.adb.side_effect = response
         report = {}
@@ -441,7 +442,8 @@ class LoginIsolationGuards(unittest.TestCase):
     def test_screen_visible_footer_behind_ime_never_receives_a_tap_or_request(self):
         device = self.footer_device("[20,1900][1060,2100]",
             "  Window #2 Window{abc u0 InputMethod}:\n"
-            "    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,1400][1080,2400]\n"
+            "    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,128][1080,2400]\n"
+            "    InsetsSource: {3 mType=ime mFrame=[0,1400][1080,2400] mVisible=true}\n"
             "    PRIVATE_EDITOR_METADATA")
         report = {}
         with mock.patch.object(smoke.urllib.request, "urlopen") as network:
@@ -479,6 +481,45 @@ class LoginIsolationGuards(unittest.TestCase):
                 self.assertEqual(error.exception.kind, "room_save_ime_geometry_unknown")
                 self.assertFalse(any(call.args[:2] == ("shell", "input") for call in device.adb.call_args_list))
                 self.assertNotIn("PRIVATE_EDITOR_METADATA", json.dumps(report))
+
+
+    def test_nearly_full_screen_ime_window_is_not_occupied_keyboard_evidence(self):
+        from types import SimpleNamespace
+        surface = "  Window #0 Window{abc u0 InputMethod}:\n    mFrame=[0,128][1080,2400]"
+        self.assertIsNone(smoke.ime_geometry.ime_frame(surface, 1080, 2400))
+        device = mock.Mock()
+        def response(*args):
+            if args == ("shell", "dumpsys", "input_method"):
+                return SimpleNamespace(returncode=0, stdout="mInputShown=true")
+            if args == ("shell", "dumpsys", "window", "displays"):
+                return SimpleNamespace(returncode=0, stdout=surface + "\n"
+                    "mRawInsetsState=InsetsState: {mSources= {InsetsSource: {3 mType=ime "
+                    "mFrame=[0,1440][1080,2400] mVisible=true}}}")
+            raise AssertionError("Valid display InsetsSource must not query stale window frames")
+        device.adb.side_effect = response
+        result = smoke.ime_geometry.observe(device, [66, 1231, 1014, 1378], 1080, 2400)
+        self.assertTrue(result["reachable"])
+        self.assertFalse(result["overlaps_ime"])
+        self.assertEqual(result["ime_bounds_px"], [0, 1440, 1080, 2400])
+        self.assertEqual(result["ime_source_query"], "displays")
+
+    def test_visible_ime_insets_support_dump_formats_but_refuse_hidden_or_conflicting_sources(self):
+        for text in (
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][1080,2400] mVisible=true}",
+            "    InsetsSource id=3 type=ime frame=[0,1440][1080,2400] visible=true flags=[]",
+            "InsetsSource: {3 mType=ime mFrame=Rect(0, 1440 - 1080, 2400) mVisible=true}",
+        ):
+            self.assertEqual(smoke.ime_geometry.ime_frame(text, 1080, 2400), [0, 1440, 1080, 2400])
+        for text in (
+            "InsetsSource: {1 mType=statusBars mFrame=[0,0][1080,128] mVisible=true}, "
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][1080,2400] mVisible=false}",
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][1080,2400] mVisible=true}, "
+            "InsetsSource: {4 mType=ime mFrame=[0,1400][1080,2400] mVisible=true}",
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][20000,2400] mVisible=true}",
+        ):
+            frame, diagnostic = smoke.ime_geometry.inspect_ime_sources(text, 1080, 2400)
+            self.assertIsNone(frame)
+            self.assertLessEqual(diagnostic["source_records"], 32)
 
 
 if __name__ == "__main__":

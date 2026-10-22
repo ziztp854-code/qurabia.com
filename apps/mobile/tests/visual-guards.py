@@ -57,7 +57,8 @@ class PublicVisualBoundary(unittest.TestCase):
             device = mock.Mock()
             device.adb.return_value = mock.Mock(returncode=0, stdout=(
                 "mInputShown=true\n  Window #0 Window{abc u0 InputMethod}:\n"
-                "    Frames: frame=[0,1400][1080,2160]"))
+                "    Frames: frame=[0,0][1080,2160]\n"
+                "    InsetsSource: {3 mType=ime mFrame=[0,1400][1080,2160] mVisible=true}"))
             device.ui.return_value = (
                 '<hierarchy><node resource-id="visual-preview-public" bounds="[0,0][1080,100]"/>'
                 '<node resource-id="visual-page-room" bounds="[0,100][1080,1100]"/>'
@@ -103,7 +104,9 @@ class PublicVisualBoundary(unittest.TestCase):
                 '<node resource-id="chat-send" bounds="' + send + '"/></hierarchy>')
             device.adb.return_value = mock.Mock(returncode=0, stdout=(
                 "mInputShown=true\n  Window #0 Window{abc u0 InputMethod}:\n"
-                "    Frames: frame=[0,1300][1080,2160]\nPRIVATE_EDITOR_METADATA"))
+                "    Frames: frame=[0,0][1080,2160]\n"
+                "    InsetsSource: {3 mType=ime mFrame=[0,1300][1080,2160] mVisible=true}\n"
+                "PRIVATE_EDITOR_METADATA"))
             evidence = {}
             with tempfile.TemporaryDirectory() as directory:
                 output = pathlib.Path(directory) / "blocked.png"
