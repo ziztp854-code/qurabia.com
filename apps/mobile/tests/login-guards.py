@@ -93,6 +93,7 @@ class LoginIsolationGuards(unittest.TestCase):
         self.assertNotIn(self.account["email"], report + output.getvalue())
         self.assertEqual(json.loads(report)["phase"], "fixture")
         self.assertEqual(list(report_dir.iterdir()), [report_dir / "login-result.json"])
+        device.adb.assert_any_call("shell", "rm", "-f", "/sdcard/tahaddi-native-window.xml", check=False)
 
 
 if __name__ == "__main__":

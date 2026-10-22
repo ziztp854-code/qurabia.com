@@ -41,6 +41,7 @@ jobs:
           git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
           git diff --check fcbdf15092ba8c5189ba75739904ffad84507b19 HEAD
   build-and-login:
+    if: github.event_name != 'pull_request'
     needs: regressions
     runs-on: ubuntu-24.04
     timeout-minutes: 90

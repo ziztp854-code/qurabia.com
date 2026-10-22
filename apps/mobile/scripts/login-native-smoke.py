@@ -2,7 +2,7 @@
 """Credentialed Android test, restricted to the isolated local HTTPS fixture.
 
 No UI dumps, screenshots, credentials, cookie values, tokens or raw logs are
-saved. The only report contains phase names, booleans and server counters.
+archived. Temporary on-device UIAutomator XML is removed during cleanup. The only report contains phase names, booleans and server counters.
 """
 from __future__ import annotations
 
@@ -200,6 +200,7 @@ def main() -> int:
             # Remove the test APK's session/credential UI after collecting only
             # safe counters. No screenshot/XML/log upload from credentialed runs.
             try:
+                device.adb("shell", "rm", "-f", "/sdcard/tahaddi-native-window.xml", check=False)
                 device.adb("shell", "am", "force-stop", PACKAGE, check=False)
                 device.adb("shell", "pm", "clear", PACKAGE, check=False)
             except Exception:
