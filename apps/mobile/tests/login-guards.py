@@ -367,5 +367,57 @@ class LoginIsolationGuards(unittest.TestCase):
         network.assert_not_called()
 
 
+    def test_room_creation_uses_one_fixed_footer_save_without_modal_back(self):
+        module = smoke.load_device()
+        from xml.etree.ElementTree import Element
+        node = Element("node", {"enabled": "true", "bounds": "[0,0][100,100]"})
+        device = mock.Mock()
+        device.wait_node.return_value = node
+        device.ui.return_value = '<hierarchy><node text="أنشئ مساحتك الصوتية"/></hierarchy>'
+        device.adb.return_value.stdout = "mInputShown=true"
+        report = {}
+        with mock.patch.object(smoke, "reveal_room_control", return_value=node), \
+             mock.patch.object(smoke, "enter_local_field"), \
+             mock.patch.object(smoke, "safe_room_snapshot", return_value={
+                 "room_name_matches": True, "modal_title_present": True,
+                 "controls": {"room-save": {"present": True, "enabled": True,
+                                             "visible": True, "center_on_screen": True}}}), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            smoke.create_native_host_room(device, module, report, "manual_create")
+        back_sent = any(call.args[:4] == ("shell", "input", "keyevent", "KEYCODE_BACK")
+                        for call in device.adb.call_args_list)
+        self.assertFalse(back_sent)
+        self.assertEqual(sum(call.args[:3] == ("shell", "input", "tap")
+                             for call in device.adb.call_args_list), 2)
+        self.assertEqual(report["keyboard_actions"]["manual_create_modal_save"],
+                         {"keyboard": "shown", "action": "tap_fixed_footer_with_ime",
+                          "sent_back": False, "modal_present": True})
+        network.assert_not_called()
+
+    def test_room_creation_stops_if_the_modal_disappears_before_save(self):
+        module = smoke.load_device()
+        from xml.etree.ElementTree import Element
+        node = Element("node", {"enabled": "true", "bounds": "[0,0][100,100]"})
+        device = mock.Mock()
+        device.wait_node.return_value = node
+        device.ui.return_value = "<hierarchy/>"
+        device.adb.return_value.stdout = "mInputShown=true"
+        report = {}
+        with mock.patch.object(smoke, "reveal_room_control", return_value=node), \
+             mock.patch.object(smoke, "enter_local_field"), \
+             mock.patch.object(smoke, "safe_room_snapshot", return_value={
+                 "room_name_matches": True, "modal_title_present": True,
+                 "controls": {"room-save": {"present": True, "enabled": True,
+                                             "visible": True, "center_on_screen": True}}}), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            with self.assertRaises(smoke.RoomCreateFailure) as failure:
+                smoke.create_native_host_room(device, module, report, "manual_create")
+        self.assertEqual(failure.exception.kind, "room_modal_not_present")
+        self.assertFalse(report["keyboard_actions"]["manual_create_modal_save"]["modal_present"])
+        self.assertEqual(sum(call.args[:3] == ("shell", "input", "tap")
+                             for call in device.adb.call_args_list), 1)
+        network.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

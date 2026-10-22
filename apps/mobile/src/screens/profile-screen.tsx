@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { SessionUser } from '../auth/AuthProvider';
 import { Action, Avatar, Body, FormScreen, Notice, Panel, Title, ui } from '../components/ui';
-import { StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import { theme } from '../theme';
 
 export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
@@ -21,9 +21,9 @@ export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
       <Panel style={styles.profileCard}>
         <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
           style={styles.cover}>
-          <View style={styles.coverLine}/>
-          <View style={styles.coverFrame}/>
-          <View style={styles.coverFrameInner}/>
+          <Image source={require('../../assets/voice-covers/studio.webp')} resizeMode="cover"
+            style={styles.artwork} accessible={false}/>
+          <View style={styles.coverScrim}/>
         </View>
         <View style={styles.identity}>
           <View style={styles.avatarFrame}>
@@ -59,6 +59,7 @@ export function ProfileScreen({user,asset,onRefresh,onSignOut}:{
   </FormScreen>;
 }
 const styles = StyleSheet.create({
+  artwork: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0},
   frame: {width: '100%', maxWidth: 560, alignSelf: 'center', gap: theme.spacing.md},
   pageHeading: {gap: theme.spacing.xs, paddingVertical: theme.spacing.sm},
   profileCard: {padding: 0, gap: 0, overflow: 'hidden', borderColor: theme.colors.border,
@@ -66,12 +67,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16, elevation: 2},
   cover: {height: 88, overflow: 'hidden', backgroundColor: theme.colors.surfaceStrong,
     borderBottomWidth: 1, borderBottomColor: theme.colors.border},
-  coverLine: {position: 'absolute', height: 1, top: 28, left: 0, right: 0,
-    backgroundColor: theme.colors.border},
-  coverFrame: {position: 'absolute', width: 140, height: 140, top: -64, right: -20,
-    borderWidth: 1, borderColor: theme.colors.border, transform: [{rotate: '35deg'}]},
-  coverFrameInner: {position: 'absolute', width: 100, height: 100, top: -42, right: 0,
-    borderWidth: 1, borderColor: theme.colors.borderSoft, transform: [{rotate: '35deg'}]},
+  coverScrim: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.colors.background, opacity: 0.22},
   identity: {alignItems: 'center', paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg, gap: theme.spacing.xs},
   avatarFrame: {marginTop: -44, padding: theme.spacing.xs, borderRadius: theme.radius.pill,

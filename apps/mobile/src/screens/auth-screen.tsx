@@ -49,11 +49,16 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
     catch (cause) { setError(presentLoginError(cause).message); }
     finally { setBusy(false); }
   }
-  return <FormScreen>
+  return <View style={styles.screen}>
+    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
+      style={styles.studioBackdrop}>
+      <Image source={require('../../assets/voice-covers/studio.webp')} resizeMode="cover"
+        style={styles.artwork} accessible={false}/>
+      <View style={styles.studioScrim}/>
+    </View>
+    <FormScreen>
     <View style={styles.frame}>
       <View style={styles.brand}>
-        <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
-          style={styles.brandGeometry}/>
         <View style={styles.logoFrame}>
           <Image source={require('../../assets/tahaddi-crown.webp')} resizeMode="contain"
             style={styles.crown} accessible={false}/>
@@ -110,14 +115,19 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
         <View accessible={false} style={styles.footerRule}/>
       </View>
     </View>
-  </FormScreen>;
+    </FormScreen>
+  </View>;
 }
 const styles = StyleSheet.create({
+  artwork: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0},
+  screen: {flex: 1, backgroundColor: theme.colors.background},
+  studioBackdrop: {position: 'absolute', top: 0, left: 0, right: 0, height: 240,
+    overflow: 'hidden', borderBottomLeftRadius: theme.radius.lg, borderBottomRightRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surfaceStrong, borderBottomWidth: 1, borderBottomColor: theme.colors.borderSoft},
+  studioScrim: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.colors.background, opacity: 0.48},
   frame: {width: '100%', maxWidth: 480, alignSelf: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.sm},
   brand: {minHeight: 88, flexDirection: 'row-reverse', alignItems: 'center', gap: theme.spacing.md,
     padding: theme.spacing.sm, borderRadius: theme.radius.lg, overflow: 'hidden'},
-  brandGeometry: {position: 'absolute', width: 144, height: 144, top: -92, left: 8,
-    borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.lg, transform: [{rotate: '32deg'}]},
   logoFrame: {width: 72, height: 72, alignItems: 'center', justifyContent: 'center',
     backgroundColor: theme.colors.surfaceStrong, borderWidth: 1, borderColor: theme.colors.border,
     borderRadius: theme.radius.md, shadowColor: theme.colors.shadow, shadowOpacity: 0.22,
@@ -133,7 +143,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.borderSoft, backgroundColor: theme.colors.roomBackground},
   statusDot: {width: 7, height: 7, borderRadius: theme.radius.pill},
   statusText: {flex: 1, fontSize: theme.type.caption, lineHeight: 22},
-  loginCard: {padding: theme.spacing.lg, gap: theme.spacing.md, borderColor: theme.colors.border,
+  loginCard: {backgroundColor: theme.colors.surface, padding: theme.spacing.lg, gap: theme.spacing.md, borderColor: theme.colors.border,
     shadowColor: theme.colors.shadow, shadowOpacity: 0.20, shadowOffset: {width: 0, height: 10},
     shadowRadius: 20, elevation: 3},
   cardAccent: {width: 40, height: 3, alignSelf: 'flex-end', borderRadius: theme.radius.pill,

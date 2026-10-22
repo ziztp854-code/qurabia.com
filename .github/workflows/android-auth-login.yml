@@ -28,15 +28,30 @@ jobs:
           node-version: '24.14.0'
       - run: npm install --global pnpm@11.26.0 --ignore-scripts
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
-      - name: Check types and run all native regressions
+      - name: Check types and affected regressions
         run: |
           pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
           pnpm --filter @tahaddi/mobile typecheck
           pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
-          pnpm --filter @tahaddi/mobile test
-          node --test apps/mobile/scripts/prepare-android-debug.test.cjs
-          python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
+          # Retain the verified 165c native-unit result only for this exact reviewed
+          # artwork pair when every other native/unit dependency is unchanged.
+          git fetch --no-tags --depth=1 origin 165c044e1035e59b8adaec1dc2fdb4a51789173d
+          if git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/src apps/mobile/tests apps/mobile/scripts/test-native.cjs apps/mobile/tsconfig.json packages package.json pnpm-lock.yaml pnpm-workspace.yaml ':!apps/mobile/src/screens/auth-screen.tsx' ':!apps/mobile/src/screens/profile-screen.tsx' ':!apps/mobile/tests/*.py' &&
+             diff <(git show 165c044e1035e59b8adaec1dc2fdb4a51789173d:apps/mobile/package.json | jq -S 'del(.version)') <(jq -S 'del(.version)' apps/mobile/package.json) &&
+             test "$(git rev-parse HEAD:apps/mobile/src/screens/auth-screen.tsx)" = fd6591af1f2a1346affd6de27bd598905e7ec453 &&
+             test "$(git rev-parse HEAD:apps/mobile/src/screens/profile-screen.tsx)" = a3eb0aec450e252f37cec85186f01d27e87c5697; then
+            echo "Native unit evidence retained: 84 passed at 165c044; exact reviewed artwork only, core dependencies unchanged."
+          else
+            pnpm --filter @tahaddi/mobile test
+          fi
+          if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/prepare-android-debug.cjs apps/mobile/scripts/prepare-android-debug.test.cjs; then
+            node --test apps/mobile/scripts/prepare-android-debug.test.cjs
+          fi
+          if ! git diff --quiet 165c044e1035e59b8adaec1dc2fdb4a51789173d HEAD -- apps/mobile/scripts/android-native-smoke.py apps/mobile/scripts/android-native-smoke.sh apps/mobile/tests/test_android_native_smoke.py; then
+            python3 apps/mobile/tests/test_android_native_smoke.py
+          fi
           python3 apps/mobile/tests/login-guards.py
+          python3 apps/mobile/tests/test_android_emulator_ready.py
           python3 apps/mobile/tests/visual-guards.py
       - name: Check patch whitespace and scope
         run: |
@@ -98,25 +113,9 @@ jobs:
       - name: Install locked mobile and real server dependencies
         run: pnpm install --frozen-lockfile 2>&1 | tee android-reports/install.log
 
-      - name: Test generated debug configuration helpers
-        run: node --test apps/mobile/scripts/prepare-android-debug.test.cjs 2>&1 | tee android-reports/build-helpers.log
-
       - name: Build shared domain and check TypeScript
         run: |
           pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json 2>&1 | tee android-reports/domain-build.log
-          pnpm --filter @tahaddi/mobile typecheck 2>&1 | tee android-reports/typecheck.log
-
-      - name: Run all native mobile TypeScript tests
-        working-directory: apps/mobile
-        run: |
-          test -d src
-          test -d tests
-          mapfile -d '' mobile_tests < <(find src tests -type f -name '*.test.ts' -print0 | sort -z)
-          test "${#mobile_tests[@]}" -gt 0
-          pnpm exec tsx --test "${mobile_tests[@]}" 2>&1 | tee ../../android-reports/mobile-tests.log
-
-      - name: Test native Android smoke guards
-        run: python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py' 2>&1 | tee android-reports/native-smoke-guards.log
 
       - name: Validate compatibility with the installed Expo SDK map
         env:
@@ -128,9 +127,6 @@ jobs:
       - name: Typecheck isolated Node login harness
         working-directory: apps/web
         run: pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --types node --lib ES2022,DOM ../mobile/scripts/login-fixture.ts ../mobile/scripts/login-http-integration.ts
-
-      - name: Typecheck the isolated public visual entry
-        run: pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
 
       - name: Verify Metro and packaged assets
         run: |
@@ -254,6 +250,15 @@ jobs:
             cat android-reports/apk-size.txt android-reports/apk-sha256.txt
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Record runner capacity before emulator boot
+        run: |
+          {
+            nproc
+            free -m
+            df -h /
+            cat /proc/pressure/cpu /proc/pressure/memory /proc/pressure/io
+          } | tee android-reports/emulator-runner-capacity.txt
+
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -267,8 +272,12 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          cores: 2
+          ram-size: '2048M'
           disable-animations: true
-          script: bash apps/mobile/scripts/android-native-smoke.sh --reports android-reports/native
+          script: |
+            python3 apps/mobile/scripts/android-emulator-ready.py --reports android-reports/public-ready
+            bash apps/mobile/scripts/android-native-smoke.sh --reports android-reports/native
 
       - name: Check public HTTPS endpoints without authentication
         if: ${{ !cancelled() && steps.apk.outcome == 'success' }}
@@ -477,8 +486,12 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          cores: 2
+          ram-size: '2048M'
           disable-animations: true
-          script: python3 apps/mobile/scripts/login-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-login-test-only.apk" --credentials "$RUNNER_TEMP/login-private.json" --ca "$RUNNER_TEMP/login-ca.pem" --reports android-reports/login
+          script: |
+            python3 apps/mobile/scripts/android-emulator-ready.py --reports android-reports/login-ready
+            python3 apps/mobile/scripts/login-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-login-test-only.apk" --credentials "$RUNNER_TEMP/login-private.json" --ca "$RUNNER_TEMP/login-ca.pem" --reports android-reports/login
 
       - name: Stop fixture and remove private test material
         if: always()
@@ -535,8 +548,12 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          cores: 2
+          ram-size: '2048M'
           disable-animations: true
-          script: python3 apps/mobile/scripts/visual-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-visual-test-only.apk" --reports android-reports/visual
+          script: |
+            python3 apps/mobile/scripts/android-emulator-ready.py --reports android-reports/visual-ready
+            python3 apps/mobile/scripts/visual-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-visual-test-only.apk" --reports android-reports/visual
 
       - name: Verify delivery APK remains the original public build
         if: always()

@@ -2,7 +2,7 @@
   "expo": {
     "name": "تحدّي لايف",
     "slug": "tahaddi-mobile",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "tahaddi",
@@ -33,7 +33,7 @@
         "backgroundColor": "#070A0F"
       },
       "predictiveBackGestureEnabled": true,
-      "versionCode": 5,
+      "versionCode": 6,
       "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
