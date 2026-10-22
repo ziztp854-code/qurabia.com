@@ -8,6 +8,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 
 const FontsContext = createContext(false);
+const KeyboardOwnerContext = createContext(false);
+
+/** Own keyboard resizing once at the native window origin, before safe areas. */
+export function KeyboardViewport({ children }: { children: ReactNode }) {
+  return <KeyboardOwnerContext.Provider value={true}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {children}
+    </KeyboardAvoidingView>
+  </KeyboardOwnerContext.Provider>;
+}
 export function UiProvider({ fontsReady = false, children }: { fontsReady?: boolean; children: ReactNode }) {
   return <FontsContext.Provider value={fontsReady}>{children}</FontsContext.Provider>;
 }
@@ -90,8 +100,12 @@ export function Avatar({ name, source, size = 48, speaking = false }: {
 export function Panel({ children, style }: {children: ReactNode; style?: ViewStyle}) {
   return <View style={[styles.panel, style]}>{children}</View>;
 }
-export function FormScreen({ children, footer }: {children: ReactNode; footer?: ReactNode}) {
-  return <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+export function FormScreen({ children, footer, keyboardAvoidingEnabled = true }: {
+  children: ReactNode; footer?: ReactNode; keyboardAvoidingEnabled?: boolean;
+}) {
+  const windowOwnsKeyboard = useContext(KeyboardOwnerContext);
+  return <KeyboardAvoidingView enabled={keyboardAvoidingEnabled && !windowOwnsKeyboard}
+    style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <ScrollView style={styles.flex} contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>{children}</ScrollView>
     {footer && <View style={styles.formFooter}>{footer}</View>}
@@ -100,15 +114,18 @@ export function FormScreen({ children, footer }: {children: ReactNode; footer?: 
 export function Sheet({ title, visible, onClose, children, footer }: {
   title: string; visible: boolean; onClose: () => void; children: ReactNode; footer?: ReactNode;
 }) {
-  return <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+  return <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}
+    statusBarTranslucent navigationBarTranslucent>
+    <KeyboardViewport>
     <SafeAreaView style={styles.modal} edges={['top','bottom','left','right']}>
       <View accessibilityViewIsModal style={styles.sheet}>
         <View style={styles.sheetHandle} accessible={false}/>
         <View style={styles.sheetHeader}><Title small style={ui.grow}>{title}</Title>
           <Action label="إغلاق" tone="secondary" compact onPress={onClose}/></View>
-        <FormScreen footer={footer}>{children}</FormScreen>
+        <FormScreen footer={footer} keyboardAvoidingEnabled={false}>{children}</FormScreen>
       </View>
     </SafeAreaView>
+    </KeyboardViewport>
   </Modal>;
 }
 export const ui = StyleSheet.create({

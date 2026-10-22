@@ -82,6 +82,17 @@ EMPTY_ERROR = "أدخل البريد الإلكتروني وكلمة المرو�
 REJECTED_ERROR = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
 
 
+def load_ime_geometry():
+    spec = importlib.util.spec_from_file_location(
+        "native_ime_geometry", pathlib.Path(__file__).with_name("native_ime_geometry.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ime_geometry = load_ime_geometry()
+
+
 def keyboard_state(device) -> str:
     # Inspect in memory only: dumpsys can contain editor metadata.
     flags = re.findall(r"\b(?:mInputShown|mIsInputViewShown)=(true|false)\b",
@@ -412,6 +423,23 @@ def modal_footer_state(device) -> dict:
             "sent_back": False, "modal_present": present}
 
 
+def tap_room_save(device, module, report: dict, prefix: str):
+    # Re-read after layout observation. Accessibility visibility alone does not
+    # prove that an overlay (notably the IME) will deliver a tap to the footer.
+    node = module.find_node(device.ui(), "room-save")
+    if (node is None or node.attrib.get("enabled") != "true" or
+            node.attrib.get("visible-to-user", "true") == "false"):
+        raise RoomCreateFailure("room_save_footer_unavailable")
+    sizes = re.findall(r"(\d+)x(\d+)", device.adb("shell", "wm", "size").stdout)
+    width, height = map(int, sizes[-1]) if sizes else (0, 0)
+    geometry = ime_geometry.observe(device, ime_geometry.node_bounds(node), width, height)
+    report.setdefault("room_save_geometry", {})[prefix] = geometry
+    if not geometry["reachable"]:
+        raise RoomCreateFailure("room_save_" + geometry["reason"])
+    x, y = module.center(node)
+    device.adb("shell", "input", "tap", str(x), str(y))
+
+
 def create_native_host_room(device, module, report: dict, prefix: str):
     def mark(stage: str):
         report["phase"] = prefix + "_" + stage
@@ -450,9 +478,11 @@ def create_native_host_room(device, module, report: dict, prefix: str):
     if not all(footer_state.get("controls", {}).get("room-save", {}).get(key, False)
                for key in ("present", "enabled", "visible", "center_on_screen")):
         raise RoomCreateFailure("room_save_footer_unavailable")
-    x, y = module.center(node)
-    device.adb("shell", "input", "tap", str(x), str(y))
+    tap_room_save(device, module, report, prefix)
     mark("save_tapped")
+    after_save = report["room_ui_snapshots"][report["phase"]]
+    if after_save.get("modal_title_present") and not after_save.get("room_name_matches"):
+        raise RoomCreateFailure("room_name_changed_after_save")
     report["phase"] = prefix + "_wait_room"
     device.wait_node("room-title", timeout=90)
     mark("room_observed")

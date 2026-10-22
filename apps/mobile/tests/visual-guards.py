@@ -55,6 +55,9 @@ class PublicVisualBoundary(unittest.TestCase):
         module = visual.load_device()
         for field in ("[20,800][1000,900]", "[20,1000][1000,1200]"):
             device = mock.Mock()
+            device.adb.return_value = mock.Mock(returncode=0, stdout=(
+                "mInputShown=true\n  Window #0 Window{abc u0 InputMethod}:\n"
+                "    Frames: frame=[0,1400][1080,2160]"))
             device.ui.return_value = (
                 '<hierarchy><node resource-id="visual-preview-public" bounds="[0,0][1080,100]"/>'
                 '<node resource-id="visual-page-room" bounds="[0,100][1080,1100]"/>'
@@ -64,7 +67,8 @@ class PublicVisualBoundary(unittest.TestCase):
         device.ui.return_value = (
             '<hierarchy><node resource-id="visual-preview-public" bounds="[0,0][1080,100]"/>'
             '<node resource-id="visual-page-room" bounds="[0,100][1080,1100]"/>'
-            '<node resource-id="chat-input" visible-to-user="true" bounds="[20,800][1000,1000]"/></hierarchy>')
+            '<node resource-id="chat-input" visible-to-user="true" bounds="[20,800][900,1000]"/>'
+            '<node resource-id="chat-send" visible-to-user="true" bounds="[910,800][1070,1000]"/></hierarchy>')
         result = visual.assert_keyboard_input_visible(device, module, "room", "chat-input", 1080, 2160, 480)
         self.assertTrue(result["fully_inside_app_viewport"])
 
@@ -83,6 +87,34 @@ class PublicVisualBoundary(unittest.TestCase):
                         module.capture_anonymous_idle(device, pathlib.Path(directory))
                     command.assert_not_called()
                 self.assertFalse((pathlib.Path(directory) / "native-auth-idle.png").exists())
+
+
+    def test_ime_overlap_prevents_public_keyboard_screenshot_even_inside_app_bounds(self):
+        module = visual.load_device()
+        for field, send in (
+            ("[20,1600][900,1800]", "[910,1600][1070,1800]"),
+            ("[20,900][900,1100]", "[910,1600][1070,1800]"),
+        ):
+            device = mock.Mock()
+            device.ui.return_value = ('<hierarchy>'
+                '<node resource-id="visual-preview-public" bounds="[0,0][1080,100]"/>'
+                '<node resource-id="visual-page-room" bounds="[0,100][1080,2160]"/>'
+                '<node resource-id="chat-input" bounds="' + field + '"/>'
+                '<node resource-id="chat-send" bounds="' + send + '"/></hierarchy>')
+            device.adb.return_value = mock.Mock(returncode=0, stdout=(
+                "mInputShown=true\n  Window #0 Window{abc u0 InputMethod}:\n"
+                "    Frames: frame=[0,1300][1080,2160]\nPRIVATE_EDITOR_METADATA"))
+            evidence = {}
+            with tempfile.TemporaryDirectory() as directory:
+                output = pathlib.Path(directory) / "blocked.png"
+                with mock.patch.object(visual.subprocess, "run") as command:
+                    with self.assertRaises(visual.VisualFailure):
+                        visual.capture_public(device, module, "room", output,
+                            before_capture=lambda: visual.assert_keyboard_input_visible(
+                                device, module, "room", "chat-input", 1080, 2160, 480, evidence))
+                    command.assert_not_called()
+                self.assertFalse(output.exists())
+            self.assertNotIn("PRIVATE_EDITOR_METADATA", str(evidence))
 
 
 if __name__ == "__main__":

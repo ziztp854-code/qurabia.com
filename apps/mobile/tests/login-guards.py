@@ -373,8 +373,15 @@ class LoginIsolationGuards(unittest.TestCase):
         node = Element("node", {"enabled": "true", "bounds": "[0,0][100,100]"})
         device = mock.Mock()
         device.wait_node.return_value = node
-        device.ui.return_value = '<hierarchy><node text="أنشئ مساحتك الصوتية"/></hierarchy>'
-        device.adb.return_value.stdout = "mInputShown=true"
+        device.ui.return_value = ('<hierarchy><node text="أنشئ مساحتك الصوتية"/>'
+            '<node resource-id="room-save" enabled="true" bounds="[0,0][100,100]"/></hierarchy>')
+        def response(*args):
+            from types import SimpleNamespace
+            value = ("Physical size: 1080x2400" if args == ("shell", "wm", "size") else
+                     "mInputShown=true" if args == ("shell", "dumpsys", "input_method") else
+                     "  Window #0 Window{abc u0 InputMethod}:\n    Frames: frame=[0,1400][1080,2400]")
+            return SimpleNamespace(returncode=0, stdout=value)
+        device.adb.side_effect = response
         report = {}
         with mock.patch.object(smoke, "reveal_room_control", return_value=node), \
              mock.patch.object(smoke, "enter_local_field"), \
@@ -417,6 +424,61 @@ class LoginIsolationGuards(unittest.TestCase):
         self.assertEqual(sum(call.args[:3] == ("shell", "input", "tap")
                              for call in device.adb.call_args_list), 1)
         network.assert_not_called()
+
+
+    def footer_device(self, bounds, windows):
+        from types import SimpleNamespace
+        device = mock.Mock()
+        device.ui.return_value = ('<hierarchy><node resource-id="room-save" enabled="true" '
+            'visible-to-user="true" bounds="' + bounds + '"/></hierarchy>')
+        def response(*args):
+            value = ("Physical size: 1080x2400" if args == ("shell", "wm", "size") else
+                     "mInputShown=true" if args == ("shell", "dumpsys", "input_method") else windows)
+            return SimpleNamespace(returncode=0, stdout=value)
+        device.adb.side_effect = response
+        return device
+
+    def test_screen_visible_footer_behind_ime_never_receives_a_tap_or_request(self):
+        device = self.footer_device("[20,1900][1060,2100]",
+            "  Window #2 Window{abc u0 InputMethod}:\n"
+            "    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,1400][1080,2400]\n"
+            "    PRIVATE_EDITOR_METADATA")
+        report = {}
+        with mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            with self.assertRaises(smoke.RoomCreateFailure) as error:
+                smoke.tap_room_save(device, smoke.load_device(), report, "manual")
+        self.assertEqual(error.exception.kind, "room_save_field_overlaps_ime")
+        self.assertTrue(report["room_save_geometry"]["manual"]["overlaps_ime"])
+        self.assertFalse(any(call.args[:2] == ("shell", "input") for call in device.adb.call_args_list))
+        self.assertNotIn("PRIVATE_EDITOR_METADATA", json.dumps(report))
+        network.assert_not_called()
+
+    def test_footer_above_visible_ime_receives_exactly_one_tap_without_back(self):
+        device = self.footer_device("[20,1100][1060,1250]",
+            "    InsetsSource: {mType=ime mFrame=[0,1400][1080,2400] mVisible=true}")
+        report = {}
+        with mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            smoke.tap_room_save(device, smoke.load_device(), report, "manual")
+        inputs = [call.args for call in device.adb.call_args_list if call.args[:2] == ("shell", "input")]
+        self.assertEqual(inputs, [("shell", "input", "tap", "540", "1175")])
+        self.assertTrue(report["room_save_geometry"]["manual"]["reachable"])
+        self.assertEqual(report["room_save_geometry"]["manual"]["ime_bounds_px"], [0, 1400, 1080, 2400])
+        network.assert_not_called()
+
+    def test_shown_ime_with_unknown_frame_refuses_unrelated_window_geometry(self):
+        for windows in (
+            "  Window #0 Window{abc u0 MainActivity}:\n    mFrame=[0,0][1080,2400]",
+            "  Window #0 Window{abc u0 InputMethod}:\n    mFrame=[0,1400][20000,2400]",
+            "PRIVATE_EDITOR_METADATA",
+        ):
+            with self.subTest(case="untrusted_geometry"):
+                device = self.footer_device("[20,1100][1060,1250]", windows)
+                report = {}
+                with self.assertRaises(smoke.RoomCreateFailure) as error:
+                    smoke.tap_room_save(device, smoke.load_device(), report, "manual")
+                self.assertEqual(error.exception.kind, "room_save_ime_geometry_unknown")
+                self.assertFalse(any(call.args[:2] == ("shell", "input") for call in device.adb.call_args_list))
+                self.assertNotIn("PRIVATE_EDITOR_METADATA", json.dumps(report))
 
 
 if __name__ == "__main__":

@@ -34,6 +34,17 @@ class VisualFailure(RuntimeError):
     pass
 
 
+def load_ime_geometry():
+    spec = importlib.util.spec_from_file_location(
+        "native_ime_geometry", pathlib.Path(__file__).with_name("native_ime_geometry.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ime_geometry = load_ime_geometry()
+
+
 def load_device():
     spec = importlib.util.spec_from_file_location(
         "visual_native_device", pathlib.Path(__file__).with_name("android-native-smoke.py"))
@@ -55,8 +66,10 @@ def assert_public_page(xml: str, module, page: str):
         raise VisualFailure("expected_preview_page_missing")
 
 
-def capture_public(device, module, page: str, filename: pathlib.Path):
+def capture_public(device, module, page: str, filename: pathlib.Path, before_capture=None):
     assert_public_page(device.ui(), module, page)
+    if before_capture is not None:
+        before_capture()
     capture = subprocess.run(device.prefix + ["exec-out", "screencap", "-p"],
                              capture_output=True, timeout=30)
     if capture.returncode or not capture.stdout.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -88,25 +101,67 @@ def keyboard_shown(device) -> bool:
 
 
 def assert_keyboard_input_visible(device, module, page: str, target: str,
-                                  width: int, height: int, density: int) -> dict:
+                                  width: int, height: int, density: int, evidence=None) -> dict:
     xml = device.ui()
     assert_public_page(xml, module, page)
     def bounds(node):
         if node is None or node.attrib.get("visible-to-user", "true") == "false":
             raise VisualFailure("keyboard_input_not_visible")
-        match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
-        if not match:
+        value = ime_geometry.bounded_rect(ime_geometry.node_bounds(node), width, height)
+        if value is None:
             raise VisualFailure("keyboard_input_bounds_missing")
-        return tuple(map(int, match.groups()))
+        return value
     parent = bounds(module.find_node(xml, "visual-page-" + page))
     field = bounds(module.find_node(xml, target))
     left, top, right, bottom = field
-    if (not (0 <= left < right <= width and 0 <= top < bottom <= height) or
-            not (parent[0] <= left < right <= parent[2] and parent[1] <= top < bottom <= parent[3]) or
-            bottom - top < round(48 * density / 160)):
+    inside = (parent[0] <= left < right <= parent[2] and parent[1] <= top < bottom <= parent[3])
+    geometry = ime_geometry.observe(device, field, width, height, require_shown=True)
+    geometry.update(bounds_px=field, height_dp=round((bottom - top) * 160 / density, 2),
+                    fully_inside_app_viewport=inside)
+    if evidence is not None:
+        evidence.clear()
+        evidence.update(geometry)
+    if not inside or bottom - top < round(48 * density / 160):
         raise VisualFailure("keyboard_input_clipped")
-    return {"bounds_px": list(field), "height_dp": round((bottom - top) * 160 / density, 2),
-            "fully_inside_app_viewport": True}
+    if not geometry["reachable"]:
+        raise VisualFailure("keyboard_input_" + geometry["reason"])
+    if target == "chat-input":
+        send = bounds(module.find_node(xml, "chat-send"))
+        frame = geometry["ime_bounds_px"]
+        overlap = (max(send[0], frame[0]) < min(send[2], frame[2]) and
+                   max(send[1], frame[1]) < min(send[3], frame[3]))
+        inside_send = (parent[0] <= send[0] < send[2] <= parent[2] and
+                       parent[1] <= send[1] < send[3] <= parent[3])
+        geometry["send_bounds_px"] = send
+        geometry["send_overlaps_ime"] = overlap
+        if evidence is not None:
+            evidence.update(geometry)
+        if overlap or not inside_send or send[3] - send[1] < round(48 * density / 160):
+            raise VisualFailure("keyboard_send_clipped")
+    return geometry
+
+
+def wait_keyboard_input_visible(device, module, page, target, width, height, density, evidence):
+    # Layout observations only: no input/action retries and no screenshots on failure.
+    deadline = time.monotonic() + 12
+    previous, stable, last_failure = None, 0, "keyboard_layout_not_stable"
+    while time.monotonic() < deadline:
+        try:
+            geometry = assert_keyboard_input_visible(device, module, page, target,
+                                                       width, height, density, evidence)
+            shape = (tuple(geometry["field_bounds_px"]), tuple(geometry["ime_bounds_px"]),
+                     tuple(geometry.get("send_bounds_px", [])))
+            stable = stable + 1 if shape == previous else 1
+            previous = shape
+            if stable >= 2:
+                return geometry
+        except VisualFailure as error:
+            if not str(error).startswith("keyboard_"):
+                raise
+            last_failure = str(error)
+            previous, stable = None, 0
+        time.sleep(0.25)
+    raise VisualFailure(last_failure)
 
 
 def featured_room_visible(device, module) -> bool:
@@ -154,7 +209,7 @@ def verify_display(device, width: int, height: int, density: int, font: str):
 
 def emit_public_frames(directory: pathlib.Path, frames: list[dict]):
     # Original verified public PNGs only. Bound inline logs; all PNGs remain artifacts.
-    budget = 8 * 1024 * 1024
+    budget = 512 * 1024
     priority = {"360dp": 0, "800dp": 1, "360dp-font2": 2, "320dp": 3, "427dp": 4}
     for frame in sorted(frames, key=lambda item: priority[item["case"]]):
         data = (directory / frame["file"]).read_bytes()
@@ -275,10 +330,14 @@ def main() -> int:
                 time.sleep(1)
             if not keyboard_shown(device):
                 raise VisualFailure("keyboard_not_observed")
-            geometry = assert_keyboard_input_visible(device, module, page,
-                "room-search" if kind == "search" else "chat-input", width, height, density)
+            target = "room-search" if kind == "search" else "chat-input"
+            evidence = report.setdefault("keyboard_geometry", {}).setdefault(kind, {})
+            geometry = wait_keyboard_input_visible(device, module, page, target,
+                                                   width, height, density, evidence)
             filename = args.label + "-" + case + "-" + kind + "-keyboard.png"
-            capture_public(device, module, page, directory / filename)
+            capture_public(device, module, page, directory / filename,
+                before_capture=lambda: assert_keyboard_input_visible(device, module, page, target,
+                    width, height, density, evidence))
             report["screens"].append({
                 "file": filename, "case": case, "page": page, "keyboard": kind,
                 "width_px": width, "height_px": height, "density_dpi": density,
