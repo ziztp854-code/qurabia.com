@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ae064e09ad2fba212395f38ab88f5df0eafdcb73
+          ref: 540bdea2649e8d19c32f80795010aade2a95886e
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
@@ -78,7 +78,7 @@ jobs:
                 module_syntax: /Unexpected token|Cannot use import|require is not defined|ES module/i,
                 typescript: /typescript|tsconfig|transpile/i,
                 webpack: /webpack/i, turbopack: /turbopack/i,
-                workflow: /workflow/i, port: /EADDRINUSE|listen|address/i,
+                workflow: /workflow/i, missing_app: /find.*(app|pages).*directory|app.*directory|directory.*app/i, port: /EADDRINUSE|listen|address/i,
                 read_only: /EACCES|EPERM|permission/i,
                 missing_build: /production build|BUILD_ID/i,
               };
@@ -127,7 +127,7 @@ jobs:
             git show "fcbdf15092ba8c5189ba75739904ffad84507b19:apps/mobile/src/auth/$file" > "$RUNNER_TEMP/login-baseline/$file"
           done
           NODE_EXTRA_CA_CERTS="$RUNNER_TEMP/login-ca.pem" \
-          GITHUB_SHA=ae064e09ad2fba212395f38ab88f5df0eafdcb73 node --import tsx apps/mobile/scripts/login-http-integration.ts \
+          GITHUB_SHA=540bdea2649e8d19c32f80795010aade2a95886e node --import tsx apps/mobile/scripts/login-http-integration.ts \
             --credentials "$RUNNER_TEMP/login-private.json" \
             --baseline "$RUNNER_TEMP/login-baseline" --reports android-reports/login
 
