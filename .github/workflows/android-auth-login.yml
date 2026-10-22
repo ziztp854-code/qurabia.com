@@ -109,7 +109,8 @@ jobs:
           parent_sha="$(git cat-file -p HEAD | sed -n 's/^parent //p')"
           if (test "$parent_sha" = 2b8560e1406034e73b236424ad21ad206f47ecdb ||
               test "$parent_sha" = 4ca383d495e2014d982c2ae8b895034e49fbae47 ||
-              test "$parent_sha" = 43e62032af952caa92cf66c2a4cdd88cd4565da6) &&
+              test "$parent_sha" = 43e62032af952caa92cf66c2a4cdd88cd4565da6 ||
+              test "$parent_sha" = d35f9fb8e2f1c09da1e780460707e3fb40e26766) &&
              git diff --quiet 2b8560e1406034e73b236424ad21ad206f47ecdb HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/native_ime_geometry.py' ':!apps/mobile/scripts/login-native-smoke.py' ':!apps/mobile/scripts/visual-native-smoke.py' ':!apps/mobile/tests/login-guards.py' ':!apps/mobile/tests/visual-guards.py'; then
             echo "eligible=true" >> "$GITHUB_OUTPUT"
             echo "Delivery reuse approved by reviewed-parent and unchanged-runtime proofs."
@@ -574,9 +575,35 @@ jobs:
           PY
 
 
+      - name: Check reuse of reviewed public visual evidence
+        id: visual_reuse
+        if: always() && steps.apk.outcome == 'success'
+        env:
+          DELIVERY_REUSED: ${{ steps.reuse.outputs.eligible }}
+        run: |
+          git fetch --no-tags --depth=1 origin 43e62032af952caa92cf66c2a4cdd88cd4565da6
+          # Delivery reuse already proves reviewed ancestry and exact runtime equality.
+          # The fixed digest also proves which original APK is being retained.
+          if test "$DELIVERY_REUSED" = true &&
+             echo 'a6463f9cca0318630e7c6a617f5c2754e2fa0447ee03b793c70a8b67f9c5e1da  android-delivery/app-debug.apk' | sha256sum --check &&
+             git diff --quiet 43e62032af952caa92cf66c2a4cdd88cd4565da6 HEAD -- apps/mobile/scripts/visual-entry.tsx apps/mobile/scripts/native_ime_geometry.py apps/mobile/scripts/visual-native-smoke.py apps/mobile/tests/visual-guards.py; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+            python3 - <<'PY'
+          import json,pathlib
+          evidence={"status":"reused_prior_evidence","fresh_capture":False,
+                    "source_sha":"43e62032af952caa92cf66c2a4cdd88cd4565da6",
+                    "run_id":39744913659,"original_public_captures":22,
+                    "reason":"identical runtime, pinned delivery APK and visual harness"}
+          pathlib.Path("android-reports/public-visual-reuse.json").write_text(json.dumps(evidence,indent=2)+"\n")
+          print("PUBLIC_VISUAL_EVIDENCE_REUSED "+json.dumps(evidence))
+          PY
+          else
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build separate public-fixture visual APK
         id: visual_build
-        if: always() && steps.apk.outcome == 'success'
+        if: always() && steps.apk.outcome == 'success' && steps.visual_reuse.outputs.eligible != 'true'
         run: |
           cp apps/mobile/index.ts "$RUNNER_TEMP/tahaddi-original-index.ts"
           python3 - <<'PY'

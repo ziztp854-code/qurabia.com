@@ -16,4 +16,4 @@ The new public POST /api/live/join/ endpoint and the existing token-authorized r
 - The native runtime changes. A new delivery APK is required; the prior pinned APK cannot validate this feature.
 - Typecheck, unit tests and bundling are engineering evidence. Native quiz UI, authenticated host/quiz integration, supported viewport/font-scale screenshots, physical devices and iOS release acceptance require their own executed evidence. No production participant is created by the unit tests.
 
-The original PR #18 stays open until the replacement's integration and visual acceptance are complete.
+PR #18 records the original quiz implementation. This reconciliation remains subject to its integration and visual acceptance gates.

@@ -273,27 +273,50 @@ class LoginIsolationGuards(unittest.TestCase):
         self.assertTrue(unrelated["permission_window"])
 
 
-    def test_native_host_confirmation_requires_the_expected_system_alert(self):
-        for namespace in ["android:id/", smoke.PACKAGE + ":id/"]:
-            with self.subTest(namespace=namespace):
+    def test_native_host_confirmation_requires_one_app_window_and_system_button(self):
+        # The observed native dialog exposes its title text without alertTitle ID.
+        for namespace in ("android:id/", smoke.PACKAGE + ":id/"):
+            for title_id in ("", namespace + "alertTitle"):
+                xml = ('<hierarchy><node package="' + smoke.PACKAGE + '">'
+                       '<node package="' + smoke.PACKAGE + '" class="android.widget.TextView" '
+                       'resource-id="' + title_id + '" text="إنهاء البث للجميع"/>'
+                       '<node package="' + smoke.PACKAGE + '" resource-id="' + namespace +
+                       'button1" text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/>'
+                       '</node></hierarchy>')
                 device = mock.Mock()
-                device.ui.return_value = (
-                    '<hierarchy><node resource-id="' + namespace + 'alertTitle" '
-                    'text="إنهاء البث للجميع"/><node resource-id="' + namespace + 'button1" '
-                    'text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/></hierarchy>')
+                device.ui.return_value = xml
                 module = mock.Mock()
                 module.center.return_value = (50, 50)
                 with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0]):
                     smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث")
                 device.adb.assert_called_once_with("shell", "input", "tap", "50", "50")
-        device = mock.Mock()
-        device.ui.return_value = ('<hierarchy><node resource-id="android:id/alertTitle" text="Unrelated"/>'
-            '<node resource-id="android:id/button1" text="إنهاء البث" enabled="true"/></hierarchy>')
-        with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), \
-             mock.patch.object(smoke.time, "sleep"):
-            with self.assertRaises(RuntimeError):
-                smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث", timeout=1)
-        device.adb.assert_not_called()
+
+    def test_native_confirmation_rejects_unrelated_disabled_or_cross_window_labels(self):
+        base = ('<hierarchy><node package="' + smoke.PACKAGE + '">'
+                '<node package="' + smoke.PACKAGE + '" class="android.widget.TextView" '
+                'text="إنهاء البث للجميع"/>'
+                '<node package="' + smoke.PACKAGE + '" resource-id="android:id/button1" '
+                'text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/>'
+                '</node></hierarchy>')
+        invalid = (
+            base.replace("إنهاء البث للجميع", "Unrelated"),
+            base.replace('enabled="true"', 'enabled="false"'),
+            base.replace('android:id/button1', 'ordinary-app-button'),
+            base.replace(smoke.PACKAGE, "another.app"),
+            base.replace('class="android.widget.TextView"', 'class="android.widget.EditText"'),
+            base.replace('text="إنهاء البث للجميع"', 'text="إنهاء البث للجميع\u200f"'),
+            base.replace('<node package="' + smoke.PACKAGE + '" resource-id="android:id/button1"',
+                         '</node><node package="' + smoke.PACKAGE + '"><node package="' +
+                         smoke.PACKAGE + '" resource-id="android:id/button1"'),
+        )
+        for xml in invalid:
+            device = mock.Mock()
+            device.ui.return_value = xml
+            with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), \
+                 mock.patch.object(smoke.time, "sleep"):
+                with self.assertRaises(RuntimeError):
+                    smoke.confirm_native_alert(device, mock.Mock(), "إنهاء البث للجميع", "إنهاء البث", timeout=1)
+            device.adb.assert_not_called()
 
 
     def test_room_scroll_stays_inside_the_actual_short_modal_viewport(self):
