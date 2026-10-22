@@ -461,17 +461,17 @@
 
 @media (max-width: 1020px) {
   .layout:global(.v-chat-open) :global(.v-chat-column) {
-    padding: 24px;
+    padding: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .layout:global(.v-chat-open) .chat {
     inline-size: 100%;
-    block-size: calc(100dvh - 48px);
-    height: calc(100dvh - 48px);
+    block-size: calc(100dvh - 3rem);
+    height: calc(100dvh - 3rem);
     max-height: none;
-    max-inline-size: 640px;
+    max-inline-size: 40rem;
     min-block-size: 0;
     min-height: 0;
   }
@@ -508,7 +508,9 @@
     border-radius: 20px 20px 0 0;
   }
   .controls :global(.v-control > span) {
-    font-size: 8px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    font-weight: 600;
   }
   .layout :global(.v-seat) {
     min-block-size: 158px;

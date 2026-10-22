@@ -69,13 +69,16 @@ export function useGameSound() {
     writeMuted(!readMuted());
   }, []);
 
-  const play = useCallback((cue: GameSoundCue) => {
+  const play = useCallback(async (cue: GameSoundCue) => {
     if (typeof window === 'undefined' || readMuted()) return;
     try {
       const Ctor = window.AudioContext;
       if (!Ctor) return;
       const ctx = (ctxRef.current ??= new Ctor());
-      if (ctx.state === 'suspended') void ctx.resume();
+      const requestedAt = performance.now();
+      if (ctx.state === 'suspended') await ctx.resume();
+      // Do not replay a stale cue after audio unlock or component teardown.
+      if (ctxRef.current !== ctx || readMuted() || performance.now() - requestedAt > 150) return;
       const { freq, duration, type } = CUES[cue];
       const now = ctx.currentTime;
       freq.forEach((f, i) => {

@@ -10,6 +10,8 @@ import {
   useState,
   type FormEvent,
 } from 'react';
+import { motion } from 'framer-motion';
+import { useChatDrag } from './use-chat-drag';
 import { Flag, Gift, MessageCircle, Pin, Reply, Send, SmilePlus, Trash2, X } from 'lucide-react';
 import type { VoiceEvent, VoiceMessage, VoiceParticipant } from '@/lib/voice/types';
 import { Avatar } from './voice-ui';
@@ -34,6 +36,7 @@ export const VoiceChat = memo(function VoiceChat({
   onError,
   close,
   onGift,
+  open = true,
 }: {
   messages: VoiceMessage[];
   participants?: VoiceParticipant[];
@@ -45,6 +48,7 @@ export const VoiceChat = memo(function VoiceChat({
   onError: (message: string) => void;
   close: () => void;
   onGift?: () => void;
+  open?: boolean;
 }) {
   const draggable = useVoiceMediaQuery('(max-width: 760px)');
   const [reply, setReply] = useState<VoiceMessage | null>(null);
@@ -55,11 +59,7 @@ export const VoiceChat = memo(function VoiceChat({
   const [reportBusy, setReportBusy] = useState(false);
   const scroll = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
-  const dragStart = useRef<number | null>(null);
-  function resetDrag() {
-    dragStart.current = null;
-    if (panel.current) panel.current.style.transform = '';
-  }
+  const { y, dismiss, ...dragHandle } = useChatDrag(panel, draggable, open, close);
   const previous = useRef(0);
   const nearBottom = useRef(true);
   useEffect(() => {
@@ -93,28 +93,12 @@ export const VoiceChat = memo(function VoiceChat({
   const messagesById = new Map(messages.map((message) => [message.id, message]));
   const pinned = messages.find((m) => m.pinned);
   return (
-    <section ref={panel} className={`v-chat ${roomStyles.chat}`} aria-label="دردشة الغرفة">
+    <motion.section ref={panel} style={{ y }} className={`v-chat ${roomStyles.chat}`} aria-label="دردشة الغرفة">
       {draggable && (
         <button
           className="v-chat-drag"
           aria-label="اسحب لأسفل أو اضغط لإغلاق الدردشة"
-          onClick={close}
-          onPointerDown={(e) => {
-            dragStart.current = e.clientY;
-            e.currentTarget.setPointerCapture?.(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            if (dragStart.current === null) return;
-            const distance = Math.max(0, e.clientY - dragStart.current);
-            if (panel.current)
-              panel.current.style.transform = `translateY(${Math.min(distance, 250)}px)`;
-          }}
-          onPointerUp={(e) => {
-            const distance = dragStart.current === null ? 0 : e.clientY - dragStart.current;
-            resetDrag();
-            if (distance > 80) close();
-          }}
-          onPointerCancel={resetDrag}
+          {...dragHandle}
         >
           <span />
         </button>
@@ -125,7 +109,7 @@ export const VoiceChat = memo(function VoiceChat({
           الدردشة
         </h2>
         <span>{number(messages.length)} رسالة</span>
-        <button className="v-icon v-chat-close" onClick={close} aria-label="إغلاق الدردشة">
+        <button className="v-icon v-chat-close" onClick={dismiss} aria-label="إغلاق الدردشة">
           <X size={19} />
         </button>
       </header>
@@ -264,7 +248,7 @@ export const VoiceChat = memo(function VoiceChat({
           nearBottom.current = true;
         }}
       />
-    </section>
+    </motion.section>
   );
 });
 

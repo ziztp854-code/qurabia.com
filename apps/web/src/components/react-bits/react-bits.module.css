@@ -11,7 +11,8 @@
   text-shadow: none;
   background-image: var(--gt-gradient);
   background-size: 300% 100%;
-  animation: gradientTravel 12s ease-in-out infinite alternate paused;
+  animation: none;
+  background-position: 50% 50%;
 }
 
 @supports (background-clip: text) {

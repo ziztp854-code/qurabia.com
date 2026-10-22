@@ -1310,7 +1310,7 @@ summary:focus-visible {
   white-space: nowrap;
   cursor: pointer;
   transition:
-    transform 0.16s ease,
+    transform 100ms cubic-bezier(0, 0, 0.2, 1),
     background 0.16s ease,
     border-color 0.16s ease,
     box-shadow 0.16s ease;
@@ -1320,7 +1320,7 @@ summary:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 .button:active:not(:disabled) {
-  transform: translateY(1px) scale(0.98);
+  transform: translateY(0) scale(0.97);
 }
 .button:disabled {
   opacity: 0.45;
@@ -1452,7 +1452,7 @@ summary:focus-visible {
   background:
     linear-gradient(90deg, rgb(0 212 255 / 0.08), transparent 44%, rgb(255 176 0 / 0.06)),
     rgb(0 0 0 / 0.68);
-  border-block-end: 1px solid color-mix(in srgb, var(--primary) 34%, var(--border));
+  border-block-end: 0;
   box-shadow: 0 14px 36px rgb(0 0 0 / 0.42);
 }
 .header-inner {
@@ -4095,7 +4095,9 @@ input[type='range'] {
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  background: var(--popover);
+  background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
+  -webkit-backdrop-filter: blur(28px) saturate(145%);
+  backdrop-filter: blur(28px) saturate(145%);
   color: var(--popover-foreground);
   box-shadow: var(--shadow-lg);
   padding: 1.25rem;
@@ -6428,7 +6430,7 @@ tr:last-child td {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
   }
 }
 
@@ -13387,4 +13389,46 @@ select:focus-visible {
   .host-command-strip span {
     min-block-size: 2.5rem;
   }
+}
+
+/* Floating chrome uses the current palette, with a soft content edge. */
+.site-header::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  block-size: 0.5rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--home-panel, var(--surface-strong)) 35%, transparent), transparent);
+}
+.dialog { overscroll-behavior: contain; }
+.dialog .floating-panel, .site-header .floating-panel { background: var(--surface-strong); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header, .dialog { background: var(--surface-strong); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button:is(:hover, :focus-visible, :active):not(:disabled) { transform: none; }
+  .dialog, .dialog-backdrop, .popover > .floating-panel {
+    transition-property: opacity !important;
+    transition-duration: 120ms !important;
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .site-header, .dialog, .floating-panel, .drawer, .bottom-sheet {
+    background: var(--surface-strong);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .dialog-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  .site-header, .dialog, .floating-panel { border: 1px solid var(--foreground); }
+  .site-header::after { display: none; }
+}
+@media (forced-colors: active) {
+  .site-header, .dialog, .floating-panel {
+    background: Canvas; color: CanvasText; border: 1px solid CanvasText;
+    box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .site-header::after { display: none; }
 }

@@ -50,6 +50,24 @@ export function SignInForm({
   const [error, setError] = useState(returnErrorMessage(returnError));
   const [pending, setPending] = useState<'google' | 'credentials' | null>(null);
   const inFlight = useRef(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'email' | 'password', string>>>({});
+  const touched = useRef({ email: false, password: false });
+  function validateField(field: 'email' | 'password', value: string) {
+    const result = signInSchema.shape[field].safeParse(value);
+    setFieldErrors((previous) => ({ ...previous, [field]: result.success ? undefined : result.error.issues[0].message }));
+  }
+  function fieldProps(field: 'email' | 'password') {
+    return {
+      error: fieldErrors[field],
+      onBlur: (event: React.FocusEvent<HTMLInputElement>) => {
+        touched.current[field] = true;
+        validateField(field, event.currentTarget.value);
+      },
+      onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (touched.current[field]) validateField(field, event.currentTarget.value);
+      },
+    };
+  }
 
   if (previousReturnError !== returnError) {
     setPreviousReturnError(returnError);
@@ -83,7 +101,10 @@ export function SignInForm({
     });
 
     if (!parsed.success) {
-      setError('راجع البريد وكلمة المرور ثم حاول مرة أخرى.');
+      touched.current = { email: true, password: true };
+      const fields = parsed.error.flatten().fieldErrors;
+      setFieldErrors({ email: fields.email?.[0], password: fields.password?.[0] });
+      event.currentTarget.querySelector<HTMLInputElement>(`[name="${fields.email ? 'email' : 'password'}"]`)?.focus();
       return;
     }
 
@@ -112,7 +133,7 @@ export function SignInForm({
   }
 
   return (
-    <form className="auth-form" onSubmit={onSubmit}>
+    <form className="auth-form" onSubmit={onSubmit} noValidate>
       {error && <Alert variant="danger">{error}</Alert>}
       {showGoogle && (
         <Button
@@ -132,8 +153,8 @@ export function SignInForm({
           لم يتم إعداد Google OAuth بعد. يمكنك استخدام البريد وكلمة المرور مؤقتًا.
         </p>
       )}
-      <Input label="البريد الإلكتروني" name="email" type="email" autoComplete="email" required />
-      <PasswordInput label="كلمة المرور" name="password" autoComplete="current-password" required />
+      <Input label="البريد الإلكتروني" name="email" type="email" autoComplete="email" required {...fieldProps('email')} />
+      <PasswordInput label="كلمة المرور" name="password" autoComplete="current-password" required {...fieldProps('password')} />
       <Button
         type="submit"
         size="lg"

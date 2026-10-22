@@ -162,3 +162,27 @@ describe('SignInForm Google button', () => {
     expect(password).toBeEnabled();
   });
 });
+
+describe('local sign-in field validation', () => {
+  it('reports on blur, clears a corrected field and makes no authentication request', () => {
+    render(<SignInForm showGoogle={false} />);
+    const email = screen.getByLabelText('البريد الإلكتروني');
+    fireEvent.change(email, { target: { value: 'invalid' } });
+    expect(email).toHaveAttribute('aria-invalid', 'false');
+    fireEvent.blur(email);
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('أدخل بريدًا إلكترونيًا صحيحًا')).toHaveAttribute('id', email.getAttribute('aria-describedby'));
+    fireEvent.change(email, { target: { value: 'host@example.com' } });
+    expect(email).toHaveAttribute('aria-invalid', 'false');
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+  it('keeps schema failures beside fields and blocks transport on invalid submit', () => {
+    render(<SignInForm showGoogle={false} />);
+    const email = screen.getByLabelText('البريد الإلكتروني');
+    fireEvent.submit(email.closest('form')!);
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('كلمة المرور')).toHaveAttribute('aria-invalid', 'true');
+    expect(email).toHaveFocus();
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+});

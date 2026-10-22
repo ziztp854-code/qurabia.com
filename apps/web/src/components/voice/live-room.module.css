@@ -1131,7 +1131,7 @@
     margin: 0;
     padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
       max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-    background: var(--voice-bg);
+    background: color-mix(in srgb, var(--voice-bg) calc(var(--chat-scrim-strength, 1) * 100%), transparent);
     border: 0;
   }
   .liveRoom :global(.v-chat-open .v-chat) {

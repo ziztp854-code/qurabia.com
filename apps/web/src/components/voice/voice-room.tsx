@@ -1174,6 +1174,7 @@ export function VoiceRoomView({
                       inert={chatOverlayOpen}
                     />
                     <VoiceChat
+                      open={chatOpen}
                       messages={(snapshot?.messages || []).filter(
                         (m) => !preferences.blockedUsers.includes(m.userId),
                       )}

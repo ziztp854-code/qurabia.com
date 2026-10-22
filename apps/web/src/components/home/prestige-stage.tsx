@@ -1,12 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useMotionActivity } from '@/components/motion/use-motion-activity';
 import styles from './prestige-home.module.css';
-
-const Noise = dynamic(() => import('@/components/react-bits/noise'), { ssr: false });
 
 export function PrestigeStage({ children }: { children: ReactNode }) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -52,7 +49,6 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.stage} ref={frameRef} data-home-hero>
-      <Noise />
       <Image
         className={styles.heroBackground}
         src="/home/tahaddi-hero-background-3344x1882.webp"
