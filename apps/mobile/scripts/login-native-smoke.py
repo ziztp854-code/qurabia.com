@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""Credentialed Android test, restricted to the isolated local HTTPS fixture.
+
+No UI dumps, screenshots, credentials, cookie values, tokens or raw logs are
+saved. The only report contains phase names, booleans and server counters.
+"""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import pathlib
+import re
+import ssl
+import stat
+import sys
+import time
+import urllib.request
+
+PACKAGE = "com.qurabia.tahaddi"
+ORIGIN = "https://localhost:3443"
+
+
+def load_credentials(filename: pathlib.Path) -> dict:
+    metadata = filename.stat()
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
+        raise ValueError("Credentials must be a private regular file")
+    account = json.loads(filename.read_text())
+    if account.get("origin") != ORIGIN:
+        raise ValueError("Only the isolated local HTTPS login fixture is allowed")
+    if not re.fullmatch(r"mobile_login_[a-f0-9-]{36}\+ci@example\.test", account.get("email", "")):
+        raise ValueError("Only the dedicated fixture account is allowed")
+    password = account.get("password", "")
+    if not re.fullmatch(r"MobileAa42!\+%25=&[a-f0-9-]{36}", password):
+        raise ValueError("Fixture password must exercise form encoding")
+    return account
+
+
+def load_device():
+    spec = importlib.util.spec_from_file_location(
+        "login_native_device", pathlib.Path(__file__).with_name("android-native-smoke.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def counters(ca: str) -> dict:
+    context = ssl.create_default_context(cafile=ca)
+    with urllib.request.urlopen(ORIGIN + "/__mobile_login_evidence",
+                                context=context, timeout=20) as response:
+        value = json.loads(response.read(8192))
+    keys = ("csrf_ok", "credentials_ok", "credentials_rejected",
+            "authenticated_sessions", "anonymous_sessions", "foreign_sessions",
+            "signout_ok", "rooms_ok")
+    if not isinstance(value, dict) or set(value) != set(keys) or any(
+            type(value[key]) is not int or value[key] < 0 for key in keys):
+        raise ValueError("Unexpected fixture evidence")
+    if value["foreign_sessions"]:
+        raise ValueError("Unexpected session identity")
+    return value
+
+
+def wait_counter(ca: str, key: str, previous: int, timeout: float = 30) -> dict:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        value = counters(ca)
+        if value[key] > previous:
+            return value
+        time.sleep(1)
+    raise RuntimeError("Expected isolated server operation was not observed")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--apk", required=True)
+    parser.add_argument("--credentials", required=True)
+    parser.add_argument("--ca", required=True)
+    parser.add_argument("--reports", default="android-reports/login")
+    parser.add_argument("--serial", default=os.environ.get("ANDROID_SERIAL"))
+    args = parser.parse_args()
+    report = {
+        "status": "failed", "source_sha": os.environ.get("GITHUB_SHA"),
+        "scope": "real native HTTPS + NextAuth + isolated PostgreSQL account",
+        "server_mode": "Next development, explicit VITEST=1 local URL preservation; nonproduction limiter",
+        "checks": {}, "phase": "fixture",
+        "limitations": [
+            "Separate test APK trusts an ephemeral localhost CA; distributed production APK does not.",
+            "Emulator authentication does not prove physical-device or production deployment behavior.",
+            "Voice/media, production rate limiter, real-user credentials and production writes are not exercised.",
+        ],
+    }
+    directory = pathlib.Path(args.reports)
+    directory.mkdir(parents=True, exist_ok=True)
+    device = None
+    try:
+        account = load_credentials(pathlib.Path(args.credentials))
+        module = load_device()
+        device = module.Device(args.serial)
+        if device.adb("shell", "getprop", "ro.kernel.qemu").stdout.strip() != "1":
+            raise ValueError("Credentialed clean-install test requires an emulator")
+        initial = counters(args.ca)
+        report["phase"] = "clean_install"
+        device.adb("reverse", "--remove-all")
+        # No Metro connection: only the real isolated HTTPS backend is forwarded.
+        device.adb("reverse", "tcp:3443", "tcp:3443")
+        device.adb("install", "-r", args.apk)
+        device.adb("shell", "pm", "clear", PACKAGE)
+        device.adb("logcat", "-c")
+        device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
+        device.wait_node("login-email")
+        if device.connection_status(timeout=60)["state"] != "online":
+            raise RuntimeError("Native isolated HTTPS connection did not succeed")
+        report["checks"]["native_isolated_https"] = True
+        report["phase"] = "rejected_credentials"
+        # Values stay in memory and subprocess arguments, never reports or console.
+        device.reveal_node("login-email")
+        device.enter("login-email", account["email"])
+        device.hide_keyboard()
+        device.reveal_node("login-password")
+        device.enter("login-password", account["password"] + "-incorrect")
+        device.hide_keyboard()
+        device.tap("login-submit")
+        rejected = wait_counter(args.ca, "credentials_rejected", initial["credentials_rejected"])
+        expected_error = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
+        if not device.validation_status(expected_error, timeout=30)["matched"]:
+            raise RuntimeError("Rejected login did not show the required safe Arabic error")
+        device.reveal_node("login-email")
+        email_node = module.find_node(device.ui(), "login-email")
+        if email_node is None or email_node.attrib.get("text", "") != account["email"]:
+            raise RuntimeError("Rejected login did not preserve the email field")
+        if rejected["authenticated_sessions"] != initial["authenticated_sessions"]:
+            raise RuntimeError("Incorrect password unexpectedly authenticated a session")
+        report["checks"]["wrong_password_rejected_with_safe_arabic_error"] = True
+        report["checks"]["email_preserved_after_rejected_login"] = True
+        report["phase"] = "credential_submit"
+        device.reveal_node("login-password")
+        device.tap("login-password")
+        device.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END")
+        device.adb("shell", "input", "keyevent", *(["KEYCODE_DEL"] * 128))
+        device.enter("login-password", account["password"])
+        device.hide_keyboard()
+        device.tap("login-submit")
+        device.wait_node("rooms-list", timeout=90)
+        signed_in = wait_counter(args.ca, "authenticated_sessions", initial["authenticated_sessions"])
+        if signed_in["credentials_ok"] <= initial["credentials_ok"]:
+            raise RuntimeError("Native credentials POST was not observed")
+        if signed_in["csrf_ok"] <= initial["csrf_ok"]:
+            raise RuntimeError("Native CSRF acquisition was not observed")
+        wait_counter(args.ca, "rooms_ok", initial["rooms_ok"])
+        report["checks"]["real_csrf_credentials_session_and_rooms"] = True
+        report["phase"] = "force_stop_reopen"
+        before_reopen = counters(args.ca)
+        device.adb("shell", "am", "force-stop", PACKAGE)
+        # Deliberately retain app data and SecureStore. A new native process must
+        # restore the cookie and the server must validate the same dedicated user.
+        device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
+        device.wait_node("rooms-list", timeout=90)
+        reopened = wait_counter(args.ca, "authenticated_sessions", before_reopen["authenticated_sessions"])
+        if reopened["credentials_ok"] != before_reopen["credentials_ok"]:
+            raise RuntimeError("App reopened by reauthenticating instead of restoring its session")
+        report["checks"]["secure_session_survives_process_restart"] = True
+        report["phase"] = "logout"
+        device.tap("nav-profile")
+        device.tap("settings-logout")
+        device.wait_node("login-email", timeout=60)
+        logged_out = wait_counter(args.ca, "signout_ok", reopened["signout_ok"])
+        wait_counter(args.ca, "anonymous_sessions", reopened["anonymous_sessions"])
+        report["checks"]["real_signout_and_anonymous_session"] = True
+        report["phase"] = "logout_persistence"
+        before_logout_reopen = counters(args.ca)
+        device.adb("shell", "am", "force-stop", PACKAGE)
+        device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
+        device.wait_node("login-email", timeout=60)
+        if device.connection_status(timeout=60)["state"] != "online":
+            raise RuntimeError("Native anonymous session after reopen did not succeed")
+        final = wait_counter(args.ca, "anonymous_sessions", before_logout_reopen["anonymous_sessions"])
+        if final["authenticated_sessions"] != before_logout_reopen["authenticated_sessions"]:
+            raise RuntimeError("Logged-out session returned after reopen")
+        report["checks"]["logout_survives_process_restart"] = True
+        errors = device.adb("logcat", "-d", "-s", "AndroidRuntime:E", "ReactNativeJS:E", "*:S").stdout
+        if re.search(r"FATAL EXCEPTION|Unable to load script|Could not connect to development server", errors):
+            raise RuntimeError("Standalone native runtime failure")
+        report["checks"]["standalone_runtime"] = True
+        report["server_counters"] = final
+        report["phase"] = "complete"
+        report["status"] = "passed"
+        return 0
+    except Exception:
+        # Exception text can contain native command arguments or server data.
+        report["error"] = "Isolated native login check failed at the recorded phase"
+        return 1
+    finally:
+        try:
+            report["server_counters"] = counters(args.ca)
+        except Exception:
+            pass
+        if device is not None:
+            # Remove the test APK's session/credential UI after collecting only
+            # safe counters. No screenshot/XML/log upload from credentialed runs.
+            try:
+                device.adb("shell", "am", "force-stop", PACKAGE, check=False)
+                device.adb("shell", "pm", "clear", PACKAGE, check=False)
+            except Exception:
+                pass
+        (directory / "login-result.json").write_text(json.dumps(report, indent=2) + "\n")
+        print("ISOLATED_NATIVE_LOGIN " + json.dumps(report, separators=(",", ":")))
+
+
+if __name__ == "__main__":
+    sys.exit(main())

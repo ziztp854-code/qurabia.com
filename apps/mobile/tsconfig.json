@@ -5,6 +5,7 @@
   },
   "exclude": [
     "src/**/*.test.ts",
-    "tests/**"
+    "tests/**",
+    "scripts/**"
   ]
 }
