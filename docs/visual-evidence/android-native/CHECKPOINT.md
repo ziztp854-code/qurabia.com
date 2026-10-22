@@ -6,10 +6,11 @@
 
 - المستودع: `ziztp854-code/qurabia.com`.
 - الفرع: `feat/android-premium-design`، [PR77](https://github.com/ziztp854-code/qurabia.com/pull/77)، مبني على [PR76](https://github.com/ziztp854-code/qurabia.com/pull/76) ثم [PR75](https://github.com/ziztp854-code/qurabia.com/pull/75).
-- الرأس: `2b8560e1406034e73b236424ad21ad206f47ecdb`؛ tree `733ed547cc99c07fa0077bf1a0f2ff4d04618406`.
+- مصدر APK: `2b8560e1406034e73b236424ad21ad206f47ecdb`؛ tree `733ed547cc99c07fa0077bf1a0f2ff4d04618406`.
+- رأس التحقق الحالي: `4ca383d495e2014d982c2ae8b895034e49fbae47`؛ tree `d39b1934b77c6b3bbf510f42d9cf151d5c0c7027`. مصدر التطبيق لم يتغير؛ تحديث parser/tests/workflow فقط.
 - الإصدار: **0.3.2 / versionCode7**؛ الحزمة `com.qurabia.tahaddi`.
-- [Actions الجاري 39728465981](https://github.com/ziztp854-code/qurabia.com/actions/runs/39728465981)، build job `119658015918`.
-- [APK 0.3.2](https://github.com/ziztp854-code/qurabia.com/actions/runs/39728465981/artifacts/12404049440): ZIP **48,942,449 بايت**. الحجم الخام وSHA والشهادة يُستخرجان من تقرير البناء النهائي.
+- [Actions الجاري 39731033805](https://github.com/ziztp854-code/qurabia.com/actions/runs/39731033805)، build/test job `119666079357`.
+- [APK 0.3.2](https://github.com/ziztp854-code/qurabia.com/actions/runs/39728465981/artifacts/12404049440): ZIP **48,942,449 بايت**. الحجم الخام **119,915,816 بايت**؛ SHA256 `a6463f9cca0318630e7c6a617f5c2754e2fa0447ee03b793c70a8b67f9c5e1da`؛ شهادة Debug `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`، مطابقة0.2.1.
 - لم يُدمج أي PR في main ولم يُنشر التطبيق للإنتاج. آخر رأس main متحقق منه: `76306271b0574f91b9231eb2cdb0673ab1819928`.
 
 ## سبب الإصلاح ومسارات الرموز
@@ -35,7 +36,7 @@
 
 ## نتائج مثبتة وحدودها
 
-- **0.3.2:** TypeScript للتطبيق والمعاينة نجح، و**120 اختبارًا** نجحت فيjob119657760205:84 native unit،25 login/modal/IME،5 readiness،6 visual guards. البناء والتوقيع التجريبي والتحقق من APK نجحت؛ تشغيل المحاكي جارٍ.
+- **0.3.2:** TypeScript للتطبيق والمعاينة نجح، و**120 اختبارًا** نجحت فيjob119657760205:84 native unit،25 login/modal/IME،5 readiness،6 visual guards. البناء والتوقيع التجريبي والتحقق من APK والتشغيل العام Android36 دون Metro وHTTPS نجحت فعلًا في39728465981.
 - **0.3.2:** إنشاء الغرفة وإنهاؤها وخروج المضيف وظهور الدردشة فوق IME ليست نتائج ناجحة حتى صدور JSON النهائي.
 - **0.3.1 / c958 / 39724859148:** التشغيل العام Android36 دون Metro وHTTPS نجحا؛8 اختبارات بروتوكول NextAuth نجحت؛ خمسة اختبارات native auth نجحت: HTTPS المعزول، رفض كلمة مرور خاطئة، الاحتفاظ بالبريد، الدخول وعرض الغرف، حفظ الجلسة بعد إيقاف العملية. فشل manual_create_wait_room قبل POST؛ لم يصل إلى الإغلاق أو الخروج.
 - [22 صورة أصلية 0.3.1](iteration-3)، [تقرير الالتقاط](iteration-3/visual-result.json)، [ملخص المصادقة والغرف](iteration-3/native-login-summary.json). الالتقاط نجح، لكنه ليس قبولًا بصريًا. أول عنوان غرفة ومضيفها ظهرا أعلى الطية على320/360/427/800dp. المراجعة البشرية كشفت مشكلة chat IME؛ fontScale2 والعناوين الطويلة تحتاجان مراجعة وصول/تمرير.
@@ -44,10 +45,16 @@
 
 ## متابعة العمل
 
-تابع Actions39728465981 دون إعادة تشغيل عمياء. بعد اكتمالjob119658015918 استخرج ISOLATED_NATIVE_LOGIN وPUBLIC_VISUAL_REVIEW، وافحص هندسة IME الفعلية وعدادات owned/active/closed/membership قبل إعلان نجاح المضيف. راجع صور الدردشة والبحث الأصلية. عند فشل parser أو التخطيط حدّد السبب أولًا، وأعد استخدام APK فقط إذا لم يتغير مصدر التطبيق وثبت SHA.
+تابع Actions39731033805 دون إعادة تشغيل عمياء. بعد اكتمالjob119666079357 استخرج ISOLATED_NATIVE_LOGIN وPUBLIC_VISUAL_REVIEW، وافحص هندسة IME الفعلية وعدادات owned/active/closed/membership قبل إعلان نجاح المضيف. راجع صور الدردشة والبحث الأصلية. عند فشل parser أو التخطيط حدّد السبب أولًا، وأعد استخدام APK فقط إذا لم يتغير مصدر التطبيق وثبت SHA.
 
 CodeGraph MCP غير متاح في الجلسة، والبيئة المحلية failed؛ لم يمكن التحقق من تثبيت أو فهرس محلي، ولم تُعد فهرسة المشروع. استُخدم GitHub للرموز والمراجع وActions للتنفيذ دون انتظار البيئة.
 
 قاعدة الاختبار وحسابها وHTTPS/CA معزولة ومؤقتة؛ نسخة CA والمعاينة لا توزعان. لا SFU في fixture: اختبار commands/DB لا يثبت إرسال الصوت أو طرد مشاركي SFU. Bluetooth والمكالمات وقفل الشاشة والصوت الطويل والهاتف الفعلي والأداء الممتد غير مختبرة في هذه الجولة. لا صور خاصة أو Cookies/Tokens في الأدلة.
 
 Release APK/AAB الموقّعان بإنتاج لم يُنتجا. لا مفاتيح إنتاج عشوائية، لا نشر، لا تعديل API/DB أو مصادقة الموقع دون موافقة.
+
+## تحديث القياس بعد تقرير 0.3.2
+
+انتهى39728465981 بالفشل في حارس القياس، وليس بفشل مثبت في موضع الزر: خمسة فحوص native auth نجحت، لكن parser اعتبر نافذة InputMethod شبه الكاملة [0,128,1080,2400] مساحة مفاتيح مشغولة؛ رفض زر الحفظ [66,1231,1014,1378] قبل النقر. الاسم بقي صحيحًا، وعدادات HTTP/DB صفر. فشل البحث لنفس السبب، وحُفظت20 صورة أصلية عادية في [iteration-4](iteration-4) مع [تقرير الحدود](iteration-4/visual-result.json).
+
+راجع الوكيل الرئيسي مرشح QA `8b044f27320e46d5bc7332acc6ab6cf753679f9c`، ودمجه في4ca383d مع مسار إعادة استخدام APK المحمي. صار `observe → dumpsys window displays → inspect_ime_sources` يقبل visible InsetsSource فقط؛ لا يعتمد Windowframe. التشخيصات أعداد وصيغ محدودة، دون raw dumps. **27 اختبار login و6 visual نجحت فعلًا** فيjob119665879127؛ TypeScript و84 native unit و5 readiness احتُفظ بها لتطابق المصدر. إعادة استخدام APK تتحقق من الأصل المباشر وتطابق مصدر التشغيل وSHA المثبت؛ لا بناء عام جديد ولا إعادة اختبار فتح الملف نفسه. اختبار المسار الخاص وIME الصحيح جارٍ، ولا نجاح إغلاق مزعوم بعد.
