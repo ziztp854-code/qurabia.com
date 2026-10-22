@@ -43,3 +43,19 @@ test('quiz transport rejects redirects, ignores cookies and never installs an ac
   assert.equal(client.sessionGeneration,0);
   assert.deepEqual(await client.request('/api/live/s1/room',{method:'POST',body:{}}),{ok:true});
 });
+
+test('answer rejection keeps the safe server reason through the shared HTTP client', async () => {
+  const client=createGuestQuizClient('https://qurabia.com',async(url)=>({
+    status:409,url,headers:{get:()=>null},text:async()=>JSON.stringify({ok:false,reason:'ANSWER_TOO_LATE'}),
+  }));
+  const {result}=await createQuizApi(client.request).postRoom(identity,'answer',{questionId:'q1',optionId:'o1'});
+  assert.deepEqual(result,{ok:false,fatal:false,message:'وصلت الإجابة بعد انتهاء الوقت.'});
+});
+test('unknown answer reasons never become displayed server text or prototype values', async () => {
+  const client=createGuestQuizClient('https://qurabia.com',async(url)=>({
+    status:409,url,headers:{get:()=>null},text:async()=>JSON.stringify({ok:false,reason:'toString',error:'private server detail'}),
+  }));
+  const {result}=await createQuizApi(client.request).postRoom(identity,'answer',{questionId:'q1',optionId:'o1'});
+  assert.equal(result.ok,false);
+  if(!result.ok){assert.equal(typeof result.message,'string');assert.ok(!result.message.includes('private'));}
+});

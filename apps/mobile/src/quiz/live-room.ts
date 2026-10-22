@@ -43,6 +43,11 @@ const ANSWER_REJECTION_MESSAGES: Record<AnswerRejectionReason, string> = {
   ANSWER_TOO_LATE: 'وصلت الإجابة بعد انتهاء الوقت.',
 };
 
+export function readAnswerRejectionReason(value: unknown): AnswerRejectionReason | null {
+  return typeof value === 'string' && Object.hasOwn(ANSWER_REJECTION_MESSAGES, value)
+    ? value as AnswerRejectionReason : null;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -124,8 +129,8 @@ export function parseRoomResponse(
   if (status === 401 || status === 404) {
     return { ok: false, fatal: true, message: 'انتهت هذه الجلسة أو لم تعد متاحة.' };
   }
-  const reason = isRecord(body) ? (body.reason as AnswerRejectionReason | undefined) : undefined;
-  if (reason && reason in ANSWER_REJECTION_MESSAGES) {
+  const reason = isRecord(body) ? readAnswerRejectionReason(body.reason) : null;
+  if (reason) {
     return { ok: false, fatal: false, message: ANSWER_REJECTION_MESSAGES[reason] };
   }
   return { ok: false, fatal: false, message: OFFLINE_MESSAGE };

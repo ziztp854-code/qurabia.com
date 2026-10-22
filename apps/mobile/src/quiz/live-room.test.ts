@@ -97,3 +97,9 @@ test('polls faster during questions and stops when the game ends', () => {
 test('formats numbers with Arabic-Indic digits', () => {
   assert.equal(arabicNumber(1250), '١٢٥٠');
 });
+
+test('prototype names are not accepted answer rejection reasons', () => {
+  const parsed = parseRoomResponse(409, {ok:false,reason:'toString'});
+  assert.equal(parsed.ok,false);
+  if(!parsed.ok) assert.equal(typeof parsed.message,'string');
+});

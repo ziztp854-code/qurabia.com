@@ -1,6 +1,6 @@
 import { ApiError, type ApiClient } from '../auth/http-client';
 import { joinEndpoint, OFFLINE_MESSAGE, parseJoinResponse, parseRoomResponse,
-  roomEndpoint, roomRequestBody, type PlayerIdentity, type RoomOperation } from './live-room';
+  roomEndpoint, roomRequestBody, readAnswerRejectionReason, type PlayerIdentity, type RoomOperation } from './live-room';
 
 const JOIN_FAILURES: Record<number, string> = {
   400: 'تحقق من رمز الغرفة واسم اللاعب.', 404: 'لم نجد مسابقة مفتوحة بهذا الرمز.',
@@ -29,7 +29,8 @@ async function postRoom(identity: PlayerIdentity, operation: RoomOperation,
     return { result: parseRoomResponse(200, body), sentAt, receivedAt: Date.now() };
   } catch (error) {
     const status = error instanceof ApiError ? error.status : 0;
-    return { result: parseRoomResponse(status, null), sentAt, receivedAt: Date.now() };
+    const reason = error instanceof ApiError && status === 409 ? readAnswerRejectionReason(error.code) : null;
+    return { result: parseRoomResponse(status, reason ? { reason } : null), sentAt, receivedAt: Date.now() };
   }
 }
   return { requestJoin, postRoom };
