@@ -80,7 +80,7 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
       const next=Math.round(nativeEvent.layout.height);
       setAvailableHeight(previous=>previous===next?previous:next);
     }}>
-      <View style={styles.header}>
+      <View style={compact&&keyboardVisible?styles.hiddenCover:styles.header}>
         <View style={compact?styles.hiddenCover:styles.cover}>
           {cover?<ExpoImage source={cover} contentFit="cover" style={styles.coverImage} accessible={false}/>
             :<Body weight="bold" style={styles.coverFallback}>تحدّي</Body>}
@@ -99,20 +99,28 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
           label={compact?'مغادرة':canEndRoom(snapshot)?'مغادرة دون إنهاء':'مغادرة'}
           accessibilityLabel={canEndRoom(snapshot)?'مغادرة دون إنهاء':'مغادرة'} busy={busy} onPress={confirmLeave}/></View>
       </View>
-      <View testID="connection-status" style={styles.connection} accessibilityLiveRegion="polite">
+      <View testID="connection-status" style={[styles.connection,compact&&styles.compactConnection]} accessibilityLiveRegion="polite">
         <View style={[styles.dot,{backgroundColor:voice.state==='connected'?theme.colors.success:theme.colors.gold}]}/>
-        <Body style={[ui.caption,styles.connectionLabel]}>{connectionLabels[voice.state]}</Body>
-        <View style={ui.grow}/><Body muted style={[ui.caption,styles.syncLabel,compact&&styles.compactSync]}
-          accessibilityLabel={rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}>
-          {compact?(rooms.connection==='online'?'البيانات متصلة':'مزامنة البيانات'):
-            rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}</Body>
+        {compact?<View style={styles.connectionInfo}>
+          <Body style={[ui.caption,styles.connectionLabel]}>{connectionLabels[voice.state]}</Body>
+          <Body muted style={[ui.caption,styles.compactSync]}
+            accessibilityLabel={rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}>
+            {rooms.connection==='online'?'البيانات متصلة':'مزامنة البيانات'}</Body>
+        </View>:<>
+          <Body style={[ui.caption,styles.connectionLabel]}>{connectionLabels[voice.state]}</Body>
+          <View style={ui.grow}/><Body muted style={[ui.caption,styles.syncLabel]}>
+            {rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}</Body>
+        </>}
+        {compact&&(voice.state==='error'||voice.state==='disconnected')&&<Action compact testID="voice-resume"
+          tone="secondary" label="استئناف" accessibilityLabel="استئناف الصوت" busy={busy}
+          onPress={()=>{void run(onRetryAudio);}}/>}
       </View>
       {!compact&&!keyboardVisible&&<View style={styles.stage}>{seats(4)}</View>}
       {!compact&&!keyboardVisible&&<View style={styles.detailActions}><View style={styles.memberAction}><Action compact tone="secondary" label={'الأعضاء والمقاعد ('+snapshot.participants.length+')'}
         onPress={()=>setAllSeats(true)}/></View>
         {manage&&<Action compact tone="secondary" label="إعدادات" onPress={()=>setSettings(true)}/>}</View>}
       <Notice message={error || rooms.error || voice.error}/>
-      {(voice.state==='error'||voice.state==='disconnected')&&<Action testID="voice-resume" tone="secondary" label="استئناف الصوت" busy={busy}
+      {!compact&&(voice.state==='error'||voice.state==='disconnected')&&<Action testID="voice-resume" tone="secondary" label="استئناف الصوت" busy={busy}
         onPress={()=>{void run(onRetryAudio);}}/>}
       <ChatPanel compact={compact} snapshot={snapshot} chat={chat} catalog={catalog} asset={asset} manage={manage}
         onModerate={async(messageId,action)=>{
@@ -212,6 +220,7 @@ const styles=StyleSheet.create({
   hiddenCover:{display:'none'},commandAction:{flex:1,minWidth:0},
   detailActions:{flexDirection:'row-reverse',flexWrap:'wrap',gap:8,alignItems:'center'},
   memberAction:{maxWidth:'100%',flexGrow:1,flexShrink:1},
+  compactConnection:{flexWrap:'nowrap'},connectionInfo:{flex:1,minWidth:0},
   compactSync:{fontSize:10,lineHeight:18},compactPrimary:{flexDirection:'row-reverse',alignItems:'center'},
   header:{flexDirection:'row-reverse',alignItems:'center',gap:12},
   cover:{width:56,height:56,borderRadius:theme.radius.md,overflow:'hidden',alignItems:'center',
