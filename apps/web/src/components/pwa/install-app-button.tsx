@@ -2,7 +2,6 @@
 
 import { Download, Share, Smartphone } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/overlay';
 import styles from './install-app-button.module.css';
@@ -94,58 +93,55 @@ export function InstallAppButton() {
         تثبيت التطبيق
       </Button>
       <span className={styles.caption}>تحدّي على شاشة هاتفك</span>
-      {open &&
-        createPortal(
-          <Dialog
-            open={open}
-            onOpenChange={setOpen}
-            title="ثبّت تحدّي على جهازك"
-            description="أضف تحدّي إلى الشاشة الرئيسية لفتحه مباشرةً مثل تطبيق."
-            className={styles.dialog}
-          >
-            {failed && (
-              <p className={styles.notice} role="alert">
-                تعذّر فتح نافذة التثبيت. يمكنك استخدام الخطوات التالية.
-              </p>
-            )}
-            <section className={styles.platform} aria-labelledby="install-apple-title">
-              <h3 id="install-apple-title">
-                <Smartphone size={20} aria-hidden="true" />
-                <span dir="ltr">iPhone وiPad</span>
-              </h3>
-              <ol>
-                <li>
-                  افتح الموقع في <span dir="ltr">Safari</span>.
-                </li>
-                <li>
-                  اضغط «مشاركة» <Share size={16} aria-hidden="true" /> ثم «إضافة إلى الشاشة
-                  الرئيسية».
-                </li>
-                <li>فعّل «فتح كتطبيق ويب» إن ظهر، ثم اضغط «إضافة».</li>
-              </ol>
-            </section>
-            <section className={styles.platform} aria-labelledby="install-android-title">
-              <h3 id="install-android-title">
-                <Smartphone size={20} aria-hidden="true" />
-                <span dir="ltr">Android</span>
-              </h3>
-              <ol>
-                <li>
-                  افتح الموقع في <span dir="ltr">Chrome</span>.
-                </li>
-                <li>
-                  افتح قائمة المتصفح ⋮ واختر «تثبيت التطبيق» أو «الإضافة إلى الشاشة الرئيسية».
-                </li>
-                <li>أكّد الإضافة من نافذة المتصفح.</li>
-              </ol>
-            </section>
-            <p className={styles.connection}>الألعاب المباشرة تحتاج إلى اتصال بالإنترنت.</p>
-            <Button variant="gold" type="button" fullWidth onClick={() => setOpen(false)}>
-              فهمت
-            </Button>
-          </Dialog>,
-          document.body,
+      <Dialog
+        portal
+        open={open}
+        onOpenChange={setOpen}
+        title="ثبّت تحدّي على جهازك"
+        description="أضف تحدّي إلى الشاشة الرئيسية لفتحه مباشرةً مثل تطبيق."
+        className={styles.dialog}
+      >
+        {failed && (
+          <p className={styles.notice} role="alert">
+            تعذّر فتح نافذة التثبيت. يمكنك استخدام الخطوات التالية.
+          </p>
         )}
+        <section className={styles.platform} aria-labelledby="install-apple-title">
+          <h3 id="install-apple-title">
+            <Smartphone size={20} aria-hidden="true" />
+            <span dir="ltr">iPhone وiPad</span>
+          </h3>
+          <ol>
+            <li>
+              افتح الموقع في <span dir="ltr">Safari</span>.
+            </li>
+            <li>
+              اضغط «مشاركة» <Share size={16} aria-hidden="true" /> ثم «إضافة إلى الشاشة
+              الرئيسية».
+            </li>
+            <li>فعّل «فتح كتطبيق ويب» إن ظهر، ثم اضغط «إضافة».</li>
+          </ol>
+        </section>
+        <section className={styles.platform} aria-labelledby="install-android-title">
+          <h3 id="install-android-title">
+            <Smartphone size={20} aria-hidden="true" />
+            <span dir="ltr">Android</span>
+          </h3>
+          <ol>
+            <li>
+              افتح الموقع في <span dir="ltr">Chrome</span>.
+            </li>
+            <li>
+              افتح قائمة المتصفح ⋮ واختر «تثبيت التطبيق» أو «الإضافة إلى الشاشة الرئيسية».
+            </li>
+            <li>أكّد الإضافة من نافذة المتصفح.</li>
+          </ol>
+        </section>
+        <p className={styles.connection}>الألعاب المباشرة تحتاج إلى اتصال بالإنترنت.</p>
+        <Button variant="gold" type="button" fullWidth onClick={() => setOpen(false)}>
+          فهمت
+        </Button>
+      </Dialog>
     </div>
   );
 }

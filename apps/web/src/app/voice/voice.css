@@ -2311,7 +2311,7 @@
     inset-inline-end: 0;
     inset-block: 0;
     z-index: 40;
-    background: var(--voice-glass);
+    background: color-mix(in srgb, var(--voice-glass) calc(var(--chat-scrim-strength, 1) * 100%), transparent);
     padding: 30px;
     backdrop-filter: blur(8px);
   }

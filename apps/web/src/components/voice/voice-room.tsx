@@ -134,7 +134,13 @@ export function VoiceRoomView({
   const chatRef = useRef<HTMLDivElement>(null);
   const compactChat = useVoiceMediaQuery('(max-width: 1020px)');
   const narrowHeader = useVoiceMediaQuery('(max-width: 760px)');
-  const closeChat = useCallback(() => setChatOpen(false), []);
+  const chatDismiss = useRef<(() => void) | null>(null);
+  const completeChatClose = useCallback(() => setChatOpen(false), []);
+  const registerChatDismiss = useCallback((dismiss: (() => void) | null) => { chatDismiss.current = dismiss; }, []);
+  const closeChat = useCallback(() => {
+    if (chatDismiss.current) chatDismiss.current();
+    else setChatOpen(false);
+  }, []);
   const [deafened, setDeafened] = useState(false);
   const [volume, setVolume] = useState(0.85);
   const [speakers, setSpeakers] = useState<string[]>([]);
@@ -1185,7 +1191,8 @@ export function VoiceRoomView({
                       onEvent={event}
                       onProfile={setProfileId}
                       onError={setError}
-                      close={closeChat}
+                      close={completeChatClose}
+                      onDismissReady={registerChatDismiss}
                       onGift={() => openGifts()}
                     />
                   </div>
@@ -1306,7 +1313,7 @@ export function VoiceRoomView({
                       ref={chatToggle}
                       className={`v-control v-chat-toggle ${chatOpen ? 'is-selected' : ''}`}
                       aria-expanded={chatOpen}
-                      onClick={() => setChatOpen((v) => !v)}
+                      onClick={() => { if (chatOpen) closeChat(); else setChatOpen(true); }}
                     >
                       <MessageCircle />
                       <span>الدردشة</span>

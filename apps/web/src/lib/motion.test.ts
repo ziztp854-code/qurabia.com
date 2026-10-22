@@ -49,3 +49,14 @@ describe('getGameMotionScene', () => {
     expect(getGameMotionScene('lobby')).toBe('intro');
   });
 });
+
+describe('physical spring velocity handoff', () => {
+  it('preserves release momentum even when it initially points away from the target', async () => {
+    const { spring } = await import('framer-motion');
+    const { momentumSheetSpring } = await import('./motion');
+    const stationary = spring({ ...momentumSheetSpring, keyframes: [100, 0], velocity: 0 });
+    const moving = spring({ ...momentumSheetSpring, keyframes: [100, 0], velocity: 2000 });
+    expect(moving.next(1).value).toBeGreaterThan(100);
+    expect(stationary.next(1).value).toBeLessThan(100);
+  });
+});

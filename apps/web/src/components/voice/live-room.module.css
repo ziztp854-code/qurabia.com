@@ -819,7 +819,7 @@
   max-inline-size: 100%;
   max-width: 100%;
   white-space: normal;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.5;
   text-align: center;
 }
@@ -1003,7 +1003,7 @@
   }
   .liveRoom :global(.v-room-controls .v-control > span),
   .liveRoom :global(.v-room-controls .v-leave > span) {
-    font-size: 11px;
+    font-size: 0.75rem;
     overflow-wrap: anywhere;
   }
   .headerMenu > summary {

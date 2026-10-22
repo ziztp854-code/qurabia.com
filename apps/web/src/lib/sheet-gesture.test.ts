@@ -19,3 +19,9 @@ describe('sheet release intent', () => {
     expect(rubberBand(800, 600) - rubberBand(700, 600)).toBeLessThan(100);
   });
 });
+
+it('uses the final direction instead of averaging a reversal into a downward flick', () => {
+  const velocity = releaseVelocity([{ y: 0, time: 0 }, { y: 300, time: 60 }, { y: 260, time: 80 }, { y: 260, time: 85 }]);
+  expect(velocity).toBeLessThan(0);
+  expect(sheetSnap(260, velocity, 600)).toBe(0);
+});

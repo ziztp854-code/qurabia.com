@@ -14,6 +14,7 @@ import {
   UserCircle2,
   X,
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -31,7 +32,7 @@ import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils';
 import { BrandLogo, BrandMark } from '../brand';
 import { ThemeToggle } from '../theme-toggle';
-import { AdminVerifiedName, Button, ButtonLink } from '../ui';
+import { AdminVerifiedName, Button, ButtonLink, FloatingPanel } from '../ui';
 import { SignOutButton } from '../auth/sign-out-button';
 
 // Keep App Router navigation so the existing voice session survives page changes.
@@ -106,7 +107,17 @@ export function Header({
       if (event.key === 'Escape') {
         event.preventDefault();
         closeUserMenu();
+        return;
       }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      if (!userMenuRef.current?.contains(document.activeElement) && document.activeElement !== userMenuButtonRef.current) return;
+      const items = [...(userMenuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled):not([aria-disabled="true"])') || [])];
+      if (!items.length) return;
+      event.preventDefault();
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+        : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items[next].focus();
     };
     const handlePointerDown = (event: PointerEvent) => {
       if (!userDropdownRef.current?.contains(event.target as Node)) {
@@ -175,7 +186,9 @@ export function Header({
               <LogIn aria-hidden="true" />
             </ButtonLink>
           ) : (
-            <div className="dropdown profile-menu" ref={userDropdownRef}>
+            <div className="dropdown profile-menu" ref={userDropdownRef} onBlurCapture={(event) => {
+              if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) setUserOpen(false);
+            }}>
               <Button
                 ref={userMenuButtonRef}
                 id={userMenuButtonId}
@@ -193,9 +206,9 @@ export function Header({
               >
                 <UserCircle2 />
               </Button>
-              {userOpen && (
-                <div
-                  className="floating-panel"
+              <AnimatePresence>{userOpen && (
+                <FloatingPanel
+                  anchorRef={userMenuButtonRef}
                   id={userMenuId}
                   ref={userMenuRef}
                   role="menu"
@@ -257,8 +270,8 @@ export function Header({
                       </Link>
                     </>
                   )}
-                </div>
-              )}
+                </FloatingPanel>
+              )}</AnimatePresence>
             </div>
           )}
           <Button

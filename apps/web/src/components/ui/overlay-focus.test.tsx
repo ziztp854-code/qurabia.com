@@ -29,3 +29,28 @@ it('retains the same dialog when reopened during exit and uses unique labels', a
   expect(screen.getByRole('dialog', { name: 'الأولى' })).toBe(original);
   expect(original.getAttribute('aria-labelledby')).not.toBe(screen.getByRole('dialog', { name: 'الثانية' }).getAttribute('aria-labelledby'));
 });
+
+it('skips controls inside hidden containers and contains programmatic focus', async () => {
+  render(<><button>خارج النافذة</button><Dialog open title="التركيز" onOpenChange={vi.fn()}>
+    <div hidden><button>مخفي</button></div>
+  </Dialog></>);
+  const close = screen.getByRole('button', { name: 'إغلاق النافذة' });
+  await waitFor(() => expect(close).toHaveFocus());
+  fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+  expect(close).toHaveFocus();
+  screen.getByRole('button', { name: 'خارج النافذة' }).focus();
+  expect(close).toHaveFocus();
+});
+
+it('does not dismiss when a press starts in the dialog and ends on its backdrop', () => {
+  const change = vi.fn();
+  render(<Dialog open title="تحديد النص" onOpenChange={change}>النص</Dialog>);
+  const dialog = screen.getByRole('dialog');
+  const backdrop = dialog.parentElement!;
+  fireEvent.pointerDown(dialog);
+  fireEvent.click(backdrop);
+  expect(change).not.toHaveBeenCalled();
+  fireEvent.pointerDown(backdrop);
+  fireEvent.click(backdrop);
+  expect(change).toHaveBeenCalledWith(false);
+});

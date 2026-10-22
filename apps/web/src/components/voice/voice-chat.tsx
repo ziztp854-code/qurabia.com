@@ -37,6 +37,7 @@ export const VoiceChat = memo(function VoiceChat({
   close,
   onGift,
   open = true,
+  onDismissReady,
 }: {
   messages: VoiceMessage[];
   participants?: VoiceParticipant[];
@@ -49,8 +50,10 @@ export const VoiceChat = memo(function VoiceChat({
   close: () => void;
   onGift?: () => void;
   open?: boolean;
+  onDismissReady?: (dismiss: (() => void) | null) => void;
 }) {
   const draggable = useVoiceMediaQuery('(max-width: 760px)');
+  const overlay = useVoiceMediaQuery('(max-width: 1020px)');
   const [reply, setReply] = useState<VoiceMessage | null>(null);
   const [reactionTarget, setReactionTarget] = useState<string | null>(null);
   const [newCount, setNewCount] = useState(0);
@@ -59,7 +62,11 @@ export const VoiceChat = memo(function VoiceChat({
   const [reportBusy, setReportBusy] = useState(false);
   const scroll = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
-  const { y, dismiss, ...dragHandle } = useChatDrag(panel, draggable, open, close);
+  const { y, dismiss, ...dragHandle } = useChatDrag(panel, overlay, open, close);
+  useEffect(() => {
+    onDismissReady?.(dismiss);
+    return () => onDismissReady?.(null);
+  }, [dismiss, onDismissReady]);
   const previous = useRef(0);
   const nearBottom = useRef(true);
   useEffect(() => {

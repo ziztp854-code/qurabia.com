@@ -13,7 +13,7 @@ test('Arabic content, decorations and click targets stay usable', async ({ page 
   await expect(runtime(page)).toHaveAttribute('data-scroll-ticker', '1');
   await expect(runtime(page)).toHaveAttribute('dir', 'rtl');
   await expect(page.getByRole('heading', { level: 1, name: 'تحدي' })).toBeVisible();
-  await expect(page.locator('[data-react-bits="Noise"]')).toHaveCount(1);
+  await expect(page.locator('[data-react-bits="Noise"]')).toHaveCount(0);
   const cta = page.getByRole('link', { name: 'ابدأ اللعب الآن' });
   await cta.hover();
   expect(

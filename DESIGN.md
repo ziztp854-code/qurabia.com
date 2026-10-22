@@ -165,13 +165,14 @@ Use the installed Framer Motion package, existing motion library entry point and
 motion values. Export these proposed defaults from `src/lib/motion.ts`:
 
 ```ts
-const uiSpring = { type: 'spring', bounce: 0, duration: 0.4 } as const;
-const sheetSpring = { type: 'spring', bounce: 0, duration: 0.3 } as const;
-const momentumSheetSpring = { type: 'spring', bounce: 0.2, duration: 0.3 } as const;
-const momentumRotationSpring = { type: 'spring', bounce: 0.2, duration: 0.4 } as const;
+const uiSpring = { type: 'spring', stiffness: 250, damping: 32, mass: 1 } as const;
+const sheetSpring = { type: 'spring', stiffness: 440, damping: 42, mass: 1 } as const;
+const momentumSheetSpring = { type: 'spring', stiffness: 440, damping: 33.6, mass: 1 } as const;
+const momentumRotationSpring = { type: 'spring', stiffness: 250, damping: 25.3, mass: 1 } as const;
 ```
 
-These are perceptual spring settings, not fixed settle deadlines. Default damping
+These physics-based settings preserve release velocity; duration/bounce springs in
+the installed Motion version discard it. Settle time is not a fixed deadline. Default damping
 intent is 1.0; approximately 0.8 only for an actual momentum release. An ordinary
 menu, click-opened sheet or score update gets no bounce. Replace the shared score
 `scale: [1, 1.08, 1]` with a nonbouncing state change. Treat opacity independently

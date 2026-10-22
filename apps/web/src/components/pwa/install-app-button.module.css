@@ -24,7 +24,6 @@
   max-block-size: calc(100dvh - 2rem);
   overflow-y: auto;
   color: var(--foreground);
-  background: var(--surface);
   border: 1px solid var(--border);
 }
 

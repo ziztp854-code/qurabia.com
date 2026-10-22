@@ -1,5 +1,6 @@
 'use client';
 
+import { lockOverlayScroll } from '@/lib/overlay-scroll-lock';
 import { useCallback, useEffect, useSyncExternalStore, type RefObject } from 'react';
 
 export function useVoiceMediaQuery(query: string) {
@@ -24,16 +25,22 @@ export function useVoiceOverlay(
   useEffect(() => {
     if (!open) return;
     const previous = returnFocus?.current ?? (document.activeElement as HTMLElement | null);
-    const overflow = document.body.style.overflow;
+    const releaseScroll = lockOverlayScroll();
     const elements = () =>
       [
         ...(panel.current?.querySelectorAll<HTMLElement>(
           'a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
         ) || []),
       ].sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
-    const focus = () => (elements()[0] || panel.current)?.focus();
+    const hasForegroundModal = () => {
+      const dialogs = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')];
+      const foreground = dialogs.at(-1);
+      return Boolean(foreground && foreground !== panel.current);
+    };
+    const focus = () => { if (!hasForegroundModal()) (elements()[0] || panel.current)?.focus(); };
     const initialFocus = requestAnimationFrame(focus);
     const key = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || hasForegroundModal()) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         close();
@@ -64,12 +71,11 @@ export function useVoiceOverlay(
     const contain = (event: FocusEvent) => {
       if (!panel.current?.contains(event.target as Node)) focus();
     };
-    document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', key);
     document.addEventListener('focusin', contain);
     return () => {
       cancelAnimationFrame(initialFocus);
-      document.body.style.overflow = overflow;
+      releaseScroll();
       document.removeEventListener('keydown', key);
       document.removeEventListener('focusin', contain);
       if (previous?.isConnected) previous.focus();

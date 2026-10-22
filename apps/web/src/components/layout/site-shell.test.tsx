@@ -236,3 +236,19 @@ describe('DashboardLayout sidebar', () => {
     expect(within(crumbs).queryByText('صاحب المنصة')).not.toBeInTheDocument();
   });
 });
+
+
+it('supports arrow keys and Home/End in the account menu', async () => {
+  render(<Header />);
+  fireEvent.click(screen.getByRole('button', { name: 'قائمة المستخدم' }));
+  const items = screen.getAllByRole('menuitem');
+  await waitFor(() => expect(items[0]).toHaveFocus());
+  fireEvent.keyDown(document, { key: 'ArrowDown' });
+  expect(items[1]).toHaveFocus();
+  fireEvent.keyDown(document, { key: 'ArrowDown' });
+  expect(items[0]).toHaveFocus();
+  fireEvent.keyDown(document, { key: 'End' });
+  expect(items[1]).toHaveFocus();
+  fireEvent.keyDown(document, { key: 'Home' });
+  expect(items[0]).toHaveFocus();
+});

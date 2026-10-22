@@ -2,9 +2,9 @@ import type { Variants } from 'framer-motion';
 
 export const motionDurations = { fast: 0.16, normal: 0.28, slow: 0.5, countdown: 0.8 } as const;
 export const motionEasings = { standard: [0.2, 0, 0, 1], enter: [0, 0, 0.2, 1] } as const;
-export const uiSpring = { type: 'spring', bounce: 0, duration: 0.4 } as const;
-export const sheetSpring = { type: 'spring', bounce: 0, duration: 0.3 } as const;
-export const momentumSheetSpring = { type: 'spring', bounce: 0.2, duration: 0.3 } as const;
+export const uiSpring = { type: 'spring', stiffness: 250, damping: 32, mass: 1 } as const;
+export const sheetSpring = { type: 'spring', stiffness: 440, damping: 42, mass: 1 } as const;
+export const momentumSheetSpring = { type: 'spring', stiffness: 440, damping: 33.6, mass: 1 } as const;
 const standardCssEasing = 'cubic-bezier(0.2, 0, 0, 1)';
 export const motionVariants: Record<string, Variants> = {
   page: { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } },

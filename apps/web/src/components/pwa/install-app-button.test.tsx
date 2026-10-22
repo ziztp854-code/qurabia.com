@@ -32,7 +32,7 @@ describe('installing Tahaddi', () => {
     expect(screen.getByRole('heading', { name: 'Android' })).toBeVisible();
     expect(screen.getByText(/فعّل «فتح كتطبيق ويب»/)).toBeVisible();
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'تثبيت التطبيق' })).toHaveFocus();
   });
 

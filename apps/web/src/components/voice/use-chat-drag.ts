@@ -1,7 +1,7 @@
 'use client';
 
 import { animate, useMotionValue, useReducedMotion } from 'framer-motion';
-import { useCallback, useEffect, useRef, type PointerEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, type MouseEvent, type PointerEvent, type RefObject } from 'react';
 import { momentumSheetSpring, sheetSpring } from '@/lib/motion';
 import { releaseVelocity, rubberBand, sheetSnap, type PointerSample } from '@/lib/sheet-gesture';
 
@@ -35,7 +35,7 @@ export function useChatDrag(panel: RefObject<HTMLElement | null>, enabled: boole
       },
     });
   }, [close, reduce, stop, y]);
-  const dismiss = () => enabled ? settle(height(), y.getVelocity()) : close();
+  const dismiss = useCallback(() => enabled ? settle(height(), y.getVelocity()) : close(), [close, enabled, height, settle, y]);
 
   useEffect(() => {
     stop();
@@ -55,12 +55,13 @@ export function useChatDrag(panel: RefObject<HTMLElement | null>, enabled: boole
 
   return {
     y, dismiss,
-    onClick() {
-      if (suppressClick.current) { suppressClick.current = false; return; }
-      dismiss();
+    onClick(event: MouseEvent<HTMLButtonElement>) {
+      const suppressPointerClick = suppressClick.current && event.detail !== 0;
+      suppressClick.current = false;
+      if (!suppressPointerClick) dismiss();
     },
     onPointerDown(event: PointerEvent<HTMLButtonElement>) {
-      if (!enabled || !event.isPrimary || event.button !== 0) return;
+      if (!enabled || !open || !event.isPrimary || event.button !== 0) return;
       stop();
       suppressClick.current = false;
       gesture.current = {
@@ -88,6 +89,7 @@ export function useChatDrag(panel: RefObject<HTMLElement | null>, enabled: boole
       gesture.current = null;
       drag.samples.push({ y: event.clientY, time: event.timeStamp });
       if (drag.axis === 'vertical') {
+        y.set(rubberBand(drag.origin + event.clientY - drag.y, drag.height));
         const velocity = releaseVelocity(drag.samples);
         settle(sheetSnap(y.get(), velocity, drag.height), velocity);
       } else if (drag.axis === 'horizontal') settle(0);
@@ -96,13 +98,13 @@ export function useChatDrag(panel: RefObject<HTMLElement | null>, enabled: boole
     onPointerCancel() {
       if (!gesture.current) return;
       gesture.current = null;
-      suppressClick.current = true;
+      suppressClick.current = false;
       settle(0);
     },
     onLostPointerCapture() {
       if (!gesture.current) return;
       gesture.current = null;
-      suppressClick.current = true;
+      suppressClick.current = false;
       settle(0);
     },
   };
