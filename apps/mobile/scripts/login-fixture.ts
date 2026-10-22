@@ -28,6 +28,7 @@ async function main() {
     throw new Error('Set explicit local HTTPS development fixture configuration');
   // Use development limiter policy intentionally. Password hashing, NextAuth CSRF,
   // JWT signing, session validation and database access are the real implementations.
+  process.env.AUTH_SECRET ||= randomUUID() + randomUUID();
   const webDir = path.resolve(process.cwd(), process.cwd().endsWith('/apps/web') ? '.' : 'apps/web');
   const requireWeb = createRequire(path.join(webDir, 'package.json'));
   const next = requireWeb('next');
@@ -39,6 +40,12 @@ async function main() {
   const password = 'MobileAa42!+%25=&' + randomUUID();
   let app: any, backend: http.Server | undefined, proxy: https.Server | undefined;
   let closing = false, ownsCredentialsFile = false;
+  type Phase = 'database_create' | 'next_prepare' | 'backend_listen' | 'proxy_listen' | 'route_warmup' | 'ready';
+  let phase: Phase = 'database_create';
+  function mark(nextPhase: Phase) {
+    phase = nextPhase;
+    console.log('MOBILE_LOGIN_FIXTURE_PHASE:' + phase);
+  }
   const evidence = {
     csrf_ok: 0, credentials_ok: 0, credentials_rejected: 0,
     authenticated_sessions: 0, anonymous_sessions: 0, foreign_sessions: 0,
@@ -58,14 +65,17 @@ async function main() {
   process.once('SIGTERM', () => { void cleanup().finally(() => process.exit(0)); });
   process.once('SIGINT', () => { void cleanup().finally(() => process.exit(0)); });
   try {
+    mark('database_create');
     await db.user.create({ data: {
       id, email, name: 'اختبار دخول أندرويد', passwordHash: await hashPassword(password),
       role: 'USER', status: 'ACTIVE',
     } });
+    mark('next_prepare');
     app = next({ dev: true, dir: webDir, hostname: 'localhost', port: 3000, webpack: true });
     await app.prepare();
     const handler = app.getRequestHandler();
     backend = http.createServer((req, res) => { void handler(req, res); });
+    mark('backend_listen');
     await new Promise<void>((resolve, reject) => {
       backend!.once('error', reject);
       backend!.listen(3000, '127.0.0.1', resolve);
@@ -116,10 +126,12 @@ async function main() {
       upstream.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
       req.pipe(upstream);
     });
+    mark('proxy_listen');
     await new Promise<void>((resolve, reject) => {
       proxy!.once('error', reject); proxy!.listen(3443, '127.0.0.1', resolve);
     });
     // Warm the real route compiler before the native client's 15-second GET timeout.
+    mark('route_warmup');
     for (const endpoint of ['/api/auth/csrf/', '/api/auth/session/', '/api/voice/rooms/']) {
       await new Promise<void>((resolve, reject) => {
         const request = https.get('https://localhost:3443' + endpoint, { family: 4 }, response => {
@@ -136,8 +148,9 @@ async function main() {
       { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     ownsCredentialsFile = true;
     await fs.chmod(credentialsFile, 0o600);
-    console.log('MOBILE_LOGIN_FIXTURE_READY (local HTTPS; development limiter; real NextAuth/database)');
+    mark('ready');
   } catch {
+    console.error('MOBILE_LOGIN_FIXTURE_FAILED:' + phase);
     await cleanup();
     throw new Error('Isolated login fixture initialization failed; private server log is not an artifact');
   }

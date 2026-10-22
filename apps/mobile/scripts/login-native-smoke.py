@@ -115,7 +115,10 @@ def main() -> int:
         report["checks"]["native_isolated_https"] = True
         report["phase"] = "credential_submit"
         # Values stay in memory and subprocess arguments, never reports or console.
+        device.reveal_node("login-email")
         device.enter("login-email", account["email"])
+        device.hide_keyboard()
+        device.reveal_node("login-password")
         device.enter("login-password", account["password"])
         device.hide_keyboard()
         device.tap("login-submit")
