@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CookieVault, type SecureStorage } from './cookie-vault';
-import { ApiError, createApiClient, type NativeTransport, type TransportResponse } from './http-client';
+import { ApiError, authCallbackError, createApiClient, type NativeTransport, type TransportResponse } from './http-client';
 import { createSessionManager } from './session-manager';
 
 function deferred<T>() {
@@ -264,4 +264,156 @@ test('canonicalization does not follow or allow even a same-origin redirect resp
   await assert.rejects(client.request('/api/auth/session'),
     (error: unknown) => error instanceof ApiError && error.code === 'UNEXPECTED_REDIRECT');
   assert.equal(calls, 1);
+});
+
+test('NextAuth callback URL errors preserve HTTP status and expose only whitelisted safe codes', async () => {
+  const origin = 'https://test.example';
+  const cases = [
+    ['CredentialsSignin', 'INVALID_CREDENTIALS'],
+    ['AccessDenied', 'AUTH_ACCESS_DENIED'],
+    ['Configuration', 'AUTH_SERVER_ERROR'],
+    ['private-provider-detail-do-not-display', 'AUTH_SERVER_ERROR'],
+  ] as const;
+  for (const [queryError, expectedCode] of cases) {
+    const cookies = new CookieVault({
+      getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+    }, origin);
+    const client = createApiClient({
+      origin, cookies,
+      transport: async (url) => ({
+        url, status: 401, headers: { get: () => null },
+        text: async () => JSON.stringify({ url: origin + '/auth/sign-in?error=' + encodeURIComponent(queryError) }),
+      }),
+    });
+    await assert.rejects(client.form('/api/auth/callback/credentials', { json: 'true' }),
+      (error: unknown) => error instanceof ApiError && error.status === 401 &&
+        error.code === expectedCode && error.stage === 'auth-callback' &&
+        !error.message.includes(queryError) && !error.message.includes(origin));
+  }
+});
+
+test('callback helper distinguishes CSRF, invalid origins, server failures and an actual success URL', () => {
+  const origin = 'https://test.example';
+  const csrf = authCallbackError({ url: origin + '/auth/sign-in?csrf=true' }, origin, 200);
+  assert.equal(csrf?.code, 'AUTH_CSRF_REJECTED');
+  assert.equal(csrf?.stage, 'auth-callback');
+  assert.equal(csrf?.status, 200);
+  assert.equal(authCallbackError({ url: origin + '/voice' }, origin, 200), null);
+  assert.equal(authCallbackError({ url: '/voice' }, origin, 200), null);
+  for (const payload of [
+    null, [], {}, { url: 42 }, { url: '' }, { url: '   ' }, { url: 'https://untrusted.example/?error=CredentialsSignin' },
+    { url: 'https://name:private@test.example/?error=CredentialsSignin' },
+    { url: 'javascript:private-provider-detail' },
+  ]) {
+    const error = authCallbackError(payload, origin, 401);
+    assert.equal(error?.code, 'INVALID_RESPONSE');
+    assert.equal(error?.stage, 'auth-callback');
+    assert.doesNotMatch(error?.message ?? '', /private|untrusted|javascript/);
+  }
+  assert.equal(authCallbackError({ url: origin + '/?error=CredentialsSignin' }, origin, 503)?.code, 'AUTH_SERVER_ERROR');
+  assert.equal(authCallbackError({}, origin, 429)?.code, 'RATE_LIMITED');
+});
+
+test('a callback HTTP failure with a success-looking URL is never returned as success', async () => {
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async (url) => ({
+      url, status: 401, headers: { get: () => null },
+      text: async () => '{"url":"https://test.example/voice"}',
+    }),
+  });
+  await assert.rejects(client.form('/api/auth/callback/credentials', { json: 'true' }),
+    (error: unknown) => error instanceof ApiError && error.status === 401 &&
+      error.code === 'AUTH_SERVER_ERROR' && error.stage === 'auth-callback');
+});
+
+test('credential form keeps Unicode, plus signs and whitespace while sending the received CSRF cookie', async () => {
+  const origin = 'https://test.example';
+  const records = new Map<string, string>();
+  const cookies = new CookieVault({
+    getItem: async (key) => records.get(key) ?? null,
+    setItem: async (key, value) => { records.set(key, value); },
+    deleteItem: async (key) => { records.delete(key); },
+  }, origin);
+  const syntheticPassword = ' اختبار + & = % 🙂 ';
+  let sawCallback = false;
+  const client = createApiClient({
+    origin, cookies,
+    transport: async (url, init) => {
+      assert.equal(init.credentials, 'omit');
+      assert.equal(init.redirect, 'error');
+      assert.equal(init.headers.Origin, origin);
+      if (url.endsWith('/api/auth/csrf/')) {
+        return {
+          url, status: 200,
+          headers: { get: (name) => name === 'set-cookie'
+            ? '__Host-next-auth.csrf-token=' + csrfToken + '%7Chash; Path=/; HttpOnly; Secure, next-auth.callback-url=https%3A%2F%2Ftest.example%2Fvoice; Path=/; HttpOnly; Secure'
+            : null },
+          text: async () => JSON.stringify({ csrfToken }),
+        };
+      }
+      assert.ok(url.endsWith('/api/auth/callback/credentials/'));
+      sawCallback = true;
+      assert.equal(init.method, 'POST');
+      assert.equal(init.headers['Content-Type'], 'application/x-www-form-urlencoded');
+      assert.ok((init.headers.Cookie ?? '').includes('__Host-next-auth.csrf-token=' + csrfToken + '%7Chash'));
+      const decoded = new URLSearchParams(init.body as string);
+      assert.equal(decoded.get('csrfToken'), csrfToken);
+      assert.equal(decoded.get('password'), syntheticPassword);
+      assert.equal(decoded.get('email'), 'member+android@example.test');
+      assert.equal(decoded.get('json'), 'true');
+      return {
+        url, status: 200, rawSetCookies: [cookie('fixture-session')],
+        headers: { get: () => null },
+        text: async () => JSON.stringify({ url: origin + '/voice' }),
+      };
+    },
+  });
+  const csrfResponse = await client.request<{ csrfToken: string }>('/api/auth/csrf');
+  await client.form('/api/auth/callback/credentials', {
+    csrfToken: csrfResponse.csrfToken, email: 'member+android@example.test',
+    password: syntheticPassword, callbackUrl: origin + '/voice', json: 'true',
+  });
+  assert.equal(sawCallback, true);
+  assert.equal(cookies.hasSession(), true);
+  assert.equal(records.size, 1);
+});
+
+test('network errors expose a safe stage without native exception details or credential material', async () => {
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async () => { throw new Error('private-native-url-and-header-details'); },
+  });
+  for (const [path, stage] of [
+    ['/api/auth/csrf', 'auth-csrf'],
+    ['/api/auth/session', 'auth-session'],
+    ['/api/voice/rooms', 'api'],
+  ] as const) {
+    await assert.rejects(client.request(path),
+      (error: unknown) => error instanceof ApiError && error.status === 0 &&
+        error.code === 'NETWORK' && error.stage === stage && !error.message.includes('private-native'));
+  }
+});
+
+test('ordinary API failures retain their own error contract rather than interpreting callback URLs', async () => {
+  const cookies = new CookieVault({
+    getItem: async () => null, setItem: async () => {}, deleteItem: async () => {},
+  }, 'https://test.example');
+  const client = createApiClient({
+    origin: cookies.origin, cookies,
+    transport: async (url) => ({
+      url, status: 403, headers: { get: () => null },
+      text: async () => JSON.stringify({ error: 'لا تملك صلاحية إدارة الغرفة.', code: 'ROOM_FORBIDDEN',
+        url: 'https://test.example/?error=CredentialsSignin' }),
+    }),
+  });
+  await assert.rejects(client.request('/api/voice/rooms/test', { method: 'POST', body: {} }),
+    (error: unknown) => error instanceof ApiError && error.status === 403 &&
+      error.code === 'ROOM_FORBIDDEN' && error.stage === 'api' && error.message === 'لا تملك صلاحية إدارة الغرفة.');
 });

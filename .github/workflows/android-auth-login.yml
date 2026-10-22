@@ -1,0 +1,512 @@
+name: Android authentication regression
+on:
+  push:
+    branches: [fix/android-auth-login]
+    paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
+  pull_request:
+    branches: [codex/android-native-v2]
+    paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-auth-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+jobs:
+  regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24.14.0'
+      - run: npm install --global pnpm@11.26.0 --ignore-scripts
+      - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
+      - name: Check types and run all native regressions
+        run: |
+          pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
+          pnpm --filter @tahaddi/mobile typecheck
+          pnpm --filter @tahaddi/mobile test
+          node --test apps/mobile/scripts/prepare-android-debug.test.cjs
+          python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
+          python3 apps/mobile/tests/login-guards.py
+      - name: Check patch whitespace and scope
+        run: |
+          git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
+          git diff --check fcbdf15092ba8c5189ba75739904ffad84507b19 HEAD
+  build-and-login:
+    if: github.event_name != 'pull_request'
+    needs: regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: mobile_login_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - '127.0.0.1:5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mobile_login_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres@127.0.0.1:5432/mobile_login_test
+      MOBILE_LOGIN_TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:5432/mobile_login_test
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_NO_DOTENV: '1'
+    steps:
+      - name: Checkout event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Prepare diagnostics and tracked source archive
+        run: |
+          mkdir -p android-reports
+          git rev-parse HEAD | tee android-reports/source-sha.txt
+          git archive --format=tar.gz --output=android-reports/tahaddi-android-source.tar.gz HEAD apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc .github/workflows/android-debug.yml .github/workflows/android-auth-login.yml
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24.14.0'
+
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.26.0 --ignore-scripts
+
+      - name: Record pinned toolchain and mobile dependency declarations
+        run: |
+          {
+            node --version
+            pnpm --version
+            node -p 'JSON.stringify(require("./apps/mobile/package.json").dependencies, null, 2)'
+          } 2>&1 | tee android-reports/registry.log
+
+      - name: Install locked mobile and real server dependencies
+        run: pnpm install --frozen-lockfile 2>&1 | tee android-reports/install.log
+
+      - name: Test generated debug configuration helpers
+        run: node --test apps/mobile/scripts/prepare-android-debug.test.cjs 2>&1 | tee android-reports/build-helpers.log
+
+      - name: Build shared domain and check TypeScript
+        run: |
+          pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json 2>&1 | tee android-reports/domain-build.log
+          pnpm --filter @tahaddi/mobile typecheck 2>&1 | tee android-reports/typecheck.log
+
+      - name: Run all native mobile TypeScript tests
+        working-directory: apps/mobile
+        run: |
+          test -d src
+          test -d tests
+          mapfile -d '' mobile_tests < <(find src tests -type f -name '*.test.ts' -print0 | sort -z)
+          test "${#mobile_tests[@]}" -gt 0
+          pnpm exec tsx --test "${mobile_tests[@]}" 2>&1 | tee ../../android-reports/mobile-tests.log
+
+      - name: Test native Android smoke guards
+        run: python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py' 2>&1 | tee android-reports/native-smoke-guards.log
+
+      - name: Validate compatibility with the installed Expo SDK map
+        env:
+          EXPO_OFFLINE: '1'
+        run: |
+          pnpm --filter @tahaddi/mobile exec node -e 'const fs=require("node:fs"),path=require("node:path");const all=JSON.parse(fs.readFileSync(path.join(path.dirname(require.resolve("expo/package.json")),"bundledNativeModules.json"),"utf8"));console.log(JSON.stringify(Object.fromEntries(["react","react-native","react-native-safe-area-context","expo-font","expo-status-bar","expo-secure-store","expo-crypto","expo-image"].map(k=>[k,all[k]])),null,2))' | tee android-reports/expo-recommended-versions.json
+          pnpm --filter @tahaddi/mobile exec expo install --check 2>&1 | tee android-reports/expo-dependency-check.log
+
+      - name: Typecheck isolated Node login harness
+        working-directory: apps/web
+        run: pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --types node --lib ES2022,DOM ../mobile/scripts/login-fixture.ts ../mobile/scripts/login-http-integration.ts
+
+      - name: Verify Metro and packaged assets
+        run: |
+          pnpm --filter @tahaddi/mobile exec expo export --platform android --output-dir dist-android-check 2>&1 | tee android-reports/metro-export.log
+          git diff --exit-code -- apps/mobile/package.json pnpm-lock.yaml
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android command line tools
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          cmdline-tools-version: '12266719'
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android SDK versions from the locked React Native package
+        id: sdk
+        run: |
+          export RN_PACKAGE_PATH="$(pnpm --filter @tahaddi/mobile exec node -p 'require.resolve("react-native/package.json")')"
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess, tomllib
+          catalog = pathlib.Path(os.environ["RN_PACKAGE_PATH"]).parent / "gradle/libs.versions.toml"
+          versions = tomllib.loads(catalog.read_text())["versions"]
+          required = {"compileSdk": r"\d+", "buildTools": r"\d+\.\d+\.\d+"}
+          if "ndkVersion" in versions:
+              required["ndkVersion"] = r"\d+\.\d+\.\d+"
+          selected = {}
+          for name, pattern in required.items():
+              value = str(versions[name])
+              if not re.fullmatch(pattern, value):
+                  raise ValueError(f"Unsupported Android version for {name}")
+              selected[name] = value
+          pathlib.Path("android-reports/android-sdk-versions.json").write_text(json.dumps(selected, indent=2))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for name, value in selected.items():
+                  print(f"{name}={value}", file=output)
+          packages = ["platform-tools", f"platforms;android-{selected['compileSdk']}", f"build-tools;{selected['buildTools']}"]
+          if "ndkVersion" in selected:
+              packages.append(f"ndk;{selected['ndkVersion']}")
+          print(json.dumps(selected, indent=2), flush=True)
+          subprocess.run(["sdkmanager", *packages], check=True)
+          PY
+
+      - name: Generate Android source and prepare standalone debug
+        run: |
+          cp apps/mobile/package.json "$RUNNER_TEMP/mobile-package-before-prebuild.json"
+          pnpm --filter @tahaddi/mobile exec expo prebuild --platform android --no-install 2>&1 | tee android-reports/prebuild.log
+          node <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const original = fs.readFileSync(process.env.RUNNER_TEMP + '/mobile-package-before-prebuild.json', 'utf8');
+          const before = JSON.parse(original);
+          const after = JSON.parse(fs.readFileSync('apps/mobile/package.json', 'utf8'));
+          const expected = structuredClone(before);
+          expected.scripts.android = 'expo run:android';
+          expected.scripts.ios = 'expo run:ios';
+          assert.deepEqual(after, expected, 'Unexpected prebuild manifest change beyond the two Expo run scripts');
+          fs.writeFileSync('apps/mobile/package.json', original);
+          NODE
+          node apps/mobile/scripts/prepare-android-debug.cjs
+          git diff --exit-code -- apps/mobile/package.json pnpm-lock.yaml
+          cd apps/mobile/android
+          ./gradlew --version | tee ../../../android-reports/gradle-version.log
+
+      - name: Assemble Debug APK
+        working-directory: apps/mobile/android
+        env:
+          NODE_ENV: production
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a,x86_64 -Pandroid.builder.sdkDownload=true 2>&1 | tee ../../../android-reports/gradle-build.log
+
+      - name: Verify APK bundle, identity and debug signature
+        env:
+          BUILD_TOOLS: ${{ steps.sdk.outputs.buildTools }}
+        run: |
+          apk=apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$apk"
+          unzip -Z1 "$apk" | grep -E '^assets/index.android.bundle$'
+          "$ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$apk" | tee android-reports/apk-signature.txt
+          "$ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt" dump badging "$apk" | tee android-reports/apk-badging.txt
+          grep -E "^package: name='com.qurabia.tahaddi'" android-reports/apk-badging.txt
+          grep -E '^application-debuggable$' android-reports/apk-badging.txt
+          "$ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt" dump permissions "$apk" > android-reports/apk-permissions.txt
+          if grep -Eq "name='android.permission.(CAMERA|SYSTEM_ALERT_WINDOW)'" android-reports/apk-permissions.txt; then
+            echo "Audio-only APK contains an unexpected camera or overlay permission" >&2
+            exit 1
+          fi
+          sha256sum "$apk" | tee android-reports/apk-sha256.txt
+          stat --printf='%s bytes\n' "$apk" | tee android-reports/apk-size.txt
+          mkdir -p android-delivery
+          cp "$apk" android-delivery/app-debug.apk
+          unzip -Z1 android-delivery/app-debug.apk > android-reports/apk-entries.txt
+          if grep -q 'tahaddi_login_ca' android-reports/apk-entries.txt; then
+            echo "Distributed APK unexpectedly trusts the isolated test CA" >&2
+            exit 1
+          fi
+          git rev-parse HEAD > android-reports/source-sha.txt
+
+      - name: Upload installable Debug APK
+        id: apk
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tahaddi-debug-${{ github.run_id }}-${{ github.run_attempt }}
+          path: android-delivery/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record download link and scope
+        env:
+          ARTIFACT_URL: ${{ steps.apk.outputs.artifact-url }}
+        run: |
+          {
+            echo "### Tahaddi Android debug"
+            echo "[Download APK artifact]($ARTIFACT_URL)"
+            echo
+            echo "This builds the native Android client. Native implementation and runtime acceptance are separate: inspect all test reports before claiming authenticated voice/chat or device compatibility."
+            echo "A dedicated account uses only isolated local PostgreSQL/HTTPS. Public production GETs remain unauthenticated. Inspect the separate real native login result; no production login or writes are performed."
+            cat android-reports/apk-size.txt android-reports/apk-sha256.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and launch on Android 36 without Metro
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash apps/mobile/scripts/android-native-smoke.sh --reports android-reports/native
+
+      - name: Check public HTTPS endpoints without authentication
+        if: ${{ !cancelled() && steps.apk.outcome == 'success' }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, response, code, message, headers, target):
+                  return None
+
+          # No cookie processor, credentials, or authentication requests are used.
+          opener = urllib.request.build_opener(NoRedirect)
+          origin = "https://qurabia.com"
+          checks = [("/api/auth/session/", 200), ("/api/voice/rooms/", 401)]
+          evidence = []
+          failures = 0
+          for endpoint, expected_status in checks:
+              entry = {"endpoint": endpoint, "method": "GET", "authenticated": False}
+              try:
+                  request = urllib.request.Request(
+                      origin + endpoint,
+                      headers={"Accept": "application/json", "User-Agent": "TahaddiAndroidCI/1.0"},
+                      method="GET",
+                  )
+                  try:
+                      response = opener.open(request, timeout=25)
+                  except urllib.error.HTTPError as error:
+                      response = error
+                  with response:
+                      status = response.status
+                      content_type = response.headers.get_content_type()
+                      payload = response.read(65537)
+                  entry["status"] = status
+                  entry["content_type"] = content_type
+                  if len(payload) > 65536:
+                      raise ValueError("Unexpected payload size")
+                  if content_type != "application/json":
+                      raise ValueError("Expected JSON")
+                  data = json.loads(payload)
+                  entry["shape"] = "object" if isinstance(data, dict) else "other"
+                  entry["keys"] = sorted(data)[:20] if isinstance(data, dict) else []
+                  valid = status == expected_status and isinstance(data, dict)
+                  if endpoint == "/api/auth/session/":
+                      valid = valid and data == {}
+                  else:
+                      valid = valid and isinstance(data.get("error"), str) and isinstance(data.get("code"), str)
+                  entry["passed"] = valid
+              except Exception:
+                  # Do not write response bodies, headers, cookies, or exception text.
+                  entry["passed"] = False
+                  entry["error"] = "reachability_or_json_contract_failed"
+              if not entry["passed"]:
+                  failures += 1
+              evidence.append(entry)
+              print(json.dumps(entry))
+          pathlib.Path("android-reports/public-https-readonly.json").write_text(
+              json.dumps({"scope": "unauthenticated_GET_only", "checks": evidence}, indent=2) + "\n"
+          )
+          raise SystemExit(1 if failures else 0)
+          PY
+
+      - name: Record unauthenticated emulator preview and diagnostics
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const file='android-reports/native/native-smoke-result.json';
+          if(fs.existsSync(file))console.log('NATIVE_SMOKE_RESULT '+fs.readFileSync(file,'utf8'));
+          const memory='android-reports/native/meminfo-startup.txt';
+          if(fs.existsSync(memory)) {
+            const text=fs.readFileSync(memory,'utf8');
+            console.log('NATIVE_MEMORY_SUMMARY '+JSON.stringify(text.split('\n').filter(line=>/TOTAL PSS|TOTAL RSS|TOTAL SWAP/.test(line))));
+          }
+          // This workflow never supplies account credentials. Do not relay images if that changes.
+          if(!process.env.TAHADDI_QA_ORIGIN&&!process.env.TAHADDI_QA_EMAIL&&!process.env.TAHADDI_QA_PASSWORD) {
+            const path='android-reports/native/native-window.png';
+            if(fs.existsSync(path)) {
+              const data=fs.readFileSync(path);
+              if(data.length>1048576)throw Error('Unexpected preview size');
+              const encoded=data.toString('base64');
+              for(let offset=0,index=0;offset<encoded.length;offset+=12000,index++)
+                console.log('NATIVE_PREVIEW '+JSON.stringify({index,chunk:encoded.slice(offset,offset+12000)}));
+              console.log('NATIVE_PREVIEW_END '+JSON.stringify({bytes:data.length,chunks:Math.ceil(encoded.length/12000)}));
+            }
+          }
+          NODE
+
+      - name: Prepare isolated database and ephemeral localhost TLS
+        run: |
+          pnpm --filter @tahaddi/contracts --filter @tahaddi/domain --filter @tahaddi/database build
+          pnpm exec prisma migrate deploy
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 2 \
+            -keyout "$RUNNER_TEMP/login-ca.key" -out "$RUNNER_TEMP/login-ca.pem" \
+            -subj '/CN=Tahaddi isolated Android login CA' \
+            -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' >/dev/null 2>&1
+          openssl req -newkey rsa:2048 -sha256 -nodes \
+            -keyout "$RUNNER_TEMP/login-leaf.key" -out "$RUNNER_TEMP/login-leaf.csr" \
+            -subj '/CN=localhost' >/dev/null 2>&1
+          cat > "$RUNNER_TEMP/login-leaf.ext" <<'EOF'
+          subjectAltName=DNS:localhost,IP:127.0.0.1
+          basicConstraints=critical,CA:FALSE
+          keyUsage=critical,digitalSignature,keyEncipherment
+          extendedKeyUsage=serverAuth
+          EOF
+          openssl x509 -req -sha256 -days 2 -in "$RUNNER_TEMP/login-leaf.csr" \
+            -CA "$RUNNER_TEMP/login-ca.pem" -CAkey "$RUNNER_TEMP/login-ca.key" -CAcreateserial \
+            -out "$RUNNER_TEMP/login-leaf.pem" -extfile "$RUNNER_TEMP/login-leaf.ext" >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/login-ca.key" "$RUNNER_TEMP/login-leaf.key"
+          openssl verify -CAfile "$RUNNER_TEMP/login-ca.pem" "$RUNNER_TEMP/login-leaf.pem"
+
+      - name: Start the real isolated NextAuth HTTPS fixture
+        run: |
+          NODE_ENV=development VITEST=1 \
+          AUTH_URL=https://localhost:3443 NEXTAUTH_URL=https://localhost:3443 \
+          NODE_EXTRA_CA_CERTS="$RUNNER_TEMP/login-ca.pem" \
+          node --import tsx apps/mobile/scripts/login-fixture.ts \
+            --credentials "$RUNNER_TEMP/login-private.json" \
+            --cert "$RUNNER_TEMP/login-leaf.pem" --key "$RUNNER_TEMP/login-leaf.key" \
+            > "$RUNNER_TEMP/login-fixture-private.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/login-fixture.pid"
+          python3 - <<'PY'
+          import os,pathlib,re,time
+          temp=pathlib.Path(os.environ["RUNNER_TEMP"])
+          ready=temp/"login-private.json"
+          pid=int((temp/"login-fixture.pid").read_text().strip())
+          for _ in range(300):
+              if ready.is_file(): break
+              try: os.kill(pid,0)
+              except ProcessLookupError: break
+              time.sleep(1)
+          if not ready.is_file():
+              log=temp/"login-fixture-private.log"
+              if log.is_file():
+                  for line in log.read_text(errors="replace").splitlines():
+                      if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
+                          print(line)
+              raise SystemExit("Isolated fixture did not become ready; private server log is not uploaded")
+          print("Isolated localhost HTTPS fixture ready; private account file retained outside artifacts")
+          PY
+
+      - name: Reproduce old rejection and verify real NextAuth protocol
+        run: |
+          git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
+          mkdir -p "$RUNNER_TEMP/login-baseline"
+          for file in cookie-vault.ts http-client.ts session-manager.ts; do
+            git show "fcbdf15092ba8c5189ba75739904ffad84507b19:apps/mobile/src/auth/$file" > "$RUNNER_TEMP/login-baseline/$file"
+          done
+          NODE_EXTRA_CA_CERTS="$RUNNER_TEMP/login-ca.pem" \
+          node --import tsx apps/mobile/scripts/login-http-integration.ts \
+            --credentials "$RUNNER_TEMP/login-private.json" \
+            --baseline "$RUNNER_TEMP/login-baseline" --reports android-reports/login
+
+      - name: Generate separate local-CA test APK without changing delivery APK
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil,xml.etree.ElementTree as ET
+          root=pathlib.Path("apps/mobile/android/app/src/main")
+          raw=root/"res/raw"; raw.mkdir(parents=True,exist_ok=True)
+          xml=root/"res/xml"; xml.mkdir(parents=True,exist_ok=True)
+          shutil.copyfile(pathlib.Path(os.environ["RUNNER_TEMP"])/"login-ca.pem",raw/"tahaddi_login_ca.pem")
+          (xml/"tahaddi_login_network_security_config.xml").write_text("""<?xml version="1.0" encoding="utf-8"?>
+          <network-security-config>
+            <base-config cleartextTrafficPermitted="false"><trust-anchors><certificates src="system"/></trust-anchors></base-config>
+            <domain-config cleartextTrafficPermitted="false"><domain includeSubdomains="false">localhost</domain>
+              <trust-anchors><certificates src="@raw/tahaddi_login_ca"/></trust-anchors>
+            </domain-config>
+          </network-security-config>
+          """)
+          manifest=root/"AndroidManifest.xml"
+          ET.register_namespace("android","http://schemas.android.com/apk/res/android")
+          ET.register_namespace("tools","http://schemas.android.com/tools")
+          tree=ET.parse(manifest)
+          app=tree.getroot().find("application")
+          assert app is not None
+          app.set("{http://schemas.android.com/apk/res/android}networkSecurityConfig","@xml/tahaddi_login_network_security_config")
+          tree.write(manifest,encoding="utf-8",xml_declaration=True)
+          PY
+          mkdir -p "$RUNNER_TEMP/login-metro-cache"
+          cd apps/mobile/android
+          NODE_ENV=production EXPO_PUBLIC_API_URL=https://localhost:3443 \
+          TMPDIR="$RUNNER_TEMP/login-metro-cache" \
+          ./gradlew :app:createBundleDebugJsAndAssets --rerun-tasks --no-daemon
+          NODE_ENV=production EXPO_PUBLIC_API_URL=https://localhost:3443 \
+          TMPDIR="$RUNNER_TEMP/login-metro-cache" \
+          ./gradlew :app:assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/tahaddi-login-test-only.apk"
+
+      - name: Verify real native login, SecureStore restart and logout
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: python3 apps/mobile/scripts/login-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-login-test-only.apk" --credentials "$RUNNER_TEMP/login-private.json" --ca "$RUNNER_TEMP/login-ca.pem" --reports android-reports/login
+
+      - name: Verify delivery APK remains the original public build
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import hashlib,pathlib
+          apk=pathlib.Path("android-delivery/app-debug.apk")
+          record=pathlib.Path("android-reports/apk-sha256.txt")
+          if apk.is_file() and record.is_file():
+              assert hashlib.sha256(apk.read_bytes()).hexdigest()==record.read_text().split()[0]
+              print("Public delivery APK SHA256 unchanged after isolated CA test")
+          PY
+
+      - name: Stop fixture and remove private test material
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,signal,time
+          temp=pathlib.Path(os.environ["RUNNER_TEMP"])
+          pidfile=temp/"login-fixture.pid"
+          if pidfile.is_file():
+              pid=int(pidfile.read_text().strip())
+              try: os.kill(pid,signal.SIGTERM)
+              except ProcessLookupError: pass
+              for _ in range(20):
+                  try: os.kill(pid,0)
+                  except ProcessLookupError: break
+                  time.sleep(1)
+          for name in ["login-private.json","login-ca.key","login-leaf.key","login-leaf.csr","tahaddi-login-test-only.apk"]:
+              (temp/name).unlink(missing_ok=True)
+          logfile=temp/"login-fixture-private.log"
+          if logfile.is_file():
+              for line in logfile.read_text(errors="replace").splitlines():
+                  if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
+                      print(line)
+          PY
+
+      - name: Upload test and build evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: android-reports/
+          if-no-files-found: error
+          retention-days: 14

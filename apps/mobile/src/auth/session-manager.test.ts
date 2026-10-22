@@ -8,7 +8,7 @@ const csrfToken = 'a'.repeat(64);
 const expires = '2031-01-01T00:00:00.000Z';
 const cookie = '__Secure-next-auth.session-token=opaque-encrypted-session; Path=/; Secure; HttpOnly; Expires=Wed, 01 Jan 2031 00:00:00 GMT';
 const session = { user: { id: 'real-server-id', name: 'عضو', email: 'member@example.test', status: 'ACTIVE', role: 'USER' }, expires };
-function setup(options: { failLogout?: boolean; callback?: string; csrfCookie?: boolean; revoked?: boolean } = {}) {
+function setup(options: { failLogout?: boolean; callback?: string; callbackPayload?: unknown; csrfCookie?: boolean; sessionCookie?: boolean; revoked?: boolean; beforeCallback?: () => Promise<void>; beforeSession?: () => Promise<void> } = {}) {
   const data = new Map<string, string>();
   const storage: SecureStorage = {
     getItem: async (key) => data.get(key) ?? null,
@@ -30,6 +30,7 @@ function setup(options: { failLogout?: boolean; callback?: string; csrfCookie?: 
       payload = { csrfToken };
       if (options.csrfCookie !== false) cookies = ['__Host-next-auth.csrf-token=' + csrfToken + '%7Chash; Path=/; Secure; HttpOnly'];
     } else if (path === '/api/auth/callback/credentials/') {
+      await options.beforeCallback?.();
       const form = new URLSearchParams(init.body as string);
       assert.equal(init.method, 'POST');
       assert.equal(init.headers['Content-Type'], 'application/x-www-form-urlencoded');
@@ -39,11 +40,13 @@ function setup(options: { failLogout?: boolean; callback?: string; csrfCookie?: 
       assert.match(init.headers.Cookie, /csrf-token=/);
       assert.equal(form.get('json'), 'true');
       assert.equal(form.get('callbackUrl'), 'https://test.example/voice');
-      payload = { url: options.callback ?? 'https://test.example/voice' };
-      cookies = [cookie];
+      payload = options.callbackPayload === undefined ? { url: options.callback ?? 'https://test.example/voice' } : options.callbackPayload;
+      cookies = options.sessionCookie === false ? [] : [cookie];
     } else if (path === '/api/auth/session/') {
-      assert.match(init.headers.Cookie, /session-token=opaque-encrypted-session/);
-      payload = options.revoked ? {} : session;
+      await options.beforeSession?.();
+      if (options.sessionCookie !== false) assert.match(init.headers.Cookie, /session-token=opaque-encrypted-session/);
+      else assert.doesNotMatch(init.headers.Cookie ?? '', /session-token=/);
+      payload = options.revoked || options.sessionCookie === false ? {} : session;
     } else if (path === '/api/auth/signout/') {
       if (options.failLogout) throw new Error('network is offline');
       assert.match(init.headers.Cookie, /session-token=/);
@@ -123,4 +126,91 @@ test('expired or disabled session identities are rejected without decoding crede
   assert.equal(parseSession({ ...session, user: { ...session.user, status: 'SUSPENDED' } }), null);
   assert.equal(parseSession({ ...session, user: { name: 'missing id' } }), null);
   assert.equal(parseSession({}), null);
+});
+
+
+test('HTTP 200 CSRF rejection is classified before any session verification request', async () => {
+  const { manager, jar, data, requests } = setup({
+    callback: 'https://test.example/api/auth/signin?csrf=true',
+    sessionCookie: false,
+  });
+  await assert.rejects(manager.signIn('member@example.test', 'test-only-password'),
+    (error: unknown) => error instanceof ApiError && error.code === 'AUTH_CSRF_REJECTED' && error.stage === 'auth-callback');
+  assert.deepEqual(requests.map((request) => request.path), ['/api/auth/csrf/', '/api/auth/callback/credentials/']);
+  assert.equal(manager.getSnapshot().status, 'unauthenticated');
+  assert.equal(jar.header(), '');
+  assert.equal(data.size, 0);
+});
+
+test('accepted callback without a usable session is distinguished from invalid credentials', async () => {
+  for (const options of [{ sessionCookie: false }, { revoked: true }]) {
+    const { manager, jar, data } = setup(options);
+    await assert.rejects(manager.signIn('member@example.test', 'test-only-password'),
+      (error: unknown) => error instanceof ApiError && error.code === 'SESSION_NOT_ESTABLISHED' &&
+        error.status === 200 && error.stage === 'auth-session');
+    assert.equal(manager.getSnapshot().user, null);
+    assert.equal(jar.hasSession(), false);
+    assert.equal(data.size, 0);
+  }
+});
+
+test('malformed successful callback payload is rejected without a native TypeError or false storage error', async () => {
+  const { manager, jar, data } = setup({ callbackPayload: null });
+  await assert.rejects(manager.signIn('member@example.test', 'test-only-password'),
+    (error: unknown) => error instanceof ApiError && error.code === 'INVALID_RESPONSE' && error.stage === 'auth-callback');
+  assert.equal(manager.getSnapshot().status, 'unauthenticated');
+  assert.equal(jar.header(), '');
+  assert.equal(data.size, 0);
+});
+
+
+test('pending sign-in keeps the form observable until the server session is verified', { timeout: 5000 }, async () => {
+  function gate() {
+    let open!: () => void;
+    const wait = new Promise<void>((resolve) => { open = resolve; });
+    return { open, wait };
+  }
+  const callbackEntered = gate();
+  const callbackRelease = gate();
+  const sessionEntered = gate();
+  const sessionRelease = gate();
+  const { manager, jar } = setup({
+    beforeCallback: async () => { callbackEntered.open(); await callbackRelease.wait; },
+    beforeSession: async () => { sessionEntered.open(); await sessionRelease.wait; },
+  });
+  // App restoration still owns its initial loading screen.
+  assert.equal(manager.getSnapshot().status, 'loading');
+  await manager.initialize();
+  assert.equal(manager.getSnapshot().status, 'unauthenticated');
+  const observed: string[] = [];
+  const unsubscribe = manager.subscribe(() => observed.push(manager.getSnapshot().status));
+  const pending = manager.signIn('member@example.test', 'test-only-password');
+  try {
+    await callbackEntered.wait;
+    assert.equal(manager.getSnapshot().status, 'unauthenticated');
+    assert.equal(manager.getSnapshot().session, null);
+    assert.equal(manager.getSnapshot().user, null);
+    await assert.rejects(manager.signIn('member@example.test', 'test-only-password'),
+      (error: unknown) => error instanceof ApiError && error.code === 'AUTH_BUSY');
+
+    callbackRelease.open();
+    await sessionEntered.wait;
+    // Receiving an opaque cookie is not enough: identity is still unverified.
+    assert.equal(jar.hasSession(), true);
+    assert.equal(manager.getSnapshot().status, 'unauthenticated');
+    assert.equal(manager.getSnapshot().user, null);
+    assert.ok(observed.length > 0);
+    assert.ok(observed.every((status) => status === 'unauthenticated'));
+
+    sessionRelease.open();
+    await pending;
+    assert.equal(manager.getSnapshot().status, 'authenticated');
+    assert.equal(manager.getSnapshot().user?.id, session.user.id);
+    assert.equal(observed.at(-1), 'authenticated');
+  } finally {
+    callbackRelease.open();
+    sessionRelease.open();
+    unsubscribe();
+    await pending.catch(() => undefined);
+  }
 });

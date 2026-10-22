@@ -147,7 +147,7 @@ class Device:
             observed["label"] = label
             if "تم الاتصال بخادم تحدّي" in label:
                 return {"state": "online", "label": label}
-            if "تعذر الاتصال بخادم تحدّي" in label:
+            if "تعذر الاتصال بخادم تحدّي" in label or "لم يكتمل التحقق من الاتصال بالخادم" in label:
                 return {"state": "failed", "label": label}
             time.sleep(1)
         return observed
