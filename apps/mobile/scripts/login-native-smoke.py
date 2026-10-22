@@ -2,7 +2,7 @@
 """Credentialed Android test, restricted to the isolated local HTTPS fixture.
 
 No UI dumps, screenshots, credentials, cookie values, tokens or raw logs are
-saved. The only report contains phase names, booleans and server counters.
+archived. Temporary on-device UIAutomator XML is removed during cleanup. The only report contains phase names, booleans and server counters.
 """
 from __future__ import annotations
 
@@ -72,6 +72,56 @@ def wait_counter(ca: str, key: str, previous: int, timeout: float = 30) -> dict:
     raise RuntimeError("Expected isolated server operation was not observed")
 
 
+
+EMPTY_ERROR = "أدخل البريد الإلكتروني وكلمة المرور."
+REJECTED_ERROR = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
+
+
+def keyboard_state(device) -> str:
+    # Inspect in memory only: dumpsys can contain editor metadata.
+    flags = re.findall(r"\b(?:mInputShown|mIsInputViewShown)=(true|false)\b",
+                       device.adb("shell", "dumpsys", "input_method").stdout)
+    return "shown" if "true" in flags else "hidden" if flags else "unknown"
+
+
+def hide_keyboard_if_shown(device) -> dict:
+    before = keyboard_state(device)
+    sent_back = before == "shown"
+    if sent_back:
+        device.adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    # BACK without a visible IME can exit the app. Never guess for unknown state.
+    return {"before": before, "sent_back": sent_back}
+
+
+def safe_ui_snapshot(device, module, email: str, expected_password_length: int) -> dict:
+    xml = device.ui()
+    controls = {}
+    nodes = {}
+    for test_id in ("login-email", "login-password", "login-submit"):
+        node = module.find_node(xml, test_id)
+        nodes[test_id] = node
+        controls[test_id] = {
+            "present": node is not None,
+            "enabled": node is not None and node.attrib.get("enabled") == "true",
+            "focused": node is not None and node.attrib.get("focused") == "true",
+            "clickable": node is not None and node.attrib.get("clickable") == "true",
+            "visible": node is not None and node.attrib.get("visible-to-user", "true") != "false",
+        }
+    email_node, password_node = nodes["login-email"], nodes["login-password"]
+    password_length = len(password_node.attrib.get("text", "")) if password_node is not None else 0
+    labels = module.scoped_error_labels(xml, "login-error")
+    notice = ("empty_credentials" if EMPTY_ERROR in labels else
+              "invalid_credentials" if REJECTED_ERROR in labels else
+              "unrecognized" if labels else "none")
+    return {
+        "process_alive": device.adb("shell", "pidof", PACKAGE, check=False).returncode == 0,
+        "email_matches": email_node is not None and email_node.attrib.get("text", "") == email,
+        "password_display_length": password_length,
+        "password_display_length_matches": password_length == expected_password_length,
+        "notice_kind": notice, "controls": controls,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apk", required=True)
@@ -101,6 +151,19 @@ def main() -> int:
         if device.adb("shell", "getprop", "ro.kernel.qemu").stdout.strip() != "1":
             raise ValueError("Credentialed clean-install test requires an emulator")
         initial = counters(args.ca)
+        report["counter_snapshots"] = {"initial": initial}
+        report["ui_snapshots"] = {}
+        report["keyboard_actions"] = {}
+
+        def snapshot(label: str, expected_length: int) -> dict:
+            report["phase"] = label
+            state = safe_ui_snapshot(device, module, account["email"], expected_length)
+            report["ui_snapshots"][label] = state
+            return state
+
+        def hide(label: str):
+            report["keyboard_actions"][label] = hide_keyboard_if_shown(device)
+
         report["phase"] = "clean_install"
         device.adb("reverse", "--remove-all")
         # No Metro connection: only the real isolated HTTPS backend is forwarded.
@@ -117,13 +180,24 @@ def main() -> int:
         # Values stay in memory and subprocess arguments, never reports or console.
         device.reveal_node("login-email")
         device.enter("login-email", account["email"])
-        device.hide_keyboard()
+        snapshot("wrong_email_entered", 0)
+        hide("after_email")
         device.reveal_node("login-password")
         device.enter("login-password", account["password"] + "-incorrect")
-        device.hide_keyboard()
+        snapshot("wrong_password_entered", len(account["password"] + "-incorrect"))
+        hide("after_wrong_password")
+        device.reveal_node("login-submit")
+        ready = snapshot("wrong_submit_ready", len(account["password"] + "-incorrect"))
+        report["counter_snapshots"]["before_wrong_submit"] = counters(args.ca)
+        if not ready["email_matches"] or not ready["process_alive"] or not all(
+                ready["controls"]["login-submit"][key] for key in ("present", "enabled", "visible")):
+            raise RuntimeError("Native login controls were not ready for credential submission")
         device.tap("login-submit")
+        snapshot("wrong_submit_tapped", len(account["password"] + "-incorrect"))
+        report["counter_snapshots"]["after_wrong_submit"] = counters(args.ca)
         rejected = wait_counter(args.ca, "credentials_rejected", initial["credentials_rejected"])
-        expected_error = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
+        report["phase"] = "rejected_credentials"
+        expected_error = REJECTED_ERROR
         if not device.validation_status(expected_error, timeout=30)["matched"]:
             raise RuntimeError("Rejected login did not show the required safe Arabic error")
         device.reveal_node("login-email")
@@ -140,8 +214,17 @@ def main() -> int:
         device.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END")
         device.adb("shell", "input", "keyevent", *(["KEYCODE_DEL"] * 128))
         device.enter("login-password", account["password"])
-        device.hide_keyboard()
+        snapshot("correct_password_entered", len(account["password"]))
+        hide("after_correct_password")
+        device.reveal_node("login-submit")
+        ready = snapshot("correct_submit_ready", len(account["password"]))
+        report["counter_snapshots"]["before_correct_submit"] = counters(args.ca)
+        if not ready["email_matches"] or not ready["process_alive"] or not all(
+                ready["controls"]["login-submit"][key] for key in ("present", "enabled", "visible")):
+            raise RuntimeError("Native login controls were not ready for credential submission")
         device.tap("login-submit")
+        report["phase"] = "correct_submit_tapped"
+        report["counter_snapshots"]["after_correct_submit"] = counters(args.ca)
         device.wait_node("rooms-list", timeout=90)
         signed_in = wait_counter(args.ca, "authenticated_sessions", initial["authenticated_sessions"])
         if signed_in["credentials_ok"] <= initial["credentials_ok"]:
@@ -188,6 +271,12 @@ def main() -> int:
         report["status"] = "passed"
         return 0
     except Exception:
+        if device is not None and "account" in locals() and "module" in locals():
+            try:
+                report.setdefault("ui_snapshots", {})["failure_observed"] = safe_ui_snapshot(
+                    device, module, account["email"], len(account["password"]))
+            except Exception:
+                report.setdefault("ui_snapshots", {})["failure_observed"] = {"ui_readable": False}
         # Exception text can contain native command arguments or server data.
         report["error"] = "Isolated native login check failed at the recorded phase"
         return 1
@@ -200,6 +289,7 @@ def main() -> int:
             # Remove the test APK's session/credential UI after collecting only
             # safe counters. No screenshot/XML/log upload from credentialed runs.
             try:
+                device.adb("shell", "rm", "-f", "/sdcard/tahaddi-native-window.xml", check=False)
                 device.adb("shell", "am", "force-stop", PACKAGE, check=False)
                 device.adb("shell", "pm", "clear", PACKAGE, check=False)
             except Exception:

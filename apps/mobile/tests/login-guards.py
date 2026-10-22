@@ -93,6 +93,48 @@ class LoginIsolationGuards(unittest.TestCase):
         self.assertNotIn(self.account["email"], report + output.getvalue())
         self.assertEqual(json.loads(report)["phase"], "fixture")
         self.assertEqual(list(report_dir.iterdir()), [report_dir / "login-result.json"])
+        device.adb.assert_any_call("shell", "rm", "-f", "/sdcard/tahaddi-native-window.xml", check=False)
+
+
+    def test_back_is_sent_only_when_ime_is_explicitly_shown(self):
+        for dump, expected in [
+            ("mInputShown=true", "shown"),
+            ("mInputShown=false mIsInputViewShown=false", "hidden"),
+            ("unrecognized private IME metadata", "unknown"),
+        ]:
+            with self.subTest(state=expected):
+                device = mock.Mock()
+                device.adb.return_value.stdout = dump
+                result = smoke.hide_keyboard_if_shown(device)
+                self.assertEqual(result, {"before": expected, "sent_back": expected == "shown"})
+                back = mock.call("shell", "input", "keyevent", "KEYCODE_BACK")
+                self.assertEqual(back in device.adb.call_args_list, expected == "shown")
+
+    def test_ui_snapshot_reports_flags_lengths_and_known_notice_kind_only(self):
+        from xml.etree.ElementTree import Element
+        secret = self.account["password"]
+        attrs = {"enabled": "true", "focused": "true", "clickable": "true"}
+        nodes = {
+            "login-email": Element("node", {**attrs, "text": self.account["email"]}),
+            "login-password": Element("node", {**attrs, "text": secret}),
+            "login-submit": Element("node", attrs),
+        }
+        module = mock.Mock()
+        module.find_node.side_effect = lambda xml, name: nodes[name]
+        module.scoped_error_labels.return_value = [secret, self.account["email"]]
+        device = mock.Mock()
+        device.ui.return_value = "private XML retained in memory only"
+        device.adb.return_value.returncode = 0
+        result = smoke.safe_ui_snapshot(device, module, self.account["email"], len(secret))
+        self.assertTrue(result["email_matches"])
+        self.assertEqual(result["password_display_length"], len(secret))
+        self.assertEqual(result["notice_kind"], "unrecognized")
+        encoded = json.dumps(result)
+        self.assertNotIn(secret, encoded)
+        self.assertNotIn(self.account["email"], encoded)
+        module.scoped_error_labels.return_value = [smoke.REJECTED_ERROR]
+        self.assertEqual(smoke.safe_ui_snapshot(device, module, self.account["email"], len(secret))
+                         ["notice_kind"], "invalid_credentials")
 
 
 if __name__ == "__main__":
