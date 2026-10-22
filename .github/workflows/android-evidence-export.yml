@@ -1,0 +1,53 @@
+name: Export existing public Android evidence
+on:
+  push:
+    branches: [docs/android-native-visual-evidence]
+    paths: [.github/workflows/android-evidence-export.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  export:
+    if: github.repository == 'ziztp854-code/qurabia.com'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: android-reports-39724859148-1
+          run-id: 39724859148
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/existing-android-reports
+      - name: Preserve only public screenshots and bounded safe summaries
+        env:
+          REPORTS: ${{ runner.temp }}/existing-android-reports
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,shutil,os
+          src=pathlib.Path(os.environ["REPORTS"])
+          dst=pathlib.Path("docs/visual-evidence/android-native/iteration-3")
+          dst.mkdir(parents=True,exist_ok=True)
+          v=json.loads((src/"visual/visual-result.json").read_text())
+          assert v["source_sha"]=="c958485ccc8828fa8dc0848d08c655a229a9a1e9"
+          assert v["status"]=="passed" and len(v["screens"])==22
+          for frame in v["screens"]:
+              name=frame["file"]
+              assert frame["public_fixture_only"] is True and name.startswith("current-") and name.endswith(".png") and pathlib.Path(name).name==name
+              p=src/"visual"/name
+              assert p.stat().st_size<3000000
+              shutil.copyfile(p,dst/name)
+          (dst/"visual-result.json").write_text(json.dumps(v,ensure_ascii=False,indent=2)+"\n")
+          a=json.loads((src/"login/login-result.json").read_text())
+          summary={k:a[k] for k in ("status","source_sha","phase","checks","failure_category","create_http_evidence","host_server_counters","limitations")}
+          (dst/"native-login-summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\n")
+          print(json.dumps({"visual_status":v["status"],"screens":len(v["screens"]),"native_status":a["status"],"native_phase":a["phase"]}))
+          PY
+      - name: Save evidence on the dedicated documentation branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/visual-evidence/android-native/iteration-3
+          git diff --cached --quiet && exit 0
+          git commit -m "docs: preserve actual Android 0.3.1 matrix and honest native result"
+          git push origin HEAD:refs/heads/docs/android-native-visual-evidence
