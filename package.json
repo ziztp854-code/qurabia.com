@@ -54,10 +54,10 @@
   "devDependencies": {
     "@livekit/rtc-node": "1.1.0",
     "dotenv": "^17.4.2",
-    "prettier": "^3.9.8",
-    "prisma": "^7.10.0",
-    "tsx": "^4.23.13",
-    "turbo": "^2.10.13",
+    "prettier": "^3.9.10",
+    "prisma": "^7.10.1",
+    "tsx": "^4.23.15",
+    "turbo": "^2.11.9",
     "typescript": "^5.9.3"
   },
   "dependencies": {
