@@ -10,13 +10,16 @@ import { theme } from '../theme';
 
 export type ChatModel = ReturnType<typeof useVoiceChat>;
 export type EmojiCatalog = ReturnType<typeof useEmojiCatalog>;
-export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,manage,onModerate}:{
-  snapshot:VoiceSnapshot;chat:ChatModel;catalog:EmojiCatalog;asset:(path:string)=>ImageSourcePropType|undefined;
+export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,manage,onModerate,compact=false}:{
+  compact?:boolean;snapshot:VoiceSnapshot;chat:ChatModel;catalog:EmojiCatalog;asset:(path:string)=>ImageSourcePropType|undefined;
   manage:boolean;onModerate:(messageId:string,action:'delete'|'pin'|'unpin'|'report')=>Promise<void>;
 }) {
   const [draft,setDraft]=useState('');const [picker,setPicker]=useState(false);
+  const [extras,setExtras]=useState(false);
+  useEffect(()=>{if(picker)setExtras(false);},[picker]);
   const [selected,setSelected]=useState<VoiceMessage|null>(null);const [giftTo,setGiftTo]=useState<VoiceParticipant|null>(null);
   const [reply,setReply]=useState<VoiceMessage|null>(null);const [error,setError]=useState('');
+  useEffect(()=>{if(giftTo)setExtras(false);},[giftTo]);
   const [still,setStill]=useState(true);const input=useRef<TextInput>(null);
   useEffect(()=>{
     let reduced=true;let active=AppState.currentState==='active';let alive=true;
@@ -37,9 +40,9 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
     try{await chat.react(selected.id,emoji);setSelected(null);}
     catch(cause){setError(cause instanceof Error?cause.message:'تعذر إضافة التفاعل.');}
   }
-  return <View style={styles.panel}>
-    <View style={styles.heading}><Title small style={styles.chatTitle}>حديث المجلس</Title>
-      <View style={styles.messageCount}><Body muted style={[ui.caption,styles.countLabel]}>{chat.messages.length.toLocaleString('ar-SA')} رسالة</Body></View></View>
+  return <View style={[styles.panel,compact&&styles.compactPanel]}>
+    {!compact&&<View style={styles.heading}><Title small style={styles.chatTitle}>حديث المجلس</Title>
+      <View style={styles.messageCount}><Body muted style={[ui.caption,styles.countLabel]}>{chat.messages.length.toLocaleString('ar-SA')} رسالة</Body></View></View>}
     <FlatList data={messages} inverted keyExtractor={message=>message.id} initialNumToRender={20}
       maxToRenderPerBatch={12} windowSize={5} keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.messages} style={ui.flex}
@@ -51,7 +54,7 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
     {!!reply&&<View style={ui.row}><Body muted style={[ui.small,ui.grow]} numberOfLines={1}>رد على {reply.name}: {reply.text}</Body>
       <Action compact tone="secondary" label="إلغاء الرد" onPress={()=>setReply(null)}/></View>}
     {snapshot.room.chatEnabled?<View style={styles.composer}>
-      <View style={styles.composerTools}>
+      {!compact&&<View style={styles.composerTools}>
         <Pressable accessibilityRole="button" accessibilityLabel="الفيسات" android_ripple={{color:theme.colors.press}}
           style={({pressed})=>[styles.quickAction,pressed&&styles.pressed]} onPress={()=>setPicker(true)}>
           <Body weight="semibold" style={styles.quickActionLabel}>الفيسات</Body>
@@ -62,8 +65,10 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
           onPress={()=>setGiftTo(snapshot.participants.find(person=>person.id!==snapshot.me?.id)||null)}>
           <Body weight="semibold" style={styles.quickActionLabel}>هدية</Body>
         </Pressable>
-      </View>
+      </View>}
       <View style={styles.composerField}>
+        {compact&&<Action compact tone="secondary" label="إضافات" accessibilityLabel="الفيسات والهدايا"
+          onPress={()=>setExtras(true)}/>}
         <TextInput ref={input} testID="chat-input" accessibilityLabel="اكتب رسالة" value={draft} onChangeText={setDraft}
           placeholder="اكتب رسالة…" placeholderTextColor={theme.colors.muted} maxLength={1000} multiline
           textAlign="right" selectionColor={theme.colors.gold} style={styles.input}
@@ -72,6 +77,11 @@ export const ChatPanel = memo(function ChatPanel({snapshot,chat,catalog,asset,ma
           onPress={()=>{void send();}}/>
       </View>
     </View>:<Notice tone="info" message="أوقف المضيف الدردشة في هذه الغرفة."/>}
+    <Sheet visible={compact&&extras&&!picker&&!giftTo} onClose={()=>setExtras(false)} title="إضافات الحديث">
+      <Action tone="secondary" label="الفيسات" onPress={()=>setPicker(true)}/>
+      <Action tone="secondary" label="هدية" disabled={snapshot.participants.length<2}
+        onPress={()=>setGiftTo(snapshot.participants.find(person=>person.id!==snapshot.me?.id)||null)}/>
+    </Sheet>
     <Sheet visible={picker} onClose={()=>setPicker(false)} title="الفيسات والإيموجي">
       <View style={ui.wrap}>{VOICE_EMOJIS.map(([value,label])=><Pressable key={value}
         accessibilityRole="button" accessibilityLabel={label} style={styles.emojiButton}
@@ -140,7 +150,7 @@ const MessageItem=memo(function MessageItem({message,own,asset,still,onPress}:{
   </Pressable>;
 });
 const styles=StyleSheet.create({
-  panel:{flex:1,minHeight:100,gap:8},
+  panel:{flex:1,minHeight:100,gap:8},compactPanel:{minHeight:0},
   heading:{flexDirection:'row-reverse',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},
   chatTitle:{fontSize:18,lineHeight:28},
   messageCount:{paddingHorizontal:10,paddingVertical:3,borderRadius:theme.radius.pill,
