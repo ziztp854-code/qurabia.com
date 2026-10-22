@@ -198,7 +198,7 @@ const styles=StyleSheet.create({
   featuredRoom:{borderColor:theme.colors.border},
   artwork:{width:88,minHeight:148,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceStrong},
   featuredArtwork:{width:104,minHeight:168},
-  cover:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},coverFallback:{width:52,height:40},
+  cover:{position:'absolute',top:0,right:0,bottom:0,left:0,width:'100%',height:'100%'},coverFallback:{width:52,height:40},
   privacy:{position:'absolute',bottom:8,right:8,left:8,backgroundColor:theme.colors.overlay,borderRadius:8,
     paddingVertical:2,paddingHorizontal:4,alignItems:'center'},
   roomBody:{flex:1,minWidth:0,padding:12,gap:4},

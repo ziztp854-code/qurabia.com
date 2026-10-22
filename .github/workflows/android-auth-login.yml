@@ -32,6 +32,7 @@ jobs:
         run: |
           pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
           pnpm --filter @tahaddi/mobile typecheck
+          pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
           pnpm --filter @tahaddi/mobile test
           node --test apps/mobile/scripts/prepare-android-debug.test.cjs
           python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
