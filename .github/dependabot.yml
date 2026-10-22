@@ -8,9 +8,75 @@ updates:
       day: monday
       time: '06:00'
       timezone: Asia/Riyadh
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
+    ignore:
+      # ESLint 10 currently breaks react/display-name; upgrade its plugins together.
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      # React Native minor releases can break the installed Expo SDK native map.
+      - dependency-name: react-native
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
     groups:
-      safe-dependency-updates:
+      mobile-sdk:
+        patterns:
+          - expo
+          - expo-*
+          - '@expo/*'
+          - react-native
+          - react-native-*
+          - '@react-native/*'
+          - '@livekit/react-native*'
+        update-types:
+          - minor
+          - patch
+      web-framework:
+        patterns:
+          - next
+          - '@next/*'
+          - eslint-config-next
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
+        update-types:
+          - minor
+          - patch
+      database:
+        patterns:
+          - prisma
+          - '@prisma/*'
+          - pg
+          - '@types/pg'
+        update-types:
+          - minor
+          - patch
+      realtime:
+        patterns:
+          - '@nestjs/*'
+          - socket.io
+          - socket.io-client
+          - '@socket.io/*'
+          - ioredis
+          - ws
+        update-types:
+          - minor
+          - patch
+      observability:
+        patterns:
+          - '@sentry/*'
+        update-types:
+          - minor
+          - patch
+      development-tools:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      application-libraries:
+        dependency-type: production
         update-types:
           - minor
           - patch
