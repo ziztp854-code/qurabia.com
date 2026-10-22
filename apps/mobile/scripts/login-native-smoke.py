@@ -100,6 +100,19 @@ def keyboard_state(device) -> str:
     return "shown" if "true" in flags else "hidden" if flags else "unknown"
 
 
+def prepare_notification_permission(device) -> str:
+    # This suite verifies room commands and database closure, not permission UX.
+    # The first voice connection requests notifications on Android 13+, which
+    # otherwise covers the room with a system dialog after the successful POST.
+    sdk = device.adb("shell", "getprop", "ro.build.version.sdk").stdout.strip()
+    if not re.fullmatch(r"\d{1,3}", sdk):
+        raise ValueError("Unknown emulator API level")
+    if int(sdk) < 33:
+        return "not_required"
+    device.adb("shell", "pm", "grant", PACKAGE, "android.permission.POST_NOTIFICATIONS")
+    return "pregranted_for_room_command_test"
+
+
 def hide_keyboard_if_shown(device) -> dict:
     before = keyboard_state(device)
     sent_back = before == "shown"
@@ -508,6 +521,7 @@ def main() -> int:
             "Separate test APK trusts an ephemeral localhost CA; distributed production APK does not.",
             "Emulator authentication does not prove physical-device or production deployment behavior.",
             "No SFU is configured: room commands/database closure are tested, not audio capture or SFU participant eviction.",
+            "Notification permission is pregranted on Android 13+; the system permission consent flow is outside this suite.",
             "Production rate limiter, real-user credentials and production writes are not exercised.",
         ],
     }
@@ -543,6 +557,7 @@ def main() -> int:
         device.adb("reverse", "tcp:3443", "tcp:3443")
         device.adb("install", "-r", args.apk)
         device.adb("shell", "pm", "clear", PACKAGE)
+        report["notification_permission"] = prepare_notification_permission(device)
         device.adb("logcat", "-c")
         device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
         device.wait_node("login-email")

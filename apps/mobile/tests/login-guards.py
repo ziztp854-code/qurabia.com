@@ -86,6 +86,38 @@ class LoginIsolationGuards(unittest.TestCase):
         self.file.write_text(json.dumps(self.account))
         self.file.chmod(0o600)
 
+    def test_room_suite_pregrants_only_notifications_on_android_13_and_later(self):
+        from types import SimpleNamespace
+        for sdk in ("33", "36"):
+            with self.subTest(sdk=sdk):
+                device = mock.Mock()
+                device.adb.return_value = SimpleNamespace(stdout=sdk)
+                self.assertEqual(smoke.prepare_notification_permission(device),
+                                 "pregranted_for_room_command_test")
+                self.assertEqual(device.adb.call_args_list, [
+                    mock.call("shell", "getprop", "ro.build.version.sdk"),
+                    mock.call("shell", "pm", "grant", smoke.PACKAGE,
+                              "android.permission.POST_NOTIFICATIONS"),
+                ])
+
+    def test_room_suite_does_not_grant_notifications_on_older_android(self):
+        from types import SimpleNamespace
+        device = mock.Mock()
+        device.adb.return_value = SimpleNamespace(stdout="32")
+        self.assertEqual(smoke.prepare_notification_permission(device), "not_required")
+        device.adb.assert_called_once_with("shell", "getprop", "ro.build.version.sdk")
+
+    def test_unknown_api_level_and_failed_permission_setup_abort_the_test(self):
+        from types import SimpleNamespace
+        device = mock.Mock()
+        for sdk in ("", "unknown", "36 private-metadata"):
+            device.adb.return_value = SimpleNamespace(stdout=sdk)
+            with self.assertRaises(ValueError):
+                smoke.prepare_notification_permission(device)
+        device.adb.side_effect = [SimpleNamespace(stdout="36"), RuntimeError("grant failed")]
+        with self.assertRaises(RuntimeError):
+            smoke.prepare_notification_permission(device)
+
     def test_encoding_sensitive_password_and_dedicated_account_are_accepted(self):
         self.assertEqual(smoke.load_credentials(self.file), self.account)
 

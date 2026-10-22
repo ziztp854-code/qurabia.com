@@ -107,10 +107,11 @@ jobs:
           git fetch --no-tags --depth=1 origin 2b8560e1406034e73b236424ad21ad206f47ecdb
           # Read the raw commit object: revision traversal stops at shallow HEAD.
           parent_sha="$(git cat-file -p HEAD | sed -n 's/^parent //p')"
-          if test "$parent_sha" = 2b8560e1406034e73b236424ad21ad206f47ecdb &&
+          if (test "$parent_sha" = 2b8560e1406034e73b236424ad21ad206f47ecdb ||
+              test "$parent_sha" = 4ca383d495e2014d982c2ae8b895034e49fbae47) &&
              git diff --quiet 2b8560e1406034e73b236424ad21ad206f47ecdb HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/native_ime_geometry.py' ':!apps/mobile/scripts/login-native-smoke.py' ':!apps/mobile/scripts/visual-native-smoke.py' ':!apps/mobile/tests/login-guards.py' ':!apps/mobile/tests/visual-guards.py'; then
             echo "eligible=true" >> "$GITHUB_OUTPUT"
-            echo "Delivery reuse approved by direct-parent and unchanged-runtime proofs."
+            echo "Delivery reuse approved by reviewed-parent and unchanged-runtime proofs."
           else
             echo "eligible=false" >> "$GITHUB_OUTPUT"
             echo "Delivery reuse declined; assemble from the current source."
