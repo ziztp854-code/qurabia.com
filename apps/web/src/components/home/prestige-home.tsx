@@ -4,7 +4,8 @@ import {
   Crown,
   Gamepad2,
   Globe2,
-  MonitorPlay,
+  Headphones,
+  Mic,
   QrCode,
   Radio,
   Trophy,
@@ -125,43 +126,43 @@ export function PrestigeHome({
         <section className={liveStyles.section} id="tahaddi-live" aria-labelledby="live-title">
           <div className={liveStyles.copy}>
             <span className={liveStyles.eyebrow}>
-              <Radio aria-hidden="true" /> مسابقات جماعية مباشرة
+              <Radio aria-hidden="true" /> غرف صوتية حيّة
             </span>
             <h2 id="live-title">
               تحدي <span>لايف</span>
             </h2>
-            <p className={liveStyles.promise}>أنت تقدّم الجولة، والحماس يجمعهم.</p>
+            <p className={liveStyles.promise}>هويتنا عربية.. صوت يجمعنا.</p>
             <p className={liveStyles.description}>
-              اختر مسابقتك، شارك رمز الغرفة، وتابع الإجابات والترتيب لحظة بلحظة. تجربة واحدة تجمع
-              المضيف واللاعبين على التحدّي.
+              مساحتك للحديث والتعارف ومشاركة اللحظة. استكشف الغرف الصوتية، انضم إلى الحوار، واجمع
+              أصدقاءك في غرفة تحمل طابعك.
             </p>
             <div className={liveStyles.actions}>
-              <ButtonLink href="/host" variant="gold">
-                <MonitorPlay aria-hidden="true" /> ابدأ تحدي لايف
+              <ButtonLink href="/voice" variant="gold">
+                <Headphones aria-hidden="true" /> ادخل تحدي لايف
                 <ArrowLeft aria-hidden="true" />
               </ButtonLink>
-              <ButtonLink href="/join" variant="outline">
-                <QrCode aria-hidden="true" /> انضم إلى التحدي
+              <ButtonLink href="/voice?view=mine" variant="outline">
+                <Mic aria-hidden="true" /> غرفي الصوتية
               </ButtonLink>
             </div>
           </div>
           <div className={liveStyles.deck}>
             <div className={liveStyles.deckHeading}>
               <span>
-                <Radio aria-hidden="true" /> من رمز واحد تبدأ المنافسة
+                <Radio aria-hidden="true" /> لكل صوت مساحة، ولكل لقاء حكاية
               </span>
               <span className={liveStyles.wordmark} lang="en" dir="ltr">
                 TAHADDI / LIVE
               </span>
             </div>
-            <ol className={liveStyles.steps} aria-label="كيف يعمل تحدي لايف">
+            <ul className={liveStyles.steps} aria-label="تجربة تحدي لايف">
               <li>
                 <span className={liveStyles.stepIcon}>
-                  <MonitorPlay aria-hidden="true" />
+                  <Headphones aria-hidden="true" />
                 </span>
                 <div>
-                  <h3>جهّز مسابقتك</h3>
-                  <p>اختر الأسئلة وقدّم الجولة من شاشة المضيف.</p>
+                  <h3>اكتشف غرفتك</h3>
+                  <p>تصفّح الغرف واختر اللقاء الذي يناسب اهتماماتك.</p>
                 </div>
               </li>
               <li>
@@ -169,22 +170,22 @@ export function PrestigeHome({
                   <Users aria-hidden="true" />
                 </span>
                 <div>
-                  <h3>اجمع اللاعبين</h3>
-                  <p>شارك رمز الغرفة لينضم أصدقاؤك من أجهزتهم.</p>
+                  <h3>شارك الحوار</h3>
+                  <p>استمع، تحدّث، وتواصل مع مجتمع تحدي.</p>
                 </div>
               </li>
               <li>
                 <span className={liveStyles.stepIcon}>
-                  <Trophy aria-hidden="true" />
+                  <Mic aria-hidden="true" />
                 </span>
                 <div>
-                  <h3>عِش المنافسة</h3>
-                  <p>إجابات مباشرة وترتيب يكشف نجوم الجولة.</p>
+                  <h3>اجمع أصدقاءك</h3>
+                  <p>أنشئ غرفتك وشارك رابطها ليبدأ اللقاء.</p>
                 </div>
               </li>
-            </ol>
-            <Link className={liveStyles.library} href="/quizzes">
-              استكشف المسابقات <ArrowLeft aria-hidden="true" />
+            </ul>
+            <Link className={liveStyles.library} href="/voice?view=favorites">
+              غرفك المفضلة <ArrowLeft aria-hidden="true" />
             </Link>
           </div>
         </section>

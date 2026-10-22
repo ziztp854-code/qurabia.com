@@ -44,6 +44,16 @@ describe('HomePage', () => {
     expect(screen.getByRole('button', { name: 'انضم' })).toBeInTheDocument();
   });
 
+  it('يربط تحدي لايف بالغرف الصوتية الحالية', async () => {
+    await renderHomePage();
+
+    const live = screen.getByRole('region', { name: 'تحدي لايف' });
+    expect(within(live).getByRole('link', { name: /ادخل تحدي لايف/ })).toHaveAttribute('href', '/voice');
+    expect(within(live).getByRole('link', { name: /غرفي الصوتية/ })).toHaveAttribute('href', '/voice?view=mine');
+    expect(within(live).getByRole('link', { name: /غرفك المفضلة/ })).toHaveAttribute('href', '/voice?view=favorites');
+    expect(live.querySelector('a[href="/host"]')).not.toBeInTheDocument();
+  });
+
   it('يستخدم أصول Hero الرسمية المنفصلة دون الصورة المركبة القديمة', async () => {
     const { container } = await renderHomePage();
     const sources = [...container.querySelectorAll('[data-home-hero] img')].map((image) => {
