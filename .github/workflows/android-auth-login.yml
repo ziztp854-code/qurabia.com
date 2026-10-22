@@ -359,6 +359,15 @@ jobs:
               console.log('NATIVE_PREVIEW_END '+JSON.stringify({bytes:data.length,chunks:Math.ceil(encoded.length/12000)}));
             }
           }
+          const idlePath='android-reports/native/native-auth-idle.png';
+          if(!process.env.TAHADDI_QA_ORIGIN&&!process.env.TAHADDI_QA_EMAIL&&!process.env.TAHADDI_QA_PASSWORD&&fs.existsSync(idlePath)){
+            const data=fs.readFileSync(idlePath);
+            if(data.length<2*1024*1024){
+              const encoded=data.toString('base64');
+              for(let offset=0,index=0;offset<encoded.length;offset+=12000,index++)
+                console.log('NATIVE_IDLE_PREVIEW '+JSON.stringify({index,chunk:encoded.slice(offset,offset+12000)}));
+            }
+          }
           NODE
 
       - name: Prepare isolated database and ephemeral localhost TLS

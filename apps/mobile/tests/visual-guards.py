@@ -50,5 +50,40 @@ class PublicVisualBoundary(unittest.TestCase):
             visual.verify_display(device, 1080, 2160, 480, "2.0")
 
 
+
+    def test_keyboard_input_must_fit_the_resized_app_and_keep_48dp_height(self):
+        module = visual.load_device()
+        for field in ("[20,800][1000,900]", "[20,1000][1000,1200]"):
+            device = mock.Mock()
+            device.ui.return_value = (
+                '<hierarchy><node resource-id="visual-preview-public" bounds="[0,0][1080,100]"/>'
+                '<node resource-id="visual-page-room" bounds="[0,100][1080,1100]"/>'
+                '<node resource-id="chat-input" visible-to-user="true" bounds="' + field + '"/></hierarchy>')
+            with self.assertRaises(visual.VisualFailure):
+                visual.assert_keyboard_input_visible(device, module, "room", "chat-input", 1080, 2160, 480)
+        device.ui.return_value = (
+            '<hierarchy><node resource-id="visual-preview-public" bounds="[0,0][1080,100]"/>'
+            '<node resource-id="visual-page-room" bounds="[0,100][1080,1100]"/>'
+            '<node resource-id="chat-input" visible-to-user="true" bounds="[20,800][1000,1000]"/></hierarchy>')
+        result = visual.assert_keyboard_input_visible(device, module, "room", "chat-input", 1080, 2160, 480)
+        self.assertTrue(result["fully_inside_app_viewport"])
+
+
+
+    def test_anonymous_idle_capture_refuses_any_populated_login_field(self):
+        module = visual.load_device()
+        for populated in ("login-email", "login-password"):
+            device = mock.Mock()
+            device.ui.return_value = "<hierarchy>" + "".join(
+                '<node resource-id="' + key + '" text="' + ("private-fixture-value" if key == populated else "") +
+                '" bounds="[10,20][300,100]"/>' for key in ("login-email", "login-password")) + "</hierarchy>"
+            with tempfile.TemporaryDirectory() as directory:
+                with mock.patch.object(module.subprocess, "run") as command:
+                    with self.assertRaises(RuntimeError):
+                        module.capture_anonymous_idle(device, pathlib.Path(directory))
+                    command.assert_not_called()
+                self.assertFalse((pathlib.Path(directory) / "native-auth-idle.png").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

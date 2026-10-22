@@ -87,6 +87,47 @@ def keyboard_shown(device) -> bool:
     return bool(re.search(r"\b(?:mInputShown|mIsInputViewShown)=true\b", dump))
 
 
+def assert_keyboard_input_visible(device, module, page: str, target: str,
+                                  width: int, height: int, density: int) -> dict:
+    xml = device.ui()
+    assert_public_page(xml, module, page)
+    def bounds(node):
+        if node is None or node.attrib.get("visible-to-user", "true") == "false":
+            raise VisualFailure("keyboard_input_not_visible")
+        match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+        if not match:
+            raise VisualFailure("keyboard_input_bounds_missing")
+        return tuple(map(int, match.groups()))
+    parent = bounds(module.find_node(xml, "visual-page-" + page))
+    field = bounds(module.find_node(xml, target))
+    left, top, right, bottom = field
+    if (not (0 <= left < right <= width and 0 <= top < bottom <= height) or
+            not (parent[0] <= left < right <= parent[2] and parent[1] <= top < bottom <= parent[3]) or
+            bottom - top < round(48 * density / 160)):
+        raise VisualFailure("keyboard_input_clipped")
+    return {"bounds_px": list(field), "height_dp": round((bottom - top) * 160 / density, 2),
+            "fully_inside_app_viewport": True}
+
+
+def featured_room_visible(device, module) -> bool:
+    xml = device.ui()
+    def bounds(key):
+        node = module.find_node(xml, key)
+        if node is None or node.attrib.get("visible-to-user", "true") == "false":
+            return None
+        match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.attrib.get("bounds", ""))
+        return tuple(map(int, match.groups())) if match else None
+    parent = bounds("visual-page-home")
+    if parent is None:
+        return False
+    for key in ("featured-room-title", "featured-room-host"):
+        child = bounds(key)
+        if child is None or not (parent[0] <= child[0] < child[2] <= parent[2] and
+                                 parent[1] <= child[1] < child[3] <= parent[3]):
+            return False
+    return True
+
+
 def focus_search(device, module):
     from xml.etree import ElementTree as ET
     xml = device.ui()
@@ -192,40 +233,64 @@ def main() -> int:
                 wait_public_page(device, module, page)
                 filename = args.label + "-" + case + "-" + page + ".png"
                 capture_public(device, module, page, directory / filename)
+                if page == "home" and float(font) == 1.0:
+                    report.setdefault("layout_checks", []).append({
+                        "case": case, "first_room_title_and_host_above_fold": featured_room_visible(device, module),
+                    })
                 report["screens"].append({
                     "file": filename, "case": case, "page": page,
                     "width_px": width, "height_px": height, "density_dpi": density,
                     "width_dp": round(width * 160 / density, 2), "font_scale": float(font),
                     "public_fixture_only": True,
                 })
-            if case == "360dp":
-                for page, kind in (("rooms", "search"), ("room", "chat")):
-                    report["phase"] = case + "_" + kind + "_keyboard"
-                    device.tap("preview-live" if page == "room" else "nav-rooms")
-                    wait_public_page(device, module, page)
-                    if kind == "search":
-                        focus_search(device, module)
-                    else:
-                        device.tap("chat-input")
-                    # Public constant draft only; never enter a password or account.
-                    device.adb("shell", "input", "text", "PublicPreview")
-                    deadline = time.monotonic() + 15
-                    while time.monotonic() < deadline and not keyboard_shown(device):
-                        time.sleep(1)
-                    if not keyboard_shown(device):
-                        raise VisualFailure("keyboard_not_observed")
-                    filename = args.label + "-" + case + "-" + kind + "-keyboard.png"
-                    capture_public(device, module, page, directory / filename)
-                    report["screens"].append({
-                        "file": filename, "case": case, "page": page, "keyboard": kind,
-                        "width_px": width, "height_px": height, "density_dpi": density,
-                        "width_dp": round(width * 160 / density, 2),
-                        "font_scale": 1.0, "public_fixture_only": True,
-                    })
-                    device.adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        # Capture every viewport/font case before exercising keyboard overlays.
+        # A keyboard failure must remain a failure without hiding other layouts.
+        case, width, height, density, font = "360dp", 1080, 2160, 480, "1.0"
+        report["phase"] = "configure_keyboard_cases"
+        device.adb("shell", "wm", "size", "1080x2160")
+        device.adb("shell", "wm", "density", "480")
+        device.adb("shell", "settings", "put", "system", "font_scale", font)
+        verify_display(device, width, height, density, font)
+        device.adb("shell", "am", "force-stop", PACKAGE)
+        device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
+        wait_public_page(device, module, "home")
+        for page, kind in (("rooms", "search"), ("room", "chat")):
+            report["phase"] = case + "_" + kind + "_keyboard"
+            device.tap("preview-live" if page == "room" else "nav-rooms")
+            wait_public_page(device, module, page)
+            if kind == "search":
+                focus_search(device, module)
+            else:
+                node = module.find_node(device.ui(), "chat-input")
+                if node is None:
+                    raise VisualFailure("chat_input_not_visible")
+                x, y = module.center(node)
+                if not (0 <= x < width and 0 <= y < height):
+                    raise VisualFailure("chat_input_outside_viewport")
+                device.adb("shell", "input", "tap", str(x), str(y))
+            # Public constant draft only; never enter a password or account.
+            device.adb("shell", "input", "text", "PublicPreview")
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline and not keyboard_shown(device):
+                time.sleep(1)
+            if not keyboard_shown(device):
+                raise VisualFailure("keyboard_not_observed")
+            geometry = assert_keyboard_input_visible(device, module, page,
+                "room-search" if kind == "search" else "chat-input", width, height, density)
+            filename = args.label + "-" + case + "-" + kind + "-keyboard.png"
+            capture_public(device, module, page, directory / filename)
+            report["screens"].append({
+                "file": filename, "case": case, "page": page, "keyboard": kind,
+                "width_px": width, "height_px": height, "density_dpi": density,
+                "width_dp": round(width * 160 / density, 2),
+                "font_scale": 1.0, "public_fixture_only": True, "input_geometry": geometry,
+            })
+            device.adb("shell", "input", "keyevent", "KEYCODE_BACK")
         errors = device.adb("logcat", "-d", "-s", "AndroidRuntime:E", "ReactNativeJS:E", "*:S").stdout
         if re.search(r"FATAL EXCEPTION|Unable to load script|Could not connect to development server", errors):
             raise VisualFailure("standalone_preview_runtime_failure")
+        if any(not item["first_room_title_and_host_above_fold"] for item in report.get("layout_checks", [])):
+            raise VisualFailure("featured_room_not_fully_visible_above_fold")
         report["phase"] = "captured"
         report["status"] = "passed"
         return 0
@@ -254,6 +319,7 @@ def main() -> int:
         print("PUBLIC_VISUAL_REVIEW " + json.dumps({
             "status": report["status"], "phase": report["phase"],
             "screens": len(report["screens"]), "source_sha": report["source_sha"],
+            "failure": report.get("failure"), "layout_checks": report.get("layout_checks", []),
         }))
 
 
