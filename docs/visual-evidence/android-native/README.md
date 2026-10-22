@@ -29,3 +29,12 @@ Root and the Android UI / Chat agents independently inspected these original fra
 The next code revision reduces the header, promotes actual room artwork, adapts optional room controls to measured available height and keeps input above the keyboard. These fixes require new rendered evidence; source/typecheck alone does not validate them.
 
 All images here are original emulator PNGs. No screenshot baseline was blindly updated, and no private authenticated UI XML/screenshots are included. APK files and functional results remain in Actions; no merge or production deployment was performed.
+
+
+## 0.3.1 — معاينة الدخول الفعلية
+
+الصورة التالية أصلية من محاكي Android36 / Pixel6، بدقة1080×2400، بعد نجاح فحوص الواجهة العامة الأربعة دون Metro في [التشغيل39720954765](https://github.com/ziztp854-code/qurabia.com/actions/runs/39720954765). البريد وكلمة المرور فارغان؛ المعروض هو تحقق محلي من الحقول الفارغة، وليس رفض حساب. لا توجد جلسة أو بيانات شخصية.
+
+مصدر PR المدمج للاختبار `38670b4c3ed24f03310799c482e9e72d24280fab` له شجرة Git نفسها تمامًا `dd30037872153fd103cfdfc5f50d9ba7b34f8ae0` الخاصة بالرأس `eb1216d468453abc5b91ed2c36fad99878b17374`. الإصدار0.3.1، versionCode6. تسجيل الدخول بحساب وإغلاق الغرف والمصفوفة المرئية ما زالت معلقة في التشغيل الرئيسي عند حفظ هذه الصورة.
+
+![شاشة الدخول الأصلية0.3.1، الحقول فارغة والتحقق المحلي ظاهر](iteration-2/anonymous-login-0.3.1.png)
