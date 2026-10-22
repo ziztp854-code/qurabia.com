@@ -197,10 +197,12 @@ class LoginIsolationGuards(unittest.TestCase):
                   'enabled="true" bounds="[100,1800][980,1950]"/></node></hierarchy>')
         device = mock.Mock()
         device.ui.side_effect = [first, second]
+        device.adb.return_value.stdout = "Physical size: 1080x2400"
         module = smoke.load_device()
         node = smoke.reveal_room_control(device, module, "room-save")
         self.assertEqual(node.attrib["resource-id"], "room-save")
-        command = device.adb.call_args.args
+        command = next(call.args for call in device.adb.call_args_list
+                       if call.args[:3] == ("shell", "input", "swipe"))
         self.assertEqual(command[:3], ("shell", "input", "swipe"))
         for x, y in [(int(command[3]), int(command[4])), (int(command[5]), int(command[6]))]:
             self.assertTrue(0 < x < 1080 and 1600 < y < 2100)
@@ -230,6 +232,27 @@ class LoginIsolationGuards(unittest.TestCase):
              mock.patch.object(smoke.urllib.request, "urlopen", return_value=response):
             with self.assertRaises(ValueError):
                 smoke.create_http_evidence("local-fixture-ca.pem")
+
+
+
+    def test_room_title_display_allows_bidi_controls_but_not_different_text(self):
+        self.assertTrue(smoke.room_title_display_matches("MobileHostClose"))
+        self.assertTrue(smoke.room_title_display_matches("\u200fMobileHostClose"))
+        self.assertTrue(smoke.room_title_display_matches("\u2067MobileHostClose\u2069"))
+        self.assertFalse(smoke.room_title_display_matches("MobileHostCloseX"))
+        self.assertFalse(smoke.room_title_display_matches(" MobileHostClose"))
+        self.assertFalse(smoke.room_title_display_matches("MobileHostC1ose"))
+
+    def test_visible_editor_save_footer_can_be_outside_scroll_viewport(self):
+        device = mock.Mock()
+        device.ui.return_value = ('<hierarchy><node class="android.widget.ScrollView" scrollable="true" '
+            'bounds="[24,300][1056,1800]"/><node resource-id="room-save" enabled="true" '
+            'visible-to-user="true" bounds="[60,1900][1020,2050]"/></hierarchy>')
+        device.adb.return_value.stdout = "Physical size: 1080x2400"
+        node = smoke.reveal_room_control(device, smoke.load_device(), "room-save")
+        self.assertEqual(node.attrib["resource-id"], "room-save")
+        self.assertFalse(any(call.args[:3] == ("shell", "input", "swipe")
+                             for call in device.adb.call_args_list))
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 import sys
 import time
 import urllib.request
+import unicodedata
 
 PACKAGE = "com.qurabia.tahaddi"
 ORIGIN = "https://localhost:3443"
@@ -217,6 +218,13 @@ def room_scroll_nodes(root) -> list:
             node.attrib.get("visible-to-user", "true") != "false" and rectangle(node)]
 
 
+def room_title_display_matches(value: str) -> bool:
+    # Android accessibility may add bidi format controls for an RTL TextInput.
+    # This comparison is only for the public constant room title, never account
+    # credentials, submitted room data or server identity.
+    return "".join(char for char in value if unicodedata.category(char) != "Cf") == "MobileHostClose"
+
+
 def safe_room_snapshot(device, module) -> dict:
     root = ET.fromstring(device.ui())
     xml = ET.tostring(root, encoding="unicode")
@@ -248,7 +256,9 @@ def safe_room_snapshot(device, module) -> dict:
         "process_alive": device.adb("shell", "pidof", PACKAGE, check=False).returncode == 0,
         "modal_title_present": "أنشئ مساحتك الصوتية" in labels,
         "room_name_length": len(name_value),
-        "room_name_matches": name_value == "MobileHostClose",
+        "room_name_matches": room_title_display_matches(name_value),
+        "room_name_display_exact": name_value == "MobileHostClose",
+        "room_name_format_controls": sum(unicodedata.category(char) == "Cf" for char in name_value),
         "known_notice": {
             "name_required": "اكتب اسمًا للغرفة من ٣ أحرف على الأقل." in labels,
             "private_password_short": "كلمة المرور يجب أن تكون ٦ أحرف على الأقل." in labels,
@@ -271,10 +281,16 @@ def reveal_room_control(device, module, test_id: str):
         scrolls = room_scroll_nodes(root)
         if node is not None and node.attrib.get("visible-to-user", "true") != "false":
             cx, cy = module.center(node)
-            if not scrolls or any(left <= cx < right and top <= cy < bottom
-                                  for left, top, right, bottom in map(rectangle, scrolls)):
-                if node.attrib.get("enabled") == "true":
-                    return node
+            sizes = re.findall(r"(\d+)x(\d+)", device.adb("shell", "wm", "size").stdout)
+            width, height = map(int, sizes[-1]) if sizes else (0, 0)
+            inside_scroll = any(left <= cx < right and top <= cy < bottom
+                                for left, top, right, bottom in map(rectangle, scrolls))
+            # The editor's persistent Save footer is intentionally outside the
+            # scroll viewport. It still must be visible, enabled and on screen.
+            if (0 <= cx < width and 0 <= cy < height and
+                    (not scrolls or inside_scroll or test_id == "room-save") and
+                    node.attrib.get("enabled") == "true"):
+                return node
         if not scrolls:
             raw_scrolls = [item for item in root.iter() if item.attrib.get("scrollable") == "true" and
                            item.attrib.get("class", "").endswith(("ScrollView", "RecyclerView"))]
