@@ -1,4 +1,16 @@
-import { ArrowLeft, Castle, Crown, Gamepad2, Globe2, QrCode, Trophy, Zap } from 'lucide-react';
+import {
+  ArrowLeft,
+  Castle,
+  Crown,
+  Gamepad2,
+  Globe2,
+  MonitorPlay,
+  QrCode,
+  Radio,
+  Trophy,
+  Users,
+  Zap,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PrestigeStage } from '@/components/home/prestige-stage';
@@ -11,6 +23,7 @@ import { publicGames } from '@/data/games';
 import type { PlanCode } from '@tahaddi/domain';
 import styles from './prestige-home.module.css';
 import worldStyles from './mamluk-home.module.css';
+import liveStyles from './live-home.module.css';
 import { GradientText } from '@/components/react-bits/gradient-text';
 import { Magnet } from '@/components/react-bits/magnet';
 
@@ -107,6 +120,73 @@ export function PrestigeHome({
               </span>
             </div>
           </PrestigeStage>
+        </section>
+
+        <section className={liveStyles.section} id="tahaddi-live" aria-labelledby="live-title">
+          <div className={liveStyles.copy}>
+            <span className={liveStyles.eyebrow}>
+              <Radio aria-hidden="true" /> مسابقات جماعية مباشرة
+            </span>
+            <h2 id="live-title">
+              تحدي <span>لايف</span>
+            </h2>
+            <p className={liveStyles.promise}>أنت تقدّم الجولة، والحماس يجمعهم.</p>
+            <p className={liveStyles.description}>
+              اختر مسابقتك، شارك رمز الغرفة، وتابع الإجابات والترتيب لحظة بلحظة. تجربة واحدة تجمع
+              المضيف واللاعبين على التحدّي.
+            </p>
+            <div className={liveStyles.actions}>
+              <ButtonLink href="/host" variant="gold">
+                <MonitorPlay aria-hidden="true" /> ابدأ تحدي لايف
+                <ArrowLeft aria-hidden="true" />
+              </ButtonLink>
+              <ButtonLink href="/join" variant="outline">
+                <QrCode aria-hidden="true" /> انضم إلى التحدي
+              </ButtonLink>
+            </div>
+          </div>
+          <div className={liveStyles.deck}>
+            <div className={liveStyles.deckHeading}>
+              <span>
+                <Radio aria-hidden="true" /> من رمز واحد تبدأ المنافسة
+              </span>
+              <span className={liveStyles.wordmark} lang="en" dir="ltr">
+                TAHADDI / LIVE
+              </span>
+            </div>
+            <ol className={liveStyles.steps} aria-label="كيف يعمل تحدي لايف">
+              <li>
+                <span className={liveStyles.stepIcon}>
+                  <MonitorPlay aria-hidden="true" />
+                </span>
+                <div>
+                  <h3>جهّز مسابقتك</h3>
+                  <p>اختر الأسئلة وقدّم الجولة من شاشة المضيف.</p>
+                </div>
+              </li>
+              <li>
+                <span className={liveStyles.stepIcon}>
+                  <Users aria-hidden="true" />
+                </span>
+                <div>
+                  <h3>اجمع اللاعبين</h3>
+                  <p>شارك رمز الغرفة لينضم أصدقاؤك من أجهزتهم.</p>
+                </div>
+              </li>
+              <li>
+                <span className={liveStyles.stepIcon}>
+                  <Trophy aria-hidden="true" />
+                </span>
+                <div>
+                  <h3>عِش المنافسة</h3>
+                  <p>إجابات مباشرة وترتيب يكشف نجوم الجولة.</p>
+                </div>
+              </li>
+            </ol>
+            <Link className={liveStyles.library} href="/quizzes">
+              استكشف المسابقات <ArrowLeft aria-hidden="true" />
+            </Link>
+          </div>
         </section>
 
         <div className={styles.showcaseGrid} data-home-showcase>

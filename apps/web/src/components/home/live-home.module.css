@@ -1,0 +1,177 @@
+.section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
+  inline-size: min(calc(100% - 2.5rem), 90rem);
+  margin: clamp(2rem, 5vw, 5rem) auto;
+  padding: clamp(1.25rem, 3vw, 3rem);
+  border: 1px solid var(--home-border);
+  border-radius: var(--radius-xl);
+  background: var(--home-panel);
+  color: var(--home-ink);
+}
+
+.copy,
+.deck,
+.steps li > div {
+  min-inline-size: 0;
+}
+
+.eyebrow,
+.deckHeading > span:first-child,
+.library {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.eyebrow {
+  color: var(--home-gold-bright);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.eyebrow svg,
+.deckHeading svg,
+.library svg {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.copy h2 {
+  margin-block: 0.7rem;
+  font-size: clamp(2.8rem, 5vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.copy h2 span {
+  color: var(--home-gold-bright);
+}
+.promise {
+  margin-block: 0 0.75rem;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 700;
+}
+.description {
+  max-inline-size: 34rem;
+  margin: 0;
+  color: var(--home-muted);
+  line-height: 1.9;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-start: 1.75rem;
+}
+.actions a {
+  min-block-size: 3rem;
+}
+
+.deck {
+  padding: clamp(1rem, 2.5vw, 2rem);
+  border: 1px solid var(--home-border);
+  border-block-start: 3px solid var(--home-gold);
+  border-radius: var(--radius-lg);
+  background: var(--home-panel-strong);
+}
+
+.deckHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+.deckHeading > span:first-child {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.deckHeading svg {
+  color: var(--home-gold-bright);
+}
+.wordmark {
+  color: var(--home-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+.steps {
+  list-style: none;
+  padding: 0;
+  margin-block: 1.25rem 0;
+}
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 1.1rem;
+  border-block-end: 1px solid var(--home-border);
+}
+.stepIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 3rem;
+  block-size: 3rem;
+  border: 1px solid var(--home-border);
+  border-radius: var(--radius-md);
+  color: var(--home-gold-bright);
+}
+.stepIcon svg {
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+}
+.steps h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.steps p {
+  margin-block: 0.25rem 0;
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  line-height: 1.8;
+}
+.library {
+  inline-size: fit-content;
+  min-block-size: 2.75rem;
+  margin-block-start: 0.75rem;
+  color: var(--home-gold-bright);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.section a:focus-visible {
+  outline: 2px solid var(--home-gold-bright);
+  outline-offset: 5px;
+}
+.library:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+@media (max-width: 900px) {
+  .section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .section {
+    inline-size: calc(100% - 1.25rem);
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .actions a {
+    inline-size: 100%;
+    white-space: normal;
+  }
+  .steps li {
+    gap: 0.75rem;
+  }
+}
