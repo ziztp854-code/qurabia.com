@@ -23,11 +23,11 @@ export function Title({ children, small = false, ...props }: TextProps & {small?
   return <Body {...props} weight="bold" accessibilityRole="header"
     style={[small ? styles.smallTitle : styles.title, props.style]}>{children}</Body>;
 }
-export function Action({ label, onPress, busy = false, disabled = false, tone = 'primary', testID, compact = false }: {
+export function Action({ label, onPress, busy = false, disabled = false, tone = 'primary', testID, compact = false, accessibilityLabel }: {
   label: string; onPress: () => void; busy?: boolean; disabled?: boolean;
-  tone?: 'primary' | 'secondary' | 'danger'; testID?: string; compact?: boolean;
+  tone?: 'primary' | 'secondary' | 'danger'; testID?: string; compact?: boolean; accessibilityLabel?: string;
 }) {
-  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label}
+  return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={accessibilityLabel || label}
     accessibilityState={{disabled: disabled || busy, busy}} disabled={disabled || busy}
     onPress={onPress} android_ripple={{color: theme.colors.press}}
     style={({pressed}) => [styles.button, compact && styles.compact, styles[tone],
@@ -39,13 +39,13 @@ export function Action({ label, onPress, busy = false, disabled = false, tone = 
     </View>
   </Pressable>;
 }
-export function Field({ label, error, ltr = false, inputRef, onFocus, onBlur, ...props }: TextInputProps & {
-  label: string; error?: string; ltr?: boolean; inputRef?: Ref<TextInput>;
+export function Field({ label, error, ltr = false, inputRef, onFocus, onBlur, hideLabel = false, ...props }: TextInputProps & {
+  label: string; error?: string; ltr?: boolean; inputRef?: Ref<TextInput>; hideLabel?: boolean;
 }) {
   const fontsReady = useContext(FontsContext);
   const [focused, setFocused] = useState(false);
   return <View style={styles.field}>
-    <Body weight="semibold" style={styles.fieldLabel}>{label}</Body>
+    {!hideLabel && <Body weight="semibold" style={styles.fieldLabel}>{label}</Body>}
     <TextInput {...props} ref={inputRef} accessibilityLabel={props.accessibilityLabel || label}
       placeholderTextColor={theme.colors.placeholder} selectionColor={theme.colors.gold}
       onFocus={event => { setFocused(true); onFocus?.(event); }}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Switch, View, type ImageSourcePropType } from 'react-native';
 import type { VoiceCreateInput, VoiceRoom } from '../api/contracts';
 import type { useRooms } from '../rooms/useRooms';
-import { Action, Body, Empty, Field, Loading, Notice, Panel, Sheet, Title, ui } from '../components/ui';
+import { Action, Body, Empty, Field, Loading, Notice, Sheet, Title, ui } from '../components/ui';
 import { theme } from '../theme';
 
 export type RoomsModel = ReturnType<typeof useRooms>;
@@ -49,14 +49,14 @@ export function RoomsScreen({ model, onJoined, asset, home = false, displayName 
           <Action compact testID="rooms-refresh" tone="secondary" label="تحديث" busy={model.refreshing}
             onPress={() => { void model.refresh().catch(()=>{}); }}/>
         </View>
-        <Panel style={home?styles.welcome:styles.discover}>
-          <Title>{home?'مجلسك يبدأ هنا':'غرف على الهواء'}</Title>
-          <Body muted style={ui.small}>{home?'حديث يجمعك بأصحابك.':
-            'اختر ما يشبه اهتمامك، وانضم إلى الحديث.'}</Body>
-          <Action testID="room-create" label="أنشئ غرفة صوتية" onPress={() => setCreating(true)}/>
-        </Panel>
-        <Field label="ابحث عن مجلس" value={query} onChangeText={setQuery} placeholder="اسم الغرفة أو المضيف"
-          returnKeyType="search" autoCorrect={false}/>
+        <View style={ui.row}>
+          <View style={ui.grow}><Title small style={styles.discoveryTitle} numberOfLines={1}>مجالس على الهواء</Title>
+            <Body muted style={ui.caption}>{filtered.length.toLocaleString('ar-SA')} غرفة{category==='الكل'?'':' · '+category}</Body></View>
+          <Action compact testID="room-create" label="أنشئ غرفة" accessibilityLabel="أنشئ غرفة صوتية"
+            onPress={() => setCreating(true)}/>
+        </View>
+        <Field testID="room-search" label="ابحث عن مجلس" hideLabel value={query} onChangeText={setQuery}
+          placeholder="ابحث عن غرفة أو مضيف" style={styles.search} returnKeyType="search" autoCorrect={false}/>
         <FlatList horizontal inverted data={filters} keyExtractor={item=>item}
           style={styles.filterRail} contentContainerStyle={styles.filterContent} showsHorizontalScrollIndicator={false}
           renderItem={({item})=><Pressable accessibilityRole="button" accessibilityState={{selected:category===item}}
@@ -65,8 +65,6 @@ export function RoomsScreen({ model, onJoined, asset, home = false, displayName 
             <Body weight={category===item?'bold':'regular'} style={[ui.small,category===item&&styles.chipText]}>{item}</Body>
           </Pressable>}/>
         <Notice message={model.error}/>
-        <View style={ui.row}><Title small>{category==='الكل'?'اكتشف المجالس':category}</Title>
-          <View style={ui.grow}/><Body muted style={ui.caption}>{filtered.length.toLocaleString('ar-SA')} غرفة</Body></View>
       </View>}
       renderItem={({item,index}) => <RoomCard room={item} source={asset(item.cover)} featured={home&&index===0} onPress={() => {
         if(model.snapshot?.room.id === item.id) onJoined();
@@ -92,7 +90,7 @@ function RoomCard({room,source,onPress,featured=false}: {
   const [failed,setFailed]=useState(false);
   const sourceKey=typeof source==='number'?String(source):JSON.stringify(source);
   useEffect(()=>setFailed(false),[sourceKey]);
-  return <Pressable accessibilityRole="button"
+  return <Pressable testID={featured?'featured-room':undefined} accessibilityRole="button"
     accessibilityLabel={room.name+'، '+(room.active?'على الهواء':'غير نشطة')+'، المضيف '+room.hostName+'، '+room.participantCount+' مشارك'}
     onPress={onPress} android_ripple={{color:theme.colors.press}}
     style={({pressed}) => [styles.room,featured&&styles.featuredRoom,pressed&&styles.pressed]}>
@@ -100,16 +98,17 @@ function RoomCard({room,source,onPress,featured=false}: {
       {source&&!failed?<Image source={source} onError={()=>setFailed(true)} style={styles.cover} resizeMode="cover" accessible={false}/>:
         <Image source={require('../../assets/tahaddi-crown.webp')} style={styles.coverFallback} resizeMode="contain" accessible={false}/>}
       <View style={styles.privacy}><Body style={ui.caption}>{room.isPrivate?'خاصة':'عامة'}</Body></View>
+      {featured&&<View style={styles.coverCategory}><Body weight="semibold" style={[ui.caption,ui.gold]}>{room.category}</Body></View>}
     </View>
-    <View style={styles.roomBody}>
-      <View style={ui.row}><Body style={[ui.caption,ui.gold]}>{room.category}</Body>
-        <View style={ui.grow}/><View style={styles.liveLabel}><View accessible={false}
+    <View style={[styles.roomBody,!featured&&styles.compactBody]}>
+      <View style={ui.row}>{!featured&&<Body style={[ui.caption,ui.gold]}>{room.category}</Body>}
+        <View style={styles.liveLabel}><View accessible={false}
           style={[styles.dot,{backgroundColor:room.active?theme.colors.live:theme.colors.muted}]}/>
-          <Body style={ui.caption}>{room.active?'مباشر':'متوقفة'}</Body></View></View>
-      <Title small numberOfLines={2}>{room.name}</Title>
-      {!!room.description&&<Body muted style={ui.small} numberOfLines={2}>{room.description}</Body>}
-      <View style={styles.roomFooter}><Body muted style={[ui.caption,ui.grow]} numberOfLines={1}>بضيافة {room.hostName}</Body>
-        <Body weight="semibold" style={ui.caption}>{room.participantCount.toLocaleString('ar-SA')} مشارك</Body></View>
+          <Body style={ui.caption}>{room.active?'مباشر':'متوقفة'}</Body></View>
+        <View style={ui.grow}/><Body weight="semibold" style={ui.caption}>{room.participantCount.toLocaleString('ar-SA')} مشارك</Body></View>
+      <Title small testID={featured?'featured-room-title':undefined} style={featured?styles.featuredTitle:styles.cardTitle} numberOfLines={2}>{room.name}</Title>
+      <Body muted testID={featured?'featured-room-host':undefined} style={ui.caption} numberOfLines={1}>بضيافة {room.hostName}</Body>
+      {featured&&!!room.description&&<Body muted style={ui.small} numberOfLines={1}>{room.description}</Body>}
     </View>
   </Pressable>;
 }
@@ -183,29 +182,29 @@ function Toggle({label,value,onValueChange}:{label:string;value:boolean;onValueC
     thumbColor={theme.colors.text}/></View>;
 }
 const styles=StyleSheet.create({
-  header:{gap:12},brandMark:{width:48,height:48,borderRadius:theme.radius.md,
+  header:{gap:8},brandMark:{width:40,height:40,borderRadius:theme.radius.md,
     borderWidth:1,borderColor:theme.colors.border,backgroundColor:theme.colors.goldSoft,alignItems:'center',justifyContent:'center'},
-  crown:{width:36,height:28},brandName:{fontSize:theme.type.section,lineHeight:30},
-  welcome:{gap:12,borderColor:theme.colors.border,padding:theme.spacing.md},
-  discover:{gap:12,padding:theme.spacing.md},
-  filterRail:{flexGrow:0},filterContent:{gap:theme.spacing.sm,paddingVertical:2},
+  crown:{width:30,height:24},brandName:{fontSize:18,lineHeight:28},
+  discoveryTitle:{fontSize:18,lineHeight:28},search:{minHeight:48,paddingVertical:8},
+  filterRail:{flexGrow:0},filterContent:{gap:theme.spacing.sm},
   chip:{minHeight:theme.touch,paddingHorizontal:theme.spacing.md,paddingVertical:10,borderRadius:theme.radius.pill,
     justifyContent:'center',backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.controlBorder},
   chipSelected:{backgroundColor:theme.colors.goldSoft,borderColor:theme.colors.gold},
   chipText:{color:theme.colors.goldLight},pressed:{opacity:0.78},
   room:{flexDirection:'row-reverse',borderRadius:theme.radius.lg,overflow:'hidden',backgroundColor:theme.colors.surface,
     borderWidth:1,borderColor:theme.colors.borderSoft},
-  featuredRoom:{borderColor:theme.colors.border},
-  artwork:{width:88,minHeight:148,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceStrong},
-  featuredArtwork:{width:104,minHeight:168},
+  featuredRoom:{flexDirection:'column',borderColor:theme.colors.border},
+  artwork:{width:80,minHeight:128,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceStrong},
+  featuredArtwork:{width:'100%',height:120,minHeight:120},
   cover:{position:'absolute',top:0,right:0,bottom:0,left:0,width:'100%',height:'100%'},coverFallback:{width:52,height:40},
-  privacy:{position:'absolute',bottom:8,right:8,left:8,backgroundColor:theme.colors.overlay,borderRadius:8,
+  privacy:{position:'absolute',bottom:8,right:8,backgroundColor:theme.colors.overlay,borderRadius:8,
     paddingVertical:2,paddingHorizontal:4,alignItems:'center'},
-  roomBody:{flex:1,minWidth:0,padding:12,gap:4},
+  coverCategory:{position:'absolute',top:8,right:8,paddingHorizontal:8,paddingVertical:2,
+    borderRadius:8,backgroundColor:theme.colors.overlay},
+  roomBody:{minWidth:0,padding:12,gap:4},compactBody:{flex:1},
+  cardTitle:{fontSize:18,lineHeight:28},featuredTitle:{fontSize:20,lineHeight:32},
   liveLabel:{flexDirection:'row-reverse',alignItems:'center',gap:4},
   dot:{width:6,height:6,borderRadius:3},
-  roomFooter:{flexDirection:'row-reverse',flexWrap:'wrap',alignItems:'center',gap:8,
-    paddingTop:8,marginTop:4,borderTopWidth:1,borderTopColor:theme.colors.borderSoft},
   editorSection:{gap:theme.spacing.md,paddingBottom:theme.spacing.lg,borderBottomWidth:1,borderBottomColor:theme.colors.borderSoft},
   coverGrid:{flexDirection:'row-reverse',flexWrap:'wrap',justifyContent:'space-between',gap:12},
   coverChoice:{width:'47%',minHeight:100,overflow:'hidden',borderRadius:theme.radius.sm,
