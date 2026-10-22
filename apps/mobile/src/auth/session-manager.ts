@@ -122,7 +122,8 @@ export function createSessionManager(client: ApiClient, cookies: CookieVault): S
       }
       busy = true;
       const operation = ++generation;
-      publish({ ...empty(), status: 'loading' });
+      // Keep the sign-in form mounted; it owns the pending spinner and typed failure notice.
+      publish(empty());
       try {
         // A new attempt cannot reuse a previous account's cookies.
         await cookies.clear();
