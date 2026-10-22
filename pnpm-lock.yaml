@@ -275,6 +275,12 @@ importers:
         specifier: ^8.70.0
         version: 8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)
 
+  apps/tahaddi-live:
+    dependencies:
+      ws:
+        specifier: ^8.18.3
+        version: 8.21.2
+
   apps/web:
     dependencies:
       '@ai-sdk/xai':
