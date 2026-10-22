@@ -17,6 +17,56 @@ SPEC.loader.exec_module(smoke)
 SUFFIX = "12345678-1234-1234-1234-123456789abc"
 
 
+
+class LocalFieldDevice:
+    """Stateful accessibility fixture: input is impossible until focus settles."""
+    def __init__(self, module, drop_attempts=0, field="login-email", secure=False):
+        self.module = module
+        self.field = field
+        self.secure = secure
+        self.value = "stale"
+        self.focus_reads = 0
+        self.tapped = False
+        self.drop_attempts = drop_attempts
+        self.entries = 0
+        self.commands = []
+
+    def node(self):
+        from xml.etree.ElementTree import Element
+        focused = self.tapped and self.focus_reads >= 2
+        return Element("node", {"resource-id": self.field, "enabled": "true",
+            "focused": "true" if focused else "false", "bounds": "[0,0][100,100]",
+            "text": "•" * len(self.value) if self.secure else self.value})
+
+    def reveal_node(self, test_id):
+        if test_id != self.field:
+            raise AssertionError("Local entry must not navigate to another control")
+        return self.node()
+
+    def ui(self):
+        from xml.etree import ElementTree as ET
+        if self.tapped:
+            self.focus_reads += 1
+        return ET.tostring(self.node(), encoding="unicode")
+
+    def adb(self, *args):
+        from types import SimpleNamespace
+        import shlex
+        self.commands.append(args[:3])
+        if args[:3] == ("shell", "input", "tap"):
+            self.tapped = True
+            self.focus_reads = 0
+        elif args[:3] == ("shell", "input", "text"):
+            if self.focus_reads < 2:
+                raise AssertionError("Input arrived before focused accessibility observations")
+            self.entries += 1
+            value = shlex.split(args[3])[0]
+            self.value = value[1:] if self.entries <= self.drop_attempts else value
+        elif args[:3] == ("shell", "input", "keyevent") and "KEYCODE_DEL" in args:
+            self.value = ""
+        return SimpleNamespace(returncode=0, stdout="")
+
+
 class LoginIsolationGuards(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -236,12 +286,12 @@ class LoginIsolationGuards(unittest.TestCase):
 
 
     def test_room_title_display_allows_bidi_controls_but_not_different_text(self):
-        self.assertTrue(smoke.room_title_display_matches("MobileHostClose"))
-        self.assertTrue(smoke.room_title_display_matches("\u200fMobileHostClose"))
-        self.assertTrue(smoke.room_title_display_matches("\u2067MobileHostClose\u2069"))
-        self.assertFalse(smoke.room_title_display_matches("MobileHostCloseX"))
-        self.assertFalse(smoke.room_title_display_matches(" MobileHostClose"))
-        self.assertFalse(smoke.room_title_display_matches("MobileHostC1ose"))
+        self.assertTrue(smoke.room_title_display_matches("7315082649"))
+        self.assertTrue(smoke.room_title_display_matches("\u200f7315082649"))
+        self.assertTrue(smoke.room_title_display_matches("\u20677315082649\u2069"))
+        self.assertFalse(smoke.room_title_display_matches("7315082649X"))
+        self.assertFalse(smoke.room_title_display_matches(" 7315082649"))
+        self.assertFalse(smoke.room_title_display_matches("7315082648"))
 
     def test_visible_editor_save_footer_can_be_outside_scroll_viewport(self):
         device = mock.Mock()
@@ -253,6 +303,68 @@ class LoginIsolationGuards(unittest.TestCase):
         self.assertEqual(node.attrib["resource-id"], "room-save")
         self.assertFalse(any(call.args[:3] == ("shell", "input", "swipe")
                              for call in device.adb.call_args_list))
+
+
+    def test_entry_waits_for_focus_clears_stale_text_and_retries_only_locally(self):
+        module = smoke.load_device()
+        device = LocalFieldDevice(module, drop_attempts=1)
+        diagnostics = []
+        clock = iter(range(1000))
+        with mock.patch.object(smoke.time, "monotonic", side_effect=lambda: next(clock)), \
+             mock.patch.object(smoke.time, "sleep"), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            smoke.enter_local_field(device, module, "login-email", "public.preview@example.test", diagnostics)
+        self.assertEqual(device.entries, 2)
+        self.assertTrue(diagnostics[-1]["verified"])
+        self.assertEqual(diagnostics[0]["initial_display_length"], 5)
+        self.assertTrue(all(item["focused_before_input"] for item in diagnostics))
+        network.assert_not_called()
+        self.assertNotIn("public.preview@example.test", json.dumps(diagnostics))
+        self.assertTrue(all(command[:2] == ("shell", "input") for command in device.commands))
+
+    def test_unverified_local_entry_is_bounded_and_never_submits_or_exposes_value(self):
+        module = smoke.load_device()
+        device = LocalFieldDevice(module, drop_attempts=100)
+        diagnostics = []
+        clock = iter(range(1000))
+        with mock.patch.object(smoke.time, "monotonic", side_effect=lambda: next(clock)), \
+             mock.patch.object(smoke.time, "sleep"), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            with self.assertRaises(smoke.RoomCreateFailure) as failure:
+                smoke.enter_local_field(device, module, "login-email", "public.preview@example.test", diagnostics)
+        self.assertEqual(device.entries, 2)
+        self.assertEqual(len(diagnostics), 2)
+        self.assertEqual(failure.exception.kind, "local_field_verification_failed")
+        self.assertNotIn("public.preview@example.test", json.dumps(diagnostics))
+        self.assertNotIn("public.preview@example.test", str(failure.exception))
+        network.assert_not_called()
+
+    def test_title_shape_preserves_strict_numeric_fixture_without_private_normalization(self):
+        self.assertTrue(smoke.room_title_display_matches("7315082649"))
+        self.assertTrue(smoke.room_title_display_matches("\u200f7315082649"))
+        self.assertFalse(smoke.room_title_display_matches("7315082649 "))
+        shape = smoke.title_shape(" 7315082649\u200f ")
+        self.assertEqual(shape["ascii_digits"], 10)
+        self.assertEqual(shape["format_controls"], 1)
+        self.assertEqual(shape["whitespace"], 2)
+        self.assertEqual(shape["letters"], 0)
+
+
+    def test_password_entry_checks_masked_length_without_recording_the_password(self):
+        module = smoke.load_device()
+        device = LocalFieldDevice(module, field="login-password", secure=True)
+        diagnostics = []
+        clock = iter(range(1000))
+        value = "Aa42!+%25=&Public"
+        with mock.patch.object(smoke.time, "monotonic", side_effect=lambda: next(clock)), \
+             mock.patch.object(smoke.time, "sleep"), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            smoke.enter_local_field(device, module, "login-password", value, diagnostics)
+        self.assertEqual(device.entries, 1)
+        self.assertTrue(diagnostics[0]["verified"])
+        self.assertEqual(diagnostics[0]["display_length"], len(value))
+        self.assertNotIn(value, json.dumps(diagnostics))
+        network.assert_not_called()
 
 
 if __name__ == "__main__":

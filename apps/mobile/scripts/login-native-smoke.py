@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import ssl
 import stat
 import subprocess
@@ -76,6 +77,7 @@ def wait_counter(ca: str, key: str, previous: int, timeout: float = 30) -> dict:
 
 
 
+ROOM_TITLE = "7315082649"
 EMPTY_ERROR = "أدخل البريد الإلكتروني وكلمة المرور."
 REJECTED_ERROR = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
 
@@ -222,8 +224,103 @@ def room_title_display_matches(value: str) -> bool:
     # Android accessibility may add bidi format controls for an RTL TextInput.
     # This comparison is only for the public constant room title, never account
     # credentials, submitted room data or server identity.
-    return "".join(char for char in value if unicodedata.category(char) != "Cf") == "MobileHostClose"
+    return "".join(char for char in value if unicodedata.category(char) != "Cf") == ROOM_TITLE
 
+
+
+def title_shape(value: str) -> dict:
+    return {
+        "ascii_digits": sum("0" <= char <= "9" for char in value),
+        "non_ascii_digits": sum(char.isdigit() and not ("0" <= char <= "9") for char in value),
+        "letters": sum(char.isalpha() for char in value),
+        "whitespace": sum(char.isspace() for char in value),
+        "leading_whitespace": len(value) - len(value.lstrip()),
+        "trailing_whitespace": len(value) - len(value.rstrip()),
+        "format_controls": sum(unicodedata.category(char) == "Cf" for char in value),
+    }
+
+
+def field_observation(device, module, test_id: str):
+    return module.find_node(device.ui(), test_id)
+
+
+def wait_focused_field(device, module, test_id: str, timeout: float = 12):
+    deadline = time.monotonic() + timeout
+    previous_bounds = None
+    stable = 0
+    while time.monotonic() < deadline:
+        node = field_observation(device, module, test_id)
+        if (node is not None and node.attrib.get("focused") == "true" and
+                node.attrib.get("enabled") == "true" and
+                node.attrib.get("visible-to-user", "true") != "false"):
+            bounds = node.attrib.get("bounds", "")
+            stable = stable + 1 if bounds and bounds == previous_bounds else 1
+            previous_bounds = bounds
+            if stable >= 2:
+                return node
+        else:
+            stable = 0
+            previous_bounds = None
+        time.sleep(0.2)
+    return None
+
+
+def wait_field_value(device, module, test_id: str, expected: str, secure: bool,
+                     timeout: float = 12) -> tuple[bool, int]:
+    deadline = time.monotonic() + timeout
+    stable = 0
+    length = 0
+    while time.monotonic() < deadline:
+        node = field_observation(device, module, test_id)
+        raw = node.attrib.get("text", "") if node is not None else ""
+        length = len(raw)
+        matched = (length == len(expected) if secure else
+                   room_title_display_matches(raw) if test_id == "room-name-input" else raw == expected)
+        if node is not None and node.attrib.get("focused") == "true" and matched:
+            stable += 1
+            if stable >= 2:
+                return True, length
+        else:
+            stable = 0
+        time.sleep(0.2)
+    return False, length
+
+
+def enter_local_field(device, module, test_id: str, value: str, diagnostics: list[dict]):
+    # At most two LOCAL edits. This function never taps Submit or makes a request.
+    limits = {"login-email": 256, "login-password": 128, "room-name-input": 80}
+    if test_id not in limits or not value or len(value) > limits[test_id]:
+        raise RoomCreateFailure("unsupported_local_field")
+    secure = test_id == "login-password"
+    for attempt in range(1, 3):
+        observed = {"attempt": attempt, "focused_before_input": False,
+                    "initial_display_length": 0, "after_clear_display_length": 0,
+                    "clear_key_limit": limits[test_id], "clear_commands_sent": False,
+                    "display_length": 0, "verified": False}
+        diagnostics.append(observed)
+        node = (reveal_room_control(device, module, test_id) if test_id == "room-name-input"
+                else device.reveal_node(test_id))
+        x, y = module.center(node)
+        device.adb("shell", "input", "tap", str(x), str(y))
+        focused = wait_focused_field(device, module, test_id)
+        if focused is None:
+            continue
+        observed["focused_before_input"] = True
+        observed["initial_display_length"] = len(focused.attrib.get("text", ""))
+        device.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END")
+        device.adb("shell", "input", "keyevent", *(["KEYCODE_DEL"] * limits[test_id]))
+        observed["clear_commands_sent"] = True
+        # Clearing can trigger a layout/focus update; observe before typing again.
+        cleared = wait_focused_field(device, module, test_id)
+        if cleared is None:
+            continue
+        observed["after_clear_display_length"] = len(cleared.attrib.get("text", ""))
+        device.adb("shell", "input", "text", shlex.quote(value))
+        matched, length = wait_field_value(device, module, test_id, value, secure)
+        observed["display_length"], observed["verified"] = length, matched
+        if matched:
+            return
+    raise RoomCreateFailure("local_field_verification_failed")
 
 def safe_room_snapshot(device, module) -> dict:
     root = ET.fromstring(device.ui())
@@ -257,8 +354,9 @@ def safe_room_snapshot(device, module) -> dict:
         "modal_title_present": "أنشئ مساحتك الصوتية" in labels,
         "room_name_length": len(name_value),
         "room_name_matches": room_title_display_matches(name_value),
-        "room_name_display_exact": name_value == "MobileHostClose",
+        "room_name_display_exact": name_value == ROOM_TITLE,
         "room_name_format_controls": sum(unicodedata.category(char) == "Cf" for char in name_value),
+        "room_name_shape": title_shape(name_value),
         "known_notice": {
             "name_required": "اكتب اسمًا للغرفة من ٣ أحرف على الأقل." in labels,
             "private_password_short": "كلمة المرور يجب أن تكون ٦ أحرف على الأقل." in labels,
@@ -323,10 +421,8 @@ def create_native_host_room(device, module, report: dict, prefix: str):
     mark("modal_opened")
     node = reveal_room_control(device, module, "room-name-input")
     mark("name_ready")
-    x, y = module.center(node)
-    device.adb("shell", "input", "tap", str(x), str(y))
-    # Existing enter helper safely quotes the constant fixture title.
-    device.enter("room-name-input", "MobileHostClose")
+    title_diagnostics = report.setdefault("local_entries", {}).setdefault(prefix + "_title", [])
+    enter_local_field(device, module, "room-name-input", ROOM_TITLE, title_diagnostics)
     mark("name_entered")
     state = report["room_ui_snapshots"][report["phase"]]
     if not state.get("room_name_matches"):
@@ -382,6 +478,7 @@ def main() -> int:
         report["counter_snapshots"] = {"initial": initial}
         report["ui_snapshots"] = {}
         report["keyboard_actions"] = {}
+        report["local_entries"] = {}
 
         def snapshot(label: str, expected_length: int) -> dict:
             report["phase"] = label
@@ -407,11 +504,15 @@ def main() -> int:
         report["phase"] = "rejected_credentials"
         # Values stay in memory and subprocess arguments, never reports or console.
         device.reveal_node("login-email")
-        device.enter("login-email", account["email"])
+        report["phase"] = "wrong_email_entry"
+        enter_local_field(device, module, "login-email", account["email"],
+                          report["local_entries"].setdefault("wrong_email", []))
         snapshot("wrong_email_entered", 0)
         hide("after_email")
         device.reveal_node("login-password")
-        device.enter("login-password", account["password"] + "-incorrect")
+        report["phase"] = "wrong_password_entry"
+        enter_local_field(device, module, "login-password", account["password"] + "-incorrect",
+                          report["local_entries"].setdefault("wrong_password", []))
         snapshot("wrong_password_entered", len(account["password"] + "-incorrect"))
         hide("after_wrong_password")
         device.reveal_node("login-submit")
@@ -438,10 +539,9 @@ def main() -> int:
         report["checks"]["email_preserved_after_rejected_login"] = True
         report["phase"] = "credential_submit"
         device.reveal_node("login-password")
-        device.tap("login-password")
-        device.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END")
-        device.adb("shell", "input", "keyevent", *(["KEYCODE_DEL"] * 128))
-        device.enter("login-password", account["password"])
+        report["phase"] = "correct_password_entry"
+        enter_local_field(device, module, "login-password", account["password"],
+                          report["local_entries"].setdefault("correct_password", []))
         snapshot("correct_password_entered", len(account["password"]))
         hide("after_correct_password")
         device.reveal_node("login-submit")
