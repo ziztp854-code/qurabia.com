@@ -113,12 +113,32 @@ def main() -> int:
         if device.connection_status(timeout=60)["state"] != "online":
             raise RuntimeError("Native isolated HTTPS connection did not succeed")
         report["checks"]["native_isolated_https"] = True
-        report["phase"] = "credential_submit"
+        report["phase"] = "rejected_credentials"
         # Values stay in memory and subprocess arguments, never reports or console.
         device.reveal_node("login-email")
         device.enter("login-email", account["email"])
         device.hide_keyboard()
         device.reveal_node("login-password")
+        device.enter("login-password", account["password"] + "-incorrect")
+        device.hide_keyboard()
+        device.tap("login-submit")
+        rejected = wait_counter(args.ca, "credentials_rejected", initial["credentials_rejected"])
+        expected_error = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
+        if not device.validation_status(expected_error, timeout=30)["matched"]:
+            raise RuntimeError("Rejected login did not show the required safe Arabic error")
+        device.reveal_node("login-email")
+        email_node = module.find_node(device.ui(), "login-email")
+        if email_node is None or email_node.attrib.get("text", "") != account["email"]:
+            raise RuntimeError("Rejected login did not preserve the email field")
+        if rejected["authenticated_sessions"] != initial["authenticated_sessions"]:
+            raise RuntimeError("Incorrect password unexpectedly authenticated a session")
+        report["checks"]["wrong_password_rejected_with_safe_arabic_error"] = True
+        report["checks"]["email_preserved_after_rejected_login"] = True
+        report["phase"] = "credential_submit"
+        device.reveal_node("login-password")
+        device.tap("login-password")
+        device.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END")
+        device.adb("shell", "input", "keyevent", *(["KEYCODE_DEL"] * 128))
         device.enter("login-password", account["password"])
         device.hide_keyboard()
         device.tap("login-submit")
