@@ -54,6 +54,9 @@ async function main() {
     authenticated_sessions: 0, anonymous_sessions: 0, foreign_sessions: 0,
     signout_ok: 0, rooms_ok: 0,
   };
+  const createEvidence = {
+    room_create_attempts: 0, room_create_response_status: 0, room_create_server_errors: 0,
+  };
   const hostEvidence = {
     room_create_ok: 0, room_close_ok: 0,
     leave_while_active: 0, signout_while_active: 0,
@@ -81,6 +84,7 @@ async function main() {
   async function observeHostRequest(pathname: string, method: string | undefined) {
     if (method !== 'POST') return;
     const canonical = pathname.replace(/\/$/, '');
+    if (canonical === '/api/voice/rooms') createEvidence.room_create_attempts++;
     if (canonical === '/api/auth/signout' && (
         hostEvidence.room_create_ok > hostEvidence.room_close_ok ||
         await db.voiceRoom.count({ where: { hostId: id, active: true } })))
@@ -151,6 +155,10 @@ async function main() {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify(evidence)); return;
       }
+      if (pathname === '/__mobile_create_evidence' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify(createEvidence)); return;
+      }
       if (pathname === '/__mobile_host_evidence' && req.method === 'GET') {
         void ownedRoomState().then(value => {
           res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -186,6 +194,10 @@ async function main() {
         response.on('end', async () => {
           const body = Buffer.concat(chunks), status = response.statusCode || 502;
           const canonical = pathname.replace(/\/$/, '');
+          if (req.method === 'POST' && canonical === '/api/voice/rooms') {
+            createEvidence.room_create_response_status = status;
+            if (status >= 500) createEvidence.room_create_server_errors++;
+          }
           if (status === 200) {
             if (canonical === '/api/auth/csrf') evidence.csrf_ok++;
             if (canonical === '/api/auth/callback/credentials') evidence.credentials_ok++;
