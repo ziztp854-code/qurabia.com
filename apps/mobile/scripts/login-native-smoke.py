@@ -122,6 +122,75 @@ def safe_ui_snapshot(device, module, email: str, expected_password_length: int) 
     }
 
 
+HOST_COUNTER_KEYS = {
+    "room_create_ok", "room_close_ok", "leave_while_active", "signout_while_active",
+    "owned_rooms", "active_rooms", "closed_rooms", "closed_with_members", "inconsistent_rooms",
+}
+
+
+def validate_host_counters(value: object) -> dict:
+    if (not isinstance(value, dict) or set(value) != HOST_COUNTER_KEYS or
+            any(type(number) is not int or number < 0 for number in value.values())):
+        raise ValueError("Unexpected isolated host evidence")
+    if value["owned_rooms"] != value["active_rooms"] + value["closed_rooms"]:
+        raise ValueError("Inconsistent isolated host counts")
+    if value["closed_with_members"] > value["closed_rooms"]:
+        raise ValueError("Inconsistent isolated closed-room membership")
+    return value
+
+
+def host_counters(ca: str) -> dict:
+    context = ssl.create_default_context(cafile=ca)
+    with urllib.request.urlopen(ORIGIN + "/__mobile_host_evidence",
+                                context=context, timeout=20) as response:
+        return validate_host_counters(json.loads(response.read(8192)))
+
+
+def assert_host_state(value: dict, baseline: dict, created: int, closed: int):
+    if (value["owned_rooms"] != baseline["owned_rooms"] + created or
+            value["active_rooms"] != baseline["active_rooms"] + created - closed or
+            value["closed_rooms"] != baseline["closed_rooms"] + closed or
+            value["room_create_ok"] != baseline["room_create_ok"] + created or
+            value["room_close_ok"] != baseline["room_close_ok"] + closed or
+            value["closed_with_members"] != 0 or value["inconsistent_rooms"] != 0 or
+            value["leave_while_active"] != baseline["leave_while_active"] or
+            value["signout_while_active"] != baseline["signout_while_active"]):
+        raise RuntimeError("Native host action was not confirmed by the isolated database")
+
+
+def confirm_native_alert(device, module, title: str, button: str, timeout: float = 30):
+    # Match only the expected Android alert and its real system button, in memory.
+    from xml.etree import ElementTree as ET
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        root = ET.fromstring(device.ui())
+        title_matches = any(node.attrib.get("resource-id") in {"android:id/alertTitle", PACKAGE + ":id/alertTitle"} and
+                            node.attrib.get("text") == title for node in root.iter())
+        if title_matches:
+            for node in root.iter():
+                if (node.attrib.get("resource-id") in {"android:id/button1", "android:id/button2",
+                                                      "android:id/button3", PACKAGE + ":id/button1",
+                                                      PACKAGE + ":id/button2", PACKAGE + ":id/button3"} and
+                        node.attrib.get("text") == button and node.attrib.get("enabled") == "true"):
+                    x, y = module.center(node)
+                    device.adb("shell", "input", "tap", str(x), str(y))
+                    return
+        time.sleep(1)
+    raise RuntimeError("Expected native host confirmation was not observed")
+
+
+def create_native_host_room(device):
+    device.reveal_node("room-create")
+    device.tap("room-create")
+    device.reveal_node("room-name-input")
+    device.enter("room-name-input", "MobileHostClose")
+    hide_keyboard_if_shown(device)
+    device.reveal_node("room-save")
+    device.tap("room-save")
+    device.wait_node("room-title", timeout=90)
+    device.wait_node("end-broadcast", timeout=45)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apk", required=True)
@@ -132,13 +201,14 @@ def main() -> int:
     args = parser.parse_args()
     report = {
         "status": "failed", "source_sha": os.environ.get("GITHUB_SHA"),
-        "scope": "real native HTTPS + NextAuth + isolated PostgreSQL account",
+        "scope": "real native HTTPS + NextAuth + isolated PostgreSQL account + owned room closure",
         "server_mode": "Next development, explicit VITEST=1 local URL preservation; nonproduction limiter",
         "checks": {}, "phase": "fixture",
         "limitations": [
             "Separate test APK trusts an ephemeral localhost CA; distributed production APK does not.",
             "Emulator authentication does not prove physical-device or production deployment behavior.",
-            "Voice/media, production rate limiter, real-user credentials and production writes are not exercised.",
+            "No SFU is configured: room commands/database closure are tested, not audio capture or SFU participant eviction.",
+            "Production rate limiter, real-user credentials and production writes are not exercised.",
         ],
     }
     directory = pathlib.Path(args.reports)
@@ -151,6 +221,8 @@ def main() -> int:
         if device.adb("shell", "getprop", "ro.kernel.qemu").stdout.strip() != "1":
             raise ValueError("Credentialed clean-install test requires an emulator")
         initial = counters(args.ca)
+        host_initial = host_counters(args.ca)
+        report["host_counter_snapshots"] = {"initial": host_initial}
         report["counter_snapshots"] = {"initial": initial}
         report["ui_snapshots"] = {}
         report["keyboard_actions"] = {}
@@ -244,13 +316,36 @@ def main() -> int:
         if reopened["credentials_ok"] != before_reopen["credentials_ok"]:
             raise RuntimeError("App reopened by reauthenticating instead of restoring its session")
         report["checks"]["secure_session_survives_process_restart"] = True
+        report["phase"] = "manual_host_room_create"
+        create_native_host_room(device)
+        manual_active = host_counters(args.ca)
+        report["host_counter_snapshots"]["manual_active"] = manual_active
+        assert_host_state(manual_active, host_initial, created=1, closed=0)
+        report["phase"] = "manual_host_room_end"
+        device.tap("end-broadcast")
+        confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث")
+        device.wait_node("rooms-list", timeout=90)
+        manual_closed = host_counters(args.ca)
+        report["host_counter_snapshots"]["manual_closed"] = manual_closed
+        assert_host_state(manual_closed, host_initial, created=1, closed=1)
+        report["checks"]["native_host_end_closes_database_room_and_clears_membership"] = True
+        report["phase"] = "logout_host_room_create"
+        create_native_host_room(device)
+        logout_active = host_counters(args.ca)
+        report["host_counter_snapshots"]["logout_active"] = logout_active
+        assert_host_state(logout_active, host_initial, created=2, closed=1)
         report["phase"] = "logout"
         device.tap("nav-profile")
         device.tap("settings-logout")
-        device.wait_node("login-email", timeout=60)
+        confirm_native_alert(device, module, "إنهاء البث وتسجيل الخروج", "إنهاء البث والخروج")
+        device.wait_node("login-email", timeout=90)
         logged_out = wait_counter(args.ca, "signout_ok", reopened["signout_ok"])
         wait_counter(args.ca, "anonymous_sessions", reopened["anonymous_sessions"])
         report["checks"]["real_signout_and_anonymous_session"] = True
+        logout_closed = host_counters(args.ca)
+        report["host_counter_snapshots"]["logout_closed"] = logout_closed
+        assert_host_state(logout_closed, host_initial, created=2, closed=2)
+        report["checks"]["native_host_logout_closes_room_before_leave_or_signout"] = True
         report["phase"] = "logout_persistence"
         before_logout_reopen = counters(args.ca)
         device.adb("shell", "am", "force-stop", PACKAGE)
@@ -283,6 +378,7 @@ def main() -> int:
     finally:
         try:
             report["server_counters"] = counters(args.ca)
+            report["host_server_counters"] = host_counters(args.ca)
         except Exception:
             pass
         if device is not None:

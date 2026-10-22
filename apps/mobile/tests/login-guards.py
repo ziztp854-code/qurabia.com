@@ -137,5 +137,56 @@ class LoginIsolationGuards(unittest.TestCase):
                          ["notice_kind"], "invalid_credentials")
 
 
+    def test_host_audit_refuses_extra_fields_or_inconsistent_database_counts(self):
+        valid = dict.fromkeys(smoke.HOST_COUNTER_KEYS, 0)
+        self.assertEqual(smoke.validate_host_counters(valid), valid)
+        for invalid in [
+            {**valid, "email": self.account["email"]},
+            {**valid, "owned_rooms": 1},
+            {**valid, "closed_with_members": 1},
+            {**valid, "room_close_ok": True},
+        ]:
+            with self.assertRaises(ValueError):
+                smoke.validate_host_counters(invalid)
+
+    def test_host_closure_requires_database_membership_and_correct_logout_order(self):
+        baseline = dict.fromkeys(smoke.HOST_COUNTER_KEYS, 0)
+        closed = {**baseline, "owned_rooms": 2, "closed_rooms": 2,
+                  "room_create_ok": 2, "room_close_ok": 2}
+        smoke.assert_host_state(closed, baseline, created=2, closed=2)
+        for changed in [
+            {"closed_with_members": 1},
+            {"active_rooms": 1, "closed_rooms": 1},
+            {"inconsistent_rooms": 1},
+            {"leave_while_active": 1},
+            {"signout_while_active": 1},
+            {"room_close_ok": 1},
+        ]:
+            with self.assertRaises(RuntimeError):
+                smoke.assert_host_state({**closed, **changed}, baseline, created=2, closed=2)
+
+    def test_native_host_confirmation_requires_the_expected_system_alert(self):
+        for namespace in ["android:id/", smoke.PACKAGE + ":id/"]:
+            with self.subTest(namespace=namespace):
+                device = mock.Mock()
+                device.ui.return_value = (
+                    '<hierarchy><node resource-id="' + namespace + 'alertTitle" '
+                    'text="إنهاء البث للجميع"/><node resource-id="' + namespace + 'button1" '
+                    'text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/></hierarchy>')
+                module = mock.Mock()
+                module.center.return_value = (50, 50)
+                with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0]):
+                    smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث")
+                device.adb.assert_called_once_with("shell", "input", "tap", "50", "50")
+        device = mock.Mock()
+        device.ui.return_value = ('<hierarchy><node resource-id="android:id/alertTitle" text="Unrelated"/>'
+            '<node resource-id="android:id/button1" text="إنهاء البث" enabled="true"/></hierarchy>')
+        with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), \
+             mock.patch.object(smoke.time, "sleep"):
+            with self.assertRaises(RuntimeError):
+                smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث", timeout=1)
+        device.adb.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
