@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import type { VoiceEvent, VoiceParticipant, VoiceSnapshot } from '../api/contracts';
 import { availableSeat, canManageRoom, canUseMicrophone } from '../rooms/state';
@@ -18,6 +18,11 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
   asset:(path:string)=>ImageSourcePropType|undefined;onToggleMic:()=>Promise<void>;onRetryAudio:()=>Promise<void>;
   onAudioOutput:(device:string)=>Promise<void>;onLeave:()=>Promise<void>;onEnd:()=>Promise<void>;
 }) {
+  const [availableHeight,setAvailableHeight]=useState(0);
+  const {fontScale}=useWindowDimensions();
+  // Candidate thresholds: use the real viewport after safe areas, navigation and keyboard resizing.
+  // Final values require native screenshot verification at the affected font scales.
+  const compact=availableHeight>0&&availableHeight<(fontScale>1.3?900:640);
   const [selected,setSelected]=useState<VoiceParticipant|null>(null);
   const [seat,setSeat]=useState<number|null>(null);const [allSeats,setAllSeats]=useState(false);
   const [settings,setSettings]=useState(false);const [audioSettings,setAudioSettings]=useState(false);
@@ -71,47 +76,57 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
     </Pressable>;
   })}</View>;}
   return <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS==='ios'?'padding':'height'}>
-    <View style={styles.room}>
+    <View style={styles.room} onLayout={({nativeEvent})=>{
+      const next=Math.round(nativeEvent.layout.height);
+      setAvailableHeight(previous=>previous===next?previous:next);
+    }}>
       <View style={styles.header}>
-        <View style={styles.cover}>
+        <View style={compact?styles.hiddenCover:styles.cover}>
           {cover?<ExpoImage source={cover} contentFit="cover" style={styles.coverImage} accessible={false}/>
             :<Body weight="bold" style={styles.coverFallback}>تحدّي</Body>}
         </View>
         <View style={styles.identity}>
-          <Title small testID="room-title" style={styles.roomTitle} numberOfLines={2}>{snapshot.room.name}</Title>
-          <Body muted style={[ui.caption,styles.roomMeta]} numberOfLines={1}>
-            {snapshot.room.participantCount.toLocaleString('ar-SA')} مشارك · {snapshot.room.category}</Body>
+          <Title small testID="room-title" style={styles.roomTitle} numberOfLines={compact?1:2}>{snapshot.room.name}</Title>
+          {!compact&&<Body muted style={[ui.caption,styles.roomMeta]} numberOfLines={1}>
+            {snapshot.room.participantCount.toLocaleString('ar-SA')} مشارك · {snapshot.room.category}</Body>}
         </View>
+        {compact&&!keyboardVisible&&<Action compact tone="secondary" label="الأعضاء"
+          accessibilityLabel={'الأعضاء والمقاعد ('+snapshot.participants.length+')'} onPress={()=>setAllSeats(true)}/>}
       </View>
       <View style={styles.hostActions}>
-        {canEndRoom(snapshot)&&<Action compact testID="end-broadcast" tone="danger" label="إنهاء البث" busy={busy} onPress={confirmEnd}/>}
-        <Action compact testID="leave-room" tone="secondary" label={canEndRoom(snapshot)?'مغادرة دون إنهاء':'مغادرة'}
-          busy={busy} onPress={confirmLeave}/>
+        {canEndRoom(snapshot)&&<View style={compact?styles.commandAction:undefined}><Action compact testID="end-broadcast" tone="danger" label="إنهاء البث" busy={busy} onPress={confirmEnd}/></View>}
+        <View style={compact?styles.commandAction:undefined}><Action compact testID="leave-room" tone="secondary"
+          label={compact?'مغادرة':canEndRoom(snapshot)?'مغادرة دون إنهاء':'مغادرة'}
+          accessibilityLabel={canEndRoom(snapshot)?'مغادرة دون إنهاء':'مغادرة'} busy={busy} onPress={confirmLeave}/></View>
       </View>
       <View testID="connection-status" style={styles.connection} accessibilityLiveRegion="polite">
         <View style={[styles.dot,{backgroundColor:voice.state==='connected'?theme.colors.success:theme.colors.gold}]}/>
         <Body style={[ui.caption,styles.connectionLabel]}>{connectionLabels[voice.state]}</Body>
-        <View style={ui.grow}/><Body muted style={[ui.caption,styles.syncLabel]}>{rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}</Body>
+        <View style={ui.grow}/><Body muted style={[ui.caption,styles.syncLabel,compact&&styles.compactSync]}
+          accessibilityLabel={rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}>
+          {compact?(rooms.connection==='online'?'البيانات متصلة':'مزامنة البيانات'):
+            rooms.connection==='online'?'بيانات الغرفة متصلة':'جارٍ مزامنة الغرفة'}</Body>
       </View>
-      {!keyboardVisible&&<View style={styles.stage}>{seats(4)}</View>}
-      {!keyboardVisible&&<View style={ui.row}><Action compact tone="secondary" label={'الأعضاء والمقاعد ('+snapshot.participants.length+')'}
-        onPress={()=>setAllSeats(true)}/>
-        <View style={ui.grow}/>{manage&&<Action compact tone="secondary" label="إعدادات" onPress={()=>setSettings(true)}/>}</View>}
+      {!compact&&!keyboardVisible&&<View style={styles.stage}>{seats(4)}</View>}
+      {!compact&&!keyboardVisible&&<View style={styles.detailActions}><View style={styles.memberAction}><Action compact tone="secondary" label={'الأعضاء والمقاعد ('+snapshot.participants.length+')'}
+        onPress={()=>setAllSeats(true)}/></View>
+        {manage&&<Action compact tone="secondary" label="إعدادات" onPress={()=>setSettings(true)}/>}</View>}
       <Notice message={error || rooms.error || voice.error}/>
       {(voice.state==='error'||voice.state==='disconnected')&&<Action testID="voice-resume" tone="secondary" label="استئناف الصوت" busy={busy}
         onPress={()=>{void run(onRetryAudio);}}/>}
-      <ChatPanel snapshot={snapshot} chat={chat} catalog={catalog} asset={asset} manage={manage}
+      <ChatPanel compact={compact} snapshot={snapshot} chat={chat} catalog={catalog} asset={asset} manage={manage}
         onModerate={async(messageId,action)=>{
           await send(action==='delete'?{type:'delete-message',messageId}:action==='report'
             ?{type:'report',messageId,reason:'بلاغ مستخدم من تطبيق Android'}
             :{type:'pin-message',messageId,pinned:action==='pin'});
         }}/>
       {!keyboardVisible&&<View style={styles.controls}>
-        <View style={styles.primaryControls}><View style={styles.micAction}>
-        <Action testID="mic-toggle" label={snapshot.me?.moderatorMuted?'الميكروفون مكتوم إداريًا':voice.muted?'تشغيل الميكروفون':'كتم الميكروفون'}
+        <View style={compact?styles.compactPrimary:styles.primaryControls}><View style={styles.micAction}>
+        <Action testID="mic-toggle" label={snapshot.me?.moderatorMuted?(compact?'مكتوم إداريًا':'الميكروفون مكتوم إداريًا'):voice.muted?'تشغيل الميكروفون':'كتم الميكروفون'}
+          accessibilityLabel={snapshot.me?.moderatorMuted?'الميكروفون مكتوم إداريًا':voice.muted?'تشغيل الميكروفون':'كتم الميكروفون'}
           busy={busy} disabled={!canUseMicrophone(snapshot.room,snapshot.me)||voice.state!=='connected'}
           onPress={()=>{void run(onToggleMic);}}/>
-        </View><Action compact label="مخرج الصوت" tone="secondary" onPress={()=>setAudioSettings(true)}/></View>
+        </View>{!compact&&<Action compact label="مخرج الصوت" tone="secondary" onPress={()=>setAudioSettings(true)}/>}</View>
         <View style={ui.row}>
           {snapshot.me?.seatIndex===null&&<Action compact label={snapshot.me.handRaised?'إلغاء طلب الحديث':'طلب الميكروفون'}
             tone="secondary" busy={busy} disabled={!snapshot.room.allowMicRequests} onPress={()=>{void run(async()=>{
@@ -124,7 +139,15 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
         </View>
       </View>}
     </View>
-    <Sheet visible={allSeats} title="المقاعد وأعضاء المجلس" onClose={()=>setAllSeats(false)}>
+    <Sheet visible={allSeats&&!settings&&!audioSettings} title="المقاعد وأعضاء المجلس" onClose={()=>setAllSeats(false)}>
+      {compact&&<>
+        <Title small>{snapshot.room.name}</Title>
+        <Body muted>{snapshot.room.participantCount.toLocaleString('ar-SA')} مشارك · {snapshot.room.category}</Body>
+        <View style={styles.detailActions}>
+          {manage&&<Action compact tone="secondary" label="إعدادات" onPress={()=>setSettings(true)}/>}
+          <Action compact label="مخرج الصوت" tone="secondary" onPress={()=>setAudioSettings(true)}/>
+        </View>
+      </>}
       {seats(snapshot.room.seatCount)}
       <Title small>المستمعون</Title>
       <View style={ui.wrap}>{snapshot.participants.filter(person=>person.seatIndex===null).map(person=><Pressable
@@ -186,6 +209,10 @@ function audioOutputLabel(device:string){
 const styles=StyleSheet.create({
   room:{flex:1,width:'100%',maxWidth:760,alignSelf:'center',paddingHorizontal:theme.spacing.md,
     paddingTop:theme.spacing.sm,gap:theme.spacing.sm},
+  hiddenCover:{display:'none'},commandAction:{flex:1,minWidth:0},
+  detailActions:{flexDirection:'row-reverse',flexWrap:'wrap',gap:8,alignItems:'center'},
+  memberAction:{maxWidth:'100%',flexGrow:1,flexShrink:1},
+  compactSync:{fontSize:10,lineHeight:18},compactPrimary:{flexDirection:'row-reverse',alignItems:'center'},
   header:{flexDirection:'row-reverse',alignItems:'center',gap:12},
   cover:{width:56,height:56,borderRadius:theme.radius.md,overflow:'hidden',alignItems:'center',
     justifyContent:'center',backgroundColor:theme.colors.goldSoft,borderWidth:1,borderColor:theme.colors.border},
