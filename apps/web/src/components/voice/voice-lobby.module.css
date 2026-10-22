@@ -1,0 +1,386 @@
+/* Discovery follows the compact reference composition, using the shared Live tokens. */
+.discovery {
+  min-inline-size: 0;
+  max-inline-size: 1280px;
+  margin-inline: auto;
+}
+.tabs {
+  display: flex;
+  gap: 28px;
+  border-block-end: 1px solid var(--voice-line);
+  margin-block-end: 18px;
+}
+.tabs button {
+  position: relative;
+  min-block-size: 48px;
+  border: 0;
+  padding-inline: 12px;
+  background: transparent;
+  color: var(--voice-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tabs button[aria-pressed='true'] {
+  color: var(--voice-gold-light);
+  font-weight: 700;
+}
+.tabs button[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  block-size: 2px;
+  border-radius: 2px;
+  background: var(--voice-gold);
+}
+.tabs button:focus-visible {
+  outline: 2px solid var(--voice-gold);
+  outline-offset: 2px;
+}
+.invitation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-block-size: 185px;
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+  padding: 24px 32px;
+  border: 1px solid var(--voice-border);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 5% 80%, var(--voice-glow), transparent 60%), var(--voice-card);
+}
+.kicker {
+  color: var(--voice-gold);
+  font-size: 11px;
+}
+.invitation h1 {
+  color: var(--voice-text);
+  font-size: clamp(21px, 2vw, 30px);
+  line-height: 1.7;
+  margin: 2px 0;
+}
+.invitation p {
+  color: var(--voice-gold-light);
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+.invitation :global(.v-button) {
+  min-block-size: 44px;
+  border-radius: 24px;
+  padding: 8px 22px;
+}
+.discovery :global(.v-discovery) {
+  padding-block-start: 22px;
+}
+.discovery :global(.v-section-heading) {
+  margin-block-end: 12px;
+}
+.discovery :global(.v-eyebrow) {
+  display: none;
+}
+.discovery :global(.v-categories) {
+  border: 0;
+  gap: 8px;
+  margin-block-end: 12px;
+  padding-block-end: 2px;
+}
+.discovery :global(.v-categories button) {
+  border-radius: 24px;
+  padding-inline: 20px;
+}
+.discovery :global(.v-categories .is-selected) {
+  background: linear-gradient(135deg, var(--voice-gold-light), var(--voice-gold));
+}
+.discovery :global(.v-room-card) {
+  border-color: var(--voice-line);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.discovery :global(.v-grid-heading) {
+  margin-block: 18px 12px;
+}
+.discovery :global(.v-value-strip) {
+  border-color: var(--voice-line);
+}
+@media (max-width: 760px) {
+  .tabs {
+    justify-content: space-between;
+    gap: 10px;
+    margin-block-end: 14px;
+  }
+  .tabs button {
+    font-size: 12px;
+    flex: 1;
+    padding-inline: 2px;
+  }
+  .invitation {
+    min-block-size: 150px;
+    padding: 16px 18px;
+    border-radius: 12px;
+  }
+  .kicker {
+    font-size: 10px;
+  }
+  .invitation h1 {
+    font-size: 19px;
+  }
+  .invitation p {
+    font-size: 12px;
+    margin-block-end: 6px;
+  }
+  .invitation :global(.v-button) {
+    font-size: 11px;
+    padding-inline: 18px;
+  }
+
+  .discovery :global(.v-discovery) {
+    padding-block-start: 14px;
+  }
+  .discovery :global(.v-section-heading) {
+    margin-block-end: 8px;
+  }
+  .discovery :global(.v-section-heading h2) {
+    font-size: 16px;
+  }
+  .discovery :global(.v-mobile-search) {
+    margin-block-end: 10px;
+  }
+  .discovery :global(.v-categories button) {
+    padding-inline: 16px;
+    font-size: 11px;
+  }
+  .discovery :global(.v-room-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .discovery :global(.v-room-card) {
+    display: block;
+    position: relative;
+    min-block-size: 210px;
+  }
+  .discovery :global(.v-card-cover) {
+    inline-size: 100%;
+    block-size: 210px;
+    min-block-size: 210px;
+  }
+  .discovery :global(.v-card-cover)::after {
+    background: linear-gradient(0deg, var(--voice-bg), transparent 85%);
+  }
+  .discovery :global(.v-card-body) {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    padding: 0 10px 10px;
+    pointer-events: none;
+  }
+  .discovery :global(.v-card-body) a,
+  .discovery :global(.v-card-body) button {
+    pointer-events: auto;
+  }
+  .discovery :global(.v-room-description),
+  .discovery :global(.v-enter) {
+    display: none;
+  }
+  .discovery :global(.v-card-presence) {
+    position: absolute;
+    inset-inline-start: 10px;
+    inset-block-end: 78px;
+    margin: 0;
+  }
+  .discovery :global(.v-card-cover) {
+    block-size: 210px;
+  }
+  .discovery :global(.v-card-body) {
+    padding: 0 10px 10px;
+  }
+  .discovery :global(.v-card-title h3) {
+    font-size: 13px;
+  }
+  .discovery :global(.v-host-line) {
+    margin-block-start: 4px;
+  }
+  .discovery :global(.v-room-description) {
+    font-size: 10px;
+  }
+  .discovery :global(.v-card-presence) {
+    margin-block: 0;
+  }
+  .discovery :global(.v-card-cover .v-live) {
+    inset: 7px auto auto 7px;
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  .discovery :global(.v-card-cover .v-category-label) {
+    display: none;
+  }
+  .discovery :global(.v-featured-row) {
+    display: none;
+  }
+  .discovery :global(.v-grid-heading > span) {
+    font-size: 9px;
+  }
+  .discovery :global(.v-value-strip) {
+    margin-block-start: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .discovery :global(.v-room-card),
+  .discovery :global(.v-card-cover img) {
+    transition: none;
+  }
+}
+
+/* Default illustrated covers give way to a restrained typographic identity.
+   Uploaded covers and actual host photos remain available. */
+.discovery :global(.v-card-identity) {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--voice-card);
+}
+.discovery :global(.v-card-identity .v-avatar) {
+  border-color: var(--voice-border);
+  color: var(--voice-gold-light);
+  background: var(--voice-bg);
+}
+.discovery :global(.v-featured-row) {
+  display: none;
+}
+
+/* Compact discovery keeps the live inventory above decorative content. */
+@media (min-width: 761px) {
+  .invitation {
+    min-block-size: 130px;
+    padding: 18px 24px;
+  }
+  .invitation > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 28px;
+    align-items: center;
+    inline-size: 100%;
+  }
+  .invitation .kicker,
+  .invitation h1,
+  .invitation p {
+    grid-column: 1;
+  }
+  .invitation :global(.v-button) {
+    grid-column: 2;
+    grid-row: 1 / 4;
+  }
+  .invitation h1 {
+    font-size: 25px;
+  }
+  .invitation p {
+    margin: 0;
+  }
+  .discovery :global(.v-room-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+  .discovery :global(.v-card-cover) {
+    block-size: 150px;
+  }
+  .discovery :global(.v-card-body) {
+    padding-inline: 14px;
+    padding-block-end: 12px;
+  }
+  .discovery :global(.v-room-description) {
+    margin-block: 2px;
+  }
+  .discovery :global(.v-host-line) {
+    margin-block-start: 6px;
+  }
+  .discovery :global(.v-card-presence) {
+    margin-block: 8px;
+  }
+}
+@media (max-width: 760px) {
+  .invitation {
+    min-block-size: 130px;
+    padding: 14px 18px;
+  }
+  .tabs {
+    margin-block-end: 10px;
+  }
+  .discovery :global(.v-room-card),
+  .discovery :global(.v-card-cover) {
+    min-block-size: 185px;
+    block-size: 185px;
+  }
+  .discovery :global(.v-value-strip) {
+    gap: 16px;
+    padding-block: 20px;
+  }
+}
+
+/* Text-sized grid minima let enlarged text reflow instead of clipping card labels. */
+@media (max-width: 760px) {
+  .discovery :global(.v-room-grid) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5em), 1fr));
+  }
+  .discovery :global(.v-room-card),
+  .discovery :global(.v-card-cover) {
+    min-block-size: max(185px, 13em);
+    block-size: max(185px, 13em);
+  }
+  .discovery :global(.v-card-body) {
+    display: grid;
+  }
+  .discovery :global(.v-card-presence) {
+    position: static;
+    grid-row: 1;
+  }
+  .discovery :global(.v-card-title) {
+    grid-row: 2;
+  }
+  .discovery :global(.v-card-title h3) {
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .discovery :global(.v-host-line) {
+    grid-row: 3;
+  }
+}
+@media (max-width: 360px) {
+  :global(.v-app):has(.discovery) :global(.v-topbar) {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    min-block-size: 70px;
+    block-size: auto;
+    gap: 4px 10px;
+    padding: 10px 14px;
+  }
+  :global(.v-app):has(.discovery) :global(.v-brand) {
+    min-inline-size: 0;
+  }
+  :global(.v-app):has(.discovery) :global(.v-brand > span) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  :global(.v-app):has(.discovery) :global(.v-header-actions) {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    inline-size: 100%;
+  }
+  :global(.v-app):has(.discovery) :global(.v-header-actions .v-button) {
+    white-space: normal;
+  }
+}
+@media (max-width: 760px) {
+  .discovery :global(.v-card-body) {
+    row-gap: 4px;
+  }
+  .discovery :global(.v-card-title) {
+    margin-block: 0;
+  }
+  .discovery :global(.v-card-presence) {
+    margin: 0;
+  }
+}

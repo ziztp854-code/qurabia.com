@@ -117,13 +117,32 @@ export default function EmojiPicker({
     <div
       ref={panel}
       role="dialog"
+      aria-modal="true"
       aria-label="لوحة الفيسات"
+      tabIndex={-1}
       dir="rtl"
       className={styles.picker}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.stopPropagation();
           close();
+        } else if (event.key === 'Tab') {
+          const controls = Array.from(
+            panel.current?.querySelectorAll<HTMLElement>('button, input, [tabindex="0"]') ?? [],
+          ).filter((control) => !control.hasAttribute('disabled'));
+          if (!controls?.length) return;
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (
+            event.shiftKey &&
+            (document.activeElement === first || document.activeElement === panel.current)
+          ) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
         }
       }}
     >

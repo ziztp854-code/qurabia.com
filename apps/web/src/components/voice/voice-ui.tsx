@@ -39,6 +39,12 @@ export function Avatar({
 }) {
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const photo = user.communityIdentity?.avatarUrl || user.image;
+  const initials = user.name
+    .trim()
+    .split(/\s+/u)
+    .slice(0, 2)
+    .map((part) => Array.from(part)[0])
+    .join('');
   const exclusive = ['frame-owner-sapphire', 'frame-amira-rose'].includes(
     user.communityIdentity?.frame?.id ?? '',
   );
@@ -63,10 +69,8 @@ export function Avatar({
           style={{ borderRadius: '50%', objectFit: 'cover' }}
         />
       ) : (
-        <span aria-hidden="true">
-          <small style={{ fontSize: Math.max(5, size / 8), textAlign: 'center', lineHeight: 1.3 }}>
-            لم تُضف صورة
-          </small>
+        <span aria-hidden="true" style={{ fontSize: Math.max(12, size * 0.33), fontWeight: 700 }}>
+          {initials}
         </span>
       )}
       {user.communityIdentity?.frame && (
@@ -364,13 +368,17 @@ export function RoomCard({
   onFavorite: () => void;
   featured?: boolean;
 }) {
+  const cover = room.cover.startsWith('/voice/covers/') ? room.hostImage : room.cover;
   return (
     <article className={`v-room-card ${featured ? 'v-room-featured' : ''}`}>
       <Link href={`/voice/${room.id}`} className="v-card-cover" aria-label={`دخول ${room.name}`}>
-        <VoiceCover
-          src={room.cover}
-          sizes="(max-width: 600px) 92vw, (max-width: 1200px) 42vw, 25vw"
-        />
+        {cover ? (
+          <VoiceCover src={cover} sizes="(max-width: 600px) 92vw, (max-width: 1200px) 42vw, 25vw" />
+        ) : (
+          <span className="v-card-identity">
+            <Avatar user={{ name: room.hostName, image: null }} size={64} />
+          </span>
+        )}
         <LiveBadge active={room.active} waiting={room.participantCount === 0} />
         <span className="v-category-label">{room.category}</span>
       </Link>

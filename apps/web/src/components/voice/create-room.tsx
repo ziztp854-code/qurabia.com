@@ -27,7 +27,7 @@ export function CreateRoom({
   const [description, setDescription] = useState('');
   const [cover, setCover] = useState(coverPath('friends'));
   const [category, setCategory] = useState<VoiceCategory>('مجالس');
-  const [seatCount, setSeatCount] = useState(8);
+  const [seatCount, setSeatCount] = useState(9);
   const [isPrivate, setPrivate] = useState(false);
   const [password, setPassword] = useState('');
   const [allowMicRequests, setMicRequests] = useState(true);
@@ -176,7 +176,7 @@ export function CreateRoom({
             value={seatCount}
             onChange={(e) => setSeatCount(Number(e.target.value))}
           >
-            {[2, 4, 6, 8, 12, 16].map((n) => (
+            {[2, 4, 6, 8, 9, 12, 16].map((n) => (
               <option key={n} value={n}>
                 {n} مقاعد
               </option>

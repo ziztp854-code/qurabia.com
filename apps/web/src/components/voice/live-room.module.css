@@ -26,15 +26,12 @@
   object-fit: cover;
   opacity: 0.08;
 }
-/* Static skyline adapted from the user's code_artifact.html reference. */
+/* Quiet navy stage: portrait rings and live controls carry the accents. */
 .backdrop::before {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    url('/voice/aflaqni-riyadh-night.webp') center bottom / cover no-repeat,
-    url('/voice/aflaqni-skyline.svg') center bottom / cover no-repeat;
-  opacity: 0.8;
+  background: radial-gradient(ellipse at 50% 0%, var(--voice-card), transparent 65%);
 }
 .backdrop::after {
   content: '';
@@ -995,11 +992,6 @@
   }
 }
 @media (max-width: 760px) {
-  .backdrop::before {
-    background-image:
-      url('/voice/aflaqni-riyadh-night-mobile.webp'), url('/voice/aflaqni-skyline.svg');
-    background-position: center bottom;
-  }
   .liveRoom {
     --room-controls-space: 170px;
   }

@@ -6,16 +6,17 @@
   max-inline-size: 420px;
   margin-inline: auto;
   padding: var(--space-3);
-  background: var(--popover);
-  color: var(--foreground);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  max-block-size: min(480px, 60dvh);
+  background: var(--voice-card, var(--popover));
+  color: var(--voice-text, var(--foreground));
+  border: 1px solid var(--voice-border, var(--border-bright));
+  border-radius: 16px;
+  box-shadow: var(--voice-shadow, var(--shadow-lg));
+  max-block-size: min(480px, 56dvh);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   text-align: start;
+  animation: picker-enter 160ms ease-out;
 }
 .picker header {
   display: flex;
@@ -28,10 +29,10 @@
 }
 .picker small {
   font-size: 12px;
-  color: var(--text-soft);
+  color: var(--voice-muted, var(--text-soft));
 }
 .picker strong {
-  color: var(--primary);
+  color: var(--voice-gold, var(--primary));
 }
 .picker button {
   border: 1px solid transparent;
@@ -44,22 +45,22 @@
   font: inherit;
 }
 .picker button:hover {
-  background: var(--surface-strong);
-  border-color: var(--border);
+  background: var(--voice-raised, var(--surface-strong));
+  border-color: var(--voice-line, var(--border));
 }
 .picker button:focus-visible,
 .picker input:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--voice-gold, var(--ring));
   outline-offset: 2px;
 }
 .picker input {
   min-inline-size: 0;
   inline-size: 100%;
   min-block-size: 44px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--input);
-  color: var(--foreground);
+  border: 1px solid var(--voice-line, var(--border));
+  border-radius: 12px;
+  background: var(--voice-bg, var(--input));
+  color: var(--voice-text, var(--foreground));
   padding-inline: var(--space-3);
   font: inherit;
 }
@@ -75,8 +76,12 @@
   font-size: 13px;
 }
 .tabs button[aria-pressed='true'] {
-  color: var(--primary-foreground);
-  background: var(--primary);
+  color: var(--voice-ink, var(--primary-foreground));
+  background: linear-gradient(
+    160deg,
+    var(--voice-gold-light, var(--primary)),
+    var(--voice-gold, var(--primary))
+  );
 }
 .grid {
   display: grid;
@@ -90,8 +95,8 @@
   display: grid;
   grid-template-columns: 1fr;
   justify-items: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--voice-line, var(--border));
+  border-radius: 12px;
 }
 .tile > button:first-child {
   inline-size: 100%;
@@ -99,12 +104,12 @@
   min-block-size: 48px;
 }
 .tile .favorite {
-  color: var(--text-soft);
+  color: var(--voice-muted, var(--text-soft));
   inline-size: 100%;
 }
 .favorite[aria-pressed='true'] svg {
-  fill: var(--primary);
-  color: var(--primary);
+  fill: var(--voice-gold, var(--primary));
+  color: var(--voice-gold, var(--primary));
 }
 .picker p {
   font-size: 13px;
@@ -131,6 +136,21 @@
 .reactionAnchor {
   position: relative;
   z-index: var(--z-popover, 60);
+}
+@keyframes picker-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .picker {
+    animation: none;
+  }
 }
 @media (max-width: 400px) {
   .picker {

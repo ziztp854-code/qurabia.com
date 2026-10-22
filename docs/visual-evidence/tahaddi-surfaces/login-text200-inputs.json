@@ -1,0 +1,16 @@
+[
+  {
+    "type": "email",
+    "height": 50,
+    "fontSize": "28px",
+    "lineHeight": "47.6px",
+    "padding": 0
+  },
+  {
+    "type": "password",
+    "height": 50,
+    "fontSize": "28px",
+    "lineHeight": "47.6px",
+    "padding": 0
+  }
+]
