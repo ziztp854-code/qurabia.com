@@ -10,7 +10,7 @@ import { useVoiceChat } from '../chat/use-voice-chat';
 import { useEmojiCatalog } from '../chat/use-emoji-catalog';
 import { useKeyboardVisible } from '../navigation/use-keyboard';
 import { useNavigation } from '../navigation/use-navigation';
-import { Body, Loading, Notice, UiProvider, ui } from '../components/ui';
+import { Body, KeyboardViewport, Loading, Notice, UiProvider, ui } from '../components/ui';
 import { AuthScreen } from './auth-screen';
 import { RoomsScreen } from './rooms-screen';
 import { RoomScreen } from './room-screen';
@@ -222,7 +222,9 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
       {!keyboardVisible&&<BottomTabs screen={navigation.screen} disabled={exitBusy} onNavigate={navigation.go}/>}
     </View>;
   return <UiProvider fontsReady={fontsReady}>
+    <KeyboardViewport>
     <SafeAreaView style={styles.root} edges={['top','bottom','left','right']}><Notice message={error}/>{content}</SafeAreaView>
+    </KeyboardViewport>
   </UiProvider>;
 }
 const styles=StyleSheet.create({

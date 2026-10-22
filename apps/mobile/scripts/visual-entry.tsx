@@ -9,7 +9,7 @@ import { useFonts } from 'expo-font';
 import { Cairo_400Regular } from '@expo-google-fonts/cairo/400Regular';
 import { Cairo_600SemiBold } from '@expo-google-fonts/cairo/600SemiBold';
 import { Cairo_700Bold } from '@expo-google-fonts/cairo/700Bold';
-import { Body, Loading, UiProvider, ui } from '../src/components/ui';
+import { Body, KeyboardViewport, Loading, UiProvider, ui } from '../src/components/ui';
 import { BottomTabs } from '../src/components/bottom-tabs';
 import { bundledRoomArt } from '../src/assets/room-art';
 import { RoomsScreen, type RoomsModel } from '../src/screens/rooms-screen';
@@ -82,6 +82,7 @@ export default function VisualEntry() {
   const keyboardVisible = useKeyboardVisible();
   const ready = fontsLoaded && !fontError;
   return <SafeAreaProvider><StatusBar style="light"/><UiProvider fontsReady={ready}>
+    <KeyboardViewport>
     <SafeAreaView style={styles.root} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.presentation} testID="visual-preview-public">
         <Body style={styles.caption}>معاينة تصميم • بيانات عامة</Body>
@@ -101,6 +102,7 @@ export default function VisualEntry() {
         </View>}
       {!keyboardVisible && <BottomTabs screen={screen} onNavigate={setScreen}/>}
     </SafeAreaView>
+    </KeyboardViewport>
   </UiProvider></SafeAreaProvider>;
 }
 const styles = StyleSheet.create({

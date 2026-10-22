@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
+import { Alert, Pressable, StyleSheet, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import type { VoiceEvent, VoiceParticipant, VoiceSnapshot } from '../api/contracts';
 import { availableSeat, canManageRoom, canUseMicrophone } from '../rooms/state';
@@ -75,7 +75,7 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
         {person.moderatorMuted?'كتم إداري':person.muted?'مكتوم':roleLabels[person.role]}</Body>}
     </Pressable>;
   })}</View>;}
-  return <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS==='ios'?'padding':'height'}>
+  return <View style={ui.flex}>
     <View style={styles.room} onLayout={({nativeEvent})=>{
       const next=Math.round(nativeEvent.layout.height);
       setAvailableHeight(previous=>previous===next?previous:next);
@@ -204,7 +204,7 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
     </Sheet>
     {settings&&<RoomEditor visible={settings} initial={snapshot.room} asset={asset} onClose={()=>setSettings(false)}
       onSave={async input=>{await rooms.update(input);setSettings(false);}}/>}
-  </KeyboardAvoidingView>;
+  </View>;
 }
 function audioOutputLabel(device:string){
   const value=device.toLowerCase();
