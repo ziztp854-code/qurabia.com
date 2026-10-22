@@ -169,6 +169,10 @@ def main() -> int:
         report["error"] = "Isolated native login check failed at the recorded phase"
         return 1
     finally:
+        try:
+            report["server_counters"] = counters(args.ca)
+        except Exception:
+            pass
         if device is not None:
             # Remove the test APK's session/credential UI after collecting only
             # safe counters. No screenshot/XML/log upload from credentialed runs.

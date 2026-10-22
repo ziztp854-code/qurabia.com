@@ -38,7 +38,7 @@ async function main() {
   // Form encoding must round-trip +, %, = and & through the actual native client.
   const password = 'MobileAa42!+%25=&' + randomUUID();
   let app: any, backend: http.Server | undefined, proxy: https.Server | undefined;
-  let closing = false;
+  let closing = false, ownsCredentialsFile = false;
   const evidence = {
     csrf_ok: 0, credentials_ok: 0, credentials_rejected: 0,
     authenticated_sessions: 0, anonymous_sessions: 0, foreign_sessions: 0,
@@ -47,7 +47,7 @@ async function main() {
   async function cleanup() {
     if (closing) return;
     closing = true;
-    await fs.rm(credentialsFile, { force: true });
+    if (ownsCredentialsFile) await fs.rm(credentialsFile, { force: true });
     proxy?.closeAllConnections(); backend?.closeAllConnections();
     await Promise.all([proxy && new Promise<void>(r => proxy!.close(() => r())),
       backend && new Promise<void>(r => backend!.close(() => r()))]);
@@ -134,6 +134,7 @@ async function main() {
     await fs.mkdir(path.dirname(credentialsFile), { recursive: true });
     await fs.writeFile(credentialsFile, JSON.stringify({ origin: 'https://localhost:3443', email, password }),
       { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    ownsCredentialsFile = true;
     await fs.chmod(credentialsFile, 0o600);
     console.log('MOBILE_LOGIN_FIXTURE_READY (local HTTPS; development limiter; real NextAuth/database)');
   } catch {
