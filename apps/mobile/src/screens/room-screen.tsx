@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import type { VoiceEvent, VoiceParticipant, VoiceSnapshot } from '../api/contracts';
 import { availableSeat, canManageRoom, canUseMicrophone } from '../rooms/state';
+import { canEndRoom } from '../rooms/end';
 import type { VoiceAudioSnapshot } from '../voice';
 import { Action, Avatar, Body, Notice, Sheet, Title, ui } from '../components/ui';
 import { ChatPanel, type ChatModel, type EmojiCatalog } from '../components/chat-panel';
@@ -11,15 +12,16 @@ import { theme } from '../theme';
 const roleLabels={host:'المضيف',moderator:'مشرف',speaker:'متحدث',listener:'مستمع'} as const;
 const connectionLabels={disconnected:'الصوت غير متصل',connecting:'جارٍ توصيل الصوت…',connected:'الصوت متصل',
   reconnecting:'جارٍ استعادة الصوت…',error:'تعذر اتصال الصوت'} as const;
-export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,onRetryAudio,onAudioOutput,onLeave,keyboardVisible=false}:{
-  keyboardVisible?:boolean;snapshot:VoiceSnapshot;rooms:RoomsModel;voice:VoiceAudioSnapshot;chat:ChatModel;catalog:EmojiCatalog;
+export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,onRetryAudio,onAudioOutput,onLeave,onEnd,keyboardVisible=false,exiting=false}:{
+  keyboardVisible?:boolean;exiting?:boolean;snapshot:VoiceSnapshot;rooms:RoomsModel;voice:VoiceAudioSnapshot;chat:ChatModel;catalog:EmojiCatalog;
   asset:(path:string)=>ImageSourcePropType|undefined;onToggleMic:()=>Promise<void>;onRetryAudio:()=>Promise<void>;
-  onAudioOutput:(device:string)=>Promise<void>;onLeave:()=>Promise<void>;
+  onAudioOutput:(device:string)=>Promise<void>;onLeave:()=>Promise<void>;onEnd:()=>Promise<void>;
 }) {
   const [selected,setSelected]=useState<VoiceParticipant|null>(null);
   const [seat,setSeat]=useState<number|null>(null);const [allSeats,setAllSeats]=useState(false);
   const [settings,setSettings]=useState(false);const [audioSettings,setAudioSettings]=useState(false);
-  const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+  const [actionBusy,setBusy]=useState(false);const [error,setError]=useState('');
+  const busy=actionBusy||exiting;
   const manage=canManageRoom(snapshot);
   async function run(action:()=>Promise<unknown>){
     if(busy)return;setBusy(true);setError('');
@@ -28,9 +30,22 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
   }
   async function send(event:VoiceEvent){await rooms.send(event);}
   function participantAction(event:VoiceEvent){void run(async()=>{await send(event);setSelected(null);});}
-  function confirmLeave(){Alert.alert('مغادرة الغرفة','سيتوقف الصوت وتغادر المجلس.',[
-    {text:'بقاء',style:'cancel'},{text:'مغادرة',style:'destructive',onPress:()=>{void run(onLeave);}},
-  ]);}
+  function confirmLeave(){
+    if(busy)return;
+    const host=canEndRoom(snapshot);
+    Alert.alert(host?'مغادرة دون إنهاء البث':'مغادرة الغرفة',
+      host?'سيتوقف الصوت على هذا الجهاز وتغادر المجلس، لكن البث سيبقى مفتوحًا للمشاركين.':'سيتوقف الصوت وتغادر المجلس.',[
+        {text:'بقاء',style:'cancel'},
+        {text:host?'مغادرة دون إنهاء':'مغادرة',style:'destructive',onPress:()=>{void run(onLeave);}},
+      ],{cancelable:false});
+  }
+  function confirmEnd(){
+    if(busy)return;
+    Alert.alert('إنهاء البث للجميع','سينتهي البث وتُغلق الغرفة أمام جميع المشاركين.',[
+      {text:'بقاء',style:'cancel'},
+      {text:'إنهاء البث',style:'destructive',onPress:()=>{void run(onEnd);}},
+    ],{cancelable:false});
+  }
   function selectSeat(index:number){setAllSeats(false);const person=snapshot.participants.find(item=>item.seatIndex===index);
     if(person)setSelected(person);else setSeat(index);}
   function seats(limit:number){return <View style={styles.seats}>{Array.from({length:Math.min(limit,snapshot.room.seatCount)},(_,index)=>{
@@ -48,9 +63,13 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
   })}</View>;}
   return <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS==='ios'?'padding':'height'}>
     <View style={styles.room}>
-      <View style={ui.row}><View style={ui.grow}><Title small testID="room-title">{snapshot.room.name}</Title>
+      <View><Title small testID="room-title">{snapshot.room.name}</Title>
         <Body muted style={ui.caption}>{snapshot.room.participantCount.toLocaleString('ar-SA')} مشارك · {snapshot.room.category}</Body></View>
-        <Action compact testID="leave-room" tone="danger" label="مغادرة" busy={busy} onPress={confirmLeave}/></View>
+      <View style={ui.wrap}>
+        {canEndRoom(snapshot)&&<Action compact testID="end-broadcast" tone="danger" label="إنهاء البث" busy={busy} onPress={confirmEnd}/>}
+        <Action compact testID="leave-room" tone="secondary" label={canEndRoom(snapshot)?'مغادرة دون إنهاء':'مغادرة'}
+          busy={busy} onPress={confirmLeave}/>
+      </View>
       <View testID="connection-status" style={ui.row} accessibilityLiveRegion="polite">
         <View style={[styles.dot,{backgroundColor:voice.state==='connected'?theme.colors.success:theme.colors.gold}]}/>
         <Body style={ui.small}>{connectionLabels[voice.state]}</Body>
@@ -61,7 +80,7 @@ export function RoomScreen({snapshot,rooms,voice,chat,catalog,asset,onToggleMic,
         onPress={()=>setAllSeats(true)}/>
         <View style={ui.grow}/>{manage&&<Action compact tone="secondary" label="إعدادات" onPress={()=>setSettings(true)}/>}</View>}
       <Notice message={error || rooms.error || voice.error}/>
-      {voice.state==='error'&&<Action tone="secondary" label="إعادة توصيل الصوت" busy={busy}
+      {(voice.state==='error'||voice.state==='disconnected')&&<Action testID="voice-resume" tone="secondary" label="استئناف الصوت" busy={busy}
         onPress={()=>{void run(onRetryAudio);}}/>}
       <ChatPanel snapshot={snapshot} chat={chat} catalog={catalog} asset={asset} manage={manage}
         onModerate={async(messageId,action)=>{

@@ -1,10 +1,10 @@
-name: Android authentication regression
+name: Android authentication and broadcast regression
 on:
   push:
-    branches: [fix/android-auth-login]
+    branches: [fix/android-auth-login, fix/android-host-broadcast-close]
     paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
   pull_request:
-    branches: [codex/android-native-v2]
+    branches: [codex/android-native-v2, fix/android-auth-login]
     paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
   workflow_dispatch:
 permissions:

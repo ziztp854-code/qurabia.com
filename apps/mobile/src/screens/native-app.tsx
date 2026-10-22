@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { useRooms } from '../rooms/useRooms';
 import { canUseMicrophone } from '../rooms/state';
+import { captureRoomExitTarget, executeRoomExit, type RoomExitMode, type RoomExitTarget } from './room-exit';
 import { NativeVoiceSession, useNativeVoiceSession } from '../voice';
 import { useVoiceChat } from '../chat/use-voice-chat';
 import { useEmojiCatalog } from '../chat/use-emoji-catalog';
@@ -27,7 +28,10 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   const keyboardVisible=useKeyboardVisible();
   const [error,setError]=useState('');
   const logoutGuard=useRef(false);
+  const [exitBusy,setExitBusy]=useState(false);
   const [logoutBusy,setLogoutBusy]=useState(false);
+  const snapshotRef=useRef(rooms.snapshot);
+  snapshotRef.current=rooms.snapshot;
   const currentRoomId=useRef<string|null>(null);
   currentRoomId.current=rooms.snapshot?.room.id??null;
   const roomId=rooms.snapshot?.room.id;
@@ -56,50 +60,89 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   function sameRoomSession(generation:number,expectedRoomId:string){
     return sameSession(generation)&&currentRoomId.current===expectedRoomId;
   }
-  async function cleanupMembership(generation:number,expectedRoomId:string|null){
-    const failures:string[]=[];
-    if(!sameSession(generation))return failures;
-    try{await voice.leave();}
-    catch{failures.push('تعذر إنهاء جلسة الصوت على الجهاز.');}
-    // Never let an old callback leave a replacement account or a new room.
-    if(!sameSession(generation)||currentRoomId.current!==expectedRoomId)return failures;
-    try{await rooms.leave();}
-    catch{failures.push('تعذر تأكيد مغادرة الغرفة لدى الخادم.');}
-    return failures;
+  function askHostLogout():Promise<boolean>{
+    return new Promise(resolve=>Alert.alert('إنهاء البث وتسجيل الخروج',
+      'سيُنهي هذا البث لجميع المشاركين، ثم يسجل خروجك من الحساب.',[
+        {text:'بقاء',style:'cancel',onPress:()=>resolve(false)},
+        {text:'إنهاء البث والخروج',style:'destructive',onPress:()=>resolve(true)},
+      ],{cancelable:false}));
   }
-  async function leave(){
-    if(logoutGuard.current)return;
-    const generation=auth.client.sessionGeneration;
-    const expectedRoomId=currentRoomId.current;
-    const failures=await cleanupMembership(generation,expectedRoomId);
-    if(!sameSession(generation))return;
-    // Room cleanup clears the old snapshot. A replacement room must keep its UI.
-    if(currentRoomId.current&&currentRoomId.current!==expectedRoomId)return;
-    navigation.go('rooms');
-    if(failures.length){
-      const message=failures.join(' ');
-      setError(message);
-      throw new Error(message);
-    }
+  function askAfterCloseFailure(logout:boolean):Promise<'stay'|'retry'|'local'>{
+    return new Promise(resolve=>{
+      const actions:Array<{text:string;style?:'cancel'|'destructive'|'default';onPress:()=>void}>=[
+        {text:'البقاء في الغرفة',style:'cancel',onPress:()=>resolve('stay')},
+        {text:'إعادة المحاولة',onPress:()=>resolve('retry')},
+      ];
+      if(logout)actions.push({text:'الخروج من هذا الجهاز فقط',style:'destructive',onPress:()=>resolve('local')});
+      Alert.alert('لم يتم تأكيد إنهاء البث',
+        logout?'لم يُسجل خروجك. يمكنك إعادة المحاولة أو الخروج من هذا الجهاز فقط؛ عندها قد يظل البث مفتوحًا.'
+          :'لم يؤكد الخادم إنهاء البث. يمكنك البقاء وإعادة تشغيل الصوت أو إعادة محاولة الإنهاء.',
+        actions,{cancelable:false});
+    });
   }
-  async function signOut(){
-    if(logoutGuard.current)return;
+  async function runExit(initialMode:RoomExitMode,target:RoomExitTarget,confirmLogout=false):Promise<boolean>{
+    if(logoutGuard.current)return false;
     logoutGuard.current=true;
-    setLogoutBusy(true);
+    setExitBusy(true);
     setError('');
-    const generation=auth.client.sessionGeneration;
-    const expectedRoomId=currentRoomId.current;
+    let mode=initialMode;
     try{
-      const failures=await cleanupMembership(generation,expectedRoomId);
-      // Login/expiry invalidates this generation. Never revoke a newer session.
-      if(!sameSession(generation))return;
-      if(failures.length)setError(failures.join(' '));
-      // Revoke despite cleanup failures, with replacement login hidden until done.
-      await auth.signOut();
-    } finally {
+      if(confirmLogout&&target.host&&!(await askHostLogout()))return false;
+      if(!sameSession(target.generation)||
+        (currentRoomId.current!==target.roomId&&currentRoomId.current!==null))return false;
+      setLogoutBusy(mode==='logout'||mode==='local-logout');
+      for(;;){
+        const result=await executeRoomExit(target,mode,{
+          sessionGeneration:()=>auth.client.sessionGeneration,
+          currentRoomId:()=>currentRoomId.current,
+          stopAudio:()=>voice.leave(),
+          end:()=>rooms.end(),
+          leave:()=>rooms.leave(),
+          signOut:()=>auth.signOut(),
+        });
+        if(result.status==='stale')return false;
+        if(result.status==='not-host'){
+          setError('إنهاء البث متاح للمضيف الموجود في الغرفة فقط.');
+          return false;
+        }
+        if(result.status==='close-failed'){
+          setError(mode==='logout'?'لم يتم تأكيد إنهاء البث. لم يُسجل خروجك من الحساب.':'لم يتم تأكيد إنهاء البث. يمكنك إعادة المحاولة.');
+          const choice=await askAfterCloseFailure(mode==='logout'||mode==='local-logout');
+          if(!sameSession(target.generation)||
+            (currentRoomId.current!==target.roomId&&currentRoomId.current!==null))return false;
+          if(choice==='stay')return false;
+          if(choice==='local')mode='local-logout';
+          continue;
+        }
+        if(result.warnings.length)setError(result.warnings.join(' '));
+        if(mode==='end'||mode==='leave'){
+          if(sameSession(target.generation)&&
+            (currentRoomId.current===null||currentRoomId.current===target.roomId))navigation.go('rooms');
+        }
+        return true;
+      }
+    }catch{
+      if(sameSession(target.generation))setError(mode==='logout'||mode==='local-logout'
+        ?'تعذر إكمال تسجيل الخروج بأمان. أعد المحاولة.':'تعذر إكمال مغادرة الغرفة. أعد المحاولة.');
+      return false;
+    }finally{
       logoutGuard.current=false;
+      setExitBusy(false);
       setLogoutBusy(false);
     }
+  }
+  async function leave(){
+    const target=captureRoomExitTarget(snapshotRef.current,auth.client.sessionGeneration);
+    await runExit('leave',target);
+  }
+  async function endBroadcast(expectedRoomId:string){
+    const target=captureRoomExitTarget(snapshotRef.current,auth.client.sessionGeneration);
+    if(target.roomId!==expectedRoomId)return;
+    await runExit('end',target);
+  }
+  async function signOut(){
+    const target=captureRoomExitTarget(snapshotRef.current,auth.client.sessionGeneration);
+    await runExit('logout',target,true);
   }
   useEffect(()=>{
     const handler=BackHandler.addEventListener('hardwareBackPress',()=>{
@@ -107,17 +150,17 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
       if(navigation.screen==='room'){navigation.go('rooms');return true;}
       if(navigation.screen!=='home'){navigation.go('home');return true;}
       if(rooms.snapshot){
-        Alert.alert('الخروج من تحدّي','توجد جلسة صوتية نشطة. هل تريد مغادرة الغرفة والخروج؟',[
+        const target=captureRoomExitTarget(snapshotRef.current,auth.client.sessionGeneration);
+        Alert.alert('الخروج من تحدّي',target.host
+          ?'هل تريد إنهاء البث لجميع المشاركين والخروج من التطبيق؟'
+          :'توجد جلسة صوتية نشطة. هل تريد مغادرة الغرفة والخروج؟',[
           {text:'بقاء',style:'cancel'},
-          {text:'مغادرة وخروج',style:'destructive',onPress:()=>{
-            const generation=auth.client.sessionGeneration;
-            void leave().then(()=>{
-              if(sameSession(generation)&&!currentRoomId.current&&!logoutGuard.current)BackHandler.exitApp();
-            }).catch(cause=>{
-              if(sameSession(generation))setError(cause instanceof Error?cause.message:'تعذر مغادرة الغرفة.');
+          {text:target.host?'إنهاء البث والخروج':'مغادرة وخروج',style:'destructive',onPress:()=>{
+            void runExit(target.host?'end':'leave',target).then(complete=>{
+              if(complete&&sameSession(target.generation)&&!currentRoomId.current&&!logoutGuard.current)BackHandler.exitApp();
             });
           }},
-        ]);
+        ],{cancelable:false});
         return true;
       }
       return false;
@@ -155,27 +198,27 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   }
   const content=logoutBusy?<Loading label="جارٍ تسجيل الخروج…"/>:auth.status==='loading'?<Loading label="جارٍ استعادة الجلسة…"/>:
     auth.status!=='authenticated'?<AuthScreen apiRequest={auth.client.request} signIn={async(email,password)=>{setError('');await auth.signIn(email,password);}} authError={auth.error}/>:
-    <View style={ui.flex}>
+    <View style={ui.flex} pointerEvents={exitBusy?'none':'auto'}>
       {navigation.screen==='profile'?<ProfileScreen user={auth.user} asset={asset}
         onRefresh={auth.refreshSession} onSignOut={signOut}/>:
         navigation.screen==='room'&&rooms.snapshot?<RoomScreen snapshot={rooms.snapshot} rooms={rooms}
-          keyboardVisible={keyboardVisible} voice={audio} chat={chat} catalog={emojis} asset={asset} onToggleMic={toggleMic}
-          onLeave={leave} onAudioOutput={device=>voice.setAudioOutput(device)}
-          onRetryAudio={async()=>{if(rooms.snapshot){setError('');await voice.connect(rooms.snapshot.room.id,rooms.snapshot.me||undefined);}}}/>:
+          exiting={exitBusy} keyboardVisible={keyboardVisible} voice={audio} chat={chat} catalog={emojis} asset={asset} onToggleMic={toggleMic}
+          onLeave={leave} onEnd={async()=>{const id=rooms.snapshot?.room.id;if(id)await endBroadcast(id);}} onAudioOutput={device=>voice.setAudioOutput(device)}
+          onRetryAudio={async()=>{if(!logoutGuard.current&&rooms.snapshot){setError('');await voice.connect(rooms.snapshot.room.id,rooms.snapshot.me||undefined);}}}/>:
           <RoomsScreen model={rooms} home={navigation.screen==='home'} displayName={auth.user?.name||''}
             asset={asset} onJoined={()=>{setError('');navigation.go('room');}}/>}
-      {rooms.snapshot&&navigation.screen!=='room'&&<Pressable accessibilityRole="button"
+      {rooms.snapshot&&navigation.screen!=='room'&&<Pressable disabled={exitBusy} accessibilityState={{disabled:exitBusy}} accessibilityRole="button"
         accessibilityLabel={'العودة إلى غرفة '+rooms.snapshot.room.name}
         onPress={()=>navigation.go('room')} style={({pressed})=>[styles.dock,pressed&&styles.pressed]}>
         <View style={[styles.dot,{backgroundColor:audio.state==='connected'?theme.colors.success:theme.colors.gold}]}/>
         <View style={ui.grow}><Body weight="semibold" numberOfLines={1}>{rooms.snapshot.room.name}</Body>
-          <Body muted style={ui.caption}>{audio.state==='connected'?'جلسة صوت نشطة':'جارٍ توصيل الصوت'} · {audio.muted?'ميكروفونك مكتوم':'الميكروفون يعمل'}</Body></View>
+          <Body muted style={ui.caption}>{audio.state==='connected'?'جلسة صوت نشطة':audio.state==='disconnected'?'الصوت متوقف على هذا الجهاز':audio.state==='error'?'تعذر اتصال الصوت':'جارٍ توصيل الصوت'} · {audio.muted?'ميكروفونك مكتوم':'الميكروفون يعمل'}</Body></View>
         <Body style={ui.gold}>العودة للمجلس</Body>
       </Pressable>}
       {!keyboardVisible&&<View style={styles.tabs} accessibilityRole="tablist">
         {([['home','الرئيسية'],['rooms','الغرف'],['profile','حسابي']] as const).map(([id,label])=>
-          <Pressable key={id} testID={'nav-'+id} accessibilityRole="tab"
-            accessibilityState={{selected:navigation.screen===id}} accessibilityLabel={label}
+          <Pressable key={id} testID={'nav-'+id} disabled={exitBusy} accessibilityRole="tab"
+            accessibilityState={{selected:navigation.screen===id,disabled:exitBusy}} accessibilityLabel={label}
             onPress={()=>navigation.go(id)} android_ripple={{color:theme.colors.press}}
             style={({pressed})=>[styles.tab,navigation.screen===id&&styles.tabActive,pressed&&styles.pressed]}>
             <Body weight="semibold" style={[ui.small,navigation.screen===id&&ui.gold]}>{label}</Body>
