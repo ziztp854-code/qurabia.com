@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstallAppButton } from './install-app-button';
@@ -27,7 +27,7 @@ describe('installing Tahaddi', () => {
     const user = userEvent.setup();
     render(<InstallAppButton />);
     await user.click(screen.getByRole('button', { name: 'تثبيت التطبيق' }));
-    expect(screen.getByRole('dialog', { name: 'ثبّت تحدّي على جهازك' })).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'ثبّت تحدّي على جهازك' })).toBeVisible());
     expect(screen.getByRole('heading', { name: 'iPhone وiPad' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Android' })).toBeVisible();
     expect(screen.getByText(/فعّل «فتح كتطبيق ويب»/)).toBeVisible();
@@ -64,10 +64,10 @@ describe('installing Tahaddi', () => {
       }),
     );
     await user.click(screen.getByRole('button', { name: 'تثبيت التطبيق' }));
-    expect(screen.getByRole('dialog')).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible());
     await user.click(screen.getByRole('button', { name: 'فهمت' }));
     await user.click(screen.getByRole('button', { name: 'تثبيت التطبيق' }));
-    expect(screen.getByRole('dialog')).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible());
     expect(prompt).toHaveBeenCalledOnce();
   });
 
@@ -83,7 +83,7 @@ describe('installing Tahaddi', () => {
     );
     await user.click(screen.getByRole('button', { name: 'تثبيت التطبيق' }));
     expect(screen.getByRole('alert')).toHaveTextContent('يمكنك استخدام الخطوات التالية');
-    expect(screen.getByRole('dialog')).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible());
   });
 
   it('hides the action when the site is already running as a standalone app', () => {

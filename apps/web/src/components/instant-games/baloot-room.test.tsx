@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BalootRoom } from './baloot-room';
 import { formatNumber } from '@/lib/utils';
@@ -85,11 +85,11 @@ describe('Baloot table', () => {
     );
   });
 
-  it('closes the rules with Escape', () => {
+  it('closes the rules with Escape', async () => {
     render(<BalootRoom />);
     fireEvent.click(screen.getByRole('button', { name: 'القوانين' }));
-    expect(screen.getByRole('dialog', { name: 'دليل قوانين البلوت' })).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'دليل قوانين البلوت' })).toBeVisible());
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
