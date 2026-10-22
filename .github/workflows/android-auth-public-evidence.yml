@@ -1,0 +1,71 @@
+name: Android public auth metadata diagnostic
+on:
+  push:
+    branches: [fix/android-auth-readonly-diagnostics]
+    paths: ['.github/workflows/android-auth-public-evidence.yml']
+permissions:
+  contents: read
+jobs:
+  public-metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Inspect only public auth status and protocol metadata
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,re,urllib.request,urllib.error,urllib.parse
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*args): return None
+          opener=urllib.request.build_opener(NoRedirect)
+          base="https://qurabia.com"
+          origin=urllib.parse.urlsplit(base)
+          results=[]
+          for endpoint in ["/api/auth/session/","/api/auth/providers/","/api/auth/csrf/"]:
+              item={"endpoint":endpoint,"method":"GET","authenticated":False}
+              try:
+                  request=urllib.request.Request(base+endpoint,headers={"Accept":"application/json","Origin":base})
+                  try: response=opener.open(request,timeout=25)
+                  except urllib.error.HTTPError as error: response=error
+                  with response:
+                      item["status"]=response.status
+                      payload=response.read(65537)
+                      headers=response.headers
+                  if len(payload)>65536: raise ValueError()
+                  data=json.loads(payload)
+                  item["json_object"]=isinstance(data,dict)
+                  if endpoint=="/api/auth/session/":
+                      item["anonymous_empty_object"]=data=={}
+                  elif endpoint=="/api/auth/providers/":
+                      provider=data.get("credentials") if isinstance(data,dict) else None
+                      item["credentials_provider_present"]=isinstance(provider,dict)
+                      if isinstance(provider,dict):
+                          for key in ["signinUrl","callbackUrl"]:
+                              url=urllib.parse.urlsplit(provider.get(key,""))
+                              item[key+"_same_origin"]=(url.scheme,url.netloc)==(origin.scheme,origin.netloc)
+                              item[key+"_https"]=url.scheme=="https"
+                  elif endpoint=="/api/auth/csrf/":
+                      token=data.get("csrfToken") if isinstance(data,dict) else None
+                      item["csrf_token_present"]=isinstance(token,str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{16,256}",token))
+                      found=[]
+                      for header in headers.get_all("set-cookie",[]):
+                          parts=[x.strip() for x in header.split(";")]
+                          name=parts[0].split("=",1)[0]
+                          if name not in ["__Host-next-auth.csrf-token","next-auth.csrf-token"]: continue
+                          attrs={}
+                          for part in parts[1:]:
+                              key,_,value=part.partition("=");attrs[key.lower()]=value
+                          found.append({"name":name,"secure":"secure" in attrs,"httponly":"httponly" in attrs,
+                              "path_is_root":attrs.get("path")=="/","domain_present":"domain" in attrs,
+                              "domain_matches_origin":"domain" not in attrs or attrs["domain"].lstrip(".").lower()==origin.hostname})
+                      item["csrf_cookies"]=found
+              except Exception:
+                  item["diagnostic_error"]="public_status_or_json_contract_failed"
+              results.append(item)
+              print("PUBLIC_AUTH_METADATA "+json.dumps(item))
+          pathlib.Path("public-auth-metadata.json").write_text(json.dumps({"scope":"anonymous_GET_only_no_values_or_credentials","checks":results},indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: public-auth-metadata
+          path: public-auth-metadata.json
+          retention-days: 14
