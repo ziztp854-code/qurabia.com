@@ -187,12 +187,42 @@ def assert_host_state(value: dict, baseline: dict, created: int, closed: int):
         raise RuntimeError("Native host action was not confirmed by the isolated database")
 
 
-def confirm_native_alert(device, module, title: str, button: str, timeout: float = 30):
+def native_alert_observation(root, title: str, button: str) -> dict:
+    """Only allowlisted comparisons leave memory; never return UI labels or IDs."""
+    nodes = list(root.iter())
+    title_ids = {"android:id/alertTitle", PACKAGE + ":id/alertTitle"}
+    button_ids = {prefix + suffix for prefix in ("android:id/", PACKAGE + ":id/")
+                  for suffix in ("button1", "button2", "button3")}
+    def plain(value):
+        return "".join(char for char in value if unicodedata.category(char) != "Cf")
+    return {
+        "title_text_exact": any(node.attrib.get("text") == title for node in nodes),
+        "title_text_format_controls_only": any(plain(node.attrib.get("text", "")) == title for node in nodes),
+        "title_resource_present": any(node.attrib.get("resource-id") in title_ids for node in nodes),
+        "title_resource_matches": any(node.attrib.get("resource-id") in title_ids and node.attrib.get("text") == title for node in nodes),
+        "button_text_exact": any(node.attrib.get("text") == button for node in nodes),
+        "button_text_format_controls_only": any(plain(node.attrib.get("text", "")) == button for node in nodes),
+        "button_resource_present": any(node.attrib.get("resource-id") in button_ids for node in nodes),
+        "button_resource_matches": any(node.attrib.get("resource-id") in button_ids and node.attrib.get("text") == button for node in nodes),
+        "app_window": any(node.attrib.get("package") == PACKAGE for node in nodes),
+        "permission_window": any(node.attrib.get("package") in {"com.android.permissioncontroller", "com.google.android.permissioncontroller"} for node in nodes),
+        "close_failure_title": any(node.attrib.get("text") == "لم يتم تأكيد إنهاء البث" for node in nodes),
+    }
+
+
+def confirm_native_alert(device, module, title: str, button: str, timeout: float = 30, evidence: dict | None = None):
     # Match only the expected Android alert and its real system button, in memory.
     from xml.etree import ElementTree as ET
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         root = ET.fromstring(device.ui())
+        if evidence is not None:
+            observation = native_alert_observation(root, title, button)
+            evidence["observations"] = min(120, evidence.get("observations", 0) + 1)
+            evidence["last"] = observation
+            previous = evidence.get("seen", {})
+            evidence["seen"] = {key: value or previous.get(key, False)
+                                for key, value in observation.items()}
         title_matches = any(node.attrib.get("resource-id") in {"android:id/alertTitle", PACKAGE + ":id/alertTitle"} and
                             node.attrib.get("text") == title for node in root.iter())
         if title_matches:
@@ -642,7 +672,10 @@ def main() -> int:
         assert_host_state(manual_active, host_initial, created=1, closed=0)
         report["phase"] = "manual_host_room_end"
         device.tap("end-broadcast")
-        confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث")
+        report["phase"] = "manual_host_room_confirm"
+        confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث",
+                             evidence=report.setdefault("native_alert_evidence", {}).setdefault("manual_end", {}))
+        report["phase"] = "manual_host_room_wait_closed"
         device.wait_node("rooms-list", timeout=90)
         manual_closed = host_counters(args.ca)
         report["host_counter_snapshots"]["manual_closed"] = manual_closed
@@ -656,7 +689,10 @@ def main() -> int:
         report["phase"] = "logout"
         device.tap("nav-profile")
         device.tap("settings-logout")
-        confirm_native_alert(device, module, "إنهاء البث وتسجيل الخروج", "إنهاء البث والخروج")
+        report["phase"] = "logout_host_room_confirm"
+        confirm_native_alert(device, module, "إنهاء البث وتسجيل الخروج", "إنهاء البث والخروج",
+                             evidence=report.setdefault("native_alert_evidence", {}).setdefault("logout", {}))
+        report["phase"] = "logout_host_room_wait_closed"
         device.wait_node("login-email", timeout=90)
         logged_out = wait_counter(args.ca, "signout_ok", reopened["signout_ok"])
         wait_counter(args.ca, "anonymous_sessions", reopened["anonymous_sessions"])

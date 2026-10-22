@@ -248,6 +248,31 @@ class LoginIsolationGuards(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 smoke.assert_host_state({**closed, **changed}, baseline, created=2, closed=2)
 
+    def test_native_alert_evidence_never_contains_ui_labels_or_resource_ids(self):
+        from xml.etree import ElementTree as ET
+        secret = self.account["password"]
+        xml = ('<hierarchy><node package="' + smoke.PACKAGE + '" resource-id="' +
+               smoke.PACKAGE + ':id/alertTitle" text="إنهاء البث للجميع"/>' +
+               '<node resource-id="android:id/button1" text="إنهاء البث" enabled="true"/>' +
+               '<node text="' + html.escape(secret, quote=True) + '" resource-id="private-value"/>' +
+               '</hierarchy>')
+        result = smoke.native_alert_observation(ET.fromstring(xml), "إنهاء البث للجميع", "إنهاء البث")
+        self.assertTrue(result["title_resource_matches"])
+        self.assertTrue(result["button_resource_matches"])
+        self.assertTrue(result["app_window"])
+        self.assertFalse(result["permission_window"])
+        self.assertTrue(all(type(value) is bool for value in result.values()))
+        encoded = json.dumps(result)
+        for private in (secret, self.account["email"], "private-value", smoke.PACKAGE, "إنهاء"):
+            self.assertNotIn(private, encoded)
+        unrelated = smoke.native_alert_observation(ET.fromstring(
+            '<hierarchy><node resource-id="android:id/button1" text="إنهاء البث"/>'
+            '<node package="com.android.permissioncontroller" text="permission"/></hierarchy>'),
+            "إنهاء البث للجميع", "إنهاء البث")
+        self.assertFalse(unrelated["title_resource_matches"])
+        self.assertTrue(unrelated["permission_window"])
+
+
     def test_native_host_confirmation_requires_the_expected_system_alert(self):
         for namespace in ["android:id/", smoke.PACKAGE + ":id/"]:
             with self.subTest(namespace=namespace):
