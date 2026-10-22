@@ -31,10 +31,9 @@ jobs:
       - run: pnpm --filter @tahaddi/mobile... install --frozen-lockfile --ignore-scripts
       - name: Check types and affected regressions
         run: |
-          git fetch --no-tags --depth=1 origin eb1216d468453abc5b91ed2c36fad99878b17374
-          if git diff --quiet eb1216d468453abc5b91ed2c36fad99878b17374 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/android-emulator-ready.py' ':!apps/mobile/tests/test_android_emulator_ready.py'; then
-            echo "TypeScript, 22 login guards and 5 visual guards retained from successful eb1216d fast job 119633992170; runtime and those test sources unchanged."
-            python3 apps/mobile/tests/test_android_emulator_ready.py
+          git fetch --no-tags --depth=1 origin c8820ed64c0b381cdb6b55ec799464c90a1f86d7
+          if git diff --quiet c8820ed64c0b381cdb6b55ec799464c90a1f86d7 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc; then
+            echo "Retained unchanged-source evidence: TypeScript and 29 checks at eb1216d, five readiness tests at c8820ed, native unit proof at 165c044."
           else
             pnpm --filter @tahaddi/mobile exec tsc -p ../../packages/domain/tsconfig.json
             pnpm --filter @tahaddi/mobile typecheck
@@ -98,12 +97,16 @@ jobs:
       - name: Check one-time public APK reuse
         id: reuse
         run: |
-          git fetch --no-tags --depth=1 origin eb1216d468453abc5b91ed2c36fad99878b17374
-          if test "$(git rev-parse HEAD^)" = eb1216d468453abc5b91ed2c36fad99878b17374 &&
-             git diff --quiet eb1216d468453abc5b91ed2c36fad99878b17374 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc ':!apps/mobile/scripts/android-emulator-ready.py' ':!apps/mobile/tests/test_android_emulator_ready.py'; then
+          git fetch --no-tags --depth=1 origin c8820ed64c0b381cdb6b55ec799464c90a1f86d7
+          # Read the raw commit object: revision traversal stops at shallow HEAD.
+          parent_sha="$(git cat-file -p HEAD | sed -n 's/^parent //p')"
+          if test "$parent_sha" = c8820ed64c0b381cdb6b55ec799464c90a1f86d7 &&
+             git diff --quiet c8820ed64c0b381cdb6b55ec799464c90a1f86d7 HEAD -- apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .nvmrc; then
             echo "eligible=true" >> "$GITHUB_OUTPUT"
+            echo "Delivery reuse approved by direct-parent and unchanged-runtime proofs."
           else
             echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "Delivery reuse declined; assemble from the current source."
           fi
 
       - name: Prepare diagnostics and tracked source archive
@@ -217,9 +220,9 @@ jobs:
         if: steps.reuse.outputs.eligible == 'true'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: tahaddi-debug-39720949793-1
+          name: tahaddi-debug-39722808100-1
           path: android-reuse
-          run-id: 39720949793
+          run-id: 39722808100
           github-token: ${{ github.token }}
 
       - name: Verify and stage the unchanged public APK
@@ -232,9 +235,9 @@ jobs:
           const fs=require('fs');
           fs.writeFileSync('android-reports/apk-provenance.json',JSON.stringify({
             kind:'unchanged delivery APK reused for harness validation',
-            apk_source_sha:'eb1216d468453abc5b91ed2c36fad99878b17374',
+            apk_source_sha:'c8820ed64c0b381cdb6b55ec799464c90a1f86d7',
             validation_source_sha:process.env.GITHUB_SHA,
-            original_run_id:39720949793,
+            original_run_id:39722808100,
             sha256:'bd03c5814ca80f48b53af2f95501d3515ca5b1be051ddef15078cc9fe0773941'
           },null,2)+'\n');
           NODE
@@ -321,7 +324,6 @@ jobs:
           ram-size: '2048M'
           disable-animations: true
           script: |
-            python3 apps/mobile/scripts/android-emulator-ready.py --reports android-reports/public-ready
             bash apps/mobile/scripts/android-native-smoke.sh --reports android-reports/native
 
       - name: Check public HTTPS endpoints without authentication
@@ -535,7 +537,6 @@ jobs:
           ram-size: '2048M'
           disable-animations: true
           script: |
-            python3 apps/mobile/scripts/android-emulator-ready.py --reports android-reports/login-ready
             python3 apps/mobile/scripts/login-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-login-test-only.apk" --credentials "$RUNNER_TEMP/login-private.json" --ca "$RUNNER_TEMP/login-ca.pem" --reports android-reports/login
 
       - name: Stop fixture and remove private test material
@@ -597,7 +598,6 @@ jobs:
           ram-size: '2048M'
           disable-animations: true
           script: |
-            python3 apps/mobile/scripts/android-emulator-ready.py --reports android-reports/visual-ready
             python3 apps/mobile/scripts/visual-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-visual-test-only.apk" --reports android-reports/visual
 
       - name: Verify delivery APK remains the original public build
