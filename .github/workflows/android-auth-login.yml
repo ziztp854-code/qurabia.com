@@ -1,10 +1,10 @@
-name: Android authentication and broadcast regression
+name: Android native, broadcast and visual checks
 on:
   push:
-    branches: [fix/android-auth-login, fix/android-host-broadcast-close]
+    branches: [fix/android-auth-login, fix/android-host-broadcast-close, feat/android-premium-design]
     paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
   pull_request:
-    branches: [codex/android-native-v2, fix/android-auth-login]
+    branches: [codex/android-native-v2, fix/android-auth-login, fix/android-host-broadcast-close]
     paths: ['apps/mobile/**', '.github/workflows/android-auth-login.yml', '.github/workflows/android-debug.yml']
   workflow_dispatch:
 permissions:
@@ -36,6 +36,7 @@ jobs:
           node --test apps/mobile/scripts/prepare-android-debug.test.cjs
           python3 -m unittest discover -s apps/mobile/tests -p 'test_*.py'
           python3 apps/mobile/tests/login-guards.py
+          python3 apps/mobile/tests/visual-guards.py
       - name: Check patch whitespace and scope
         run: |
           git fetch --no-tags --depth=1 origin fcbdf15092ba8c5189ba75739904ffad84507b19
@@ -126,6 +127,9 @@ jobs:
       - name: Typecheck isolated Node login harness
         working-directory: apps/web
         run: pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2022 --module commonjs --moduleResolution node --esModuleInterop --types node --lib ES2022,DOM ../mobile/scripts/login-fixture.ts ../mobile/scripts/login-http-integration.ts
+
+      - name: Typecheck the isolated public visual entry
+        run: pnpm --filter @tahaddi/mobile exec tsc -p scripts/tsconfig.visual.json --noEmit
 
       - name: Verify Metro and packaged assets
         run: |
@@ -466,18 +470,6 @@ jobs:
           disable-animations: true
           script: python3 apps/mobile/scripts/login-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-login-test-only.apk" --credentials "$RUNNER_TEMP/login-private.json" --ca "$RUNNER_TEMP/login-ca.pem" --reports android-reports/login
 
-      - name: Verify delivery APK remains the original public build
-        if: always()
-        run: |
-          python3 - <<'PY'
-          import hashlib,pathlib
-          apk=pathlib.Path("android-delivery/app-debug.apk")
-          record=pathlib.Path("android-reports/apk-sha256.txt")
-          if apk.is_file() and record.is_file():
-              assert hashlib.sha256(apk.read_bytes()).hexdigest()==record.read_text().split()[0]
-              print("Public delivery APK SHA256 unchanged after isolated CA test")
-          PY
-
       - name: Stop fixture and remove private test material
         if: always()
         run: |
@@ -500,6 +492,66 @@ jobs:
               for line in logfile.read_text(errors="replace").splitlines():
                   if re.fullmatch(r"MOBILE_LOGIN_FIXTURE_(PHASE|FAILED):(database_create|next_prepare|backend_listen|proxy_listen|route_warmup|ready)",line):
                       print(line)
+          PY
+
+
+      - name: Build separate public-fixture visual APK
+        id: visual_build
+        if: always() && steps.apk.outcome == 'success'
+        run: |
+          cp apps/mobile/index.ts "$RUNNER_TEMP/tahaddi-original-index.ts"
+          python3 - <<'PY'
+          import pathlib
+          pathlib.Path("apps/mobile/index.ts").write_text(
+              "import { registerRootComponent } from 'expo';\n"
+              "import VisualEntry from './scripts/visual-entry';\n"
+              "registerRootComponent(VisualEntry);\n")
+          PY
+          mkdir -p "$RUNNER_TEMP/visual-metro-cache"
+          cd apps/mobile/android
+          NODE_ENV=production EXPO_PUBLIC_API_URL=https://qurabia.com \
+          TMPDIR="$RUNNER_TEMP/visual-metro-cache" \
+          ./gradlew :app:createBundleDebugJsAndAssets --rerun-tasks --no-daemon
+          NODE_ENV=production EXPO_PUBLIC_API_URL=https://qurabia.com \
+          TMPDIR="$RUNNER_TEMP/visual-metro-cache" \
+          ./gradlew :app:assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/tahaddi-visual-test-only.apk"
+
+      - name: Capture actual native screens using public presentation fixtures
+        if: always() && steps.visual_build.outcome == 'success'
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: python3 apps/mobile/scripts/visual-native-smoke.py --apk "$RUNNER_TEMP/tahaddi-visual-test-only.apk" --reports android-reports/visual
+
+      - name: Verify delivery APK remains the original public build
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import hashlib,pathlib
+          apk=pathlib.Path("android-delivery/app-debug.apk")
+          record=pathlib.Path("android-reports/apk-sha256.txt")
+          if apk.is_file() and record.is_file():
+              assert hashlib.sha256(apk.read_bytes()).hexdigest()==record.read_text().split()[0]
+              print("Public delivery APK SHA256 unchanged after isolated CA test")
+          PY
+
+
+      - name: Restore public entry and remove the non-distributed preview APK
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          temp=pathlib.Path(os.environ["RUNNER_TEMP"])
+          original=temp/"tahaddi-original-index.ts"
+          if original.is_file():
+              shutil.copyfile(original,"apps/mobile/index.ts")
+              original.unlink()
+          (temp/"tahaddi-visual-test-only.apk").unlink(missing_ok=True)
           PY
 
       - name: Upload test and build evidence
