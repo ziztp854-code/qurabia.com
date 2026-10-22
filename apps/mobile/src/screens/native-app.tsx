@@ -10,12 +10,14 @@ import { useVoiceChat } from '../chat/use-voice-chat';
 import { useEmojiCatalog } from '../chat/use-emoji-catalog';
 import { useKeyboardVisible } from '../navigation/use-keyboard';
 import { useNavigation } from '../navigation/use-navigation';
-import { Body, Loading, Notice, UiProvider, ui } from '../components/ui';
+import { Body, KeyboardViewport, Loading, Notice, UiProvider, ui } from '../components/ui';
 import { AuthScreen } from './auth-screen';
 import { RoomsScreen } from './rooms-screen';
 import { RoomScreen } from './room-screen';
 import { ProfileScreen } from './profile-screen';
 import { theme } from '../theme';
+import { BottomTabs } from '../components/bottom-tabs';
+import { bundledRoomArt } from '../assets/room-art';
 
 export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
   const auth=useAuth();
@@ -168,6 +170,8 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
     return()=>handler.remove();
   },[navigation.screen,navigation.go,rooms.snapshot,rooms.leave,voice]);
   function asset(path:string):ImageSourcePropType|undefined{
+    const bundled=bundledRoomArt(path);
+    if(bundled)return bundled;
     try{return auth.client.assetSource(path);}catch{return undefined;}
   }
   async function toggleMic(){
@@ -215,27 +219,17 @@ export function NativeApp({fontsReady=false}:{fontsReady?:boolean}){
           <Body muted style={ui.caption}>{audio.state==='connected'?'جلسة صوت نشطة':audio.state==='disconnected'?'الصوت متوقف على هذا الجهاز':audio.state==='error'?'تعذر اتصال الصوت':'جارٍ توصيل الصوت'} · {audio.muted?'ميكروفونك مكتوم':'الميكروفون يعمل'}</Body></View>
         <Body style={ui.gold}>العودة للمجلس</Body>
       </Pressable>}
-      {!keyboardVisible&&<View style={styles.tabs} accessibilityRole="tablist">
-        {([['home','الرئيسية'],['rooms','الغرف'],['profile','حسابي']] as const).map(([id,label])=>
-          <Pressable key={id} testID={'nav-'+id} disabled={exitBusy} accessibilityRole="tab"
-            accessibilityState={{selected:navigation.screen===id,disabled:exitBusy}} accessibilityLabel={label}
-            onPress={()=>navigation.go(id)} android_ripple={{color:theme.colors.press}}
-            style={({pressed})=>[styles.tab,navigation.screen===id&&styles.tabActive,pressed&&styles.pressed]}>
-            <Body weight="semibold" style={[ui.small,navigation.screen===id&&ui.gold]}>{label}</Body>
-          </Pressable>)}
-      </View>}
+      {!keyboardVisible&&<BottomTabs screen={navigation.screen} disabled={exitBusy} onNavigate={navigation.go}/>}
     </View>;
   return <UiProvider fontsReady={fontsReady}>
+    <KeyboardViewport>
     <SafeAreaView style={styles.root} edges={['top','bottom','left','right']}><Notice message={error}/>{content}</SafeAreaView>
+    </KeyboardViewport>
   </UiProvider>;
 }
 const styles=StyleSheet.create({
   root:{flex:1,backgroundColor:theme.colors.background},
-  tabs:{flexDirection:'row-reverse',paddingHorizontal:8,paddingVertical:8,borderTopWidth:1,
-    borderTopColor:theme.colors.borderSoft,backgroundColor:theme.colors.surface},
-  tab:{flex:1,minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:12},
-  tabActive:{backgroundColor:theme.colors.surfaceStrong,borderTopWidth:2,borderTopColor:theme.colors.gold},
-  dock:{flexDirection:'row-reverse',alignItems:'center',gap:12,padding:12,backgroundColor:theme.colors.surfaceStrong,
-    borderTopWidth:1,borderTopColor:theme.colors.border},
+  dock:{flexDirection:'row-reverse',alignItems:'center',gap:12,padding:12,marginHorizontal:16,marginTop:6,borderRadius:16,backgroundColor:theme.colors.surfaceStrong,
+    borderWidth:1,borderColor:theme.colors.border},
   dot:{width:8,height:8,borderRadius:4},pressed:{opacity:0.75},
 });

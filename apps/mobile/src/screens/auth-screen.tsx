@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, View, type TextInput } from 'react-native';
-import { Action, Body, Field, FormScreen, Notice, Panel, Title, ui } from '../components/ui';
+import { Action, Body, Field, FormScreen, Notice, Panel, Title } from '../components/ui';
 import { theme } from '../theme';
 import type { ApiRequest } from '../rooms/api';
 import { presentConnectionError, presentLoginError, presentSessionNotice } from './auth-error';
@@ -49,43 +49,112 @@ export function AuthScreen({ signIn, authError, apiRequest }: {
     catch (cause) { setError(presentLoginError(cause).message); }
     finally { setBusy(false); }
   }
-  return <FormScreen>
-    <View style={styles.brand}>
-      <Image source={require('../../assets/tahaddi-crown.webp')} resizeMode="contain" style={styles.crown} accessible={false}/>
-      <Title style={styles.brandTitle}>تحدّي لايف</Title>
-      <Body muted style={ui.center}>صوتك يجمعنا</Body>
-      <Body testID="server-status" accessibilityLiveRegion="polite" style={[ui.caption,ui.center,{
-        color:serverState==='online'?theme.colors.success:serverState==='error'?theme.colors.danger:theme.colors.muted,
-      }]}>{serverState==='online'?'تم الاتصال بخادم تحدّي':serverState==='error'
-        ?'لم يكتمل التحقق من الاتصال بالخادم':'جارٍ التحقق من الاتصال بالخادم…'}</Body>
-      {serverState==='error'&&<>
-        <Notice message={serverError}/>
-        <Action testID="server-retry" label="إعادة التحقق من الاتصال" tone="secondary" compact
-          onPress={()=>setServerAttempt(current=>current+1)}/>
-      </>}
+  return <View style={styles.screen}>
+    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
+      style={styles.studioBackdrop}>
+      <Image source={require('../../assets/voice-covers/studio.webp')} resizeMode="cover"
+        style={styles.artwork} accessible={false}/>
+      <View style={styles.studioScrim}/>
     </View>
-    <Panel>
-      <Body weight="semibold" style={ui.gold}>أهلًا بعودتك</Body>
-      <Title>خذ مكانك في المجلس</Title>
-      <Body muted>سجّل الدخول بحساب تحدّي للانضمام إلى الغرف والمشاركة في الحديث.</Body>
-      <View style={styles.form}>
-        <Field testID="login-email" label="البريد الإلكتروني" value={email}
-          onChangeText={setEmail} autoComplete="email" textContentType="emailAddress" keyboardType="email-address"
-          autoCapitalize="none" autoCorrect={false} ltr returnKeyType="next"
-          onSubmitEditing={() => passwordRef.current?.focus()} editable={!busy}/>
-        <Field inputRef={passwordRef} testID="login-password" label="كلمة المرور" value={password}
-          onChangeText={setPassword} autoComplete="current-password" textContentType="password"
-          secureTextEntry autoCapitalize="none" autoCorrect={false} ltr returnKeyType="go"
-          onSubmitEditing={() => { void submit(); }} editable={!busy}/>
-        <Notice testID="login-error" message={error || presentSessionNotice(authError)}/>
-        <Action testID="login-submit" label="تسجيل الدخول" busy={busy} onPress={() => { void submit(); }}/>
+    <FormScreen>
+    <View style={styles.frame}>
+      <View style={styles.brand}>
+        <View style={styles.logoFrame}>
+          <Image source={require('../../assets/tahaddi-crown.webp')} resizeMode="contain"
+            style={styles.crown} accessible={false}/>
+        </View>
+        <View style={styles.brandCopy}>
+          <Title style={styles.brandTitle}>تحدّي لايف</Title>
+          <Body muted style={styles.tagline}>صوتك يجمعنا</Body>
+        </View>
       </View>
-    </Panel>
-    <Body muted style={[ui.caption, ui.center]}>تُرسل بيانات الدخول عبر اتصال آمن إلى خدمة تحدّي.</Body>
-  </FormScreen>;
+
+      <View style={styles.connection}>
+        <View style={styles.statusPill}>
+          <View accessible={false} style={[styles.statusDot,{
+            backgroundColor:serverState==='online'?theme.colors.success:serverState==='error'?theme.colors.danger:theme.colors.muted,
+          }]}/>
+          <Body testID="server-status" accessibilityLiveRegion="polite" style={[styles.statusText,{
+            color:serverState==='online'?theme.colors.success:serverState==='error'?theme.colors.danger:theme.colors.muted,
+          }]}>{serverState==='online'?'تم الاتصال بخادم تحدّي':serverState==='error'
+            ?'لم يكتمل التحقق من الاتصال بالخادم':'جارٍ التحقق من الاتصال بالخادم…'}</Body>
+        </View>
+        {serverState==='error'&&<>
+          <Notice message={serverError}/>
+          <Action testID="server-retry" label="إعادة التحقق من الاتصال" tone="secondary" compact
+            onPress={()=>setServerAttempt(current=>current+1)}/>
+        </>}
+      </View>
+
+      <Panel style={styles.loginCard}>
+        <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants"
+          style={styles.cardAccent}/>
+        <View style={styles.formHeading}>
+          <Title style={styles.welcome}>أهلًا بعودتك</Title>
+          <Body muted style={styles.introduction}>سجّل الدخول بحسابك وخذ مكانك في المجلس.</Body>
+        </View>
+        <View style={styles.form}>
+          <Field testID="login-email" label="البريد الإلكتروني" value={email}
+            onChangeText={setEmail} autoComplete="email" textContentType="emailAddress" keyboardType="email-address"
+            autoCapitalize="none" autoCorrect={false} ltr returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()} editable={!busy}/>
+          <Field inputRef={passwordRef} testID="login-password" label="كلمة المرور" value={password}
+            onChangeText={setPassword} autoComplete="current-password" textContentType="password"
+            secureTextEntry autoCapitalize="none" autoCorrect={false} ltr returnKeyType="go"
+            onSubmitEditing={() => { void submit(); }} editable={!busy}/>
+          <Notice testID="login-error" message={error || presentSessionNotice(authError)}/>
+          <View style={styles.submit}>
+            <Action testID="login-submit" label="تسجيل الدخول" busy={busy} onPress={() => { void submit(); }}/>
+          </View>
+        </View>
+      </Panel>
+
+      <View style={styles.footer}>
+        <View accessible={false} style={styles.footerRule}/>
+        <Body muted style={styles.footerText}>استخدم البريد الإلكتروني المرتبط بحسابك.</Body>
+        <View accessible={false} style={styles.footerRule}/>
+      </View>
+    </View>
+    </FormScreen>
+  </View>;
 }
 const styles = StyleSheet.create({
-  brand: {alignItems: 'center', paddingVertical: theme.spacing.xl, gap: theme.spacing.sm},
-  crown: {width: 92, height: 62}, brandTitle: {fontSize: theme.type.display, lineHeight: 52, color: theme.colors.goldLight},
-  form: {gap: theme.spacing.md, marginTop: theme.spacing.md},
+  artwork: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0},
+  screen: {flex: 1, backgroundColor: theme.colors.background},
+  studioBackdrop: {position: 'absolute', top: 0, left: 0, right: 0, height: 240,
+    overflow: 'hidden', borderBottomLeftRadius: theme.radius.lg, borderBottomRightRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surfaceStrong, borderBottomWidth: 1, borderBottomColor: theme.colors.borderSoft},
+  studioScrim: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.colors.background, opacity: 0.48},
+  frame: {width: '100%', maxWidth: 480, alignSelf: 'center', gap: theme.spacing.md, paddingVertical: theme.spacing.sm},
+  brand: {minHeight: 88, flexDirection: 'row-reverse', alignItems: 'center', gap: theme.spacing.md,
+    padding: theme.spacing.sm, borderRadius: theme.radius.lg, overflow: 'hidden'},
+  logoFrame: {width: 72, height: 72, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.colors.surfaceStrong, borderWidth: 1, borderColor: theme.colors.border,
+    borderRadius: theme.radius.md, shadowColor: theme.colors.shadow, shadowOpacity: 0.22,
+    shadowOffset: {width: 0, height: 6}, shadowRadius: 12, elevation: 2},
+  crown: {width: 56, height: 40},
+  brandCopy: {flex: 1, gap: theme.spacing.xs},
+  brandTitle: {fontSize: 28, lineHeight: 40, color: theme.colors.goldLight},
+  tagline: {fontSize: theme.type.small, lineHeight: 24},
+  connection: {gap: theme.spacing.sm},
+  statusPill: {alignSelf: 'stretch', flexDirection: 'row-reverse', alignItems: 'center',
+    minHeight: 40, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.sm, borderRadius: theme.radius.pill, borderWidth: 1,
+    borderColor: theme.colors.borderSoft, backgroundColor: theme.colors.roomBackground},
+  statusDot: {width: 7, height: 7, borderRadius: theme.radius.pill},
+  statusText: {flex: 1, fontSize: theme.type.caption, lineHeight: 22},
+  loginCard: {backgroundColor: theme.colors.surface, padding: theme.spacing.lg, gap: theme.spacing.md, borderColor: theme.colors.border,
+    shadowColor: theme.colors.shadow, shadowOpacity: 0.20, shadowOffset: {width: 0, height: 10},
+    shadowRadius: 20, elevation: 3},
+  cardAccent: {width: 40, height: 3, alignSelf: 'flex-end', borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.gold},
+  formHeading: {gap: theme.spacing.xs},
+  welcome: {fontSize: 26, lineHeight: 38},
+  introduction: {fontSize: theme.type.small, lineHeight: 24},
+  form: {gap: theme.spacing.md, marginTop: theme.spacing.xs},
+  submit: {marginTop: theme.spacing.xs},
+  footer: {flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs, paddingBottom: theme.spacing.sm},
+  footerRule: {height: 1, flex: 1, backgroundColor: theme.colors.borderSoft},
+  footerText: {flexShrink: 1, fontSize: theme.type.caption, lineHeight: 22, textAlign: 'center'},
 });

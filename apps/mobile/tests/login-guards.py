@@ -86,6 +86,38 @@ class LoginIsolationGuards(unittest.TestCase):
         self.file.write_text(json.dumps(self.account))
         self.file.chmod(0o600)
 
+    def test_room_suite_pregrants_only_notifications_on_android_13_and_later(self):
+        from types import SimpleNamespace
+        for sdk in ("33", "36"):
+            with self.subTest(sdk=sdk):
+                device = mock.Mock()
+                device.adb.return_value = SimpleNamespace(stdout=sdk)
+                self.assertEqual(smoke.prepare_notification_permission(device),
+                                 "pregranted_for_room_command_test")
+                self.assertEqual(device.adb.call_args_list, [
+                    mock.call("shell", "getprop", "ro.build.version.sdk"),
+                    mock.call("shell", "pm", "grant", smoke.PACKAGE,
+                              "android.permission.POST_NOTIFICATIONS"),
+                ])
+
+    def test_room_suite_does_not_grant_notifications_on_older_android(self):
+        from types import SimpleNamespace
+        device = mock.Mock()
+        device.adb.return_value = SimpleNamespace(stdout="32")
+        self.assertEqual(smoke.prepare_notification_permission(device), "not_required")
+        device.adb.assert_called_once_with("shell", "getprop", "ro.build.version.sdk")
+
+    def test_unknown_api_level_and_failed_permission_setup_abort_the_test(self):
+        from types import SimpleNamespace
+        device = mock.Mock()
+        for sdk in ("", "unknown", "36 private-metadata"):
+            device.adb.return_value = SimpleNamespace(stdout=sdk)
+            with self.assertRaises(ValueError):
+                smoke.prepare_notification_permission(device)
+        device.adb.side_effect = [SimpleNamespace(stdout="36"), RuntimeError("grant failed")]
+        with self.assertRaises(RuntimeError):
+            smoke.prepare_notification_permission(device)
+
     def test_encoding_sensitive_password_and_dedicated_account_are_accepted(self):
         self.assertEqual(smoke.load_credentials(self.file), self.account)
 
@@ -216,27 +248,75 @@ class LoginIsolationGuards(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 smoke.assert_host_state({**closed, **changed}, baseline, created=2, closed=2)
 
-    def test_native_host_confirmation_requires_the_expected_system_alert(self):
-        for namespace in ["android:id/", smoke.PACKAGE + ":id/"]:
-            with self.subTest(namespace=namespace):
+    def test_native_alert_evidence_never_contains_ui_labels_or_resource_ids(self):
+        from xml.etree import ElementTree as ET
+        secret = self.account["password"]
+        xml = ('<hierarchy><node package="' + smoke.PACKAGE + '" resource-id="' +
+               smoke.PACKAGE + ':id/alertTitle" text="إنهاء البث للجميع"/>' +
+               '<node resource-id="android:id/button1" text="إنهاء البث" enabled="true"/>' +
+               '<node text="' + html.escape(secret, quote=True) + '" resource-id="private-value"/>' +
+               '</hierarchy>')
+        result = smoke.native_alert_observation(ET.fromstring(xml), "إنهاء البث للجميع", "إنهاء البث")
+        self.assertTrue(result["title_resource_matches"])
+        self.assertTrue(result["button_resource_matches"])
+        self.assertTrue(result["app_window"])
+        self.assertFalse(result["permission_window"])
+        self.assertTrue(all(type(value) is bool for value in result.values()))
+        encoded = json.dumps(result)
+        for private in (secret, self.account["email"], "private-value", smoke.PACKAGE, "إنهاء"):
+            self.assertNotIn(private, encoded)
+        unrelated = smoke.native_alert_observation(ET.fromstring(
+            '<hierarchy><node resource-id="android:id/button1" text="إنهاء البث"/>'
+            '<node package="com.android.permissioncontroller" text="permission"/></hierarchy>'),
+            "إنهاء البث للجميع", "إنهاء البث")
+        self.assertFalse(unrelated["title_resource_matches"])
+        self.assertTrue(unrelated["permission_window"])
+
+
+    def test_native_host_confirmation_requires_one_app_window_and_system_button(self):
+        # The observed native dialog exposes its title text without alertTitle ID.
+        for namespace in ("android:id/", smoke.PACKAGE + ":id/"):
+            for title_id in ("", namespace + "alertTitle"):
+                xml = ('<hierarchy><node package="' + smoke.PACKAGE + '">'
+                       '<node package="' + smoke.PACKAGE + '" class="android.widget.TextView" '
+                       'resource-id="' + title_id + '" text="إنهاء البث للجميع"/>'
+                       '<node package="' + smoke.PACKAGE + '" resource-id="' + namespace +
+                       'button1" text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/>'
+                       '</node></hierarchy>')
                 device = mock.Mock()
-                device.ui.return_value = (
-                    '<hierarchy><node resource-id="' + namespace + 'alertTitle" '
-                    'text="إنهاء البث للجميع"/><node resource-id="' + namespace + 'button1" '
-                    'text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/></hierarchy>')
+                device.ui.return_value = xml
                 module = mock.Mock()
                 module.center.return_value = (50, 50)
                 with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0]):
                     smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث")
                 device.adb.assert_called_once_with("shell", "input", "tap", "50", "50")
-        device = mock.Mock()
-        device.ui.return_value = ('<hierarchy><node resource-id="android:id/alertTitle" text="Unrelated"/>'
-            '<node resource-id="android:id/button1" text="إنهاء البث" enabled="true"/></hierarchy>')
-        with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), \
-             mock.patch.object(smoke.time, "sleep"):
-            with self.assertRaises(RuntimeError):
-                smoke.confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث", timeout=1)
-        device.adb.assert_not_called()
+
+    def test_native_confirmation_rejects_unrelated_disabled_or_cross_window_labels(self):
+        base = ('<hierarchy><node package="' + smoke.PACKAGE + '">'
+                '<node package="' + smoke.PACKAGE + '" class="android.widget.TextView" '
+                'text="إنهاء البث للجميع"/>'
+                '<node package="' + smoke.PACKAGE + '" resource-id="android:id/button1" '
+                'text="إنهاء البث" enabled="true" bounds="[0,0][100,100]"/>'
+                '</node></hierarchy>')
+        invalid = (
+            base.replace("إنهاء البث للجميع", "Unrelated"),
+            base.replace('enabled="true"', 'enabled="false"'),
+            base.replace('android:id/button1', 'ordinary-app-button'),
+            base.replace(smoke.PACKAGE, "another.app"),
+            base.replace('class="android.widget.TextView"', 'class="android.widget.EditText"'),
+            base.replace('text="إنهاء البث للجميع"', 'text="إنهاء البث للجميع\u200f"'),
+            base.replace('<node package="' + smoke.PACKAGE + '" resource-id="android:id/button1"',
+                         '</node><node package="' + smoke.PACKAGE + '"><node package="' +
+                         smoke.PACKAGE + '" resource-id="android:id/button1"'),
+        )
+        for xml in invalid:
+            device = mock.Mock()
+            device.ui.return_value = xml
+            with mock.patch.object(smoke.time, "monotonic", side_effect=[0, 0, 2]), \
+                 mock.patch.object(smoke.time, "sleep"):
+                with self.assertRaises(RuntimeError):
+                    smoke.confirm_native_alert(device, mock.Mock(), "إنهاء البث للجميع", "إنهاء البث", timeout=1)
+            device.adb.assert_not_called()
 
 
     def test_room_scroll_stays_inside_the_actual_short_modal_viewport(self):
@@ -365,6 +445,161 @@ class LoginIsolationGuards(unittest.TestCase):
         self.assertEqual(diagnostics[0]["display_length"], len(value))
         self.assertNotIn(value, json.dumps(diagnostics))
         network.assert_not_called()
+
+
+    def test_room_creation_uses_one_fixed_footer_save_without_modal_back(self):
+        module = smoke.load_device()
+        from xml.etree.ElementTree import Element
+        node = Element("node", {"enabled": "true", "bounds": "[0,0][100,100]"})
+        device = mock.Mock()
+        device.wait_node.return_value = node
+        device.ui.return_value = ('<hierarchy><node text="أنشئ مساحتك الصوتية"/>'
+            '<node resource-id="room-save" enabled="true" bounds="[0,0][100,100]"/></hierarchy>')
+        def response(*args):
+            from types import SimpleNamespace
+            value = ("Physical size: 1080x2400" if args == ("shell", "wm", "size") else
+                     "mInputShown=true" if args == ("shell", "dumpsys", "input_method") else
+                     "  Window #0 Window{abc u0 InputMethod}:\n    Frames: frame=[0,128][1080,2400]\n"
+                     "    InsetsSource: {3 mType=ime mFrame=[0,1400][1080,2400] mVisible=true}")
+            return SimpleNamespace(returncode=0, stdout=value)
+        device.adb.side_effect = response
+        report = {}
+        with mock.patch.object(smoke, "reveal_room_control", return_value=node), \
+             mock.patch.object(smoke, "enter_local_field"), \
+             mock.patch.object(smoke, "safe_room_snapshot", return_value={
+                 "room_name_matches": True, "modal_title_present": True,
+                 "controls": {"room-save": {"present": True, "enabled": True,
+                                             "visible": True, "center_on_screen": True}}}), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            smoke.create_native_host_room(device, module, report, "manual_create")
+        back_sent = any(call.args[:4] == ("shell", "input", "keyevent", "KEYCODE_BACK")
+                        for call in device.adb.call_args_list)
+        self.assertFalse(back_sent)
+        self.assertEqual(sum(call.args[:3] == ("shell", "input", "tap")
+                             for call in device.adb.call_args_list), 2)
+        self.assertEqual(report["keyboard_actions"]["manual_create_modal_save"],
+                         {"keyboard": "shown", "action": "tap_fixed_footer_with_ime",
+                          "sent_back": False, "modal_present": True})
+        network.assert_not_called()
+
+    def test_room_creation_stops_if_the_modal_disappears_before_save(self):
+        module = smoke.load_device()
+        from xml.etree.ElementTree import Element
+        node = Element("node", {"enabled": "true", "bounds": "[0,0][100,100]"})
+        device = mock.Mock()
+        device.wait_node.return_value = node
+        device.ui.return_value = "<hierarchy/>"
+        device.adb.return_value.stdout = "mInputShown=true"
+        report = {}
+        with mock.patch.object(smoke, "reveal_room_control", return_value=node), \
+             mock.patch.object(smoke, "enter_local_field"), \
+             mock.patch.object(smoke, "safe_room_snapshot", return_value={
+                 "room_name_matches": True, "modal_title_present": True,
+                 "controls": {"room-save": {"present": True, "enabled": True,
+                                             "visible": True, "center_on_screen": True}}}), \
+             mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            with self.assertRaises(smoke.RoomCreateFailure) as failure:
+                smoke.create_native_host_room(device, module, report, "manual_create")
+        self.assertEqual(failure.exception.kind, "room_modal_not_present")
+        self.assertFalse(report["keyboard_actions"]["manual_create_modal_save"]["modal_present"])
+        self.assertEqual(sum(call.args[:3] == ("shell", "input", "tap")
+                             for call in device.adb.call_args_list), 1)
+        network.assert_not_called()
+
+
+    def footer_device(self, bounds, windows):
+        from types import SimpleNamespace
+        device = mock.Mock()
+        device.ui.return_value = ('<hierarchy><node resource-id="room-save" enabled="true" '
+            'visible-to-user="true" bounds="' + bounds + '"/></hierarchy>')
+        def response(*args):
+            value = ("Physical size: 1080x2400" if args == ("shell", "wm", "size") else
+                     "mInputShown=true" if args == ("shell", "dumpsys", "input_method") else windows)
+            return SimpleNamespace(returncode=0, stdout=value)
+        device.adb.side_effect = response
+        return device
+
+    def test_screen_visible_footer_behind_ime_never_receives_a_tap_or_request(self):
+        device = self.footer_device("[20,1900][1060,2100]",
+            "  Window #2 Window{abc u0 InputMethod}:\n"
+            "    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,128][1080,2400]\n"
+            "    InsetsSource: {3 mType=ime mFrame=[0,1400][1080,2400] mVisible=true}\n"
+            "    PRIVATE_EDITOR_METADATA")
+        report = {}
+        with mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            with self.assertRaises(smoke.RoomCreateFailure) as error:
+                smoke.tap_room_save(device, smoke.load_device(), report, "manual")
+        self.assertEqual(error.exception.kind, "room_save_field_overlaps_ime")
+        self.assertTrue(report["room_save_geometry"]["manual"]["overlaps_ime"])
+        self.assertFalse(any(call.args[:2] == ("shell", "input") for call in device.adb.call_args_list))
+        self.assertNotIn("PRIVATE_EDITOR_METADATA", json.dumps(report))
+        network.assert_not_called()
+
+    def test_footer_above_visible_ime_receives_exactly_one_tap_without_back(self):
+        device = self.footer_device("[20,1100][1060,1250]",
+            "    InsetsSource: {mType=ime mFrame=[0,1400][1080,2400] mVisible=true}")
+        report = {}
+        with mock.patch.object(smoke.urllib.request, "urlopen") as network:
+            smoke.tap_room_save(device, smoke.load_device(), report, "manual")
+        inputs = [call.args for call in device.adb.call_args_list if call.args[:2] == ("shell", "input")]
+        self.assertEqual(inputs, [("shell", "input", "tap", "540", "1175")])
+        self.assertTrue(report["room_save_geometry"]["manual"]["reachable"])
+        self.assertEqual(report["room_save_geometry"]["manual"]["ime_bounds_px"], [0, 1400, 1080, 2400])
+        network.assert_not_called()
+
+    def test_shown_ime_with_unknown_frame_refuses_unrelated_window_geometry(self):
+        for windows in (
+            "  Window #0 Window{abc u0 MainActivity}:\n    mFrame=[0,0][1080,2400]",
+            "  Window #0 Window{abc u0 InputMethod}:\n    mFrame=[0,1400][20000,2400]",
+            "PRIVATE_EDITOR_METADATA",
+        ):
+            with self.subTest(case="untrusted_geometry"):
+                device = self.footer_device("[20,1100][1060,1250]", windows)
+                report = {}
+                with self.assertRaises(smoke.RoomCreateFailure) as error:
+                    smoke.tap_room_save(device, smoke.load_device(), report, "manual")
+                self.assertEqual(error.exception.kind, "room_save_ime_geometry_unknown")
+                self.assertFalse(any(call.args[:2] == ("shell", "input") for call in device.adb.call_args_list))
+                self.assertNotIn("PRIVATE_EDITOR_METADATA", json.dumps(report))
+
+
+    def test_nearly_full_screen_ime_window_is_not_occupied_keyboard_evidence(self):
+        from types import SimpleNamespace
+        surface = "  Window #0 Window{abc u0 InputMethod}:\n    mFrame=[0,128][1080,2400]"
+        self.assertIsNone(smoke.ime_geometry.ime_frame(surface, 1080, 2400))
+        device = mock.Mock()
+        def response(*args):
+            if args == ("shell", "dumpsys", "input_method"):
+                return SimpleNamespace(returncode=0, stdout="mInputShown=true")
+            if args == ("shell", "dumpsys", "window", "displays"):
+                return SimpleNamespace(returncode=0, stdout=surface + "\n"
+                    "mRawInsetsState=InsetsState: {mSources= {InsetsSource: {3 mType=ime "
+                    "mFrame=[0,1440][1080,2400] mVisible=true}}}")
+            raise AssertionError("Valid display InsetsSource must not query stale window frames")
+        device.adb.side_effect = response
+        result = smoke.ime_geometry.observe(device, [66, 1231, 1014, 1378], 1080, 2400)
+        self.assertTrue(result["reachable"])
+        self.assertFalse(result["overlaps_ime"])
+        self.assertEqual(result["ime_bounds_px"], [0, 1440, 1080, 2400])
+        self.assertEqual(result["ime_source_query"], "displays")
+
+    def test_visible_ime_insets_support_dump_formats_but_refuse_hidden_or_conflicting_sources(self):
+        for text in (
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][1080,2400] mVisible=true}",
+            "    InsetsSource id=3 type=ime frame=[0,1440][1080,2400] visible=true flags=[]",
+            "InsetsSource: {3 mType=ime mFrame=Rect(0, 1440 - 1080, 2400) mVisible=true}",
+        ):
+            self.assertEqual(smoke.ime_geometry.ime_frame(text, 1080, 2400), [0, 1440, 1080, 2400])
+        for text in (
+            "InsetsSource: {1 mType=statusBars mFrame=[0,0][1080,128] mVisible=true}, "
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][1080,2400] mVisible=false}",
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][1080,2400] mVisible=true}, "
+            "InsetsSource: {4 mType=ime mFrame=[0,1400][1080,2400] mVisible=true}",
+            "InsetsSource: {3 mType=ime mFrame=[0,1440][20000,2400] mVisible=true}",
+        ):
+            frame, diagnostic = smoke.ime_geometry.inspect_ime_sources(text, 1080, 2400)
+            self.assertIsNone(frame)
+            self.assertLessEqual(diagnostic["source_records"], 32)
 
 
 if __name__ == "__main__":

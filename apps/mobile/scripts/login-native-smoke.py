@@ -82,11 +82,35 @@ EMPTY_ERROR = "أدخل البريد الإلكتروني وكلمة المرو�
 REJECTED_ERROR = "لم يقبل الخادم تسجيل الدخول بهذه البيانات. راجع البريد وكلمة المرور، أو حاول لاحقًا."
 
 
+def load_ime_geometry():
+    spec = importlib.util.spec_from_file_location(
+        "native_ime_geometry", pathlib.Path(__file__).with_name("native_ime_geometry.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ime_geometry = load_ime_geometry()
+
+
 def keyboard_state(device) -> str:
     # Inspect in memory only: dumpsys can contain editor metadata.
     flags = re.findall(r"\b(?:mInputShown|mIsInputViewShown)=(true|false)\b",
                        device.adb("shell", "dumpsys", "input_method").stdout)
     return "shown" if "true" in flags else "hidden" if flags else "unknown"
+
+
+def prepare_notification_permission(device) -> str:
+    # This suite verifies room commands and database closure, not permission UX.
+    # The first voice connection requests notifications on Android 13+, which
+    # otherwise covers the room with a system dialog after the successful POST.
+    sdk = device.adb("shell", "getprop", "ro.build.version.sdk").stdout.strip()
+    if not re.fullmatch(r"\d{1,3}", sdk):
+        raise ValueError("Unknown emulator API level")
+    if int(sdk) < 33:
+        return "not_required"
+    device.adb("shell", "pm", "grant", PACKAGE, "android.permission.POST_NOTIFICATIONS")
+    return "pregranted_for_room_command_test"
 
 
 def hide_keyboard_if_shown(device) -> dict:
@@ -163,19 +187,59 @@ def assert_host_state(value: dict, baseline: dict, created: int, closed: int):
         raise RuntimeError("Native host action was not confirmed by the isolated database")
 
 
-def confirm_native_alert(device, module, title: str, button: str, timeout: float = 30):
+def native_alert_observation(root, title: str, button: str) -> dict:
+    """Only allowlisted comparisons leave memory; never return UI labels or IDs."""
+    nodes = list(root.iter())
+    title_ids = {"android:id/alertTitle", PACKAGE + ":id/alertTitle"}
+    button_ids = {prefix + suffix for prefix in ("android:id/", PACKAGE + ":id/")
+                  for suffix in ("button1", "button2", "button3")}
+    def plain(value):
+        return "".join(char for char in value if unicodedata.category(char) != "Cf")
+    return {
+        "title_text_exact": any(node.attrib.get("text") == title for node in nodes),
+        "title_text_format_controls_only": any(plain(node.attrib.get("text", "")) == title for node in nodes),
+        "title_resource_present": any(node.attrib.get("resource-id") in title_ids for node in nodes),
+        "title_resource_matches": any(node.attrib.get("resource-id") in title_ids and node.attrib.get("text") == title for node in nodes),
+        "button_text_exact": any(node.attrib.get("text") == button for node in nodes),
+        "button_text_format_controls_only": any(plain(node.attrib.get("text", "")) == button for node in nodes),
+        "button_resource_present": any(node.attrib.get("resource-id") in button_ids for node in nodes),
+        "button_resource_matches": any(node.attrib.get("resource-id") in button_ids and node.attrib.get("text") == button for node in nodes),
+        "app_window": any(node.attrib.get("package") == PACKAGE for node in nodes),
+        "permission_window": any(node.attrib.get("package") in {"com.android.permissioncontroller", "com.google.android.permissioncontroller"} for node in nodes),
+        "close_failure_title": any(node.attrib.get("text") == "لم يتم تأكيد إنهاء البث" for node in nodes),
+    }
+
+
+def confirm_native_alert(device, module, title: str, button: str, timeout: float = 30, evidence: dict | None = None):
     # Match only the expected Android alert and its real system button, in memory.
     from xml.etree import ElementTree as ET
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         root = ET.fromstring(device.ui())
-        title_matches = any(node.attrib.get("resource-id") in {"android:id/alertTitle", PACKAGE + ":id/alertTitle"} and
-                            node.attrib.get("text") == title for node in root.iter())
-        if title_matches:
-            for node in root.iter():
-                if (node.attrib.get("resource-id") in {"android:id/button1", "android:id/button2",
-                                                      "android:id/button3", PACKAGE + ":id/button1",
-                                                      PACKAGE + ":id/button2", PACKAGE + ":id/button3"} and
+        if evidence is not None:
+            observation = native_alert_observation(root, title, button)
+            evidence["observations"] = min(120, evidence.get("observations", 0) + 1)
+            evidence["last"] = observation
+            previous = evidence.get("seen", {})
+            evidence["seen"] = {key: value or previous.get(key, False)
+                                for key, value in observation.items()}
+        # RN/AppCompat may omit alertTitle's resource ID from accessibility.
+        # Require the exact expected title and a real Android alert button inside
+        # the same app-owned window; text alone must never authorize a tap.
+        windows = [node for node in root if node.attrib.get("package") == PACKAGE]
+        for window in windows:
+            title_matches = any(
+                node.attrib.get("package") == PACKAGE and
+                node.attrib.get("class") == "android.widget.TextView" and
+                node.attrib.get("text") == title
+                for node in window.iter())
+            if not title_matches:
+                continue
+            for node in window.iter():
+                if (node.attrib.get("package") == PACKAGE and
+                        node.attrib.get("resource-id") in {"android:id/button1", "android:id/button2",
+                                                          "android:id/button3", PACKAGE + ":id/button1",
+                                                          PACKAGE + ":id/button2", PACKAGE + ":id/button3"} and
                         node.attrib.get("text") == button and node.attrib.get("enabled") == "true"):
                     x, y = module.center(node)
                     device.adb("shell", "input", "tap", str(x), str(y))
@@ -403,6 +467,32 @@ def reveal_room_control(device, module, test_id: str):
     raise RoomCreateFailure("control_not_revealed")
 
 
+def modal_footer_state(device) -> dict:
+    # Observe only. BACK is deliberately never used in the native room modal.
+    keyboard = keyboard_state(device)
+    root = ET.fromstring(device.ui())
+    present = any(node.attrib.get("text") == "أنشئ مساحتك الصوتية" for node in root.iter())
+    return {"keyboard": keyboard, "action": "tap_fixed_footer_with_ime",
+            "sent_back": False, "modal_present": present}
+
+
+def tap_room_save(device, module, report: dict, prefix: str):
+    # Re-read after layout observation. Accessibility visibility alone does not
+    # prove that an overlay (notably the IME) will deliver a tap to the footer.
+    node = module.find_node(device.ui(), "room-save")
+    if (node is None or node.attrib.get("enabled") != "true" or
+            node.attrib.get("visible-to-user", "true") == "false"):
+        raise RoomCreateFailure("room_save_footer_unavailable")
+    sizes = re.findall(r"(\d+)x(\d+)", device.adb("shell", "wm", "size").stdout)
+    width, height = map(int, sizes[-1]) if sizes else (0, 0)
+    geometry = ime_geometry.observe(device, ime_geometry.node_bounds(node), width, height)
+    report.setdefault("room_save_geometry", {})[prefix] = geometry
+    if not geometry["reachable"]:
+        raise RoomCreateFailure("room_save_" + geometry["reason"])
+    x, y = module.center(node)
+    device.adb("shell", "input", "tap", str(x), str(y))
+
+
 def create_native_host_room(device, module, report: dict, prefix: str):
     def mark(stage: str):
         report["phase"] = prefix + "_" + stage
@@ -427,14 +517,25 @@ def create_native_host_room(device, module, report: dict, prefix: str):
     state = report["room_ui_snapshots"][report["phase"]]
     if not state.get("room_name_matches"):
         raise RoomCreateFailure("room_name_not_entered")
-    hide_keyboard_if_shown(device)
-    mark("keyboard_dismissed")
+    modal = modal_footer_state(device)
+    report.setdefault("keyboard_actions", {})[prefix + "_modal_save"] = modal
+    if not modal["modal_present"]:
+        raise RoomCreateFailure("room_modal_not_present")
+    mark("keyboard_retained_for_footer")
     mark("save_reveal")
-    node = reveal_room_control(device, module, "room-save")
+    node = device.wait_node("room-save", timeout=15)
     mark("save_ready")
-    x, y = module.center(node)
-    device.adb("shell", "input", "tap", str(x), str(y))
+    footer_state = report["room_ui_snapshots"][report["phase"]]
+    if not footer_state.get("modal_title_present"):
+        raise RoomCreateFailure("room_modal_not_present")
+    if not all(footer_state.get("controls", {}).get("room-save", {}).get(key, False)
+               for key in ("present", "enabled", "visible", "center_on_screen")):
+        raise RoomCreateFailure("room_save_footer_unavailable")
+    tap_room_save(device, module, report, prefix)
     mark("save_tapped")
+    after_save = report["room_ui_snapshots"][report["phase"]]
+    if after_save.get("modal_title_present") and not after_save.get("room_name_matches"):
+        raise RoomCreateFailure("room_name_changed_after_save")
     report["phase"] = prefix + "_wait_room"
     device.wait_node("room-title", timeout=90)
     mark("room_observed")
@@ -460,6 +561,7 @@ def main() -> int:
             "Separate test APK trusts an ephemeral localhost CA; distributed production APK does not.",
             "Emulator authentication does not prove physical-device or production deployment behavior.",
             "No SFU is configured: room commands/database closure are tested, not audio capture or SFU participant eviction.",
+            "Notification permission is pregranted on Android 13+; the system permission consent flow is outside this suite.",
             "Production rate limiter, real-user credentials and production writes are not exercised.",
         ],
     }
@@ -495,6 +597,7 @@ def main() -> int:
         device.adb("reverse", "tcp:3443", "tcp:3443")
         device.adb("install", "-r", args.apk)
         device.adb("shell", "pm", "clear", PACKAGE)
+        report["notification_permission"] = prepare_notification_permission(device)
         device.adb("logcat", "-c")
         device.adb("shell", "am", "start", "-W", "-n", PACKAGE + "/.MainActivity")
         device.wait_node("login-email")
@@ -579,7 +682,10 @@ def main() -> int:
         assert_host_state(manual_active, host_initial, created=1, closed=0)
         report["phase"] = "manual_host_room_end"
         device.tap("end-broadcast")
-        confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث")
+        report["phase"] = "manual_host_room_confirm"
+        confirm_native_alert(device, module, "إنهاء البث للجميع", "إنهاء البث",
+                             evidence=report.setdefault("native_alert_evidence", {}).setdefault("manual_end", {}))
+        report["phase"] = "manual_host_room_wait_closed"
         device.wait_node("rooms-list", timeout=90)
         manual_closed = host_counters(args.ca)
         report["host_counter_snapshots"]["manual_closed"] = manual_closed
@@ -593,7 +699,10 @@ def main() -> int:
         report["phase"] = "logout"
         device.tap("nav-profile")
         device.tap("settings-logout")
-        confirm_native_alert(device, module, "إنهاء البث وتسجيل الخروج", "إنهاء البث والخروج")
+        report["phase"] = "logout_host_room_confirm"
+        confirm_native_alert(device, module, "إنهاء البث وتسجيل الخروج", "إنهاء البث والخروج",
+                             evidence=report.setdefault("native_alert_evidence", {}).setdefault("logout", {}))
+        report["phase"] = "logout_host_room_wait_closed"
         device.wait_node("login-email", timeout=90)
         logged_out = wait_counter(args.ca, "signout_ok", reopened["signout_ok"])
         wait_counter(args.ca, "anonymous_sessions", reopened["anonymous_sessions"])

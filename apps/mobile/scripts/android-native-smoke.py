@@ -242,6 +242,21 @@ def read_only_reachability(base: str) -> dict:
     return results
 
 
+def capture_anonymous_idle(device: Device, directory: pathlib.Path):
+    # This runs only after a clean emulator install, before any credentials or
+    # local validation. Refuse to capture if either field contains any value.
+    xml = device.ui()
+    for key in ("login-email", "login-password"):
+        node = find_node(xml, key)
+        if node is None or node.attrib.get("text", ""):
+            raise RuntimeError("Anonymous preview requires empty credential fields")
+    capture = subprocess.run(device.prefix + ["exec-out", "screencap", "-p"],
+                             capture_output=True, timeout=20)
+    if capture.returncode or not capture.stdout.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise RuntimeError("Anonymous preview capture failed")
+    (directory / "native-auth-idle.png").write_bytes(capture.stdout)
+
+
 def diagnostics(device: Device, directory: pathlib.Path):
     commands = {
         "meminfo-startup.txt": ("shell", "dumpsys", "meminfo", PACKAGE),
@@ -325,6 +340,8 @@ def main() -> int:
         if report["native_read_only_https"]["state"] != "online":
             raise RuntimeError("The native Android read-only server connection was not verified online")
         report["checks"]["native_read_only_server_connection"] = True
+        if not authenticated:
+            capture_anonymous_idle(device, directory)
         device.reveal_node("login-submit")
         report["checks"]["native_login_render"] = True
         device.tap("login-submit")
