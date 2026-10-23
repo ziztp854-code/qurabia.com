@@ -4,7 +4,11 @@
     --room-avatar-size: 58px;
     --room-desktop-height: calc(
       var(--room-viewport-height, 100dvh) - var(--room-controls-height, 100px) -
-        max(12px, env(safe-area-inset-bottom)) - 76px
+        max(12px, env(safe-area-inset-bottom)) - var(--room-topbar-height, 56px) - 20px
+    );
+    --room-chat-height: max(
+      0px,
+      calc(var(--room-desktop-height) - var(--room-header-height, 77px) - 12px)
     );
     padding-inline: 20px;
   }
@@ -278,14 +282,47 @@
 @media (min-width: 1021px) and (min-height: 640px) {
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
     block-size: var(--room-desktop-height);
-    /* Larger text can grow the document; seats retain their own scroll area. */
-    min-block-size: min-content;
+    /* Enlarged text scrolls within the visible workspace above the fixed deck. */
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-padding-block: 12px;
     grid-template-rows: auto auto minmax(180px, 1fr) auto auto;
     align-content: stretch;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
     min-block-size: 0;
+    max-block-size: var(--room-chat-height);
+  }
+}
+
+@media (min-width: 1021px) and (max-width: 1279px) and (min-height: 640px) {
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column) {
+    display: grid;
+    block-size: var(--room-chat-height);
+    grid-template-rows: minmax(0, 1fr) minmax(220px, 2fr);
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column > [data-room-audience]),
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column > .v-chat) {
+    grid-area: auto;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-chat-column > .v-chat) {
+    min-block-size: 0;
+    min-height: 0;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
+    min-block-size: 0;
+    max-block-size: 100%;
+    overflow-y: auto;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global([data-room-audience-list]) {
+    max-block-size: none;
+    overflow: visible;
   }
 }
 

@@ -261,7 +261,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      'code' in error &&
+      error.code === 'P2025'
+    ) {
       return NextResponse.json(
         { ok: false, message: 'تم تعديل هذا السؤال من مستخدم آخر. أعد تحميل الصفحة.' },
         { status: 409 },

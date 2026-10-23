@@ -176,6 +176,25 @@ afterEach(async () => {
 });
 
 describe('persistent microphone across game routes', () => {
+  it('keeps one audio session while typing, resizing and rerendering the room', async () => {
+    const view = render(<App />);
+    await connected();
+    const microphoneCalls = sdk.microphone.mock.calls.length;
+    const input = document.querySelector<HTMLTextAreaElement>('#voice-message')!;
+    expect(input).not.toBeNull();
+    for (let index = 1; index <= 100; index++) {
+      fireEvent.change(input, { target: { value: `draft ${index}` } });
+    }
+    fireEvent(window, new Event('resize'));
+    view.rerender(<App />);
+    await act(async () => {});
+    expect(input).toHaveValue('draft 100');
+    expect(sdk.connect).toHaveBeenCalledTimes(1);
+    expect(sdk.disconnect).not.toHaveBeenCalled();
+    expect(sdk.microphone).toHaveBeenCalledTimes(microphoneCalls);
+    expect(requests('/token')).toHaveLength(1);
+  });
+
   it('keeps the microphone connected during trial gifting and releases the gift dialog on game navigation', async () => {
     const view = render(<App />);
     await connected();
