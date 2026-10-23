@@ -97,7 +97,7 @@ jobs:
           NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:3001
 
       - name: Install Playwright Chromium
-        run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
+        run: pnpm --filter @tahaddi/web exec playwright install chromium
 
       - name: Verify Tahaddi Live reference room against its standalone fixture
         working-directory: apps/web
