@@ -74,6 +74,9 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
+      - name: Verify production gate and decoded voice signal measurement
+        run: node --test scripts/vercel-ci-gate.test.mjs scripts/voice-audio-signal.test.mjs
+
       - name: Test
         # Unit requests use fixed origins; runtime URLs remain set for browser tests.
         run: NEXTAUTH_URL= AUTH_URL= NEXT_PUBLIC_SITE_URL= pnpm test
@@ -95,6 +98,14 @@ jobs:
 
       - name: Install Playwright Chromium
         run: pnpm --filter @tahaddi/web exec playwright install --with-deps chromium
+
+      - name: Verify Tahaddi Live reference room against its standalone fixture
+        working-directory: apps/web
+        run: pnpm exec playwright test --config playwright.tahaddi-reference.config.ts
+
+      - name: Verify Tahaddi Live surfaces against their standalone fixture
+        working-directory: apps/web
+        run: pnpm exec playwright test --config playwright.tahaddi-surfaces.config.ts
 
       - name: Playwright end-to-end tests
         working-directory: apps/web

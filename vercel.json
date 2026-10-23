@@ -10,7 +10,7 @@
       "root": "apps/web",
       "framework": "nextjs",
       "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-      "buildCommand": "cd ../.. && VOICE_SCHEMA_DEPLOY=1 node scripts/voice-production-schema.mjs && node scripts/voice-cloud-check.mjs && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && pnpm --filter @tahaddi/domain build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build && pnpm --filter @tahaddi/web build"
+      "buildCommand": "cd ../.. && node scripts/vercel-ci-gate.mjs && VOICE_SCHEMA_DEPLOY=1 node scripts/voice-production-schema.mjs && node scripts/voice-cloud-check.mjs && pnpm --filter @tahaddi/contracts build && pnpm --filter @tahaddi/database build && pnpm --filter @tahaddi/domain build && pnpm --filter @mamluk/world-map-core build && pnpm --filter @mamluk/maplibre-adapter build && pnpm --filter @tahaddi/web build"
     },
     "realtime": {
       "root": ".",
