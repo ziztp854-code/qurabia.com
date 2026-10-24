@@ -20,7 +20,7 @@ export type PublicGame = {
 
 const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
   alfazaa: {
-    image: '/game-art/alfazaa/city-reconstructed-native.webp',
+    image: '/game-art/catalog-v2/alfazaa.webp',
     imageAlt: 'مدينة الفزعة الخضراء تحيط بها المباني والأسوار',
   },
   'intelligence-test': {
