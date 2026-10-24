@@ -8,6 +8,15 @@ describe('Alfazaa persistence boundary', () => {
     localStorage.clear();
     vi.restoreAllMocks();
   });
+  it('preserves an invalid existing local save and reports recovery failure instead of silently resetting progress', async () => {
+    const stored = '{"version":3,"revision":57}';
+    localStorage.setItem('alfazaa-demo-v1', stored);
+    const view = renderHook(() => useGame(true));
+    await waitFor(() => expect(view.result.current.error).toContain('تعذّر استعادة'));
+    expect(view.result.current.state).toBeNull();
+    expect(localStorage.getItem('alfazaa-demo-v1')).toBe(stored);
+    view.unmount();
+  });
   it('saves guest progress locally and restores it without an account request', async () => {
     const fetcher = vi.spyOn(globalThis, 'fetch');
     const view = renderHook(() => useGame(true));

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getArm, getBuilding, getLevel, catalog } from './catalog';
 import type { AlfazaaState } from './types';
+import { createRealmState, validateRealmState } from '../realm/state';
 
 const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const node = z
@@ -38,7 +39,7 @@ const battle = z
   .strict();
 const schema = z
   .object({
-    version: z.union([z.literal(1), z.literal(2)]),
+    version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     revision: integer,
     castleLevel: integer.min(1).max(100),
     balances: z.record(z.string().regex(/^\d{1,9}$/), integer.max(1e12)),
@@ -59,6 +60,7 @@ const schema = z
     completedTowerLevels: z.array(integer).max(65),
     battle: battle.nullable(),
     updatedAt: integer,
+    realm: z.unknown().optional(),
     quests: z
       .object({
         claimed: z.array(z.enum(['road-104', 'road-301'])).max(2),
@@ -75,11 +77,24 @@ export function validateState(raw: unknown): AlfazaaState | null {
   if (parsed.data.lastCollectedAt > parsed.data.updatedAt) return null;
   if (parsed.data.version === 1 && parsed.data.quests !== undefined) return null;
   if (parsed.data.version === 2 && !parsed.data.quests) return null;
+  if (parsed.data.version < 3 && parsed.data.realm !== undefined) return null;
+  if (parsed.data.version === 3 && (!parsed.data.quests || parsed.data.realm === undefined)) return null;
+  const realm = parsed.data.version === 3
+    ? validateRealmState(parsed.data.realm, parsed.data.updatedAt)
+    : createRealmState(parsed.data.updatedAt, {
+      claimed: parsed.data.quests?.claimed ?? [], completedTowerLevels: parsed.data.completedTowerLevels,
+    });
+  if (!realm) return null;
   let state: AlfazaaState = {
     ...parsed.data,
-    version: 2,
+    version: 3,
+    realm,
     quests: parsed.data.quests ?? { claimed: [], lastDailyClaimDay: null },
   };
+  state = { ...state, realm: { ...state.realm, systems: { ...state.realm.systems,
+    claims: [...new Set([...state.realm.systems.claims,
+      ...state.quests.claimed.map(id => id.replace('road-', 'road:'))])],
+  } } };
   // One-time v1 compatibility: preserve progress while preventing an old city
   // without housing or cash from becoming unable to earn under the new model.
   if (

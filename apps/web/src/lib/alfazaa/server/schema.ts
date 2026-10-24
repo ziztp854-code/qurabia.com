@@ -1,11 +1,13 @@
 import { z } from 'zod';
+import { heroCommandSchema } from '../realm/hero-schema';
+import { systemsCommandSchema } from '../realm/systems-schema';
 
 const cfgId = z.number().int().positive().max(2_147_483_647);
 const cell = z.number().int().min(0).max(35);
 const node = z.string().min(1).max(80);
 const route = { from: node, to: node };
 
-export const commandSchema = z.discriminatedUnion('type', [
+const cityCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('claim-quest'),
     questId: z.enum(['daily-attendance', 'road-104', 'road-301']),
@@ -23,6 +25,7 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('tower-tick') }),
   z.strictObject({ type: z.literal('tower-quit') }),
 ]);
+export const commandSchema = z.union([cityCommandSchema, heroCommandSchema, systemsCommandSchema]);
 
 export const commandRequestSchema = z.strictObject({
   idempotencyKey: z.string().regex(/^[A-Za-z0-9_-]{8,128}$/),

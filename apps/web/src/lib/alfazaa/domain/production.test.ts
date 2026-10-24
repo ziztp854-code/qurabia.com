@@ -74,7 +74,7 @@ describe('source-derived housing production', () => {
     );
     const grounds = applyCommand(initial, { type: 'build', cfgId: 60001, cell: 2 }, 0).state;
     expect(applyCommand(grounds, { type: 'upgrade-building', cell: 2 }, 0).code).toBe(
-      'BUILDING_UPGRADE_UNAVAILABLE',
+      'CASTLE_REQUIRED',
     );
   });
   it('can reach every castle level through 20 with real commands, housing income and once-daily quests', () => {
