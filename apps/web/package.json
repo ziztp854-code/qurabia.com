@@ -21,7 +21,7 @@
     "@mamluk/world-map-core": "workspace:*",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@react-three/fiber": "^9.7.0",
-    "@sentry/nextjs": "10.75.0",
+    "@sentry/nextjs": "10.75.2",
     "@tahaddi/config": "workspace:*",
     "@tahaddi/contracts": "workspace:*",
     "@tahaddi/database": "workspace:*",

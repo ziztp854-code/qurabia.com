@@ -1,0 +1,57 @@
+[
+  {
+    "path": "outputs/deep-code-audit/decoded-tables/arms.csv",
+    "bytes": 205472,
+    "sha256": "d1e51849e013dfe1b63bafaf215dbe2255252307105f358291c0129b56d7db10"
+  },
+  {
+    "path": "outputs/deep-code-audit/decoded-tables/build.csv",
+    "bytes": 423651,
+    "sha256": "783238981895f45cdd01503444d1f1199774c3cdb12ffa08c6c0b98298e20fd3"
+  },
+  {
+    "path": "outputs/deep-code-audit/decoded-tables/item.csv",
+    "bytes": 611442,
+    "sha256": "1b9b27ac4f0b1ee87fa83f61fc8aa18760d1db2f1c26365ab0b765fd0cd6a365"
+  },
+  {
+    "path": "outputs/deep-code-audit/decoded-tables/language_ar.csv",
+    "bytes": 1867482,
+    "sha256": "9d6fe3e2b453b8cd4f632287b637b9c7ba6f1af3a69a2fe4ed19d36cc07c1259"
+  },
+  {
+    "path": "outputs/game-code-extraction/readable-configs/resources/TowerRush/cfg/stage_level.json",
+    "bytes": 125291,
+    "sha256": "2ce7b9128e570726bcc84a98ab06dd938f98b93b0f273d750205a886a5cb20ed"
+  },
+  {
+    "path": "outputs/game-code-extraction/readable-configs/resources/TowerRush/cfg/grow_attack.json",
+    "bytes": 983,
+    "sha256": "3095fa8cbe3ed8f1de5bdb3a811d46e9beda31c6423abf0ee39b36d5cb8d1a37"
+  },
+  {
+    "path": "outputs/game-code-extraction/readable-configs/resources/TowerRush/cfg/building.json",
+    "bytes": 429,
+    "sha256": "1eed36d07ca4e9d26a3850b2ab972d9916a7c50148a65a083188a6b790b5f24c"
+  },
+  {
+    "path": "outputs/jsc-decoded/modules/TRGameConst.js",
+    "bytes": 3689,
+    "sha256": "a4937cf5765905f3e1a8aa505d95407697a41142a2ce55888bd08dd7989d2ac4"
+  },
+  {
+    "path": "outputs/jsc-decoded/modules/TowerRushConfig.js",
+    "bytes": 668,
+    "sha256": "edfc58dc114159c8393ef2477faa82a67a93bd07308c041e613b265bc40caf6f"
+  },
+  {
+    "path": "outputs/jsc-decoded/modules/BattleUtil.js",
+    "bytes": 1158,
+    "sha256": "98415408dfc994e64d7388055388eef65f29503787ea8b7afcfd1b54da8bc6d7"
+  },
+  {
+    "path": "outputs/jsc-decoded/modules/BuildUpgradePanel.js",
+    "bytes": 16426,
+    "sha256": "783d449cec2ac9c24f1b9467653de66a17a4152a63c329d309d7ce27aa35c0cb"
+  }
+]

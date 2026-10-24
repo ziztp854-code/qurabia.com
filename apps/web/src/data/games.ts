@@ -19,6 +19,10 @@ export type PublicGame = {
 };
 
 const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
+  alfazaa: {
+    image: '/game-art/catalog-v2/alfazaa.webp',
+    imageAlt: 'مدينة الفزعة الخضراء تحيط بها المباني والأسوار',
+  },
   'intelligence-test': {
     image: '/game-art/catalog-v2/intelligence-test.svg',
     imageAlt: 'مسارات منطق ذهبية تتصل عبر ثلاث مراحل في تحدي الذكاء',
