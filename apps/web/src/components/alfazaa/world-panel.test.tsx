@@ -18,6 +18,9 @@ describe('Alfazaa shared-world account UI', () => {
     expect(screen.getByText(/تقدم المدينة التجريبية مستقل/)).toBeInTheDocument();
     expect(fetcher).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'إنشاء المخفر' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'تسجيل الدخول' })).toHaveAttribute(
+      'href', '/auth/sign-in?next=%2Fgames%2Falfazaa',
+    );
   });
   it('loads a real account and requires confirmation before permanent city troop conversion', async () => {
     const now = 1800000000000;

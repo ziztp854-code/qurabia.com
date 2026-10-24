@@ -104,7 +104,7 @@ export function WorldPanel({ demo }: { demo: boolean }) {
           سجّل الدخول لإنشاء مخفر ومقابلة لاعبين حقيقيين والتجارة والانضمام للتحالفات. تقدم المدينة
           التجريبية مستقل.
         </p>
-        <a href="/login">تسجيل الدخول</a>
+        <a href="/auth/sign-in?next=%2Fgames%2Falfazaa">تسجيل الدخول</a>
       </section>
     );
   const world = data?.world;
