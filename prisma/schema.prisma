@@ -158,6 +158,7 @@ model User {
   voiceRooms         VoiceRoom[]
   voicePreference    VoicePreference?
   alfazaaState       AlfazaaState?
+  alfazaaWorldCommands AlfazaaWorldCommand[]
   voiceSentMessages VoiceDirectMessage[] @relation("VoiceMessageSender")
   voiceReceivedMessages VoiceDirectMessage[] @relation("VoiceMessageRecipient")
   voiceReports       VoiceReport[]
@@ -935,5 +936,27 @@ model AlfazaaCommand {
   createdAt   DateTime @default(now())
   account     AlfazaaState @relation(fields: [userId], references: [userId], onDelete: Cascade)
   @@id([userId, key])
+  @@index([createdAt])
+}
+
+model AlfazaaWorld {
+  id String @id
+  state Json
+  revision Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  commands AlfazaaWorldCommand[]
+}
+
+model AlfazaaWorldCommand {
+  worldId String
+  userId String
+  key String @db.VarChar(128)
+  fingerprint String @db.Char(64)
+  result Json
+  createdAt DateTime @default(now())
+  world AlfazaaWorld @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([worldId, userId, key])
   @@index([createdAt])
 }

@@ -18,7 +18,7 @@ import catalogData from '@/lib/alfazaa/data/catalog.json';
 import art from '@/lib/alfazaa/data/art.json';
 import dynamic from 'next/dynamic';
 import type { Building, Catalog, Cost } from '@/lib/alfazaa/domain/types';
-import { getGoldPerMinute } from '@/lib/alfazaa/domain';
+import { getGoldPerMinute } from '@/lib/alfazaa/domain/state';
 import { QuestsPanel } from './quests-panel';
 import { CityScene } from './city-scene';
 import { TowerScene } from './tower-scene';
@@ -27,6 +27,15 @@ import { Tutorial } from './tutorial';
 import { useGame } from './use-game';
 import styles from './game.module.css';
 const catalog = catalogData as unknown as Catalog;
+const HeroPanel = dynamic(() => import('./hero-panel').then(m => m.HeroPanel), {
+  loading: () => <p role="status">جارٍ تجهيز الجيش والأبطال…</p>,
+});
+const SystemsPanel = dynamic(() => import('./systems-panel').then(m => m.SystemsPanel), {
+  loading: () => <p role="status">جارٍ فتح أنظمة المدينة…</p>,
+});
+const WorldPanel = dynamic(() => import('./world-panel').then(m => m.WorldPanel), {
+  loading: () => <p role="status">جارٍ فتح العالم المشترك…</p>,
+});
 const HeroGallery = dynamic(() => import('./hero-gallery').then((module) => module.HeroGallery), {
   loading: () => <p role="status">جارٍ فتح دليل الأبطال…</p>,
 });
@@ -62,7 +71,7 @@ function requirements(row: Building) {
 
 export function GameClient({ demo }: { demo: boolean }) {
   const game = useGame(demo);
-  const [tab, setTab] = useState<'city' | 'training' | 'bag' | 'heroes' | 'resources' | 'quests'>(
+  const [tab, setTab] = useState<'city' | 'training' | 'bag' | 'heroes' | 'resources' | 'quests' | 'world' | 'codex'>(
     'city',
   );
   const [action, setAction] = useState<'recruit' | 'build'>('recruit');
@@ -71,6 +80,7 @@ export function GameClient({ demo }: { demo: boolean }) {
   const helpButton = useRef<HTMLButtonElement>(null);
   const state = game.state;
   const changeTab = (next: typeof tab) => {
+    if (tab === 'world' && next !== 'world') void game.reload();
     setTab(next);
     setSelected(null);
   };
@@ -98,7 +108,7 @@ export function GameClient({ demo }: { demo: boolean }) {
       setSelected(null);
     } else setSelected(selected === index ? null : index);
   };
-  const recruitable = catalog.arms.filter((item) => item.level === 1 && item.subtype !== 3);
+  const recruitable = catalog.arms.filter((item) => item.level === 1 && item.subtype === 1 && [0,1,2].includes(item.type));
   const buildable = catalog.buildings.filter((item) => item.level === 1 && item.type !== 11);
   return (
     <section className={styles.game} dir="rtl" aria-label="لعبة الفزعة">
@@ -137,6 +147,7 @@ export function GameClient({ demo }: { demo: boolean }) {
         </span>
         {demo && <Link href="/games/alfazaa">اللعب بحسابي</Link>}
       </div>
+      <p className={styles.hint}>نسخة ويب تجريبية بقواعد مستقلة. ابنِ مدينتك وطوّر جيشك واستكشف العالم المشترك.</p>
       {game.error && (
         <div role="alert" className={styles.error}>
           {game.error}
@@ -230,11 +241,15 @@ export function GameClient({ demo }: { demo: boolean }) {
               <Images size={19} />
               الصور
             </button>
+            <button aria-current={tab === 'world' ? 'page' : undefined} onClick={() => changeTab('world')}><Flag size={19} />العالم والتحالف</button>
+            <button aria-current={tab === 'codex' ? 'page' : undefined} onClick={() => changeTab('codex')}><Shield size={19} />موسوعة الأبطال</button>
           </nav>
           {tab === 'quests' && (
-            <QuestsPanel state={state} busy={game.busy} send={game.send} reload={game.reload} />
+            <><SystemsPanel state={state} busy={game.busy} send={game.send} world={game.world} /><details><summary>مكافآت البداية السابقة</summary><QuestsPanel state={state} busy={game.busy} send={game.send} reload={game.reload} /></details></>
           )}
-          {tab === 'heroes' && <HeroGallery />}
+          {tab === 'heroes' && <HeroPanel state={state} busy={game.busy} send={game.send} />}
+          {tab === 'codex' && <HeroGallery />}
+          {tab === 'world' && <WorldPanel demo={demo} />}
           {tab === 'resources' && <ResourceGallery />}
           {tab === 'city' && (
             <div className={styles.cityLayout}>
@@ -273,7 +288,7 @@ export function GameClient({ demo }: { demo: boolean }) {
                             ? 'أعلى مستوى متاح في هذه النسخة.'
                             : selectedBuilding.lvType === 0
                               ? 'يتطلب الدمج قلعة بمستوى المبنى الناتج.'
-                              : selectedBuilding.lvType === 1
+                              : selectedBuilding.lvType !== 0
                                 ? `شروط التطوير: ${requirements(selectedBuilding)}. التكلفة: ${costText([...selectedBuilding.upgradeCost, [catalog.meta.goldItemId, selectedBuilding.upgradeGold]])}`
                                 : 'هذا المبنى للاستعراض في النسخة الحالية؛ لا يدعم الترقية المباشرة.'}
                           {selectedBuilding.type === 4
@@ -281,7 +296,7 @@ export function GameClient({ demo }: { demo: boolean }) {
                             : ''}
                         </span>
                       )}
-                      {selectedBuilding?.lvType === 1 && (
+                      {selectedBuilding && selectedBuilding.lvType !== 0 && (
                         <button
                           disabled={game.busy || !selectedNext}
                           className={styles.primary}
@@ -354,7 +369,7 @@ export function GameClient({ demo }: { demo: boolean }) {
                       ))
                     : buildable.map((building) => (
                         <article className={styles.shopItem} key={building.id}>
-                          <img src={building.image} alt="" />
+                          <img src={building.image || art.ui.city} alt="" loading="lazy" />
                           <div>
                             <b>{building.name}</b>
                             <small>{costText(building.buildCost)}</small>
@@ -384,7 +399,7 @@ export function GameClient({ demo }: { demo: boolean }) {
                   جمع إنتاج المساكن
                 </button>
                 <p className={styles.hint}>
-                  الدخل الحالي: {number(getGoldPerMinute(state))} ذهب/دقيقة. يتراكم حتى 12 ساعة.
+                  الدخل الأساسي: {number(getGoldPerMinute(state))} ذهب/دقيقة قبل مكافآت الأبحاث. يتراكم حتى 12 ساعة.
                 </p>
               </aside>
             </div>
@@ -400,7 +415,7 @@ export function GameClient({ demo }: { demo: boolean }) {
               />
             ))}
           {tab === 'bag' && (
-            <section className={styles.inventory}>
+            <><SystemsPanel state={state} busy={game.busy} send={game.send} world={game.world} initialTab="bag" /><details><summary>أرصدة الموارد كاملة</summary><section className={styles.inventory}>
               <h2>حقيبة الموارد</h2>
               <p>موارد مدينتك الحالية، محفوظة {demo ? 'محليًا على الجهاز' : 'في حساب الفزعة'}.</p>
               <div className={styles.inventoryGrid}>
@@ -415,7 +430,7 @@ export function GameClient({ demo }: { demo: boolean }) {
                   );
                 })}
               </div>
-            </section>
+            </section></details></>
           )}
           <p className={styles.status} role="status" aria-live="polite">
             {game.busy
@@ -433,8 +448,7 @@ export function GameClient({ demo }: { demo: boolean }) {
             التطوير؛ المستشفى والقلعة لهما ترقية مباشرة بشروط وتكلفة معروضتين.
           </li>
           <li>
-            حد دمج الجنود هو مستوى القلعة + 2، وحد دمج المباني هو مستوى القلعة. هذه قيود الفزعة
-            المبسّطة بدل نظام الأبحاث الأصلي.
+            حد دمج الجنود يبدأ بمستوى القلعة + 2 ويزيد بالأبحاث، وحد دمج المباني هو مستوى القلعة. هذه قاعدة مستقلة موثقة.
           </li>
           <li>
             تنتج المساكن الذهب بالدقيقة، ويتراكم الإنتاج حتى 12 ساعة. تغيير مستوى المساكن يسوّي
@@ -445,12 +459,13 @@ export function GameClient({ demo }: { demo: boolean }) {
             الرياض؛ مهام الإنجاز تُصرف مرة واحدة.
           </li>
           <li>
-            المتاح حاليًا: 20 مستوى للقلعة و65 ساحة تدريب. الفوز يتطلب امتلاك جميع الأبراج؛ التدريب
+            بيانات القلعة حتى المستوى 80 و65 ساحة تدريب للأبراج، إضافة إلى حملة الأبطال والاستكشاف. الفوز يتطلب امتلاك جميع الأبراج؛ التدريب
             لا يمنح عملات مباشرة.
           </li>
           <li>
-            قتال الأبراج وتراكم الإنتاج تنفيذ مستقل مستند إلى بيانات المصدر. موسوعة الأبطال
-            للاستعراض؛ قتال الأبطال والتحالفات وPvP والمشتريات غير مفعّلة هنا.
+            القتال والمهام والبحث والتطوير تنفيذ مستقل يستخدم جداول المصدر؛ لا تتوفر شيفرة الخادم الأصلي.
+            الأبطال ضمن الجيش قابلون للتطوير والقتال. العالم والتحالف يتطلبان حسابًا نشطًا واتصالًا بالخادم.
+            لا توجد مدفوعات؛ المتجر يستعمل موارد اللعبة فقط. موسوعة الأبطال مرجع إضافي.
           </li>
         </ul>
       </details>

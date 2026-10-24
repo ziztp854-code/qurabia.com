@@ -10,12 +10,40 @@ import {
 } from '../domain';
 import { commandRequestSchema } from './schema';
 import { AlfazaaHttpError, stableFingerprint } from './http';
+import { readAlfazaaWorldProgress } from './world-repository';
+import type { GameplaySnapshot } from '../realm/common';
 
 export type AlfazaaIdentity = { id: string; tokenVersion: number };
-export type AccountView = { state: AlfazaaState; revision: number };
+export type AccountView = {
+  state: AlfazaaState;
+  revision: number;
+  world?: GameplaySnapshot['world'];
+};
 type Tx = Prisma.TransactionClient;
 type AccountRow = { userId: string; state: unknown; revision: number };
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+
+// Persist every server clock advance, but only invalidate clients when progress
+// changes. Full-stamina anchors and last-evaluated timestamps are bookkeeping.
+function progressFingerprint(state: AlfazaaState) {
+  return stableFingerprint({
+    ...state,
+    updatedAt: 0,
+    realm: {
+      ...state.realm,
+      heroes: { ...state.realm.heroes, staminaAt: 0 },
+      systems: { ...state.realm.systems, lastAt: 0 },
+    },
+    battle: state.battle ? { ...state.battle, updatedAt: 0 } : null,
+  });
+}
+function normalizedReceipt(raw: unknown): AccountView {
+  const view = raw as { state?: unknown; revision?: unknown; world?: AccountView['world'] };
+  const state = validateState(view?.state);
+  if (!state || !Number.isSafeInteger(view.revision) || state.revision !== view.revision)
+    throw new Error('Invalid Alfazaa receipt');
+  return { state, revision: state.revision, ...(view.world ? { world: view.world } : {}) };
+}
 
 async function account(tx: Tx, identity: AlfazaaIdentity) {
   // A concurrent suspension/token revocation must serialize with this command.
@@ -61,10 +89,21 @@ export function readAlfazaa(
 ): Promise<AccountView> {
   return transaction(
     identity,
-    async (_tx, { row, state, now }) => ({
-      state: advanceState(state, now),
-      revision: row.revision,
-    }),
+    async (tx, { row, state, now }) => {
+      const advanced = advanceState(state, now);
+      const migrated = (row.state as { version?: unknown }).version !== 3;
+      const changed = migrated || progressFingerprint(state) !== progressFingerprint(advanced);
+      const next = { ...advanced, revision: row.revision + (changed ? 1 : 0) };
+      if (!validateState(next)) throw new Error('Invalid advanced Alfazaa state');
+      // Save due jobs, first-clear flags, daily resets and migration atomically.
+      // Repeated reads cannot re-grant their XP/resources, even across processes.
+      await tx.alfazaaState.update({
+        where: { userId: identity.id },
+        data: { state: json(next), revision: next.revision },
+      });
+      const world = await readAlfazaaWorldProgress(tx, identity.id);
+      return { state: next, revision: next.revision, world };
+    },
     db,
   );
 }
@@ -88,14 +127,17 @@ export async function commandAlfazaa(
       if (receipt) {
         if (receipt.fingerprint !== fingerprint)
           throw new AlfazaaHttpError(409, 'مفتاح الطلب مستخدم لأمر مختلف.');
-        return receipt.result as unknown as AccountView;
+        return normalizedReceipt(receipt.result);
       }
       if (request.expectedRevision !== row.revision)
         throw new AlfazaaHttpError(409, 'تغيّر التقدّم في نافذة أخرى. حدّث الحالة وحاول مجددًا.');
-      const result = applyCommand(state, request.command, now);
+      // Plain MVCC read only: never take a world lock after this city lock.
+      const world = await readAlfazaaWorldProgress(tx, identity.id);
+      const result = applyCommand(state, request.command, now, world);
       if (!result.ok) throw new AlfazaaHttpError(409, result.message);
       const next = { ...result.state, revision: row.revision + 1 };
-      const view: AccountView = { state: next, revision: next.revision };
+      if (!validateState(next)) throw new Error('Invalid command state');
+      const view: AccountView = { state: next, revision: next.revision, world };
       await tx.alfazaaState.update({
         where: { userId: identity.id },
         data: { state: json(next), revision: next.revision },

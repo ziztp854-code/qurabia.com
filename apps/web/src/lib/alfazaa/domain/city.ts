@@ -7,6 +7,14 @@ import {
 } from './tower';
 import type { AlfazaaState, Command, CommandResult, Cost } from './types';
 import { claimQuest } from './quests';
+import { getGoldPerMinute } from './state';
+import { advanceRealm, realmCommand } from '../realm/reducer';
+import { recordGameEvents } from '../realm/systems-state';
+import { getArmyCap } from '../realm/systems-read';
+import type { GameEvent, GameplaySnapshot } from '../realm/common';
+import { getGameplayContext } from '../realm/context';
+import { researchRow } from '../realm/systems-catalog';
+export { createInitialState, getGoldPerMinute } from './state';
 
 const validTime = (n: number) => Number.isSafeInteger(n) && n >= 0;
 const position = (n: number) => Number.isInteger(n) && n >= 0 && n < 36;
@@ -29,37 +37,9 @@ const failureMessages: Record<string, string> = {
   ROUTE_BLOCKED: 'يوجد حاجز يمنع هذا المسار. اختر هدفًا آخر.',
   INVALID_TIME: 'توقيت حالة اللعب غير متسق. أعد المزامنة.',
   MAX_LEVEL: 'وصل هذا المبنى إلى أعلى مستوى متاح.',
+  RESEARCH_REQUIRED: 'أكمل البحث المطلوب من ديوان المملكة قبل الترقية.',
+  PLAYER_REQUIRED: 'مستوى اللاعب لا يفي بالمتطلب. أكمل المهام والقتال والتدريب لاكتساب الخبرة.',
 };
-export function createInitialState(now: number): AlfazaaState {
-  if (!validTime(now)) throw new Error('INVALID_TIME');
-  const starter = listRecruitableArms()[0];
-  const resources = new Set(
-    catalog.arms
-      .flatMap((a) => a.cost.map((c) => c[0]))
-      .concat(catalog.meta.blueprintItemId, catalog.meta.goldItemId),
-  );
-  return {
-    version: 2,
-    revision: 0,
-    castleLevel: 1,
-    balances: Object.fromEntries(
-      [...resources].map((id) => [id, id === catalog.meta.goldItemId ? 20000 : 200]),
-    ),
-    cells: Array.from({ length: 36 }, (_, i) =>
-      i < 2 && starter
-        ? { id: String(i + 1), kind: 'troop' as const, cfgId: starter.id }
-        : i === 35
-          ? { id: '3', kind: 'building' as const, cfgId: 40001 }
-          : null,
-    ),
-    nextId: 4,
-    lastCollectedAt: now,
-    completedTowerLevels: [],
-    battle: null,
-    updatedAt: now,
-    quests: { claimed: [], lastDailyClaimDay: null },
-  };
-}
 export function advanceState(state: AlfazaaState, now: number): AlfazaaState {
   if (!validTime(now) || now < state.updatedAt) throw new Error('INVALID_TIME');
   const battle = state.battle ? advanceTowerBattle(state.battle, now) : null;
@@ -67,7 +47,11 @@ export function advanceState(state: AlfazaaState, now: number): AlfazaaState {
     battle?.status === 'won' && !state.completedTowerLevels.includes(battle.levelId)
       ? [...state.completedTowerLevels, battle.levelId].sort((a, b) => a - b)
       : state.completedTowerLevels;
-  return { ...state, battle, completedTowerLevels: completed, updatedAt: now };
+  const events: GameEvent[] = completed.length > state.completedTowerLevels.length
+    ? [{ type: 'tower-win', amount: 1, target: battle!.levelId }] : [];
+  const advanced = advanceRealm({ ...state, battle, completedTowerLevels: completed, updatedAt: now }, now);
+  return { ...advanced, realm: { ...advanced.realm,
+    systems: recordGameEvents(advanced.realm.systems, events, now) } };
 }
 function pay(state: AlfazaaState, cost: Cost): AlfazaaState {
   const totals: Record<string, number> = {};
@@ -86,6 +70,13 @@ function pay(state: AlfazaaState, cost: Cost): AlfazaaState {
 }
 function upgradeAllowed(state: AlfazaaState, row: NonNullable<ReturnType<typeof getBuilding>>) {
   if (state.castleLevel < row.requireCastle) throw new Error('CASTLE_REQUIRED');
+  if (getGameplayContext(state).view.playerLevel < (row.roleLevel ?? 0)) throw new Error('PLAYER_REQUIRED');
+  for (const [tree, id] of [['college', row.collegeLimit], ['science', row.scienceLimit]] as const) {
+    const needed = id ? researchRow(tree, id) : undefined;
+    const owned = needed ? researchRow(tree, state.realm.systems.research[needed.key] ?? 0) : undefined;
+    // Initial source research rows describe the baseline capability.
+    if (needed && needed.level > 1 && (owned?.level ?? 0) < needed.level) throw new Error('RESEARCH_REQUIRED');
+  }
   if (row.requireBuilding) {
     const needed = getBuilding(row.requireBuilding);
     if (
@@ -100,18 +91,11 @@ function upgradeAllowed(state: AlfazaaState, row: NonNullable<ReturnType<typeof 
       throw new Error('BUILDING_REQUIRED');
   }
 }
-/** Source housing Value is gold/minute; research/ownership boosts are not ported. */
-export function getGoldPerMinute(state: AlfazaaState): number {
-  return state.cells.reduce((sum, cell) => {
-    const row = cell?.kind === 'building' ? getBuilding(cell.cfgId) : undefined;
-    return sum + (row?.type === 4 ? row.value : 0);
-  }, 0);
-}
 function settleProduction(state: AlfazaaState, now: number, rateChanging = false): AlfazaaState {
   const count = Math.min(720, Math.floor((now - state.lastCollectedAt) / 60000));
   if (count < 1 && !rateChanging) throw new Error('NOT_READY');
   const gold = String(catalog.meta.goldItemId),
-    rate = getGoldPerMinute(state);
+    rate = Math.floor(getGoldPerMinute(state) * (1 + Math.max(0, Math.min(10, getGameplayContext(state).bonuses.production))));
   if (rate === 0 && !rateChanging) throw new Error('NO_PRODUCTION');
   return {
     ...state,
@@ -189,7 +173,7 @@ function cityCommand(state: AlfazaaState, command: Command, now: number): Alfaza
     )
       throw new Error('MERGE_MISMATCH');
     // New-game research replacement: castle level permits two troop tiers beyond itself.
-    if (next.level > state.castleLevel + 2) throw new Error('CASTLE_REQUIRED');
+    if (next.level > getArmyCap(state.realm.systems, arm.type, state.castleLevel)) throw new Error('CASTLE_REQUIRED');
     cells[command.to] = { ...target, cfgId: next.id };
     cells[command.from] = null;
     return { ...state, cells };
@@ -214,7 +198,7 @@ function cityCommand(state: AlfazaaState, command: Command, now: number): Alfaza
       row = cell?.kind === 'building' ? getBuilding(cell.cfgId) : undefined;
     if (!cell || !row?.nextId || !getBuilding(row.nextId)) throw new Error('INVALID_BUILDING');
     if (row.lvType === 0) throw new Error('BUILDING_MERGE_REQUIRED');
-    if (row.lvType !== 1) throw new Error('BUILDING_UPGRADE_UNAVAILABLE');
+    if (![1, 2].includes(row.lvType)) throw new Error('BUILDING_UPGRADE_UNAVAILABLE');
     upgradeAllowed(state, row);
     cells[command.cell] = { ...cell, cfgId: row.nextId };
     return {
@@ -224,9 +208,14 @@ function cityCommand(state: AlfazaaState, command: Command, now: number): Alfaza
   }
   throw new Error('UNKNOWN_COMMAND');
 }
-export function applyCommand(input: AlfazaaState, command: Command, now: number): CommandResult {
+export function applyCommand(input: AlfazaaState, command: Command, now: number,
+  world?: GameplaySnapshot['world']): CommandResult {
   try {
     let state = advanceState(input, now);
+    const realm = realmCommand(state, command, now, world);
+    if (realm) return realm.ok ? { ...realm, state: { ...realm.state, revision: input.revision + 1 } }
+      : { ...realm, state: input };
+    const before = state;
     if (command.type === 'tower-start')
       state = { ...state, battle: createTowerBattle(command.levelId, now) };
     else if (command.type === 'tower-quit') state = { ...state, battle: null };
@@ -243,6 +232,15 @@ export function applyCommand(input: AlfazaaState, command: Command, now: number)
       if (!state.battle) throw new Error('NO_BATTLE');
     } else if (command.type === 'claim-quest') state = claimQuest(state, command.questId, now);
     else state = cityCommand(state, command, now);
+    if (command.type === 'move' || command.type === 'merge') {
+      const selected = state.realm.heroes.troopCells.map(index => index === command.from ? command.to : index)
+        .filter(index => state.cells[index]?.kind === 'troop');
+      state = { ...state, realm: { ...state.realm, heroes: { ...state.realm.heroes, troopCells: [...new Set(selected)] } } };
+    }
+    const event = cityEvent(before, state, command);
+    if (event) state = { ...state, realm: { ...state.realm,
+      systems: recordGameEvents(state.realm.systems, [event, ...(command.type === 'collect' ? [{type:'resource-gather',target:400001,
+        amount:(state.balances['400001']??0)-(before.balances['400001']??0)}] : [])], now) } };
     return {
       ok: true,
       state: { ...state, revision: input.revision + 1 },
@@ -258,4 +256,20 @@ export function applyCommand(input: AlfazaaState, command: Command, now: number)
       message: failureMessages[code] ?? 'تعذّر تنفيذ الأمر؛ راجع الموارد والمتطلبات',
     };
   }
+}
+
+function cityEvent(before: AlfazaaState, after: AlfazaaState, command: Command): GameEvent | null {
+  if (command.type === 'recruit') return { type: 'recruit', amount: 1, target: command.cfgId, level: 1 };
+  if (command.type === 'build') return { type: 'build', amount: 1, target: command.cfgId, level: 1 };
+  if (command.type === 'merge') {
+    const cell = after.cells[command.to];
+    return cell ? { type: 'merge', amount: 1, target: cell.cfgId,
+      level: (cell.kind === 'troop' ? getArm(cell.cfgId) : getBuilding(cell.cfgId))?.level } : null;
+  }
+  if (command.type === 'upgrade-building') return { type: 'upgrade-building', amount: 1,
+    target: after.cells[command.cell]?.cfgId, level: getBuilding(after.cells[command.cell]?.cfgId ?? 0)?.level };
+  if (command.type === 'upgrade-castle') return { type: 'upgrade-castle', amount: 1, level: after.castleLevel };
+  if (command.type === 'collect' && (after.balances['400001'] ?? 0) > (before.balances['400001'] ?? 0))
+    return { type: 'collect', amount: 1, target: 400001 };
+  return null;
 }

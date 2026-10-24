@@ -6,10 +6,11 @@ describe('Alfazaa authoritative quests', () => {
     const initial = createInitialState(1000);
     const legacy = { ...initial, version: 1 } as Record<string, unknown>;
     delete legacy.quests;
+    delete legacy.realm;
     const snapshot = structuredClone(legacy);
     const restored = validateState(legacy);
     expect(restored).toMatchObject({
-      version: 2,
+      version: 3,
       revision: 0,
       quests: { claimed: [], lastDailyClaimDay: null },
     });
@@ -47,6 +48,7 @@ describe('Alfazaa authoritative quests', () => {
       cells: initial.cells.map((cell, index) => (index === 35 ? null : cell)),
     } as Record<string, unknown>;
     delete legacy.quests;
+    delete legacy.realm;
     const restored = validateState(legacy)!;
     expect(restored.castleLevel).toBe(6);
     expect(restored.balances['400001']).toBe(0);
@@ -149,6 +151,7 @@ describe('Alfazaa authoritative quests', () => {
       nextId: 37,
     } as Record<string, unknown>;
     delete legacy.quests;
+    delete legacy.realm;
     const migrated = validateState(legacy)!;
     expect(migrated.balances['400001']).toBe(480);
     expect(migrated.cells.filter(Boolean)).toHaveLength(36);

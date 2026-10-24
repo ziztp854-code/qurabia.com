@@ -9,4 +9,4 @@ export const getLevel = (id: number) => catalog.levels.find((row) => row.id === 
 export const getCastle = (state: AlfazaaState) =>
   catalog.buildings.find((row) => row.type === 11 && row.level === state.castleLevel);
 export const listRecruitableArms = () =>
-  catalog.arms.filter((row) => row.level === 1 && row.subtype !== 3);
+  catalog.arms.filter((row) => row.level === 1 && row.subtype === 1 && [0, 1, 2].includes(row.type));

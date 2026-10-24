@@ -1,3 +1,4 @@
+import type { RealmCommand, RealmState } from '../realm/types';
 export type Cost = [number, number][];
 export interface Arm {
   id: number;
@@ -23,6 +24,10 @@ export interface Building {
   image: string;
   value: number;
   lvType: number;
+  collegeLimit?: number;
+  scienceLimit?: number;
+  roleLevel?: number;
+  attributeId?: number;
 }
 export interface TowerNode {
   id: string;
@@ -59,7 +64,7 @@ export interface CityCell {
   cfgId: number;
 }
 export interface AlfazaaState {
-  version: 2;
+  version: 3;
   revision: number;
   castleLevel: number;
   balances: Record<string, number>;
@@ -70,6 +75,7 @@ export interface AlfazaaState {
   battle: TowerBattle | null;
   updatedAt: number;
   quests: QuestLedger;
+  realm: RealmState;
 }
 export type QuestId = 'daily-attendance' | 'road-104' | 'road-301';
 export interface QuestLedger {
@@ -77,6 +83,7 @@ export interface QuestLedger {
   lastDailyClaimDay: number | null;
 }
 export type Command =
+  | RealmCommand
   | { type: 'claim-quest'; questId: QuestId }
   | { type: 'recruit'; cfgId: number }
   | { type: 'move' | 'merge'; from: number; to: number }

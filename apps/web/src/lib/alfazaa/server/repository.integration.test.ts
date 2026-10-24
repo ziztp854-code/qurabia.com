@@ -2,6 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { DatabaseClient } from '@tahaddi/database';
 import { readAlfazaa, commandAlfazaa, type AlfazaaIdentity } from './repository';
+import { createInitialState } from '../domain';
+import { systemsCatalog } from '../realm/systems-catalog';
+import { stableFingerprint } from './http';
+import { createSharedWorld, applySharedCommand, type SharedWorld } from '../realm/world-engine';
+import { WORLD_ID } from './world-repository';
 
 // Never fall back to the application's DATABASE_URL. Provision/migrate an
 // explicitly isolated local database before running this suite.
@@ -11,7 +16,10 @@ function assertLocalDatabase(value: string) {
   if (
     !['postgres:', 'postgresql:'].includes(url.protocol) ||
     !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
-    !/^\/alfazaa_test(?:_[a-zA-Z0-9_-]+)?$/.test(url.pathname) ||
+    !(
+      (url.port === '55441' && url.pathname === '/alfazaa_world_test') ||
+      /^\/alfazaa_test(?:_[a-zA-Z0-9_-]+)?$/.test(url.pathname)
+    ) ||
     url.search ||
     url.hash
   )
@@ -54,8 +62,157 @@ describe.skipIf(!databaseUrl)('Alfazaa PostgreSQL account serialization', () => 
     const results = await Promise.all([readAlfazaa(actor, db), readAlfazaa(actor, db)]);
     expect(results.map((result) => result.revision)).toEqual([0, 0]);
     expect(results.map((result) => result.state.cells.filter(Boolean).length)).toEqual([3, 3]);
-    expect(results.map((result) => result.state.version)).toEqual([2, 2]);
+    expect(results.map((result) => result.state.version)).toEqual([3, 3]);
     expect(results[0].state.cells[35]).toMatchObject({ kind: 'building', cfgId: 40001 });
+  });
+  it('persists v2 migration once and normalizes historical receipts without rewriting current progress', async () => {
+    const actor = await identity();
+    const initial = createInitialState(Date.now() - 60000);
+    const { realm, ...old } = initial;
+    const legacy = { ...old, version: 2, revision: 7 };
+    await db.alfazaaState.create({
+      data: { userId: actor.id, state: JSON.parse(JSON.stringify(legacy)), revision: 7 },
+    });
+    const first = await readAlfazaa(actor, db);
+    expect(first.state.version).toBe(3);
+    expect(first.state.realm.heroes.roster).toEqual(realm.heroes.roster);
+    expect(first.revision).toBe(8);
+    expect(
+      (await db.alfazaaState.findUniqueOrThrow({ where: { userId: actor.id } })).state,
+    ).toMatchObject({ version: 3 });
+    expect((await readAlfazaa(actor, db)).revision).toBe(8);
+    const request = {
+      idempotencyKey: randomUUID(),
+      expectedRevision: 0,
+      command: { type: 'merge', from: 0, to: 1 },
+    };
+    await db.alfazaaCommand.create({
+      data: {
+        userId: actor.id,
+        key: request.idempotencyKey,
+        fingerprint: stableFingerprint({ expectedRevision: 0, command: request.command }),
+        result: JSON.parse(JSON.stringify({ state: { ...legacy, revision: 1 }, revision: 1 })),
+      },
+    });
+    const replay = await commandAlfazaa(actor, request, db);
+    expect(replay.state.version).toBe(3);
+    expect(replay.revision).toBe(1);
+    expect(
+      (await db.alfazaaState.findUniqueOrThrow({ where: { userId: actor.id } })).revision,
+    ).toBe(8);
+  });
+  it('settles due training jobs and their XP once across concurrent reads', async () => {
+    const actor = await identity();
+    const initial = createInitialState(Date.now() - 60000);
+    initial.realm.systems.jobs = [
+      {
+        id: 1,
+        kind: 'training',
+        target: 10001,
+        count: 2,
+        startedAt: initial.updatedAt,
+        finishAt: initial.updatedAt + 1000,
+      },
+    ];
+    initial.realm.systems.nextJobId = 2;
+    await db.alfazaaState.create({
+      data: { userId: actor.id, state: JSON.parse(JSON.stringify(initial)), revision: 0 },
+    });
+    const [one, two] = await Promise.all([readAlfazaa(actor, db), readAlfazaa(actor, db)]);
+    expect(one.state.realm.systems.reserve['10001']).toBe(2);
+    expect(two.state.realm.systems.reserve['10001']).toBe(2);
+    const xp = systemsCatalog.arms.find((a) => a.id === 10001)!.xp;
+    expect(two.state.balances['1200001']).toBe(xp * 2);
+    expect(one.revision).toBe(1);
+    expect(two.revision).toBe(1);
+    const stored = await db.alfazaaState.findUniqueOrThrow({ where: { userId: actor.id } });
+    expect(stored.state).toMatchObject({
+      realm: { systems: { jobs: [], reserve: { '10001': 2 } } },
+    });
+  });
+  it('replays hero spending and quest rewards once through the same account command boundary', async () => {
+    const actor = await identity();
+    const initial = createInitialState(Date.now() - 1000);
+    initial.realm.heroes.stamina = 50;
+    initial.realm.systems.lifetime['tower-win'] = 1;
+    await db.alfazaaState.create({
+      data: { userId: actor.id, state: JSON.parse(JSON.stringify(initial)), revision: 0 },
+    });
+    const rest = {
+      idempotencyKey: randomUUID(),
+      expectedRevision: 0,
+      command: { type: 'hero-rest' },
+    };
+    const [first, retry] = await Promise.all([
+      commandAlfazaa(actor, rest, db),
+      commandAlfazaa(actor, rest, db),
+    ]);
+    expect(first).toEqual(retry);
+    expect(first.state.realm.heroes.stamina).toBeGreaterThan(50);
+    expect(first.state.balances['400001']).toBeLessThan(initial.balances['400001']);
+    const claim = {
+      idempotencyKey: randomUUID(),
+      expectedRevision: first.revision,
+      command: { type: 'systems-claim', family: 'main', id: 100010 },
+    };
+    const [reward, replayed] = await Promise.all([
+      commandAlfazaa(actor, claim, db),
+      commandAlfazaa(actor, claim, db),
+    ]);
+    expect(reward).toEqual(replayed);
+    expect(reward.state.balances['400001']).toBe(first.state.balances['400001'] + 9000);
+    expect(reward.state.realm.systems.claims).toContain('main:100010');
+    await expect(
+      commandAlfazaa(
+        actor,
+        { ...claim, idempotencyKey: randomUUID(), expectedRevision: reward.revision },
+        db,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+  it('uses actual server world membership for a gated quest and rejects client-forged context', async () => {
+    const actor = await identity();
+    const initial = await readAlfazaa(actor, db);
+    const request = {
+      idempotencyKey: randomUUID(),
+      expectedRevision: initial.revision,
+      command: { type: 'systems-claim', family: 'milestone', id: 100040 },
+    };
+    await expect(
+      commandAlfazaa(actor, { ...request, world: { allianceMember: true } }, db),
+    ).rejects.toThrow();
+    await expect(commandAlfazaa(actor, request, db)).rejects.toMatchObject({ status: 409 });
+    const previous = await db.alfazaaWorld.findUnique({ where: { id: WORLD_ID } });
+    try {
+      const now = Date.now();
+      let world: SharedWorld = previous
+        ? JSON.parse(JSON.stringify(previous.state))
+        : createSharedWorld(now);
+      world = applySharedCommand(world, actor.id, { type: 'join', name: 'اختبار التحالف' }, now);
+      const village = Object.values(world.game.villages).find((v) => v.ownerId === actor.id)!;
+      village.buildings.embassy = 1;
+      world = applySharedCommand(
+        world,
+        actor.id,
+        { type: 'outpost', action: { type: 'allianceCreate', name: 'اختبار' } },
+        now,
+      );
+      await db.alfazaaWorld.upsert({
+        where: { id: WORLD_ID },
+        create: { id: WORLD_ID, state: JSON.parse(JSON.stringify(world)), revision: 0 },
+        update: { state: JSON.parse(JSON.stringify(world)) },
+      });
+      const granted = await commandAlfazaa(actor, { ...request, idempotencyKey: randomUUID() }, db);
+      expect(granted.state.realm.systems.claims).toContain('milestone:100040');
+      expect(granted.world?.allianceMember).toBe(true);
+    } finally {
+      if (previous)
+        await db.alfazaaWorld.update({
+          where: { id: WORLD_ID },
+          data: { state: JSON.parse(JSON.stringify(previous.state)), revision: previous.revision },
+        });
+      else await db.alfazaaWorld.deleteMany({ where: { id: WORLD_ID } });
+    }
   });
   it('allows exactly one concurrent command at the same revision', async () => {
     const actor = await identity();

@@ -33,6 +33,7 @@ export function database() {
       if (sql.includes('"User"'))
         return users.has(String(values[0])) ? [copy(users.get(String(values[0])))] : [];
       if (sql.includes('clock_timestamp')) return [{ now: new Date(now) }];
+      if (sql.includes('"AlfazaaWorld"')) return [];
       if (sql.includes('"AlfazaaState"'))
         return states.has(String(values[0])) ? [copy(states.get(String(values[0])))] : [];
       throw new Error('Unknown fixture query');

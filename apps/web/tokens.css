@@ -514,3 +514,45 @@
   --primary-foreground: var(--voice-ink);
   --border: var(--voice-line);
 }
+
+/* Local Alfazaa game panels share scoped palettes without changing site themes. */
+[data-alfazaa-hero] {
+  --ink: #f1e6cd;
+  --muted: #bdb39b;
+  --gold: #d9b56d;
+  --edge: #8d754444;
+  --surface: #18272b;
+  --hero-bg: #101e23;
+  --hero-header-start: #213a3d;
+  --hero-header-end: #122128;
+  --hero-tab-bg: #101b20;
+  --hero-button-border: #b39257;
+  --hero-button-bg: #c6a365;
+  --hero-button-text: #112129;
+  --hero-button-hover: #e0c38a;
+  --hero-focus: #f7d38c;
+  --hero-tab-active: #203136;
+  --hero-input-bg: #101e24;
+  --hero-input-border: #56625f;
+  --hero-card-bg: #1d3034;
+  --hero-card-border: #52615b;
+  --hero-card-selected: #35433c;
+  --hero-portrait-glow: #9e7c3944;
+  --hero-portrait-start: #253839;
+  --hero-portrait-end: #121f27;
+  --hero-portrait-shadow: #0007;
+  --hero-stat-bg: #15282d;
+  --hero-secondary-border: #7d704e;
+  --hero-skill-bg: #13232a;
+  --hero-preview-bg: #283a3c;
+  --hero-fight-bg: #d7b36e;
+  --hero-notice-bg: #293637;
+  --hero-health: #98ad6d;
+}
+
+[data-alfazaa-systems] {
+  --sys-gold: #c5a15c;
+  --sys-deep: #182b32;
+  --sys-ready: #437749;
+  --sys-button-text: #f6e6bf;
+}

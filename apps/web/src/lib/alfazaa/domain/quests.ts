@@ -35,7 +35,7 @@ export function listQuests(state: AlfazaaState, now: number) {
     const claimed =
       quest.id === 'daily-attendance'
         ? state.quests.lastDailyClaimDay === day
-        : state.quests.claimed.includes(quest.id);
+        : state.quests.claimed.includes(quest.id) || state.realm.systems.claims.includes(quest.id.replace('road-', 'road:'));
     return {
       id: quest.id,
       title: quest.title,
@@ -56,7 +56,7 @@ export function claimQuest(state: AlfazaaState, questId: QuestId, now: number): 
   const claimed =
     questId === 'daily-attendance'
       ? state.quests.lastDailyClaimDay === day
-      : state.quests.claimed.includes(questId);
+      : state.quests.claimed.includes(questId) || state.realm.systems.claims.includes(questId.replace('road-', 'road:'));
   if (claimed) throw new Error('QUEST_ALREADY_CLAIMED');
   if (!meetsRequirement(state, quest)) throw new Error('QUEST_REQUIREMENT');
   const balances = quest.rewards.reduce((result, [id, amount]) => {
@@ -68,6 +68,9 @@ export function claimQuest(state: AlfazaaState, questId: QuestId, now: number): 
   return {
     ...state,
     balances,
+    realm: questId === 'daily-attendance' ? state.realm : { ...state.realm, systems: {
+      ...state.realm.systems, claims: [...new Set([...state.realm.systems.claims, questId.replace('road-', 'road:')])],
+    } },
     quests:
       questId === 'daily-attendance'
         ? { ...state.quests, lastDailyClaimDay: day }

@@ -1,12 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  applyCommand,
-  createInitialState,
-  validateState,
-  type AlfazaaState,
-  type Command,
-} from '@/lib/alfazaa/domain';
+import { createInitialState } from '@/lib/alfazaa/domain/state';
+import { validateState } from '@/lib/alfazaa/domain/validation';
+import type { AlfazaaState, Command } from '@/lib/alfazaa/domain/types';
+import type { GameplaySnapshot } from '@/lib/alfazaa/realm/common';
 
 const STORAGE = 'alfazaa-demo-v1';
 class AccountError extends Error {
@@ -17,7 +14,7 @@ class AccountError extends Error {
     super(message);
   }
 }
-async function accountRequest(body?: object): Promise<AlfazaaState> {
+async function accountRequest(body?: object): Promise<{ state: AlfazaaState; world?: GameplaySnapshot['world'] }> {
   const response = await fetch(
     '/api/alfazaa',
     body
@@ -33,7 +30,7 @@ async function accountRequest(body?: object): Promise<AlfazaaState> {
     throw new AccountError(result.error || 'تعذّر الاتصال بحفظ الحساب.', response.status);
   const state = validateState(result.data?.state);
   if (!state) throw new Error('بيانات الحفظ غير صالحة. أعد تحميل الصفحة.');
-  return state;
+  return { state, world: result.data?.world };
 }
 
 export function useGame(demo: boolean) {
@@ -41,6 +38,7 @@ export function useGame(demo: boolean) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [world, setWorld] = useState<GameplaySnapshot['world']>();
   const pending = useRef(false);
   const unresolved = useRef<{
     idempotencyKey: string;
@@ -71,15 +69,19 @@ export function useGame(demo: boolean) {
     setError('');
     try {
       if (demo) {
-        let restored: AlfazaaState | null = null;
-        try {
-          restored = validateState(JSON.parse(localStorage.getItem(STORAGE) || 'null'));
-        } catch {
-          /* Invalid guest saves are replaced by a new local game. */
+        const stored = localStorage.getItem(STORAGE);
+        if (!stored) commit(createInitialState(Date.now()));
+        else {
+          let restored: AlfazaaState | null = null;
+          try { restored = validateState(JSON.parse(stored)); } catch { /* Preserve the original for recovery. */ }
+          if (!restored) throw new Error('تعذّر استعادة الحفظ المحلي. احتفظ ببياناته لاسترداد التقدّم؛ لم يُحذف الحفظ.');
+          const { advanceState } = await import('@/lib/alfazaa/domain/city');
+          commit(advanceState(restored, Date.now()));
         }
-        commit(restored || createInitialState(Date.now()));
       } else {
-        commit(await accountRequest());
+        const result = await accountRequest();
+        commit(result.state);
+        setWorld(result.world);
         unresolved.current = null;
       }
     } catch (cause) {
@@ -112,10 +114,11 @@ export function useGame(demo: boolean) {
       setError('');
       try {
         if (demo) {
+          const { applyCommand } = await import('@/lib/alfazaa/domain/city');
           const result = applyCommand(current.current, command, Date.now());
           if (result.ok) {
             commit(result.state);
-            if (command.type !== 'tower-tick') setMessage(result.message || 'تم تنفيذ الأمر.');
+            if (!['tower-tick', 'systems-tick'].includes(command.type)) setMessage(result.message || 'تم تنفيذ الأمر.');
           } else setError(result.message);
         } else {
           const body = unresolved.current || {
@@ -124,9 +127,11 @@ export function useGame(demo: boolean) {
             command,
           };
           unresolved.current = body;
-          commit(await accountRequest(body));
+          const result = await accountRequest(body);
+          commit(result.state);
+          setWorld(result.world);
           unresolved.current = null;
-          if (command.type !== 'tower-tick') setMessage('تم حفظ الأمر في حسابك.');
+          if (!['tower-tick', 'systems-tick'].includes(command.type)) setMessage('تم حفظ الأمر في حسابك.');
         }
       } catch (cause) {
         if (cause instanceof AccountError && cause.status < 500) unresolved.current = null;
@@ -138,6 +143,11 @@ export function useGame(demo: boolean) {
     },
     [demo, commit],
   );
+  useEffect(() => {
+    if (!state?.realm.systems.jobs.length || state.battle?.status === 'active') return;
+    const timer = setInterval(() => void send({ type: 'systems-tick' }), 5000);
+    return () => clearInterval(timer);
+  }, [state?.realm.systems.jobs.length, state?.battle?.status, send]);
   useEffect(() => {
     if (state?.battle?.status !== 'active') return;
     const timer = setInterval(
@@ -151,5 +161,5 @@ export function useGame(demo: boolean) {
   const retry = useCallback(async () => {
     if (unresolved.current) await send(unresolved.current.command);
   }, [send]);
-  return { state, busy, error, message, send, reload, retry };
+  return { state, world, busy, error, message, send, reload, retry };
 }

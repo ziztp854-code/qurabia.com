@@ -23,7 +23,7 @@ describe('Alfazaa account persistence', () => {
     const b = await readAlfazaa(bob, db);
     expect(a.revision).toBe(0);
     expect(a.state.castleLevel).toBe(1);
-    expect(a.state.version).toBe(2);
+    expect(a.state.version).toBe(3);
     expect(a.state.cells.filter(Boolean)).toHaveLength(3);
     expect(a.state.cells[35]).toMatchObject({ kind: 'building', cfgId: 40001 });
     expect(a.state).toEqual(b.state);
