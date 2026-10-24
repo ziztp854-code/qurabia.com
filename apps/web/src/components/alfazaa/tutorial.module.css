@@ -1,0 +1,288 @@
+.guide {
+  border: 1px solid var(--border-gold);
+  border-radius: 18px;
+  background: var(--surface);
+  margin-block: 16px 24px;
+  overflow: hidden;
+  color: var(--foreground);
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  background: var(--secondary);
+}
+.header h2 {
+  font-family: var(--font-alexandria);
+  font-size: 18px;
+  margin: 0;
+  line-height: 1.6;
+  color: var(--gold-100);
+}
+.caption {
+  font-size: 10px;
+  color: var(--text-soft);
+}
+.emblem {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  width: 42px;
+  height: 48px;
+  background: var(--gold-gradient);
+  color: var(--brand-navy);
+  clip-path: polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%);
+}
+.count {
+  margin-inline-start: auto;
+  white-space: nowrap;
+  color: var(--gold-100);
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+}
+.meter {
+  height: 4px;
+  background: var(--surface-strong);
+}
+.meter > span {
+  display: block;
+  height: 100%;
+  background: var(--gold-gradient);
+}
+.current,
+.finished {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+.stepNumber {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  background: var(--secondary);
+  color: var(--gold-100);
+  font-size: 20px;
+  font-weight: 800;
+}
+.instruction {
+  flex: 1;
+  min-width: 0;
+}
+.current h3,
+.finished h3 {
+  font-size: 16px;
+  margin: 0 0 5px;
+  color: var(--gold-100);
+}
+.current p,
+.finished p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--text-soft);
+  margin: 0;
+}
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--gold-gradient);
+  color: var(--brand-navy);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.action:hover {
+  filter: brightness(1.08);
+}
+.finished > svg {
+  color: var(--gold-100);
+  flex-shrink: 0;
+}
+.finished > div {
+  flex: 1;
+}
+.details {
+  border-top: 1px solid var(--border-gold);
+}
+.details > summary {
+  padding: 12px 20px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--gold-100);
+}
+.details[open] > summary {
+  background: var(--secondary);
+}
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 8px 20px 12px;
+  display: grid;
+  gap: 0;
+}
+.steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-gold);
+}
+.steps li:last-child {
+  border-bottom: 0;
+}
+.steps li > div {
+  min-width: 0;
+  flex: 1;
+}
+.marker {
+  display: grid;
+  place-items: center;
+  min-width: 27px;
+  height: 27px;
+  border: 1px solid var(--border-gold);
+  border-radius: 50%;
+  font-size: 12px;
+  color: var(--gold-100);
+  background: var(--secondary);
+  margin-top: 2px;
+}
+.done .marker {
+  background: var(--gold-gradient);
+  color: var(--brand-navy);
+}
+.steps h3 {
+  font-size: 13px;
+  margin: 0 0 5px;
+  font-weight: 700;
+}
+.steps h3 small {
+  display: inline-block;
+  margin-inline-start: 9px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-soft);
+}
+.steps p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--text-soft);
+  margin: 0;
+}
+.stepLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--gold-100);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rules {
+  margin: 0 20px 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-gold);
+}
+.rules h3 {
+  font-size: 14px;
+  margin: 0 0 9px;
+  color: var(--gold-100);
+}
+.rules p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--text-soft);
+  margin: 0 0 10px;
+}
+.rules p:last-child {
+  margin-bottom: 0;
+}
+.guide button:focus-visible,
+.guide summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (max-width: 650px) {
+  .current,
+  .finished {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 10px;
+  }
+  .instruction {
+    flex-basis: calc(100% - 50px);
+  }
+  .action {
+    width: 100%;
+    margin-top: 3px;
+  }
+  .finished > div {
+    flex-basis: calc(100% - 44px);
+  }
+  .header {
+    padding: 12px;
+    gap: 8px;
+  }
+  .header h2 {
+    font-size: 16px;
+  }
+  .caption {
+    font-size: 9px;
+  }
+  .count {
+    font-size: 12px;
+  }
+  .emblem {
+    min-width: 34px;
+    width: 34px;
+    height: 42px;
+  }
+  .steps {
+    padding-inline: 14px;
+  }
+  .steps li {
+    gap: 8px;
+  }
+  .rules {
+    margin-inline: 14px;
+    padding: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide * {
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,2210 @@
+{
+  "map__CityArmy__Army_30001_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30001_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/5a/5aadd7fc-e15a-48c4-9c6a-43cd3321b4af.png",
+    "sourceSha256": "417566e5c14476df42f9a10b58e683c236989beedf90182b91bc00d84e5f3361",
+    "width": 57,
+    "height": 50,
+    "bytes": 1952,
+    "sha256": "ed20055f908e968d9574d959861e8956abe1707944f46ea3526b1b149901d1f2",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30002_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30002_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ad/ad6f50f8-c4bf-48d4-870b-c96e87d5164a.png",
+    "sourceSha256": "21e38c9c30e9810659c77a8d69b7d2ae5d8eafadab3c4af0b32b022a6eafa2a3",
+    "width": 57,
+    "height": 78,
+    "bytes": 2596,
+    "sha256": "ed69ba3662209268689446bc7c6596378be0f3d2eeec8aa8e74746657630439a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30003_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30003_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/bb/bbd0adcf-0aa2-4083-a5fa-af0736feaab9.png",
+    "sourceSha256": "3aea41ba0e7d9452e99d8fb3b0e42b51dd41968fc6259abcd0dd4d5b47ad3749",
+    "width": 112,
+    "height": 84,
+    "bytes": 2754,
+    "sha256": "13106113842d37998f9d916d62ba11283e278cd0bb6f3f3c70e3c6bc0b4108ae",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30004_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30004_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/94/94b126cb-95c9-4d69-bef8-f375cfbc2fb5.png",
+    "sourceSha256": "56084b92164597889705c10b82847cfa129cd2f68a54f91dde192259aacd3569",
+    "width": 61,
+    "height": 59,
+    "bytes": 2354,
+    "sha256": "37de0df481bcb47cfe43e594c1c8070ca2548ae825bc424b4c55716272fdc2a0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30005_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30005_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d5/d5c244a7-e33f-4a2d-8347-81057bdd6394.png",
+    "sourceSha256": "0ade8a15c87b20101a043d77776b665708d6dd27c449f43ca7f79e32e45bfbae",
+    "width": 61,
+    "height": 67,
+    "bytes": 2808,
+    "sha256": "a4a47c8b95fac4473678c6cb821a16c00eeb43b61bb302171ca8b7ad2c33727e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30006_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30006_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/65/65b0c576-45d7-4eb1-9ebf-9b071707895e.png",
+    "sourceSha256": "dd45627eb2343e6f27b09642a98de91b7e4417a0e775de8bcd4c92a7ca75ddd5",
+    "width": 78,
+    "height": 49,
+    "bytes": 2786,
+    "sha256": "7663c8dcbc132b7126d88fda9e6a7481a8c224559830c6f12bfb7a0c38336ac5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30007_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30007_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/af/af85345b-d36a-45f4-b01d-65a377bb2ff8.png",
+    "sourceSha256": "c40de4519d399e3f877d0536b08a79d1067f97f7ab722e862b56c769bd497686",
+    "width": 80,
+    "height": 66,
+    "bytes": 2844,
+    "sha256": "689badbb9668129757c453dd0128d308d4d44d9df71d0e3f71c3f551be49ae89",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30008_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30008_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/3e/3ed11965-eeed-45b7-91b9-a5ccc3047490.png",
+    "sourceSha256": "2c0c09ad8075cf0435a7ac13808e87b75574a89ba7235548c74738f77c822a4a",
+    "width": 84,
+    "height": 101,
+    "bytes": 3194,
+    "sha256": "9427e12f1111210bae4cbc114e0e66b82cb1f11f88e0513a27618c149bad15c8",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30009_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30009_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/96/9642d6ae-1362-4645-8bca-1e52464aee21.png",
+    "sourceSha256": "d30e78b175a1321285988b8c007acfc91d11f0a29d2474652fcc5d364d9dda61",
+    "width": 66,
+    "height": 60,
+    "bytes": 2552,
+    "sha256": "51d004f755bd5ab6e02cd33f9197e8655b479ba8ea58d7475b5f2047c710fc98",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30014_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30014_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/02/0271aa25-1444-4036-9d91-813b8640ad30.png",
+    "sourceSha256": "3ed6a4161a269f70009374bdb3f773cda0776074681d84d9ff9988b0d1e1fc41",
+    "width": 69,
+    "height": 83,
+    "bytes": 2746,
+    "sha256": "63f719772cf0ffd7b47432a1ad7382e6a2b2824f86521be9bb83d39d6c27f89b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30010_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30010_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/1f/1f631156-691d-486b-bfd2-caca6f47a133.png",
+    "sourceSha256": "895888f351231f38ce5d9e6e92b85ba43a1efc058376ccd2b2a88bbc9aff941f",
+    "width": 81,
+    "height": 73,
+    "bytes": 2744,
+    "sha256": "98e502222575a52c756ac7884a87ca22c6f6fdd6f3e5c48d66a36515b6973ddd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30012_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30012_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/de/debc0c11-bb53-4b83-a462-e0b287bd8aa4.png",
+    "sourceSha256": "00386b5b2fe98b18d7bfffbffbca281273cdb8dc2c644a2404fa15b0bc1c2cca",
+    "width": 63,
+    "height": 59,
+    "bytes": 2662,
+    "sha256": "6d284a1525bcf0ddb5dd17159e58d539ec2eaf87da389499391192bd44de7267",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30013_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30013_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/53/538f965f-75e9-43a3-999d-983142aa71da.png",
+    "sourceSha256": "d9f9017887b1f06c2d5b7437078e90751404feede9a6f1a25582cc59c9274dd9",
+    "width": 59,
+    "height": 64,
+    "bytes": 2484,
+    "sha256": "0408a340474816e3644dce2140364dc8a4c555e8701abed194b6edd8845963bd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30019_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30019_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a7/a7c44f1d-20c8-428d-976c-0e5826269504.png",
+    "sourceSha256": "e775170d2fb25b39acfcda7edf59d72e55e58a7613d548dcfb2d95c54e42bfe4",
+    "width": 98,
+    "height": 85,
+    "bytes": 3286,
+    "sha256": "46f2f1276528f6a1e38a97d9017a9362c70ea4d671a703131a6aeb946ca5b2d3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30016_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30016_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/17/179ceda8-9581-4738-8d42-862c8d93ad5c.png",
+    "sourceSha256": "2b8695cfdaca00aacb43a797f017e9f4ce9d3edbcd3ad2ad1f5ea76378c10a42",
+    "width": 118,
+    "height": 98,
+    "bytes": 3312,
+    "sha256": "206954f6e253ed9f88286256ea6ca566153f505f889319efe8e37dcedd00e463",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30017_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30017_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/51/515f416c-9ac5-4df1-882a-3dc44544f35a.png",
+    "sourceSha256": "780191f961ed7403b60d3a628393864350fc085c718b87c9a702a56d8751373d",
+    "width": 115,
+    "height": 67,
+    "bytes": 3242,
+    "sha256": "eb77edde415fab6b4c166e0792e45966354e98406f3b8a83e3ad59ad8c50350d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30015_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30015_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/84/8419d735-0d20-4026-ae27-e99c7805c309.png",
+    "sourceSha256": "eaff4113649d461cec93e7609f4aabad6f96a958dd963ccabfc983738aa847f1",
+    "width": 76,
+    "height": 91,
+    "bytes": 3092,
+    "sha256": "ea993238bbe49f61b46279c4e5cc9461804275fd319e15e716fc79da225a03bd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30018_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30018_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c1/c1fc6ac7-6583-490d-bcc4-41b5333ce95a.png",
+    "sourceSha256": "d60c1014515c668fb04aa8a3fb65c8bf16edc9ac6c93971ad9f05156d8dccf8e",
+    "width": 88,
+    "height": 71,
+    "bytes": 3236,
+    "sha256": "f10a565ca239b544faaecace687decf65c95331a2c3ee2382cfe6a277ac1cf94",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30020_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30020_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ad/ad25336a-95f5-4eb1-b846-7f65f6680adc.png",
+    "sourceSha256": "6e5477a1cd3d0dafaa989d870bef04723eb3f0254a32a8f08cd8c0b5c9b56d99",
+    "width": 112,
+    "height": 81,
+    "bytes": 3414,
+    "sha256": "8e8dae654e7381d29766b8f9a2031d6400648d8735271559992a13f460d12cc3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_30011_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_30011_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7f/7f930501-a2f7-42a7-adb6-8b0820dc07b8.png",
+    "sourceSha256": "df8a54e8b6f93a1d61b3ab9f435f179b8b53875b3228a085be97c72d1e11da3c",
+    "width": 76,
+    "height": 59,
+    "bytes": 2766,
+    "sha256": "fcc82e3c339745a2a477c9f5a67e345674abbf27229d8466f94f102544c2a6ed",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31001_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31001_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/05/05953f90-1148-4ca4-8f3f-7f23647730c1.png",
+    "sourceSha256": "9393a7ccf87cba0c61f47ba6e69e7928fef689cf8e35b3ec741a8c103020562b",
+    "width": 52,
+    "height": 76,
+    "bytes": 2302,
+    "sha256": "35e95d93aa238de295de060f37b868a251043cf7960d5fccfd01260bd0706779",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31002_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31002_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/84/8408b6d5-4544-455f-8a62-d2814d78895d.png",
+    "sourceSha256": "e8e1609123745e65c12aade290588ba12fd890f4d0ee58362ec12a0bb07a4446",
+    "width": 85,
+    "height": 66,
+    "bytes": 2538,
+    "sha256": "91162e764d905bbd329390e034653ae09cd4e1e0e8a7df73d1a59c5ce1b427a5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31003_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31003_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/20/205e71e7-c91b-4f04-91fa-db96ad59c905.png",
+    "sourceSha256": "5f5e8bf15045d16b5712cfceed73c8b029e24a19e8c5a7b1f72f3d7bf214bf2c",
+    "width": 66,
+    "height": 74,
+    "bytes": 2342,
+    "sha256": "5ebb0b80ffc246467b7bbb3d0dfb05c12463c04e02399fe9a5f2ede630e09832",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31004_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31004_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/9e/9e7ee847-8388-4211-88ce-25c901bfb351.png",
+    "sourceSha256": "f7d829506320d2c89997e20f13e137ab204ed6546373d4b48ef15c5c7522bf78",
+    "width": 67,
+    "height": 70,
+    "bytes": 2804,
+    "sha256": "cffee1805e6f79b342d3713296b726a1d44736c3984653adcaf144ac1517ce5b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31005_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31005_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/1f/1fab06c0-4a1f-4fce-bd25-5ad3ea7a7675.png",
+    "sourceSha256": "dbedae5f684aa0e6eeee1f63ec87eebe65fb5887d489fa16a0889f62f24fabcc",
+    "width": 67,
+    "height": 80,
+    "bytes": 2646,
+    "sha256": "a46dd51395954fd5055d9454539608e874d78b31ce170784ee604a7c2be722ad",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31006_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31006_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/41/41efebd6-8982-4bd0-b4b2-3152bbecd7ca.png",
+    "sourceSha256": "ac402266715b14ac6711546289b9b51ff6d5443a1e10f9c08fb33f0f94a1ffc9",
+    "width": 69,
+    "height": 76,
+    "bytes": 2796,
+    "sha256": "3353ec4269c735ed38d646c6f1c03c7235cf6b3f1857ac8eb2da748104d1e35c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31007_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31007_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2b/2bd307de-f6c1-4486-ac75-0e878d47a126.png",
+    "sourceSha256": "a8154188a653ee75cb981c73305bbc9bcbf947cb69b0f17bce80d8b259d40167",
+    "width": 73,
+    "height": 74,
+    "bytes": 2544,
+    "sha256": "0cc9f0ba669e619803f2bce0fbaee1c4a02aea0b0c763407fa4cf11128ab3b5e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31008_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31008_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/8f/8fabbf19-ef4b-435f-8f74-c238c5896821.png",
+    "sourceSha256": "e52eee9fdd80e7dead0c99d711959cbc66f558dfb15c33368c8001b3b39451d7",
+    "width": 84,
+    "height": 80,
+    "bytes": 3192,
+    "sha256": "ba6ccf0d3c8248e5a884ba48cf02d31bdff3a49ef790981bdd25536c459fae56",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31009_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31009_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f8/f88c3cf8-4a90-456c-9122-264f6709a8ff.png",
+    "sourceSha256": "3e57a17a3a84d147ddf5b84010dc8c3ad0323ac53a2abfe3f13a65f1ef0c42c0",
+    "width": 71,
+    "height": 88,
+    "bytes": 3106,
+    "sha256": "f437dc4ff3fcfd50a0f015da4e930076b92fe164288b9ff98c0847a9c112bba7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31010_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31010_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/5e/5e28f671-3643-48e3-8339-e4bb9008452e.png",
+    "sourceSha256": "2c5330ca975feb9c0e6b64709a6272a79f36a03a2766cb8ec8230fcc139f0bfd",
+    "width": 87,
+    "height": 106,
+    "bytes": 3522,
+    "sha256": "dbd1c17f0d64f6d49e6c8425263e8cdf4eb9110cb1ded7e561d92e1d5a8103a1",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31011_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31011_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/89/89cefb65-61ce-4f6b-9723-997eb58f7e12.png",
+    "sourceSha256": "40f1e5f73ed42c1ccaf7b29b4c00f5e9c0dbf1564b01ab56ba72cb7b3e2a1b32",
+    "width": 77,
+    "height": 85,
+    "bytes": 2952,
+    "sha256": "5040db4ef6347fd2521f237feee780221e54e0bbc2427521e659caa80ccd25ab",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31012_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31012_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f7/f7066eaf-b177-4ab6-aac7-3aa81c21e3d9.png",
+    "sourceSha256": "778b21aeb1ed005289c1406db10f59653edbf78cc97b0a9606e5cf2ecf7d7646",
+    "width": 70,
+    "height": 80,
+    "bytes": 2802,
+    "sha256": "9b7a8aeb5f275e988b64524908863a437b3e84eae115bfb81dbb8fad4b862225",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31013_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31013_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/87/87b97a01-bce8-4469-9c55-c370dd3db82d.png",
+    "sourceSha256": "4175420dd3f4adb5262af8839f42d5f7debf43bde7ad8bec3190e849102eeeaa",
+    "width": 70,
+    "height": 80,
+    "bytes": 3158,
+    "sha256": "ecf52040718cb18240b7b674641872f8223c7493690e426a476634fa8798202f",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31014_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31014_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/da/da9d23c4-b649-4526-96cd-d482e7b4c946.png",
+    "sourceSha256": "1781ad1fa8a037da0b7f9f96f485e5990529537cb7defcf1220795ad0b5a2bcf",
+    "width": 74,
+    "height": 90,
+    "bytes": 3330,
+    "sha256": "a17a0c2b36c9b8274c559f653aeb39bee77f7408e3d423321734f84121794d65",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31015_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31015_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/8a/8ae8f9eb-1827-4b29-a4b0-1340c81f970f.png",
+    "sourceSha256": "1d8c40d735b6febda95c4a5ebf367fd5745ac831c9b0d92e33b00187d35c759c",
+    "width": 78,
+    "height": 81,
+    "bytes": 2880,
+    "sha256": "3648218a19bee3432bdb44b59ca92f740e6cbb28506b46b5d7155ea2d394052f",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31016_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31016_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/5b/5b865ad5-eee7-4742-9611-f120c887a72a.png",
+    "sourceSha256": "a155c4d343cfe0ea9e0640da83a99f8fa125453bd378ccefa5dd60c18b96d8fb",
+    "width": 91,
+    "height": 74,
+    "bytes": 3480,
+    "sha256": "ef938488f7f5966d6a596f5b80984b704005c919b963468d76bfa6d089293566",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31017_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31017_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e2/e2da5d63-b062-43c4-a81d-16c002ca5343.png",
+    "sourceSha256": "0c5e9c611288627d36c2e074f472827b7cf898449966cc2f8264f28336f0e2bc",
+    "width": 83,
+    "height": 101,
+    "bytes": 3324,
+    "sha256": "5be46448d81b525f6a385db3be1b1e041b7e28aadd4b9a9e0374b06d4b1d5961",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31018_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31018_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7b/7bbdf15e-52b0-4cc9-8263-e726d69f97df.png",
+    "sourceSha256": "831b2a96e9cc85cec31ed0bac8635938a49eac1d336cde250b5aaa8058ef3276",
+    "width": 106,
+    "height": 90,
+    "bytes": 3320,
+    "sha256": "f73fe2cf401740f8d72a942b7e554951c05c1b3ef1a6e4d820106f3fd047c2bb",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31019_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31019_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b3/b38bf598-d3d7-42ed-a813-f16d8030ecbc.png",
+    "sourceSha256": "9fa42b633da0d4a1167f0aee90fc8104877b8b6cced866d4c61509fd02f3526a",
+    "width": 78,
+    "height": 84,
+    "bytes": 3424,
+    "sha256": "d5b8c08cd5c4019d10c7adca5eaffb8bc7e4f7bf129aa1e2fef0bb65fb2677b1",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_31020_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_31020_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f8/f8836117-d870-407e-a7f2-450a301dade5.png",
+    "sourceSha256": "8d382d8e7e11c9d485e8bd360b02114994f71753770bd92c5c2ca507e4e26829",
+    "width": 120,
+    "height": 111,
+    "bytes": 3862,
+    "sha256": "50cf39c9bb880d2d0b88867f0d546d0235e164f45bcd54fd1a93b4f2cd9c1513",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32001_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32001_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ff/fff8b69e-b1b4-4420-beb0-79ade4aa273b.png",
+    "sourceSha256": "494cf5977b18bff65992c4ce5a3ddb9a40c650b7977d17f9a6243de7e8d9b663",
+    "width": 57,
+    "height": 53,
+    "bytes": 1862,
+    "sha256": "e39fa1a95864aee87da5d1b9434d1f391f7f6d8c84eb11406e5419285a8de2d3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32002_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32002_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/47/471e589b-d51c-4449-a7a3-00a3d35a5521.png",
+    "sourceSha256": "842c2e79a99f06349d34c53e019f8defa528c39899816ef7c0fba36911b4dcd6",
+    "width": 59,
+    "height": 54,
+    "bytes": 1958,
+    "sha256": "9a2743ce4cd788276c3b380db56d731e20c98d03cf0617574f58a9b46aac2e22",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32003_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32003_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/23/2354b789-f7e4-4156-bcb6-9ad20541b921.png",
+    "sourceSha256": "f814a8edb3a1374331c5a177e24c88debfdc57a7162662589721b018499004ab",
+    "width": 61,
+    "height": 50,
+    "bytes": 2162,
+    "sha256": "b5d152b300b5264c8499980c7d4592d18b37a590d30c3b6089bb6c6e47fe3aca",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32004_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32004_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ab/ab94533a-104d-46d3-bc95-33e97059203c.png",
+    "sourceSha256": "ab2260133eae9828117c48cad5bcf657055e389a6f3ff6d061deb5dee0f3fd58",
+    "width": 67,
+    "height": 61,
+    "bytes": 2578,
+    "sha256": "353bd84bd814b586072ec68b35d3ef59473234ba042e78d7775ff4e717570066",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32005_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32005_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b4/b46c8f50-0b8d-4b79-b363-a36bad61c5f6.png",
+    "sourceSha256": "9779d0e6a4c3049fa607c741bb7ee8bcccc48576dd596209e6362ff5ec09f74e",
+    "width": 79,
+    "height": 61,
+    "bytes": 2386,
+    "sha256": "f6fb8a4a9bfa93ff0820218b22b52ac691feddda3cd3cc6da227c036106c9d39",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32006_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32006_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/51/514a492e-b373-4d92-8eb5-43dbd33327fb.png",
+    "sourceSha256": "b353893ffed42765b6fe84a9c3f73ad3b2e692b5442c8581610d611f35298ea7",
+    "width": 58,
+    "height": 62,
+    "bytes": 2066,
+    "sha256": "26bbf52a288adf78df3452a4d003887b2ef05cdc1d1cc2500161a97e38f4ae49",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32007_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32007_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/52/520c3f70-ab42-4fd9-abc7-5e4f2b89a873.png",
+    "sourceSha256": "7d80e32a58897765a6b8a417d46f2e6f56758db29e1a59577d842abd7bb62ff2",
+    "width": 63,
+    "height": 54,
+    "bytes": 2140,
+    "sha256": "e82e18b93381515cb41f52904de56ab5d794ec0830989dafa26870cb62ec5f63",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32008_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32008_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/34/34a08939-ead7-442b-94b4-ab6fcdf90af7.png",
+    "sourceSha256": "17b359aa06fd16623408d5a7c32b1af00c78b11dfc69853b427083926434ddc6",
+    "width": 83,
+    "height": 57,
+    "bytes": 2078,
+    "sha256": "00c85ece1d6683af21c6308330e1e3a526444ca320367670b3a59640d58a8ebb",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32009_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32009_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e1/e1d0f43d-6797-4557-a434-f6c56837018e.png",
+    "sourceSha256": "cdf7c2a4741a5cf322ae76c75a8f3fa7159a6952250ab3c16c268e21297e0b94",
+    "width": 82,
+    "height": 53,
+    "bytes": 2188,
+    "sha256": "4d0d0ce04abe9b47d7e2172f62a195b45164b05bcb16eb53bf97aa603bff1b6e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32010_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32010_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/69/696731ee-e53e-448a-98db-2d70ef900a44.png",
+    "sourceSha256": "9da70e538afd436796ef5313e5dd42e41e32c5fe2bf365e8a54a901dee28d68d",
+    "width": 96,
+    "height": 73,
+    "bytes": 2392,
+    "sha256": "89ffbdb3d0b0f3bef67aa03c57cdfbb841bbbf1c10b94c7738d09efd8c7514ed",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32011_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32011_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/3b/3b692d07-81f3-4795-9fe2-33626e1962a6.png",
+    "sourceSha256": "56a33c082dd228121668f72bcbbf5e138bc4c611bd86bc7d19b2070a31607f51",
+    "width": 78,
+    "height": 57,
+    "bytes": 2238,
+    "sha256": "5c75dfba94eaca2a70fe434afd6745c88551f24ee3331c3a9a9a46fe6b158e19",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32012_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32012_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ed/edd3ace6-5187-4b64-b327-b9f891569d39.png",
+    "sourceSha256": "9e69278c66d3e4c5d76089287152cb6df106cfb591e706b09d678a9661790569",
+    "width": 73,
+    "height": 62,
+    "bytes": 2290,
+    "sha256": "8ca3ac8fb62f6aae629e8b7376e24bda47f93be3362b2cba81c551e21baf6a3e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32013_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32013_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2e/2e4f73ee-3a8c-4277-ba19-b504d5c4035b.png",
+    "sourceSha256": "8611fb01ea26c7020e696bcc100bb6bd83da19acb0da445b883877bd5e6f938c",
+    "width": 76,
+    "height": 67,
+    "bytes": 2704,
+    "sha256": "8f0bb3dce639b13dc543f3fa5b46b4ca5d1e4654ee01dd282de5cf9db040a44a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32014_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32014_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/23/23c11da6-646e-4f57-aaf3-5d9889272cec.png",
+    "sourceSha256": "3a8c92510c00143d6651920f7f3c4dd9d4d67dcb119fa6e02c7792fbb18dccce",
+    "width": 66,
+    "height": 63,
+    "bytes": 2316,
+    "sha256": "bad05b975cf4ae21b4e72aec1254935696c0389232915631ff6ad3ac4a2219da",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32015_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32015_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/fc/fc096b23-6b89-4806-ac9a-7add5201907a.png",
+    "sourceSha256": "7efe1751e13760d1be1ef491a9c3042a33db05c85affaa9487e7a40669519390",
+    "width": 87,
+    "height": 63,
+    "bytes": 2804,
+    "sha256": "69cc0537185fa59c106c598b07e803cd1fe0d6af2e7a54c15b45d1f10489f3c2",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32016_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32016_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a7/a7224467-9403-44eb-aa88-267eb32ed78c.png",
+    "sourceSha256": "a2465cb6ea1b74e1fe447dd1f97827fcb5b6e8fa80057e33415d1d439180f8d2",
+    "width": 73,
+    "height": 70,
+    "bytes": 2392,
+    "sha256": "c0656f09387a3c125fe5ae29c22db0b41b745b269169531a5994650e1435e891",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32017_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32017_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/66/66cbb226-54a5-433d-9b05-420f8009455c.png",
+    "sourceSha256": "6d17168fa88ff702e36f71b47264d107c0606edea81a665d602dd17a4df098f8",
+    "width": 84,
+    "height": 67,
+    "bytes": 2462,
+    "sha256": "fd9f24d2a2805420cea81bea307d2cbcef739ea9877bb18265d8d7870aa3888d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32018_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32018_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/80/80dce026-b95c-43ec-96f8-6b4d2dec7422.png",
+    "sourceSha256": "3a70e1899d7171fa5e09e042f3fdb3c2ab1c09c466d4ba19d2d7117a9e3484ea",
+    "width": 104,
+    "height": 98,
+    "bytes": 2968,
+    "sha256": "05e77087cb1d9ff8a58a8ab62dfa01c0b3e9b7466b2768b85b45b97acf5cb480",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32019_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32019_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/67/67dd0e33-2d1a-4bfc-95b2-2796285e8f5e.png",
+    "sourceSha256": "44980a7ed474ff0f1df3b0045dc78823be89a2b97417fd6931163fb5ec9c9644",
+    "width": 71,
+    "height": 64,
+    "bytes": 2604,
+    "sha256": "a85ea5febd37a705f81ae1e7427a8521224995486916a7785a83531ff00c4438",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityArmy__Army_32020_stand_202.webp": {
+    "logicalPath": "map/CityArmy/Army_32020_stand_202",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/73/73798154-272d-490e-9443-6eb700439ba4.png",
+    "sourceSha256": "f398f0d5450f17ab8849ce9704e54f6e04470e4f27f165f826f48eb53ce125f4",
+    "width": 70,
+    "height": 59,
+    "bytes": 2624,
+    "sha256": "689feff359ecbbb992cdd7c64897418e58e3a897402a4d4d63c1f8fbac94ffbd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_1.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/77/77402c25-58b0-4502-8261-dff1abc59096.png",
+    "sourceSha256": "6c97a7d908dbad2d2a2ce68cf46ed55fca5ad1855efb196a26c7cfcd7c53b266",
+    "width": 130,
+    "height": 112,
+    "bytes": 7222,
+    "sha256": "aecf7fb6b329397e3bacd5cb0eca7ce84247f20f8872afcabcee765dfa4d5db5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_2.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/da/da35ccc4-a8d6-456e-83df-c87446d01273.png",
+    "sourceSha256": "31b2d3452d9f9dc59c9487807c696f2e751630307881268898a262665256fc2b",
+    "width": 130,
+    "height": 111,
+    "bytes": 7374,
+    "sha256": "eefd43a2be4c6d7512d74ce60f0c186450599e628012f7c6faa3ac6928fc693e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_3.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/96/962e8ad8-a128-4807-8894-b9829bd067dc.png",
+    "sourceSha256": "dd08143114e1300b8d923efe35e57eb66f9c94623b3c5bdf4a7f4a0ad8ec264e",
+    "width": 129,
+    "height": 105,
+    "bytes": 7228,
+    "sha256": "e37a73f6589ef59cf3e01b25a5e98bda37962b3dc0e903a30b2e949a5da1434e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_4.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_4",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/96/969e154d-7949-4e42-9eb0-ff4adba667f7.png",
+    "sourceSha256": "6af7049120785d18b05a99665304fec8a79741fc7142abcaf635c791e0b59c31",
+    "width": 134,
+    "height": 104,
+    "bytes": 6782,
+    "sha256": "1d449447fea2011eb67c33c313ce284549f1fa045b886fda4eff73e8bc9f73be",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_5.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_5",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/1e/1e65be58-e32a-4c9b-8d70-cac1b29ab902.png",
+    "sourceSha256": "9d9988fde1c0a74a681e51de73f6c395d6070389c1804dd75e2788ed59f67985",
+    "width": 139,
+    "height": 104,
+    "bytes": 6902,
+    "sha256": "14521807c92b050d800824c9b4c35ca3b3a0f20141cf5fbc99d0556316e80436",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_6.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_6",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/39/39009e9a-2b1f-4047-b6ec-9f29b9acec18.png",
+    "sourceSha256": "905e0d60a8fb7506c1cab964756bdc99623bb87c4a18f9c7495372f48757eb84",
+    "width": 154,
+    "height": 120,
+    "bytes": 7372,
+    "sha256": "63934d9164fc18c36cef5cf7eb2e7c9fd7b5ed6da1aadbc839682b5b53794023",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_7.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_7",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d6/d6d3a706-118a-45b6-a163-98343470d7ea.png",
+    "sourceSha256": "ad189d47c4409ca60daf48ebf6b102aa62a2c91313826f8dbcb85741fa477298",
+    "width": 154,
+    "height": 122,
+    "bytes": 7596,
+    "sha256": "29a766a41c519cd9a99078dff8279a6be6d9e6fc19cb93fa4cc3dac06ccbab34",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_8.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_8",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7d/7dd32cf9-4760-4784-91cd-bfc85dd7d08a.png",
+    "sourceSha256": "b7390c019fea0c0d09defa20bf4a50c30ad80f6dd7fcf06d0a29872bc5b3b028",
+    "width": 153,
+    "height": 120,
+    "bytes": 7478,
+    "sha256": "e5658336493bc2c5914cf53e5a48d014a0f1f6c0b31c0a4b439ea4c727ee0b1a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_9.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_9",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/38/38c881ac-d891-4556-b31f-86e00b1283ed.png",
+    "sourceSha256": "aba71025c817a6abc7f66600f996315ec8b3ed27159e8ba2ac1aa8ab7437090b",
+    "width": 151,
+    "height": 118,
+    "bytes": 7432,
+    "sha256": "e8a6e535704e04a2b7bf09086e6f28b593b7d1d29f8e4ec6a4e04df3dc5310c3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_10.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_10",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/53/537c13e5-17af-46ad-99da-92248b8a36ce.png",
+    "sourceSha256": "cae8f00ac9fe2d8e04d56387cca19cc6f147da624a2cb553659e00a19c3b8f6f",
+    "width": 153,
+    "height": 122,
+    "bytes": 7236,
+    "sha256": "e359215ad3ab6402154cabb697d50a3cc15ebdae72c999c710d4b708ce2be0a9",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_11.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_11",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/78/7817ae4c-f5f4-4740-9db2-7c3e22ada3cb.png",
+    "sourceSha256": "6e34a8003e0a1b82c78777fc79fdfa4ef563e2c4a36187fcf562cb2ce812b6da",
+    "width": 154,
+    "height": 130,
+    "bytes": 7458,
+    "sha256": "cb2bdd7dec4a0ef0f23102718d06160dd104c5167c846c9099609b59e950262e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_12.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_12",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/07/07065196-78a4-46db-886a-b5c79a66159f.png",
+    "sourceSha256": "5e641f5bdefefc77556f8fc37154e232c0ca70dcc3f330acbda7f5ed58682b2f",
+    "width": 155,
+    "height": 130,
+    "bytes": 7144,
+    "sha256": "1971f472fc7702bfc25431a281a6c31b8c33eea1fb6de5002817c446727327f9",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_13.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_13",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/0a/0a539540-e8e3-4ecb-8b06-b3e3abffee1d.png",
+    "sourceSha256": "145436ea7565786af36aef1591fd3ee2295c39d46c80d577bcc2d28b80de813c",
+    "width": 155,
+    "height": 130,
+    "bytes": 7022,
+    "sha256": "e2f5f028767cda12fdc8b4e3e271cc2a3f272a7af153cc2bd5a1025e16f39f4a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_14.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_14",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/11/1119f0ff-fef9-486a-b9b5-8f0defdf0836.png",
+    "sourceSha256": "f6b6b49df2ff1a9daff3daf1323a45adf4220de38470e030ff101a7364aefda5",
+    "width": 153,
+    "height": 127,
+    "bytes": 7042,
+    "sha256": "49c90d2ca7351d75889444dfc8331c1499fc443f36537a5e0ac8e764f5c16625",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_15.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_15",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/df/df81bb2c-485e-4988-975a-3819e059838a.png",
+    "sourceSha256": "088acedc5cb8aaeee3185623cb756b6ddeac51d4d8575de22cdc4d60deafd97d",
+    "width": 154,
+    "height": 129,
+    "bytes": 7570,
+    "sha256": "fe19b3365ce28f3c9d72d84d0c07c80a87908cae24dd71cafb4f4fb55af8676e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_16.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_16",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/8f/8fbabd39-6760-441d-a9ab-be43047c43ad.png",
+    "sourceSha256": "581281db80c3101a9d22085539d8778a43856bd8612056302ede5256e0b60317",
+    "width": 155,
+    "height": 129,
+    "bytes": 7012,
+    "sha256": "1907756e8e9f67f2bc31f54154997c4f51166d66437946b53bd0df17dca3bfc3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_17.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_17",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/07/07915c4c-4c13-4312-a993-7c5244cb2dc7.png",
+    "sourceSha256": "6af0a2d15ae120b62980e2b37777c67b4ff6bbb2270cdb2a33df80a1bf95b8cd",
+    "width": 158,
+    "height": 137,
+    "bytes": 7060,
+    "sha256": "5b6e504e067464fb9c2dead96a56cd0298f8fa681e975e337105d1bd60f83682",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_18.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_18",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2b/2bd28e13-a9a9-4057-a9d7-4a65f6b2cbbb.png",
+    "sourceSha256": "c964ca784d9299ece59df9c67c2afce80261bb0a8a6f0abde21ad749c15fb253",
+    "width": 161,
+    "height": 133,
+    "bytes": 7206,
+    "sha256": "f6c30b37c4881f73a8e65323c4d268386e607e46011485807089a08c5c21cb86",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_1_1_19.webp": {
+    "logicalPath": "map/CityBuild/Build_1_1_19",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/cc/cca117b7-2906-4e72-97b2-80499aaacb64.png",
+    "sourceSha256": "dbfb0f83c79ba4c33a201fc405766bbc3f79b84688c719367bfc5e099bdab6d0",
+    "width": 164,
+    "height": 140,
+    "bytes": 7242,
+    "sha256": "ea1e05f884dad5fa0f0edbaf87aaaf536a1aabee11299b280c52e5b2d4200ab7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_1.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/4c/4c070003-4421-44f1-a21f-d662dfc2a82b.png",
+    "sourceSha256": "476be90f43653c974acbcd969be293441962528ebeee273b74f2d157a65b2cd7",
+    "width": 189,
+    "height": 108,
+    "bytes": 7504,
+    "sha256": "b97bd4a8dd704a68ef983828d6d002b715b5dcc4860a2ba354be015bc752c9b6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_2.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/88/88003121-9c74-444a-90e0-eda8ec10a44c.png",
+    "sourceSha256": "fb21f868275c4770864200303a5a8dcccab973361856bfb5d2bbb498d26e753d",
+    "width": 140,
+    "height": 102,
+    "bytes": 7446,
+    "sha256": "41eb6d3a542fbef2ee0ff9277e4cd8b87243fc25e30a787b1c49ac805f9a3bfd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_3.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/bf/bfc6bc73-ecfa-42e3-9724-f27c3897661e.png",
+    "sourceSha256": "a99b033c26c2144631b974710dbca34bf29078ade103f0905ea01eac07194c4b",
+    "width": 140,
+    "height": 105,
+    "bytes": 7460,
+    "sha256": "179cef90ae6fe73a4b7726973b5fcc5db470be761159f734ce75410315818076",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_4.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_4",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c9/c99817e6-e03e-4e41-9c78-9d715f077422.png",
+    "sourceSha256": "b93a0752e70b0e00771a112299693d6850d8939e8f09a66cbe4cba3e1106581e",
+    "width": 132,
+    "height": 105,
+    "bytes": 7020,
+    "sha256": "ac042ae7fc34c7468ea30378a04258177668e4e238d4c7f072e87b1a1d30ba92",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_5.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_5",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/06/06a2698a-0af9-4132-a3ad-d6a59c7404e1.png",
+    "sourceSha256": "8633eb20202adefa2549b46110a7006fc1dcadfc7665a1bd3d72c8e8eb80ee43",
+    "width": 136,
+    "height": 102,
+    "bytes": 7012,
+    "sha256": "af4438efdfbdc792da21cb2060afc2c3f340117c6327bd92fb5004debfb4569b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_6.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_6",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/0d/0d920f3a-648e-4536-9a3b-733b7b144872.png",
+    "sourceSha256": "742ee2799d162bc75c1ed5233943c7f3609dca4c479e21dc85d6b7f783331022",
+    "width": 147,
+    "height": 120,
+    "bytes": 7208,
+    "sha256": "d6e70a232ce65a887e071ee52aae3b14d6b824b40a5547419a391ef3da8e3d38",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_7.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_7",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e3/e347f07d-1b4f-4284-8dd1-1b08515e7c90.png",
+    "sourceSha256": "7c982cd6a4463deec0737a8b7c732e056a99a2d244af3a0da50cfa80cce6ceb0",
+    "width": 150,
+    "height": 126,
+    "bytes": 7666,
+    "sha256": "96561854d107117ff68aa7dd0d00ac39b614cfb3b1d9fbba463aaedcf3547806",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_8.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_8",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/79/79f96b2e-e076-41f6-b16c-d5ea2e04653b.png",
+    "sourceSha256": "29cdc2e09f585e98940777d8e9d38f1bf61d35ec596f12ba1045fee165576662",
+    "width": 150,
+    "height": 126,
+    "bytes": 7628,
+    "sha256": "17e9cfa38270166823f639fba225c01bab7c113d93fc590bd96cef6ad16c5da0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_9.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_9",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c0/c0f7e143-3142-4c2a-bec4-16a450f2e672.png",
+    "sourceSha256": "b393a8efbb0e45cb2737034cfd7cfcc5da5d05c9cb94371be717e1829247d3cd",
+    "width": 153,
+    "height": 127,
+    "bytes": 7624,
+    "sha256": "f64780266c671e53b06de7f012654d229d72483d82093b52a62dd38e23119fff",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_10.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_10",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/42/423d8288-3adf-4b38-9458-c0e7d6de1bbd.png",
+    "sourceSha256": "3ce3b8f44f0bb0d15a22bec0df0b8672bd0dfe7bbf140ac9cf78cbe890800c3f",
+    "width": 144,
+    "height": 120,
+    "bytes": 6984,
+    "sha256": "4c66852372ebbaf33f1033ac63d0913f8f314ed440d8bdb89ec8c6e638ba13b9",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_11.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_11",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/5d/5d1d93cb-30f7-4acd-8dc7-44f9a45cc327.png",
+    "sourceSha256": "e035af9eacd58f52ef4be0f68d8a545d33ffc3c65625839e930f2bd34eec2a48",
+    "width": 151,
+    "height": 129,
+    "bytes": 7418,
+    "sha256": "380a386381048a899d5c1f47c2e0cf95efa55d01209ecf134ac1ba112af1ea7a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_12.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_12",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a7/a7f5b806-7980-44f8-a4ac-33210bec7af0.png",
+    "sourceSha256": "fd60ab2f44d159c815a72ad511b30c944eb9a70705b2c657b87f566d144106f0",
+    "width": 148,
+    "height": 127,
+    "bytes": 7380,
+    "sha256": "82bd1723b071685f391dab8247ee030cdae1b795dd172fe189f28a0249c13e52",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_13.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_13",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/26/26f3953c-10d1-4296-9dde-a3d532b9263d.png",
+    "sourceSha256": "d49796e503c03b5666cd21cd77e9a397c826f4bae0d128256126511ad47bb12f",
+    "width": 148,
+    "height": 127,
+    "bytes": 7070,
+    "sha256": "6d255d867c4cab2094782a5bca79222d62e6e07ba05c3c4ebada72bdfa780be6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_14.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_14",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/51/51840319-dd4a-48df-a223-dc5b8c114d6f.png",
+    "sourceSha256": "fc97640e5858a61cf6f28b6358f3e1425df1cc5d61592da66f584ee3871ddaff",
+    "width": 148,
+    "height": 129,
+    "bytes": 7090,
+    "sha256": "a02707f4f1b0800838466255d695724ceea43e8074567d850604c7fb06ec7f54",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_15.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_15",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/36/36a44ae0-c7a9-488c-9db2-3b064b226a80.png",
+    "sourceSha256": "31b098de68d13b59acd951819e747cc776572071a6d9dad65a2be2f836582dc5",
+    "width": 151,
+    "height": 130,
+    "bytes": 7216,
+    "sha256": "ba255f4e20a77202801b65b41c6a597d0a0f9e6f3b9a696a1587c50fabecb5b2",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_16.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_16",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/38/388212ea-7375-4a95-8fba-54b4f58605c2.png",
+    "sourceSha256": "9b27ac7c629d21323966a3dc105764a9b99b9655c3ef8aa4054a6cb28a1643e1",
+    "width": 153,
+    "height": 130,
+    "bytes": 7334,
+    "sha256": "fb8f1dc3b5c978dde93d4a7c7f661880226746699568b1eae482e88fa9ecfa02",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_17.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_17",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/87/87f93b12-6fcd-481c-b85f-1767b9ef48a7.png",
+    "sourceSha256": "31bdb3851c06c3b6946ff8178a88808822dfed61b5c78e0ce33b4393e3baf6c3",
+    "width": 146,
+    "height": 126,
+    "bytes": 6926,
+    "sha256": "66bc951b96abf49aa36f68fc947ecacd97d889b12dc6a1db691e2406117a75a3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_18.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_18",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/92/92f8eb5e-4504-42ac-8cf6-e7d0227d75c2.png",
+    "sourceSha256": "99bc13b6757015cb6adcacf69468abc86ad5869bad2d702217686b509ec5a723",
+    "width": 146,
+    "height": 126,
+    "bytes": 7064,
+    "sha256": "8f42664a3877761883c71dadfaffaaac85583ce7a67308f7f19d86cdd2c48b41",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_2_1_19.webp": {
+    "logicalPath": "map/CityBuild/Build_2_1_19",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7e/7e9574b1-9f85-4d84-930f-749756ab9bc7.png",
+    "sourceSha256": "677a0a76483cd7537f8c4d352c15b8e831ba67d9394eafd21c7d21389a4adb0d",
+    "width": 150,
+    "height": 136,
+    "bytes": 7624,
+    "sha256": "2b6f7773d0428c693284268be490999ec9f9d739ce5dfd938068bd65dcad9396",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_1.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/69/69cf1799-51fe-4a2c-9dac-f3e791b1c25f.png",
+    "sourceSha256": "a92d6306647c13cb735524f9489971df0f89c1297df2696525f92cbe08d60589",
+    "width": 137,
+    "height": 109,
+    "bytes": 6470,
+    "sha256": "3fc4f8e5f3bc34814b41d6527b60a0a7ce452fc8e25cfe6008b9bc56b3570cea",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_2.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ac/ac05a728-b6c8-4338-814d-132000b8d544.png",
+    "sourceSha256": "e5dc4527af59c3bfc86c9e653ca610bbb5d573629c17d3407871132b381f2eaf",
+    "width": 134,
+    "height": 111,
+    "bytes": 7472,
+    "sha256": "2149b47f40f56166d6b0a4000562b8c425cbec5ffd60426efd827977224b51e6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_3.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d1/d1680082-2376-4035-b29c-7aa1f1307918.png",
+    "sourceSha256": "4a0626bebf8d42f3f47c08caed4f66690fb8ca82571eb375533f31f25e4350c6",
+    "width": 134,
+    "height": 115,
+    "bytes": 7768,
+    "sha256": "3e978c876127811df7ba4e070c1fbbd044ddaa0fafdbbcec9201cb0fce5b8f26",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_4.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_4",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/6d/6d48eae4-bf1f-4e5c-97f2-0e3cec6fad28.png",
+    "sourceSha256": "0befcc1ff18ef7be0bae9cd4025ed2e05844f5a34e3b7ed3a0d98439863f7f6a",
+    "width": 129,
+    "height": 115,
+    "bytes": 7306,
+    "sha256": "9bf32e5d94cd632592fec01352b6424aee7209224ab7e3986708095876915e18",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_5.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_5",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/29/29d2058b-8ccc-4db9-8a07-e525f6d46785.png",
+    "sourceSha256": "a0fd1ede430b2b4f5093fffae3ecb7e1967671a9eb6b75fba98bd8760378c930",
+    "width": 130,
+    "height": 126,
+    "bytes": 7232,
+    "sha256": "bf237e9d13551510f533150cd4d183278496fbf9d2a0654cd83fb80f5b819973",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_6.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_6",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/47/475856b3-cbc2-4c33-8d42-244581333f34.png",
+    "sourceSha256": "f78644e0853eab1515c39183eb00a3194dcfd793682e170f1e4cb77b3b007fc3",
+    "width": 133,
+    "height": 118,
+    "bytes": 7112,
+    "sha256": "18bf3e8ad10a753a3579ce1dab2ee0031b7fb8b5e4fb46f5ed3858809052afb0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_7.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_7",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/79/79bf4b7e-9180-4497-b1fb-c7559c5a47f2.png",
+    "sourceSha256": "613719ad180c5c9dcde36730f073100e7a95308b95220de141e9cbffdcea595e",
+    "width": 133,
+    "height": 111,
+    "bytes": 7088,
+    "sha256": "575c0ef01466b6004bb721afa4baa0efd031e4e4ff178d204637162a18d37082",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_8.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_8",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/eb/eb7272e8-dcf1-4649-9da6-3c331079eceb.png",
+    "sourceSha256": "9ead6e7374e08821d4882714a889b015dc82f9ec739466a56aa93e449705c509",
+    "width": 136,
+    "height": 115,
+    "bytes": 7072,
+    "sha256": "d8b3677d9363fc7b84c930638207b447c5e165585604cd80af8d07459591a8f5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_9.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_9",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/28/2805fbcb-7252-47b3-bc07-c4a22e850e5b.png",
+    "sourceSha256": "eeff0d88e0cca696292e6eb26889d7b5350ec58c74b33374bfd42629411ce591",
+    "width": 136,
+    "height": 111,
+    "bytes": 7118,
+    "sha256": "2ac1ea43658f3a8c6701c2ac5b40b1068984258859a2f45d69168458321f1ad9",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_10.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_10",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f6/f6ecc99b-5453-4ce2-bb8f-6e3b3d39e75c.png",
+    "sourceSha256": "3b80b18a828645f74b18afa66f6cd7b3d8d52fa2b3768ac252e4c246eb2bfc3a",
+    "width": 139,
+    "height": 116,
+    "bytes": 6926,
+    "sha256": "ec36e3b68421db2f9a2f32167af9d087b67c23aca4636dfbbf916252b0ef1c10",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_11.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_11",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a3/a38e8553-30e6-4436-8704-42975ebcd2e4.png",
+    "sourceSha256": "49835dd433438e5005188b1a56de6b84f5c18362a60fa1bd8907770da445e60b",
+    "width": 136,
+    "height": 132,
+    "bytes": 7112,
+    "sha256": "c6e89f594baf41c227247ad9073690d44366706d057a54146034d7ca99e34c26",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_12.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_12",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/dc/dcd4f973-3d6b-4574-a3c4-a1acf405dbec.png",
+    "sourceSha256": "fe5d699c278f0a05ef0a46d00b2cb77d8dc127718d5f6d0cdbed333655dcbee0",
+    "width": 137,
+    "height": 130,
+    "bytes": 7262,
+    "sha256": "73a5d0b787d2af4a9e54191ab13494365e3803c01ab013aaeb0c7f4f020472e6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_13.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_13",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b1/b17da73c-02a0-4320-91d1-dced5a29113e.png",
+    "sourceSha256": "15bd21f41ad148fe894b648f28a7794cfa3c37f4a69d2384d898f3a02015f3dc",
+    "width": 141,
+    "height": 132,
+    "bytes": 7752,
+    "sha256": "027282c3fe1fc9d0314d6cc660a47a0489dd1c8699af8ba14b9cea00e6c705bf",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_14.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_14",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a6/a686deb8-79d9-49ba-b89a-c032258c130f.png",
+    "sourceSha256": "3927c1b7e07509f2baceec270a7a5003416e43eb5f0510ee591ff1eb3213fb47",
+    "width": 144,
+    "height": 132,
+    "bytes": 7606,
+    "sha256": "a084e3249858b6ffe6284bcaa974024cc30620e7ce6a87099edca433e3aa37c0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_15.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_15",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2a/2acf960d-3174-466e-85c7-301f3ae47551.png",
+    "sourceSha256": "ac672bb46355f647690cf057453d59dbf859a839469eb6fa5166a60da8d99f51",
+    "width": 143,
+    "height": 132,
+    "bytes": 7738,
+    "sha256": "937ba5258154a32a0ead1c4650c3f5d0004d439a870f685f6ed483751a4031fb",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_16.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_16",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/bb/bbe41777-6767-48e3-aa39-fb51cfb0fbf8.png",
+    "sourceSha256": "408fd7933d2cd0479b2e543b37b018e3a95e1bc7cb6f745a9cbb40b4260302ef",
+    "width": 151,
+    "height": 132,
+    "bytes": 7856,
+    "sha256": "11f7799de8a4e1ae22687db7ec8f35984d6de42c45fcf6dda29a021d7a1321b2",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_17.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_17",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/21/21c40eb0-5d31-4d86-9738-47b47f5a09a7.png",
+    "sourceSha256": "367a0e673ea628fa34af88d9786c6b2a96a336a7824368e09a826064d1866f9c",
+    "width": 153,
+    "height": 146,
+    "bytes": 8304,
+    "sha256": "2ff3f2470ba5fc66ed4d8c68c8d60dcb0b68fb90aa734c0ef47d17bc907c45a2",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_18.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_18",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/6c/6c264421-7903-4da9-9c84-5d2965ace134.png",
+    "sourceSha256": "280cedcf0013e93775bd16919d160aee3b18bdca0c5620544324139d15d0cfb8",
+    "width": 151,
+    "height": 144,
+    "bytes": 8346,
+    "sha256": "b9a702282ff3a6dbeb9f6300175bd5b856500e5a98f63ef49c891829fe102ac6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_3_1_19.webp": {
+    "logicalPath": "map/CityBuild/Build_3_1_19",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/9b/9b843d54-4b00-41ca-88e6-62b1a198ab9e.png",
+    "sourceSha256": "e360f4494dce15575533aa6e74501fd7efeb0dfe320186829419174f1d0fb276",
+    "width": 151,
+    "height": 144,
+    "bytes": 8522,
+    "sha256": "cb6ed5b74043407c8d23621b7458db780717aaa8229818d625865901c8363454",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_1.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2d/2db20b2d-684f-4225-a9b7-36c327460721.png",
+    "sourceSha256": "5ac5a3c0f8b1716591a6f03ec6daf216711d84a10ad0ecba5a2618d5f9c10bcf",
+    "width": 137,
+    "height": 137,
+    "bytes": 6746,
+    "sha256": "046c45b13681c2e190d74427d48413051c2c247ce9b60df305f6a2f8c3541ad1",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_2.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/14/14446c08-5506-4fc1-9b6d-b18ea85425ba.png",
+    "sourceSha256": "d970884a4e05f0ed4802c89a88b7f55d9557d7c49553394e200c8e9054b444d5",
+    "width": 137,
+    "height": 134,
+    "bytes": 7010,
+    "sha256": "8bd48637a39dcc2b353023790ab687d2586371507035545a510a29d6f5ce2eda",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_3.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/dc/dcd51b49-58f4-43da-9dbc-334909e7de10.png",
+    "sourceSha256": "f9106daeb5769eaa1b780c802ea352359acd7de05c3db4989859c4eb9984e314",
+    "width": 136,
+    "height": 141,
+    "bytes": 6982,
+    "sha256": "077d9b2bd22e804fc10e0800ff27af449f6e1dd18452ad7fd6f9b983387a9eaf",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_4.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_4",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2d/2dc50402-fbe4-4d76-9506-0d033628e6a4.png",
+    "sourceSha256": "0c63d0fd9a210ff1dabb4d0bfb6d25048fd3b100ed69c455d958844042e64883",
+    "width": 136,
+    "height": 137,
+    "bytes": 6940,
+    "sha256": "d652d98522b51bbb39fc09247a42083fb6b4ba856f6497f99d72b7a71cbcada7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_5.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_5",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b6/b68a9605-6a45-4c3e-b700-d5499ceb8f00.png",
+    "sourceSha256": "e81406ee2b3d2d2d568899142b2af9f73eaed7eb4dcc51d85d0cbf519db9a6ab",
+    "width": 133,
+    "height": 140,
+    "bytes": 6822,
+    "sha256": "6837f439150eb2fd28ffc4973ade1a829f1a992ac3ed46f35fafeac6b743dcc5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_6.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_6",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d3/d31f6507-2911-4af6-b60c-a86fd4ee8108.png",
+    "sourceSha256": "88f2f282bcb16dcba44637a6c3fd4cad61d6873b640ec40f8a925f0d7e4e2172",
+    "width": 147,
+    "height": 140,
+    "bytes": 7742,
+    "sha256": "5808b9afd287d6bf9da5449399cea3a9964597655d4e1f94856a4d4a8b29067b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_7.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_7",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e2/e21c04e1-c6a5-44ed-82db-183e279dd53b.png",
+    "sourceSha256": "c17b78d9cadeff97aa49cf5cd5e2e19f05870dfadde68d8be8a98dc595003053",
+    "width": 146,
+    "height": 140,
+    "bytes": 7602,
+    "sha256": "ca98a88963f456189d2d2e1fe6c3f97bc27bf23a609531f20c03f71dafd551e7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_8.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_8",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b9/b9994a95-455a-4f76-9e51-e2dc2300c7c0.png",
+    "sourceSha256": "dc01b3ab364ad21aaf140791bc7ac841a09fdedec0bc658d04dba9cc5fa5e098",
+    "width": 130,
+    "height": 134,
+    "bytes": 7576,
+    "sha256": "6215f7fb855307587e7dab82aeea8be1f2d698798c476e982e7885de14231dbf",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_9.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_9",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/57/572baa35-b886-40eb-823a-9c185de7151b.png",
+    "sourceSha256": "285428f15e09e7c810aebcbf75fc95a960f06467b41b43751f1dee67c6e52ab0",
+    "width": 139,
+    "height": 136,
+    "bytes": 7826,
+    "sha256": "d0f8eb227ee68dd9137a6ad962be4ce3ccefe1eff1fb8027efb32c649ef42cbf",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_10.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_10",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/dd/dddab913-95c0-4d19-82aa-7388ed21caea.png",
+    "sourceSha256": "e92410b491d77f884fef80e8ef0e31ce6b2d6d85481fa4c60cc28f11a055d892",
+    "width": 132,
+    "height": 122,
+    "bytes": 6194,
+    "sha256": "44ab93c8fb88977675db73f6a2c2310da53f7dc5ccaea61455f41adfe8365c4d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_11.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_11",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7d/7d55d976-0c14-4f22-beeb-0a9c830ea153.png",
+    "sourceSha256": "1dd5bbe8fe292af6bbd6fcf4a82c5a99472433fe71699cb14204cc1192786329",
+    "width": 132,
+    "height": 126,
+    "bytes": 6154,
+    "sha256": "2a4d87e7586e9c06afa21946120a2780bc0a07be6bfe3400a3f2ca0a08d43ad1",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_12.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_12",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/5b/5b4cc2ca-b526-463d-a7bb-91fe440b09a2.png",
+    "sourceSha256": "5c1f7e907ffc0ca2d7c03c36e928c297bd2bad41483e7e6ed017e51bd3c79015",
+    "width": 134,
+    "height": 120,
+    "bytes": 6522,
+    "sha256": "06fff4988832d5ddce77ba0fd6edd491a37abc592e24c8e651ed9a147a0d4ab7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_13.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_13",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/cd/cd3d35cc-6e1d-47cb-8fc6-de14f2456cc3.png",
+    "sourceSha256": "9df8962abc26e8b0e0a92c72efc09abad69aaf44cb08b56c9684f7a67df7e843",
+    "width": 134,
+    "height": 119,
+    "bytes": 6608,
+    "sha256": "1f479cdeeec79d9eff929a8a6d61e80149d4d191e24578e4ae89c53638a8061c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_14.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_14",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/96/962cd2a9-65c3-47f1-a032-fd6973d46fe6.png",
+    "sourceSha256": "7a315b109826a78fc5ff0ebefbb5473d7035cbfe129ce75537285d16793273ec",
+    "width": 150,
+    "height": 130,
+    "bytes": 6750,
+    "sha256": "629c8fde54a8408d5311d0cedbc583025a6c8736f7cd84f26e152b6abf75b432",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_15.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_15",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f7/f727e133-4dd5-48c4-8e0b-32561a64845e.png",
+    "sourceSha256": "c182a39d0da111f805581416fda8772a5ec7eabe3074fe62b297ebb7079b13ff",
+    "width": 162,
+    "height": 125,
+    "bytes": 7230,
+    "sha256": "2759eac37e016658bc5e9d0b0c914b14f660f485cc8a9f90adc72f69a88dca3d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_16.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_16",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/50/506a18a8-e1d9-460d-a072-82e37550755f.png",
+    "sourceSha256": "7d347d820000cdfacdc55ac0cd19fb6086d835306290cf143497f3d9db72758f",
+    "width": 162,
+    "height": 119,
+    "bytes": 7458,
+    "sha256": "acf0a840e84c9efe300518771997c0aebb2968f1a834fa3ebdf533384fccc14c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_17.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_17",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f0/f047319f-a5db-4131-8d0f-71c26109aa56.png",
+    "sourceSha256": "170947a5ebfeae903f6f64548a22aa1dd3d72dd457fb6a4d5f7ebaa057df8f3d",
+    "width": 148,
+    "height": 125,
+    "bytes": 6582,
+    "sha256": "dcbe0e0c0dc9030a4bd794a35e295a3ba1a15fb785294967c72e3da0ab5b5c11",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_18.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_18",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c4/c4ff16f0-f332-49ee-9749-9e7457096a13.png",
+    "sourceSha256": "08b35bfca649753b6a077bb5d25d11cc213a687a6eec3892a75ff913c306482b",
+    "width": 151,
+    "height": 125,
+    "bytes": 6594,
+    "sha256": "5f8c76333eb5b5236e9e28c99210cfc88dfde77e8d259d36520d1b0cd75f8251",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_4_1_19.webp": {
+    "logicalPath": "map/CityBuild/Build_4_1_19",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ed/ed84cc58-2f08-40b5-a030-a40edd0250bb.png",
+    "sourceSha256": "d9ea7db15e6ce59b523e7c87caa68a111494dcc1d6718893bb990cb70e669f9c",
+    "width": 154,
+    "height": 130,
+    "bytes": 6944,
+    "sha256": "5da8b409df34b7fb9c5374945704a545fc7f7b5f0489cc6fc019de7b348697e3",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_5_1.webp": {
+    "logicalPath": "map/CityBuild/Build_5_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ff/ff0b17e1-6817-49cd-bd82-a6a255664c89.png",
+    "sourceSha256": "bbe4ba2e296565e670f9bb6cff61582f896deb500d8aa419e76880bad0e65a4d",
+    "width": 158,
+    "height": 116,
+    "bytes": 7280,
+    "sha256": "431f643b0b28d71b4d7be886bbbc3009a94945e8a4f29df620bc02a76707ceba",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_6_1.webp": {
+    "logicalPath": "map/CityBuild/Build_6_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ed/ed4f6a17-6495-4ffe-a2f7-3ad71579c3ef.png",
+    "sourceSha256": "4ba80dcc819b74f8b21219e67922edf0d6f6d359d6e519b37268833cd8484e1b",
+    "width": 128,
+    "height": 128,
+    "bytes": 5138,
+    "sha256": "96d742412cca6266620294ee91afbe2159e7ccde013e29cc56e7826ef66b6b0c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_7_1.webp": {
+    "logicalPath": "map/CityBuild/Build_7_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c8/c86b5048-271d-4e3b-8588-42794a46394e.png",
+    "sourceSha256": "844f7e08b3257a792c4666c063b10f006c139868b403235cd277b5bac3ce7327",
+    "width": 123,
+    "height": 110,
+    "bytes": 5222,
+    "sha256": "b758c956be1179d8ba3a1b51658740b3f464bb42bf9ae7253257f55f26170301",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_8_1.webp": {
+    "logicalPath": "map/CityBuild/Build_8_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a2/a2b3a966-9f01-4032-a33c-fa4005e27d32.png",
+    "sourceSha256": "724a9e461667e729ba4af0e257d81d80005d2866030de1048f07be6bf7c9e64d",
+    "width": 127,
+    "height": 125,
+    "bytes": 5616,
+    "sha256": "ed1b74b287ecd6f2611b93e4fa26d5768dc7457e1b0e5d17027e7ec8724e365f",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_1.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/1f/1f92c8ed-e83b-4942-99eb-46311fb760dc.png",
+    "sourceSha256": "915ec441a05fe247494876b5d539b4c0a268f6fbb76c2390f293b21032e1c3f2",
+    "width": 170,
+    "height": 272,
+    "bytes": 13954,
+    "sha256": "5c31d6ed5aed1b06d09dbc4fe5a5664547053daf22305404fc3d052f58eb5259",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_2.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/d7/d7b71786-1226-4780-b2ce-a20ea2a561d4.png",
+    "sourceSha256": "fadc347676e3632c9afa17ddfecc12efb12f525e770a0e436ac98e323951d31d",
+    "width": 170,
+    "height": 272,
+    "bytes": 13930,
+    "sha256": "ae9e7cb49286939ff25b090efe01100b31127deda634e48ec261bd0d130dd614",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_3.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/f0/f0f2f771-f9c3-4d2b-9905-9cd22076f30f.png",
+    "sourceSha256": "0f418745e2cae0b7bd3f6e41260ba44215ef0b9008f00d47e904daa05283a876",
+    "width": 170,
+    "height": 272,
+    "bytes": 14100,
+    "sha256": "b48e003e6e6c7b32f2cbf34ee1c6bf5a3aaf0631966ae4977f5a3e68df60ce9a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_4.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_4",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/fd/fdd6f754-23eb-4af1-b5d7-20fb27e1607d.png",
+    "sourceSha256": "4504005e032de52813caec2d708f8df36cd1902b8ccf0b44dff8a4d2a27a0658",
+    "width": 170,
+    "height": 272,
+    "bytes": 13540,
+    "sha256": "3dd17e8cf3ba6afa05bd1a84cfa8d7b7e46c84855ac9da496845a68d02378f3e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_5.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_5",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/f7/f795d8eb-aeaf-4cda-9e39-b8641f37743b.png",
+    "sourceSha256": "9cb6b1a0cd7e6a3476e2417b637264bbcf40dca9befa33dc4c119939430c242c",
+    "width": 170,
+    "height": 272,
+    "bytes": 14258,
+    "sha256": "76998ca3e24d266cab8cd8d737b99ba96ca7dbeae1020fd07da258d2a0479380",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_6.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_6",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/4e/4e9ec627-3911-4d4e-8a3d-d7a7c11d22d4.png",
+    "sourceSha256": "c94ba728b9939ffbb0570a259321066f4549e550932c475cbcaf3061267fdb68",
+    "width": 170,
+    "height": 272,
+    "bytes": 15050,
+    "sha256": "b8a589fc64d034edb37f4d1f4beb792ddcee40232c874066932c9a82173e7c9c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_7.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_7",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/c3/c349f2cd-225c-480e-87f1-4787cea34083.png",
+    "sourceSha256": "fc406c77477c8bd15dd82bc0551ab16a5d41e5c8bc461d2a2dfa0fad505cc747",
+    "width": 170,
+    "height": 272,
+    "bytes": 15964,
+    "sha256": "749d23a3b531b8c9fabe20b9315b7ccd273928078dba21c36b6160545ba4bb6a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_8.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_8",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/37/379e7788-c346-4ebd-85a1-94b0c45735fc.png",
+    "sourceSha256": "7693d41d738d186ca4ccf7bcc3e67c654bd4b7195ff04ed0009844d389b24500",
+    "width": 170,
+    "height": 272,
+    "bytes": 15306,
+    "sha256": "bde9504bc7baeff4b049f0781088d033adb7660eefa97578ba5464c29309ebfc",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_9.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_9",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/0d/0d58f2de-a9cb-451c-9bc4-852532f142d7.png",
+    "sourceSha256": "08e3c1b3483db6a67a24b0639743561673f6efd6695d926a5e02723a7f859e01",
+    "width": 170,
+    "height": 272,
+    "bytes": 14924,
+    "sha256": "5743128665ac84026130ae5762744293ab6f06d03a12d47b7ed9db110fc5f7a5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_10.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_10",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/9e/9ec62cbf-8f9a-4db4-ae84-de19d94efdb2.png",
+    "sourceSha256": "c283a43b70ac85ff7280ed5dfd044df85052cfbf9504a346ffd37522a6ef7e99",
+    "width": 170,
+    "height": 272,
+    "bytes": 14454,
+    "sha256": "6c7a84256f133c8f776e7eedbbee0c7c47ca5096b418538b7bfe09642dac5520",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_11.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_11",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/1e/1ee9b4b3-9e65-4580-a23d-f5ad15643f73.png",
+    "sourceSha256": "34995b46e864d596395d96914f82682c82f3f0321ca87e4bfe8f162ffa252120",
+    "width": 170,
+    "height": 272,
+    "bytes": 12852,
+    "sha256": "1aa51583511d74f73a3ffa0e4f14d5e83d01e0a0d1536c9f0a974faed3c718fd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_12.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_12",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/ae/ae01c24a-ec34-4646-bd45-e4e78f9b726f.png",
+    "sourceSha256": "67d67417f4a3a9dbe7e11c35fb11e8a0e94344daaed98c2daf04284cc9d0ebeb",
+    "width": 170,
+    "height": 272,
+    "bytes": 13118,
+    "sha256": "a48cd46f7d79ff2a56ca9b565d5d47466b5afb7ac13acced93d621c6938db252",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_13.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_13",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/22/2232bbdb-3cf5-4b1a-9684-b0316e01cfad.png",
+    "sourceSha256": "500984010de01b1fc9d5a3d11342eeae978e10db2bceae5d5596ad5910c80499",
+    "width": 170,
+    "height": 272,
+    "bytes": 13354,
+    "sha256": "8bd582b871c4d24d4a21b02895b974a85d179c4db4560cd5cc4bc2519d00501b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_14.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_14",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/75/751030a7-dbe6-4d38-b8f5-de57e5e72292.png",
+    "sourceSha256": "93bdff37a055241b8f69dc44475ab98f66c48438a280a1614e6c45f5bd646fa3",
+    "width": 170,
+    "height": 272,
+    "bytes": 13472,
+    "sha256": "62cf931bab55d90716a13740fd6d157de14e45b15eaf360c8166483261d11ee7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_15.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_15",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/61/61e501a0-6a87-493c-bd2f-79d860877f11.png",
+    "sourceSha256": "7fdb3ce93d8b2c66d63f2f05675848f4a076583313dc62be7e210a85cb3db748",
+    "width": 170,
+    "height": 272,
+    "bytes": 12410,
+    "sha256": "22412672b66393f567760dfc940855760c3b09375ae1df7e3a1775f79bba71bd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_16.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_16",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/df/dff1ef4d-1805-43a0-a8e1-eebcf8d649dd.png",
+    "sourceSha256": "9705c1dd09050694b86574627110b4eba674bb8c927041e154aad47a9b2945a6",
+    "width": 170,
+    "height": 272,
+    "bytes": 12380,
+    "sha256": "01144874f0979013828c9ccd6047691247a219821bba24f08031ed194f22cfda",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_17.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_17",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/21/21a8fcb0-2d1e-4073-a8e1-d0280b79a9b6.png",
+    "sourceSha256": "1fc1c20aff1edda2e3cc37d8fa155155a664b30523d4af09512c627685700088",
+    "width": 170,
+    "height": 272,
+    "bytes": 12736,
+    "sha256": "b804cff2c217a65e4d627f41b0a5e3dd1e77c31cee6babfec78abdbcf7ab9212",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_18.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_18",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/8b/8b444466-6f9c-4bd5-ab06-2ce9900d4718.png",
+    "sourceSha256": "7cdb9f5f1d35437acc271e39c0fee7959571b6dd4f8f080385fafffd9ecd3d3d",
+    "width": 170,
+    "height": 272,
+    "bytes": 13022,
+    "sha256": "382ce55a933754c8fd48ff53fd496d21e09bf2ab212bf81e901e7f5bb309a336",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Circle__MainBuildIcon__icon_Build_11_1_19.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Circle/MainBuildIcon/icon_Build_11_1_19",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/43/436ee8b4-3d19-4588-aced-ff23258686a0.png",
+    "sourceSha256": "d6a3f363729b4e03b5eabcd88f14c1e55c5056c58af232c33399d19b989cbc88",
+    "width": 170,
+    "height": 272,
+    "bytes": 13116,
+    "sha256": "2d41f465cbd93f1e11465a786689ffabbc905fe60e5d8a098218f94ea26aa814",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_13_1.webp": {
+    "logicalPath": "map/CityBuild/Build_13_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b1/b18e2d01-9512-47b0-a52d-2c3829cdf05d.png",
+    "sourceSha256": "7da43cda06ca57ef29ca48f4638c7741d326ae7c7f6c9ee62b8be111ee9ffd34",
+    "width": 131,
+    "height": 116,
+    "bytes": 7534,
+    "sha256": "34273b8cb4f4fb23a1ef851afb63e7f6ef1e7748210fef97e1525b1411aff4ab",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Item__item_400001.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Item/item_400001",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/c3/c3dab177-6167-4ee5-aa9b-5da94daf9649.png",
+    "sourceSha256": "e74c98be8d61733ccf0d23edca07bab30afc449d5b20f4e46ed8078ede2c6e90",
+    "width": 108,
+    "height": 108,
+    "bytes": 3888,
+    "sha256": "e108d4306ab612567c9cee9c201d045331015ebe2d3e7d09c047855008b0c5d0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "dynamicImageRes__resourceImage__Item__item_110001.webp": {
+    "logicalPath": "dynamicImageRes/resourceImage/Item/item_110001",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/cn/native/69/69b2d5cd-8e4b-4606-9e7f-77057dc7def8.png",
+    "sourceSha256": "dfa9b1b334966d908f4e59baae894410365931f777c4c5d8c4a33ac248410577",
+    "width": 108,
+    "height": 108,
+    "bytes": 4122,
+    "sha256": "a2162e3ec9fbae6b0d8fcffef93278777faa9513b6903eaa328a727d391923b9",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "texture__CityMapTiles.webp": {
+    "logicalPath": "texture/CityMapTiles",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/09/09ec61e9-c0e4-4c0c-946e-ed39ef7ecc0a.png",
+    "sourceSha256": "6f65f05d9735494cada176eeb1af9fda8cf7d2affab655fb4c4be6dbcbeee43e",
+    "width": 226,
+    "height": 200,
+    "bytes": 16236,
+    "sha256": "abf27a9956360fbd8ebe97554f4f59f00c89be81d611b8009a194cdca419b5ae",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityMap__scale_city_map_1.webp": {
+    "logicalPath": "map/CityMap/scale_city_map_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/0c/0c501186-02e9-4b68-b507-3e54d7a51c97.png",
+    "sourceSha256": "434b62a09771b59c6bcc521556269251d27a9870d3b517cde0674d5bb4527472",
+    "width": 1969,
+    "height": 1936,
+    "bytes": 1714742,
+    "sha256": "54e2fd0a34a369bc465ffce6adf3d33ac95a2c0cb110131911110c6dbb689436",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityMapBg__city_bg_blur.webp": {
+    "logicalPath": "map/CityMapBg/city_bg_blur",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/6e/6ebc86ac-80ec-4daa-b1ec-3518aab976da.jpg",
+    "sourceSha256": "263243f90818cd53eb1c1ab9ec00f1a23f357cd35469b5abfc6231438952af00",
+    "width": 280,
+    "height": 200,
+    "bytes": 80496,
+    "sha256": "c9546eadff249814ac1a3a3ad0505539676f27f757413dbbbf32d80523efe3e6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_28_1_903201.webp": {
+    "logicalPath": "map/CityBuild/Build_28_1_903201",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/02/0285d046-2d6c-4d87-9ea4-18f17587d65c.png",
+    "sourceSha256": "8e238e5b41c2b47401067bfd77527be642289ecc70a14113b25da3a559fb38b4",
+    "width": 83,
+    "height": 70,
+    "bytes": 3130,
+    "sha256": "d3626c08d299b449f28f96ba98416ba7282a1aa3bdfeb0dfdec5d2d184e56610",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "map__CityBuild__Build_28_1_901401.webp": {
+    "logicalPath": "map/CityBuild/Build_28_1_901401",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/03/03424a25-056a-46da-8fa9-61f64648175d.png",
+    "sourceSha256": "89caa6dce64a0bfd55e0d08f09184517d57533f4b34fbf02c25ce34463a56b6c",
+    "width": 114,
+    "height": 136,
+    "bytes": 7128,
+    "sha256": "3cdb5e8753669376655f1448434926ff767a4fa291665d07583894cc6a537fff",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "grassTile.webp": {
+    "logicalPath": "texture/CityMapTiles",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/09/09ec61e9-c0e4-4c0c-946e-ed39ef7ecc0a.png",
+    "sourceSha256": "6f65f05d9735494cada176eeb1af9fda8cf7d2affab655fb4c4be6dbcbeee43e",
+    "crop": [
+      114,
+      0,
+      226,
+      81
+    ],
+    "width": 112,
+    "height": 81,
+    "bytes": 2784,
+    "sha256": "2cd04093bc7ebc4705b6a11140b4ee9676ce5a9c03e0e49f349f1c27dfa40ec2",
+    "processing": "bounded sprite sheet tile crop; lossless WebP, no resize"
+  },
+  "pathTile.webp": {
+    "logicalPath": "texture/CityMapTiles",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/09/09ec61e9-c0e4-4c0c-946e-ed39ef7ecc0a.png",
+    "sourceSha256": "6f65f05d9735494cada176eeb1af9fda8cf7d2affab655fb4c4be6dbcbeee43e",
+    "crop": [
+      0,
+      0,
+      112,
+      81
+    ],
+    "width": 112,
+    "height": 81,
+    "bytes": 3856,
+    "sha256": "c450c219a8af6683dcac11f3c7b3be7f97a99f6127320a3ec6538dfa1b46561d",
+    "processing": "bounded sprite sheet tile crop; lossless WebP, no resize"
+  },
+  "largePathTile.webp": {
+    "logicalPath": "texture/CityMapTiles",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/09/09ec61e9-c0e4-4c0c-946e-ed39ef7ecc0a.png",
+    "sourceSha256": "6f65f05d9735494cada176eeb1af9fda8cf7d2affab655fb4c4be6dbcbeee43e",
+    "crop": [
+      0,
+      82,
+      163,
+      200
+    ],
+    "width": 163,
+    "height": 118,
+    "bytes": 9024,
+    "sha256": "13556653493392890cc255b08af9b93faf23b25ae436a4a66dd818978a9a4e74",
+    "processing": "bounded sprite sheet tile crop; lossless WebP, no resize"
+  },
+  "TowerRush__building__img_building_neutral_2_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_2_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/04/049fa52e-4029-43b8-88e4-8695cf456fda.png",
+    "sourceSha256": "f680ccb46b629e2de5663b60049a7ea47256e9440ff4c0cb8ab999d8efd2c0d3",
+    "width": 150,
+    "height": 114,
+    "bytes": 7872,
+    "sha256": "b03d0b2ff5763ccb6589f18f6344684e1ffb90d7721c6362cc93dd2378b132d5",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_1_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/12/120d8579-d96b-497b-b6f9-8f7a3e27eb7e.png",
+    "sourceSha256": "858fecf9bf0ce55bbfea13d7236e2fed9d58b38c9e3eed96c9d413059277b7fa",
+    "width": 79,
+    "height": 71,
+    "bytes": 2604,
+    "sha256": "f01a333f4e1950314398430e13cfac54edeccd20877eade36e49847fa430f168",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_4_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_4_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/13/13691285-2a36-495a-972c-3b1399dd4f8c.png",
+    "sourceSha256": "12dd1caa29dfea60c5180fa9cc47c58e4d60b92e4ac35df71e25575a8b31759a",
+    "width": 168,
+    "height": 139,
+    "bytes": 9634,
+    "sha256": "26e8d0f98e291070612b58369f49c13aa19267a694a789b28e1b11991312a95c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_4_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_4_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/1c/1c77cf89-ec90-474d-af9a-e64a1dfd6792.png",
+    "sourceSha256": "24f0f5b0ed5893f28656d27c1aaae9176a1857c4bee5cc334ef35c9d41c36f7c",
+    "width": 165,
+    "height": 146,
+    "bytes": 9972,
+    "sha256": "e6fc95897143c271320914a9c50ce67e9cc7c8f4ea6c36c254d6083d02195f8b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_0_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_0_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/44/44227d78-9008-4474-8625-dd2c46989cae.png",
+    "sourceSha256": "b3e4d0c2f9f20869eea9f948ea32d2e99aee6032a49d4085af068c75e3eebb99",
+    "width": 150,
+    "height": 111,
+    "bytes": 8622,
+    "sha256": "ca0f6271375be6e7f5a6ac0f78aeabbae1eb13e3c7d5e7e3461ed527b73f459d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_2_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_2_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/47/475d4eea-106d-403f-ac07-a78c098e6f03.png",
+    "sourceSha256": "3e312541e60413e2a9ae9b02a93e63c77933443479e593ab96ebf923d7d3046e",
+    "width": 58,
+    "height": 74,
+    "bytes": 2614,
+    "sha256": "62af0fdf22190444fbd0ba4c93faf4cc42e8f54541d86fe6b1c2c837616b8fd8",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_1_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/64/6405b001-16cc-4246-9377-010bbbad3028.png",
+    "sourceSha256": "b8103d161a14eb341a5f09000e19c8d3034ed335be49d12da04b71fa94cf3293",
+    "width": 165,
+    "height": 146,
+    "bytes": 10210,
+    "sha256": "497798acd757246f76d1427e07093d1ee03bf03c028733c8250066fb763fff90",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_1_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/67/6757b7fa-0cc7-40d7-8e92-6e44eefc1333.png",
+    "sourceSha256": "16a572b0260618b931f77772da5f6ac82cf82df8c5f36bc348344329e3f94d85",
+    "width": 155,
+    "height": 127,
+    "bytes": 8800,
+    "sha256": "ca50a8171c8f15565d7bb194d83116b10bb16d81b5003f216102c37a69bf3bbe",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_4_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_4_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/68/6849d151-39ab-4c3b-b556-ae2a0f0127f5.png",
+    "sourceSha256": "43908e33e273309e66e736d0a146d764800fa9190349bddecbe99fb2c3645059",
+    "width": 80,
+    "height": 70,
+    "bytes": 2438,
+    "sha256": "02479883289480daf1bfe38c41421bb002e1117596952f57a6e527a149df5f03",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_4_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_4_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/6e/6e8350b9-bcef-46bd-91a0-932e74e7d7ec.png",
+    "sourceSha256": "dc97cf80e29a3c9c0c2bee1a67e7e0200718ff06ffaa6f54c554c54e2073fbbb",
+    "width": 159,
+    "height": 126,
+    "bytes": 8788,
+    "sha256": "8d6bd7e255d7a4861fe542d8b241d92ca3142d791c4fc6c14c8ae18658bbeb80",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_4_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_4_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/75/7597e031-5397-4a61-91cc-2fd51a2ef444.png",
+    "sourceSha256": "4f85f84f4dbcc1d9cceaa0d099676f3cc1cc81f2c2c94e9493c05fea74e5d0d1",
+    "width": 58,
+    "height": 74,
+    "bytes": 2648,
+    "sha256": "2b203329ceff213b63766143044339e310e93845c22f4061e57da7af0e995fcd",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_3_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_3_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/77/77cf2987-c60b-40fc-8367-02d6a99178a7.png",
+    "sourceSha256": "e8154485389d26bf9d8573b6e3ef2950da6f158255f354bcaa69aad359e36a8c",
+    "width": 159,
+    "height": 126,
+    "bytes": 8990,
+    "sha256": "68a4bf81130f1d8a82190dfae14d52d6fc42f4030e0b3a71930a5b5129cabad2",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_1_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/78/78736288-a751-4df4-8bc8-5f0d6a63b41a.png",
+    "sourceSha256": "5cbaceb5f02c1a7f74f8e80c47db8f88d89b622f433af41e2fe750dc41376c9a",
+    "width": 168,
+    "height": 139,
+    "bytes": 10058,
+    "sha256": "8e8529ddcf052545f787942aaf8df9d8682c30b326364e07b071d6179a571172",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_0_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_0_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/83/836cf25f-4623-4bc2-9769-24766617e269.png",
+    "sourceSha256": "5b79169589ed2d4e13bdd4e04697e550adef71a2bdc97ae44af6ac890cb5ffd0",
+    "width": 81,
+    "height": 70,
+    "bytes": 5078,
+    "sha256": "5c02e7b31b7e4f9b1b1811e33992f45207fce904cc7e08a3524f832c12133b60",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_2_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_2_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/8c/8c6c217e-a0bc-4df8-bc26-2ecb46ec582a.png",
+    "sourceSha256": "999d3d6490b183c4cc5dd805d1c788eb831b6814120dce3feb60de92dc3160f7",
+    "width": 168,
+    "height": 139,
+    "bytes": 9862,
+    "sha256": "6de2e0540896079e23d96510e557a6ee3d92e6552cd8b438f79576de63ff351d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_3_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_3_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/8d/8d1ed4b1-0576-4fb4-af17-3f9a654c3346.png",
+    "sourceSha256": "7c67d0c47294dad3b3046de2dd5da399135054d744e1a7fe20233c0e4ef735c8",
+    "width": 79,
+    "height": 71,
+    "bytes": 2586,
+    "sha256": "9247217689f3f78e94b76d41aba26a8cb3c24bde2c0ed67da0ca19df6dcdeb23",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_1_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_1_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/97/9713e979-4368-488f-816d-843cfd39eecc.png",
+    "sourceSha256": "4a2e00fc1ae7acfb699e07fc42fc55a7e489ba8897047d40e5c1cd0f5fef8783",
+    "width": 58,
+    "height": 74,
+    "bytes": 2702,
+    "sha256": "8946f785501114bf5dad16c6d44d7bc1523e583698a6c7be38e5e487c77cbcbb",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_4_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_4_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/99/994e514f-149b-4cf8-8d96-ff391514a77a.png",
+    "sourceSha256": "d820688a9f31bb6071e19da69e2e61c1ad477a0d71a822b40dc60ebf672728aa",
+    "width": 150,
+    "height": 114,
+    "bytes": 7790,
+    "sha256": "0f48eadfc78e308bbdbf2f6b1cc259f927dea235e19f96dfaec9e3d6ceaa6644",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_1_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_1_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/a2/a274261c-9cf1-493f-9fac-1fa8fb6740af.png",
+    "sourceSha256": "c3e6b0190ee4d4e2128a46281ca97fb5d197814de175a8aad50664e0aeca5f74",
+    "width": 159,
+    "height": 126,
+    "bytes": 9020,
+    "sha256": "c497874822ba1ca6b660c729840cec14141cc5ef9d2e6bf6209f7f2732e1e5b0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_barrier_1.webp": {
+    "logicalPath": "TowerRush/building/img_barrier_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b2/b25403ec-413c-4fd1-90ca-c188ac1d5faf.png",
+    "sourceSha256": "e8f389219b1149697e6d9f2ca78bb8238a663e224a93fef2aab63f8f8126eb8c",
+    "width": 80,
+    "height": 57,
+    "bytes": 4340,
+    "sha256": "7f2217ca699f24012e704dd445cd4505619b2489e10ac2eae4d53ec65c20dda0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_0_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_0_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/b9/b9a7428c-5e39-4091-8db0-ec8eb9e31d09.png",
+    "sourceSha256": "93e8240885810a1ebe0e511bff035e852de97ab181348fa26bd3bf6b087535eb",
+    "width": 168,
+    "height": 139,
+    "bytes": 10488,
+    "sha256": "5ea41fe133d0e188e998705476e45257131bf7922d720b9f5c2d998f992cc212",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_3_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_3_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/4c/4cd1dc2d-21a9-4a29-9a9a-d9a436a42ca9.png",
+    "sourceSha256": "cf75f9731e2c34a0de29264216df019ff48e7e8925f50918f953e32ec1c0cf2f",
+    "width": 165,
+    "height": 146,
+    "bytes": 10154,
+    "sha256": "bd1913ca93bf4e0a99b99f45f3ae9822e1f83c215544d1916f93de28df630b86",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_1_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/19/1956423d-c263-46e9-8379-1839c59ce060.png",
+    "sourceSha256": "c7acbac95c44a9b8abb826cf4aed560bafb70fb4a23c2c0ea81b8996cb80221c",
+    "width": 150,
+    "height": 114,
+    "bytes": 8006,
+    "sha256": "5c9bf8ed6c133cef592238f2a21209abc6f0462fcd41d186f8d9ab094a1e9c65",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_0_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_0_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/27/276bf783-7bfd-4ff3-804f-b0b859d0f23d.png",
+    "sourceSha256": "5b79169589ed2d4e13bdd4e04697e550adef71a2bdc97ae44af6ac890cb5ffd0",
+    "width": 81,
+    "height": 70,
+    "bytes": 5078,
+    "sha256": "5c02e7b31b7e4f9b1b1811e33992f45207fce904cc7e08a3524f832c12133b60",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_2_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_2_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/28/280c29be-f7f7-4be4-bc41-636709a089b8.png",
+    "sourceSha256": "57a1214716598eb1470280ee56a2ebc343b16a61ee42e1674336c77739413079",
+    "width": 150,
+    "height": 111,
+    "bytes": 8450,
+    "sha256": "0bb497fe128be231062bd08ef60d8f783913aa2d7a214ef267825fb8a9b1d54a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_barrier_4.webp": {
+    "logicalPath": "TowerRush/building/img_barrier_4",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/28/28ecc949-15e1-48ea-a5b1-c243c00b2d42.png",
+    "sourceSha256": "6719918595621db721603ab89b07a4bc8b6c79d173e213a77ae0a746be5eb459",
+    "width": 39,
+    "height": 29,
+    "bytes": 1476,
+    "sha256": "f98bdcc96098182e5ecd09b659605e6865e4498788f03907d6df383b4e7f076d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_3_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_3_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/29/2912b443-0f8b-4ddb-b505-8bff6bbe23d5.png",
+    "sourceSha256": "2a0d662481c8e25880706554d1bed096d86b354ac1823daad4bb72a3810af8f1",
+    "width": 168,
+    "height": 139,
+    "bytes": 9634,
+    "sha256": "65c90418d5221651ad71355597ec695b1843802f76abf7dd22a1ca1d878207d9",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_3_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_3_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/2e/2e8e560b-e3d4-45b7-b7ea-495b9421b7bf.png",
+    "sourceSha256": "99ae7db417787661a08a91bc54f5f32e0fed446f111c7c65619da48a7f22bd18",
+    "width": 150,
+    "height": 114,
+    "bytes": 7866,
+    "sha256": "b4f74e06d7f2404892005db7f364b4c97a57e534d84afef04a6852426ba96444",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_3_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_3_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/30/30fbd298-c6b7-479a-a3ef-6df92ded727c.png",
+    "sourceSha256": "0ecb433274ec6aa538ee2981e29b107aa889cb514d8a94062091343efd6f85e9",
+    "width": 58,
+    "height": 74,
+    "bytes": 2658,
+    "sha256": "c83c190568d982f94d40e1f110214f13cebecbe2a8d02660592fb4d06fcefd8b",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_0_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_0_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/32/32a8a2d0-3745-4e68-b229-bb014f2792c8.png",
+    "sourceSha256": "43408af3bf547ce9efa5e86121c110bc24ee6e829d67fddd5b94aaffb3ebc1e8",
+    "width": 150,
+    "height": 114,
+    "bytes": 8058,
+    "sha256": "b2dab09499728fadb78c85c3551bcf829d113d1700110e1e232f3a6e91069761",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_1_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/36/368f8aba-684f-4add-9b4d-4ea449a7049e.png",
+    "sourceSha256": "03f0d2ff9068681e389326ba9878a34637e609e7a9f2af27ea2424992371563a",
+    "width": 150,
+    "height": 111,
+    "bytes": 8414,
+    "sha256": "26bb7f1c73e0ef5df00a96f53356e5728c962c2634ed1a694cc01feb7c03e5ff",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_barrier_2.webp": {
+    "logicalPath": "TowerRush/building/img_barrier_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/39/39f73894-39b8-4bd0-acf6-4d7448372a3a.png",
+    "sourceSha256": "d8047c2ad0eb5e39c4c374ca7f0b21a2f5c0ede7ce2945be43c97c1cf7226639",
+    "width": 66,
+    "height": 46,
+    "bytes": 4142,
+    "sha256": "e852b3f912269e890ae72949a879d9e52c368272ff99f38e7f1c569086ef348f",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_2_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_2_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/51/516d2bb0-c4c2-47b2-90fe-cc1f74ed4699.png",
+    "sourceSha256": "70a712033c2492c4305f9956ee2a3803256149d6af534feb9cf0df31aa619609",
+    "width": 80,
+    "height": 70,
+    "bytes": 2454,
+    "sha256": "e2ecb1ca2ca66def95b9bb9fac4acd56878d130a6dd6666ecc0ec1c95dfa8f5c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_2_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_2_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/51/519ad7bb-f489-42c1-bd87-598d4f59cf64.png",
+    "sourceSha256": "46bc82b9f8443d7068d0d4645cae57ea8b23f30223b78088bc4b9fb560e13b12",
+    "width": 165,
+    "height": 146,
+    "bytes": 10122,
+    "sha256": "1075a39a62c8256d29681003834843729f61415b99617757fa94fc218ecac773",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_0_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_0_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/59/59360885-236a-430b-a2f1-dbcbd88a57ba.png",
+    "sourceSha256": "5b79169589ed2d4e13bdd4e04697e550adef71a2bdc97ae44af6ac890cb5ffd0",
+    "width": 81,
+    "height": 70,
+    "bytes": 5078,
+    "sha256": "5c02e7b31b7e4f9b1b1811e33992f45207fce904cc7e08a3524f832c12133b60",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_3_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_3_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7c/7cd4b074-c4c8-4cff-ae1b-cb2c0bff2149.png",
+    "sourceSha256": "70cb1b4a360a6e138d8aa8491795f77666b76bbe99aa408f2787f2be2f73d342",
+    "width": 80,
+    "height": 70,
+    "bytes": 2428,
+    "sha256": "a1e497884fab52d076a50e78697d8d1390e8487356a61d519e08fcf525c7c60a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_2_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_2_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/7f/7f9f8acd-3c03-47ba-9a73-e501160debdb.png",
+    "sourceSha256": "c07954a3b8444182b3428d33f3683e28f5fb7b6a08c7a468f7ca255c2cf1b796",
+    "width": 79,
+    "height": 71,
+    "bytes": 2582,
+    "sha256": "e492063b6aba6db63f987d66f2eac7293a0f9bfbbf468942a3852c3d94f42f9c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_4_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_4_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c5/c5b2fa52-7511-42f9-9473-5470b378f04b.png",
+    "sourceSha256": "ce1e704dcc16a1a37d095e0a094010bffc0a2941f55e0a6cb53c22f1a9d3cb5d",
+    "width": 155,
+    "height": 127,
+    "bytes": 8452,
+    "sha256": "bd8bbd5f405e6c41fbe7c2990b9d83da6767e64c882c4791e23dbe0b1e3c55d7",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_barrier_3.webp": {
+    "logicalPath": "TowerRush/building/img_barrier_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/c6/c6eafef4-958d-48f7-8f8d-9f68fd0ef2f1.png",
+    "sourceSha256": "3f7edfbd4dab029b8a3f176e925070d99fc3d27d0368481e320e701bbef2199c",
+    "width": 51,
+    "height": 29,
+    "bytes": 1828,
+    "sha256": "35333f15eadb1ede9eb2fceffbd341a115b9039bb3a49d5ee29ce77a6cd5ea94",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_0_3.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_0_3",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d1/d1f54678-f74f-4b5f-8d1d-95ce630bbd10.png",
+    "sourceSha256": "c8be95d6b3b227e5970ad3be4dc30df304f67cd7d13a57e8389dca131ddba103",
+    "width": 165,
+    "height": 146,
+    "bytes": 10558,
+    "sha256": "5a98f2ba289d735683911a1a921210f33203fa378a62e191e9982395c59d8f4d",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_1_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_1_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d5/d590d7c5-fe22-47da-b200-86f5d77877d9.png",
+    "sourceSha256": "14ae589ed52a9d97b07eb81040f955547d812d382c79408c0d951846c4feba8d",
+    "width": 80,
+    "height": 70,
+    "bytes": 2476,
+    "sha256": "9071fb10e642c326e9288a1dc739261f8a6c39d0672a7f419d5bf9a540f35e90",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_0_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_0_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/d7/d77ce593-a458-49e8-a7f7-b5fdd9f1d4e0.png",
+    "sourceSha256": "d3c842988b17f90a2aa3efdf89b923b4c728b7d0fcfd9b95d4598f40277c76c1",
+    "width": 155,
+    "height": 127,
+    "bytes": 9148,
+    "sha256": "8339ccf9248b23179001d7003e0dccb3cbff3a2c4a61642ff8f1622d9b26f711",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_2_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_2_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e4/e436c250-0229-4a76-9f04-225472a99dd9.png",
+    "sourceSha256": "204464df151567c0c7d033585a307055dace04b0aac683568411335f38efaed3",
+    "width": 155,
+    "height": 127,
+    "bytes": 8622,
+    "sha256": "942b7905e856fc0a4423874789f49cacc45b4799c22d1867ac7e2579722eccfb",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_neutral_3_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_neutral_3_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e6/e63b32aa-4b64-4f59-b5fd-ae4b4a97be38.png",
+    "sourceSha256": "078e87ea1f81ef7b1996f8f197221e728893ba62cd1d1a1896569296d84171d0",
+    "width": 155,
+    "height": 127,
+    "bytes": 8632,
+    "sha256": "e06b7c0bead3f0689c767c83ac18a0f483dd4db86255dcba1fe55b5b0108fab0",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_0_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_0_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/e8/e8b2248c-ba1e-46a0-9cbb-155b0093be65.png",
+    "sourceSha256": "40c7f6c5a2ac9fe0a3f45d3339bac3f90cb1ec69490744bb572c4e70bc93da9d",
+    "width": 159,
+    "height": 126,
+    "bytes": 9172,
+    "sha256": "231a2ed6edf8c4ebdc53e9f7e9812cc436f68bae03534c33061bf6faa1a4874a",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_2_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_2_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/ed/ed0520b5-6221-4c33-b19f-e2d7e8be0f7d.png",
+    "sourceSha256": "780924851f4f45f69585e78f772fc9cda77fff8ad11da0a9ecc4fa5005270c5e",
+    "width": 159,
+    "height": 126,
+    "bytes": 9018,
+    "sha256": "b8bef72eafbcdcb761269a58404b745c765b8a10b158fceb7d8a1327bd189c6c",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_attack_4_2.webp": {
+    "logicalPath": "TowerRush/building/img_building_attack_4_2",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f8/f8183972-4f6d-4341-abba-663039cfe4f2.png",
+    "sourceSha256": "3ef8de1fb50d5e7d8c4af55bc2c7359a64c05ad4772c2d446813154386196530",
+    "width": 79,
+    "height": 71,
+    "bytes": 2584,
+    "sha256": "c3c7478402c11b65de599dbe133de51d3469bfaf786b5308adb3010ec72a51c6",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_3_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_3_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/f8/f86f7965-f7d2-4931-ad61-86b78e09e773.png",
+    "sourceSha256": "4eaa86bea19e18f6ff9dec227c9ca3415e15bc0400cf95a53be42a4514ea80c1",
+    "width": 150,
+    "height": 111,
+    "bytes": 8340,
+    "sha256": "55f14e5333e98637cea944f0d7bac98817be8db27d132cd895ef9b43dbc9088e",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  },
+  "TowerRush__building__img_building_defense_4_1.webp": {
+    "logicalPath": "TowerRush/building/img_building_defense_4_1",
+    "source": "outputs/merge-kingdoms-extracted/asset_pack-unpacked/assets/assets/resources/native/fd/fd7fc131-10bc-4021-9472-55e5d1dd9258.png",
+    "sourceSha256": "29f4bcc712a523cac9437f09e90518044cd07cc56f2649ac4f50f2de8385e818",
+    "width": 150,
+    "height": 111,
+    "bytes": 8236,
+    "sha256": "644e89b4a2d796cde6b6c9c6742ada78f20b74c59f01b1c804bf1757641639ef",
+    "processing": "lossless WebP transcode; original encoded dimensions retained"
+  }
+}

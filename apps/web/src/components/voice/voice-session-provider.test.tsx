@@ -240,7 +240,7 @@ describe('persistent microphone across game routes', () => {
   it('keeps one connection and microphone through games and back, with working mute/deafen', async () => {
     const view = render(<App />);
     await connected();
-    for (const path of ['/games/', '/games/chess', '/games/kingdoms', '/live/TEST/host']) {
+    for (const path of ['/games/', '/games/chess', '/games/kingdoms', '/games/alfazaa', '/live/TEST/host']) {
       sdk.pathname = path;
       view.rerender(<App />);
       expect(

@@ -1,0 +1,69 @@
+{
+  "quests": [
+    {
+      "id": "daily-attendance",
+      "title": "حضور الفزعة اليومي",
+      "description": "استلم المكافأة مرة واحدة في اليوم. يبدأ يوم جديد عند منتصف الليل بتوقيت الرياض. هذه مهمة للفزعة مقتبسة من مكافأة حضور المصدر، وليست الحدث الأصلي.",
+      "rewards": [
+        [400091, 5],
+        [420001, 5],
+        [110001, 20],
+        [200127, 50]
+      ],
+      "requirement": { "kind": "daily" },
+      "source": {
+        "table": "activitytask.csv",
+        "id": 11,
+        "sha256": "a586b29361c043d998c0595d0026f9713005600b7d2fe11b3b881a17964fb667"
+      },
+      "adaptation": "Original row belongs to event11100000; that event availability, server day boundary and remote ownership were not recovered. Fazaa makes this attendance task permanently available with an authoritative Riyadh day boundary; full source reward tuple is retained."
+    },
+    {
+      "id": "road-104",
+      "title": "طوّر القلعة إلى المستوى 3",
+      "description": "ارفع القلعة إلى المستوى 3 أو أعلى، ثم استلم المكافأة مرة واحدة. استُبقي شرط المبنى ومكافأة المصدر؛ نظام فصول الطريق الأصلي غير مفعل هنا.",
+      "rewards": [
+        [110001, 50],
+        [110023, 25],
+        [800081, 10]
+      ],
+      "requirement": { "kind": "castle-level", "level": 3 },
+      "source": {
+        "table": "taskroad.csv",
+        "id": 104,
+        "sha256": "935009802f476b614ef1d3edc39e17316dccc87c424fc01ea212770f0d4baed2"
+      },
+      "adaptation": "Original Type1 TarId110003 Condition1 LimitLv2 Add1; Fazaa evaluates the castle condition from server state without the unavailable original chapter service."
+    },
+    {
+      "id": "road-301",
+      "title": "طوّر معسكر المشاة إلى المستوى 7",
+      "description": "امتلك معسكر مشاة من المستوى 7 أو أعلى وقلعة من المستوى 6 أو أعلى، ثم استلم المكافأة مرة واحدة. نظام فصول الطريق الأصلي غير مفعل هنا.",
+      "rewards": [
+        [110001, 50],
+        [100001, 10],
+        [800081, 50]
+      ],
+      "requirement": { "kind": "building-level", "buildingType": 1, "level": 7, "castleLevel": 6 },
+      "source": {
+        "table": "taskroad.csv",
+        "id": 301,
+        "sha256": "935009802f476b614ef1d3edc39e17316dccc87c424fc01ea212770f0d4baed2"
+      },
+      "adaptation": "Original Type1 TarId10007 Condition1 LimitLv6 Add1; Fazaa evaluates the building condition from server state without the unavailable original chapter service."
+    }
+  ],
+  "meta": {
+    "scope": "Three server-authoritative Fazaa tasks adapted from original source rows; not the complete original quest system.",
+    "rewardPolicy": "Rewards are claimed by command with a validated ledger; no automatic client rewards. One-time claims stay recorded; attendance records the most recent Riyadh day.",
+    "originalQuestTables": {
+      "task": 968,
+      "taskroad": 35,
+      "taskplot": 63,
+      "taskday": 591,
+      "taskmilestone": 16,
+      "guide": 213,
+      "newguide": 1360
+    }
+  }
+}

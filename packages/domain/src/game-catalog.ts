@@ -61,8 +61,7 @@ export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
   risk: {
     mode: 'risk',
     title: 'المجازفة',
-    description:
-      'اكشف البطاقات واجمع رصيد دورك، ثم اكتفِ في الوقت المناسب قبل أن تظهر القنبلة.',
+    description: 'اكشف البطاقات واجمع رصيد دورك، ثم اكتفِ في الوقت المناسب قبل أن تظهر القنبلة.',
     roundSeconds: 0,
     minimumPlayers: 2,
     contentLabel: '٣٠ خانة',
@@ -176,7 +175,13 @@ export type GameCategory =
 
 export interface EnhancedGameMeta {
   id: string;
-  mode: SpecialGameMode | InstantGameMode | 'kingdoms' | 'fastest-button' | 'intelligence-test';
+  mode:
+    | SpecialGameMode
+    | InstantGameMode
+    | 'kingdoms'
+    | 'alfazaa'
+    | 'fastest-button'
+    | 'intelligence-test';
   kind: GameKind;
   title: string;
   shortTitle: string;
@@ -223,6 +228,27 @@ export interface GameSearchSuggestion {
 }
 
 export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
+  {
+    id: 'alfazaa',
+    mode: 'alfazaa',
+    kind: 'instant',
+    title: 'الفزعة',
+    shortTitle: 'الفزعة',
+    description: 'ابنِ مدينتك، جنّد جيشك وادمج الوحدات، واستكشف 65 ساحة تدريب للأبراج.',
+    minimumPlayers: 1,
+    maximumPlayers: 1,
+    roundSeconds: 0,
+    contentLabel: 'مدينة و65 مرحلة تدريب',
+    year: 2026,
+    difficulty: 3,
+    platforms: ['web', 'mobile', 'pwa'],
+    categories: ['استراتيجية'],
+    tags: ['مدينة', 'دمج', 'تجنيد', 'أبراج'],
+    accent: 'var(--gold)',
+    href: '/games/alfazaa',
+    requiresRealtime: false,
+    requiresAuth: true,
+  },
   {
     id: 'intelligence-test',
     mode: 'intelligence-test',
@@ -273,7 +299,8 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
     kind: 'room',
     title: 'تحدي الممالك',
     shortTitle: 'الممالك',
-    description: 'ابنِ قريتك، درّب جيشك، وتعاون مع تحالفك في عالم مستمر تتنافس فيه الممالك على عرش تحدي.',
+    description:
+      'ابنِ قريتك، درّب جيشك، وتعاون مع تحالفك في عالم مستمر تتنافس فيه الممالك على عرش تحدي.',
     minimumPlayers: 1,
     maximumPlayers: 1000,
     roundSeconds: 0,
@@ -672,8 +699,7 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
     kind: 'instant',
     title: 'المجازفة',
     shortTitle: 'المجازفة',
-    description:
-      'اكشف البطاقات واجمع رصيد دورك، ثم اكتفِ في الوقت المناسب قبل أن تظهر القنبلة.',
+    description: 'اكشف البطاقات واجمع رصيد دورك، ثم اكتفِ في الوقت المناسب قبل أن تظهر القنبلة.',
     minimumPlayers: 2,
     maximumPlayers: 8,
     roundSeconds: 30,
