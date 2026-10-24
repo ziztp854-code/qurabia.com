@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { VoiceParticipant, VoiceSnapshot } from '../../src/lib/voice/types';
 async function main() {
@@ -104,7 +105,7 @@ async function main() {
       void server
         .transformIndexHtml(
           '/',
-          '<!doctype html><html lang="ar" dir="rtl" data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/e2e/fixtures/live-room-harness.tsx"></script></body></html>',
+          '<!doctype html><html lang="ar" dir="rtl" data-theme="dark"><head><title>Voice room local presentation fixture</title><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/e2e/fixtures/live-room-harness.tsx"></script></body></html>',
         )
         .then((html: string) => res.end(html));
       return;
@@ -113,9 +114,36 @@ async function main() {
   };
   const server = await createServer({
     configFile: false,
+    cacheDir: path.join(process.cwd(), 'node_modules/.vite-live-room'),
     root: process.cwd(),
     envDir: path.join(process.cwd(), 'e2e/fixtures'),
     plugins: [
+      {
+        // An explicit baseline run reads immutable tracked presentation source;
+        // concurrent polishing can continue without changing the before evidence.
+        name: 'voice-polish-immutable-baseline',
+        enforce: 'pre',
+        load(id: string) {
+          if (process.env.VOICE_POLISH_STAGE !== 'before') return null;
+          const relative = path
+            .relative(path.resolve(process.cwd(), '../..'), id.split('?')[0])
+            .replaceAll('\\', '/');
+          if (
+            !relative.startsWith('apps/web/src/components/voice/') &&
+            relative !== 'apps/web/src/app/voice/voice.css'
+          )
+            return null;
+          if (!/\.(css|ts|tsx)$/.test(relative)) return null;
+          return execFileSync(
+            'git',
+            ['show', `9132ff95c4db2fa7809e434adae59a111013be9d:${relative}`],
+            {
+              cwd: path.resolve(process.cwd(), '../..'),
+              encoding: 'utf8',
+            },
+          );
+        },
+      },
       {
         name: 'live-room-adapters',
         enforce: 'pre',

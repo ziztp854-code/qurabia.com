@@ -5,10 +5,9 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 const stage = process.env.CHAT_TYPING_STAGE || 'after';
-const output = path.resolve(
-  process.cwd(),
-  '../../docs/performance-evidence/live-chat-typing/artifacts',
-);
+const output = process.env.CHAT_TYPING_EVIDENCE_DIR
+  ? path.resolve(process.env.CHAT_TYPING_EVIDENCE_DIR)
+  : path.resolve(process.cwd(), '../../docs/performance-evidence/live-chat-typing/artifacts');
 
 for (const scenario of ['isolated', 'speaking'] as const) {
   test(`100 real keyboard characters with 200 messages (${scenario})`, async ({

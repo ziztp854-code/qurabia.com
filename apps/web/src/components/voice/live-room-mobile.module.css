@@ -1,5 +1,11 @@
 /* Mobile overrides stay on the room surface; audio and room state are unchanged. */
 @media (max-width: 1020px) {
+  .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
+    inset-block-end: calc(
+      var(--room-viewport-bottom, 0px) + max(12px, env(safe-area-inset-bottom, 0px))
+    );
+  }
+
   .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-column) {
     inset-block: auto;
     inset-block-start: var(--room-viewport-top, 0px);
@@ -292,7 +298,9 @@
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
-    inset-block-end: max(8px, env(safe-area-inset-bottom, 0px));
+    inset-block-end: calc(
+      var(--room-viewport-bottom, 0px) + max(8px, env(safe-area-inset-bottom, 0px))
+    );
     inset-inline: max(10px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
     gap: 3px;
     padding: 6px;
@@ -371,7 +379,8 @@
     column-gap: 0;
   }
 
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-is-empty:has(.v-seat-lock) .v-empty-seat > span) {
+  .mobileRoom[data-room-visible='true']
+    :global(.v-stage .v-seat-is-empty:has(.v-seat-lock) .v-empty-seat > span) {
     inline-size: 44px;
     block-size: 44px;
     margin-block-end: 0;

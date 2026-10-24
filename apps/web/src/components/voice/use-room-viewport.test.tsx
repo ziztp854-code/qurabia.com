@@ -6,9 +6,11 @@ describe('voice room viewport measurements', () => {
   let surface: HTMLDivElement;
   let controls: HTMLDivElement;
   let header: HTMLElement;
+  let topbar: HTMLElement;
   let viewport: EventTarget & { height: number; offsetTop: number };
   let controlsHeight: number;
   let headerHeight: number;
+  let topbarHeight: number;
   let nextFrame: number;
   let frames: Map<number, FrameRequestCallback>;
   let resizeCallbacks: Array<() => void>;
@@ -37,17 +39,25 @@ describe('voice room viewport measurements', () => {
     surface = document.createElement('div');
     const main = document.createElement('main');
     main.className = 'v-main';
+    const app = document.createElement('div');
+    app.className = 'v-room-app';
+    topbar = document.createElement('header');
+    topbar.className = 'v-topbar';
     header = document.createElement('header');
     controls = document.createElement('div');
     main.append(header, controls);
-    surface.append(main);
+    app.append(topbar, main);
+    surface.append(app);
     document.body.append(surface);
     controlsHeight = 92;
     headerHeight = 72;
+    topbarHeight = 56;
     Object.defineProperty(controls, 'offsetHeight', { get: () => controlsHeight });
     Object.defineProperty(header, 'offsetHeight', { get: () => headerHeight });
+    Object.defineProperty(topbar, 'offsetHeight', { get: () => topbarHeight });
     viewport = Object.assign(new EventTarget(), { height: 800, offsetTop: 0 });
     vi.stubGlobal('visualViewport', viewport);
+    vi.stubGlobal('innerHeight', 800);
     nextFrame = 0;
     frames = new Map();
     resizeCallbacks = [];
@@ -79,11 +89,14 @@ describe('voice room viewport measurements', () => {
     mount();
     expect(pixels('viewport-height')).toBe('800px');
     expect(pixels('viewport-top')).toBe('0px');
+    expect(pixels('viewport-bottom')).toBe('0px');
     expect(pixels('controls-height')).toBe('92px');
     expect(pixels('controls-space')).toBe('108px');
     expect(pixels('header-height')).toBe('72px');
+    expect(pixels('topbar-height')).toBe('56px');
     expect(observe).toHaveBeenCalledWith(controls);
     expect(observe).toHaveBeenCalledWith(header);
+    expect(observe).toHaveBeenCalledWith(topbar);
 
     viewport.height = 420;
     viewport.offsetTop = 114;
@@ -91,6 +104,7 @@ describe('voice room viewport measurements', () => {
     viewport.dispatchEvent(new Event('scroll'));
     controlsHeight = 168;
     headerHeight = 120;
+    topbarHeight = 84;
     resizeCallbacks[0]();
     window.dispatchEvent(new Event('resize'));
     expect(frames.size).toBe(1);
@@ -98,9 +112,11 @@ describe('voice room viewport measurements', () => {
     flushFrames();
     expect(pixels('viewport-height')).toBe('420px');
     expect(pixels('viewport-top')).toBe('114px');
+    expect(pixels('viewport-bottom')).toBe('266px');
     expect(pixels('controls-height')).toBe('168px');
     expect(pixels('controls-space')).toBe('184px');
     expect(pixels('header-height')).toBe('120px');
+    expect(pixels('topbar-height')).toBe('84px');
   });
 
   it('cancels pending work, restores styles and stops listening while hidden or unmounted', () => {
@@ -108,6 +124,7 @@ describe('voice room viewport measurements', () => {
     const { rerender, unmount } = mount(false);
     expect(resizeCallbacks).toHaveLength(0);
     expect(pixels('viewport-height')).toBe('');
+    expect(pixels('viewport-bottom')).toBe('');
     rerender({ active: true });
     viewport.dispatchEvent(new Event('resize'));
     expect(frames.size).toBe(1);
@@ -153,5 +170,40 @@ describe('voice room viewport measurements', () => {
     unmount();
     window.dispatchEvent(new Event('resize'));
     expect(frames.size).toBe(0);
+  });
+
+  it('reveals the focused inline composer when the keyboard opens without moving focus', () => {
+    const composer = document.createElement('form');
+    composer.className = 'v-chat-compose';
+    const input = document.createElement('textarea');
+    composer.append(input);
+    surface.querySelector('main')!.append(composer);
+    const scroll = vi.fn();
+    composer.scrollIntoView = scroll;
+    input.focus();
+    mount();
+    expect(scroll).not.toHaveBeenCalled();
+
+    viewport.height = 420;
+    viewport.dispatchEvent(new Event('resize'));
+    flushFrames();
+    expect(pixels('viewport-bottom')).toBe('380px');
+    expect(scroll).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
+    expect(document.activeElement).toBe(input);
+
+    // Overlay chat owns its own viewport; never scroll its background room.
+    surface.querySelector('main')!.classList.add('v-chat-open');
+    scroll.mockClear();
+    viewport.height = 330;
+    viewport.dispatchEvent(new Event('resize'));
+    flushFrames();
+    expect(scroll).not.toHaveBeenCalled();
+
+    // Panning/zoom can report a viewport extending beyond the layout viewport.
+    viewport.height = 900;
+    viewport.offsetTop = 20;
+    viewport.dispatchEvent(new Event('resize'));
+    flushFrames();
+    expect(pixels('viewport-bottom')).toBe('0px');
   });
 });

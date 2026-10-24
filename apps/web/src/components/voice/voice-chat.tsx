@@ -67,14 +67,15 @@ export const VoiceChat = memo(function VoiceChat({
     onDismissReady?.(dismiss);
     return () => onDismissReady?.(null);
   }, [dismiss, onDismissReady]);
-  const previous = useRef(0);
+  const previous = useRef(new Set<string>());
   const nearBottom = useRef(true);
   useEffect(() => {
-    const delta = Math.max(0, messages.length - previous.current);
+    // History stays capped at 200; new arrivals can replace old IDs without growing it.
+    const delta = messages.filter((message) => !previous.current.has(message.id)).length;
     if (nearBottom.current) {
       if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
     } else if (delta) setNewCount((count) => count + delta);
-    previous.current = messages.length;
+    previous.current = new Set(messages.map((message) => message.id));
   }, [messages]);
   const act = useCallback(
     async (event: VoiceEvent) => {
@@ -100,7 +101,12 @@ export const VoiceChat = memo(function VoiceChat({
   const messagesById = new Map(messages.map((message) => [message.id, message]));
   const pinned = messages.find((m) => m.pinned);
   return (
-    <motion.section ref={panel} style={{ y }} className={`v-chat ${roomStyles.chat}`} aria-label="دردشة الغرفة">
+    <motion.section
+      ref={panel}
+      style={{ y }}
+      className={`v-chat ${roomStyles.chat}`}
+      aria-label="دردشة الغرفة"
+    >
       {draggable && (
         <button
           className="v-chat-drag"
@@ -250,8 +256,8 @@ export const VoiceChat = memo(function VoiceChat({
         onError={onError}
         onGift={onGift}
         onCancelReply={() => setReply(null)}
-        onSent={() => {
-          setReply(null);
+        onSent={(sentReplyId, unchanged) => {
+          if (unchanged) setReply((current) => (current?.id === sentReplyId ? null : current));
           nearBottom.current = true;
         }}
       />
@@ -420,12 +426,13 @@ function VoiceChatComposer({
   onError: (message: string) => void;
   onGift?: () => void;
   onCancelReply: () => void;
-  onSent: () => void;
+  onSent: (replyId: string | undefined, unchanged: boolean) => void;
 }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [picker, setPicker] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
+  const draftVersion = useRef(0);
   const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
   const busy = useRef(false);
   const replyingTo = reply?.id;
@@ -442,6 +449,7 @@ function VoiceChatComposer({
       onError('الحد الأقصى 12 فيسًا و1000 حرف للرسالة.');
       return;
     }
+    draftVersion.current++;
     setText(next);
     setPicker(false);
     requestAnimationFrame(() => {
@@ -457,10 +465,12 @@ function VoiceChatComposer({
       return;
     }
     const fingerprint = JSON.stringify([text.trim(), reply?.id]);
+    const submittedVersion = draftVersion.current;
     if (pending.current?.fingerprint !== fingerprint)
       pending.current = { fingerprint, requestId: crypto.randomUUID() };
     busy.current = true;
     setSending(true);
+    input.current?.focus({ preventScroll: true });
     try {
       await onEvent({
         type: 'message',
@@ -468,9 +478,11 @@ function VoiceChatComposer({
         requestId: pending.current.requestId,
         ...(reply ? { replyTo: reply.id } : {}),
       });
-      setText('');
+      // An acknowledgement must not erase edits made while the request was in flight.
+      const unchanged = draftVersion.current === submittedVersion;
+      if (unchanged) setText('');
       pending.current = null;
-      onSent();
+      onSent(reply?.id, unchanged);
     } catch (err) {
       onError(err instanceof Error ? err.message : 'تعذر إرسال الرسالة.');
     } finally {
@@ -491,7 +503,12 @@ function VoiceChatComposer({
           </button>
         </div>
       )}
-      <form className={`v-chat-compose ${emojiStyles.anchor}`} onSubmit={send}>
+      <form className={`v-chat-compose ${emojiStyles.anchor}`} onSubmit={send} aria-busy={sending}>
+        {sending && (
+          <span className="v-sr-only" role="status">
+            جارٍ إرسال الرسالة…
+          </span>
+        )}
         {picker && me && enabled && (
           <Suspense fallback={<p role="status">تحميل لوحة الفيسات…</p>}>
             <EmojiPicker
@@ -511,8 +528,11 @@ function VoiceChatComposer({
           id="voice-message"
           value={text}
           maxLength={1000}
-          onChange={(e) => setText(e.target.value)}
-          disabled={!enabled || !me || sending}
+          onChange={(e) => {
+            draftVersion.current++;
+            setText(e.target.value);
+          }}
+          disabled={!enabled || !me}
           placeholder={enabled ? 'اكتب رسالتك هنا…' : 'الدردشة معطّلة من المضيف'}
           autoComplete="off"
         />
@@ -533,7 +553,7 @@ function VoiceChatComposer({
             className="v-icon"
             type="button"
             aria-label="إضافة رمز تعبيري"
-            disabled={!enabled || !me || sending}
+            disabled={!enabled || !me}
             aria-expanded={picker}
             aria-haspopup="dialog"
             onClick={() => setPicker((value) => !value)}

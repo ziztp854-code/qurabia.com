@@ -41,6 +41,32 @@ const message = (id: string, createdAt: number): VoiceMessage => ({
 });
 
 describe('chat transport invariants during typing', () => {
+  it('counts new message IDs while scrolled up even when retained history stays at 200', () => {
+    const onEvent = vi.fn();
+    const history = Array.from({ length: 200 }, (_, index) => message(`old-${index}`, index));
+    const view = render(<VoiceChat {...props} messages={history} onEvent={onEvent} />);
+    const log = screen.getByRole('log');
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 200 },
+    });
+    fireEvent.scroll(log, { target: { scrollTop: 0 } });
+    view.rerender(
+      <VoiceChat {...props} messages={history.map((entry) => ({ ...entry }))} onEvent={onEvent} />,
+    );
+    expect(document.querySelector('.v-new-messages')).not.toBeInTheDocument();
+    const retained = [...history.slice(1), message('new', 200)];
+    view.rerender(<VoiceChat {...props} messages={retained} onEvent={onEvent} />);
+    expect(document.querySelector('.v-new-messages')).toHaveTextContent('1');
+    view.rerender(
+      <VoiceChat {...props} messages={retained.map((entry) => ({ ...entry }))} onEvent={onEvent} />,
+    );
+    expect(document.querySelector('.v-new-messages')).toHaveTextContent('1');
+    fireEvent.click(document.querySelector<HTMLButtonElement>('.v-new-messages')!);
+    expect(document.querySelector('.v-new-messages')).not.toBeInTheDocument();
+    expect(log.scrollTop).toBe(log.scrollHeight);
+  });
+
   it('updates all 100 characters immediately without dispatching a message or typing event', () => {
     const onEvent = vi.fn();
     render(<VoiceChat {...props} onEvent={onEvent} />);

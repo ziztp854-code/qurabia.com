@@ -6,7 +6,9 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import type { VoiceEvent, VoiceSnapshot } from '../src/lib/voice/types';
 
-const evidence = path.resolve(process.cwd(), '../../docs/performance-evidence/live-chat-typing/qa');
+const evidence = process.env.LIVE_CHAT_EVIDENCE_DIR
+  ? path.resolve(process.env.LIVE_CHAT_EVIDENCE_DIR)
+  : path.resolve(process.cwd(), '../../docs/performance-evidence/live-chat-typing/qa');
 
 async function room(page: Page, viewport = { width: 1440, height: 900 }) {
   let snapshot: VoiceSnapshot;
@@ -134,9 +136,13 @@ test('rapid English/Arabic, native clipboard, deletion, caret and IME preserve d
   expect(app.posts.filter((event) => event.type === 'message')).toHaveLength(0);
   await page.getByRole('button', { name: 'إرسال الرسالة', exact: true }).click();
   await expect(app.input).toHaveValue('');
-  expect(app.posts.filter((event) => event.type === 'message')).toEqual([
-    { type: 'message', text: 'اختبار' },
-  ]);
+  const sentMessages = app.posts.filter((event) => event.type === 'message');
+  expect(sentMessages).toHaveLength(1);
+  expect(sentMessages[0]).toMatchObject({
+    type: 'message',
+    text: 'اختبار',
+    requestId: expect.any(String),
+  });
   await expect(
     page
       .getByRole('log')

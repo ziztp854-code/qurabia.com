@@ -15,6 +15,7 @@ export default defineConfig({
     'chat-typing-performance.spec.ts',
     'live-chat-typing.spec.ts',
     'live-room-responsive.spec.ts',
+    'voice-polish.spec.ts',
     'tahaddi-reference.spec.ts',
     'tahaddi-surfaces.spec.ts',
     'globe-scene.spec.ts',

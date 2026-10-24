@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Prisma } from '@tahaddi/database';
 const mocks = vi.hoisted(() => ({
   question: { findUnique: vi.fn(), update: vi.fn() },
   questionOption: {
@@ -94,4 +95,40 @@ describe('question option and point updates', () => {
       }),
     );
   });
+
+  it('returns a conflict when the guarded update loses its question version', async () => {
+    mocks.transaction.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Question version changed', {
+        code: 'P2025',
+        clientVersion: 'test',
+      }),
+    );
+    const response = await patch({ difficulty: 'MEDIUM' });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ ok: false });
+  });
+
+  it.each([
+    new Prisma.PrismaClientKnownRequestError('Other database failure', {
+      code: 'P2002',
+      clientVersion: 'test',
+    }),
+    new Error('Unexpected update failure'),
+    Object.assign(new Error('Not a Prisma conflict'), { code: 'P2025' }),
+  ])('preserves the server-error response for other Error instances: %s', async (error) => {
+    mocks.transaction.mockRejectedValueOnce(error);
+    const response = await patch({ difficulty: 'MEDIUM' });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ ok: false, message: error.message });
+  });
+
+  it.each([null, 'unknown failure', { code: 'P2025' }])(
+    'handles unknown thrown values without treating them as a version conflict: %j',
+    async (error) => {
+      mocks.transaction.mockRejectedValueOnce(error);
+      const response = await patch({ difficulty: 'MEDIUM' });
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ ok: false, message: expect.any(String) });
+    },
+  );
 });
