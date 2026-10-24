@@ -45,6 +45,9 @@ function productionConfig(overrides: Record<string, string> = {}) {
 }
 
 describe('actual Next.js production release configuration', () => {
+  // The first cold Next/Sentry config load took 44s under the full four-worker
+  // Windows suite; subsequent loads are warm. Keep the release assertions and
+  // give only this cold-start integration check a bounded 60-second budget.
   it('uses the checkout commit without release environment variables', () => {
     const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
     const result = productionConfig();
@@ -53,7 +56,7 @@ describe('actual Next.js production release configuration', () => {
       inherited: `qurabia-web@${commit}`,
       repeated: `qurabia-web@${commit}`,
     });
-  }, 15000);
+  }, 60000);
 
   it('respects an explicit release and exposes it to the browser and build workers', () => {
     expect(productionConfig({ SENTRY_RELEASE: 'synthetic-release-42' })).toEqual({
