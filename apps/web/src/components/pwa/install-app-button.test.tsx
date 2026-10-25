@@ -27,13 +27,17 @@ describe('installing Tahaddi', () => {
     const user = userEvent.setup();
     render(<InstallAppButton />);
     await user.click(screen.getByRole('button', { name: 'تثبيت التطبيق' }));
-    await waitFor(() => expect(screen.getByRole('dialog', { name: 'ثبّت تحدّي على جهازك' })).toBeVisible());
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: 'ثبّت تحدّي على جهازك' })).toBeVisible(),
+    );
     expect(screen.getByRole('heading', { name: 'iPhone وiPad' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Android' })).toBeVisible();
     expect(screen.getByText(/فعّل «فتح كتطبيق ويب»/)).toBeVisible();
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'تثبيت التطبيق' })).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'تثبيت التطبيق' })).toHaveFocus(),
+    );
   });
 
   it('uses the available browser install prompt and hides the action after acceptance', async () => {
