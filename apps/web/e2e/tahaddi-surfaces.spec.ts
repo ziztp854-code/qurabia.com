@@ -14,7 +14,7 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.route('**/api/voice/rooms', (route) => route.fulfill({ json: rooms }));
+    await page.route('**/api/voice/rooms{,/}', (route) => route.fulfill({ json: rooms }));
     await page.goto('/');
     await expect(
       page.getByRole('heading', { name: 'جلسة نقاش حرة', exact: true }).last(),
@@ -67,7 +67,7 @@ test('narrow surfaces preserve RTL and no horizontal overflow at enlarged text',
 }) => {
   await mkdir(evidence, { recursive: true });
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.route('**/api/voice/rooms', (route) => route.fulfill({ json: rooms }));
+  await page.route('**/api/voice/rooms{,/}', (route) => route.fulfill({ json: rooms }));
   await page.route('**/api/community/profiles/124', (route) =>
     route.fulfill({ json: { ok: true, data: profile } }),
   );

@@ -23,7 +23,7 @@ async function room(page: Page, viewport = { width: 1440, height: 900 }) {
       },
     }),
   );
-  await page.route('**/api/voice/rooms/responsive-fixture{,/events}', async (route) => {
+  await page.route(/\/api\/voice\/rooms\/responsive-fixture(?:\/events|\/join)?\/?$/, async (route) => {
     if (!snapshot) snapshot = (await (await route.fetch()).json()) as VoiceSnapshot;
     if (route.request().method() === 'POST') {
       const event = route.request().postDataJSON() as VoiceEvent;
@@ -42,7 +42,7 @@ async function room(page: Page, viewport = { width: 1440, height: 900 }) {
           reactions: {},
         });
       }
-    } else if (route.request().url().endsWith('/events')) eventReads++;
+    } else if (/\/events\/?$/.test(route.request().url())) eventReads++;
     await route.fulfill({ json: snapshot });
   });
   await page.goto('/');

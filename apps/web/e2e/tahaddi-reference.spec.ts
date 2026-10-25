@@ -208,11 +208,11 @@ test('mobile chat replies send once and restore focus after closing', async ({ p
   const draft = dialog.getByRole('textbox', { name: 'رسالتك' });
   let outgoing = 0;
   page.on('request', (request) => {
-    if (request.method() === 'POST' && request.url().endsWith('/events')) outgoing++;
+    if (request.method() === 'POST' && /\/events\/?$/.test(request.url())) outgoing++;
   });
   await draft.fill('رد محلي لاختبار الواجهة 👏');
   expect(outgoing, 'typing remains local').toBe(0);
-  const packet = page.waitForRequest((r) => r.method() === 'POST' && r.url().endsWith('/events'));
+  const packet = page.waitForRequest((r) => r.method() === 'POST' && /\/events\/?$/.test(r.url()));
   await dialog.getByRole('button', { name: 'إرسال الرسالة', exact: true }).click();
   expect((await packet).postDataJSON()).toMatchObject({
     type: 'message',
