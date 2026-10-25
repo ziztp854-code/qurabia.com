@@ -498,7 +498,9 @@
   min-block-size: 0;
   pointer-events: none;
 }
-.photographicEntrance[hidden] { display: none; }
+.photographicEntrance[hidden] {
+  display: none;
+}
 .photographicEntrance > button {
   position: absolute;
   inset-inline-start: 0;
@@ -515,7 +517,11 @@
   min-block-size: 44px;
   padding-inline: 44px;
   text-align: center;
-  font-size: .7rem;
+  font-size: 0.7rem;
   line-height: 1.5;
   color: var(--voice-text);
+}
+
+.entrance[data-effects-reduced='true'] {
+  animation: none;
 }

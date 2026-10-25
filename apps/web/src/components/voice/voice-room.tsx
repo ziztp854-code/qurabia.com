@@ -43,7 +43,6 @@ import type {
   VoicePreferences,
   VoicePreferencesAction,
   VoiceSnapshot,
-  VoiceMessage,
 } from '@/lib/voice/types';
 import { AudioSession, type VoiceAudioHandle } from './audio-session';
 import { MemberEntrance, voiceArrivals, type VoiceArrival } from './member-entrance';
@@ -65,17 +64,23 @@ import { RoomSettings } from './room-settings';
 import { useVoiceMediaQuery, useVoiceOverlay } from './use-voice-overlay';
 import { MemberName } from './member-name';
 import roomStyles from './room-layout.module.css';
-import { VoiceGifts } from './voice-gifts';
+import dynamic from 'next/dynamic';
 import liveStyles from './live-room.module.css';
 import mobileStyles from './live-room-mobile.module.css';
 import desktopStyles from './live-room-desktop.module.css';
 import { useRoomViewport } from './use-room-viewport';
 import material from '@/components/ui/royal-material.module.css';
+import { GiftEffectQueue, type GiftDisplay } from '@/lib/voice/effect-queue';
+import effectStyles from './room-effects.module.css';
+import { FloatingReactions } from './floating-reactions';
+import { useRoomEffects } from './use-room-effects';
 import { GiftCelebration } from './gift-celebration';
 import { requestVoiceMicrophone } from './microphone-permission';
 import { VoiceSocial } from './voice-social';
 import { VoiceRoomAudience } from './voice-room-audience';
 import { withLiveMessages, type VoiceLiveMessage } from './voice-live-message';
+
+const VoiceGifts = dynamic(() => import('./voice-gifts').then((module) => module.VoiceGifts));
 
 export type VoiceRoomHandle = { leave: () => Promise<void> };
 
@@ -120,8 +125,32 @@ export function VoiceRoomView({
   const [membersOpen, setMembersOpen] = useState(false);
   const [showEmptySeats, setShowEmptySeats] = useState(true);
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
-  const [giftArrival, setGiftArrival] = useState<VoiceMessage | null>(null);
-  const dismissGift = useCallback(() => setGiftArrival(null), []);
+  const [giftDisplay, setGiftDisplay] = useState<GiftDisplay | null>(null);
+  const giftArrival = giftDisplay?.message ?? null;
+  const giftQueue = useRef(new GiftEffectQueue());
+  const [giftAnchor, setGiftAnchor] = useState<HTMLDivElement | null>(null);
+  const giftActive = useRef(false);
+  const effectsVisible = useRef(visible);
+  useEffect(() => {
+    effectsVisible.current = visible;
+    if (!visible) giftQueue.current.clear();
+  }, [visible]);
+  const effects = useRoomEffects();
+  const dismissGift = useCallback(() => {
+    giftActive.current = false;
+    setGiftDisplay(null);
+  }, []);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (giftActive.current || !effectsVisible.current || document.hidden) return;
+      const next = giftQueue.current.next(Date.now());
+      if (next) {
+        giftActive.current = true;
+        setGiftDisplay(next);
+      }
+    }, 200);
+    return () => clearInterval(timer);
+  }, []);
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [giftRecipient, setGiftRecipient] = useState<string | undefined>();
   const closeGifts = useCallback(() => setGiftsOpen(false), []);
@@ -136,7 +165,9 @@ export function VoiceRoomView({
   const narrowHeader = useVoiceMediaQuery('(max-width: 760px)');
   const chatDismiss = useRef<(() => void) | null>(null);
   const completeChatClose = useCallback(() => setChatOpen(false), []);
-  const registerChatDismiss = useCallback((dismiss: (() => void) | null) => { chatDismiss.current = dismiss; }, []);
+  const registerChatDismiss = useCallback((dismiss: (() => void) | null) => {
+    chatDismiss.current = dismiss;
+  }, []);
   const closeChat = useCallback(() => {
     if (chatDismiss.current) chatDismiss.current();
     else setChatOpen(false);
@@ -199,11 +230,24 @@ export function VoiceRoomView({
     const next = withLiveMessages(accepted, liveMessages.current);
     // Initial history is not a live event. Polling the same message must not replay it.
     const previous = snapshotRef.current;
-    if (previous) {
-      const seen = new Set(previous.messages.map((message) => message.id));
-      const gifts = next.messages.filter((message) => message.gift && !seen.has(message.id));
-      if (gifts.length) setGiftArrival(gifts[gifts.length - 1]);
+    if (previous && previous.room.id !== next.room.id) {
+      giftQueue.current = new GiftEffectQueue();
+      giftActive.current = false;
+      setGiftDisplay(null);
+      setArrivals([]);
     }
+    giftQueue.current.ingest(
+      next.messages,
+      Date.now(),
+      Boolean(
+        previous?.me &&
+        previous.room.id === next.room.id &&
+        next.me &&
+        next.room.active &&
+        effectsVisible.current &&
+        !document.hidden,
+      ),
+    );
     const entrants = voiceArrivals(snapshotRef.current, next);
     if (entrants.length)
       setArrivals((current) =>
@@ -582,6 +626,7 @@ export function VoiceRoomView({
       ref={surfaceRef}
       className={`${liveStyles.liveRoom} ${mobileStyles.mobileRoom} ${desktopStyles.desktopRoom} v-room-scope`}
       data-room-visible={visible}
+      data-effects-reduced={effects.reduced}
     >
       {visible && room && <div className={liveStyles.backdrop} aria-hidden="true" />}
       {snapshot && (
@@ -639,8 +684,19 @@ export function VoiceRoomView({
           )}
         </PersistentVoiceDock>
       )}
+      {snapshot?.me && (
+        <FloatingReactions
+          key={roomId}
+          events={snapshot.roomReactions ?? []}
+          reduced={effects.reduced}
+          visible={visible && Boolean(me && room?.active)}
+        />
+      )}
       <GiftCelebration
         message={giftArrival}
+        container={giftAnchor}
+        count={giftDisplay?.count}
+        reduced={effects.reduced}
         visible={visible && !preferences.blockedUsers.includes(giftArrival?.userId || '')}
         onDismiss={dismissGift}
       />
@@ -902,9 +958,15 @@ export function VoiceRoomView({
                   className={`v-room-columns ${roomStyles.layout} ${chatOpen ? 'v-chat-open' : ''}`}
                 >
                   <div className="v-stage-column" inert={chatOverlayOpen}>
+                    <div
+                      ref={setGiftAnchor}
+                      className={effectStyles.giftSlot}
+                      data-active={Boolean(giftArrival)}
+                    />
                     <div className={liveStyles.entranceRail}>
                       <MemberEntrance
                         arrival={arrivals[0]}
+                        reduced={effects.reduced}
                         selfId={user.id}
                         onDismiss={dismissArrival}
                         visible={
@@ -924,6 +986,46 @@ export function VoiceRoomView({
                       />
                     </div>
                     <section className="v-stage">
+                      <div className={effectStyles.toolbar} aria-label="مؤثرات الغرفة">
+                        <button
+                          type="button"
+                          className={roomStyles.diagnosticsButton}
+                          aria-label="إرسال قلوب"
+                          disabled={!me || actionBusy}
+                          onClick={() =>
+                            void act({
+                              type: 'room-reaction',
+                              emoji: '❤️',
+                              requestId: crypto.randomUUID(),
+                            })
+                          }
+                        >
+                          <Heart size={16} aria-hidden="true" /> قلوب
+                        </button>
+                        <button
+                          type="button"
+                          className={roomStyles.diagnosticsButton}
+                          aria-label="احتفال قصير"
+                          disabled={!me || actionBusy}
+                          onClick={() =>
+                            void act({
+                              type: 'room-reaction',
+                              emoji: '✨',
+                              requestId: crypto.randomUUID(),
+                            })
+                          }
+                        >
+                          ✨
+                        </button>
+                        <button
+                          type="button"
+                          className={roomStyles.diagnosticsButton}
+                          aria-pressed={effects.light}
+                          onClick={effects.toggle}
+                        >
+                          {effects.reduced ? 'مؤثرات مخففة' : 'تخفيف المؤثرات'}
+                        </button>
+                      </div>
                       <div className="v-stage-heading" data-audio-state={audioState}>
                         <div>
                           <p className="v-eyebrow">مساحة الحديث</p>
@@ -1313,7 +1415,10 @@ export function VoiceRoomView({
                       ref={chatToggle}
                       className={`v-control v-chat-toggle ${chatOpen ? 'is-selected' : ''}`}
                       aria-expanded={chatOpen}
-                      onClick={() => { if (chatOpen) closeChat(); else setChatOpen(true); }}
+                      onClick={() => {
+                        if (chatOpen) closeChat();
+                        else setChatOpen(true);
+                      }}
                     >
                       <MessageCircle />
                       <span>الدردشة</span>
@@ -1599,6 +1704,7 @@ export function VoiceRoomView({
               </Dialog>
               {giftsOpen && (
                 <VoiceGifts
+                  reduced={effects.reduced}
                   participants={participants}
                   selfId={user.id}
                   initialRecipientId={giftRecipient}

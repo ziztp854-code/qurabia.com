@@ -111,6 +111,10 @@ jobs:
         working-directory: apps/web
         run: pnpm test:e2e
 
+      - name: Verify voice gifts, reactions and reduced motion
+        working-directory: apps/web
+        run: pnpm exec playwright test --config playwright.voice-effects.config.ts
+
       - name: Verify Sultan Farm and management against the local fixture
         working-directory: apps/web
         run: pnpm exec playwright test --config playwright.sultan-farm.config.ts

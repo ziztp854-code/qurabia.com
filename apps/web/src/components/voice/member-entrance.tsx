@@ -5,6 +5,8 @@ import { X } from 'lucide-react';
 import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
 import type { VoiceParticipant, VoiceSnapshot } from '@/lib/voice/types';
 import styles from './voice-enhancements.module.css';
+import { EffectArt } from './effect-art';
+import effects from './room-effects.module.css';
 import { MemberName } from './member-name';
 
 export type VoiceArrival = { member: VoiceParticipant; key: string; expiresAt: number };
@@ -41,9 +43,11 @@ export function MemberEntrance({
   visible,
   selfId,
   onDismiss,
+  reduced = false,
 }: {
   arrival?: VoiceArrival;
   visible: boolean;
+  reduced?: boolean;
   selfId: string;
   onDismiss: () => void;
 }) {
@@ -51,17 +55,30 @@ export function MemberEntrance({
   useEffect(() => {
     const controller = new AbortController();
     void fetch('/api/community/me', { signal: controller.signal })
-      .then(async (response) => response.ok ? response.json() : null)
+      .then(async (response) => (response.ok ? response.json() : null))
       .then((result) => {
         if (result?.ok && result.data?.settings && !controller.signal.aborted) {
-          setSettings({ entranceEnabled: result.data.settings.entranceEnabled !== false, reduceEffects: result.data.settings.reduceEffects === true });
+          setSettings({
+            entranceEnabled: result.data.settings.entranceEnabled !== false,
+            reduceEffects: result.data.settings.reduceEffects === true,
+          });
         }
-      }).catch(() => {});
+      })
+      .catch(() => {});
     return () => controller.abort();
   }, []);
   useEffect(() => {
     if (!arrival) return;
-    const timer = window.setTimeout(onDismiss, Math.max(0, Math.min(3000, arrival.expiresAt - Date.now())));
+    const timer = window.setTimeout(
+      onDismiss,
+      Math.max(
+        0,
+        Math.min(
+          voiceEntranceRank(arrival.member) === 'member' ? 1600 : 2600,
+          arrival.expiresAt - Date.now(),
+        ),
+      ),
+    );
     return () => window.clearTimeout(timer);
   }, [arrival, onDismiss]);
   if (!arrival || !settings.entranceEnabled) return null;
@@ -74,20 +91,37 @@ export function MemberEntrance({
       key={arrival.key}
       className={`${styles.entrance} ${styles.photographicEntrance}`}
       data-rank={rank}
+      data-effects-reduced={reduced}
       data-premium={premium || undefined}
       hidden={!visible}
       dir="rtl"
       aria-label="ترحيب بالأعضاء"
     >
+      {premium && (
+        <span className={effects.entranceAccent}>
+          <EffectArt
+            kind={
+              rank === 'sultan' || rank === 'owner'
+                ? 'crown'
+                : rank === 'prince'
+                  ? 'car'
+                  : rank === 'admin'
+                    ? 'portal'
+                    : 'meteor'
+            }
+          />
+        </span>
+      )}
       <div role="status" aria-live="polite" aria-atomic="true">
         <span className={styles.arrivalContext}>
           {member.id === selfId ? 'حيّاك ' : 'وصل الآن '}
-          {premium ? 'دخول مميز · ' : ''}{rankLabels[rank]}
+          {premium ? 'دخول مميز · ' : ''}
+          {rankLabels[rank]}
           <MemberName name="" badges={member.accountBadges} showRankBadge={false} />
           {identity?.accountNumber != null ? ` · ID ${identity.accountNumber}` : ''}
         </span>
         <EntranceEffectPreview
-          subdued={settings.reduceEffects}
+          subdued={settings.reduceEffects || reduced}
           tier={identity?.effect?.tier ?? 'ordinary'}
           effectAssetUrl={identity?.effect?.assetUrl}
           name={member.name}

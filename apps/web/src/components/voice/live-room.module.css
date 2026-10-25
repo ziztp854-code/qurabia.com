@@ -890,7 +890,7 @@
   grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
 }
 .liveRoom .entranceRail :global(aside[aria-label='ترحيب بالأعضاء']) {
-  position: absolute;
+  position: relative;
   inset-block-start: 0;
   inset-block-end: auto;
   inset-inline: 0;
@@ -1131,7 +1131,11 @@
     margin: 0;
     padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
       max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-    background: color-mix(in srgb, var(--voice-bg) calc(var(--chat-scrim-strength, 1) * 100%), transparent);
+    background: color-mix(
+      in srgb,
+      var(--voice-bg) calc(var(--chat-scrim-strength, 1) * 100%),
+      transparent
+    );
     border: 0;
   }
   .liveRoom :global(.v-chat-open .v-chat) {
@@ -1176,13 +1180,13 @@
   display: grid;
   place-items: center;
   min-inline-size: 0;
-  position: absolute;
+  position: relative;
   inset-block-start: 0;
   inset-inline: 0;
   z-index: 2;
   isolation: isolate;
   flex: none;
-  block-size: 0;
+  block-size: auto;
   min-block-size: 0;
   padding: 0;
   box-sizing: border-box;

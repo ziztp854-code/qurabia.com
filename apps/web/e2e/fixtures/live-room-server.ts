@@ -4,6 +4,9 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { applyVoiceEvent, voiceSnapshot } from '../../src/lib/voice/room-state';
+import { voiceEventSchema } from '../../src/lib/voice/schemas';
+import type { VoiceRoomState } from '../../src/lib/voice/types';
 import type { VoiceParticipant, VoiceSnapshot } from '../../src/lib/voice/types';
 async function main() {
   if (process.env.LIVE_ROOM_E2E !== '1') throw Error('Set LIVE_ROOM_E2E=1');
@@ -13,7 +16,10 @@ async function main() {
   const { default: react } = await import(
     pathToFileURL(require.resolve('@vitejs/plugin-react')).href
   );
-  const at = 1792500000000;
+  const effectsPreview = process.env.VOICE_EFFECTS_PREVIEW === '1';
+  const effectsBaseline = process.env.VOICE_EFFECTS_BASELINE === '1';
+  const port = effectsBaseline ? 3419 : effectsPreview ? 3418 : 3417;
+  const at = effectsPreview ? Date.now() : 1792500000000;
   const participants: VoiceParticipant[] = [
     'عبدالعزيز بن سلطان',
     'نورة',
@@ -76,6 +82,43 @@ async function main() {
       reactions: {},
     })),
   };
+  if (effectsPreview) {
+    participants[0].accountBadges = ['sultan'];
+    participants[0].communityIdentity = {
+      userId: 'host',
+      username: 'host',
+      name: participants[0].name,
+      avatarUrl: null,
+      accountNumber: 1,
+      primaryBadge: null,
+      badges: [],
+      effect: null,
+      frame: {
+        id: 'frame-gold',
+        name: 'ذهبي',
+        tier: 'gold',
+        assetUrl: null,
+        description: 'إطار المعاينة',
+        kind: 'FRAME',
+        token: 'gold',
+        archived: false,
+        free: true,
+      },
+    } as VoiceParticipant['communityIdentity'];
+    snapshot.room.name = 'معاينة المؤثرات · المجلس الملكي';
+  }
+  const previewState: VoiceRoomState = {
+    settings: snapshot.room,
+    host: participants[0],
+    participants,
+    messages: [...snapshot.messages],
+    active: true,
+    lockedSeats: [],
+    createdAt: at,
+    bannedUsers: [],
+  };
+  const receipts = new Set<string>();
+  let revision = 1;
   const preferences = {
     favorites: [],
     following: [],
@@ -87,6 +130,54 @@ async function main() {
   };
   const middleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1:3417');
+    if (effectsPreview && url.pathname === '/api/community/me') {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(
+        JSON.stringify({
+          ok: true,
+          data: { settings: { entranceEnabled: true, reduceEffects: false } },
+        }),
+      );
+      return;
+    }
+    if (
+      effectsPreview &&
+      /\/api\/voice\/rooms\/responsive-fixture(?:\/events|\/join)?$/.test(url.pathname)
+    ) {
+      const viewer =
+        /(?:^|; )effects-viewer=(guest[1-5])/.exec(req.headers.cookie ?? '')?.[1] ?? 'host';
+      const respond = () => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify(voiceSnapshot('responsive-fixture', previewState, revision, viewer)),
+        );
+      };
+      if (req.method === 'POST' && url.pathname.endsWith('/events')) {
+        let body = '';
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
+        req.on('end', () => {
+          try {
+            const command = voiceEventSchema.parse(JSON.parse(body));
+            const key = 'requestId' in command ? `${viewer}:${command.requestId}` : null;
+            if (!key || !receipts.has(key)) {
+              applyVoiceEvent(previewState, viewer, command, Date.now(), crypto.randomUUID());
+              if (key) receipts.add(key);
+              revision++;
+            }
+            respond();
+          } catch (error) {
+            res.statusCode = 429;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(
+              JSON.stringify({ error: error instanceof Error ? error.message : 'تعذر الإرسال' }),
+            );
+          }
+        });
+      } else respond();
+      return;
+    }
     if (url.pathname.startsWith('/api/voice/')) {
       res.setHeader('Content-Type', 'application/json');
       res.end(
@@ -101,6 +192,11 @@ async function main() {
       return;
     }
     if (url.pathname === '/') {
+      if (effectsPreview)
+        res.setHeader(
+          'Set-Cookie',
+          `effects-viewer=${/^guest[1-5]$/.test(url.searchParams.get('viewer') ?? '') ? url.searchParams.get('viewer') : 'host'}; Path=/; SameSite=Strict`,
+        );
       res.setHeader('Content-Type', 'text/html');
       void server
         .transformIndexHtml(
@@ -124,7 +220,7 @@ async function main() {
         name: 'voice-polish-immutable-baseline',
         enforce: 'pre',
         load(id: string) {
-          if (process.env.VOICE_POLISH_STAGE !== 'before') return null;
+          if (!effectsBaseline && process.env.VOICE_POLISH_STAGE !== 'before') return null;
           const relative = path
             .relative(path.resolve(process.cwd(), '../..'), id.split('?')[0])
             .replaceAll('\\', '/');
@@ -136,7 +232,10 @@ async function main() {
           if (!/\.(css|ts|tsx)$/.test(relative)) return null;
           return execFileSync(
             'git',
-            ['show', `9132ff95c4db2fa7809e434adae59a111013be9d:${relative}`],
+            [
+              'show',
+              `${effectsBaseline ? 'HEAD' : '9132ff95c4db2fa7809e434adae59a111013be9d'}:${relative}`,
+            ],
             {
               cwd: path.resolve(process.cwd(), '../..'),
               encoding: 'utf8',
@@ -171,7 +270,7 @@ async function main() {
     define: { 'process.env': JSON.stringify({ NODE_ENV: 'development' }) },
     server: {
       host: '127.0.0.1',
-      port: 3417,
+      port,
       strictPort: true,
       watch: {
         ignored: [

@@ -51,9 +51,17 @@ export const joinRoomSchema = z
 export const voiceEventSchema = z.discriminatedUnion('type', [
   z
     .object({
+      type: z.literal('room-reaction'),
+      emoji: z.enum(['❤️', '👏', '✨']),
+      requestId: z.uuid(),
+    })
+    .strict(),
+  z
+    .object({
       type: z.literal('gift'),
       giftId: z.enum(VOICE_GIFTS.map((gift) => gift.id)),
       recipientId: id,
+      requestId: z.uuid().optional(),
     })
     .strict(),
   z

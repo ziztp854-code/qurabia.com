@@ -41,6 +41,7 @@ export function MemberName({
               <span
                 key={badge}
                 className={badge === 'verified' ? styles.verified : styles.badge}
+                data-vip={badge !== 'verified' || undefined}
                 role="img"
                 aria-label={
                   badge === 'verified' && badges.includes('owner')
@@ -53,9 +54,24 @@ export function MemberName({
                     : labels[badge]
                 }
               >
+                {badge !== 'verified' && (
+                  <small className={styles.vipLabel} aria-hidden="true">
+                    VIP
+                  </small>
+                )}
                 <span aria-hidden="true">
                   <RealBadgeArtwork
-                    badgeId={badge === 'owner' ? 'platform-founder' : badge === 'admin' || badge === 'verified' ? 'general-manager' : badge === 'sultan' ? 'royal-member' : badge === 'prince' ? 'diamond-member' : 'gold-member'}
+                    badgeId={
+                      badge === 'owner'
+                        ? 'platform-founder'
+                        : badge === 'admin' || badge === 'verified'
+                          ? 'general-manager'
+                          : badge === 'sultan'
+                            ? 'royal-member'
+                            : badge === 'prince'
+                              ? 'diamond-member'
+                              : 'gold-member'
+                    }
                     name=""
                     className={styles.realBadge}
                   />
@@ -64,10 +80,19 @@ export function MemberName({
             );
           })}
         {identity?.primaryBadge && (
-          <RealBadgeArtwork badgeId={identity.primaryBadge.id} assetUrl={identity.primaryBadge.assetUrl} name={identity.primaryBadge.name} className={styles.realBadge} />
+          <RealBadgeArtwork
+            badgeId={identity.primaryBadge.id}
+            assetUrl={identity.primaryBadge.assetUrl}
+            name={identity.primaryBadge.name}
+            className={styles.realBadge}
+          />
         )}
       </span>
-      {identity?.accountNumber != null && <small className={styles.accountNumber} dir="ltr">ID {identity.accountNumber}</small>}
+      {identity?.accountNumber != null && (
+        <small className={styles.accountNumber} dir="ltr">
+          ID {identity.accountNumber}
+        </small>
+      )}
     </span>
   );
 }

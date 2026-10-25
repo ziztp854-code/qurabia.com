@@ -525,3 +525,43 @@
     animation: none;
   }
 }
+
+.celebration {
+  inset-block-start: auto;
+  inset-block-end: max(120px, 18dvh);
+  inset-inline: 0;
+}
+.choice {
+  transition:
+    transform 160ms ease-out,
+    border-color 160ms ease-out,
+    background 160ms ease-out;
+}
+.choice:has(input:checked) {
+  transform: translateY(-3px);
+}
+.form button:active {
+  transform: scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog {
+    animation: none;
+  }
+  .choice {
+    transition: none;
+  }
+  .choice:has(input:checked),
+  .form button:active {
+    transform: none;
+  }
+}
+
+.form[data-effects-reduced='true'] .choice,
+.form[data-effects-reduced='true'] button {
+  transition: none;
+  transform: none;
+}
+
+.choice input[type='radio'] {
+  z-index: 2;
+}

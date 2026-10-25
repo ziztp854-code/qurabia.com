@@ -1,0 +1,18 @@
+{
+  "browser": "154.0.8037.57",
+  "layout": [
+    {
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "scope": "Two isolated browser contexts, loopback HTTP, real room-state reducer, mocked AudioSession. Does not establish production SFU or physical device performance."
+}

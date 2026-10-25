@@ -26,3 +26,39 @@
 .exclusiveAvatar > .frameOverlay {
   inset: 0;
 }
+
+/* A separate shimmer preserves the existing speaker ring and never rotates the artwork. */
+.frameOverlay[data-frame-motion]::after {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  border: 1px solid var(--voice-gold);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: frame-shimmer 3600ms ease-in-out 3;
+}
+.frameOverlay[data-frame-motion='diamond']::after {
+  border-color: var(--voice-cyan);
+}
+.frameOverlay[data-frame-motion='royal']::after {
+  border-width: 2px;
+}
+@keyframes frame-shimmer {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .frameOverlay[data-frame-motion]::after {
+    animation: none;
+  }
+}
+:global([data-effects-reduced='true']) .frameOverlay[data-frame-motion]::after {
+  animation: none;
+}

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { MotionConfig } from 'framer-motion';
+import { useRef, useState, type FormEvent } from 'react';
+import { EffectArt } from './effect-art';
 import { Gift, Sparkles } from 'lucide-react';
 import { Dialog } from '@/components/ui/overlay';
 import { VOICE_GIFTS, voiceGift, type VoiceGiftId } from '@/lib/voice/gifts';
@@ -14,11 +16,13 @@ export function VoiceGifts({
   enabled,
   onEvent,
   onClose,
+  reduced = false,
 }: {
   participants: VoiceParticipant[];
   selfId: string;
   initialRecipientId?: string;
   enabled: boolean;
+  reduced?: boolean;
   onEvent: (event: VoiceEvent) => Promise<void>;
   onClose: () => void;
 }) {
@@ -26,6 +30,7 @@ export function VoiceGifts({
     initialRecipientId ?? participants.find((p) => p.id !== selfId)?.id ?? selfId,
   );
   const [giftId, setGiftId] = useState<VoiceGiftId>('rose');
+  const request = useRef<{ key: string; id: string } | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const recipient = participants.find((p) => p.id === recipientId);
@@ -36,7 +41,9 @@ export function VoiceGifts({
     setSending(true);
     setError('');
     try {
-      await onEvent({ type: 'gift', giftId, recipientId });
+      const key = `${giftId}:${recipientId}`;
+      if (request.current?.key !== key) request.current = { key, id: crypto.randomUUID() };
+      await onEvent({ type: 'gift', giftId, recipientId, requestId: request.current.id });
       onClose();
     } catch (error) {
       setError(error instanceof Error ? error.message : 'تعذر إرسال الهدية. حاول مجددًا.');
@@ -45,98 +52,104 @@ export function VoiceGifts({
     }
   }
   return (
-    <Dialog
-      open
-      onOpenChange={onClose}
-      title="الهدايا التجريبية"
-      className={`v-dialog ${styles.dialog}`}
-    >
-      <form className={styles.form} onSubmit={(event) => void send(event)}>
-        <div className={styles.preview} aria-label="معاينة الهدية">
-          <span
-            className={`${styles.previewArt} ${styles.photo}`}
-            data-gift={selected.id}
-            aria-hidden="true"
-          />
-          <div>
-            <span className={styles.eyebrow}>
-              <Sparkles size={14} /> لحظة تستحق هدية
+    <MotionConfig reducedMotion={reduced ? 'always' : 'user'}>
+      <Dialog
+        open
+        onOpenChange={onClose}
+        title="الهدايا التجريبية"
+        className={`v-dialog ${styles.dialog}`}
+      >
+        <form
+          data-effects-reduced={reduced}
+          className={styles.form}
+          onSubmit={(event) => void send(event)}
+        >
+          <div className={styles.preview} aria-label="معاينة الهدية">
+            <span className={styles.previewArt} data-gift={selected.id} aria-hidden="true">
+              <EffectArt key={selected.id} kind={selected.id} large />
             </span>
-            <h3>{selected.name}</h3>
-            <p>
-              {recipient ? (
-                <>
-                  إلى <bdi>{recipient.name}</bdi>، بكل تقدير
-                </>
-              ) : (
-                'اختر عضوًا موجودًا في الغرفة'
-              )}
-            </p>
+            <div>
+              <span className={styles.eyebrow}>
+                <Sparkles size={14} /> هدايا واقعية · معاينة الحركة
+              </span>
+              <h3>{selected.name}</h3>
+              <p>
+                {recipient ? (
+                  <>
+                    إلى <bdi>{recipient.name}</bdi>، بكل تقدير
+                  </>
+                ) : (
+                  'اختر عضوًا موجودًا في الغرفة'
+                )}
+              </p>
+            </div>
           </div>
-        </div>
-        <p className={styles.trial}>
-          <Gift size={20} /> جميع الهدايا مجانية للتجربة، دون شراء أو خصم رصيد.
-        </p>
-        <label className={styles.recipient}>
-          إلى من ترسل الهدية؟
-          <select
-            value={recipientId}
-            disabled={sending}
-            onChange={(event) => {
-              setRecipientId(event.target.value);
-              setError('');
-            }}
-          >
-            {!recipient && (
-              <option value={recipientId} disabled>
-                غادر العضو الغرفة
-              </option>
-            )}
-            {participants.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.name}
-                {person.id === selfId ? ' (أنت — للتجربة)' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-        <fieldset className={styles.choices} disabled={sending}>
-          <legend>اختر هديتك</legend>
-          <div>
-            {VOICE_GIFTS.map((gift) => (
-              <label key={gift.id} className={styles.choice}>
-                <input
-                  type="radio"
-                  name="voice-gift"
-                  value={gift.id}
-                  checked={giftId === gift.id}
-                  onChange={() => {
-                    setGiftId(gift.id);
-                    setError('');
-                  }}
-                />
-                <span className={styles.photo} data-gift={gift.id} aria-hidden="true" />
-                <strong>{gift.name}</strong>
-                <small>مجانية</small>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <p className={styles.hint}>
-          تظهر الهدية لأعضاء الغرفة في الدردشة. يمكنك الإرسال مرة كل خمس ثوانٍ.
-        </p>
-        {!enabled && <p role="status">الهدايا متاحة للأعضاء أثناء فتح الدردشة فقط.</p>}
-        {error && (
-          <p className={styles.error} role="alert">
-            {error}
+          <p className={styles.trial}>
+            <Gift size={20} /> جميع الهدايا مجانية للتجربة، دون شراء أو خصم رصيد.
           </p>
-        )}
-        <button className="v-button" type="submit" disabled={sending || !enabled || !recipient}>
-          <Gift size={18} />
-          {sending ? 'جارٍ الإرسال…' : `إرسال ${selected.name} مجانًا`}
-        </button>
-      </form>
-    </Dialog>
+          <label className={styles.recipient}>
+            إلى من ترسل الهدية؟
+            <select
+              value={recipientId}
+              disabled={sending}
+              onChange={(event) => {
+                setRecipientId(event.target.value);
+                setError('');
+              }}
+            >
+              {!recipient && (
+                <option value={recipientId} disabled>
+                  غادر العضو الغرفة
+                </option>
+              )}
+              {participants.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                  {person.id === selfId ? ' (أنت — للتجربة)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <fieldset className={styles.choices} disabled={sending}>
+            <legend>اختر هديتك</legend>
+            <div>
+              {VOICE_GIFTS.map((gift) => (
+                <label key={gift.id} className={styles.choice}>
+                  <input
+                    type="radio"
+                    name="voice-gift"
+                    value={gift.id}
+                    checked={giftId === gift.id}
+                    onChange={() => {
+                      setGiftId(gift.id);
+                      setError('');
+                    }}
+                  />
+                  <span data-gift={gift.id} aria-hidden="true">
+                    <EffectArt kind={gift.id} />
+                  </span>
+                  <strong>{gift.name}</strong>
+                  <small>مجانية</small>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <p className={styles.hint}>
+            تظهر الهدية لأعضاء الغرفة بالتتابع، مع تجميع التكرار. يمكنك الإرسال مرة كل خمس ثوانٍ.
+          </p>
+          {!enabled && <p role="status">الهدايا متاحة للأعضاء أثناء فتح الدردشة فقط.</p>}
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
+          <button className="v-button" type="submit" disabled={sending || !enabled || !recipient}>
+            <Gift size={18} />
+            {sending ? 'جارٍ الإرسال…' : `إرسال ${selected.name} مجانًا`}
+          </button>
+        </form>
+      </Dialog>
+    </MotionConfig>
   );
 }
 
@@ -145,11 +158,9 @@ export function GiftReceipt({ message }: { message: VoiceMessage }) {
   if (!gift || !message.gift) return <p>{message.text}</p>;
   return (
     <div className={styles.receipt}>
-      <span
-        className={`${styles.giftEmoji} ${styles.photo}`}
-        data-gift={gift.id}
-        aria-hidden="true"
-      />
+      <span className={styles.giftEmoji} data-gift={gift.id} aria-hidden="true">
+        <EffectArt kind={gift.id} />
+      </span>
       <div>
         <strong>هدية {gift.name}</strong>
         <p>

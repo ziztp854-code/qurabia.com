@@ -348,3 +348,35 @@ describe('free trial gifts', () => {
     expect(voiceSnapshot('room', state, 2, 'bob', false, ['alice']).messages).toHaveLength(0);
   });
 });
+
+describe('ephemeral room reactions', () => {
+  it('validates the supported reaction catalog and rejects forged identity', () => {
+    const command = {
+      type: 'room-reaction',
+      emoji: '❤️',
+      requestId: 'f2b2e248-8f04-4abe-8c76-a30a07cd2e47',
+    };
+    expect(voiceEventSchema.safeParse(command).success).toBe(true);
+    expect(voiceEventSchema.safeParse({ ...command, userId: 'host' }).success).toBe(false);
+    expect(voiceEventSchema.safeParse({ ...command, emoji: 'x' }).success).toBe(false);
+  });
+});
+
+it('authorizes and throttles room reactions, bounds history and hides server throttle state', () => {
+  const state = room();
+  const command = {
+    type: 'room-reaction' as const,
+    emoji: '❤️' as const,
+    requestId: 'f2b2e248-8f04-4abe-8c76-a30a07cd2e47',
+  };
+  expect(() => applyVoiceEvent(state, 'outsider', command, now, 'bad')).toThrow();
+  applyVoiceEvent(state, 'alice', command, now, 'one');
+  expect(() => applyVoiceEvent(state, 'alice', command, now + 1199, 'two')).toThrow();
+  applyVoiceEvent(state, 'alice', command, now + 1200, 'two');
+  expect(state.roomReactions).toHaveLength(2);
+  const snapshot = voiceSnapshot('room', state, 1, 'host', false, ['alice']);
+  expect(snapshot.roomReactions).toHaveLength(0);
+  expect(JSON.stringify(snapshot.participants)).not.toContain('lastRoomReactionAt');
+  applyVoiceEvent(state, 'alice', command, now + 8000, 'fresh');
+  expect(state.roomReactions?.map((item) => item.id)).toEqual(['fresh']);
+});

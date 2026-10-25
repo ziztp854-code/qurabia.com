@@ -74,7 +74,11 @@ export function Avatar({
         </span>
       )}
       {user.communityIdentity?.frame && (
-        <span aria-hidden="true" className={artStyles.frameOverlay}>
+        <span
+          aria-hidden="true"
+          className={artStyles.frameOverlay}
+          data-frame-motion={size >= 48 ? user.communityIdentity.frame.tier : undefined}
+        >
           <RealFrameArtwork
             tier={user.communityIdentity.frame.tier}
             assetUrl={user.communityIdentity.frame.assetUrl}

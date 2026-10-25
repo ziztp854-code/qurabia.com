@@ -10,6 +10,10 @@ window.addEventListener('live-room-fixture-unmount', () => root.unmount());
 root.render(
   <VoiceRoomView
     roomId="responsive-fixture"
-    user={{ id: 'host', name: 'عبدالعزيز بن سلطان', image: null }}
+    user={{
+      id: new URLSearchParams(location.search).get('viewer') || 'host',
+      name: 'عبدالعزيز بن سلطان',
+      image: null,
+    }}
   />,
 );

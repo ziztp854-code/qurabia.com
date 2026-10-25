@@ -29,9 +29,10 @@ describe('trial gift interface', () => {
   it('sends the selected catalog gift to the selected member and confirms only after success', async () => {
     let confirm!: () => void;
     const onEvent = vi.fn(
-      () => new Promise<void>((resolve) => {
-        confirm = resolve;
-      }),
+      () =>
+        new Promise<void>((resolve) => {
+          confirm = resolve;
+        }),
     );
     const onClose = vi.fn();
     render(<VoiceGifts {...base} onEvent={onEvent} onClose={onClose} />);
@@ -39,7 +40,12 @@ describe('trial gift interface', () => {
     fireEvent.click(screen.getByRole('radio', { name: /تاج/ }));
     fireEvent.click(screen.getByRole('button', { name: 'إرسال تاج مجانًا' }));
     await waitFor(() =>
-      expect(onEvent).toHaveBeenCalledWith({ type: 'gift', giftId: 'crown', recipientId: 'other' }),
+      expect(onEvent).toHaveBeenCalledWith({
+        type: 'gift',
+        giftId: 'crown',
+        recipientId: 'other',
+        requestId: expect.any(String),
+      }),
     );
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'جارٍ الإرسال…' })).toBeDisabled();

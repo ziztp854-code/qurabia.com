@@ -509,7 +509,12 @@ export async function joinVoiceRoom(roomId: string, user: VoiceIdentity, input: 
 }
 export async function sendVoiceEvent(roomId: string, userId: string, event: VoiceEvent) {
   const commandId =
-    event.type === 'message' || event.type === 'reaction' ? event.requestId : undefined;
+    event.type === 'message' ||
+    event.type === 'reaction' ||
+    event.type === 'gift' ||
+    event.type === 'room-reaction'
+      ? event.requestId
+      : undefined;
   // Check membership before looking up receipts; a removed account cannot replay old commands.
   if (commandId) {
     await requireVoiceMembership(roomId, userId);
@@ -665,4 +670,3 @@ export async function withVoiceMediaSnapshot<T>(
     { timeout: 20_000, maxWait: 10_000 },
   );
 }
-

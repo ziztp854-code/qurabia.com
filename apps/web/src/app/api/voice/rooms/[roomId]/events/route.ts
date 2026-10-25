@@ -33,6 +33,7 @@ export async function POST(request: Request, context: Context) {
       'gift',
       'message',
       'reaction',
+      'room-reaction',
       'hand',
       'pin-message',
       'delete-message',
@@ -44,7 +45,7 @@ export async function POST(request: Request, context: Context) {
       announceVoiceChange(
         local ? snapshot : await synchronizeVoiceMedia(roomId, snapshot),
         event.type === 'message' || event.type === 'gift'
-          ? event.type === 'message' && event.requestId
+          ? event.requestId
             ? snapshot.messages.find(
                 (message) => message.userId === user.id && message.clientId === event.requestId,
               )?.id

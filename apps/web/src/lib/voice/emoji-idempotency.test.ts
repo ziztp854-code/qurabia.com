@@ -128,3 +128,16 @@ describe('chat receipt persistence boundary (mocked database)', () => {
     await expect(sendVoiceEvent('room', 'host', event)).rejects.toThrow();
   });
 });
+
+// Uses the same database receipt transaction as chat; no wallet or purchase path.
+it('deduplicates a confirmed gift after a lost acknowledgement and deletion', async () => {
+  const event = { type: 'gift' as const, giftId: 'car' as const, recipientId: 'host', requestId };
+  await sendVoiceEvent('room', 'host', event);
+  await sendVoiceEvent('room', 'host', event);
+  expect(state.messages).toHaveLength(1);
+  expect(state.messages[0].clientId).toBe(requestId);
+  expect(mock.db.voiceChatCommand.create).toHaveBeenCalledOnce();
+  state.messages = [];
+  await sendVoiceEvent('room', 'host', event);
+  expect(state.messages).toHaveLength(0);
+});

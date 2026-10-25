@@ -1,0 +1,38 @@
+{
+  "browser": "154.0.8037.57",
+  "viewport": "390x844 DPR1, headless Chromium software rendering",
+  "renderedSamplesBefore": 2688,
+  "renderedSamplesAfter": 184448,
+  "timing": {
+    "mean": 18.269166666666283,
+    "p95": 33.29999999999927,
+    "over50ms": 1
+  },
+  "hitTests": [
+    {
+      "name": "تشغيل المايك",
+      "reachable": true
+    },
+    {
+      "name": "مغادرة المقعد",
+      "reachable": true
+    },
+    {
+      "name": "رفع اليد",
+      "reachable": true
+    },
+    {
+      "name": "كتم السماعات",
+      "reachable": true
+    },
+    {
+      "name": "الهدايا",
+      "reachable": true
+    },
+    {
+      "name": "الدردشة",
+      "reachable": true
+    }
+  ],
+  "scope": "Real WebAudio oscillator/gain/analyser rendering to a live MediaStreamDestination during a gift. Room AudioSession remains a fixture adapter. Local RTCPeerConnection had no ICE candidates in this environment; production LiveKit, microphone and physical-device performance remain unverified."
+}

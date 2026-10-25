@@ -34,6 +34,7 @@ export type VoiceParticipant = VoiceIdentity & {
   lastSeenAt: number;
   /** Server-only trial gift throttle for this membership. */
   lastGiftAt?: number;
+  lastRoomReactionAt?: number;
 };
 export type VoiceMessage = {
   clientId?: string;
@@ -72,7 +73,14 @@ export type VoiceRoom = VoiceRoomSettings & {
   speakers: VoiceParticipant[];
   passwordRequired: boolean;
 };
+export type RoomReaction = {
+  id: string;
+  userId: string;
+  emoji: '❤️' | '👏' | '✨';
+  createdAt: number;
+};
 export type VoiceSnapshot = {
+  roomReactions?: RoomReaction[];
   room: VoiceRoom;
   participants: VoiceParticipant[];
   messages: VoiceMessage[];
@@ -91,6 +99,7 @@ export type VoicePreferences = {
   directMessages?: 'everyone' | 'friends' | 'none';
 };
 export type VoiceRoomState = {
+  roomReactions?: RoomReaction[];
   settings: VoiceRoomSettings;
   host: VoiceIdentity;
   createdAt: number;
@@ -114,6 +123,7 @@ export type VoiceMediaLedger = Record<
   }
 >;
 export type VoiceEvent =
+  | { type: 'room-reaction'; emoji: RoomReaction['emoji']; requestId: string }
   | { type: 'request-seat'; seatIndex?: number }
   | { type: 'approve-seat'; userId: string; seatIndex: number }
   | { type: 'give-mic'; userId: string }
@@ -126,7 +136,7 @@ export type VoiceEvent =
   | { type: 'remove'; userId: string }
   | { type: 'role'; userId: string; role: 'moderator' | 'speaker' | 'listener' }
   | { type: 'message'; text: string; replyTo?: string; requestId?: string }
-  | { type: 'gift'; giftId: VoiceGiftId; recipientId: string }
+  | { type: 'gift'; giftId: VoiceGiftId; recipientId: string; requestId?: string }
   | { type: 'reaction'; messageId: string; emoji: string; requestId?: string }
   | { type: 'pin-message'; messageId: string; pinned: boolean }
   | { type: 'delete-message'; messageId: string }

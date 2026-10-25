@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { VOICE_GIFTS } from '@/lib/voice/gifts';
 import type { VoiceMessage, VoiceSnapshot } from '@/lib/voice/types';
 const packetSchema = z
   .object({
@@ -18,7 +19,7 @@ const packetSchema = z
         reactions: z.record(z.string().max(42), z.array(z.string().max(191)).max(500)),
         gift: z
           .object({
-            id: z.enum(['rose', 'applause', 'star', 'crown']),
+            id: z.enum(VOICE_GIFTS.map((gift) => gift.id)),
             recipientId: z.string().max(191),
             recipientName: z.string().max(120),
           })

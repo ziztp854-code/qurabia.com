@@ -108,6 +108,18 @@ export function applyVoiceEvent(
     participant.muted = true;
   };
   switch (event.type) {
+    case 'room-reaction': {
+      if (actor.lastRoomReactionAt !== undefined && now - actor.lastRoomReactionAt < 1200)
+        throw new VoiceHttpError(429, 'انتظر لحظة بين التفاعلات.', 'REACTION_SLOW_MODE');
+      if (!['❤️', '👏', '✨'].includes(event.emoji))
+        throw new VoiceHttpError(400, 'التفاعل غير متاح.', 'INVALID_REACTION');
+      state.roomReactions = [
+        ...(state.roomReactions ?? []).filter((item) => now - item.createdAt < 6000),
+        { id: messageId, userId, emoji: event.emoji, createdAt: now },
+      ].slice(-24);
+      actor.lastRoomReactionAt = now;
+      break;
+    }
     case 'gift': {
       if (!state.settings.chatEnabled)
         throw new VoiceHttpError(403, 'الهدايا متوقفة أثناء إغلاق الدردشة.', 'CHAT_DISABLED');
@@ -126,6 +138,7 @@ export function applyVoiceEvent(
         replyTo: null,
         pinned: false,
         reactions: {},
+        clientId: event.requestId,
         gift: {
           id: gift.id,
           recipientId: recipient.id,
@@ -346,6 +359,7 @@ function publicParticipant(participant: VoiceParticipant): VoiceParticipant {
   const publicValue = { ...participant };
   delete publicValue.tokenVersion;
   delete publicValue.lastGiftAt;
+  delete publicValue.lastRoomReactionAt;
   return publicValue;
 }
 export function voiceSnapshot(
@@ -372,6 +386,9 @@ export function voiceSnapshot(
       passwordRequired,
     },
     participants: state.participants.map(publicParticipant),
+    roomReactions: (state.roomReactions ?? []).filter(
+      (item) => Date.now() - item.createdAt < 6000 && !blocked.includes(item.userId),
+    ),
     messages: state.messages.filter((m) => !blocked.includes(m.userId)),
     me: state.participants.find((p) => p.id === userId)
       ? publicParticipant(state.participants.find((p) => p.id === userId)!)
