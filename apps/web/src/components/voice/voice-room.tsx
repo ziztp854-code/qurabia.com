@@ -986,53 +986,56 @@ export function VoiceRoomView({
                       />
                     </div>
                     <section className="v-stage">
-                      <div className={effectStyles.toolbar} aria-label="مؤثرات الغرفة">
-                        <button
-                          type="button"
-                          className={roomStyles.diagnosticsButton}
-                          aria-label="إرسال قلوب"
-                          disabled={!me || actionBusy}
-                          onClick={() =>
-                            void act({
-                              type: 'room-reaction',
-                              emoji: '❤️',
-                              requestId: crypto.randomUUID(),
-                            })
-                          }
-                        >
-                          <Heart size={16} aria-hidden="true" /> قلوب
-                        </button>
-                        <button
-                          type="button"
-                          className={roomStyles.diagnosticsButton}
-                          aria-label="احتفال قصير"
-                          disabled={!me || actionBusy}
-                          onClick={() =>
-                            void act({
-                              type: 'room-reaction',
-                              emoji: '✨',
-                              requestId: crypto.randomUUID(),
-                            })
-                          }
-                        >
-                          ✨
-                        </button>
-                        <button
-                          type="button"
-                          className={roomStyles.diagnosticsButton}
-                          aria-pressed={effects.light}
-                          onClick={effects.toggle}
-                        >
-                          {effects.reduced ? 'مؤثرات مخففة' : 'تخفيف المؤثرات'}
-                        </button>
-                      </div>
-                      <div className="v-stage-heading" data-audio-state={audioState}>
+                      <div
+                        className={`v-stage-heading ${effectStyles.effectsHeading}`}
+                        data-audio-state={audioState}
+                      >
                         <div>
                           <p className="v-eyebrow">مساحة الحديث</p>
                           <h2>
                             <Mic size={18} />
                             على الميكروفون
                           </h2>
+                        </div>
+                        <div className={effectStyles.toolbar} aria-label="مؤثرات الغرفة">
+                          <button
+                            type="button"
+                            className={roomStyles.diagnosticsButton}
+                            aria-label="إرسال قلوب"
+                            disabled={!me || actionBusy}
+                            onClick={() =>
+                              void act({
+                                type: 'room-reaction',
+                                emoji: '❤️',
+                                requestId: crypto.randomUUID(),
+                              })
+                            }
+                          >
+                            <Heart size={16} aria-hidden="true" /> قلوب
+                          </button>
+                          <button
+                            type="button"
+                            className={roomStyles.diagnosticsButton}
+                            aria-label="احتفال قصير"
+                            disabled={!me || actionBusy}
+                            onClick={() =>
+                              void act({
+                                type: 'room-reaction',
+                                emoji: '✨',
+                                requestId: crypto.randomUUID(),
+                              })
+                            }
+                          >
+                            ✨
+                          </button>
+                          <button
+                            type="button"
+                            className={roomStyles.diagnosticsButton}
+                            aria-pressed={effects.light}
+                            onClick={effects.toggle}
+                          >
+                            {effects.reduced ? 'مؤثرات مخففة' : 'تخفيف المؤثرات'}
+                          </button>
                         </div>
                         <div className={roomStyles.stageActions}>
                           <button

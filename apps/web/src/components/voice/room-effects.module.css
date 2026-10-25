@@ -410,3 +410,19 @@
 :global([data-effects-reduced='true']) .giftSlot {
   transition: none;
 }
+
+/* Empty effect mounts must not consume the stage column's flex gap. */
+.giftSlot[data-active='false'] {
+  display: none;
+}
+.effectsHeading > .toolbar {
+  margin-block-end: 0;
+}
+@media (max-width: 1020px) {
+  :global(.v-room-scope .v-stage-column .v-stage .v-stage-heading).effectsHeading {
+    display: flex;
+  }
+  .effectsHeading[data-audio-state='connected'] > div:not(.toolbar) {
+    display: none;
+  }
+}

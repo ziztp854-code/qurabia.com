@@ -210,7 +210,7 @@ async function main() {
   };
   const server = await createServer({
     configFile: false,
-    cacheDir: path.join(process.cwd(), 'node_modules/.vite-live-room'),
+    cacheDir: path.join(process.cwd(), `node_modules/.vite-live-room-${port}`),
     root: process.cwd(),
     envDir: path.join(process.cwd(), 'e2e/fixtures'),
     plugins: [

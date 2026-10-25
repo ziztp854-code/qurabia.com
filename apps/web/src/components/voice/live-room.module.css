@@ -1192,3 +1192,7 @@
   box-sizing: border-box;
   pointer-events: none;
 }
+
+.entranceRail:not(:has(aside:not([hidden]))) {
+  display: none;
+}
