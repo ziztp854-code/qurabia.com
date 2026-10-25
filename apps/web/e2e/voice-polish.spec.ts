@@ -253,7 +253,7 @@ test('separate synthetic API acknowledgement from draft availability', async ({ 
   await page.setViewportSize({ width: 1440, height: 900 });
   await openRoom(page);
   let delayedPosts = 0;
-  await page.route('**/api/voice/rooms/responsive-fixture/events', async (route) => {
+  await page.route('**/api/voice/rooms/responsive-fixture/events{,/}', async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
     const event = route.request().postDataJSON();
     if (event.type !== 'message') return route.continue();
@@ -364,7 +364,7 @@ test('pinned message and reply keep the composer reachable at medium text zoom',
   test.skip(stage === 'before', 'Targeted regression for the changed medium layout.');
   await page.setViewportSize({ width: 1440, height: 900 });
   await openRoom(page);
-  await page.route('**/api/voice/rooms/responsive-fixture{,/events}', async (route) => {
+  await page.route(/\/api\/voice\/rooms\/responsive-fixture(?:\/events|\/join)?\/?$/, async (route) => {
     const response = await route.fetch();
     const snapshot = await response.json();
     snapshot.messages[0].pinned = true;

@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const output = path.resolve('../../docs/visual-evidence/voice-effects');
 const effect = '[role="status"][data-effects-reduced] [data-gift]';
-const endpoint = '/api/voice/rooms/responsive-fixture/events';
+const endpoint = '/api/voice/rooms/responsive-fixture/events/';
 async function open(page: Page, viewer = 'host') {
   await page.goto(`/?viewer=${viewer}`);
   await page.locator('.v-room-controls').waitFor();
@@ -18,6 +18,47 @@ async function send(page: Page, giftId: string, viewer: string) {
   });
   expect(response.ok()).toBe(true);
 }
+
+test('a listener joins without a preview request and receives another viewer chat over HTTP fallback', async ({
+  browser,
+}) => {
+  const hostContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const guestContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  try {
+    await guestContext.addCookies([
+      { name: 'effects-viewer', value: 'guest1', url: 'http://127.0.0.1:3418' },
+    ]);
+    const host = await hostContext.newPage();
+    const guest = await guestContext.newPage();
+    const entryRequests: { path: string; method: string }[] = [];
+    guest.on('request', (request) => {
+      const path = new URL(request.url()).pathname;
+      if (path.startsWith('/api/voice/rooms/'))
+        entryRequests.push({ path, method: request.method() });
+    });
+    await Promise.all([open(host), open(guest, 'guest1')]);
+    expect(
+      entryRequests.filter((entry) => entry.path === '/api/voice/rooms/responsive-fixture/join/'),
+    ).toHaveLength(1);
+    expect(
+      entryRequests.filter((entry) => entry.path === '/api/voice/rooms/responsive-fixture/'),
+    ).toHaveLength(0);
+    await guest.locator('.v-chat-toggle').click();
+    const text = `رسالة اختبار الطرفين ${crypto.randomUUID()}`;
+    await host.locator('#voice-message').fill(text);
+    await host.locator('.v-send').click();
+    await expect(host.locator('.v-message').filter({ hasText: text })).toHaveCount(1);
+    await expect(guest.locator('.v-message').filter({ hasText: text })).toHaveCount(1, {
+      timeout: 5000,
+    });
+    await guest.keyboard.press('Escape');
+    await expect(
+      guest.getByRole('button', { name: 'الميكروفون مكتوم', exact: true }),
+    ).toBeDisabled();
+  } finally {
+    await Promise.all([hostContext.close(), guestContext.close()]);
+  }
+});
 
 test('two viewers: ordered burst, bounded effects, heart synchronization and reconnect deduplication', async ({
   browser,

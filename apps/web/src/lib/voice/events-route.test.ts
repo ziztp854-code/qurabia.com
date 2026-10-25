@@ -5,6 +5,11 @@ const mocks = vi.hoisted(() => ({
   sync: vi.fn(),
   read: vi.fn(),
   announce: vi.fn(),
+  after: vi.fn(),
+}));
+vi.mock('next/server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/server')>()),
+  after: mocks.after,
 }));
 vi.mock('./identity', () => ({
   voiceIdentity: async () => ({ id: 'self' }),
@@ -54,7 +59,26 @@ it('keeps authoritative permission reconciliation on moderator mute and coalesce
   );
   expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 1, messages: [{ id: 'confirmed' }] });
   await GET(new Request('https://voice.test'), context);
+  await mocks.after.mock.calls[0][0]();
   expect(mocks.sync).toHaveBeenCalledWith('room', { cursor: 2 }, true);
+});
+
+it('returns authorized chat updates before a slow periodic SFU repair finishes', async () => {
+  mocks.sync.mockImplementation(() => new Promise(() => {}));
+  const response = await GET(new Request('https://voice.test'), context);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ cursor: 2 });
+  expect(mocks.sync).not.toHaveBeenCalled();
+  expect(mocks.after).toHaveBeenCalledOnce();
+});
+
+it('does not schedule media work or expose messages when membership is rejected', async () => {
+  const { VoiceHttpError } = await import('./http');
+  mocks.read.mockRejectedValue(new VoiceHttpError(403, 'انتهت العضوية', 'NOT_JOINED'));
+  const response = await GET(new Request('https://voice.test'), context);
+  expect(response.status).toBe(403);
+  expect(mocks.after).not.toHaveBeenCalled();
+  expect(mocks.sync).not.toHaveBeenCalled();
 });
 it('reconciles SFU permissions after granting a listener the microphone', async () => {
   const command = { type: 'give-mic', userId: 'listener' };

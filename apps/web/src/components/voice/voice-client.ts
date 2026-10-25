@@ -1,5 +1,13 @@
 import type { VoicePreferences } from '@/lib/voice/types';
 
+/** Match Next's trailingSlash setting without redirecting every voice request. */
+export function voiceApiPath(path: string) {
+  const queryIndex = path.indexOf('?');
+  const pathname = queryIndex < 0 ? path : path.slice(0, queryIndex);
+  const query = queryIndex < 0 ? '' : path.slice(queryIndex);
+  return `/api/voice/${pathname.replace(/\/+$/, '')}/${query}`;
+}
+
 export class VoiceRequestError extends Error {
   constructor(
     message: string,
@@ -18,14 +26,15 @@ export async function voiceRequest<T>(
   options: { signal?: AbortSignal } = {},
 ): Promise<T> {
   const controller = new AbortController();
+  const pathname = path.split('?')[0].replace(/\/+$/, '');
   // Permission writes can wait for an authoritative SFU transaction (20s + pool
   // admission). Keep reads short; do not report a committed grant as failed at 10s.
   const permissionWrite =
     body !== undefined &&
-    (/\/join$/.test(path) ||
-      /\/token$/.test(path) ||
-      /\/leave$/.test(path) ||
-      (/\/events$/.test(path) &&
+    (/\/join$/.test(pathname) ||
+      /\/token$/.test(pathname) ||
+      /\/leave$/.test(pathname) ||
+      (/\/events$/.test(pathname) &&
         typeof body === 'object' &&
         body !== null &&
         'type' in body &&
@@ -65,7 +74,7 @@ export async function voiceRequest<T>(
     return await Promise.race([
       (async () => {
         controller.signal.throwIfAborted();
-        const response = await fetch(`/api/voice/${path}`, {
+        const response = await fetch(voiceApiPath(path), {
           method: body === undefined ? 'GET' : method,
           headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
           body: body === undefined ? undefined : JSON.stringify(body),

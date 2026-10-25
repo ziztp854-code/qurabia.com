@@ -18,7 +18,7 @@ it('waits for a Cloud revocation cutoff and returns only a freshly authorized to
   await vi.advanceTimersByTimeAsync(1000);
   expect(await work).toMatchObject({ token: 'fresh' });
   expect(fetcher).toHaveBeenCalledTimes(2);
-  expect(fetcher.mock.calls[0][0]).toBe('/api/voice/rooms/room%2Fa/token');
+  expect(fetcher.mock.calls[0][0]).toBe('/api/voice/rooms/room%2Fa/token/');
 });
 it('does not retry forbidden membership and stops aborted pending retries', async () => {
   const fetcher = vi

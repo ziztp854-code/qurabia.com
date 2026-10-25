@@ -57,6 +57,7 @@ import {
   requestedSeat,
   roleLabels,
   VoiceRequestError,
+  voiceApiPath,
   voiceRequest,
 } from './voice-client';
 import { VoiceChat } from './voice-chat';
@@ -357,11 +358,11 @@ export function VoiceRoomView({
           refreshController.current = null;
           refreshing.current = false;
           if (refreshAgain.current && !leaving.current)
-            refreshTimer.current = setTimeout(refresh, 750);
+            refreshTimer.current = setTimeout(refresh, 50);
         }
       }
     }
-    refreshTimer.current = setTimeout(refresh, 750);
+    refreshTimer.current = setTimeout(refresh, 50);
   }, [roomId, apply]);
   useEffect(() => stopRefresh, [roomId, stopRefresh]);
   async function join() {
@@ -396,19 +397,8 @@ export function VoiceRoomView({
     }
     inviteRef.current ||= captureInvite(roomId);
     async function open() {
-      try {
-        const initial = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}`);
-        if (cancelled) return;
-        apply(initial);
-        if (initial.me) {
-          clearSavedInvite(roomId);
-          inviteRef.current = null;
-          setLoading(false);
-          return;
-        }
-      } catch {
-        /* Join endpoint safely handles private rooms and invitations. */
-      }
+      // Join is idempotent for existing members and returns the authorized snapshot.
+      // A preview GET here adds a full round trip before a new listener can connect.
       if (cancelled) return;
       const invite = inviteRef.current || captureInvite(roomId);
       inviteRef.current = invite;
@@ -515,7 +505,7 @@ export function VoiceRoomView({
     function unload() {
       if (!leaving.current && snapshotRef.current?.me)
         navigator.sendBeacon(
-          `/api/voice/rooms/${roomId}/leave`,
+          voiceApiPath(`rooms/${roomId}/leave`),
           new Blob(['{}'], { type: 'application/json' }),
         );
     }

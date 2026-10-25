@@ -76,8 +76,9 @@ function response(value: unknown, status = 200) {
 }
 function mockRoom(me = host, state = snapshot(me)) {
   const fetcher = vi.fn((url: string, init?: RequestInit) => {
-    if (url.endsWith('/preferences')) return response(emptyPreferences);
-    if (url.endsWith('/events') && init?.body) return response({ ...state, cursor: 11 });
+    if (url.replace(/\/$/, '').endsWith('/preferences')) return response(emptyPreferences);
+    if (url.replace(/\/$/, '').endsWith('/events') && init?.body)
+      return response({ ...state, cursor: 11 });
     return response(state);
   });
   vi.stubGlobal('fetch', fetcher);
@@ -257,7 +258,7 @@ describe('Live room roles and state', () => {
       'fetch',
       vi.fn((url: string) =>
         response(
-          url.endsWith('/preferences')
+          url.replace(/\/$/, '').endsWith('/preferences')
             ? emptyPreferences
             : { ...snapshot(), mediaSyncPending: true },
         ),
@@ -270,8 +271,8 @@ describe('Live room roles and state', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string) => {
-        if (url.endsWith('/preferences')) return response(emptyPreferences);
-        if (url.endsWith('/events'))
+        if (url.replace(/\/$/, '').endsWith('/preferences')) return response(emptyPreferences);
+        if (url.replace(/\/$/, '').endsWith('/events'))
           return response({ error: 'انتهت عضويتك في الغرفة.', code: 'NOT_JOINED' }, 403);
         return response(snapshot());
       }),

@@ -141,7 +141,7 @@ test('chat remains usable under keyboard viewport resize, focus and text zoom', 
     const send = dialog.getByRole('button', { name: 'إرسال الرسالة', exact: true });
     await expect(send).toBeInViewport();
     const packet = page.waitForRequest(
-      (request) => request.url().endsWith('/events') && request.method() === 'POST',
+      (request) => /\/events\/?$/.test(request.url()) && request.method() === 'POST',
     );
     await send.click();
     expect((await packet).postDataJSON()).toMatchObject({

@@ -130,6 +130,7 @@ async function main() {
   };
   const middleware = (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1:3417');
+    url.pathname = url.pathname.replace(/\/$/, '') || '/';
     if (effectsPreview && url.pathname === '/api/community/me') {
       res.setHeader('Content-Type', 'application/json');
       res.end(

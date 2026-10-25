@@ -1,27 +1,42 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { voiceRequest } from './voice-client';
 
+it.each([
+  ['rooms', '/api/voice/rooms/'],
+  ['rooms/room/events', '/api/voice/rooms/room/events/'],
+  ['rooms/room/events/', '/api/voice/rooms/room/events/'],
+  ['social/peer?profile=1', '/api/voice/social/peer/?profile=1'],
+])('requests the canonical endpoint for %s without a redirect', async (path, expected) => {
+  const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  vi.stubGlobal('fetch', fetcher);
+  await voiceRequest(path);
+  expect(fetcher).toHaveBeenCalledWith(expected, expect.any(Object));
+});
+
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
-it('allows a permission write to finish beyond the read deadline, then bounds it without retrying', async () => {
-  vi.useFakeTimers();
-  const fetcher = vi.fn<typeof fetch>(() => new Promise<Response>(() => {}));
-  vi.stubGlobal('fetch', fetcher);
-  const result = voiceRequest('rooms/room/leave', {}).catch((error: Error) => error);
-  await vi.advanceTimersByTimeAsync(10_000);
-  expect(await Promise.race([result, Promise.resolve('still pending')])).toBe('still pending');
-  expect(fetcher.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
-  await vi.advanceTimersByTimeAsync(35_000);
-  expect(await Promise.race([result, Promise.resolve('still pending')])).toMatchObject({
-    name: 'VoiceRequestError',
-    code: 'REQUEST_TIMEOUT',
-  });
-  expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(fetcher.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
-});
+it.each(['rooms/room/leave', 'rooms/room/leave/'])(
+  'bounds permission writes to %s without applying the short read deadline or retrying',
+  async (path) => {
+    vi.useFakeTimers();
+    const fetcher = vi.fn<typeof fetch>(() => new Promise<Response>(() => {}));
+    vi.stubGlobal('fetch', fetcher);
+    const result = voiceRequest(path, {}).catch((error: Error) => error);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(await Promise.race([result, Promise.resolve('still pending')])).toBe('still pending');
+    expect(fetcher.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(35_000);
+    expect(await Promise.race([result, Promise.resolve('still pending')])).toMatchObject({
+      name: 'VoiceRequestError',
+      code: 'REQUEST_TIMEOUT',
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+  },
+);
 it('keeps ordinary chat writes on the short deadline', async () => {
   vi.useFakeTimers();
   vi.stubGlobal(

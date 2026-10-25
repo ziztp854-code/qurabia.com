@@ -114,7 +114,7 @@ function App() {
   );
 }
 function requests(suffix: string) {
-  return fetcher.mock.calls.filter(([url]) => String(url).endsWith(suffix));
+  return fetcher.mock.calls.filter(([url]) => String(url).replace(/\/$/, '').endsWith(suffix));
 }
 async function connected() {
   // Readiness includes the lazy room import and its asynchronous media effects.
@@ -145,12 +145,12 @@ beforeEach(() => {
     },
   });
   fetcher = vi.fn((url: string, init?: RequestInit) => {
-    if (url.endsWith('/preferences')) return response(emptyPreferences);
-    if (url.endsWith('/token'))
+    if (url.replace(/\/$/, '').endsWith('/preferences')) return response(emptyPreferences);
+    if (url.replace(/\/$/, '').endsWith('/token'))
       return response({ token: 'test-only-token', url: 'ws://127.0.0.1:7890' });
-    if (url.endsWith('/leave'))
+    if (url.replace(/\/$/, '').endsWith('/leave'))
       return response(leaveFails ? { error: 'تعذر إنهاء الجلسة.' } : {}, leaveFails ? 503 : 200);
-    if (url.endsWith('/events') && init?.body) {
+    if (url.replace(/\/$/, '').endsWith('/events') && init?.body) {
       const event = JSON.parse(init.body as string);
       if (event.type === 'mute') {
         const me = { ...current.me!, muted: event.muted };
@@ -158,7 +158,7 @@ beforeEach(() => {
       }
       return response(current);
     }
-    if (url.endsWith('/events') && pollStatus !== 200)
+    if (url.replace(/\/$/, '').endsWith('/events') && pollStatus !== 200)
       return response({ error: 'انتهت صلاحية جلسة الصوت.' }, pollStatus);
     if (url.includes('/room-two'))
       return response({ ...current, room: { ...room, id: 'room-two' } });
@@ -176,6 +176,38 @@ afterEach(async () => {
 });
 
 describe('persistent microphone across game routes', () => {
+  it('connects a listener after one join without a preview round trip or microphone capture', async () => {
+    const listener = { ...host, role: 'listener' as const, seatIndex: null, muted: true };
+    current = { ...current, me: listener, participants: [listener] };
+    render(<App />);
+    await screen.findByText('متصل بالصوت', {}, { timeout: 3000 });
+    expect(requests('/join')).toHaveLength(1);
+    expect(requests('/room-one')).toHaveLength(0);
+    expect(requests('/token')).toHaveLength(1);
+    expect(sdk.connect).toHaveBeenCalledOnce();
+    expect(sdk.microphone).not.toHaveBeenCalledWith(true, expect.anything());
+  });
+
+  it('coalesces a burst of media invalidations without the previous 750ms wait', async () => {
+    render(<App />);
+    await connected();
+    vi.useFakeTimers();
+    try {
+      const packet = new TextEncoder().encode(JSON.stringify({ roomId: room.id, cursor: 11 }));
+      act(() => {
+        for (let i = 0; i < 5; i++)
+          sdk.events.get('data')?.(packet, undefined, undefined, 'tahaddi-voice-refresh-v1');
+      });
+      expect(requests('/room-one')).toHaveLength(0);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(requests('/room-one')).toHaveLength(1);
+      expect(sdk.connect).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('keeps one audio session while typing, resizing and rerendering the room', async () => {
     const view = render(<App />);
     await connected();
@@ -240,7 +272,13 @@ describe('persistent microphone across game routes', () => {
   it('keeps one connection and microphone through games and back, with working mute/deafen', async () => {
     const view = render(<App />);
     await connected();
-    for (const path of ['/games/', '/games/chess', '/games/kingdoms', '/games/alfazaa', '/live/TEST/host']) {
+    for (const path of [
+      '/games/',
+      '/games/chess',
+      '/games/kingdoms',
+      '/games/alfazaa',
+      '/live/TEST/host',
+    ]) {
       sdk.pathname = path;
       view.rerender(<App />);
       expect(
@@ -251,7 +289,7 @@ describe('persistent microphone across game routes', () => {
     expect(sdk.disconnect).not.toHaveBeenCalled();
     expect(navigator.sendBeacon).not.toHaveBeenCalled();
     expect(requests('/leave')).toHaveLength(0);
-    expect(requests('/join')).toHaveLength(0);
+    expect(requests('/join')).toHaveLength(1);
     expect(requests('/token')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'كتم المايك أثناء اللعب' }));
     await waitFor(() => expect(sdk.microphone).toHaveBeenLastCalledWith(false, expect.anything()));
@@ -327,7 +365,7 @@ describe('persistent microphone across game routes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
     await waitFor(() => expect(sdk.disconnect).toHaveBeenCalledWith(true));
     expect(requests('/leave')).toHaveLength(1);
-    expect(requests('/join')).toHaveLength(0);
+    expect(requests('/join')).toHaveLength(1);
     expect(sdk.push).not.toHaveBeenCalled();
     expect(screen.getByRole('main', { name: 'لعبة اختبار' })).toBeInTheDocument();
   });
@@ -366,7 +404,9 @@ describe('persistent microphone across game routes', () => {
       init?: RequestInit,
     ) => Promise<Response>;
     fetcher.mockImplementation((url: string, init?: RequestInit) =>
-      url.endsWith('/leave') ? new Promise<Response>(() => {}) : originalFetch(url, init),
+      url.replace(/\/$/, '').endsWith('/leave')
+        ? new Promise<Response>(() => {})
+        : originalFetch(url, init),
     );
     fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
     expect(sdk.disconnect).toHaveBeenCalledWith(true);
@@ -385,13 +425,16 @@ describe('persistent microphone across game routes', () => {
       init?: RequestInit,
     ) => Promise<Response>;
     fetcher.mockImplementation((url: string, init?: RequestInit) =>
-      url.endsWith('/leave') ? new Promise<Response>(() => {}) : originalFetch(url, init),
+      url.replace(/\/$/, '').endsWith('/leave')
+        ? new Promise<Response>(() => {})
+        : originalFetch(url, init),
     );
     vi.useFakeTimers();
     try {
       fireEvent.click(screen.getByRole('button', { name: 'مغادرة الصوت' }));
-      const leaveSignal = fetcher.mock.calls.find(([url]) => String(url).endsWith('/leave'))?.[1]
-        ?.signal as AbortSignal;
+      const leaveSignal = fetcher.mock.calls.find(([url]) =>
+        String(url).replace(/\/$/, '').endsWith('/leave'),
+      )?.[1]?.signal as AbortSignal;
       // Stopping local capture is immediate; only authoritative server departure
       // waits for the permission-write deadline, independently covered by voice-client.
       expect(sdk.disconnect).toHaveBeenCalledWith(true);

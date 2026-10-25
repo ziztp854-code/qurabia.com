@@ -1,3 +1,5 @@
+import { voiceApiPath } from './voice-client';
+
 export class VoiceMediaTokenError extends Error {
   constructor(
     message: string,
@@ -12,7 +14,7 @@ export class VoiceMediaTokenError extends Error {
 export async function requestVoiceMediaToken(roomId: string, signal: AbortSignal) {
   for (let attempt = 0; ; attempt++) {
     signal.throwIfAborted();
-    const response = await fetch(`/api/voice/rooms/${encodeURIComponent(roomId)}/token`, {
+    const response = await fetch(voiceApiPath(`rooms/${encodeURIComponent(roomId)}/token`), {
       method: 'POST',
       signal,
       headers: { 'Content-Type': 'application/json' },

@@ -7,14 +7,17 @@ import { voiceEventSchema } from '@/lib/voice/schemas';
 import { getVoiceSnapshot, sendVoiceEvent } from '@/lib/voice/repository';
 import { synchronizeVoiceMedia } from '@/lib/voice/media-sync';
 import { announceVoiceChange } from '@/lib/voice/notifications';
+import { after } from 'next/server';
 export async function GET(_request: Request, context: Context) {
   try {
     const user = await voiceIdentity();
     await voiceRateLimit(user.id, false);
     const { roomId } = await context.params;
-    return jsonSuccess(
-      await synchronizeVoiceMedia(roomId, await getVoiceSnapshot(roomId, user.id, true), true),
-    );
+    const snapshot = await getVoiceSnapshot(roomId, user.id, true);
+    // Periodic repair must not hold chat delivery behind SFU network calls.
+    // Permission-changing commands and token issuance still enforce grants before responding.
+    after(() => synchronizeVoiceMedia(roomId, snapshot, true).then(() => undefined));
+    return jsonSuccess(snapshot);
   } catch (error) {
     return jsonFailure(error);
   }
