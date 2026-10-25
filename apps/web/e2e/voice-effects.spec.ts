@@ -43,6 +43,17 @@ test('two viewers: ordered burst, bounded effects, heart synchronization and rec
   await send(host, 'crown', 'guest2');
   await expect(host.locator(effect)).toHaveAttribute('data-gift', 'crown');
   await expect(guest.locator(effect)).toHaveAttribute('data-gift', 'crown');
+  expect(
+    await host
+      .locator('.v-message [data-effect-art]')
+      .evaluateAll((elements) =>
+        elements.some((element) =>
+          element
+            .getAnimations({ subtree: true })
+            .some((animation) => animation.playState === 'running'),
+        ),
+      ),
+  ).toBe(false);
   await host.locator(`${effect} img`).evaluate((image: HTMLImageElement) => image.decode());
   await guest.locator(`${effect} img`).evaluate((image: HTMLImageElement) => image.decode());
   await host.waitForTimeout(350);

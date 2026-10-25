@@ -565,3 +565,13 @@
 .choice input[type='radio'] {
   z-index: 2;
 }
+
+/* History and catalog thumbnails stay still; only the selected/live scene animates. */
+.receipt [data-effect-art] *,
+.choice [data-effect-art] * {
+  animation: none !important;
+}
+.receipt [data-effect-art] i,
+.choice [data-effect-art] i {
+  display: none;
+}
