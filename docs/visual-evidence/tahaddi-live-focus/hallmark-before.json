@@ -1,0 +1,197 @@
+{
+  "summary": {
+    "fails": 1,
+    "reflex": 17,
+    "warns": 2,
+    "waived": 0,
+    "rejected": 0,
+    "answered": 0,
+    "dismissed": 0,
+    "notes": 0,
+    "files": 1,
+    "render": "ran",
+    "before": "before: recorded 11 links, 2 fields, 0 handlers, 0 test hooks, 0 script hooks and 1 rendered page(s) in .hallmark/before.json; --kept checks a redesign against it"
+  },
+  "findings": [
+    {
+      "gate": "40",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "http://127.0.0.1:3441/",
+      "line": 1,
+      "evidence": "[1440px] a field's edge is under 3:1 against what surrounds it: input 1.88:1",
+      "fix": "Draw the field in --color-muted, or fill it a step off the surface it sits on"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 73,
+      "evidence": "padding: 8px 22px (off the 4px scale) on .invitation :global(.v-button)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 103,
+      "evidence": "margin-block: 18px 12px (off the 4px scale) on .discovery :global(.v-grid-heading)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 111,
+      "evidence": "gap: 10px (off the 4px scale) on .tabs",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 121,
+      "evidence": "padding: 16px 18px (off the 4px scale) on .invitation",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 136,
+      "evidence": "padding-inline: 18px (off the 4px scale) on .invitation :global(.v-button)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 157,
+      "evidence": "gap: 10px (off the 4px scale) on .discovery :global(.v-room-grid)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 176,
+      "evidence": "padding: 0 10px 10px (off the 4px scale) on .discovery :global(.v-card-body)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 197,
+      "evidence": "padding: 0 10px 10px (off the 4px scale) on .discovery :global(.v-card-body)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 214,
+      "evidence": "padding: 3px 6px (off the 4px scale) on .discovery :global(.v-card-cover .v-live)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 258,
+      "evidence": "padding: 18px 24px (off the 4px scale) on .invitation",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 284,
+      "evidence": "gap: 14px (off the 4px scale) on .discovery :global(.v-room-grid)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 290,
+      "evidence": "padding-inline: 14px (off the 4px scale) on .discovery :global(.v-card-body)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 306,
+      "evidence": "padding: 14px 18px (off the 4px scale) on .invitation",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 357,
+      "evidence": "gap: 4px 10px (off the 4px scale) on :global(.v-app):has(.discovery) :global(.v-topbar)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 358,
+      "evidence": "padding: 10px 14px (off the 4px scale) on :global(.v-app):has(.discovery) :global(.v-topbar)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "26b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 1,
+      "evidence": "no :active styling anywhere",
+      "fix": "All eight states; guard: not a form control, no aria-disabled anywhere"
+    },
+    {
+      "gate": "75",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "http://127.0.0.1:3441/",
+      "line": 1,
+      "evidence": "[1440px] text that strains the eye: small at 8px, p.v-eyebrow at 10px, a at 10px, a.v-back-home at 10px",
+      "fix": "Running text 12px or more (16px for body), functional text 11px or more, multi-line prose leaded 1.3 or more"
+    },
+    {
+      "gate": "40",
+      "grade": "WARN",
+      "tier": "floor",
+      "file": "http://127.0.0.1:3441/",
+      "line": 1,
+      "evidence": "[1280px] contrast drops to 1.03:1 over the gradient behind button.v-button \"أنشئ غرفتك\"",
+      "fix": "Check the text where the gradient is darkest or lightest; give the label its own ground"
+    },
+    {
+      "gate": "F3",
+      "grade": "WARN",
+      "tier": "finish",
+      "file": "apps/web/src/components/voice/voice-lobby.module.css",
+      "line": 59,
+      "evidence": "no text-wrap: balance on any display head (5 head rule(s), e.g. .invitation h1)",
+      "fix": "Add text-wrap: balance to h1/h2-level heads"
+    }
+  ]
+}

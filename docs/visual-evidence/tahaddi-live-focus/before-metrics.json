@@ -1,0 +1,609 @@
+{
+  "fixture": "local Vite plus existing synthetic room inventory; no production data or media",
+  "records": [
+    {
+      "state": "full",
+      "width": 360,
+      "height": 640,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice",
+        "/voice/room-0",
+        "/voice/room-0",
+        "/voice/room-0",
+        "/voice/room-0",
+        "/voice/room-1",
+        "/voice/room-1",
+        "/voice/room-1",
+        "/voice/room-2",
+        "/voice/room-2",
+        "/voice/room-2",
+        "/voice/room-3",
+        "/voice/room-3",
+        "/voice/room-3"
+      ],
+      "cards": [
+        {
+          "box": {
+            "x": 185,
+            "y": 551.53125,
+            "right": 347,
+            "bottom": 736.53125,
+            "width": 162,
+            "height": 185
+          },
+          "cover": {
+            "x": 186,
+            "y": 552.53125,
+            "right": 346,
+            "bottom": 737.53125,
+            "width": 160,
+            "height": 185
+          },
+          "body": {
+            "x": 186,
+            "y": 616.75,
+            "right": 346,
+            "bottom": 735.53125,
+            "width": 160,
+            "height": 118.78125
+          },
+          "titleFont": "13px",
+          "hostFont": "9px"
+        },
+        {
+          "box": {
+            "x": 13,
+            "y": 551.53125,
+            "right": 175,
+            "bottom": 736.53125,
+            "width": 162,
+            "height": 185
+          },
+          "cover": {
+            "x": 14,
+            "y": 552.53125,
+            "right": 174,
+            "bottom": 737.53125,
+            "width": 160,
+            "height": 185
+          },
+          "body": {
+            "x": 14,
+            "y": 619.53125,
+            "right": 174,
+            "bottom": 735.53125,
+            "width": 160,
+            "height": 116
+          },
+          "titleFont": "13px",
+          "hostFont": "9px"
+        },
+        {
+          "box": {
+            "x": 185,
+            "y": 746.53125,
+            "right": 347,
+            "bottom": 931.53125,
+            "width": 162,
+            "height": 185
+          },
+          "cover": {
+            "x": 186,
+            "y": 747.53125,
+            "right": 346,
+            "bottom": 932.53125,
+            "width": 160,
+            "height": 185
+          },
+          "body": {
+            "x": 186,
+            "y": 814.53125,
+            "right": 346,
+            "bottom": 930.53125,
+            "width": 160,
+            "height": 116
+          },
+          "titleFont": "13px",
+          "hostFont": "9px"
+        },
+        {
+          "box": {
+            "x": 13,
+            "y": 746.53125,
+            "right": 175,
+            "bottom": 931.53125,
+            "width": 162,
+            "height": 185
+          },
+          "cover": {
+            "x": 14,
+            "y": 747.53125,
+            "right": 174,
+            "bottom": 932.53125,
+            "width": 160,
+            "height": 185
+          },
+          "body": {
+            "x": 14,
+            "y": 814.53125,
+            "right": 174,
+            "bottom": 930.53125,
+            "width": 160,
+            "height": 116
+          },
+          "titleFont": "13px",
+          "hostFont": "9px"
+        }
+      ],
+      "buttons": [
+        {
+          "x": 196,
+          "y": 649.140625,
+          "right": 240,
+          "bottom": 693.140625,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "x": 24,
+          "y": 650.53125,
+          "right": 68,
+          "bottom": 694.53125,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "x": 196,
+          "y": 845.53125,
+          "right": 240,
+          "bottom": 889.53125,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "x": 24,
+          "y": 845.53125,
+          "right": 68,
+          "bottom": 889.53125,
+          "width": 44,
+          "height": 44
+        }
+      ],
+      "seatFonts": []
+    },
+    {
+      "state": "empty",
+      "width": 360,
+      "height": 640,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": []
+    },
+    {
+      "state": "error",
+      "width": 360,
+      "height": 640,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": []
+    },
+    {
+      "state": "search-empty",
+      "width": 360,
+      "height": 640,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": []
+    },
+    {
+      "state": "room",
+      "width": 360,
+      "height": 640,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/games",
+        "/games/",
+        "/games/",
+        "/leaderboard",
+        "/privacy",
+        "/profile",
+        "/voice",
+        "/voice",
+        "/voice",
+        "/voice",
+        "/voice",
+        "/voice?view=explore",
+        "/voice?view=favorites",
+        "/voice?view=favorites",
+        "/voice?view=following",
+        "/voice?view=history",
+        "/voice?view=mine",
+        "/voice?view=settings"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": [
+        "11px",
+        "11px",
+        "11px",
+        "11px",
+        "11px",
+        "11px",
+        "11px"
+      ]
+    },
+    {
+      "state": "full",
+      "width": 1920,
+      "height": 1080,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice",
+        "/voice/room-0",
+        "/voice/room-0",
+        "/voice/room-0",
+        "/voice/room-0",
+        "/voice/room-1",
+        "/voice/room-1",
+        "/voice/room-1",
+        "/voice/room-2",
+        "/voice/room-2",
+        "/voice/room-2",
+        "/voice/room-3",
+        "/voice/room-3",
+        "/voice/room-3"
+      ],
+      "cards": [
+        {
+          "box": {
+            "x": 1184.5,
+            "y": 474.75,
+            "right": 1494,
+            "bottom": 817.75,
+            "width": 309.5,
+            "height": 343
+          },
+          "cover": {
+            "x": 1185.5,
+            "y": 475.75,
+            "right": 1493,
+            "bottom": 625.75,
+            "width": 307.5,
+            "height": 150
+          },
+          "body": {
+            "x": 1185.5,
+            "y": 619.75,
+            "right": 1493,
+            "bottom": 816.75,
+            "width": 307.5,
+            "height": 197
+          },
+          "titleFont": "16px",
+          "hostFont": "10px"
+        },
+        {
+          "box": {
+            "x": 861,
+            "y": 474.75,
+            "right": 1170.5,
+            "bottom": 817.75,
+            "width": 309.5,
+            "height": 343
+          },
+          "cover": {
+            "x": 862,
+            "y": 475.75,
+            "right": 1169.5,
+            "bottom": 625.75,
+            "width": 307.5,
+            "height": 150
+          },
+          "body": {
+            "x": 862,
+            "y": 619.75,
+            "right": 1169.5,
+            "bottom": 816.75,
+            "width": 307.5,
+            "height": 197
+          },
+          "titleFont": "16px",
+          "hostFont": "10px"
+        },
+        {
+          "box": {
+            "x": 537.5,
+            "y": 474.75,
+            "right": 847,
+            "bottom": 817.75,
+            "width": 309.5,
+            "height": 343
+          },
+          "cover": {
+            "x": 538.5,
+            "y": 475.75,
+            "right": 846,
+            "bottom": 625.75,
+            "width": 307.5,
+            "height": 150
+          },
+          "body": {
+            "x": 538.5,
+            "y": 619.75,
+            "right": 846,
+            "bottom": 816.75,
+            "width": 307.5,
+            "height": 197
+          },
+          "titleFont": "16px",
+          "hostFont": "10px"
+        },
+        {
+          "box": {
+            "x": 214,
+            "y": 474.75,
+            "right": 523.5,
+            "bottom": 817.75,
+            "width": 309.5,
+            "height": 343
+          },
+          "cover": {
+            "x": 215,
+            "y": 475.75,
+            "right": 522.5,
+            "bottom": 625.75,
+            "width": 307.5,
+            "height": 150
+          },
+          "body": {
+            "x": 215,
+            "y": 619.75,
+            "right": 522.5,
+            "bottom": 816.75,
+            "width": 307.5,
+            "height": 197
+          },
+          "titleFont": "16px",
+          "hostFont": "10px"
+        }
+      ],
+      "buttons": [
+        {
+          "x": 1199.5,
+          "y": 619.75,
+          "right": 1239.5,
+          "bottom": 663.75,
+          "width": 40,
+          "height": 44
+        },
+        {
+          "x": 876,
+          "y": 619.75,
+          "right": 916,
+          "bottom": 663.75,
+          "width": 40,
+          "height": 44
+        },
+        {
+          "x": 552.5,
+          "y": 619.75,
+          "right": 592.5,
+          "bottom": 663.75,
+          "width": 40,
+          "height": 44
+        },
+        {
+          "x": 229,
+          "y": 619.75,
+          "right": 269,
+          "bottom": 663.75,
+          "width": 40,
+          "height": 44
+        }
+      ],
+      "seatFonts": []
+    },
+    {
+      "state": "empty",
+      "width": 1920,
+      "height": 1080,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": []
+    },
+    {
+      "state": "error",
+      "width": 1920,
+      "height": 1080,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": []
+    },
+    {
+      "state": "search-empty",
+      "width": 1920,
+      "height": 1080,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/",
+        "/auth/sign-in?next=%2Fvoice",
+        "/auth/sign-in?next=%2Fvoice",
+        "/games",
+        "/games",
+        "/leaderboard",
+        "/privacy",
+        "/voice",
+        "/voice"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": []
+    },
+    {
+      "state": "room",
+      "width": 1920,
+      "height": 1080,
+      "errors": [],
+      "overflow": false,
+      "direction": "rtl",
+      "links": [
+        "#voice-main",
+        "/",
+        "/",
+        "/games",
+        "/games/",
+        "/games/",
+        "/leaderboard",
+        "/privacy",
+        "/profile",
+        "/voice",
+        "/voice",
+        "/voice",
+        "/voice",
+        "/voice",
+        "/voice?view=explore",
+        "/voice?view=favorites",
+        "/voice?view=favorites",
+        "/voice?view=following",
+        "/voice?view=history",
+        "/voice?view=mine",
+        "/voice?view=settings"
+      ],
+      "cards": [],
+      "buttons": [],
+      "seatFonts": [
+        "12px",
+        "12px",
+        "12px",
+        "12px",
+        "12px",
+        "12px",
+        "12px"
+      ]
+    }
+  ]
+}

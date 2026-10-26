@@ -1,0 +1,34 @@
+[
+  {
+    "zoom": 1,
+    "pageOverflow": false,
+    "cardClipped": false,
+    "titleClipped": false,
+    "hostClipped": false,
+    "roomLinks": [
+      "/voice/room-0",
+      "/voice/room-0",
+      "/voice/room-0"
+    ],
+    "favoriteTarget": {
+      "w": 44,
+      "h": 44
+    }
+  },
+  {
+    "zoom": 2,
+    "pageOverflow": false,
+    "cardClipped": false,
+    "titleClipped": false,
+    "hostClipped": false,
+    "roomLinks": [
+      "/voice/room-0",
+      "/voice/room-0",
+      "/voice/room-0"
+    ],
+    "favoriteTarget": {
+      "w": 44,
+      "h": 44
+    }
+  }
+]

@@ -223,7 +223,7 @@
 
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-person > strong),
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1.7;
   }
@@ -235,7 +235,7 @@
 
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > small) {
     color: var(--voice-muted);
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-expand) {

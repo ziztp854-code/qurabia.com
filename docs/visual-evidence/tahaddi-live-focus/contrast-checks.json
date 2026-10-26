@@ -1,0 +1,14 @@
+{
+  "colors": {
+    "buttonText": "rgb(26, 18, 8)",
+    "buttonBackground": "linear-gradient(112deg, rgb(223, 183, 109), rgb(243, 211, 143))",
+    "goldLight": "rgb(243, 211, 143)",
+    "gold": "rgb(223, 183, 109)",
+    "goldDeep": "rgb(182, 139, 72)",
+    "searchBorder": "rgb(178, 184, 193)",
+    "searchFill": "rgb(16, 24, 32)"
+  },
+  "ctaMinGoldContrast": 5.9752481368245665,
+  "searchBorderContrast": 8.963667139848472,
+  "scope": "Computed ink against the declared gold colors inside .v-app, and search rim against solid fill; not a full image/composite contrast certification"
+}
