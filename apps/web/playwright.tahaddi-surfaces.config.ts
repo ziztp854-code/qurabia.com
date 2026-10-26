@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 import { existsSync } from 'node:fs';
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'tahaddi-surfaces.spec.ts',
+  testMatch: ['tahaddi-surfaces.spec.ts', 'voice-lobby-polish.spec.ts'],
   workers: 1,
   timeout: 90_000,
   outputDir: './test-results/tahaddi-surfaces',

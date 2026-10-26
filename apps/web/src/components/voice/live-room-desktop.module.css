@@ -186,10 +186,11 @@
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
-    padding: 4px 6px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
+    padding: 10px 12px;
+    border: 1px solid var(--voice-line);
+    border-radius: 16px;
+    border-start-start-radius: 5px;
+    background: var(--voice-card);
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
@@ -216,7 +217,7 @@
     min-block-size: max(44px, calc(1lh + 22px));
     block-size: max(44px, calc(1lh + 22px));
     border-radius: 12px;
-    border-color: var(--voice-muted);
+    border-color: var(--voice-border);
     background: var(--voice-bg);
   }
 

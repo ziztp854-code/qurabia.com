@@ -12,7 +12,7 @@ vi.mock('next/server', async (importOriginal) => ({
   after: mocks.after,
 }));
 vi.mock('./identity', () => ({
-  voiceIdentity: async () => ({ id: 'self' }),
+  voiceActor: async () => ({ id: 'self' }),
   voiceRateLimit: vi.fn(),
 }));
 vi.mock('./repository', () => ({ sendVoiceEvent: mocks.command, getVoiceSnapshot: mocks.read }));

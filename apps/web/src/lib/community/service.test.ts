@@ -557,3 +557,18 @@ describe('community server authority', () => {
     expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
 });
+
+it('starts the cosmetic catalog read while member identities are still loading', async () => {
+  let release!: (rows: []) => void;
+  mocks.db.user.findMany.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  mocks.db.profileCosmetic.findMany.mockResolvedValueOnce([]);
+  const pending = getUserIdentities(['self']);
+  expect(mocks.db.profileCosmetic.findMany).toHaveBeenCalled();
+  release([]);
+  expect(await pending).toEqual(new Map());
+});

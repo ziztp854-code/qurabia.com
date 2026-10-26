@@ -1,4 +1,4 @@
-import { voiceIdentity, voiceRateLimit } from '@/lib/voice/identity';
+import { voiceActor, voiceRateLimit } from '@/lib/voice/identity';
 import { jsonSuccess, jsonFailure, voiceOrigin, readVoiceBody } from '@/lib/voice/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ import { announceVoiceChange } from '@/lib/voice/notifications';
 import { after } from 'next/server';
 export async function GET(_request: Request, context: Context) {
   try {
-    const user = await voiceIdentity();
+    const user = await voiceActor();
     await voiceRateLimit(user.id, false);
     const { roomId } = await context.params;
     const snapshot = await getVoiceSnapshot(roomId, user.id, true);
@@ -25,7 +25,7 @@ export async function GET(_request: Request, context: Context) {
 export async function POST(request: Request, context: Context) {
   try {
     voiceOrigin(request);
-    const user = await voiceIdentity();
+    const user = await voiceActor();
     await voiceRateLimit(user.id, true);
     const { roomId } = await context.params;
     const event = await readVoiceBody(request, voiceEventSchema);

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   AudioLines,
   ChevronLeft,
-  Headphones,
   Heart,
   History,
   Mic,
@@ -26,15 +25,8 @@ import { VOICE_CATEGORIES } from '@/lib/voice/types';
 import { Switch } from '@/components/ui/forms';
 import { CreateRoom } from './create-room';
 import { VoiceSocial } from './voice-social';
-import {
-  EmptyState,
-  LiveBadge,
-  RoomCard,
-  VoiceShell,
-  VoiceCover,
-  type VoiceView,
-} from './voice-ui';
-import { emptyPreferences, number, voiceRequest } from './voice-client';
+import { EmptyState, RoomCard, VoiceShell, type VoiceView } from './voice-ui';
+import { emptyPreferences, number, voiceRequest, VoiceRequestError } from './voice-client';
 import styles from './voice-lobby.module.css';
 
 export function VoiceLobby({
@@ -53,6 +45,7 @@ export function VoiceLobby({
   const [data, setData] = useState<VoiceList | null>(null);
   const [preferences, setPreferences] = useState<VoicePreferences>(emptyPreferences);
   const [error, setError] = useState('');
+  const [requiresSignIn, setRequiresSignIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
   const [favoriteNotice, setFavoriteNotice] = useState('');
@@ -63,9 +56,12 @@ export function VoiceLobby({
   }, [preferences]);
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       try {
-        const list = await voiceRequest<VoiceList>('rooms');
+        const list = await voiceRequest<VoiceList>('rooms', undefined, 'GET', {
+          signal: controller.signal,
+        });
         if (!cancelled) {
           const active = new Set(
             list.rooms.filter((r) => r.active && r.participantCount > 0).map((r) => r.id),
@@ -83,10 +79,14 @@ export function VoiceLobby({
           }
           knownActiveRooms.current = active;
           setData(list);
+          setRequiresSignIn(false);
           setError('');
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'تعذر تحميل الغرف.');
+        if (!cancelled) {
+          setRequiresSignIn(err instanceof VoiceRequestError && err.status === 401);
+          setError(err instanceof Error ? err.message : 'تعذر تحميل الغرف.');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -96,6 +96,7 @@ export function VoiceLobby({
     return () => {
       cancelled = true;
       clearInterval(timer);
+      controller.abort();
     };
   }, [refresh]);
   useEffect(() => {
@@ -125,20 +126,30 @@ export function VoiceLobby({
       setError(err instanceof Error ? err.message : 'تعذر حفظ التفضيل.');
     }
   }
+  function retryRooms() {
+    setLoading(true);
+    setError('');
+    setRefresh((n) => n + 1);
+  }
+  function clearFilters() {
+    setSearch('');
+    setCategory('الكل');
+  }
+  const query = search.trim().toLocaleLowerCase('ar');
   const filtered = useMemo(
     () =>
       (data?.rooms || []).filter(
         (room) =>
           (category === 'الكل' || room.category === category) &&
-          (!search ||
+          (!query ||
             `${room.name} ${room.description} ${room.hostName}`
-              .toLowerCase()
-              .includes(search.toLowerCase())) &&
+              .toLocaleLowerCase('ar')
+              .includes(query)) &&
           (view !== 'mine' || room.hostId === user?.id) &&
           (view !== 'favorites' || preferences.favorites.includes(room.id)) &&
           (view !== 'following' || preferences.following.includes(room.hostId)),
       ),
-    [data, category, search, view, user, preferences],
+    [data, category, query, view, user, preferences],
   );
   const active = [...filtered].sort((a, b) =>
     order === 'new'
@@ -147,6 +158,11 @@ export function VoiceLobby({
         ? b.participantCount - a.participantCount
         : Number(b.active) - Number(a.active) || b.participantCount - a.participantCount,
   );
+  const featured = filtered
+    .filter((room) => room.active && room.participantCount > 0)
+    .sort((a, b) => b.participantCount - a.participantCount)[0];
+  const liveCount = data?.rooms.filter((room) => room.active && room.participantCount > 0).length;
+  const hasFilters = Boolean(query || category !== 'الكل');
   const titles: Record<VoiceView, string> = {
     explore: 'اكتشف البثوث',
     mine: 'غرفك، بطابعك',
@@ -194,13 +210,28 @@ export function VoiceLobby({
         )}
         {view === 'explore' && (
           <section className={styles.invitation} aria-labelledby="voice-hero-title">
-            <div>
-              <span className={styles.kicker}>تحدي لايف</span>
+            <div className={styles.invitationCopy}>
+              <span className={styles.kicker}>
+                <AudioLines size={16} aria-hidden="true" /> تحدي لايف
+              </span>
               <h1 id="voice-hero-title">للّقاء طابع آخر</h1>
-              <p>صوتك يصنع الفرق</p>
+              <p>اختر مجلسك، استمع للحوار، وشارك بصوتك.</p>
               <button className="v-button" onClick={createRoom}>
                 أنشئ غرفتك <Plus size={16} />
               </button>
+            </div>
+            <div className={styles.onAir}>
+              <AudioLines size={48} strokeWidth={1.25} aria-hidden="true" />
+              <span>
+                {liveCount === undefined
+                  ? error
+                    ? 'تعذر تحديث الغرف'
+                    : 'نستكشف اللقاءات…'
+                  : liveCount
+                    ? `${number(liveCount)} غرف حيّة الآن`
+                    : 'كن أول من يبدأ اللقاء'}
+              </span>
+              <small>مجالس عربية، وأصوات تجمعنا</small>
             </div>
           </section>
         )}
@@ -220,7 +251,9 @@ export function VoiceLobby({
               <h2>{titles[view]}</h2>
             </div>
             {view !== 'settings' && view !== 'history' && (
-              <span className="v-room-count">{data ? number(filtered.length) : '—'} غرفة</span>
+              <span className="v-room-count" role="status" aria-live="polite">
+                {data ? number(filtered.length) : '—'} غرفة
+              </span>
             )}
           </div>
           {view !== 'settings' && view !== 'history' && (
@@ -249,10 +282,10 @@ export function VoiceLobby({
               </div>
             </>
           )}
-          {error && (
+          {error && data && (
             <div className="v-error" role="alert">
               {error}
-              <button className="v-text-button" onClick={() => setRefresh((n) => n + 1)}>
+              <button className="v-text-button" onClick={retryRooms} disabled={loading}>
                 إعادة المحاولة
               </button>
             </div>
@@ -318,12 +351,12 @@ export function VoiceLobby({
               نبحث عن الأصوات الحاضرة…
             </div>
           ) : !data ? (
-            <EmptyState title={user ? 'تعذر تحميل الغرف' : 'اللقاء يبدأ بحسابك'}>
-              {user
+            <EmptyState title={requiresSignIn ? 'اللقاء يبدأ بحسابك' : 'تعذر تحميل الغرف'}>
+              {!requiresSignIn
                 ? 'لم نتمكن من جلب الغرف الآن. أعد المحاولة بعد لحظات.'
                 : 'سجّل الدخول لمشاهدة الغرف والانضمام إلى مجتمع تحدي لايف.'}
-              {user ? (
-                <button className="v-button" onClick={() => setRefresh((n) => n + 1)}>
+              {!requiresSignIn ? (
+                <button className="v-button" onClick={retryRooms} disabled={loading}>
                   إعادة المحاولة
                 </button>
               ) : (
@@ -335,7 +368,7 @@ export function VoiceLobby({
           ) : !filtered.length ? (
             <EmptyState
               title={
-                search || category !== 'الكل'
+                hasFilters
                   ? 'لا توجد غرف تطابق بحثك'
                   : view === 'mine'
                     ? 'مساحتك الأولى بانتظارك'
@@ -346,40 +379,47 @@ export function VoiceLobby({
                         : 'المجلس ينتظر أول صوت'
               }
             >
-              {search || category !== 'الكل'
+              {hasFilters
                 ? 'جرّب تصنيفًا آخر أو ابحث باسم مختلف.'
                 : 'أنشئ غرفة، شارك رابطها، وابدأ الحديث.'}
-              <button className="v-button" onClick={createRoom}>
-                <Plus size={18} />
-                إنشاء غرفة
-              </button>
+              {hasFilters ? (
+                <button className="v-button" onClick={clearFilters}>
+                  مسح البحث والتصنيف
+                </button>
+              ) : (
+                <button className="v-button" onClick={createRoom}>
+                  <Plus size={18} />
+                  إنشاء غرفة
+                </button>
+              )}
             </EmptyState>
           ) : (
             <>
-              {view === 'explore' && !search && category === 'الكل' && active.length > 0 && (
-                <div className="v-featured-row">
-                  <div className="v-featured-label">
+              {view === 'explore' && !hasFilters && featured && (
+                <aside className={styles.spotlight} aria-label="الغرفة الأكثر نشاطًا">
+                  <div className={styles.spotlightLabel}>
+                    <Radio size={20} aria-hidden="true" />
+                    <span>الأكثر نشاطًا الآن</span>
+                  </div>
+                  <Link href={`/voice/${featured.id}`} className={styles.spotlightRoom}>
+                    <strong>{featured.name}</strong>
                     <span>
-                      <AudioLines size={20} />
-                      الأكثر نشاطًا الآن
+                      <Users size={15} aria-hidden="true" /> {number(featured.participantCount)}{' '}
+                      حاضر
                     </span>
-                    <p>لقاءات حيّة تستحق الانضمام</p>
-                  </div>
-                  <div className="v-featured-room">
-                    <VoiceCover src={active[0].cover} sizes="60vw" />
-                    <div>
-                      <LiveRoomInfo name={active[0].name} people={active[0].participantCount} />
-                      <Link href={`/voice/${active[0].id}`} className="v-button">
-                        انضم للغرفة
-                        <Headphones size={18} />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                    <ChevronLeft size={18} aria-hidden="true" />
+                  </Link>
+                </aside>
               )}
               <div className="v-grid-heading">
-                <h3>{view === 'explore' ? 'غرف مقترحة لك' : 'الغرف المباشرة'}</h3>
-                <span>{order === 'new' ? 'الأحدث أولًا' : 'بترتيب النشاط الحالي'}</span>
+                <h3>{hasFilters ? 'نتائج البحث' : view === 'explore' ? 'اختر مجلسك' : 'غرفك'}</h3>
+                <span>
+                  {order === 'new'
+                    ? 'الأحدث أولًا'
+                    : order === 'popular'
+                      ? 'الأكثر حضورًا أولًا'
+                      : 'المباشرة أولًا'}
+                </span>
               </div>
               <div className="v-room-grid">
                 {active.map((room) => (
@@ -417,17 +457,5 @@ export function VoiceLobby({
       </div>
       <CreateRoom open={create} onOpenChange={setCreate} />
     </VoiceShell>
-  );
-}
-function LiveRoomInfo({ name, people }: { name: string; people: number }) {
-  return (
-    <div className="v-featured-copy">
-      <LiveBadge waiting={people === 0} />
-      <h3>{name}</h3>
-      <p>
-        <Users size={16} />
-        {number(people)} حاضر
-      </p>
-    </div>
   );
 }

@@ -861,3 +861,44 @@ test('HTTP recovery clears only its Arabic connection status', async ({ page, co
   await expect(page.getByText('فشل إرسال تجريبي', { exact: true })).toBeAttached();
   await expect(input).toHaveValue('مسودة عند انقطاع الشبكة');
 });
+
+test('mobile opens with chat in view and confirmed gifts display without a timer tick', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.locator('.v-room-controls').waitFor();
+  await expect(page.locator('.v-seats')).toHaveAttribute('data-show-empty', 'false');
+  await expect(page.getByRole('textbox', { name: 'رسالتك' })).toBeInViewport();
+  const entrance = page.getByRole('button', { name: 'إخفاء شارة الدخول' });
+  if (await entrance.isVisible()) await entrance.click();
+  // Freeze presentation timers: a confirmed gift must be driven by the response itself.
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.route(/\/events\/?$/, async (route) => {
+    if (route.request().method() !== 'POST' || route.request().postDataJSON().type !== 'gift') {
+      await route.continue();
+      return;
+    }
+    const response = await route.fetch();
+    const snapshot = (await response.json()) as VoiceSnapshot;
+    snapshot.cursor += 1;
+    snapshot.messages.push({
+      id: 'confirmed-gift-immediate',
+      userId: 'host',
+      name: 'عبدالعزيز بن سلطان',
+      image: null,
+      text: '',
+      createdAt: await page.evaluate(() => Date.now()),
+      replyTo: null,
+      pinned: false,
+      reactions: {},
+      gift: { id: 'rose', recipientId: 'guest1', recipientName: 'نورة' },
+    });
+    await route.fulfill({ json: snapshot });
+  });
+  await page.locator('.v-room-controls').getByRole('button', { name: 'الهدايا' }).click();
+  await page.getByRole('button', { name: /إرسال.*مجانًا/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'أهدى' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /الهدايا/ })).not.toBeVisible();
+});

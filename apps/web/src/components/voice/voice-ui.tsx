@@ -321,12 +321,17 @@ export function VoiceShell({
           </Link>
           <button
             className={view === 'explore' ? 'is-active' : ''}
+            aria-current={view === 'explore' ? 'page' : undefined}
             onClick={() => navigate('explore')}
           >
             <Mic />
             <span>غرف صوتية</span>
           </button>
-          <button onClick={() => navigate('following')}>
+          <button
+            className={view === 'following' ? 'is-active' : ''}
+            aria-current={view === 'following' ? 'page' : undefined}
+            onClick={() => navigate('following')}
+          >
             <Users />
             <span>أتابعهم</span>
           </button>

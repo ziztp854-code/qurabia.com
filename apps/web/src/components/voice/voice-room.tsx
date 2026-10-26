@@ -132,7 +132,7 @@ export function VoiceRoomView({
   const [chatOpen, setChatOpen] = useState(false);
   const chatToggle = useRef<HTMLButtonElement>(null);
   const [membersOpen, setMembersOpen] = useState(false);
-  const [showEmptySeats, setShowEmptySeats] = useState(true);
+  const [showEmptySeats, setShowEmptySeats] = useState<boolean | null>(null);
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const [giftDisplay, setGiftDisplay] = useState<GiftDisplay | null>(null);
   const giftArrival = giftDisplay?.message ?? null;
@@ -145,21 +145,23 @@ export function VoiceRoomView({
     if (!visible) giftQueue.current.clear();
   }, [visible]);
   const effects = useRoomEffects();
+  const showNextGift = useCallback(() => {
+    if (giftActive.current || !effectsVisible.current || document.hidden) return;
+    const next = giftQueue.current.next(Date.now());
+    if (next) {
+      giftActive.current = true;
+      setGiftDisplay(next);
+    }
+  }, []);
   const dismissGift = useCallback(() => {
     giftActive.current = false;
     setGiftDisplay(null);
-  }, []);
+    showNextGift();
+  }, [showNextGift]);
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (giftActive.current || !effectsVisible.current || document.hidden) return;
-      const next = giftQueue.current.next(Date.now());
-      if (next) {
-        giftActive.current = true;
-        setGiftDisplay(next);
-      }
-    }, 200);
-    return () => clearInterval(timer);
-  }, []);
+    document.addEventListener('visibilitychange', showNextGift);
+    return () => document.removeEventListener('visibilitychange', showNextGift);
+  }, [showNextGift]);
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [giftRecipient, setGiftRecipient] = useState<string | undefined>();
   const closeGifts = useCallback(() => setGiftsOpen(false), []);
@@ -172,6 +174,7 @@ export function VoiceRoomView({
   const chatRef = useRef<HTMLDivElement>(null);
   const compactChat = useVoiceMediaQuery('(max-width: 1020px)');
   const narrowHeader = useVoiceMediaQuery('(max-width: 760px)');
+  const expandedSeats = showEmptySeats ?? !narrowHeader;
   const chatDismiss = useRef<(() => void) | null>(null);
   const completeChatClose = useCallback(() => setChatOpen(false), []);
   const registerChatDismiss = useCallback((dismiss: (() => void) | null) => {
@@ -232,47 +235,51 @@ export function VoiceRoomView({
   const stopHeartbeat = useRef<(() => void) | null>(null);
   const snapshotRef = useRef<VoiceSnapshot | null>(null);
   const liveMessages = useRef<VoiceLiveMessage[]>([]);
-  const apply = useCallback((data: VoiceSnapshot) => {
-    if (leaving.current) return;
-    const accepted = nextSnapshot(snapshotRef.current, data);
-    if (accepted === snapshotRef.current) return;
-    const next = withLiveMessages(accepted, liveMessages.current);
-    // Initial history is not a live event. Polling the same message must not replay it.
-    const previous = snapshotRef.current;
-    if (previous && previous.room.id !== next.room.id) {
-      giftQueue.current = new GiftEffectQueue();
-      giftActive.current = false;
-      setGiftDisplay(null);
-      setArrivals([]);
-    }
-    giftQueue.current.ingest(
-      next.messages,
-      Date.now(),
-      Boolean(
-        previous?.me &&
-        previous.room.id === next.room.id &&
-        next.me &&
-        next.room.active &&
-        effectsVisible.current &&
-        !document.hidden,
-      ),
-    );
-    const entrants = voiceArrivals(snapshotRef.current, next);
-    if (entrants.length)
-      setArrivals((current) =>
-        [
-          ...current.filter((entry) => entry.expiresAt > Date.now()),
-          ...entrants.slice(-3).map((member, index) => ({
-            member,
-            key: `${member.id}:${member.joinedAt}`,
-            expiresAt: Date.now() + 6000 + index * 3000,
-          })),
-        ].slice(-3),
+  const apply = useCallback(
+    (data: VoiceSnapshot) => {
+      if (leaving.current) return;
+      const accepted = nextSnapshot(snapshotRef.current, data);
+      if (accepted === snapshotRef.current) return;
+      const next = withLiveMessages(accepted, liveMessages.current);
+      // Initial history is not a live event. Polling the same message must not replay it.
+      const previous = snapshotRef.current;
+      if (previous && previous.room.id !== next.room.id) {
+        giftQueue.current = new GiftEffectQueue();
+        giftActive.current = false;
+        setGiftDisplay(null);
+        setArrivals([]);
+      }
+      giftQueue.current.ingest(
+        next.messages,
+        Date.now(),
+        Boolean(
+          previous?.me &&
+          previous.room.id === next.room.id &&
+          next.me &&
+          next.room.active &&
+          effectsVisible.current &&
+          !document.hidden,
+        ),
       );
-    snapshotRef.current = next;
-    setSnapshot(next);
-    if (data.mediaSyncPending !== undefined) setMediaPending(data.mediaSyncPending);
-  }, []);
+      showNextGift();
+      const entrants = voiceArrivals(snapshotRef.current, next);
+      if (entrants.length)
+        setArrivals((current) =>
+          [
+            ...current.filter((entry) => entry.expiresAt > Date.now()),
+            ...entrants.slice(-3).map((member, index) => ({
+              member,
+              key: `${member.id}:${member.joinedAt}`,
+              expiresAt: Date.now() + 6000 + index * 3000,
+            })),
+          ].slice(-3),
+        );
+      snapshotRef.current = next;
+      setSnapshot(next);
+      if (data.mediaSyncPending !== undefined) setMediaPending(data.mediaSyncPending);
+    },
+    [showNextGift],
+  );
   const receiveRoomMessage = useCallback(
     (packet: VoiceLiveMessage) => {
       const current = snapshotRef.current;
@@ -1106,7 +1113,7 @@ export function VoiceRoomView({
                           )}
                         </div>
                       )}
-                      <div className="v-seats" data-show-empty={showEmptySeats}>
+                      <div className="v-seats" data-show-empty={expandedSeats}>
                         {Array.from({ length: room.seatCount }, (_, index) => {
                           const person = participants.find((p) => p.seatIndex === index);
                           const locked = room.lockedSeats.includes(index);
@@ -1231,11 +1238,11 @@ export function VoiceRoomView({
                       {participants.filter((p) => p.seatIndex !== null).length < room.seatCount && (
                         <button
                           className="v-seat-expand v-text-button"
-                          aria-expanded={showEmptySeats}
-                          onClick={() => setShowEmptySeats((value) => !value)}
+                          aria-expanded={expandedSeats}
+                          onClick={() => setShowEmptySeats(!expandedSeats)}
                         >
                           <Mic size={15} />
-                          {showEmptySeats ? 'طي المقاعد الشاغرة' : 'عرض المقاعد الشاغرة'}
+                          {expandedSeats ? 'طي المقاعد الشاغرة' : 'عرض المقاعد الشاغرة'}
                         </button>
                       )}
                       <p className="v-stage-note">

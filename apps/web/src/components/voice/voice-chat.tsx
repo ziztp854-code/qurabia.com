@@ -569,12 +569,12 @@ function VoiceChatComposer({
           </button>
         </div>
       )}
+      {sending && (
+        <div className="v-chat-sending" role="status">
+          جارٍ إرسال الرسالة… يمكنك كتابة رسالتك التالية
+        </div>
+      )}
       <form className={`v-chat-compose ${emojiStyles.anchor}`} onSubmit={send} aria-busy={sending}>
-        {sending && (
-          <span className="v-sr-only" role="status">
-            جارٍ إرسال الرسالة…
-          </span>
-        )}
         {picker && me && enabled && (
           <Suspense fallback={<p role="status">تحميل لوحة الفيسات…</p>}>
             <EmojiPicker

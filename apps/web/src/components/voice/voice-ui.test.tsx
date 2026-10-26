@@ -372,3 +372,104 @@ describe('Narrow screen navigation accessibility', () => {
     expect(trigger).toHaveFocus();
   });
 });
+
+describe('Discovery recovery and truthful room activity', () => {
+  it('offers guests a retry for a service failure instead of asking them to sign in', async () => {
+    let finish: ((value: Response) => void) | undefined;
+    const fetcher = vi
+      .fn()
+      .mockImplementationOnce(() => response({ error: 'الخدمة غير متاحة' }, 503))
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            finish = resolve;
+          }),
+      );
+    vi.stubGlobal('fetch', fetcher);
+    render(<VoiceLobby user={null} />);
+    expect(await screen.findByText('تعذر تحميل الغرف')).toBeInTheDocument();
+    expect(screen.queryByText('اللقاء يبدأ بحسابك')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إعادة المحاولة' }));
+    expect(screen.getByText('نبحث عن الأصوات الحاضرة…')).toBeInTheDocument();
+    await act(async () => {
+      finish!(await response({ rooms: [room] }));
+    });
+    expect(await screen.findByRole('link', { name: 'دخول الغرفة' })).toBeInTheDocument();
+    expect(screen.queryByText('تعذر تحميل الغرف')).not.toBeInTheDocument();
+  });
+  it('trims search input and clears both search and category without leaving discovery', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => response({ rooms: [room] })),
+    );
+    render(<VoiceLobby user={null} />);
+    await screen.findByRole('link', { name: 'دخول الغرفة' });
+    const search = screen.getAllByRole('searchbox')[0];
+    fireEvent.change(search, { target: { value: `  ${room.name}  ` } });
+    expect(screen.getByRole('link', { name: 'دخول الغرفة' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'ثقافة' }));
+    expect(screen.getByText('لا توجد غرف تطابق بحثك')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'مسح البحث والتصنيف' }));
+    expect(search).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'الكل' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('link', { name: 'دخول الغرفة' })).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+  it('keeps the active spotlight independent of sorting and ignores ended or empty rooms', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        response({
+          rooms: [
+            room,
+            {
+              ...room,
+              id: 'ended',
+              name: 'لقاء انتهى',
+              active: false,
+              participantCount: 100,
+              createdAt: 10,
+            },
+            { ...room, id: 'empty', name: 'لقاء لم يبدأ', participantCount: 0, createdAt: 11 },
+          ],
+        }),
+      ),
+    );
+    render(<VoiceLobby user={null} />);
+    const spotlight = await screen.findByRole('complementary', { name: 'الغرفة الأكثر نشاطًا' });
+    expect(spotlight).toHaveTextContent(room.name);
+    fireEvent.click(screen.getByRole('button', { name: 'جديد' }));
+    expect(spotlight).toHaveTextContent(room.name);
+    expect(spotlight).not.toHaveTextContent('لقاء انتهى');
+    expect(screen.getByText('١ غرف حيّة الآن')).toBeInTheDocument();
+  });
+  it('does not advertise a live spotlight when every room is inactive or waiting', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => response({ rooms: [{ ...room, active: false }] })),
+    );
+    render(<VoiceLobby user={null} />);
+    await screen.findByRole('link', { name: 'دخول الغرفة' });
+    expect(
+      screen.queryByRole('complementary', { name: 'الغرفة الأكثر نشاطًا' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('كن أول من يبدأ اللقاء')).toBeInTheDocument();
+  });
+  it('announces the selected following view in the mobile navigation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => response({ rooms: [] })),
+    );
+    render(<VoiceLobby user={null} />);
+    const nav = screen.getByRole('navigation', { name: 'التنقل على الجوال' });
+    fireEvent.click(within(nav).getByRole('button', { name: 'أتابعهم' }));
+    expect(within(nav).getByRole('button', { name: 'أتابعهم' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(nav).getByRole('button', { name: 'غرف صوتية' })).not.toHaveAttribute(
+      'aria-current',
+    );
+    await screen.findByText('تابع المضيفين من داخل غرفهم');
+  });
+});

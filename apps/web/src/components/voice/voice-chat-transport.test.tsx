@@ -102,6 +102,7 @@ describe('chat transport invariants during typing', () => {
     });
     expect(input).toHaveValue('  مرحبًا بالمجلس  ');
     expect(send).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('جارٍ إرسال الرسالة');
 
     const confirmed = message('confirmed', 2);
     const snapshot = {

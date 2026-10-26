@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { optionalVoiceDisplayIdentity } from './identity';
+import { optionalVoiceDisplayIdentity, voiceActor } from './identity';
 import type { PublicIdentity } from '@/lib/community/contracts';
 
 const mocks = vi.hoisted(() => ({
@@ -71,5 +71,25 @@ describe('voice SSR display identity', () => {
     mocks.current.mockReturnValueOnce(false);
     expect(await optionalVoiceDisplayIdentity()).toBeNull();
     expect(mocks.community).not.toHaveBeenCalled();
+  });
+});
+
+describe('voice event actor', () => {
+  it('authorizes without waiting for display or cosmetic queries', async () => {
+    mocks.community.mockImplementation(() => new Promise(() => {}));
+    expect(await voiceActor()).toEqual({ id: 'self' });
+    expect(mocks.user).toHaveBeenCalledWith({
+      where: { id: 'self' },
+      select: { id: true, role: true, status: true, tokenVersion: true },
+    });
+    expect(mocks.current).toHaveBeenCalled();
+    expect(mocks.community).not.toHaveBeenCalled();
+  });
+  it('rejects anonymous and revoked accounts before processing events', async () => {
+    mocks.session.mockResolvedValueOnce(null);
+    await expect(voiceActor()).rejects.toMatchObject({ status: 401, code: 'AUTH_REQUIRED' });
+    expect(mocks.user).not.toHaveBeenCalled();
+    mocks.current.mockReturnValueOnce(false);
+    await expect(voiceActor()).rejects.toMatchObject({ status: 401, code: 'SESSION_REVOKED' });
   });
 });

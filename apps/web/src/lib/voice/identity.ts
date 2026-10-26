@@ -6,6 +6,20 @@ import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { VoiceHttpError } from './http';
 import type { VoiceIdentity } from './types';
 import { voiceCommunityIdentities } from './community-identity';
+/** Event authorization does not need profile decorations or the cosmetic catalog. */
+export async function voiceActor(): Promise<{ id: string }> {
+  const session = await getCurrentSession();
+  if (!session?.user?.id)
+    throw new VoiceHttpError(401, 'سجّل الدخول للانضمام إلى تحدي لايف.', 'AUTH_REQUIRED');
+  const user = await getPrismaClient().user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, role: true, status: true, tokenVersion: true },
+  });
+  if (!isSessionUserCurrent(session.user, user))
+    throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة. سجّل الدخول مجددًا.', 'SESSION_REVOKED');
+  return { id: user.id };
+}
+
 export async function voiceIdentity(): Promise<VoiceIdentity> {
   const session = await getCurrentSession();
   if (!session?.user?.id)

@@ -225,13 +225,14 @@ export async function getUserIdentities(
 ): Promise<Map<string, PublicIdentity>> {
   const ids = [...new Set(userIds)];
   if (!ids.length) return new Map();
-  const rows = await db.user.findMany({
-    where: { id: { in: ids }, status: 'ACTIVE' },
-    select: identitySelect,
-  });
-  const catalog = (
-    await db.profileCosmetic.findMany({ where: { archived: false }, orderBy: { createdAt: 'asc' } })
-  ).map(cosmetic);
+  const [rows, cosmetics] = await Promise.all([
+    db.user.findMany({
+      where: { id: { in: ids }, status: 'ACTIVE' },
+      select: identitySelect,
+    }),
+    db.profileCosmetic.findMany({ where: { archived: false }, orderBy: { createdAt: 'asc' } }),
+  ]);
+  const catalog = cosmetics.map(cosmetic);
   const result = new Map<string, PublicIdentity>();
   for (const row of rows) {
     const entry = identity(row, await resolve(row, db, catalog));

@@ -275,10 +275,11 @@
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
-    padding: 4px 6px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
+    padding: 8px 10px;
+    border: 1px solid var(--voice-line);
+    border-radius: 14px;
+    border-start-start-radius: 5px;
+    background: var(--voice-card);
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
@@ -303,13 +304,13 @@
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose) {
-    gap: 4px;
-    padding: 8px;
-    background: transparent;
+    gap: 6px;
+    padding: 10px 8px;
+    background: var(--voice-bg);
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose textarea) {
-    border-color: var(--voice-muted);
+    border-color: var(--voice-border);
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
@@ -393,7 +394,8 @@
     white-space: nowrap;
   }
 
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-is-empty:has(.v-seat-lock)) {
+  .mobileRoom[data-room-visible='true']
+    :global(.v-stage .v-seats[data-show-empty='true'] .v-seat-is-empty:has(.v-seat-lock)) {
     display: grid;
     grid-template-columns: minmax(44px, 1fr) 44px;
     padding-inline: 0;
