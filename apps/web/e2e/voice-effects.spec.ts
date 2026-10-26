@@ -1,4 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type Page,
+  type Request,
+  type Response,
+  type ConsoleMessage,
+} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -11,6 +18,40 @@ async function open(page: Page, viewer = 'host') {
   await page.locator('.v-room-controls').waitFor();
   await page.evaluate(() => document.fonts.ready);
 }
+
+function monitor(page: Page, viewer: string) {
+  const diagnostics = {
+    viewer,
+    console: [] as { type: string; text: string; url: string }[],
+    pageErrors: [] as string[],
+    failedRequests: [] as { url: string; error: string | undefined }[],
+    responses: [] as { url: string; status: number; method: string }[],
+  };
+  page.on('console', (message: ConsoleMessage) => {
+    if (message.type() === 'error' || message.type() === 'warning')
+      diagnostics.console.push({
+        type: message.type(),
+        text: message.text(),
+        url: message.location().url,
+      });
+  });
+  page.on('pageerror', (error: Error) => diagnostics.pageErrors.push(error.stack ?? error.message));
+  page.on('requestfailed', (request: Request) =>
+    diagnostics.failedRequests.push({
+      url: request.url(),
+      error: request.failure()?.errorText,
+    }),
+  );
+  page.on('response', (response: Response) => {
+    if (response.status() >= 400 || new URL(response.url()).pathname.startsWith('/api/voice/'))
+      diagnostics.responses.push({
+        url: response.url(),
+        status: response.status(),
+        method: response.request().method(),
+      });
+  });
+  return diagnostics;
+}
 async function send(page: Page, giftId: string, viewer: string) {
   const response = await page.request.post(endpoint, {
     headers: { Cookie: `effects-viewer=${viewer}` },
@@ -21,15 +62,25 @@ async function send(page: Page, giftId: string, viewer: string) {
 
 test('a listener joins without a preview request and receives another viewer chat over HTTP fallback', async ({
   browser,
-}) => {
+}, testInfo) => {
   const hostContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const guestContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pages: { page: Page; diagnostics: ReturnType<typeof monitor> }[] = [];
+  let failed = false;
   try {
+    await Promise.all([
+      hostContext.tracing.start({ screenshots: true, snapshots: true }),
+      guestContext.tracing.start({ screenshots: true, snapshots: true }),
+    ]);
     await guestContext.addCookies([
       { name: 'effects-viewer', value: 'guest1', url: 'http://127.0.0.1:3418' },
     ]);
     const host = await hostContext.newPage();
     const guest = await guestContext.newPage();
+    pages.push(
+      { page: host, diagnostics: monitor(host, 'host') },
+      { page: guest, diagnostics: monitor(guest, 'guest1') },
+    );
     const entryRequests: { path: string; method: string }[] = [];
     guest.on('request', (request) => {
       const path = new URL(request.url()).pathname;
@@ -55,7 +106,43 @@ test('a listener joins without a preview request and receives another viewer cha
     await expect(
       guest.getByRole('button', { name: 'الميكروفون مكتوم', exact: true }),
     ).toBeDisabled();
+  } catch (error) {
+    failed = true;
+    // Capture before closing these manual contexts; normal fixture artifacts miss them.
+    await Promise.all(
+      pages.map(async ({ page, diagnostics }) => {
+        const body = await page
+          .locator('body')
+          .innerText({ timeout: 2000 })
+          .catch(() => '(page unavailable)');
+        await testInfo.attach(`startup-${diagnostics.viewer}.json`, {
+          body: Buffer.from(JSON.stringify({ ...diagnostics, body, url: page.url() }, null, 2)),
+          contentType: 'application/json',
+        });
+        const screenshot = await page.screenshot({ timeout: 2000 }).catch(() => null);
+        if (screenshot)
+          await testInfo.attach(`startup-${diagnostics.viewer}.png`, {
+            body: screenshot,
+            contentType: 'image/png',
+          });
+      }),
+    ).catch(() => {});
+    await Promise.all(
+      [
+        { context: hostContext, viewer: 'host' },
+        { context: guestContext, viewer: 'guest1' },
+      ].map(async ({ context, viewer }) => {
+        const trace = testInfo.outputPath(`startup-${viewer}-trace.zip`);
+        await context.tracing.stop({ path: trace });
+        await testInfo.attach(`startup-${viewer}-trace`, {
+          path: trace,
+          contentType: 'application/zip',
+        });
+      }),
+    ).catch(() => {});
+    throw error;
   } finally {
+    if (!failed) await Promise.all([hostContext.tracing.stop(), guestContext.tracing.stop()]);
     await Promise.all([hostContext.close(), guestContext.close()]);
   }
 });
