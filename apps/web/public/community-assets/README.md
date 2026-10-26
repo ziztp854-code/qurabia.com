@@ -13,10 +13,12 @@ Built-in artwork does not confer a grant or account role. Custom administrator-u
 
 Exclusive account overlays (user-approved reference, 21 October 2026):
 
-- `frame-owner-sapphire.webp`: 768 × 768, 178658 bytes, gold crown and blue sapphires.
+- `frame-owner-sapphire.webp`: 768 × 768, 139094 bytes, refined champagne-gold crown, midnight enamel and blue sapphires. Updated 26 October 2026; see [browser review](../../../../docs/visual-evidence/owner-frame-refinement/README.md).
 - `frame-amira-rose.webp`: 768 × 768, 213146 bytes, rose gold, pink gems and pearls.
 
 Generated from the user's approved board with transparent portrait holes and exterior alpha. Original masters are 1254 × 1254 PNGs in the session workspace (`exec-660e7202-f8ec-4945-8c62-aedfa23f09d9.png` and `exec-e96e3e04-edfa-4942-b33c-672d21c98de8.png`). Sharp only resizes and encodes WebP; the artwork itself is produced by the image-generation tool. Both center and corner alpha are zero. No third-party stock assets or additional client libraries are included. Existing atlas files remain unchanged.
+
+The owner's refined frame replaces its original artwork with a newly generated 1254 × 1254 transparent master, `exec-ad2c38b2-bbc0-40d8-b392-2ed44017e59d.png`, retained in `/workspace/generated_images` for this session. It retains the existing asset URL, crown/sapphire identity and portrait alignment. Delivery is 768 × 768 WebP, quality 90 / alpha quality 100, 22.1% fewer bytes than the previous owner frame. The Amira artwork and exclusive grants are unchanged.
 
 Artwork URLs are public for display; ownership and equip/grant permissions are enforced separately on the server and by database constraints. These frames confer no role or rank.
 

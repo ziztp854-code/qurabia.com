@@ -856,18 +856,27 @@
 }
 /* Transparent jewelry overlays: keep the real portrait inside the circular opening. */
 .avatar[data-exclusive-frame] {
+  --exclusive-photo-size: 64%;
+  --exclusive-photo-inline: 18%;
+  --exclusive-photo-top: 23%;
   border: 0;
   padding: 0;
   background: transparent;
   box-shadow: none;
 }
+/* Match the sapphire artwork's aperture rather than the full crown canvas. */
+.avatar[data-exclusive-frame='frame-owner-sapphire'] {
+  --exclusive-photo-size: 60%;
+  --exclusive-photo-inline: 20%;
+  --exclusive-photo-top: 22%;
+}
 .avatar[data-exclusive-frame] > img:not(.avatarFrame),
 .avatar[data-exclusive-frame] > .avatarPlaceholder {
   position: absolute;
-  inset-inline-start: 18%;
-  inset-block-start: 23%;
-  inline-size: 64%;
-  block-size: 64%;
+  inset-inline-start: var(--exclusive-photo-inline);
+  inset-block-start: var(--exclusive-photo-top);
+  inline-size: var(--exclusive-photo-size);
+  block-size: var(--exclusive-photo-size);
   border-radius: 50%;
   background: var(--surface-strong);
 }
@@ -876,6 +885,14 @@
   inline-size: 100%;
   block-size: 100%;
   border-radius: 0;
+}
+.avatar[data-exclusive-frame='frame-owner-sapphire'] > .avatarPlaceholder {
+  display: grid;
+  place-content: center;
+  padding: 2px;
+  overflow: hidden;
+  font-size: 0.6rem;
+  line-height: 1.35;
 }
 .profileHero[data-background-tier='silver'] .cover {
   background:

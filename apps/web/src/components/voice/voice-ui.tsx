@@ -51,6 +51,7 @@ export function Avatar({
   return (
     <span
       className={`v-avatar ${speaking ? 'v-speaking' : ''} ${exclusive ? artStyles.exclusiveAvatar : ''}`}
+      data-exclusive-frame={exclusive ? user.communityIdentity?.frame?.id : undefined}
       style={{
         width: size,
         height: size,

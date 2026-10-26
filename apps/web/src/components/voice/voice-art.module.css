@@ -10,16 +10,24 @@
   height: 100%;
 }
 .exclusiveAvatar:global(.v-avatar) {
+  --exclusive-photo-size: 64%;
+  --exclusive-photo-inline: 18%;
+  --exclusive-photo-top: 23%;
   background: transparent;
   border-color: transparent;
 }
-.exclusiveAvatar > img,
-.exclusiveAvatar > span:not(.frameOverlay) {
+.exclusiveAvatar[data-exclusive-frame='frame-owner-sapphire'] {
+  --exclusive-photo-size: 60%;
+  --exclusive-photo-inline: 20%;
+  --exclusive-photo-top: 22%;
+}
+.exclusiveAvatar:global(.v-avatar) > img,
+.exclusiveAvatar:global(.v-avatar) > span:not(.frameOverlay) {
   position: absolute;
-  inset-inline-start: 18%;
-  inset-block-start: 23%;
-  width: 64%;
-  height: 64%;
+  inset-inline-start: var(--exclusive-photo-inline);
+  inset-block-start: var(--exclusive-photo-top);
+  width: var(--exclusive-photo-size);
+  height: var(--exclusive-photo-size);
   border-radius: 50%;
   background: var(--surface-strong);
 }

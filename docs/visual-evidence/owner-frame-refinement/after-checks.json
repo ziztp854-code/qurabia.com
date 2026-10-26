@@ -1,0 +1,45 @@
+[
+  {
+    "width": 390,
+    "overflow": false,
+    "brokenImages": [],
+    "frames": 8,
+    "frameBytes": [
+      139094
+    ],
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "overflow": false,
+    "brokenImages": [],
+    "frames": 8,
+    "frameBytes": [
+      139094
+    ],
+    "errors": []
+  },
+  {
+    "width": 320,
+    "zoom": 2,
+    "reduced": true,
+    "overflow": false,
+    "brokenImages": [],
+    "frames": 8,
+    "frameBytes": [
+      139094
+    ],
+    "errors": []
+  },
+  {
+    "width": 390,
+    "light": true,
+    "overflow": false,
+    "brokenImages": [],
+    "frames": 8,
+    "frameBytes": [
+      139094
+    ],
+    "errors": []
+  }
+]
