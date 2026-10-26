@@ -60,6 +60,13 @@ describe('current LiveKit connection diagnostics', () => {
     expect(rows.find((r) => r.label === 'الميكروفون')?.state).toBe('warning');
     expect(rows.find((r) => r.label === 'جودة الشبكة')?.state).toBe('warning');
   });
+  it('keeps the listening warning when an individual track is blocked despite a successful room status', async () => {
+    const rows = await inspectVoiceConnection(fixture({ playback: true }), false, true);
+    expect(rows.find((r) => r.label === 'تشغيل الصوت')).toMatchObject({
+      state: 'warning',
+      detail: expect.stringContaining('تفعيل الاستماع'),
+    });
+  });
   it('reads received RTP statistics and flags significant loss without opening a second transport', async () => {
     const stats = vi.fn(
       async () =>

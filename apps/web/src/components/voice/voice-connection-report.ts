@@ -17,7 +17,11 @@ type AudioStats = {
 };
 
 /** Inspect the current SDK transport. No new participant, microphone capture or recording. */
-export async function inspectVoiceConnection(room: Room | null, microphoneExpected: boolean) {
+export async function inspectVoiceConnection(
+  room: Room | null,
+  microphoneExpected: boolean,
+  playbackBlocked = false,
+) {
   const connected = room?.state === 'connected';
   const rows: VoiceCheckRow[] = [
     {
@@ -27,10 +31,11 @@ export async function inspectVoiceConnection(room: Room | null, microphoneExpect
     },
   ];
   if (!room || !connected) return rows;
+  const playbackAllowed = room.canPlaybackAudio && !playbackBlocked;
   rows.push({
     label: 'تشغيل الصوت',
-    state: room.canPlaybackAudio ? 'passed' : 'warning',
-    detail: room.canPlaybackAudio
+    state: playbackAllowed ? 'passed' : 'warning',
+    detail: playbackAllowed
       ? 'المتصفح يسمح بتشغيل الصوت.'
       : 'اضغط تفعيل الاستماع للسماح بتشغيل الصوت.',
   });

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   mic: vi.fn(),
   startAudio: vi.fn(),
   canPlaybackAudio: true,
+  permissions: { canSubscribe: true, canPublish: true },
   lock: vi.fn(),
   track: { enabled: true, stop: vi.fn() },
   events: new Map<string, (...args: unknown[]) => void>(),
@@ -17,6 +18,10 @@ vi.mock('livekit-client', () => ({
   ConnectionState: { Connected: 'connected' },
   DisconnectReason: { DUPLICATE_IDENTITY: 2, PARTICIPANT_REMOVED: 4 },
   Track: { Kind: { Audio: 'audio' }, Source: { Microphone: 'microphone' } },
+  TrackEvent: {
+    AudioPlaybackStarted: 'audioPlaybackStarted',
+    AudioPlaybackFailed: 'audioPlaybackFailed',
+  },
   RoomEvent: {
     DataReceived: 'data',
     ParticipantPermissionsChanged: 'permissions',
@@ -37,7 +42,9 @@ vi.mock('livekit-client', () => ({
       return mocks.canPlaybackAudio;
     }
     localParticipant = {
-      permissions: { canSubscribe: true, canPublish: true },
+      get permissions() {
+        return mocks.permissions;
+      },
       setMicrophoneEnabled: mocks.mic,
       getTrackPublication: () => ({ track: { mediaStreamTrack: mocks.track } }),
     };
@@ -71,6 +78,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.events.clear();
   mocks.canPlaybackAudio = true;
+  mocks.permissions = { canSubscribe: true, canPublish: true };
   mocks.track.enabled = true;
   vi.stubGlobal('isSecureContext', true);
   Object.defineProperty(navigator, 'mediaDevices', {
@@ -388,3 +396,199 @@ it('exposes a user-gesture playback action when the browser blocks remote audio'
   expect(mocks.startAudio).toHaveBeenCalledTimes(1);
   expect(blocked).toHaveBeenLastCalledWith(false);
 });
+
+it('attaches a newly subscribed speaker after the listener is already connected without reconnecting', async () => {
+  const listener = { ...participant, role: 'listener' as const, seatIndex: null };
+  const view = render(<AudioSession roomId="room" participant={listener} volume={0.4} />);
+  await screen.findByText('متصل بالصوت');
+
+  const audio = document.createElement('audio');
+  const remoteTrack = {
+    kind: 'audio',
+    attach: vi.fn(() => audio),
+    detach: vi.fn(() => [audio]),
+    on: vi.fn(),
+    off: vi.fn(),
+  };
+  act(() => {
+    mocks.events.get('subscribed')?.(remoteTrack, {}, { identity: 'late-speaker' });
+  });
+
+  expect(document.querySelector('audio[data-voice-audio="late-speaker"]')).toBe(audio);
+  expect(audio.autoplay).toBe(true);
+  expect(audio.muted).toBe(false);
+  expect(audio.volume).toBe(0.4);
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
+  expect(mocks.disconnect).not.toHaveBeenCalled();
+
+  view.rerender(
+    <AudioSession roomId="room" participant={listener} volume={0.4} mutedUserIds={['late-speaker']} />,
+  );
+  expect(audio.muted).toBe(true);
+
+  act(() => mocks.events.get('unsubscribed')?.(remoteTrack));
+  expect(audio).not.toBeInTheDocument();
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
+});
+
+it.each(['membership-first', 'grant-first'] as const)(
+  'starts a promoted speaker without reconnecting when %s arrives',
+  async (order) => {
+    const listener = { ...participant, role: 'listener' as const, seatIndex: null };
+    mocks.permissions = { canSubscribe: true, canPublish: false };
+    const view = render(<AudioSession roomId="room" participant={listener} muted={false} />);
+    await screen.findByText('متصل بالصوت');
+    await waitFor(() => expect(mocks.track.enabled).toBe(false));
+
+    const grantPublishing = () => {
+      const previous = mocks.permissions;
+      mocks.permissions = { canSubscribe: true, canPublish: true };
+      act(() => mocks.events.get('permissions')?.(previous, { identity: participant.id }));
+    };
+    const promoteMembership = () => {
+      view.rerender(<AudioSession roomId="room" participant={participant} muted={false} />);
+    };
+    if (order === 'membership-first') {
+      promoteMembership();
+      await act(async () => {});
+      expect(mocks.track.enabled).toBe(false);
+      grantPublishing();
+    } else {
+      grantPublishing();
+      await act(async () => {});
+      expect(mocks.track.enabled).toBe(false);
+      promoteMembership();
+    }
+
+    await waitFor(() => expect(mocks.track.enabled).toBe(true));
+    expect(mocks.mic).toHaveBeenLastCalledWith(true, expect.anything());
+    expect(mocks.connect).toHaveBeenCalledTimes(1);
+    expect(mocks.disconnect).not.toHaveBeenCalled();
+  },
+);
+
+it.each([
+  { name: 'deafened', deafened: true, mutedUserIds: [] },
+  { name: 'muted member', deafened: false, mutedUserIds: ['late'] },
+])('preserves $name while a user gesture unlocks SDK playback', async ({ deafened, mutedUserIds }) => {
+  const ref = createRef<VoiceAudioHandle>();
+  const view = render(
+    <AudioSession ref={ref} roomId="room" participant={participant} deafened={deafened} mutedUserIds={mutedUserIds} />,
+  );
+  await screen.findByText('متصل بالصوت');
+  const audio = document.createElement('audio');
+  const track = { kind: 'audio', attach: () => audio, detach: () => [audio], on: vi.fn(), off: vi.fn() };
+  act(() => mocks.events.get('subscribed')?.(track, {}, { identity: 'late' }));
+  expect(audio.muted).toBe(true);
+  let finish!: () => void;
+  mocks.startAudio.mockImplementation(() => {
+    // Room.startAudio synchronously unmutes attached elements before awaiting play.
+    audio.muted = false;
+    return new Promise<void>((resolve) => { finish = resolve; });
+  });
+  await act(async () => {
+    const unlocked = ref.current!.startAudio();
+    expect(audio.muted).toBe(true);
+    finish();
+    await unlocked;
+  });
+  expect(audio.muted).toBe(true);
+  expect(mocks.connect).toHaveBeenCalledTimes(1);
+  view.unmount();
+});
+
+it.each(['user-gesture', 'same-track-retry', 'unsubscribe'] as const)(
+  'keeps recovery available for a blocked late track despite another track playing, then handles %s',
+  async (recovery) => {
+  const sdk = await vi.importActual<typeof import('livekit-client')>('livekit-client');
+  const previousMediaStream = globalThis.MediaStream;
+  class BrowserMediaStream {
+    tracks: MediaStreamTrack[] = [];
+    getTracks() { return this.tracks; }
+    getAudioTracks() { return this.tracks.filter((track) => track.kind === 'audio'); }
+    getVideoTracks() { return this.tracks.filter((track) => track.kind === 'video'); }
+    addTrack(track: MediaStreamTrack) { this.tracks = [...this.tracks, track]; }
+    removeTrack(track: MediaStreamTrack) { this.tracks = this.tracks.filter((entry) => entry !== track); }
+  }
+  vi.stubGlobal('MediaStream', BrowserMediaStream);
+  const playing = new WeakSet<HTMLMediaElement>();
+  let allowLatePlayback = false;
+  let startExisting!: () => void;
+  const existingPlayback = new Promise<void>((resolve) => { startExisting = resolve; });
+  const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (this: HTMLMediaElement) {
+    Object.defineProperty(this, 'paused', {
+      configurable: true,
+      get: () => !playing.has(this),
+    });
+    const source = this.srcObject as MediaStream;
+    if (source.getAudioTracks()[0].id === 'late' && !allowLatePlayback)
+      return Promise.reject(new DOMException('A user gesture is required', 'NotAllowedError'));
+    return existingPlayback.then(() => { playing.add(this); });
+  });
+  const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+  const tracks = ['existing', 'late'].map((id) => new sdk.RemoteAudioTrack(
+    { id, kind: 'audio', enabled: true, readyState: 'live' } as MediaStreamTrack,
+    `track-${id}`,
+    {} as RTCRtpReceiver,
+  ));
+  // Reproduce the SDK's documented room-wide playback status events using real
+  // RemoteAudioTrack.attach/play handling. Browser play permission is the only
+  // playback boundary replaced here; no application mute or volume is forced.
+  for (const track of tracks) {
+    track.on(sdk.TrackEvent.AudioPlaybackFailed, () => {
+      mocks.canPlaybackAudio = false;
+      mocks.events.get('playback')?.();
+    });
+    track.on(sdk.TrackEvent.AudioPlaybackStarted, () => {
+      mocks.canPlaybackAudio = true;
+      mocks.events.get('playback')?.();
+    });
+  }
+  const listener = { ...participant, role: 'listener' as const, seatIndex: null };
+  const view = render(<AudioSession roomId="room" participant={listener} />);
+  try {
+    await screen.findByText('متصل بالصوت');
+    await act(async () => {
+      for (const [index, track] of tracks.entries())
+        mocks.events.get('subscribed')?.(track, {}, { identity: index ? 'late' : 'existing' });
+    });
+    const late = document.querySelector<HTMLAudioElement>('audio[data-voice-audio="late"]')!;
+    expect(late.muted).toBe(false);
+    expect(late.paused).toBe(true);
+    expect(screen.getByRole('button', { name: 'تفعيل الاستماع' })).toBeInTheDocument();
+
+    await act(async () => { startExisting(); });
+    expect(mocks.canPlaybackAudio).toBe(true);
+    expect(late.paused).toBe(true);
+    expect(screen.getByRole('button', { name: 'تفعيل الاستماع' })).toBeInTheDocument();
+
+    allowLatePlayback = true;
+    if (recovery === 'user-gesture') {
+      mocks.startAudio.mockImplementation(async () => {
+        await Promise.all(tracks.flatMap((track) => track.attachedElements).map((element) => {
+          element.muted = false;
+          return element.play();
+        }));
+        mocks.canPlaybackAudio = true;
+        mocks.events.get('playback')?.();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'تفعيل الاستماع' }));
+      await waitFor(() => expect(late.paused).toBe(false));
+    } else if (recovery === 'same-track-retry') {
+      await act(async () => { tracks[1].attach(late); });
+      expect(late.paused).toBe(false);
+    } else {
+      act(() => mocks.events.get('unsubscribed')?.(tracks[1]));
+      expect(late).not.toBeInTheDocument();
+    }
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'تفعيل الاستماع' })).not.toBeInTheDocument());
+    expect(mocks.connect).toHaveBeenCalledTimes(1);
+
+  } finally {
+    view.unmount();
+    play.mockRestore();
+    pause.mockRestore();
+    vi.stubGlobal('MediaStream', previousMediaStream);
+  }
+  },
+);

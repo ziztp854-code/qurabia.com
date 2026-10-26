@@ -11,6 +11,7 @@ type StubDatabase = {
   voiceRoom: { findUnique: Stub; updateMany: Stub };
   voiceChatCommand: { findUnique: Stub; create: Stub };
   $queryRaw: Stub;
+  $executeRaw: Stub;
   $transaction: Stub;
 };
 const mock = vi.hoisted(() => ({ db: {} as StubDatabase }));
@@ -84,6 +85,32 @@ beforeEach(() => {
       }),
     },
     $queryRaw: vi.fn(async () => []),
+    // Emulate only the message/gift CAS. Actual JSONB, authorization and rollback
+    // behavior are covered by the PostgreSQL latency integration suites.
+    $executeRaw: vi.fn(
+      async (
+        _sql: TemplateStringsArray,
+        patch: string,
+        actorPath: string[],
+        _actorIndex: number,
+        actorPatch: string,
+        _roomId: string,
+        expectedRevision: number,
+      ) => {
+        if (expectedRevision !== revision) return 0;
+        state = {
+          ...state,
+          ...(JSON.parse(patch) as Pick<VoiceRoomState, 'messages'> | Record<string, never>),
+          participants: state.participants.map((participant, index) =>
+            index === Number(actorPath[1])
+              ? { ...participant, ...(JSON.parse(actorPatch) as Partial<typeof participant>) }
+              : participant,
+          ),
+        };
+        revision++;
+        return 1;
+      },
+    ),
     $transaction: vi.fn(async (work: (db: StubDatabase) => Promise<unknown>) => work(mock.db)),
   };
 });

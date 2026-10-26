@@ -331,6 +331,8 @@ async function mutateRoom(
   },
   report?: Extract<VoiceEvent, { type: 'report' }>,
   commandId?: string,
+  localMode?: 'message' | 'heartbeat' | 'gift',
+  recipientId?: string,
 ) {
   const db = getPrismaClient();
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -353,8 +355,9 @@ async function mutateRoom(
     await mutate(state, record);
     const changed = await db.$transaction(
       async (tx) => {
-        // State changes and Cloud token issuance/revocation share one room lock.
-        await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+        // Permission changes share the SFU lock. Chat/presence change no media grants.
+        if (!localMode)
+          await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
         if (
           commandId &&
           (await tx.voiceChatCommand.findUnique({
@@ -364,16 +367,44 @@ async function mutateRoom(
           }))
         )
           return 2;
-        const result = await tx.voiceRoom.updateMany({
-          where: { id: roomId, revision: record.revision },
-          data: {
-            state: json(state),
-            revision: { increment: 1 },
-            active: state.active,
-            isPrivate: state.settings.isPrivate,
-            ...extra,
-          },
-        });
+        const actorIndex = localMode
+          ? stateOf(record.state).participants.findIndex((participant) => participant.id === userId)
+          : -1;
+        const actor = localMode ? requireParticipant(state, userId) : undefined;
+        const recipient =
+          localMode === 'gift' ? requireParticipant(state, recipientId!) : undefined;
+        // Patch current JSON, rather than the read snapshot: scheduler checkpoints do
+        // not advance revision. Never persist pruning or grant changes on this path.
+        const result = localMode
+          ? {
+              count: await tx.$executeRaw`
+              UPDATE "VoiceRoom"
+              SET state = jsonb_set(
+                state || ${JSON.stringify(localMode !== 'heartbeat' ? { messages: state.messages } : {})}::jsonb,
+                ${['participants', String(actorIndex)]}::text[],
+                (state -> 'participants' -> ${actorIndex}::int) || ${JSON.stringify({ lastSeenAt: actor!.lastSeenAt, ...(localMode === 'gift' ? { lastGiftAt: actor!.lastGiftAt } : {}) })}::jsonb, false
+              ), revision = revision + 1, "updatedAt" = NOW()
+              WHERE id = ${roomId} AND revision = ${record.revision}
+                AND EXISTS (
+                  SELECT 1 FROM "User" WHERE id = ${userId}
+                    AND status = 'ACTIVE' AND "tokenVersion" = ${actor!.tokenVersion ?? 0}
+                )
+                AND (${recipient?.id ?? null}::text IS NULL OR EXISTS (
+                  SELECT 1 FROM "User" WHERE id = ${recipient?.id ?? null}
+                    AND status = 'ACTIVE' AND "tokenVersion" = ${recipient?.tokenVersion ?? 0}
+                ))
+            `,
+            }
+          : await tx.voiceRoom.updateMany({
+              where: { id: roomId, revision: record.revision },
+              data: {
+                state: json(state),
+                revision: { increment: 1 },
+                active: state.active,
+                isPrivate: state.settings.isPrivate,
+                ...extra,
+              },
+            });
         if (result.count && report) {
           const message = report.messageId
             ? state.messages.find((m) => m.id === report.messageId)
@@ -428,9 +459,17 @@ export async function getVoiceSnapshot(
     const me = requireParticipant(state, userId);
     // Presence lives for 90s. Polling must not write/retry the room on every refresh.
     if (Date.now() - me.lastSeenAt >= 10_000)
-      return mutateRoom(roomId, userId, (current) => {
-        requireParticipant(current, userId).lastSeenAt = Date.now();
-      });
+      return mutateRoom(
+        roomId,
+        userId,
+        (current) => {
+          requireParticipant(current, userId).lastSeenAt = Date.now();
+        },
+        undefined,
+        undefined,
+        undefined,
+        'heartbeat',
+      );
   }
   if (state.bannedUsers.includes(userId))
     throw new VoiceHttpError(403, 'لا يمكنك دخول هذه الغرفة.', 'FORBIDDEN');
@@ -516,7 +555,7 @@ export async function sendVoiceEvent(roomId: string, userId: string, event: Voic
       ? event.requestId
       : undefined;
   // Check membership before looking up receipts; a removed account cannot replay old commands.
-  if (commandId) {
+  if (commandId && event.type !== 'message' && event.type !== 'gift') {
     await requireVoiceMembership(roomId, userId);
     if (
       await getPrismaClient().voiceChatCommand.findUnique({
@@ -547,6 +586,8 @@ export async function sendVoiceEvent(roomId: string, userId: string, event: Voic
     undefined,
     event.type === 'report' ? event : undefined,
     commandId,
+    event.type === 'message' || event.type === 'gift' ? event.type : undefined,
+    event.type === 'gift' ? event.recipientId : undefined,
   );
 }
 export async function leaveVoiceRoom(roomId: string, userId: string) {
@@ -654,12 +695,16 @@ export async function withVoiceMediaSnapshot<T>(
       const checkpoint = { checkedAt: state.mediaReconciledAt ?? 0 };
       const result = await work(snapshot, ledger, checkpoint);
       if (JSON.stringify(ledger) !== before) {
-        state.mediaReconciledAt = checkpoint.checkedAt;
-        state.mediaGrants = ledger;
-        await tx.voiceRoom.update({
-          where: { id: roomId },
-          data: { state: json(state), revision: { increment: 1 } },
-        });
+        // Messages may commit during the SFU callback. Preserve their current JSON
+        // and membership; only this serialized media callback owns these fields.
+        await tx.$executeRaw`
+          UPDATE "VoiceRoom"
+          SET state = jsonb_set(
+            jsonb_set(state, '{mediaGrants}', ${JSON.stringify(ledger)}::jsonb, true),
+            '{mediaReconciledAt}', to_jsonb(${checkpoint.checkedAt}::bigint), true
+          ), revision = revision + 1, "updatedAt" = NOW()
+          WHERE id = ${roomId}
+        `;
       } else if (checkpoint.checkedAt !== (state.mediaReconciledAt ?? 0)) {
         // A scheduler timestamp is not an account/seat/permission change. Patch only
         // that JSON field; never rewrite membership/ledger without advancing revision.

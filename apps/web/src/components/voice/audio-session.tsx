@@ -7,6 +7,7 @@ import {
   Room,
   RoomEvent,
   Track,
+  TrackEvent,
   type RemoteAudioTrack,
   type RemoteParticipant,
 } from 'livekit-client';
@@ -72,7 +73,12 @@ export function AudioSession({
   const recoveryAttempts = useRef(0);
   const micQueue = useRef<Promise<void>>(Promise.resolve());
   const tracks = useRef(
-    new Map<RemoteAudioTrack, { element: HTMLMediaElement; identity: string }>(),
+    new Map<RemoteAudioTrack, {
+      element: HTMLMediaElement;
+      identity: string;
+      blocked: boolean;
+      stopPlaybackWatch: () => void;
+    }>(),
   );
   const callbacks = useRef({
     onStateChange,
@@ -93,6 +99,21 @@ export function AudioSession({
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [canSelectOutput, setCanSelectOutput] = useState(false);
   const participantId = participant?.id;
+  const applyPlaybackPreferences = useCallback(() => {
+    const current = playback.current;
+    for (const { element, identity } of tracks.current.values()) {
+      element.volume = Math.max(0, Math.min(1, current.volume));
+      element.muted = current.deafened || current.mutedUserIds.includes(identity);
+    }
+  }, []);
+  const updatePlaybackBlocked = useCallback(() => {
+    const room = roomRef.current;
+    const current = playback.current;
+    const blockedTrack = [...tracks.current.values()].some(({ blocked, identity }) =>
+      blocked && !current.deafened && !current.mutedUserIds.includes(identity),
+    );
+    setAudioBlocked(Boolean(room && (!room.canPlaybackAudio || blockedTrack)));
+  }, []);
   const retryAudio = useCallback(() => {
     if (stopped.current) return;
     recoveryAttempts.current = 0;
@@ -100,12 +121,20 @@ export function AudioSession({
   }, []);
   const startAudio = useCallback(async () => {
     try {
-      await roomRef.current?.startAudio();
-      if (roomRef.current) setAudioBlocked(!roomRef.current.canPlaybackAudio);
+      const pending = roomRef.current?.startAudio();
+      // The SDK unmutes every attached element synchronously when unlocking.
+      // Keep deafen and individual member mutes in force during that attempt.
+      applyPlaybackPreferences();
+      await pending;
+      for (const [track, entry] of tracks.current) {
+        if (!entry.element.paused) tracks.current.set(track, { ...entry, blocked: false });
+      }
+      applyPlaybackPreferences();
+      updatePlaybackBlocked();
     } catch {
       setError('اضغط للسماح بتشغيل الصوت في المتصفح.');
     }
-  }, []);
+  }, [applyPlaybackPreferences, updatePlaybackBlocked]);
   const stop = useCallback(() => {
     stopped.current = true;
     stopSession.current();
@@ -153,11 +182,9 @@ export function AudioSession({
   }, [state]);
   useEffect(() => {
     playback.current = { deafened, volume, mutedUserIds };
-    for (const { element, identity } of tracks.current.values()) {
-      element.volume = Math.max(0, Math.min(1, volume));
-      element.muted = deafened || mutedUserIds.includes(identity);
-    }
-  }, [deafened, volume, mutedUserIds]);
+    applyPlaybackPreferences();
+    updatePlaybackBlocked();
+  }, [deafened, volume, mutedUserIds, applyPlaybackPreferences, updatePlaybackBlocked]);
 
   useEffect(() => {
     if (!participantId || stopped.current) return;
@@ -242,19 +269,39 @@ export function AudioSession({
           element.dataset.voiceAudio = remote.identity;
           element.style.display = 'none';
           document.body.appendChild(element);
-          attached.set(audioTrack, { element, identity: remote.identity });
+          const recordPlayback = (blocked: boolean) => {
+            const entry = attached.get(audioTrack);
+            if (disposed || !entry) return;
+            attached.set(audioTrack, { ...entry, blocked });
+            updatePlaybackBlocked();
+          };
+          const started = () => recordPlayback(false);
+          const failed = () => recordPlayback(true);
+          audioTrack.on(TrackEvent.AudioPlaybackStarted, started);
+          audioTrack.on(TrackEvent.AudioPlaybackFailed, failed);
+          attached.set(audioTrack, {
+            element,
+            identity: remote.identity,
+            blocked: false,
+            stopPlaybackWatch: () => {
+              audioTrack.off(TrackEvent.AudioPlaybackStarted, started);
+              audioTrack.off(TrackEvent.AudioPlaybackFailed, failed);
+            },
+          });
         });
         room.on(RoomEvent.TrackUnsubscribed, (track) => {
           if (track.kind !== Track.Kind.Audio) return;
           const audioTrack = track as RemoteAudioTrack;
+          attached.get(audioTrack)?.stopPlaybackWatch();
           audioTrack.detach().forEach((element) => element.remove());
           attached.delete(audioTrack);
+          if (!disposed) updatePlaybackBlocked();
         });
         room.on(RoomEvent.ActiveSpeakersChanged, (speakers) =>
           callbacks.current.onSpeakersChange?.(speakers.map((s) => s.identity)),
         );
         room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
-          if (!disposed) setAudioBlocked(!room!.canPlaybackAudio);
+          if (!disposed) updatePlaybackBlocked();
         });
         room.on(RoomEvent.Reconnecting, () => {
           callbacks.current.onSpeakersChange?.([]);
@@ -288,7 +335,7 @@ export function AudioSession({
         }
         recoveryAttempts.current = 0;
         changeState('connected');
-        setAudioBlocked(!room.canPlaybackAudio);
+        updatePlaybackBlocked();
         setCanSelectOutput('setSinkId' in HTMLMediaElement.prototype);
         await refreshDevices();
       } catch (cause) {
@@ -405,7 +452,8 @@ export function AudioSession({
         room.removeAllListeners();
         void room.disconnect(true);
       }
-      for (const [track, { element }] of attached) {
+      for (const [track, { element, stopPlaybackWatch }] of attached) {
+        stopPlaybackWatch();
         track.detach();
         element.remove();
       }
@@ -413,7 +461,7 @@ export function AudioSession({
     };
     stopSession.current = dispose;
     return dispose;
-  }, [roomId, participantId, retry, getMicrophoneTrack]);
+  }, [roomId, participantId, retry, getMicrophoneTrack, updatePlaybackBlocked]);
 
   useEffect(() => {
     const room = roomRef.current;
@@ -487,8 +535,8 @@ export function AudioSession({
         </button>
       )}
       <VoiceConnectionCheck
-        key={`${roomId}:${state}:${canPublish}:${muted}`}
-        inspect={() => inspectVoiceConnection(roomRef.current, canPublish && !muted)}
+        key={`${roomId}:${state}:${canPublish}:${muted}:${audioBlocked}`}
+        inspect={() => inspectVoiceConnection(roomRef.current, canPublish && !muted, audioBlocked)}
       />
       {participant && (
         <SoundCheck
