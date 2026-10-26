@@ -88,7 +88,7 @@
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-stage-heading) {
-    margin-block-end: 12px;
+    margin-block-end: 8px;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats) {
@@ -99,7 +99,7 @@
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat) {
     border-radius: 12px;
-    padding: 6px;
+    padding: 4px;
     background: linear-gradient(160deg, var(--voice-card), var(--voice-bg));
   }
 
