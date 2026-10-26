@@ -1,0 +1,14 @@
+[
+  {
+    "width": 360,
+    "border": "rgb(178, 184, 193)",
+    "fill": "rgb(16, 24, 32)",
+    "borderToFieldContrast": 8.963667139848472
+  },
+  {
+    "width": 1920,
+    "border": "rgb(178, 184, 193)",
+    "fill": "rgb(3, 11, 18)",
+    "borderToFieldContrast": 9.91936725648188
+  }
+]

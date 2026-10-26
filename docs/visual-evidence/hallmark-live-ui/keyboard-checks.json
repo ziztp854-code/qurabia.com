@@ -1,0 +1,119 @@
+{
+  "records": [
+    {
+      "width": 320,
+      "height": 700,
+      "keyboardSimulation": {
+        "dialog": {
+          "top": 20,
+          "bottom": 350
+        },
+        "compose": {
+          "top": 216,
+          "bottom": 337
+        },
+        "textarea": {
+          "top": 225,
+          "bottom": 277
+        },
+        "send": {
+          "top": 281,
+          "bottom": 329
+        },
+        "focused": true,
+        "scroll": "auto",
+        "viewportVar": "330px"
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "keyboardSimulation": {
+        "dialog": {
+          "top": 20,
+          "bottom": 350
+        },
+        "compose": {
+          "top": 216,
+          "bottom": 337
+        },
+        "textarea": {
+          "top": 225,
+          "bottom": 277
+        },
+        "send": {
+          "top": 281,
+          "bottom": 329
+        },
+        "focused": true,
+        "scroll": "auto",
+        "viewportVar": "330px"
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "keyboardSimulation": {
+        "dialog": {
+          "top": 20,
+          "bottom": 350
+        },
+        "compose": {
+          "top": 222,
+          "bottom": 337
+        },
+        "textarea": {
+          "top": 231,
+          "bottom": 275
+        },
+        "send": {
+          "top": 281,
+          "bottom": 329
+        },
+        "focused": true,
+        "scroll": "auto",
+        "viewportVar": "330px"
+      }
+    },
+    {
+      "width": 1020,
+      "height": 768,
+      "keyboardSimulation": {
+        "dialog": {
+          "top": 20,
+          "bottom": 350
+        },
+        "compose": {
+          "top": 204,
+          "bottom": 337
+        },
+        "textarea": {
+          "top": 217,
+          "bottom": 269
+        },
+        "send": {
+          "top": 277,
+          "bottom": 325
+        },
+        "focused": true,
+        "scroll": "auto",
+        "viewportVar": "330px"
+      }
+    },
+    {
+      "textZoom200": {
+        "overflowX": false,
+        "dockHeight": 85
+      },
+      "visibleSeats": 8
+    },
+    {
+      "cleanup": {
+        "before": "700px",
+        "after": "",
+        "remainingRoom": false
+      }
+    }
+  ],
+  "limitation": "Synthetic HTTP events and simulated visualViewport; no physical OS keyboard, backend or actual audio assertion."
+}

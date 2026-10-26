@@ -1,0 +1,7 @@
+{
+  "apps/web/src/components/voice/voice-room.tsx": "757d02e5eb5bfb0ae864380bb631d3bf4f796e1c86a2445b61b059b4700c88a4",
+  "apps/web/src/components/voice/voice-chat.tsx": "aa2f6cf18ee715f7463033f0403fcb895640079dbe5642ef4111c46a1e750e3f",
+  "apps/web/src/components/voice/audio-session.tsx": "969548cb5e4b57ed0a77786af7133492641ee1136fc64bc1ab9a7ebe7e978eb1",
+  "apps/web/src/components/live/cinematic-quiz-experience.tsx": "3821ea5835741d730783fcd7129c23331510767cbb12b7cf43178fa2a5ed05f8",
+  "apps/web/src/components/live/use-live-game.ts": "55c83ec5b6f15bbb2730d5218acb0fdd33ad00156035f017cadc239ca68ef2d1"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2026-10-26",
+    "mode": "redesign",
+    "depth": "polish",
+    "scope": "app",
+    "theme": "project-locked Prestige Live",
+    "entry": "apps/web/src/components/voice/live-room-mobile.module.css",
+    "prompt": "Audit then limited visual polish of Tahaddi Live voice rooms, chat and broadcast; retain brand, Arabic RTL and all wiring; no publish or merge",
+    "files": [
+      "apps/web/src/components/voice/live-room-mobile.module.css",
+      "apps/web/src/components/voice/live-room-desktop.module.css",
+      "apps/web/src/components/live/cinematic-quiz-experience.module.css"
+    ],
+    "before": {
+      "floor": 126,
+      "reflex": 30
+    },
+    "after": {
+      "floor": 124,
+      "reflex": 7,
+      "notes": 22
+    },
+    "kept": {
+      "links": "14/14",
+      "fields": "2/2",
+      "headings": "5/5"
+    },
+    "review": {
+      "reviewer": "hallmark_independent_review",
+      "independent": true,
+      "score": 94,
+      "decision": "ship limited branch for review; full visual acceptance unverified",
+      "resolved": 1
+    },
+    "publication": "not authorized; no push, merge or deploy"
+  }
+]

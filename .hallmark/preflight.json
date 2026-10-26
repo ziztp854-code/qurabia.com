@@ -1,0 +1,35 @@
+{
+  "scanned": "2026-10-26",
+  "mode": "audit then limited polish",
+  "scope": "app",
+  "skill": {
+    "source": "https://github.com/nutlope/hallmark",
+    "reviewedCommit": "7ec868225c6caa040558c321ee0fefa0e73f83a8",
+    "version": "2.0.0",
+    "license": "MIT",
+    "installedGloballyFor": "codex",
+    "installer": "skills@1.7.4; telemetry disabled",
+    "runtime": "Node 24; system Chromium; isolated puppeteer-core@25.16.0 (Apache-2.0), no product dependency changes",
+    "review": "Reviewed skill entry, redesign flow, static/render scripts and installer telemetry controls. No image-generation calls, credentials, database commands or external AI services are required. Render requests target loopback fixtures only."
+  },
+  "findings": {
+    "fonts": "Cairo Variable and Alexandria Variable: apps/web/tokens.css:7-9; local Fontsource imports in apps/web/src/app/layout.tsx",
+    "palette": "Locked Prestige Live system in design.md; voice gold/cyan/dark tokens in apps/web/tokens.css:483-507; preserve cinematic broadcast palette in its CSS module",
+    "spacing": "Existing --space-* tokens and scoped voice CSS modules; inspect final cascade before changing values",
+    "framework": "Next.js 16 / React 19, CSS modules and scoped CSS; Playwright and Vite fixtures already installed",
+    "motion": "Existing Framer Motion and reduced-motion handling; preserve transports and interaction handlers"
+  },
+  "preserve": [
+    "approved colors",
+    "fonts",
+    "RTL",
+    "layouts",
+    "all content and links",
+    "Socket.IO",
+    "WebRTC",
+    "game logic",
+    "database"
+  ],
+  "introduce": [],
+  "plan": "Audit and before evidence first. Then only demonstrated visual defects in active room/chat/broadcast styles, followed by after evidence and an independent review. No push, merge or deploy."
+}

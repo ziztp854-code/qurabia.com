@@ -1,3 +1,6 @@
+/* Hallmark · checked: 2026-10-26 · genre: atmospheric (inferred)
+ * scoped polish: chat readability, spacing and field boundary; legacy gates recorded in audit
+ * built: the project · redesign: polish · scope: app · v2.0.0 */
 /* Desktop broadcast desk. Audio, membership, and moderation remain in VoiceRoom. */
 @media (min-width: 1021px) {
   .desktopRoom[data-room-visible='true'] {
@@ -178,8 +181,8 @@
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message) {
-    gap: 5px;
-    margin-block-end: 8px;
+    gap: var(--space-2);
+    margin-block-end: var(--space-3);
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
@@ -190,7 +193,7 @@
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.8;
   }
 
@@ -213,6 +216,7 @@
     min-block-size: max(44px, calc(1lh + 22px));
     block-size: max(44px, calc(1lh + 22px));
     border-radius: 12px;
+    border-color: var(--voice-muted);
     background: var(--voice-bg);
   }
 

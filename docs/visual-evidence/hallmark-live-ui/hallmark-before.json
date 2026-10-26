@@ -1,0 +1,1493 @@
+{
+  "summary": {
+    "fails": 126,
+    "reflex": 30,
+    "warns": 8,
+    "waived": 0,
+    "rejected": 0,
+    "answered": 0,
+    "dismissed": 0,
+    "notes": 0,
+    "files": 3,
+    "render": "ran",
+    "before": "before: recorded 14 links, 2 fields, 0 handlers, 0 test hooks, 0 script hooks and 2 rendered page(s) in .hallmark/before.json; --kept checks a redesign against it"
+  },
+  "findings": [
+    {
+      "gate": "7a",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 15,
+      "evidence": "pure #000: background: #000 (.cinema)",
+      "fix": "Tint the base toward the anchor hue"
+    },
+    {
+      "gate": "7a",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 260,
+      "evidence": "pure #fff: background: #fff (.hostQrCard)",
+      "fix": "Tint the base toward the anchor hue"
+    },
+    {
+      "gate": "7a",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 422,
+      "evidence": "pure #fff: background: #fff (.qrCard)",
+      "fix": "Tint the base toward the anchor hue"
+    },
+    {
+      "gate": "7a",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 753,
+      "evidence": "pure #000: background: #000 (.bars i, .answerProgress > i)",
+      "fix": "Tint the base toward the anchor hue"
+    },
+    {
+      "gate": "34",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 30,
+      "evidence": "width: min(100vw, calc(100svh * 16… on .stage (scrollbar overflow)",
+      "fix": "width: 100% with container padding"
+    },
+    {
+      "gate": "34",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1160,
+      "evidence": "width: min(24rem, calc(100vw - 2.5… on .controlPanel (scrollbar overflow)",
+      "fix": "width: 100% with container padding"
+    },
+    {
+      "gate": "40",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "http://127.0.0.1:3417/",
+      "line": 1,
+      "evidence": "[1440px] a field's edge is under 3:1 against what surrounds it: textarea 1.33:1",
+      "fix": "Draw the field in --color-muted, or fill it a step off the surface it sits on"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 2,
+      "evidence": "colour literal #020508 outside tokens (--black on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 3,
+      "evidence": "colour literal rgb(4 9 14 / 0.94) outside tokens (--panel on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 5,
+      "evidence": "colour literal #f7ca55 outside tokens (--gold-bright on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 6,
+      "evidence": "colour literal #ffe9a2 outside tokens (--gold-pale on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 7,
+      "evidence": "colour literal #00d4ff outside tokens (--cyan on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 8,
+      "evidence": "colour literal #f7f4ed outside tokens (--text on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 9,
+      "evidence": "colour literal #b6b1a8 outside tokens (--muted on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 15,
+      "evidence": "colour literal #000 outside tokens (background on .cinema)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 16,
+      "evidence": "font-family literal \"'Alexandria Variable', 'Cairo Varia…\" on .cinema",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 36,
+      "evidence": "colour literal rgb(212 175 55 / 0.12) outside tokens (box-shadow on .stage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 43,
+      "evidence": "colour literal rgb(247 202 85 / 0.75) outside tokens (border on .stage::after)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 45,
+      "evidence": "colour literal rgb(0 0 0 / 0.7) outside tokens (box-shadow on .stage::after)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 51,
+      "evidence": "colour literal rgb(0 0 0 / 0.04) outside tokens (background-image on .arenaStage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 51,
+      "evidence": "colour literal rgb(0 0 0 / 0.18) outside tokens (background-image on .arenaStage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 55,
+      "evidence": "colour literal rgb(0 0 0 / 0.02) outside tokens (background-image on .questionStage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 55,
+      "evidence": "colour literal rgb(0 0 0 / 0.16) outside tokens (background-image on .questionStage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 60,
+      "evidence": "colour literal rgb(0 0 0 / 0.02) outside tokens (background-image on .finaleStage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 60,
+      "evidence": "colour literal rgb(0 0 0 / 0.08) outside tokens (background-image on .finaleStage)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 69,
+      "evidence": "colour literal rgb(0 0 0 / 0.9) outside tokens (filter on .brand)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 70,
+      "evidence": "colour literal rgb(212 175 55 / 0.35) outside tokens (text-shadow on .brand)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 93,
+      "evidence": "colour literal rgb(255 255 255 / 0.25) outside tokens (border on .liveBadge)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 96,
+      "evidence": "colour literal rgb(2 7 11 / 0.82) outside tokens (background on .liveBadge)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 116,
+      "evidence": "colour literal rgb(0 0 0 / 0.75) outside tokens (filter on .crest, .crestSmall)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 144,
+      "evidence": "colour literal rgb(212 175 55 / 0.25) outside tokens (border-bottom on .hostHeader)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 157,
+      "evidence": "colour literal rgb(212 175 55 / 0.28) outside tokens (text-shadow on .hostHeader h1)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 182,
+      "evidence": "colour literal rgb(212 175 55 / 0.42) outside tokens (border on .headerControls button, .ques…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 185,
+      "evidence": "colour literal rgb(4 9 14 / 0.88) outside tokens (background on .headerControls button, .ques…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 214,
+      "evidence": "colour literal rgb(212 175 55 / 0.6) outside tokens (border on .statsColumn > div)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 216,
+      "evidence": "colour literal rgb(10 15 20 / 0.98) outside tokens (background on .statsColumn > div)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 216,
+      "evidence": "colour literal rgb(2 6 10 / 0.94) outside tokens (background on .statsColumn > div)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 217,
+      "evidence": "colour literal rgb(255 255 255 / 0.02) outside tokens (box-shadow on .statsColumn > div)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 260,
+      "evidence": "colour literal #fff outside tokens (background on .hostQrCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 261,
+      "evidence": "colour literal rgb(212 175 55 / 0.22) outside tokens (box-shadow on .hostQrCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 294,
+      "evidence": "colour literal rgb(212 175 55 / 0.5) outside tokens (border on .hostInviteActions button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 297,
+      "evidence": "colour literal rgb(4 9 14 / 0.88) outside tokens (background on .hostInviteActions button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 316,
+      "evidence": "colour literal rgb(212 175 55 / 0.7) outside tokens (border on .hostActions button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 319,
+      "evidence": "colour literal rgb(20 25 30 / 0.96) outside tokens (background on .hostActions button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 319,
+      "evidence": "colour literal rgb(3 7 11 / 0.96) outside tokens (background on .hostActions button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 329,
+      "evidence": "colour literal #171002 outside tokens (color on .hostActions .goldButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 331,
+      "evidence": "colour literal #ffe486 outside tokens (background on .hostActions .goldButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 331,
+      "evidence": "colour literal #d9a817 outside tokens (background on .hostActions .goldButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 335,
+      "evidence": "colour literal #ff6259 outside tokens (color on .hostActions .endButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 336,
+      "evidence": "colour literal #b94139 outside tokens (border-color on .hostActions .endButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 343,
+      "evidence": "colour literal rgb(212 175 55 / 0.55) outside tokens (border on .hostToolbar)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 345,
+      "evidence": "colour literal rgb(3 8 12 / 0.96) outside tokens (background on .hostToolbar)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 352,
+      "evidence": "colour literal rgb(212 175 55 / 0.22) outside tokens (border-inline-start on .hostToolbar button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 363,
+      "evidence": "colour literal #d8d8d8 outside tokens (color on .hostToolbar svg)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 386,
+      "evidence": "colour literal #ddd9d3 outside tokens (color on .lobbyScreen > p)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 404,
+      "evidence": "colour literal rgb(3 7 11 / 0.92) outside tokens (background on .codeCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 422,
+      "evidence": "colour literal #fff outside tokens (background on .qrCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 423,
+      "evidence": "colour literal rgb(212 175 55 / 0.22) outside tokens (box-shadow on .qrCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 435,
+      "evidence": "colour literal #07090b outside tokens (background-color on .qrCard > .crestSmall)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 447,
+      "evidence": "colour literal rgb(2 9 14 / 0.92) outside tokens (background on .joinedCount)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 448,
+      "evidence": "colour literal rgb(0 212 255 / 0.3) outside tokens (box-shadow on .joinedCount)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 448,
+      "evidence": "colour literal rgb(0 212 255 / 0.1) outside tokens (box-shadow on .joinedCount)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 471,
+      "evidence": "colour literal rgb(0 212 255 / 0.3) outside tokens (border on .waiting i)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 720,
+      "evidence": "colour literal rgb(212 175 55 / 0.72) outside tokens (border on .revealPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 721,
+      "evidence": "colour literal rgb(2 6 9 / 0.97) outside tokens (background on .revealPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 722,
+      "evidence": "colour literal rgb(0 0 0 / 0.55) outside tokens (box-shadow on .revealPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 739,
+      "evidence": "colour literal rgb(212 175 55 / 0.24) outside tokens (border on .bars)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 753,
+      "evidence": "colour literal #000 outside tokens (background on .bars i, .answerProgress > i)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 760,
+      "evidence": "colour literal #008cc5 outside tokens (background on .bars i b, .answerProgress > …)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 761,
+      "evidence": "colour literal rgb(0 212 255 / 0.38) outside tokens (box-shadow on .bars i b, .answerProgress > …)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 773,
+      "evidence": "colour literal rgb(212 175 55 / 0.18) outside tokens (background on .correctCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 773,
+      "evidence": "colour literal #0a0906 outside tokens (background on .correctCard)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 794,
+      "evidence": "colour literal rgb(212 175 55 / 0.22) outside tokens (border on .answerProgress)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 857,
+      "evidence": "colour literal rgb(2 7 11 / 0.94) outside tokens (background on .boardPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 866,
+      "evidence": "colour literal rgb(255 255 255 / 0.18) outside tokens (border on .boardTabs button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 867,
+      "evidence": "colour literal #ddd8d1 outside tokens (color on .boardTabs button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 868,
+      "evidence": "colour literal rgb(7 12 17 / 0.9) outside tokens (background on .boardTabs button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 875,
+      "evidence": "colour literal rgb(0 212 255 / 0.12) outside tokens (box-shadow on .boardTabs .activeTab)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 883,
+      "evidence": "colour literal #bfaa78 outside tokens (color on .tableHead)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 903,
+      "evidence": "colour literal rgb(212 175 55 / 0.42) outside tokens (border on .boardPanel li)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 904,
+      "evidence": "colour literal rgb(2 6 10 / 0.98) outside tokens (background on .boardPanel li)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 904,
+      "evidence": "colour literal rgb(8 13 18 / 0.94) outside tokens (background on .boardPanel li)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 922,
+      "evidence": "colour literal #85898e outside tokens (border on .playerMark)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 924,
+      "evidence": "colour literal #ddd outside tokens (color on .playerMark)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 925,
+      "evidence": "colour literal #2b3138 outside tokens (background on .playerMark)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 925,
+      "evidence": "colour literal #080a0c outside tokens (background on .playerMark)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 928,
+      "evidence": "colour literal #888 outside tokens (box-shadow on .playerMark)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 931,
+      "evidence": "colour literal #f7ca55 outside tokens (--tone on .rank1)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 934,
+      "evidence": "colour literal #d8dde5 outside tokens (--tone on .rank2)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 937,
+      "evidence": "colour literal #cc8248 outside tokens (--tone on .rank3)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 948,
+      "evidence": "colour literal #a6a8ac outside tokens (color on .boardPanel li > svg)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 952,
+      "evidence": "colour literal rgb(212 175 55 / 0.2) outside tokens (background on .boardPanel .row1)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 952,
+      "evidence": "colour literal rgb(8 11 13 / 0.94) outside tokens (background on .boardPanel .row1)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 955,
+      "evidence": "colour literal rgb(216 221 229 / 0.45) outside tokens (border-color on .boardPanel .row2)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 958,
+      "evidence": "colour literal rgb(204 130 72 / 0.55) outside tokens (border-color on .boardPanel .row3)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 973,
+      "evidence": "colour literal rgb(212 175 55 / 0.55) outside tokens (border on .boardPanel footer button, .b…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 974,
+      "evidence": "colour literal #d8bd7f outside tokens (color on .boardPanel footer button, .b…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 975,
+      "evidence": "colour literal rgb(5 9 13 / 0.9) outside tokens (background on .boardPanel footer button, .b…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1018,
+      "evidence": "colour literal rgb(3 8 12 / 0.86) outside tokens (background on .finaleScreen > header > butt…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1064,
+      "evidence": "colour literal #030405 outside tokens (background on .podium li)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1064,
+      "evidence": "colour literal #090a0b outside tokens (background on .podium li)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1070,
+      "evidence": "colour literal rgb(0 0 0 / 0.6) outside tokens (box-shadow on .podium li)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1076,
+      "evidence": "colour literal #f7ca55 outside tokens (--tone on .place1)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1081,
+      "evidence": "colour literal #d8dde5 outside tokens (--tone on .place2)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1086,
+      "evidence": "colour literal #cc8248 outside tokens (--tone on .place3)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1127,
+      "evidence": "colour literal #171002 outside tokens (color on .finishButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1128,
+      "evidence": "colour literal #ffe486 outside tokens (background on .finishButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1128,
+      "evidence": "colour literal #d9a817 outside tokens (background on .finishButton)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1145,
+      "evidence": "colour literal #f7ca55 outside tokens (color on .previewToast)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1146,
+      "evidence": "colour literal rgb(2 7 11 / 0.96) outside tokens (background on .previewToast)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1153,
+      "evidence": "colour literal #02070b outside tokens (background on .liveController)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1167,
+      "evidence": "colour literal rgb(3 8 12 / 0.97) outside tokens (background on .controlPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1168,
+      "evidence": "colour literal rgb(0 0 0 / 0.65) outside tokens (box-shadow on .controlPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1168,
+      "evidence": "colour literal rgb(212 175 55 / 0.08) outside tokens (box-shadow on .controlPanel)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1179,
+      "evidence": "colour literal rgb(212 175 55 / 0.45) outside tokens (border on .controlPanel > button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1181,
+      "evidence": "colour literal #f7ca55 outside tokens (color on .controlPanel > button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1182,
+      "evidence": "colour literal #080d11 outside tokens (background on .controlPanel > button)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1188,
+      "evidence": "colour literal #f7ca55 outside tokens (color on .controlPanel h2)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1205,
+      "evidence": "colour literal rgb(212 175 55 / 0.22) outside tokens (border on .controlPanel dl div, .contro…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1207,
+      "evidence": "colour literal rgb(255 255 255 / 0.025) outside tokens (background on .controlPanel dl div, .contro…)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1210,
+      "evidence": "colour literal #a8b0b7 outside tokens (color on .controlPanel dt)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1215,
+      "evidence": "colour literal #f7ca55 outside tokens (color on .controlPanel dd)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1227,
+      "evidence": "colour literal #f7ca55 outside tokens (color on .controlPanel li span)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1232,
+      "evidence": "colour literal #f7ca55 outside tokens (color on .controlPanel li b)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "48",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1249,
+      "evidence": "colour literal #65dffc outside tokens (color on .controlPanel > p)",
+      "fix": "Lift the value into the token block"
+    },
+    {
+      "gate": "73",
+      "grade": "FAIL",
+      "tier": "floor",
+      "file": "http://127.0.0.1:3417/",
+      "line": 1,
+      "evidence": "[1440px] text painted under another element: details.v-audio-session over \"طي المقاعد الشاغ\"; details.v-audio-session o…",
+      "fix": "Give the text its own space, or put it above what covers it on a surface of its own"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 52,
+      "evidence": "gap: 12px 18px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 79,
+      "evidence": "padding: 3px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-stage-column)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 93,
+      "evidence": "gap: 7px 10px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 99,
+      "evidence": "padding: 6px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 181,
+      "evidence": "gap: 5px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 186,
+      "evidence": "padding: 4px 6px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 208,
+      "evidence": "gap: 6px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-desktop.module.css",
+      "line": 260,
+      "evidence": "padding-inline: 14px (off the 4px scale) on .desktopRoom[data-room-visible='true'] :global(.v-room-controls .v-leave)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 70,
+      "evidence": "gap: 3px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 71,
+      "evidence": "padding: 8px 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 83,
+      "evidence": "padding-block: 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat > header)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 87,
+      "evidence": "gap: 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-compose)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 96,
+      "evidence": "padding-block: 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-compose te…",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 105,
+      "evidence": "padding-inline: max(14px, env(safe-area-ins… (off the 4px scale) on .mobileRoom[data-room-visible='true']",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 109,
+      "evidence": "gap: 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-main)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 245,
+      "evidence": "gap: 10px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-chat-column)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 258,
+      "evidence": "padding: 6px 12px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-chat > header)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 275,
+      "evidence": "padding: 4px 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 305,
+      "evidence": "gap: 3px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 306,
+      "evidence": "padding: 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 315,
+      "evidence": "gap: 3px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 316,
+      "evidence": "padding: 3px 0 (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "24b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 328,
+      "evidence": "padding: 6px (off the 4px scale) on .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control > svg)",
+      "fix": "Use the 4px spacing scale"
+    },
+    {
+      "gate": "26b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1,
+      "evidence": "no :active styling anywhere",
+      "fix": "All eight states; guard: not a form control, no aria-disabled anywhere"
+    },
+    {
+      "gate": "26b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 1,
+      "evidence": "no :active styling anywhere",
+      "fix": "All eight states; guard: not a form control, no aria-disabled anywhere"
+    },
+    {
+      "gate": "38iii",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 159,
+      "evidence": "accented word inside a heading (.hostHeader h1 span)",
+      "fix": "Set the whole head one way: a line break, a second line at a second size, or the whole head in the accent. Guard: the theme names the coloured word as its signature and it appears once on the page, in the hero"
+    },
+    {
+      "gate": "38iii",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 844,
+      "evidence": "accented word inside a heading (.leaderboardScreen > h1 span)",
+      "fix": "Set the whole head one way: a line break, a second line at a second size, or the whole head in the accent. Guard: the theme names the coloured word as its signature and it appears once on the page, in the hero"
+    },
+    {
+      "gate": "39b",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "http://127.0.0.1:3417/",
+      "line": 1,
+      "evidence": "[1440px] control height outside 32 to 52px: button.v-seat-person 84px, button.v-empty-seat 82px, button.v-empty-seat 82…",
+      "fix": "Marketing controls stand 44 to 52px; app UI 32 to 40px with a 44px hit target"
+    },
+    {
+      "gate": "72",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "http://127.0.0.1:3417/",
+      "line": 1,
+      "evidence": "[1440px] text crowds the edge of its box: div.v-seat bottom 3px; div.v-seat bottom 3px; div.v-seat bottom 3px",
+      "fix": "Pad the box: max(8px, 0.5em) at the sides, max(4px, 0.3em) above and below"
+    },
+    {
+      "gate": "75",
+      "grade": "REFLEX",
+      "tier": "reflex",
+      "file": "http://127.0.0.1:3417/",
+      "line": 1,
+      "evidence": "[1440px] text that strains the eye: small at 10px, span.v-live at 10px, small at 10px, button.v-seat-lock at 10px",
+      "fix": "Running text 12px or more (16px for body), functional text 11px or more, multi-line prose leaded 1.3 or more"
+    },
+    {
+      "gate": "3",
+      "grade": "WARN",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 543,
+      "evidence": "side stripe border-inline-start: 4px solid var(--gold-bright) on .questionHeading",
+      "fix": "Hairline all round, none, or an accent square"
+    },
+    {
+      "gate": "3",
+      "grade": "WARN",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 669,
+      "evidence": "side stripe border-inline-start: 3px solid var(--cyan) on .questionExplanation",
+      "fix": "Hairline all round, none, or an accent square"
+    },
+    {
+      "gate": "29",
+      "grade": "WARN",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 36,
+      "evidence": "chromatic zero-offset glow (blur 80px) on .stage",
+      "fix": "Shadows carry offset and blur in a neutral; colour is not depth"
+    },
+    {
+      "gate": "29",
+      "grade": "WARN",
+      "tier": "reflex",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1168,
+      "evidence": "chromatic zero-offset glow (blur 32px) on .controlPanel",
+      "fix": "Shadows carry offset and blur in a neutral; colour is not depth"
+    },
+    {
+      "gate": "41",
+      "grade": "WARN",
+      "tier": "floor",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 435,
+      "evidence": "dark surface (L 14%) on .qrCard > .crestSmall sets no text colour",
+      "fix": "Swap text to paper in the same rule"
+    },
+    {
+      "gate": "F3",
+      "grade": "WARN",
+      "tier": "finish",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 150,
+      "evidence": "no text-wrap: balance on any display head (18 head rule(s), e.g. .hostHeader h1)",
+      "fix": "Add text-wrap: balance to h1/h2-level heads"
+    },
+    {
+      "gate": "F3",
+      "grade": "WARN",
+      "tier": "finish",
+      "file": "apps/web/src/components/voice/live-room-mobile.module.css",
+      "line": 132,
+      "evidence": "no text-wrap: balance on any display head (3 head rule(s), e.g. .mobileRoom[data-room-visible='…)",
+      "fix": "Add text-wrap: balance to h1/h2-level heads"
+    },
+    {
+      "gate": "F24",
+      "grade": "WARN",
+      "tier": "finish",
+      "file": "apps/web/src/components/live/cinematic-quiz-experience.module.css",
+      "line": 1168,
+      "evidence": "a hairline border under a wide soft shadow on .controlPanel",
+      "fix": "Commit to one: a defined edge, or elevation by shadow"
+    }
+  ]
+}

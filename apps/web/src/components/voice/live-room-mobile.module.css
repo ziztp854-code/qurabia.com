@@ -1,3 +1,6 @@
+/* Hallmark · checked: 2026-10-26 · genre: atmospheric (inferred)
+ * scoped polish: chat readability, spacing and field boundary; legacy gates recorded in audit
+ * built: the project · redesign: polish · scope: app · v2.0.0 */
 /* Mobile overrides stay on the room surface; audio and room state are unchanged. */
 @media (max-width: 1020px) {
   .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
@@ -263,12 +266,12 @@
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-messages) {
-    padding: 8px;
+    padding: var(--space-3);
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message) {
-    gap: 4px;
-    margin-block-end: 8px;
+    gap: var(--space-2);
+    margin-block-end: var(--space-3);
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
@@ -279,22 +282,34 @@
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.8;
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-meta strong) {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-meta time) {
-    font-size: 9px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-actions button) {
+    inline-size: 44px;
+    block-size: 44px;
+    min-inline-size: 44px;
+    min-block-size: 44px;
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose) {
     gap: 4px;
     padding: 8px;
     background: transparent;
+  }
+
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose textarea) {
+    border-color: var(--voice-muted);
   }
 
   .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
@@ -332,6 +347,13 @@
   .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-gift-control > svg) {
     color: var(--voice-text);
     background: var(--voice-purple);
+  }
+}
+
+@media (max-width: 340px) {
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-actions) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(44px, 1fr));
   }
 }
 
