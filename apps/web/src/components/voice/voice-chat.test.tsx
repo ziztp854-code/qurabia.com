@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { VoiceMessage, VoiceParticipant } from '@/lib/voice/types';
-import { VoiceChat } from './voice-chat';
+import { VoiceChat, createVoiceChatDraft } from './voice-chat';
 
 vi.mock('./use-voice-overlay', () => ({ useVoiceMediaQuery: () => false }));
 const me: VoiceParticipant = {
@@ -190,5 +190,57 @@ describe('room composer', () => {
     view.rerender(<VoiceChat {...props} me={null} onEvent={onEvent} onGift={onGift} />);
     expect(screen.getByRole('button', { name: 'إرسال هدية' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'إرسال الرسالة' })).toBeDisabled();
+  });
+});
+
+describe('composer session continuity', () => {
+  it('retains draft and retry identity through rejoin remount', async () => {
+    const draft = createVoiceChatDraft();
+    const onError = vi.fn();
+    const onEvent = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('lost ACK'))
+      .mockResolvedValueOnce(undefined);
+    const first = render(
+      <VoiceChat {...props} draft={draft} onEvent={onEvent} onError={onError} />,
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: 'رسالتك' }), {
+      target: { value: 'لا تضيع رسالتي' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }));
+    await waitFor(() => expect(onError).toHaveBeenCalled());
+    first.unmount();
+    render(<VoiceChat {...props} draft={draft} onEvent={onEvent} />);
+    expect(screen.getByRole('textbox', { name: 'رسالتك' })).toHaveValue('لا تضيع رسالتي');
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'رسالتك' })).toHaveValue(''));
+    expect(onEvent.mock.calls[1][0].requestId).toBe(onEvent.mock.calls[0][0].requestId);
+  });
+  it('protects newer text across remount and ignores late ACK after reset', async () => {
+    const draft = createVoiceChatDraft();
+    let acknowledge!: () => void;
+    const onEvent = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          acknowledge = resolve;
+        }),
+    );
+    const first = render(<VoiceChat {...props} draft={draft} onEvent={onEvent} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'رسالتك' }), {
+      target: { value: 'الأولى' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }));
+    first.unmount();
+    render(<VoiceChat {...props} draft={draft} onEvent={onEvent} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'رسالتك' }), {
+      target: { value: 'الأحدث' },
+    });
+    await act(async () => acknowledge());
+    expect(screen.getByRole('textbox', { name: 'رسالتك' })).toHaveValue('الأحدث');
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال الرسالة' }));
+    act(() => draft.reset());
+    await act(async () => acknowledge());
+    expect(screen.getByRole('textbox', { name: 'رسالتك' })).toHaveValue('');
+    expect(draft.getSnapshot().pending).toBeNull();
   });
 });

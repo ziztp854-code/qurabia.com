@@ -2,6 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { VoiceSnapshot } from '../src/lib/voice/types';
 const stage = process.env.LIVE_ROOM_STAGE || 'after';
 const evidence = process.env.LIVE_ROOM_EVIDENCE_DIR
   ? path.resolve(process.env.LIVE_ROOM_EVIDENCE_DIR)
@@ -759,4 +760,104 @@ test('final requested sizes keep expanded seats, chat and controls separate and 
       2,
     ),
   );
+});
+
+// Reconnection UX with synthetic HTTP and mocked media, never production WebRTC.
+test('rejoin preserves draft reply and retry identity after a lost acknowledgement', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let snapshot: VoiceSnapshot | undefined;
+  let revokeOnce = false;
+  const writes = new Map<string, unknown>();
+  const requestIds: string[] = [];
+  await page.route('**/api/voice/rooms/responsive-fixture/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (!snapshot) snapshot = await (await route.fetch()).json();
+    if (!snapshot?.me) throw new Error('Fixture must return an admitted viewer');
+    const current = snapshot;
+    const self = snapshot.me;
+    if (request.method() === 'POST' && url.pathname.endsWith('/events/')) {
+      const event = request.postDataJSON();
+      if (event.type === 'message') {
+        requestIds.push(event.requestId);
+        if (!writes.has(event.requestId)) {
+          writes.set(event.requestId, event);
+          snapshot = {
+            ...snapshot,
+            cursor: current.cursor + 1,
+            messages: [
+              ...current.messages,
+              {
+                id: `confirmed-${event.requestId}`,
+                userId: self.id,
+                name: self.name,
+                image: null,
+                text: event.text,
+                replyTo: event.replyTo ?? null,
+                createdAt: Date.now(),
+                pinned: false,
+                reactions: {},
+              },
+            ],
+          };
+          revokeOnce = true;
+          await route.abort('failed');
+          return;
+        }
+      }
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/events/') && revokeOnce) {
+      revokeOnce = false;
+      await route.fulfill({ status: 403, json: { error: 'انتهت جلسة الاختبار' } });
+      return;
+    }
+    await route.fulfill({ json: snapshot });
+  });
+  await page.goto('/');
+  await page.locator('.v-room-controls').waitFor();
+  await page.locator('.v-chat-toggle').click();
+  await page.getByRole('button', { name: 'الرد على عبدالعزيز بن سلطان', exact: true }).click();
+  const input = page.getByRole('textbox', { name: 'رسالتك', exact: true });
+  await input.fill('مسودة مستمرة بعد إعادة الانضمام');
+  await page.getByRole('button', { name: 'إرسال الرسالة', exact: true }).click();
+  const rejoin = page.getByRole('button', { name: 'الانضمام للغرفة', exact: true });
+  await expect(rejoin).toBeVisible();
+  await expect(input).toHaveCount(0);
+  await rejoin.click();
+  await expect(input).toHaveValue('مسودة مستمرة بعد إعادة الانضمام');
+  await expect(page.locator('.v-reply-preview')).toContainText('عبدالعزيز بن سلطان');
+  expect(requestIds).toHaveLength(1); // Rejoining must never send automatically.
+  await page.getByRole('button', { name: 'إرسال الرسالة', exact: true }).click();
+  await expect(input).toHaveValue('');
+  expect(requestIds).toHaveLength(2);
+  expect(requestIds[1]).toBe(requestIds[0]);
+  expect(writes.size).toBe(1);
+  await expect(
+    page.getByRole('log').getByText('مسودة مستمرة بعد إعادة الانضمام', { exact: true }),
+  ).toHaveCount(1);
+});
+
+test('HTTP recovery clears only its Arabic connection status', async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/voice/rooms/responsive-fixture/events/', async (route) => {
+    if (route.request().method() === 'POST')
+      await route.fulfill({ status: 500, json: { error: 'فشل إرسال تجريبي' } });
+    else await route.continue();
+  });
+  await page.goto('/');
+  await page.locator('.v-room-controls').waitFor();
+  await page.locator('.v-chat-toggle').click();
+  const input = page.getByRole('textbox', { name: 'رسالتك', exact: true });
+  await input.fill('مسودة عند انقطاع الشبكة');
+  await page.getByRole('button', { name: 'إرسال الرسالة', exact: true }).click();
+  await expect(page.getByText('فشل إرسال تجريبي', { exact: true })).toBeAttached();
+  await context.setOffline(true);
+  const connection = page.getByText('انقطع تحديث الغرفة. نحاول إعادة الاتصال…', { exact: true });
+  await expect(connection).toBeAttached({ timeout: 15000 });
+  await context.setOffline(false);
+  await expect(connection).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByText('فشل إرسال تجريبي', { exact: true })).toBeAttached();
+  await expect(input).toHaveValue('مسودة عند انقطاع الشبكة');
 });

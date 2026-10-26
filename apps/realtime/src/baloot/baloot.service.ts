@@ -312,21 +312,12 @@ export class BalootService {
       const namedSeat = room.seats.find(
         (seat) => seat?.playerName === playerName,
       );
-      if (namedSeat) {
-        if (!namedSeat.connected) {
-          namedSeat.connected = true;
-          room.stateVersion += 1;
-          this.syncLobbyPhase(room);
-          await this.persist(room);
-          await this.indexSession(namedSeat.sessionToken, roomCode);
-          return {
-            ok: true as const,
-            data: this.buildSession(room, namedSeat.sessionToken),
-          };
-        }
+      if (namedSeat && (namedSeat.connected || namedSeat.isHost)) {
+        // A public name never proves ownership of an existing credential.
+        // Keep the host seat reserved for authenticated resume/reconnect.
         return this.failure('NAME_TAKEN', 'الاسم مستخدم في الغرفة.');
       }
-      const seatIndex = this.findOpenSeatIndex(room);
+      const seatIndex = namedSeat?.seat ?? this.findOpenSeatIndex(room);
       if (seatIndex < 0) {
         return this.failure('ROOM_FULL', 'اكتملت مقاعد البلوت الأربعة.');
       }
@@ -679,7 +670,7 @@ export class BalootService {
     roomCode: string,
     expectedVersion: number,
     expectedTurn: number,
-  ): Promise<boolean> {
+  ): Promise<boolean | BalootFailure> {
     return this.withRoomLock(roomCode, async () => {
       const room = await this.resolveRoom(roomCode);
       if (
@@ -753,14 +744,19 @@ export class BalootService {
     const roomCode = await this.lookupRoomCode(sessionToken);
     if (!roomCode)
       return this.failure('INVALID_SESSION', 'جلسة البلوت غير صالحة.');
-    const found = await this.findSession(roomCode, sessionToken);
-    if (!found.ok) return found;
-    if (!found.seat.connected) {
-      found.seat.connected = true;
-      found.room.stateVersion += 1;
-      await this.persist(found.room);
-    }
-    return { ok: true, data: this.buildSession(found.room, sessionToken) };
+    return this.withRoomLock(roomCode, async () => {
+      const found = await this.findSession(roomCode, sessionToken);
+      if (!found.ok) return found;
+      if (!found.seat.connected) {
+        found.seat.connected = true;
+        found.room.stateVersion += 1;
+        await this.persist(found.room);
+      }
+      return {
+        ok: true as const,
+        data: this.buildSession(found.room, sessionToken),
+      };
+    });
   }
 
   async disconnect(sessionToken: string) {
@@ -1144,7 +1140,9 @@ export class BalootService {
     const empty = room.seats.findIndex((seat) => seat === null);
     if (empty >= 0) return empty;
     if (room.phase === 'LOBBY' || room.phase === 'READY') {
-      return room.seats.findIndex((seat) => Boolean(seat) && !seat?.connected);
+      return room.seats.findIndex(
+        (seat) => Boolean(seat) && !seat?.connected && !seat?.isHost,
+      );
     }
     return -1;
   }
@@ -1312,7 +1310,7 @@ export class BalootService {
   private async withRoomLock<T>(
     roomCode: string,
     action: () => Promise<T>,
-  ): Promise<T> {
+  ): Promise<T | BalootFailure> {
     if (!this.redisEnabled()) return action();
     const token = randomUUID();
     for (let attempt = 0; attempt < 80; attempt += 1) {
@@ -1326,6 +1324,6 @@ export class BalootService {
       }
       await new Promise((resolve) => setTimeout(resolve, 25));
     }
-    return action();
+    return this.failure('ROOM_BUSY', 'الغرفة مشغولة الآن. حاول مرة أخرى.');
   }
 }

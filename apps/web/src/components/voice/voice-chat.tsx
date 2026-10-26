@@ -8,6 +8,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type FormEvent,
 } from 'react';
 import { motion } from 'framer-motion';
@@ -25,6 +26,52 @@ import { messageEmojiCount, MAX_MESSAGE_EMOJIS } from '@/lib/voice/emojis';
 import emojiStyles from './emoji.module.css';
 const EmojiPicker = lazy(() => import('./emoji-picker'));
 
+type DraftState = {
+  text: string;
+  reply: VoiceMessage | null;
+  version: number;
+  generation: number;
+  sending: boolean;
+  pending: { fingerprint: string; requestId: string } | null;
+};
+
+// Owned by the room, never persisted. Rejoining may unmount the chat, not this state.
+export function createVoiceChatDraft() {
+  let state: DraftState = {
+    text: '',
+    reply: null,
+    version: 0,
+    generation: 0,
+    sending: false,
+    pending: null,
+  };
+  const listeners = new Set<() => void>();
+  const draft = {
+    getSnapshot: () => state,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    update: (patch: Partial<DraftState>) => {
+      state = { ...state, ...patch };
+      listeners.forEach((listener) => listener());
+    },
+    reset: () =>
+      draft.update({
+        text: '',
+        reply: null,
+        version: state.version + 1,
+        generation: state.generation + 1,
+        sending: false,
+        pending: null,
+      }),
+  };
+  return draft;
+}
+export type VoiceChatDraft = ReturnType<typeof createVoiceChatDraft>;
+
 export const VoiceChat = memo(function VoiceChat({
   messages,
   participants = [],
@@ -38,7 +85,9 @@ export const VoiceChat = memo(function VoiceChat({
   onGift,
   open = true,
   onDismissReady,
+  draft: retainedDraft,
 }: {
+  draft?: VoiceChatDraft;
   messages: VoiceMessage[];
   participants?: VoiceParticipant[];
   me: VoiceParticipant | null;
@@ -54,7 +103,14 @@ export const VoiceChat = memo(function VoiceChat({
 }) {
   const draggable = useVoiceMediaQuery('(max-width: 760px)');
   const overlay = useVoiceMediaQuery('(max-width: 1020px)');
-  const [reply, setReply] = useState<VoiceMessage | null>(null);
+  const [localDraft] = useState(createVoiceChatDraft);
+  const draft = retainedDraft ?? localDraft;
+  const reply = useSyncExternalStore(
+    draft.subscribe,
+    () => draft.getSnapshot().reply,
+    () => draft.getSnapshot().reply,
+  );
+  const setReply = useCallback((reply: VoiceMessage | null) => draft.update({ reply }), [draft]);
   const [reactionTarget, setReactionTarget] = useState<string | null>(null);
   const [newCount, setNewCount] = useState(0);
   const [report, setReport] = useState<string | null>(null);
@@ -249,6 +305,7 @@ export const VoiceChat = memo(function VoiceChat({
         </div>
       )}
       <VoiceChatComposer
+        draft={draft}
         reply={reply}
         me={me}
         enabled={enabled}
@@ -257,7 +314,7 @@ export const VoiceChat = memo(function VoiceChat({
         onGift={onGift}
         onCancelReply={() => setReply(null)}
         onSent={(sentReplyId, unchanged) => {
-          if (unchanged) setReply((current) => (current?.id === sentReplyId ? null : current));
+          if (unchanged && draft.getSnapshot().reply?.id === sentReplyId) setReply(null);
           nearBottom.current = true;
         }}
       />
@@ -410,6 +467,7 @@ const ChatMessageRow = memo(
 
 // Draft changes stay below the message history, so each keystroke only renders the composer.
 function VoiceChatComposer({
+  draft,
   reply,
   me,
   enabled,
@@ -419,6 +477,7 @@ function VoiceChatComposer({
   onCancelReply,
   onSent,
 }: {
+  draft: VoiceChatDraft;
   reply: VoiceMessage | null;
   me: VoiceParticipant | null;
   enabled: boolean;
@@ -428,13 +487,15 @@ function VoiceChatComposer({
   onCancelReply: () => void;
   onSent: (replyId: string | undefined, unchanged: boolean) => void;
 }) {
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
+  const { text, sending } = useSyncExternalStore(
+    draft.subscribe,
+    draft.getSnapshot,
+    draft.getSnapshot,
+  );
+  const setText = (text: string) =>
+    draft.update({ text, version: draft.getSnapshot().version + 1 });
   const [picker, setPicker] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
-  const draftVersion = useRef(0);
-  const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
-  const busy = useRef(false);
   const replyingTo = reply?.id;
   const canCompose = enabled && Boolean(me);
   useEffect(() => {
@@ -449,7 +510,6 @@ function VoiceChatComposer({
       onError('الحد الأقصى 12 فيسًا و1000 حرف للرسالة.');
       return;
     }
-    draftVersion.current++;
     setText(next);
     setPicker(false);
     requestAnimationFrame(() => {
@@ -459,35 +519,41 @@ function VoiceChatComposer({
   }
   async function send(event: FormEvent) {
     event.preventDefault();
-    if (!text.trim() || busy.current || !enabled || !me) return;
+    if (!text.trim() || draft.getSnapshot().sending || !enabled || !me) return;
     if (messageEmojiCount(text) > MAX_MESSAGE_EMOJIS) {
       onError('الحد الأقصى 12 فيسًا للرسالة.');
       return;
     }
     const fingerprint = JSON.stringify([text.trim(), reply?.id]);
-    const submittedVersion = draftVersion.current;
-    if (pending.current?.fingerprint !== fingerprint)
-      pending.current = { fingerprint, requestId: crypto.randomUUID() };
-    busy.current = true;
-    setSending(true);
+    const submitted = draft.getSnapshot();
+    const pending =
+      submitted.pending?.fingerprint === fingerprint
+        ? submitted.pending
+        : { fingerprint, requestId: crypto.randomUUID() };
+    draft.update({ pending, sending: true });
     input.current?.focus({ preventScroll: true });
     try {
       await onEvent({
         type: 'message',
         text: text.trim(),
-        requestId: pending.current.requestId,
+        requestId: pending.requestId,
         ...(reply ? { replyTo: reply.id } : {}),
       });
       // An acknowledgement must not erase edits made while the request was in flight.
-      const unchanged = draftVersion.current === submittedVersion;
-      if (unchanged) setText('');
-      pending.current = null;
+      const current = draft.getSnapshot();
+      if (current.generation !== submitted.generation) return;
+      const unchanged = current.version === submitted.version;
+      draft.update({
+        ...(unchanged ? { text: '' } : {}),
+        ...(unchanged && current.reply?.id === reply?.id ? { reply: null } : {}),
+        pending: null,
+      });
       onSent(reply?.id, unchanged);
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'تعذر إرسال الرسالة.');
+      if (draft.getSnapshot().generation === submitted.generation)
+        onError(err instanceof Error ? err.message : 'تعذر إرسال الرسالة.');
     } finally {
-      setSending(false);
-      busy.current = false;
+      if (draft.getSnapshot().generation === submitted.generation) draft.update({ sending: false });
     }
   }
   return (
@@ -529,7 +595,6 @@ function VoiceChatComposer({
           value={text}
           maxLength={1000}
           onChange={(e) => {
-            draftVersion.current++;
             setText(e.target.value);
           }}
           disabled={!enabled || !me}

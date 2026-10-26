@@ -65,6 +65,56 @@ function connectedPlayer() {
 }
 
 describe('useLiveGame realtime connection', () => {
+  it('ignores late starts and snapshots from an older question after advancing', () => {
+    const { result } = connectedPlayer();
+    const newer = {
+      ...questionSnapshot.question!,
+      questionId: 'question-2',
+      questionNumber: 2,
+      questionStartedAt: 30_000,
+      questionEndsAt: 50_000,
+    };
+    receive('question:started', newer);
+    receive('question:started', questionSnapshot.question);
+    receive('game:snapshot', questionSnapshot);
+    expect(result.current.snapshot?.question?.questionId).toBe('question-2');
+  });
+
+  it('does not clear an answer when the same question start is delivered twice', () => {
+    const { result } = connectedPlayer();
+    act(() => result.current.submitAnswer('question-1', 'option-1'));
+    receive('question:started', questionSnapshot.question);
+    expect(result.current.snapshot?.playerAnswer?.optionId).toBe('option-1');
+  });
+
+  it('keeps FINISHED absorbing across late phases and reconnect snapshots', () => {
+    const { result } = connectedPlayer();
+    receive('game:finished', { sessionId: 'session-1', leaderboard: [] });
+    receive('question:started', questionSnapshot.question);
+    receive('leaderboard:shown', { leaderboard: [] });
+    receive('game:snapshot', questionSnapshot);
+    act(() => socketState.socket.listeners.get('connect')?.());
+    receive('game:snapshot', questionSnapshot);
+    expect(result.current.snapshot?.phase).toBe('FINISHED');
+  });
+
+  it('remembers a finish received before the first snapshot', () => {
+    const { result } = renderHook(() =>
+      useLiveGame({
+        sessionId: 'session-1',
+        subjectId: 'player-1',
+        accessToken: 'token',
+        role: 'player',
+      }),
+    );
+    receive('game:finished', { sessionId: 'session-1', leaderboard: [] });
+    receive('question:started', questionSnapshot.question);
+    receive('game:snapshot', questionSnapshot);
+    expect(result.current.snapshot).toBeNull();
+    receive('game:snapshot', { ...questionSnapshot, phase: 'FINISHED' });
+    expect(result.current.snapshot?.phase).toBe('FINISHED');
+  });
+
   beforeEach(() => {
     delete process.env.NEXT_PUBLIC_REALTIME_URL;
     window.localStorage.setItem('tahaddi.device-id.v1', '018f5e2a-7b66-7b2c-9a51-2397f59d67e1');

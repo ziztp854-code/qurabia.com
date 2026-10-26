@@ -10,6 +10,8 @@ function makeSession() {
     status: 'ACTIVE',
     currentQuestionPosition: 0,
     questionStartedAt: startedAt,
+    questionRevealedAt: null as Date | null,
+    questionAdvanceAt: null as Date | null,
     endedAt: null,
     quiz: {
       autoAdvance: true,
@@ -74,7 +76,7 @@ describe('GameService live safety', () => {
         questionStartedAt: session.questionStartedAt.getTime(),
         questionEndsAt: session.questionStartedAt.getTime() + 20_000,
       }),
-      saveGameState: jest.fn(),
+      saveGameState: jest.fn().mockResolvedValue(true),
       deleteGameState: jest.fn(),
       acquireTransition: jest.fn().mockResolvedValue(true),
       releaseTransition: jest.fn(),
@@ -92,6 +94,31 @@ describe('GameService live safety', () => {
         liveSession: {
           findUnique: jest.fn().mockResolvedValue(session),
           update: jest.fn(),
+          updateMany: jest.fn(
+            (input: {
+              where: Record<string, unknown>;
+              data: Record<string, unknown>;
+            }) => {
+              const mutable = session as unknown as Record<string, unknown>;
+              for (const [key, expected] of Object.entries(input.where)) {
+                const actual = mutable[key];
+                if (
+                  expected &&
+                  typeof expected === 'object' &&
+                  'not' in expected
+                ) {
+                  if (actual === expected.not)
+                    return Promise.resolve({ count: 0 });
+                } else if (
+                  JSON.stringify(actual) !== JSON.stringify(expected)
+                ) {
+                  return Promise.resolve({ count: 0 });
+                }
+              }
+              Object.assign(mutable, input.data);
+              return Promise.resolve({ count: 1 });
+            },
+          ),
         },
         liveParticipant: {
           updateMany: jest.fn(),
@@ -148,6 +175,224 @@ describe('GameService live safety', () => {
         role: 'player',
       }),
     ).resolves.toBe(false);
+  });
+
+  it('does not revive a finished session when an older start resumes after lease expiry', async () => {
+    const initial = makeSession();
+    initial.status = 'WAITING';
+    const { service, database, redis, io, session } = setup(initial);
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'LOBBY',
+      currentQuestionPosition: 0,
+      questionStartedAt: session.questionStartedAt.getTime(),
+      questionEndsAt: null,
+      transitionDueAt: null,
+    });
+    // Keep each read immutable, like separate Prisma query results.
+    database.client.liveSession.findUnique.mockImplementation(() =>
+      Promise.resolve({ ...session }),
+    );
+    const write =
+      database.client.liveSession.updateMany.getMockImplementation()!;
+    let resume!: () => void;
+    let reached!: () => void;
+    const paused = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
+    database.client.liveSession.updateMany.mockImplementationOnce(
+      async (input) => {
+        reached();
+        await new Promise<void>((resolve) => {
+          resume = resolve;
+        });
+        return write(input);
+      },
+    );
+    // The mock lock admits both owners to simulate expiry during DB I/O.
+    const starting = service.startQuestion(session.id, session.hostId);
+    await paused;
+    await expect(service.finishGame(session.id, session.hostId)).resolves.toBe(
+      true,
+    );
+    resume();
+    await expect(starting).resolves.toBe(false);
+    expect(session.status).toBe('FINISHED');
+    expect(io.emit).not.toHaveBeenCalledWith(
+      'question:started',
+      expect.anything(),
+    );
+    expect(redis.saveGameState).not.toHaveBeenCalledWith(
+      expect.objectContaining({ phase: 'QUESTION' }),
+    );
+  });
+
+  it('keeps DB FINISHED terminal when Redis still contains QUESTION', async () => {
+    const initial = makeSession();
+    initial.status = 'FINISHED';
+    const { service, redis } = setup(initial);
+    const snapshot = await service.getSnapshot({
+      sessionId: initial.id,
+      subjectId: initial.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.phase).toBe('FINISHED');
+    expect(redis.saveGameState).toHaveBeenCalledWith(
+      expect.objectContaining({ phase: 'FINISHED' }),
+    );
+  });
+
+  it('uses the current DB question tuple instead of an older cache with the same phase', async () => {
+    const { service, redis, session } = setup();
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'QUESTION',
+      currentQuestionPosition: 0,
+      questionStartedAt: session.questionStartedAt.getTime() - 5_000,
+      questionEndsAt: Date.now() + 2_000,
+      transitionDueAt: null,
+    });
+    const snapshot = await service.getSnapshot({
+      sessionId: session.id,
+      subjectId: session.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.question?.questionStartedAt).toBe(
+      session.questionStartedAt.getTime(),
+    );
+  });
+
+  it('recovers a committed start after Redis publication fails', async () => {
+    const initial = makeSession();
+    initial.status = 'WAITING';
+    const { service, redis, session, io } = setup(initial);
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'LOBBY',
+      currentQuestionPosition: 0,
+      questionStartedAt: session.questionStartedAt.getTime(),
+      questionEndsAt: null,
+      transitionDueAt: null,
+    });
+    redis.saveGameState.mockRejectedValueOnce(new Error('redis unavailable'));
+    await expect(
+      service.startQuestion(session.id, session.hostId),
+    ).rejects.toThrow('redis unavailable');
+    expect(session.status).toBe('ACTIVE');
+    expect(io.emit).not.toHaveBeenCalled();
+    redis.loadGameState.mockResolvedValue(null);
+    const snapshot = await service.getSnapshot({
+      sessionId: session.id,
+      subjectId: session.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.phase).toBe('QUESTION');
+    expect(snapshot?.question?.questionStartedAt).toBe(
+      session.questionStartedAt.getTime(),
+    );
+  });
+
+  it('repairs a cached QUESTION after a committed reveal lost its Redis publication', async () => {
+    const { service, session } = setup();
+    session.questionRevealedAt = new Date();
+    const snapshot = await service.getSnapshot({
+      sessionId: session.id,
+      subjectId: session.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.phase).toBe('REVEAL');
+  });
+
+  it('re-reads authority instead of returning a rejected recovery projection', async () => {
+    const { service, session, redis } = setup();
+    redis.loadGameState.mockResolvedValue(null);
+    redis.saveGameState.mockImplementationOnce(() => {
+      session.status = 'FINISHED';
+      return Promise.resolve(false);
+    });
+    const snapshot = await service.getSnapshot({
+      sessionId: session.id,
+      subjectId: session.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.phase).toBe('FINISHED');
+  });
+
+  it('recovers a lost leaderboard publication to a safe reveal without inferring HTTP phases', async () => {
+    const { service, session, redis, database } = setup();
+    session.questionRevealedAt = new Date();
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'REVEAL',
+      currentQuestionPosition: 0,
+      questionStartedAt: session.questionStartedAt.getTime(),
+      questionEndsAt: Date.now() + 19_000,
+      transitionDueAt: null,
+      dbRevealedAt: session.questionRevealedAt.getTime(),
+      dbAdvanceAt: null,
+    });
+    redis.saveGameState.mockRejectedValueOnce(new Error('redis unavailable'));
+    await expect(service.next(session.id, session.hostId)).rejects.toThrow(
+      'redis unavailable',
+    );
+    expect(session.questionAdvanceAt).toBeInstanceOf(Date);
+    // A real Redis read returns a separate decoded value, not the object next mutated.
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'REVEAL',
+      currentQuestionPosition: 0,
+      questionStartedAt: session.questionStartedAt.getTime(),
+      questionEndsAt: Date.now() + 19_000,
+      transitionDueAt: null,
+      dbRevealedAt: session.questionRevealedAt.getTime(),
+      dbAdvanceAt: null,
+    });
+    const snapshot = await service.getSnapshot({
+      sessionId: session.id,
+      subjectId: session.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.phase).toBe('REVEAL');
+    expect(database.client.liveSession.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores an HTTP reveal delay as REVEAL, never as an inferred leaderboard', async () => {
+    const { service, session, redis } = setup();
+    session.questionAdvanceAt = new Date(Date.now() + 3_000);
+    redis.loadGameState.mockResolvedValue(null);
+    const start = jest.spyOn(service, 'startQuestion');
+    const snapshot = await service.getSnapshot({
+      sessionId: session.id,
+      subjectId: session.hostId,
+      role: 'host',
+    });
+    expect(snapshot?.phase).toBe('REVEAL');
+    await jest.advanceTimersByTimeAsync(3_000);
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('finishes an exhausted quiz inside start without acquiring a nested contention lock', async () => {
+    const { service, session, redis } = setup();
+    redis.loadGameState.mockResolvedValue({
+      sessionId: session.id,
+      roomCode: session.roomCode,
+      phase: 'LEADERBOARD',
+      currentQuestionPosition: 0,
+      questionStartedAt: session.questionStartedAt.getTime(),
+      questionEndsAt: Date.now(),
+      transitionDueAt: Date.now(),
+    });
+    await expect(
+      service.startQuestion(session.id, session.hostId),
+    ).resolves.toBe(true);
+    expect(session.status).toBe('FINISHED');
+    expect(redis.acquireTransition).toHaveBeenCalledTimes(1);
+    expect(redis.releaseTransition).toHaveBeenCalledTimes(1);
   });
 
   it('does not expose the correct answer in a QUESTION snapshot', async () => {
@@ -226,10 +471,16 @@ describe('GameService live safety', () => {
       transitionDueAt: null,
     });
     let finishUpdate!: () => void;
-    database.client.liveSession.update.mockImplementation(
+    database.client.liveSession.updateMany.mockImplementation(
       () =>
         new Promise((resolve) => {
-          finishUpdate = () => resolve({});
+          finishUpdate = () => {
+            session.status = 'ACTIVE';
+            const call =
+              database.client.liveSession.updateMany.mock.calls[0][0];
+            Object.assign(session, call.data);
+            resolve({ count: 1 });
+          };
         }),
     );
 
@@ -237,7 +488,9 @@ describe('GameService live safety', () => {
     for (let tick = 0; tick < 10 && !finishUpdate; tick += 1)
       await Promise.resolve();
     expect(finishUpdate).toBeDefined();
-    expect(redis.saveGameState).not.toHaveBeenCalled();
+    expect(redis.saveGameState).not.toHaveBeenCalledWith(
+      expect.objectContaining({ phase: 'QUESTION' }),
+    );
     finishUpdate();
     await expect(starting).resolves.toBe(true);
     expect(redis.saveGameState).toHaveBeenCalledWith(
@@ -376,13 +629,14 @@ describe('GameService live safety', () => {
   });
 
   it('rejects a late answer using server time', async () => {
-    const { service, redis, io, database } = setup();
+    const { service, redis, io, database, session } = setup();
+    session.questionStartedAt = new Date(Date.now() - 30_000);
     redis.loadGameState.mockResolvedValue({
       sessionId: 'session-1',
       roomCode: 'ABC123',
       phase: 'QUESTION',
       currentQuestionPosition: 0,
-      questionStartedAt: Date.now() - 30_000,
+      questionStartedAt: session.questionStartedAt.getTime(),
       questionEndsAt: Date.now() - 1,
     });
     await service.submitAnswer(
@@ -534,7 +788,8 @@ describe('GameService live safety', () => {
   it('recreates the leaderboard timer after a service restart', async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-07-31T00:00:00.000Z'));
-    const { redis, database, io } = setup();
+    const { redis, database, io, session } = setup();
+    session.questionStartedAt = new Date(Date.now() - 20_000);
     redis.loadGameState.mockResolvedValue({
       sessionId: 'session-1',
       roomCode: 'ABC123',
@@ -561,7 +816,8 @@ describe('GameService live safety', () => {
   });
 
   it('advances a legacy leaderboard state without a stored deadline', async () => {
-    const { service, redis } = setup();
+    const { service, redis, session } = setup();
+    session.questionStartedAt = new Date(Date.now() - 20_000);
     redis.loadGameState.mockResolvedValue({
       sessionId: 'session-1',
       roomCode: 'ABC123',
@@ -587,7 +843,8 @@ describe('GameService live safety', () => {
   it('does not duplicate the leaderboard timer when snapshots repeat', async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-07-31T00:00:00.000Z'));
-    const { service, redis } = setup();
+    const { service, redis, session } = setup();
+    session.questionStartedAt = new Date(Date.now() - 20_000);
     redis.loadGameState.mockResolvedValue({
       sessionId: 'session-1',
       roomCode: 'ABC123',
@@ -620,7 +877,8 @@ describe('GameService live safety', () => {
   it('persists the leaderboard deadline before scheduling the next question', async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-07-31T00:00:00.000Z'));
-    const { service, redis } = setup();
+    const { service, redis, session } = setup();
+    session.questionStartedAt = new Date(Date.now() - 20_000);
     redis.loadGameState.mockResolvedValue({
       sessionId: 'session-1',
       roomCode: 'ABC123',

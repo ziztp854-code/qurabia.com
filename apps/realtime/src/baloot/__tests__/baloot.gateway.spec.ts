@@ -8,6 +8,152 @@ import { BalootService } from '../baloot.service.js';
 type TestBalootSocket = Parameters<BalootGateway['createRoom']>[0];
 
 describe('BalootGateway', () => {
+  const busy = { ok: false as const, code: 'ROOM_BUSY', message: 'busy' };
+
+  it('acknowledges a busy player command without broadcasting or retrying it', async () => {
+    const setReady = jest.fn().mockResolvedValue(busy);
+    const gateway = new BalootGateway({ setReady } as unknown as BalootService);
+    const client = {
+      id: 'busy-ready',
+      data: { balootRoomCode: '123456', balootSessionToken: 'token' },
+    } as unknown as TestBalootSocket;
+    expect(await gateway.ready(client, { ready: true })).toEqual(busy);
+    expect(setReady).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a newer turn timer when an older timeout completes as busy', async () => {
+    jest.useFakeTimers();
+    try {
+      let complete!: (result: typeof busy) => void;
+      const playTimedOutTurn = jest
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              complete = resolve;
+            }),
+        )
+        .mockResolvedValue(false);
+      const gateway = new BalootGateway({
+        playTimedOutTurn,
+      } as unknown as BalootService);
+      const scheduler = gateway as unknown as {
+        scheduleTurnTimeout: (code: string, snapshot: unknown) => void;
+      };
+      scheduler.scheduleTurnTimeout('123456', {
+        phase: 'PLAYING',
+        turn: 2,
+        stateVersion: 9,
+      });
+      await jest.advanceTimersByTimeAsync(BALOOT_RULES.turnTimeoutMs);
+      scheduler.scheduleTurnTimeout('123456', {
+        phase: 'PLAYING',
+        turn: 3,
+        stateVersion: 10,
+      });
+      complete(busy);
+      await jest.advanceTimersByTimeAsync(1_000);
+      expect(playTimedOutTurn).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(BALOOT_RULES.turnTimeoutMs - 1_000);
+      expect(playTimedOutTurn).toHaveBeenLastCalledWith('123456', 10, 3);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('retains the socket identity and returns busy when leaving cannot acquire the lock', async () => {
+    const leave = jest.fn().mockResolvedValue(busy);
+    const service = {
+      leave,
+    } as unknown as BalootService;
+    const gateway = new BalootGateway(service);
+    const socketLeave = jest.fn();
+    const client = {
+      id: 'busy-socket',
+      data: { balootRoomCode: '123456', balootSessionToken: 'token' },
+      leave: socketLeave,
+    } as unknown as TestBalootSocket;
+    expect(await gateway.leave(client, {})).toEqual(busy);
+    expect(client.data.balootSessionToken).toBe('token');
+    expect(socketLeave).not.toHaveBeenCalled();
+    expect(leave).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not attach a different room when detaching the current room is busy', async () => {
+    const joinRoom = jest.fn();
+    const leave = jest.fn().mockResolvedValue(busy);
+    const gateway = new BalootGateway({
+      leave,
+      joinRoom,
+    } as unknown as BalootService);
+    const client = {
+      id: 'cross-room',
+      data: { balootRoomCode: '123456', balootSessionToken: 'token' },
+    } as unknown as TestBalootSocket;
+    expect(
+      await gateway.joinRoom(client, {
+        roomCode: '654321',
+        playerName: 'Guest',
+      }),
+    ).toEqual(busy);
+    expect(joinRoom).not.toHaveBeenCalled();
+    expect(client.data.balootRoomCode).toBe('123456');
+  });
+
+  it('retries only the guarded automatic timeout when its lock is busy', async () => {
+    jest.useFakeTimers();
+    try {
+      const playTimedOutTurn = jest
+        .fn()
+        .mockResolvedValueOnce(busy)
+        .mockResolvedValue(false);
+      const gateway = new BalootGateway({
+        playTimedOutTurn,
+      } as unknown as BalootService);
+      (
+        gateway as unknown as {
+          scheduleTurnTimeout: (code: string, snapshot: unknown) => void;
+        }
+      ).scheduleTurnTimeout('123456', {
+        phase: 'PLAYING',
+        turn: 2,
+        stateVersion: 9,
+      });
+      await jest.advanceTimersByTimeAsync(BALOOT_RULES.turnTimeoutMs);
+      expect(playTimedOutTurn).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(1_000);
+      expect(playTimedOutTurn).toHaveBeenCalledTimes(2);
+      expect(playTimedOutTurn).toHaveBeenLastCalledWith('123456', 9, 2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('retries a busy disconnect instead of discarding the pending presence change', async () => {
+    jest.useFakeTimers();
+    try {
+      const disconnect = jest
+        .fn()
+        .mockResolvedValueOnce(busy)
+        .mockResolvedValue(null);
+      const service = {
+        disconnect,
+        listRoomSockets: jest.fn().mockResolvedValue([]),
+        getSnapshots: jest.fn().mockResolvedValue(new Map()),
+      } as unknown as BalootService;
+      const gateway = new BalootGateway(service);
+      (
+        gateway as unknown as { queueDisconnect: (identity: unknown) => void }
+      ).queueDisconnect({ roomCode: '123456', sessionToken: 'token' });
+      await jest.advanceTimersByTimeAsync(8_000);
+      expect(disconnect).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(1_000);
+      expect(disconnect).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('invokes the authoritative timeout play with the scheduled state', async () => {
     jest.useFakeTimers();
     try {

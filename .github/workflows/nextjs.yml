@@ -15,6 +15,56 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  voice-postgres:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/voice_test_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/voice_test_ci
+      VOICE_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/voice_test_ci
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: voice_test_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d voice_test_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare the isolated voice test database
+        # Use Prisma directly so an unreachable database fails this job.
+        run: pnpm exec prisma migrate deploy
+
+      - name: Build shared packages for the integration runner
+        run: pnpm exec turbo build --filter=@tahaddi/database --filter=@tahaddi/contracts --filter=@tahaddi/domain
+
+      - name: Test voice quotas, replay and media authorization with PostgreSQL
+        working-directory: apps/web
+        run: pnpm exec vitest run --config vitest.voice-quota.config.ts
+
   validate:
     runs-on: ubuntu-latest
     env:

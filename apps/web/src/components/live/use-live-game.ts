@@ -39,6 +39,8 @@ export function useLiveGame(input: {
   const activeQuestionId = useRef<string | null>(null);
   const latestStartedQuestion = useRef<QuestionPayload | null>(null);
   const latestReveal = useRef<QuestionRevealPayload | null>(null);
+  const finishedSession = useRef<string | null>(null);
+  const latestQuestion = useRef<{ sessionId: string; question: QuestionPayload } | null>(null);
   const pending = useRef(false);
   const pendingTimer = useRef<number | undefined>(undefined);
   const bestRtt = useRef(Number.POSITIVE_INFINITY);
@@ -77,6 +79,18 @@ export function useLiveGame(input: {
   }, [accessToken, role, sessionId, subjectId, settlePending]);
 
   useEffect(() => {
+    const isOlderQuestion = (question: QuestionPayload) => {
+      const previous = latestQuestion.current;
+      if (!previous || previous.sessionId !== sessionId) return false;
+      return (
+        question.questionNumber < previous.question.questionNumber ||
+        (question.questionNumber === previous.question.questionNumber &&
+          question.questionStartedAt < previous.question.questionStartedAt)
+      );
+    };
+    const rememberQuestion = (question: QuestionPayload) => {
+      latestQuestion.current = { sessionId, question };
+    };
     const deviceId = getOrCreateDeviceId();
     const realtimeUrl = resolveRealtimeNamespaceUrl(
       process.env.NEXT_PUBLIC_REALTIME_URL,
@@ -127,6 +141,16 @@ export function useLiveGame(input: {
       }
     });
     socket.on('game:snapshot', (next) => {
+      if (next.phase === 'FINISHED') finishedSession.current = sessionId;
+      if (finishedSession.current === sessionId && next.phase !== 'FINISHED') return;
+      if (
+        next.phase === 'LOBBY' &&
+        latestQuestion.current?.sessionId === sessionId &&
+        !latestStartedQuestion.current
+      )
+        return;
+      if (next.phase !== 'FINISHED' && next.question && isOlderQuestion(next.question)) return;
+      if (next.question) rememberQuestion(next.question);
       const started = latestStartedQuestion.current;
       let restored =
         started &&
@@ -177,6 +201,16 @@ export function useLiveGame(input: {
       setMessage('');
     });
     socket.on('question:started', (question) => {
+      if (finishedSession.current === sessionId) return;
+      if (isOlderQuestion(question)) return;
+      const previous = latestQuestion.current;
+      if (
+        previous?.sessionId === sessionId &&
+        previous.question.questionId === question.questionId &&
+        previous.question.questionStartedAt === question.questionStartedAt
+      )
+        return;
+      rememberQuestion(question);
       latestStartedQuestion.current = question;
       latestReveal.current = null;
       activeQuestionId.current = question.questionId;
@@ -226,6 +260,7 @@ export function useLiveGame(input: {
       if (next.questionId === activeQuestionId.current) setStats(next);
     });
     socket.on('question:revealed', (reveal) => {
+      if (finishedSession.current === sessionId) return;
       if (reveal.questionId !== activeQuestionId.current) return;
       latestReveal.current = reveal;
       setSnapshot((current) =>
@@ -242,6 +277,7 @@ export function useLiveGame(input: {
       settlePending();
     });
     socket.on('leaderboard:shown', ({ leaderboard }) => {
+      if (finishedSession.current === sessionId) return;
       latestStartedQuestion.current = null;
       latestReveal.current = null;
       setSnapshot((current) =>
@@ -250,6 +286,7 @@ export function useLiveGame(input: {
       settlePending();
     });
     socket.on('game:finished', ({ leaderboard }) => {
+      finishedSession.current = sessionId;
       latestStartedQuestion.current = null;
       latestReveal.current = null;
       activeQuestionId.current = null;

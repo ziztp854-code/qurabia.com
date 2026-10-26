@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { getQuizQuestionPoints } from '@tahaddi/domain';
 import {
   ANSWER_ACCEPT_GRACE_MS,
@@ -120,6 +121,8 @@ export class GameService {
         status: true,
         currentQuestionPosition: true,
         questionStartedAt: true,
+        questionRevealedAt: true,
+        questionAdvanceAt: true,
         endedAt: true,
         quiz: {
           select: {
@@ -234,6 +237,7 @@ export class GameService {
 
   private async ensureState(
     session: NonNullable<SessionRecord>,
+    attempt = 0,
   ): Promise<LiveGameState> {
     const stored = await this.redis.loadGameState(session.id);
     const startedAt = session.questionStartedAt?.getTime() ?? null;
@@ -243,23 +247,7 @@ export class GameService {
         : session.status === 'WAITING' || !startedAt
           ? 'LOBBY'
           : 'QUESTION';
-    // A stale lobby must not erase a question that was just started.
-    if (stored && stored.phase === dbPhase) return stored;
-    if (stored && dbPhase === 'LOBBY' && stored.phase !== 'LOBBY') {
-      const refreshed = await this.loadSession(session.id);
-      if (
-        refreshed &&
-        (refreshed.status === 'FINISHED' || refreshed.questionStartedAt)
-      ) {
-        return this.ensureState(refreshed);
-      }
-      await this.redis.deleteGameState(session.id);
-    } else if (
-      stored &&
-      !(dbPhase === 'QUESTION' && stored.phase === 'LOBBY')
-    ) {
-      return stored;
-    }
+    // Terminal DB state always wins, even over a cached active phase.
     if (dbPhase === 'FINISHED') {
       const state: LiveGameState = {
         sessionId: session.id,
@@ -270,8 +258,37 @@ export class GameService {
         questionEndsAt: null,
         transitionDueAt: null,
       };
-      await this.redis.saveGameState(state);
-      return state;
+      return this.restoreProjection(session, state, attempt);
+    }
+    if (stored?.phase === 'FINISHED') return stored;
+    // Phase equality alone says nothing about which question the cache holds.
+    if (
+      stored &&
+      stored.currentQuestionPosition === session.currentQuestionPosition &&
+      stored.questionStartedAt === startedAt &&
+      (stored.dbRevealedAt === undefined
+        ? !session.questionRevealedAt
+        : stored.dbRevealedAt ===
+          (session.questionRevealedAt?.getTime() ?? null)) &&
+      (stored.dbAdvanceAt === undefined
+        ? !session.questionAdvanceAt
+        : stored.dbAdvanceAt ===
+          (session.questionAdvanceAt?.getTime() ?? null)) &&
+      !(
+        stored.phase === 'QUESTION' &&
+        (session.questionRevealedAt || session.questionAdvanceAt)
+      )
+    )
+      return stored;
+    if (stored && dbPhase === 'LOBBY' && stored.phase !== 'LOBBY') {
+      const refreshed = await this.loadSession(session.id);
+      if (
+        refreshed &&
+        (refreshed.status === 'FINISHED' || refreshed.questionStartedAt)
+      ) {
+        return this.ensureState(refreshed);
+      }
+      // Never delete an entire cache key based on a possibly stale DB read.
     }
     if (dbPhase === 'LOBBY') {
       const state: LiveGameState = {
@@ -283,15 +300,27 @@ export class GameService {
         questionEndsAt: null,
         transitionDueAt: null,
       };
-      await this.redis.saveGameState(state);
-      return state;
+      return this.restoreProjection(session, state, attempt);
     }
 
     const question = this.currentQuestion(
       session,
       session.currentQuestionPosition,
     );
-    const phase: GamePhase = 'QUESTION';
+    // HTTP uses questionAdvanceAt for its reveal delay, not a leaderboard.
+    // Without a matching Redis projection, restore the safe REVEAL screen;
+    // never infer LEADERBOARD solely from this shared deadline field.
+    const knownLeaderboard =
+      stored?.phase === 'LEADERBOARD' &&
+      stored.currentQuestionPosition === session.currentQuestionPosition &&
+      stored.questionStartedAt === startedAt &&
+      session.questionRevealedAt &&
+      session.questionAdvanceAt;
+    const phase: GamePhase = knownLeaderboard
+      ? 'LEADERBOARD'
+      : session.questionRevealedAt || session.questionAdvanceAt
+        ? 'REVEAL'
+        : 'QUESTION';
     const state: LiveGameState = {
       sessionId: session.id,
       roomCode: session.roomCode,
@@ -300,13 +329,93 @@ export class GameService {
       questionStartedAt: startedAt,
       questionEndsAt:
         startedAt && question ? startedAt + question.timeLimit * 1_000 : null,
-      transitionDueAt: null,
+      transitionDueAt:
+        phase === 'LEADERBOARD' ? session.questionAdvanceAt!.getTime() : null,
+      dbRevealedAt: session.questionRevealedAt?.getTime() ?? null,
+      dbAdvanceAt: session.questionAdvanceAt?.getTime() ?? null,
     };
-    await this.redis.saveGameState(state);
-    if (phase === 'QUESTION' && question && state.questionEndsAt) {
-      this.scheduleReveal(session.id, question.id, state.questionEndsAt);
+    const restored = await this.restoreProjection(session, state, attempt);
+    if (restored.phase === 'QUESTION' && question && restored.questionEndsAt) {
+      this.scheduleReveal(session.id, question.id, restored.questionEndsAt);
     }
-    return state;
+    return restored;
+  }
+
+  private async restoreProjection(
+    session: NonNullable<SessionRecord>,
+    state: LiveGameState,
+    attempt: number,
+  ): Promise<LiveGameState> {
+    if (await this.publishState(state)) return state;
+    if (attempt >= 2)
+      throw new Error(
+        'Live session changed while restoring its state. Retry the snapshot.',
+      );
+    const fresh = await this.loadSession(session.id);
+    if (!fresh) throw new Error('Live session no longer exists.');
+    return this.ensureState(fresh, attempt + 1);
+  }
+
+  private transitionWhere(session: NonNullable<SessionRecord>) {
+    return {
+      id: session.id,
+      status: session.status,
+      currentQuestionPosition: session.currentQuestionPosition,
+      questionStartedAt: session.questionStartedAt,
+      questionRevealedAt: session.questionRevealedAt ?? null,
+      questionAdvanceAt: session.questionAdvanceAt ?? null,
+    };
+  }
+
+  private matchesSession(
+    state: LiveGameState,
+    session: NonNullable<SessionRecord>,
+  ) {
+    if (session.status === 'FINISHED') return state.phase === 'FINISHED';
+    if (state.phase === 'FINISHED') return false;
+    if (session.status === 'WAITING') return state.phase === 'LOBBY';
+    return (
+      state.currentQuestionPosition === session.currentQuestionPosition &&
+      state.questionStartedAt ===
+        (session.questionStartedAt?.getTime() ?? null) &&
+      (state.dbRevealedAt === undefined ||
+        state.dbRevealedAt ===
+          (session.questionRevealedAt?.getTime() ?? null)) &&
+      (state.dbAdvanceAt === undefined ||
+        state.dbAdvanceAt === (session.questionAdvanceAt?.getTime() ?? null))
+    );
+  }
+
+  private async publishState(state: LiveGameState) {
+    const session = await this.loadSession(state.sessionId);
+    if (!session || !this.matchesSession(state, session)) return false;
+    // DB writes commit before this projection. Redis failure is recovered from
+    // the persisted tuple/deadlines, rather than rolling back a committed DB write.
+    // This is best-effort publication; clients also make FINISHED absorbing.
+    return this.redis.saveGameState(state);
+  }
+
+  private async persistPhase(
+    session: NonNullable<SessionRecord>,
+    state: LiveGameState,
+  ) {
+    if (session.status === 'FINISHED') return false;
+    const revealedAt = session.questionRevealedAt ?? new Date();
+    const advanceAt =
+      state.phase === 'LEADERBOARD'
+        ? new Date(state.transitionDueAt!)
+        : session.questionAdvanceAt;
+    const result = await this.database.client.liveSession.updateMany({
+      where: this.transitionWhere(session),
+      data: {
+        questionRevealedAt: revealedAt,
+        questionAdvanceAt: advanceAt,
+      },
+    });
+    if (!result.count) return false;
+    state.dbRevealedAt = revealedAt.getTime();
+    state.dbAdvanceAt = advanceAt?.getTime() ?? null;
+    return this.publishState(state);
   }
 
   async validateIdentity(identity: LiveSocketIdentity) {
@@ -422,7 +531,7 @@ export class GameService {
     let session = await this.loadSession(identity.sessionId);
     if (!session) return null;
     let state = await this.ensureState(session);
-    if (session.status === 'WAITING' && state.phase !== 'LOBBY') {
+    if (!this.matchesSession(state, session)) {
       session = await this.loadSession(identity.sessionId);
       if (!session) return null;
     }
@@ -440,7 +549,7 @@ export class GameService {
       await this.revealQuestion(session.id, question.id);
       session = await this.loadSession(identity.sessionId);
       if (!session) return null;
-      state = (await this.redis.loadGameState(session.id)) ?? state;
+      state = await this.ensureState(session);
     } else if (state.phase === 'QUESTION' && question && state.questionEndsAt) {
       this.scheduleReveal(session.id, question.id, state.questionEndsAt);
     }
@@ -501,7 +610,8 @@ export class GameService {
   }
 
   async startQuestion(sessionId: string, hostId: string) {
-    const locked = await this.redis.acquireTransition(sessionId);
+    const lockToken = randomUUID();
+    const locked = await this.redis.acquireTransition(sessionId, lockToken);
     if (!locked) return false;
     try {
       const session = await this.loadSession(sessionId);
@@ -522,8 +632,7 @@ export class GameService {
         return false;
       const question = this.currentQuestion(session, targetPosition);
       if (!question) {
-        await this.finishGame(sessionId, hostId, true);
-        return true;
+        return this.finishGame(sessionId, hostId, true);
       }
 
       const questionStartedAt = Date.now() + QUESTION_START_LEAD_MS;
@@ -536,9 +645,11 @@ export class GameService {
         questionStartedAt,
         questionEndsAt,
         transitionDueAt: null,
+        dbRevealedAt: null,
+        dbAdvanceAt: null,
       };
-      await this.database.client.liveSession.update({
-        where: { id: sessionId },
+      const changed = await this.database.client.liveSession.updateMany({
+        where: this.transitionWhere(session),
         data: {
           status: 'ACTIVE',
           startedAt:
@@ -548,18 +659,20 @@ export class GameService {
           currentQuestionPosition: targetPosition,
           questionStartedAt: new Date(questionStartedAt),
           questionAdvanceAt: null,
+          questionRevealedAt: null,
         },
       });
-      await this.redis.saveGameState(nextState);
+      if (!changed.count || !(await this.publishState(nextState))) return false;
 
       const freshSession = await this.loadSession(sessionId);
-      if (!freshSession) return false;
+      if (!freshSession || !this.matchesSession(nextState, freshSession))
+        return false;
       const payload = this.toQuestionPayload(freshSession, nextState, question);
       this.io.to(gameRoom(sessionId)).emit('question:started', payload);
       this.scheduleReveal(sessionId, question.id, questionEndsAt);
       return true;
     } finally {
-      await this.redis.releaseTransition(sessionId);
+      await this.redis.releaseTransition(sessionId, lockToken);
     }
   }
 
@@ -733,11 +846,12 @@ export class GameService {
   }
 
   async revealQuestion(sessionId: string, questionId: string) {
-    const locked = await this.redis.acquireTransition(sessionId);
+    const lockToken = randomUUID();
+    const locked = await this.redis.acquireTransition(sessionId, lockToken);
     if (!locked) return false;
     try {
       const session = await this.loadSession(sessionId);
-      if (!session) return false;
+      if (!session || session.status === 'FINISHED') return false;
       const state = await this.ensureState(session);
       const question = this.currentQuestion(
         session,
@@ -754,10 +868,11 @@ export class GameService {
 
       state.phase = 'REVEAL';
       state.transitionDueAt = null;
-      await this.redis.saveGameState(state);
+      if (!(await this.persistPhase(session, state))) return false;
       this.clearRevealTimer(sessionId);
       const freshSession = await this.loadSession(sessionId);
-      if (!freshSession) return false;
+      if (!freshSession || !this.matchesSession(state, freshSession))
+        return false;
       const leaderboard = this.toLeaderboard(freshSession);
       const reveal = this.buildReveal(freshSession, question);
       this.io.to(hostRoom(sessionId)).emit('question:revealed', reveal);
@@ -781,16 +896,22 @@ export class GameService {
       }
       return true;
     } finally {
-      await this.redis.releaseTransition(sessionId);
+      await this.redis.releaseTransition(sessionId, lockToken);
     }
   }
 
   async next(sessionId: string, hostId: string) {
-    const locked = await this.redis.acquireTransition(sessionId);
+    const lockToken = randomUUID();
+    const locked = await this.redis.acquireTransition(sessionId, lockToken);
     if (!locked) return false;
     try {
       const session = await this.loadSession(sessionId);
-      if (!session || session.hostId !== hostId) return false;
+      if (
+        !session ||
+        session.status === 'FINISHED' ||
+        session.hostId !== hostId
+      )
+        return false;
       const state = await this.ensureState(session);
       if (
         state.phase !== 'REVEAL' ||
@@ -800,7 +921,7 @@ export class GameService {
       }
       state.phase = 'LEADERBOARD';
       state.transitionDueAt = Date.now() + LEADERBOARD_DURATION_MS;
-      await this.redis.saveGameState(state);
+      if (!(await this.persistPhase(session, state))) return false;
       const leaderboard = this.toLeaderboard(session);
       this.io
         .to(gameRoom(sessionId))
@@ -812,7 +933,7 @@ export class GameService {
       this.scheduleLeaderboardAdvance(sessionId, hostId, state.transitionDueAt);
       return true;
     } finally {
-      await this.redis.releaseTransition(sessionId);
+      await this.redis.releaseTransition(sessionId, lockToken);
     }
   }
 
@@ -821,16 +942,22 @@ export class GameService {
    * دون انتظار انتهاء الوقت، من طلب واحد من المضيف.
    */
   async skip(sessionId: string, hostId: string) {
-    const locked = await this.redis.acquireTransition(sessionId);
+    const lockToken = randomUUID();
+    const locked = await this.redis.acquireTransition(sessionId, lockToken);
     if (!locked) return false;
     try {
       const session = await this.loadSession(sessionId);
-      if (!session || session.hostId !== hostId) return false;
+      if (
+        !session ||
+        session.status === 'FINISHED' ||
+        session.hostId !== hostId
+      )
+        return false;
       const state = await this.ensureState(session);
       if (state.phase === 'REVEAL') {
         state.phase = 'LEADERBOARD';
         state.transitionDueAt = Date.now() + LEADERBOARD_DURATION_MS;
-        await this.redis.saveGameState(state);
+        if (!(await this.persistPhase(session, state))) return false;
         const leaderboard = this.toLeaderboard(session);
         this.io
           .to(gameRoom(sessionId))
@@ -856,10 +983,11 @@ export class GameService {
 
       state.phase = 'REVEAL';
       state.transitionDueAt = null;
-      await this.redis.saveGameState(state);
+      if (!(await this.persistPhase(session, state))) return false;
       this.clearRevealTimer(sessionId);
       const freshSession = await this.loadSession(sessionId);
-      if (!freshSession) return false;
+      if (!freshSession || !this.matchesSession(state, freshSession))
+        return false;
       const leaderboard = this.toLeaderboard(freshSession);
       const reveal = this.buildReveal(freshSession, question);
       this.io.to(hostRoom(sessionId)).emit('question:revealed', reveal);
@@ -884,7 +1012,7 @@ export class GameService {
 
       state.phase = 'LEADERBOARD';
       state.transitionDueAt = Date.now() + LEADERBOARD_DURATION_MS;
-      await this.redis.saveGameState(state);
+      if (!(await this.persistPhase(freshSession, state))) return false;
       this.io
         .to(gameRoom(sessionId))
         .emit('leaderboard:shown', { leaderboard: [] });
@@ -894,48 +1022,57 @@ export class GameService {
       this.scheduleLeaderboardAdvance(sessionId, hostId, state.transitionDueAt);
       return true;
     } finally {
-      await this.redis.releaseTransition(sessionId);
+      await this.redis.releaseTransition(sessionId, lockToken);
     }
   }
 
   async finishGame(sessionId: string, hostId: string, internal = false) {
-    if (!internal) {
-      const session = await this.database.client.liveSession.findUnique({
-        where: { id: sessionId },
-        select: { hostId: true },
-      });
+    const lockToken = randomUUID();
+    // startQuestion already owns the contention lock when it exhausts the quiz.
+    if (
+      !internal &&
+      !(await this.redis.acquireTransition(sessionId, lockToken))
+    )
+      return false;
+    try {
+      const session = await this.loadSession(sessionId);
       if (!session || session.hostId !== hostId) return false;
-    }
-    const session = await this.loadSession(sessionId);
-    if (!session) return false;
-    const state = await this.ensureState(session);
-    state.phase = 'FINISHED';
-    state.questionEndsAt = null;
-    state.transitionDueAt = null;
-    await Promise.all([
-      this.database.client.liveSession.update({
-        where: { id: sessionId },
+      const changed = await this.database.client.liveSession.updateMany({
+        where: { id: sessionId, hostId, status: { not: 'FINISHED' } },
         data: {
           status: 'FINISHED',
           endedAt: new Date(),
           questionAdvanceAt: null,
         },
-      }),
-      this.redis.saveGameState(state),
-    ]);
-    this.clearRevealTimer(sessionId);
-    const leaderboardTimer = this.leaderboardTimers.get(sessionId);
-    if (leaderboardTimer) clearTimeout(leaderboardTimer);
-    this.leaderboardTimers.delete(sessionId);
-    const freshSession = await this.loadSession(sessionId);
-    const leaderboard = freshSession ? this.toLeaderboard(freshSession) : [];
-    this.io
-      .to(gameRoom(sessionId))
-      .emit('game:finished', { leaderboard: [], sessionId });
-    this.io
-      .to(hostRoom(sessionId))
-      .emit('game:finished', { leaderboard, sessionId });
-    return true;
+      });
+      if (!changed.count && session.status !== 'FINISHED') return false;
+      const state: LiveGameState = {
+        sessionId,
+        roomCode: session.roomCode,
+        phase: 'FINISHED',
+        currentQuestionPosition: session.currentQuestionPosition,
+        questionStartedAt: session.questionStartedAt?.getTime() ?? null,
+        questionEndsAt: null,
+        transitionDueAt: null,
+      };
+      this.clearRevealTimer(sessionId);
+      const leaderboardTimer = this.leaderboardTimers.get(sessionId);
+      if (leaderboardTimer) clearTimeout(leaderboardTimer);
+      this.leaderboardTimers.delete(sessionId);
+      if (!(await this.publishState(state))) return false;
+      const freshSession = await this.loadSession(sessionId);
+      if (!freshSession || freshSession.status !== 'FINISHED') return false;
+      const leaderboard = this.toLeaderboard(freshSession);
+      this.io
+        .to(gameRoom(sessionId))
+        .emit('game:finished', { leaderboard: [], sessionId });
+      this.io
+        .to(hostRoom(sessionId))
+        .emit('game:finished', { leaderboard, sessionId });
+      return true;
+    } finally {
+      if (!internal) await this.redis.releaseTransition(sessionId, lockToken);
+    }
   }
 
   private scheduleReveal(

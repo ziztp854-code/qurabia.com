@@ -176,6 +176,7 @@ async function prepareLiveSession(sessionId: string) {
         id: session.id,
         status: 'ACTIVE',
         currentQuestionPosition: session.currentQuestionPosition,
+        questionStartedAt: session.questionStartedAt,
         questionAdvanceAt: null,
       },
       data: { questionAdvanceAt: new Date(Date.now() + LIVE_REVEAL_DELAY_MS) },
@@ -296,6 +297,7 @@ export async function startHttpLiveQuestion(identity: HttpLiveIdentity) {
       status: 'ACTIVE',
       startedAt,
       questionStartedAt: startedAt,
+      questionRevealedAt: null,
       questionAdvanceAt: null,
     },
   });

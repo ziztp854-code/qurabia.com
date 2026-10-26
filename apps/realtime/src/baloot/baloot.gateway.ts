@@ -130,7 +130,10 @@ export class BalootGateway implements OnGatewayDisconnect {
     if (!parsed.success) return this.invalidPayload();
     if (!this.consume(client, 'host', 5)) return this.rateLimited();
     const identity = this.identity(client);
-    if (identity) await this.detach(client, identity);
+    if (identity) {
+      const failure = await this.detach(client, identity);
+      if (failure) return failure;
+    }
     return this.attach(client, await this.baloot.createRoom(parsed.data));
   }
 
@@ -149,7 +152,10 @@ export class BalootGateway implements OnGatewayDisconnect {
         await this.baloot.resume(identity.sessionToken),
       );
     }
-    if (identity) await this.detach(client, identity);
+    if (identity) {
+      const failure = await this.detach(client, identity);
+      if (failure) return failure;
+    }
     return this.attach(client, await this.baloot.joinRoom(parsed.data));
   }
 
@@ -264,7 +270,8 @@ export class BalootGateway implements OnGatewayDisconnect {
       return this.invalidPayload();
     const identity = this.identity(client);
     if (!identity) return this.invalidSession();
-    await this.baloot.leave(identity.sessionToken);
+    const result = await this.baloot.leave(identity.sessionToken);
+    if (result && 'ok' in result) return result;
     await this.detach(client, identity, false);
     await this.broadcast(identity.roomCode);
     return { ok: true as const, data: { left: true } };
@@ -304,6 +311,10 @@ export class BalootGateway implements OnGatewayDisconnect {
     identity: { roomCode: string; sessionToken: string },
     markDisconnected = true,
   ) {
+    if (markDisconnected) {
+      const result = await this.baloot.leave(identity.sessionToken);
+      if (result && 'ok' in result) return result;
+    }
     this.sockets.delete(client.id);
     delete client.data.balootRoomCode;
     delete client.data.balootSessionToken;
@@ -313,7 +324,7 @@ export class BalootGateway implements OnGatewayDisconnect {
     } catch {
       /* socket already gone */
     }
-    if (markDisconnected) await this.baloot.leave(identity.sessionToken);
+    return null;
   }
 
   private clearPendingDisconnect(sessionToken: string) {
@@ -323,10 +334,13 @@ export class BalootGateway implements OnGatewayDisconnect {
     this.pendingDisconnects.delete(sessionToken);
   }
 
-  private queueDisconnect(identity: {
-    roomCode: string;
-    sessionToken: string;
-  }) {
+  private queueDisconnect(
+    identity: {
+      roomCode: string;
+      sessionToken: string;
+    },
+    delayMs = 8_000,
+  ) {
     this.clearPendingDisconnect(identity.sessionToken);
     const timer = setTimeout(() => {
       this.pendingDisconnects.delete(identity.sessionToken);
@@ -334,10 +348,14 @@ export class BalootGateway implements OnGatewayDisconnect {
         (candidate) => candidate.sessionToken === identity.sessionToken,
       );
       if (hasActiveSocket) return;
-      void this.baloot
-        .disconnect(identity.sessionToken)
-        .then(() => this.broadcast(identity.roomCode));
-    }, 8_000);
+      void this.baloot.disconnect(identity.sessionToken).then((result) => {
+        if (result && 'ok' in result) {
+          this.queueDisconnect(identity, 1_000);
+          return;
+        }
+        return this.broadcast(identity.roomCode);
+      });
+    }, delayMs);
     this.pendingDisconnects.set(identity.sessionToken, timer);
   }
 
@@ -372,6 +390,7 @@ export class BalootGateway implements OnGatewayDisconnect {
   private scheduleTurnTimeout(
     roomCode: string,
     snapshot: BalootSnapshot | null,
+    delayMs: number = BALOOT_RULES.turnTimeoutMs,
   ) {
     const current = this.turnTimers.get(roomCode);
     if (current) clearTimeout(current);
@@ -383,8 +402,18 @@ export class BalootGateway implements OnGatewayDisconnect {
       this.turnTimers.delete(roomCode);
       void this.baloot
         .playTimedOutTurn(roomCode, expectedVersion, expectedTurn)
-        .then((played) => (played ? this.broadcast(roomCode) : undefined));
-    }, BALOOT_RULES.turnTimeoutMs);
+        .then((played) => {
+          if (typeof played === 'object') {
+            // Retry only the version-guarded automatic action, never a user command.
+            // A newer broadcast may already have scheduled the authoritative turn.
+            if (!this.turnTimers.has(roomCode)) {
+              this.scheduleTurnTimeout(roomCode, snapshot, 1_000);
+            }
+            return;
+          }
+          return played ? this.broadcast(roomCode) : undefined;
+        });
+    }, delayMs);
     timer.unref?.();
     this.turnTimers.set(roomCode, timer);
   }

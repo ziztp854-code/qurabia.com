@@ -7,6 +7,7 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useMemo,
   useState,
   type MouseEvent,
   type Ref,
@@ -60,7 +61,7 @@ import {
   voiceApiPath,
   voiceRequest,
 } from './voice-client';
-import { VoiceChat } from './voice-chat';
+import { VoiceChat, createVoiceChatDraft } from './voice-chat';
 import { RoomSettings } from './room-settings';
 import { useVoiceMediaQuery, useVoiceOverlay } from './use-voice-overlay';
 import { MemberName } from './member-name';
@@ -107,6 +108,13 @@ export function VoiceRoomView({
   const [authRequired, setAuthRequired] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [networkError, setNetworkError] = useState('');
+  const chatSession = useMemo(
+    () => ({ roomId, userId: user.id, draft: createVoiceChatDraft() }),
+    [roomId, user.id],
+  );
+  const chatDraft = chatSession.draft;
+  useEffect(() => () => chatDraft.reset(), [chatDraft]);
   const [notice, setNotice] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
   const [relationship, setRelationship] = useState<{
@@ -284,10 +292,11 @@ export function VoiceRoomView({
   );
   const event = useCallback(
     async (value: VoiceEvent) => {
+      const generation = chatDraft.getSnapshot().generation;
       const result = await voiceRequest<VoiceSnapshot>(`rooms/${roomId}/events`, value);
-      apply(result);
+      if (chatDraft.getSnapshot().generation === generation) apply(result);
     },
-    [roomId, apply],
+    [roomId, apply, chatDraft],
   );
   const act = useCallback(
     async (value: VoiceEvent) => {
@@ -378,6 +387,7 @@ export function VoiceRoomView({
         }),
       );
       setJoinRequired(false);
+      setNetworkError('');
       clearSavedInvite(roomId);
       inviteRef.current = null;
     } catch (err) {
@@ -452,6 +462,7 @@ export function VoiceRoomView({
         });
         if (!stopped) {
           apply(next);
+          setNetworkError('');
           if (!next.me && next.room.active && !leaving.current) {
             setJoinRequired(true);
             setError('انتهت جلستك في الغرفة. يمكنك محاولة الانضمام مرة أخرى.');
@@ -459,8 +470,10 @@ export function VoiceRoomView({
         }
       } catch (err) {
         if (!stopped) {
-          setError(err instanceof Error ? err.message : 'انقطع تحديث الغرفة. نحاول إعادة الاتصال.');
+          setNetworkError('انقطع تحديث الغرفة. نحاول إعادة الاتصال…');
           if (err instanceof VoiceRequestError && [401, 403, 404, 410].includes(err.status)) {
+            setNetworkError('');
+            setError(err.message);
             // Revocation/expiry must tear down media immediately, before any retry.
             setJoinRequired(true);
             setAuthRequired(err.status === 401);
@@ -571,6 +584,8 @@ export function VoiceRoomView({
   }
   async function leave(navigate = true, rejectOnFailure = false) {
     leaving.current = true;
+    chatDraft.reset();
+    setNetworkError('');
     stopHeartbeat.current?.();
     stopRefresh();
     setActionBusy(true);
@@ -928,6 +943,11 @@ export function VoiceRoomView({
                   </button>
                 </div>
               )}
+              {networkError && (
+                <div className="v-error v-room-error" role="status">
+                  <span>{networkError}</span>
+                </div>
+              )}
               {mediaPending && (
                 <p className="v-error" role="status">
                   حُفظ التغيير، لكن تطبيق صلاحيات الصوت لم يتأكد بعد. جارٍ محاولة المزامنة؛ لا تُعد
@@ -1275,6 +1295,7 @@ export function VoiceRoomView({
                       inert={chatOverlayOpen}
                     />
                     <VoiceChat
+                      draft={chatDraft}
                       open={chatOpen}
                       messages={(snapshot?.messages || []).filter(
                         (m) => !preferences.blockedUsers.includes(m.userId),

@@ -2,6 +2,38 @@ import type { ConfigService } from '@nestjs/config';
 import { RedisService } from './redis.service.js';
 
 describe('RedisService distributed rate limiter', () => {
+  it('does not let an expired transition owner delete its successor lock', async () => {
+    const service = new RedisService({
+      get: jest.fn().mockReturnValue('redis://configured'),
+    } as unknown as ConfigService);
+    let owner: string | null = 'owner-b';
+    const client = {
+      eval: jest.fn(
+        (_script: string, _keys: number, _key: string, token: string) => {
+          if (owner !== token) return Promise.resolve(0);
+          owner = null;
+          return Promise.resolve(1);
+        },
+      ),
+      del: jest.fn(() => {
+        owner = null;
+      }),
+    };
+    (service as unknown as { client: typeof client }).client = client;
+
+    await service.releaseTransition('session-1', 'owner-a');
+    expect(owner).toBe('owner-b');
+    expect(client.del).not.toHaveBeenCalled();
+    expect(client.eval).toHaveBeenCalledWith(
+      expect.stringContaining('redis.call("GET", KEYS[1]) == ARGV[1]'),
+      1,
+      'live:session-1:transition',
+      'owner-a',
+    );
+    await service.releaseTransition('session-1', 'owner-b');
+    expect(owner).toBeNull();
+  });
+
   it('increments atomically with a fixed TTL and never stores the raw subject', async () => {
     const service = new RedisService({
       get: jest.fn().mockReturnValue('redis://configured'),

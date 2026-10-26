@@ -128,6 +128,7 @@ export async function scheduleAutoAdvanceIfComplete(sessionId: string, questionI
       id: sessionId,
       status: 'ACTIVE',
       currentQuestionPosition: session.currentQuestionPosition,
+      questionStartedAt: session.questionStartedAt,
       questionAdvanceAt: null,
     },
     data: { questionAdvanceAt: new Date(now.getTime() + LIVE_REVEAL_DELAY_MS) },
@@ -143,6 +144,7 @@ export async function advanceLiveSessionIfDue(sessionId: string) {
     select: {
       status: true,
       currentQuestionPosition: true,
+      questionStartedAt: true,
       questionAdvanceAt: true,
       quiz: {
         select: {
@@ -173,7 +175,8 @@ export async function advanceLiveSessionIfDue(sessionId: string) {
       id: sessionId,
       status: 'ACTIVE',
       currentQuestionPosition: session.currentQuestionPosition,
-      questionAdvanceAt: { lte: now },
+      questionStartedAt: session.questionStartedAt,
+      questionAdvanceAt: session.questionAdvanceAt,
     },
     data: isLastQuestion
       ? {
@@ -184,6 +187,7 @@ export async function advanceLiveSessionIfDue(sessionId: string) {
       : {
           currentQuestionPosition: { increment: 1 },
           questionStartedAt: now,
+          questionRevealedAt: null,
           questionAdvanceAt: null,
         },
   });
@@ -196,6 +200,7 @@ export async function advanceLiveSessionManually(sessionId: string, hostId: stri
     where: { id: sessionId, hostId, status: 'ACTIVE' },
     select: {
       currentQuestionPosition: true,
+      questionStartedAt: true,
       quiz: { select: { _count: { select: { questions: true } } } },
     },
   });
@@ -210,12 +215,14 @@ export async function advanceLiveSessionManually(sessionId: string, hostId: stri
       hostId,
       status: 'ACTIVE',
       currentQuestionPosition: session.currentQuestionPosition,
+      questionStartedAt: session.questionStartedAt,
     },
     data: isLastQuestion
       ? { status: 'FINISHED', endedAt: now, questionAdvanceAt: null }
       : {
           currentQuestionPosition: { increment: 1 },
           questionStartedAt: now,
+          questionRevealedAt: null,
           questionAdvanceAt: null,
         },
   });

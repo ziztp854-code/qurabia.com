@@ -191,13 +191,36 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async saveGameState(state: LiveGameState) {
-    await this.client.set(
+  async saveGameState(state: LiveGameState): Promise<boolean> {
+    // Redis is a projection. A delayed publisher must never replace a newer
+    // question/phase or resurrect a terminal session.
+    const result = await this.client.eval(
+      `
+        local raw = redis.call("GET", KEYS[1])
+        local incoming = cjson.decode(ARGV[1])
+        if raw then
+          local current = cjson.decode(raw)
+          local rank = { LOBBY = 0, QUESTION = 1, REVEAL = 2, LEADERBOARD = 3, FINISHED = 4 }
+          if current.phase == "FINISHED" and incoming.phase ~= "FINISHED" then return 0 end
+          if incoming.phase ~= "FINISHED" then
+            if current.currentQuestionPosition > incoming.currentQuestionPosition then return 0 end
+            if current.currentQuestionPosition == incoming.currentQuestionPosition then
+              local oldStart = tonumber(current.questionStartedAt) or 0
+              local newStart = tonumber(incoming.questionStartedAt) or 0
+              if oldStart > newStart then return 0 end
+              if oldStart == newStart and rank[current.phase] > rank[incoming.phase] then return 0 end
+            end
+          end
+        end
+        redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2])
+        return 1
+      `,
+      1,
       this.stateKey(state.sessionId),
       JSON.stringify(state),
-      'EX',
       GAME_TTL_SECONDS,
     );
+    return Number(result) === 1;
   }
 
   async loadGameState(sessionId: string): Promise<LiveGameState | null> {
@@ -205,10 +228,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return raw ? (JSON.parse(raw) as LiveGameState) : null;
   }
 
-  async acquireTransition(sessionId: string) {
+  async acquireTransition(sessionId: string, token: string) {
     const result = await this.client.set(
       this.transitionKey(sessionId),
-      String(Date.now()),
+      token,
       'EX',
       TRANSITION_LOCK_SECONDS,
       'NX',
@@ -216,8 +239,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return result === 'OK';
   }
 
-  async releaseTransition(sessionId: string) {
-    await this.client.del(this.transitionKey(sessionId));
+  async releaseTransition(sessionId: string, token: string) {
+    await this.client.eval(
+      `if redis.call("GET", KEYS[1]) == ARGV[1] then
+         return redis.call("DEL", KEYS[1])
+       end
+       return 0`,
+      1,
+      this.transitionKey(sessionId),
+      token,
+    );
   }
 
   async deleteGameState(sessionId: string) {

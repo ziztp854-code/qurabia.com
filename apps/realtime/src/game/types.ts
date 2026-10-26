@@ -29,6 +29,9 @@ export type LiveGameState = {
   questionStartedAt: number | null;
   questionEndsAt: number | null;
   transitionDueAt: number | null;
+  /** DB authority tuple; internal projection metadata, never a wire contract. */
+  dbRevealedAt?: number | null;
+  dbAdvanceAt?: number | null;
 };
 
 export type StoredAnswer = {

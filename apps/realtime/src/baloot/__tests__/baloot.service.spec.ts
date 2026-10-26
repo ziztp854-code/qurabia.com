@@ -1,11 +1,193 @@
 import { BalootService } from '../baloot.service.js';
 import { getLegalPlays, selectTimeoutPlay } from '@tahaddi/domain';
+import type { RedisService } from '../../game/redis.service.js';
 
 describe('BalootService', () => {
   let service: BalootService;
 
   beforeEach(() => {
     service = new BalootService();
+  });
+
+  it('requires the host token to recover a disconnected host seat', async () => {
+    const created = await service.createRoom({ playerName: 'Host' });
+    if (!created.ok) throw new Error('room creation failed');
+    await service.disconnect(created.data.sessionToken);
+
+    expect(
+      await service.joinRoom({
+        roomCode: created.data.roomCode,
+        playerName: 'Host',
+      }),
+    ).toMatchObject({ ok: false, code: 'NAME_TAKEN' });
+    const guest = await service.joinRoom({
+      roomCode: created.data.roomCode,
+      playerName: 'Guest',
+    });
+    if (!guest.ok) throw new Error('guest join failed');
+    expect(guest.data.snapshot.yourSeat).not.toBe(0);
+    expect(
+      await service.startGame(created.data.roomCode, guest.data.sessionToken),
+    ).toMatchObject({ ok: false, code: 'NOT_HOST' });
+    const recovered = await service.reconnect({
+      sessionToken: created.data.sessionToken,
+    });
+    expect(recovered.ok).toBe(true);
+    if (recovered.ok) expect(recovered.data.snapshot.yourSeat).toBe(0);
+  });
+
+  it('replaces a disconnected guest by name with a new credential', async () => {
+    const created = await service.createRoom({ playerName: 'Host' });
+    if (!created.ok) throw new Error('room creation failed');
+    const guest = await service.joinRoom({
+      roomCode: created.data.roomCode,
+      playerName: 'Guest',
+    });
+    if (!guest.ok) throw new Error('guest join failed');
+    await service.disconnect(guest.data.sessionToken);
+    const replacement = await service.joinRoom({
+      roomCode: created.data.roomCode,
+      playerName: 'Guest',
+    });
+    expect(replacement.ok).toBe(true);
+    if (!replacement.ok) throw new Error('replacement failed');
+    expect(replacement.data.sessionToken).not.toBe(guest.data.sessionToken);
+    expect(replacement.data.snapshot.yourSeat).toBe(
+      guest.data.snapshot.yourSeat,
+    );
+    expect(await service.resume(guest.data.sessionToken)).toMatchObject({
+      ok: false,
+      code: 'INVALID_SESSION',
+    });
+    expect(
+      await service.startGame(
+        created.data.roomCode,
+        replacement.data.sessionToken,
+      ),
+    ).toMatchObject({ ok: false, code: 'NOT_HOST' });
+  });
+
+  it('reserves a disconnected host when all four seats are occupied', async () => {
+    const { roomCode, players } = await fillRoom();
+    await service.disconnect(players[0].sessionToken);
+    expect(
+      await service.joinRoom({ roomCode, playerName: 'Replacement' }),
+    ).toMatchObject({ ok: false, code: 'ROOM_FULL' });
+    expect((await service.resume(players[0].sessionToken)).ok).toBe(true);
+  });
+
+  it.each(['leave', 'disconnect', 'resume', 'timeout'] as const)(
+    'reports contention for %s without running its mutation',
+    async (operation) => {
+      const created = await service.createRoom({ playerName: 'Host' });
+      if (!created.ok) throw new Error('room creation failed');
+      const redis = {
+        hasSharedStore: () => true,
+        acquireBalootRoomLock: jest.fn().mockResolvedValue(false),
+        saveBalootRoom: jest.fn(),
+        releaseBalootRoomLock: jest.fn(),
+      };
+      Object.assign(service, { redis });
+      jest.useFakeTimers();
+      try {
+        const pending =
+          operation === 'timeout'
+            ? service.playTimedOutTurn(created.data.roomCode, 1, 0)
+            : service[operation](created.data.sessionToken);
+        await jest.advanceTimersByTimeAsync(2_100);
+        expect(await pending).toMatchObject({ ok: false, code: 'ROOM_BUSY' });
+        expect(redis.saveBalootRoom).not.toHaveBeenCalled();
+        expect(redis.releaseBalootRoomLock).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
+    },
+  );
+
+  it('returns busy without mutating when every shared lock attempt fails, then permits a manual retry', async () => {
+    const created = await service.createRoom({ playerName: 'Host' });
+    if (!created.ok) throw new Error('room creation failed');
+    const redis = {
+      hasSharedStore: () => true,
+      acquireBalootRoomLock: jest.fn().mockResolvedValue(false),
+      releaseBalootRoomLock: jest.fn(),
+      loadBalootRoom: jest.fn().mockResolvedValue(null),
+      saveBalootRoom: jest.fn(),
+    };
+    Object.assign(service, { redis: redis as unknown as RedisService });
+    jest.useFakeTimers();
+    try {
+      const pending = service.setReady(
+        created.data.roomCode,
+        created.data.sessionToken,
+        true,
+      );
+      await jest.advanceTimersByTimeAsync(2_100);
+      expect(await pending).toMatchObject({ ok: false, code: 'ROOM_BUSY' });
+      expect(redis.acquireBalootRoomLock).toHaveBeenCalledTimes(80);
+      expect(redis.saveBalootRoom).not.toHaveBeenCalled();
+      expect(redis.releaseBalootRoomLock).not.toHaveBeenCalled();
+      const unchanged = await service.getSnapshot(
+        created.data.roomCode,
+        created.data.sessionToken,
+      );
+      expect(unchanged?.stateVersion).toBe(created.data.snapshot.stateVersion);
+      redis.acquireBalootRoomLock.mockResolvedValue(true);
+      expect(
+        (
+          await service.setReady(
+            created.data.roomCode,
+            created.data.sessionToken,
+            true,
+          )
+        ).ok,
+      ).toBe(true);
+      expect(redis.saveBalootRoom).toHaveBeenCalledTimes(1);
+      expect(redis.releaseBalootRoomLock).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not consume a bid command on busy and accepts the same command once after a manual retry', async () => {
+    const { roomCode, players } = await fillRoom();
+    for (const player of players)
+      await service.setReady(roomCode, player.sessionToken, true);
+    await service.startGame(roomCode, players[0].sessionToken);
+    const before = (await service.getSnapshot(
+      roomCode,
+      players[0].sessionToken,
+    ))!;
+    const player = players[before.bidder];
+    const command = {
+      commandId: 'retry-busy-bid',
+      expectedVersion: before.stateVersion,
+      bid: { mode: 'pass' as const },
+    };
+    const redis = {
+      hasSharedStore: () => true,
+      acquireBalootRoomLock: jest.fn().mockResolvedValue(false),
+      releaseBalootRoomLock: jest.fn(),
+      loadBalootRoom: jest.fn().mockResolvedValue(null),
+      saveBalootRoom: jest.fn(),
+    };
+    Object.assign(service, { redis });
+    jest.useFakeTimers();
+    try {
+      const pending = service.bid(roomCode, player.sessionToken, command);
+      await jest.advanceTimersByTimeAsync(2_100);
+      expect(await pending).toMatchObject({ ok: false, code: 'ROOM_BUSY' });
+      expect(redis.saveBalootRoom).not.toHaveBeenCalled();
+      redis.acquireBalootRoomLock.mockResolvedValue(true);
+      const retried = await service.bid(roomCode, player.sessionToken, command);
+      expect(retried.ok).toBe(true);
+      if (!retried.ok) throw new Error('manual retry failed');
+      expect(retried.data.snapshot.stateVersion).toBe(before.stateVersion + 1);
+      await service.bid(roomCode, player.sessionToken, command);
+      expect(redis.saveBalootRoom).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   async function fillRoom() {
@@ -288,9 +470,9 @@ describe('BalootService', () => {
     if (!created.ok) throw new Error('room creation failed');
     const before = created.data.snapshot.stateVersion;
 
-    expect(
-      (await service.disconnect(created.data.sessionToken))?.connected,
-    ).toBe(false);
+    expect(await service.disconnect(created.data.sessionToken)).toMatchObject({
+      connected: false,
+    });
     const reconnected = await service.reconnect({
       sessionToken: created.data.sessionToken,
     });
