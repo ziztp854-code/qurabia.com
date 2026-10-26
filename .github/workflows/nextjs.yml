@@ -125,7 +125,7 @@ jobs:
 
       - name: Preserve failed browser evidence
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: browser-failures-${{ github.run_attempt }}
           path: apps/web/test-results/
