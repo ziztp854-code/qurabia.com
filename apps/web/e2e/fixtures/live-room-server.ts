@@ -214,6 +214,9 @@ async function main() {
     cacheDir: path.join(process.cwd(), `node_modules/.vite-live-room-${port}`),
     root: process.cwd(),
     envDir: path.join(process.cwd(), 'e2e/fixtures'),
+    // HTML is supplied by middleware, so Vite cannot infer this entry from an
+    // index.html. Scan before concurrent viewers can request stale dep hashes.
+    optimizeDeps: { entries: ['e2e/fixtures/live-room-harness.tsx'] },
     plugins: [
       {
         // An explicit baseline run reads immutable tracked presentation source;
