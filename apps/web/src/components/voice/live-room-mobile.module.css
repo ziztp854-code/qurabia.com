@@ -100,326 +100,299 @@
   }
 }
 
-/* Reference composition: the people are the stage, rather than a stack of cards. */
+/* Immersive audio LIVE: normal chat floats over the studio; full chat keeps its dialog. */
 @media (max-width: 760px) {
   .mobileRoom[data-room-visible='true'] {
-    --room-avatar-size: clamp(52px, 14vw, 64px);
-    --room-controls-space: 86px;
-    padding-inline: max(14px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    --room-avatar-size: 54px;
+    --room-controls-space: 100px;
+    --room-inline-chat-height: min(28dvh, 260px);
+    padding-inline: max(12px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
-    gap: 6px;
+    gap: 10px;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-main > header) {
-    min-block-size: 52px;
-    padding-block: 2px;
-    border-block-end: 0;
+    min-block-size: 56px;
+    padding-block: 4px;
+    border: 0;
   }
-
   .mobileRoom[data-room-visible='true'] :global([data-room-heading]) {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0 8px;
-    text-align: start;
     padding-block: 0;
+    text-align: center;
   }
-
   .mobileRoom[data-room-visible='true'] :global([data-room-heading] > span) {
-    order: 1;
-    font-size: 10px;
+    font-size: 11px;
   }
-
   .mobileRoom[data-room-visible='true'] :global([data-room-heading] h1) {
-    flex: 1 1 210px;
-    margin-block: 2px;
+    margin-block: 4px;
     color: var(--voice-text);
     background: none;
     -webkit-text-fill-color: currentColor;
-    font-size: 17px;
-    line-height: 1.65;
+    font-size: 20px;
+    line-height: 1.6;
     font-weight: 700;
-    text-wrap: pretty;
+    text-wrap: balance;
   }
-
   .mobileRoom[data-room-visible='true'] :global([data-room-heading] p) {
-    order: 2;
-    flex-basis: 100%;
-    margin-block: 0;
-    font-size: 11px;
-    line-height: 1.7;
-    color: var(--voice-muted);
+    display: none;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage-column) {
     gap: 8px;
+    min-block-size: 0;
+    block-size: max(
+      80px,
+      calc(
+        var(--room-viewport-height, 100dvh) - var(--room-header-height, 56px) -
+          var(--room-controls-height, 86px) - var(--room-inline-chat-height) - 40px
+      )
+    );
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-padding-block: 8px;
+    padding-block-end: 0;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage-column .v-stage) {
     padding-block: 4px 0;
   }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-stage-heading) {
-    margin-block-end: 12px;
+  .mobileRoom[data-room-visible='true'] :global(.v-audio-session) {
+    position: fixed;
+    inset-inline: max(12px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    inset-block-start: calc(
+      var(--room-viewport-height, 100dvh) - var(--room-controls-height, 86px) -
+        var(--room-inline-chat-height) - 24px
+    );
+    z-index: 32;
+    margin: 0;
   }
-
+  .mobileRoom[data-room-visible='true'] :global(.v-audio-session:not([open])) {
+    inset-inline-start: auto;
+    inline-size: calc(50% - 16px);
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-close-room) {
+    position: fixed;
+    inset-inline-start: 12px;
+    inset-block-start: calc(
+      var(--room-viewport-height, 100dvh) - var(--room-controls-height, 86px) -
+        var(--room-inline-chat-height) - 24px
+    );
+    z-index: 31;
+    inline-size: calc(50% - 16px);
+    min-block-size: 34px;
+    margin: 0;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-audio-session > summary) {
+    min-block-size: 34px;
+    padding-block: 6px;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-audio-session[open]) {
+    max-block-size: var(--room-inline-chat-height);
+    overflow-y: auto;
+    padding: 0 12px 12px;
+    border: 1px solid var(--voice-border);
+    border-radius: 12px;
+    background: var(--voice-card);
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-stage-heading) {
+    margin-block-end: 10px;
+  }
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seats) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px 12px;
-    max-inline-size: 430px;
+    gap: 6px;
+    max-inline-size: 560px;
     margin-inline: auto;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat),
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat:hover),
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-host-seat),
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat.is-speaking) {
-    min-block-size: 0;
-    padding: 0 2px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    min-block-size: 102px;
+    min-height: 0;
+    padding: 8px 4px;
+    border: 1px solid var(--voice-line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--voice-bg) 64%, transparent);
     box-shadow: none;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-seats:has(.v-host-seat) .v-host-seat) {
-    --room-avatar-size: clamp(88px, 24vw, 104px);
-    inline-size: min(100%, 170px);
-    margin-block: 2px 0;
+    grid-column: auto;
+    order: initial;
+    justify-self: stretch;
+    inline-size: auto;
+    margin: 0;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-person),
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat) {
-    gap: 4px;
-    min-block-size: 0;
+    gap: 5px;
+    min-block-size: 44px;
+    min-height: 0;
+    min-inline-size: 44px;
     padding: 0;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-avatar) {
     border-width: 1px;
-    border-color: var(--voice-purple);
+    border-color: var(--voice-border);
     background: var(--voice-raised);
   }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-host-seat .v-seat-avatar) {
-    border-width: 2px;
-    box-shadow:
-      0 0 0 4px color-mix(in srgb, var(--voice-purple) 12%, transparent),
-      0 0 32px color-mix(in srgb, var(--voice-purple) 18%, transparent);
-  }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage .is-speaking .v-seat-avatar) {
-    border-color: var(--voice-gold);
-    box-shadow: 0 0 0 4px var(--voice-glow);
+    border-color: var(--voice-cyan);
+    box-shadow: 0 0 0 3px var(--voice-glow);
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > span) {
-    border: 1px solid var(--voice-line);
-    background: color-mix(in srgb, var(--voice-card) 70%, transparent);
+    inline-size: 48px;
+    block-size: 48px;
+    border: 1px dashed var(--voice-border);
+    background: transparent;
     color: var(--voice-muted);
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-person > strong),
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
     font-size: 12px;
-    font-weight: 500;
-    line-height: 1.7;
+    font-weight: 600;
+    line-height: 1.6;
   }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-host-seat .v-seat-person > strong) {
-    font-size: 13px;
-    font-weight: 700;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > small) {
-    color: var(--voice-muted);
-    font-size: 11px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-expand) {
-    min-block-size: 44px;
-    margin-block-start: 4px;
-    font-size: 11px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat-column) {
-    gap: 10px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
-    block-size: clamp(270px, 38dvh, 440px);
-    border-color: var(--voice-line);
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--voice-card) 72%, transparent);
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat > header) {
-    min-block-size: 44px;
-    gap: 4px;
-    padding: 6px 12px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat > header h2) {
-    font-size: 12px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-messages) {
-    padding: var(--space-3);
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message) {
-    gap: var(--space-2);
-    margin-block-end: var(--space-3);
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
-    padding: 8px 10px;
-    border: 1px solid var(--voice-line);
-    border-radius: 14px;
-    border-start-start-radius: 5px;
-    background: var(--voice-card);
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
-    font-size: 14px;
-    line-height: 1.8;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-meta strong) {
-    font-size: 12px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-meta time) {
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-actions button) {
-    inline-size: 44px;
-    block-size: 44px;
+  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-lock) {
     min-inline-size: 44px;
     min-block-size: 44px;
+    margin: 0;
+    padding: 4px;
+    font-size: 11px;
   }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose) {
-    gap: 6px;
-    padding: 10px 8px;
-    background: var(--voice-bg);
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-chat-column) {
+    position: fixed;
+    inset-inline: max(12px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    inset-block-end: calc(
+      var(--room-viewport-bottom, 0px) + var(--room-controls-height, 86px) + 24px
+    );
+    z-index: 30;
+    block-size: calc(var(--room-inline-chat-height) - 40px);
+    max-block-size: max(
+      180px,
+      calc(var(--room-viewport-height, 100dvh) - var(--room-controls-height, 86px) - 32px)
+    );
+    pointer-events: none;
+    gap: 0;
   }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose textarea) {
-    border-color: var(--voice-border);
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-chat) {
+    block-size: 100%;
+    border: 0;
+    border-radius: 0;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--voice-bg) 75%, transparent) 35%,
+      var(--voice-bg)
+    );
+    overflow: visible;
+    pointer-events: none;
   }
-
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-chat > header),
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-avatar-button),
+  .mobileRoom[data-room-visible='true']
+    :global(.v-room-columns:not(.v-chat-open) .v-message-meta time),
+  .mobileRoom[data-room-visible='true']
+    :global(.v-room-columns:not(.v-chat-open) .v-message-actions) {
+    display: none;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-message) {
+    margin-block-end: 10px;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-messages) {
+    padding: 12px 6px;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
+    min-inline-size: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
+    color: var(--voice-text);
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-meta strong) {
+    font-size: 13px;
+    color: var(--voice-cyan);
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-chat-compose) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--voice-border);
+    border-radius: 999px;
+    background: var(--voice-card);
+    pointer-events: auto;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-chat-compose) {
+    pointer-events: auto;
+  }
+  .mobileRoom[data-room-visible='true']
+    :global(.v-room-columns:not(.v-chat-open) .v-chat-compose textarea) {
+    block-size: max(44px, calc(1lh + 12px));
+    min-block-size: max(44px, calc(1lh + 12px));
+    min-height: max(44px, calc(1lh + 12px));
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    resize: none;
+  }
+  .mobileRoom[data-room-visible='true']
+    :global(.v-room-columns:not(.v-chat-open) .v-chat-compose > div) {
+    flex-wrap: nowrap;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-chat-compose button) {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    inline-size: 44px;
+    border-radius: 50%;
+  }
   .mobileRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
     inset-block-end: calc(
       var(--room-viewport-bottom, 0px) + max(8px, env(safe-area-inset-bottom, 0px))
     );
     inset-inline: max(10px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    grid-template-columns: repeat(6, minmax(44px, 1fr));
     gap: 3px;
     padding: 6px;
     border: 1px solid var(--voice-line);
-    border-radius: 20px;
+    border-radius: 22px;
     background: var(--voice-bg);
-    box-shadow: var(--voice-shadow);
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control) {
-    min-block-size: 60px;
+    min-block-size: 64px;
     gap: 3px;
     padding: 3px 0;
-    border-radius: 12px;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control > span) {
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.5;
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-control > svg) {
     inline-size: 32px;
     block-size: 32px;
     padding: 6px;
     background: var(--voice-card);
   }
-
   .mobileRoom[data-room-visible='true'] :global(.v-room-controls .v-gift-control > svg) {
-    color: var(--voice-text);
-    background: var(--voice-purple);
+    color: var(--voice-ink);
+    background: var(--voice-live);
   }
-}
-
-@media (max-width: 340px) {
-  .mobileRoom[data-room-visible='true'] :global(.v-chat .v-message-actions) {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(44px, 1fr));
-  }
-}
-
-@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .is-speaking .v-seat-avatar)::after {
-    animation: none;
-  }
-}
-
-@media (max-width: 760px) {
   .mobileRoom[data-room-visible='true'] :global(.v-chat-open .v-chat-column .v-chat) {
     block-size: 100%;
     height: 100%;
-    max-block-size: none;
     min-block-size: 0;
   }
 }
-
-/* Moderator locks sit beside the seat instead of adding a second control row. */
-@media (max-width: 760px) {
+@media (max-width: 360px) {
+  .mobileRoom[data-room-visible='true'] {
+    --room-avatar-size: 44px;
+  }
   .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat) {
-    min-height: 0;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat) {
-    min-height: 0;
-    min-inline-size: 44px;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
-    /* The full request/locked state stays in the button's existing aria-label. */
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .mobileRoom[data-room-visible='true']
-    :global(.v-stage .v-seats[data-show-empty='true'] .v-seat-is-empty:has(.v-seat-lock)) {
-    display: grid;
-    grid-template-columns: minmax(44px, 1fr) 44px;
-    padding-inline: 0;
-    align-items: center;
-    column-gap: 0;
-  }
-
-  .mobileRoom[data-room-visible='true']
-    :global(.v-stage .v-seat-is-empty:has(.v-seat-lock) .v-empty-seat > span) {
-    inline-size: 44px;
-    block-size: 44px;
-    margin-block-end: 0;
-  }
-
-  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-seat-lock) {
-    position: static;
-    inline-size: 44px;
-    min-inline-size: 44px;
-    min-width: 44px;
-    min-block-size: 44px;
-    min-height: 44px;
-    margin: 0;
-    padding: 4px 0;
-    font-size: 10px;
-    overflow-wrap: anywhere;
+    min-block-size: 76px;
+    padding: 4px 3px;
   }
 }

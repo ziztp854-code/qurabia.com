@@ -804,7 +804,7 @@ export function VoiceRoomView({
                           }
                         />
                       </strong>
-                      <small>مضيف المجلس</small>
+                      <small title={room.name}>{room.name}</small>
                     </span>
                   </button>
                   {room.hostId !== user.id && (
@@ -1014,7 +1014,11 @@ export function VoiceRoomView({
                             على الميكروفون
                           </h2>
                         </div>
-                        <div className={effectStyles.toolbar} aria-label="مؤثرات الغرفة">
+                        <div
+                          className={effectStyles.toolbar}
+                          role="group"
+                          aria-label="مؤثرات الغرفة"
+                        >
                           <button
                             type="button"
                             className={roomStyles.diagnosticsButton}
@@ -1132,12 +1136,27 @@ export function VoiceRoomView({
                                     onClick={() => setProfileId(person.id)}
                                     aria-label={`${person.name}، ${roleLabels[person.role]}${speakers.includes(person.id) ? '، يتحدث الآن' : ''}${person.muted || person.moderatorMuted ? '، الميكروفون مكتوم' : ''}`}
                                   >
-                                    <span className="v-seat-avatar">
+                                    <span
+                                      className="v-seat-avatar v-seat-portrait"
+                                      data-has-photo={Boolean(
+                                        person.communityIdentity?.avatarUrl || person.image,
+                                      )}
+                                    >
                                       <Avatar
                                         user={person}
                                         size={72}
                                         speaking={speakers.includes(person.id)}
                                       />
+                                      {!person.communityIdentity?.avatarUrl && !person.image && (
+                                        <span
+                                          className="v-seat-portrait-art"
+                                          aria-hidden="true"
+                                          title="صورة زخرفية من تصميم الاستوديو"
+                                          style={{
+                                            backgroundPosition: `${(index % 3) * 50}% ${Math.floor((index % 9) / 3) * 50}%`,
+                                          }}
+                                        />
+                                      )}
 
                                       <span
                                         className={`v-mic-status ${person.muted || person.moderatorMuted ? 'is-muted' : ''}`}

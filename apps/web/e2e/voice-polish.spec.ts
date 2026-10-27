@@ -94,6 +94,146 @@ async function textScale(page: Page, enlarged: boolean) {
   }, enlarged);
 }
 
+test('immersive LIVE keeps readable overlay chat clear of room controls', async ({ page }) => {
+  await openRoom(page);
+  for (const [width, height] of [
+    [390, 844],
+    [1440, 900],
+  ]) {
+    await page.setViewportSize({ width, height });
+    const metrics = await page.evaluate(() => {
+      const chat = document.querySelector('.v-chat')!.getBoundingClientRect();
+      const seats = document.querySelector('.v-seats')!.getBoundingClientRect();
+      const stage = document.querySelector('.v-stage-column')!.getBoundingClientRect();
+      const composer = document.querySelector('.v-chat-compose')!.getBoundingClientRect();
+      const controls = document.querySelector('.v-room-controls')!.getBoundingClientRect();
+      const host = document.querySelector('.v-host-seat .v-seat-avatar')!.getBoundingClientRect();
+      const message = document.querySelector('.v-message-body > p')!;
+      return {
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        chat: { left: chat.left, right: chat.right, top: chat.top, width: chat.width },
+        seats: { left: seats.left, right: seats.right, bottom: seats.bottom },
+        stageBottom: stage.bottom,
+        composerBottom: composer.bottom,
+        controlsTop: controls.top,
+        hostSize: host.width,
+        messageSize: parseFloat(getComputedStyle(message).fontSize),
+      };
+    });
+    expect(metrics.overflow).toBe(false);
+    expect(metrics.messageSize, 'conversation text is comfortably readable').toBeGreaterThanOrEqual(
+      16,
+    );
+    expect(metrics.hostSize, 'host portrait does not dominate the room').toBeLessThanOrEqual(72);
+    if (width < 761) {
+      expect(
+        metrics.stageBottom,
+        'overlay conversation does not obstruct guest controls',
+      ).toBeLessThanOrEqual(metrics.chat.top);
+      expect(metrics.composerBottom, 'composer remains clear of live controls').toBeLessThanOrEqual(
+        metrics.controlsTop,
+      );
+    } else {
+      expect(
+        metrics.chat.width,
+        'desktop chat has its own generous reading column',
+      ).toBeGreaterThanOrEqual(350);
+      expect(metrics.chat.left, 'chat and stage do not overlap').toBeGreaterThanOrEqual(
+        metrics.seats.right,
+      );
+    }
+  }
+});
+
+test('nine-guest presentation keeps the last row clear and full chat actions available', async ({
+  page,
+}) => {
+  await page.route(
+    /\/api\/voice\/rooms\/responsive-fixture(?:\/events|\/join)?\/?$/,
+    async (route) => {
+      const response = await route.fetch();
+      const snapshot = await response.json();
+      snapshot.participants = Array.from({ length: 9 }, (_, index) => ({
+        ...snapshot.participants[index % snapshot.participants.length],
+        id: index ? `studio-guest-${index}` : 'host',
+        name: index ? `ضيف المعاينة ${index + 1}` : snapshot.me.name,
+        role: index ? 'speaker' : 'host',
+        seatIndex: index,
+      }));
+      snapshot.me = snapshot.participants[0];
+      snapshot.room.seatCount = 9;
+      snapshot.room.participantCount = 9;
+      snapshot.room.listenerCount = 0;
+      snapshot.room.speakers = snapshot.participants;
+      await route.fulfill({ response, json: snapshot });
+    },
+  );
+  await mkdir(output, { recursive: true });
+  for (const [width, height] of [
+    [320, 720],
+    [390, 844],
+    [1440, 900],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await openRoom(page);
+    await expect(page.locator('.v-seat-person')).toHaveCount(9);
+    const result = await page
+      .locator('.v-seat-person')
+      .last()
+      .evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const chat = document.querySelector('.v-chat')!.getBoundingClientRect();
+        const stage = document.querySelector('.v-stage-column')!.getBoundingClientRect();
+        const audio = document.querySelector('.v-audio-session')!.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        return {
+          lastBottom: rect.bottom,
+          chatTop: chat.top,
+          stageBottom: stage.bottom,
+          audioBottom: audio.bottom,
+          reachable: hit === element || element.contains(hit),
+          overflow: document.documentElement.scrollWidth > innerWidth,
+        };
+      });
+    expect(result.overflow).toBe(false);
+    expect(result.reachable, 'last visible guest tile is clickable without moving the stage').toBe(
+      true,
+    );
+    expect(result.lastBottom, 'last row fits the guest viewport').toBeLessThanOrEqual(
+      result.stageBottom + 1,
+    );
+    if (width < 761) {
+      expect(result.lastBottom, 'chat does not cover the last guest name').toBeLessThan(
+        result.chatTop,
+      );
+      expect(
+        result.audioBottom,
+        'audio disclosure stays outside the chat stream',
+      ).toBeLessThanOrEqual(result.chatTop);
+    }
+    await writeFile(
+      path.join(output, `nine-guests-${width}.json`),
+      JSON.stringify(result, null, 2),
+    );
+    await page.screenshot({ path: path.join(output, `nine-guests-${width}.png`), fullPage: true });
+    if (width < 761) {
+      await page.locator('.v-chat-toggle').click();
+      const dialog = page.getByRole('dialog', { name: 'دردشة الغرفة', exact: true });
+      const message = dialog.locator('.v-message').first();
+      await expect(message.getByRole('button', { name: /^الرد على/ })).toBeVisible();
+      await expect(
+        message.getByRole('button', { name: 'تثبيت الرسالة', exact: true }),
+      ).toBeVisible();
+      await message.getByRole('button', { name: /^الرد على/ }).click();
+      await expect(dialog.locator('.v-reply-preview')).toBeVisible();
+      await message.getByRole('button', { name: 'الإبلاغ عن الرسالة', exact: true }).click();
+      await expect(dialog.getByLabel('سبب الإبلاغ')).toBeVisible();
+      await dialog.getByRole('button', { name: 'إلغاء البلاغ', exact: true }).click();
+      await page.keyboard.press('Escape');
+    }
+  }
+});
+
 test('matched room screenshots, geometry, text zoom and keyboard simulation', async ({ page }) => {
   await mkdir(output, { recursive: true });
   await openRoom(page);
@@ -107,6 +247,11 @@ test('matched room screenshots, geometry, text zoom and keyboard simulation', as
   ]) {
     await page.setViewportSize({ width, height });
     await page.waitForTimeout(180);
+    await page.evaluate(() => {
+      document.querySelectorAll('.v-main, .v-stage-column, .v-messages').forEach((element) => {
+        element.scrollTop = 0;
+      });
+    });
     records.push({ state: 'normal', ...(await geometry(page)) });
     await page.screenshot({ path: path.join(output, `${width}x${height}.png`), fullPage: true });
     await textScale(page, true);
@@ -124,7 +269,9 @@ test('matched room screenshots, geometry, text zoom and keyboard simulation', as
     });
     if (width > 1020 && stage !== 'before') {
       if (width < 1280) {
-        const member = page.locator('.v-chat-column [data-room-audience-list] button').last();
+        await page.getByRole('button', { name: /^عرض أعضاء الغرفة/ }).click();
+        const dialog = page.getByRole('dialog', { name: 'أهل المجلس' });
+        const member = dialog.locator('.v-listener-grid button').last();
         await member.scrollIntoViewIfNeeded();
         const audience = await member.evaluate((element) => {
           const rect = element.getBoundingClientRect();
@@ -139,7 +286,11 @@ test('matched room screenshots, geometry, text zoom and keyboard simulation', as
           path.join(output, `${width}-audience-reachability.json`),
           JSON.stringify(audience, null, 2),
         );
-        expect.soft(audience.reachable, 'last synthetic audience member reachable').toBe(true);
+        expect
+          .soft(audience.reachable, 'last member remains reachable through the audience dialog')
+          .toBe(true);
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
       }
       for (const selector of [
         '.v-chat-compose',
@@ -324,6 +475,7 @@ test('room keyboard access and reduced-motion accessibility audit', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openRoom(page);
+  await expect(page.getByRole('group', { name: 'مؤثرات الغرفة', exact: true })).toBeVisible();
   const toggle = page.locator('.v-room-controls .v-chat-toggle');
   await toggle.focus();
   await page.keyboard.press('Enter');
@@ -364,12 +516,15 @@ test('pinned message and reply keep the composer reachable at medium text zoom',
   test.skip(stage === 'before', 'Targeted regression for the changed medium layout.');
   await page.setViewportSize({ width: 1440, height: 900 });
   await openRoom(page);
-  await page.route(/\/api\/voice\/rooms\/responsive-fixture(?:\/events|\/join)?\/?$/, async (route) => {
-    const response = await route.fetch();
-    const snapshot = await response.json();
-    snapshot.messages[0].pinned = true;
-    await route.fulfill({ response, json: snapshot });
-  });
+  await page.route(
+    /\/api\/voice\/rooms\/responsive-fixture(?:\/events|\/join)?\/?$/,
+    async (route) => {
+      const response = await route.fetch();
+      const snapshot = await response.json();
+      snapshot.messages[0].pinned = true;
+      await route.fulfill({ response, json: snapshot });
+    },
+  );
   await page.reload();
   await page.locator('.v-pinned').waitFor();
   await page.evaluate(() => document.fonts.ready);

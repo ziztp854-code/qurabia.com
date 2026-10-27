@@ -474,37 +474,37 @@
   --royal-material-light: color-mix(in srgb, var(--surface-strong) 80%, transparent);
 }
 
-/* Tahaddi Live — reference-led navy surfaces; isolated from game themes.
-   Palette estimated from the supplied composite; see docs/tahaddi-live-reference-audit.md. */
+/* Tahaddi Live — immersive audio LIVE from the generated OpenDesign studio.
+   The original voice token names remain stable for component compatibility. */
 .v-app,
 .v-player,
 .v-room-scope,
 .v-room-scope .v-room-app {
-  --voice-bg: #030b12;
-  --voice-card: #101820;
-  --voice-raised: #18232d;
-  --voice-gold: #dfb76d;
-  --voice-gold-light: #f3d38f;
-  --voice-gold-deep: #b68b48;
-  --voice-purple: #ae63ed;
-  --voice-cyan: #63cce7;
-  --voice-live: #f33458;
-  --voice-live-strong: #ce2447;
-  --voice-text: #faf9f7;
-  --voice-muted: #b2b8c1;
-  --voice-ink: #1a1208;
-  --voice-border: rgb(223 183 109 / 0.3);
-  --voice-line: rgb(255 255 255 / 0.1);
-  --voice-glass: rgb(3 11 18 / 0.88);
-  --voice-shade: rgb(3 11 18 / 0.96);
-  --voice-soft-shade: rgb(3 11 18 / 0.25);
-  --voice-glow: rgb(223 183 109 / 0.12);
-  --voice-danger: #ffa1b5;
+  --voice-bg: #080a0e;
+  --voice-card: #101319;
+  --voice-raised: #161a22;
+  --voice-gold: #25f4ee;
+  --voice-gold-light: #b3fbf7;
+  --voice-gold-deep: #19c6c1;
+  --voice-purple: #b5aaff;
+  --voice-cyan: #25f4ee;
+  --voice-live: #fe2c7b;
+  --voice-live-strong: #c82462;
+  --voice-text: #f7f8fb;
+  --voice-muted: #aeb4c2;
+  --voice-ink: #080a0e;
+  --voice-border: color-mix(in srgb, var(--voice-muted) 44%, transparent);
+  --voice-line: color-mix(in srgb, var(--voice-muted) 20%, transparent);
+  --voice-glass: color-mix(in srgb, var(--voice-bg) 96%, transparent);
+  --voice-shade: color-mix(in srgb, var(--voice-bg) 98%, transparent);
+  --voice-soft-shade: color-mix(in srgb, var(--voice-bg) 45%, transparent);
+  --voice-glow: color-mix(in srgb, var(--voice-gold) 10%, transparent);
+  --voice-danger: #ff8da9;
   --voice-success: #7ce4bc;
-  --voice-shadow: 0 16px 50px rgb(0 0 0 / 0.26);
-  --voice-radius-card: 14px;
-  --voice-radius-control: 999px;
-  --voice-gold-gradient: linear-gradient(180deg, var(--voice-gold-light), var(--voice-gold-deep));
+  --voice-shadow: 0 16px 50px rgb(0 0 0 / 0.18);
+  --voice-radius-card: 20px;
+  --voice-radius-control: 12px;
+  --voice-gold-gradient: linear-gradient(180deg, var(--voice-gold), var(--voice-gold-deep));
   --background: var(--voice-bg);
   --foreground: var(--voice-text);
   --surface: var(--voice-card);

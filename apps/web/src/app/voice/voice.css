@@ -3,7 +3,7 @@
   background: var(--voice-bg);
   color: var(--voice-text);
   font-family: var(--font-arabic), sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.7;
   isolation: isolate;
   overflow-x: clip;
@@ -2311,7 +2311,11 @@
     inset-inline-end: 0;
     inset-block: 0;
     z-index: 40;
-    background: color-mix(in srgb, var(--voice-glass) calc(var(--chat-scrim-strength, 1) * 100%), transparent);
+    background: color-mix(
+      in srgb,
+      var(--voice-glass) calc(var(--chat-scrim-strength, 1) * 100%),
+      transparent
+    );
     padding: 30px;
     backdrop-filter: blur(8px);
   }

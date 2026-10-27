@@ -17,6 +17,7 @@ async function main() {
     pathToFileURL(require.resolve('@vitejs/plugin-react')).href
   );
   const effectsPreview = process.env.VOICE_EFFECTS_PREVIEW === '1';
+  const studioPreview = process.env.VOICE_STUDIO_PREVIEW === '1';
   const effectsBaseline = process.env.VOICE_EFFECTS_BASELINE === '1';
   const port = effectsBaseline ? 3419 : effectsPreview ? 3418 : 3417;
   const at = effectsPreview ? Date.now() : 1792500000000;
@@ -27,13 +28,14 @@ async function main() {
     'سارة',
     'سلطان',
     'خالد',
+    ...(studioPreview ? ['ضيف المعاينة ٧', 'ضيف المعاينة ٨', 'ضيف المعاينة ٩'] : []),
   ].map((name, i) => ({
     id: i ? `guest${i}` : 'host',
     name,
     image: null,
     accountNumber: i + 1,
-    role: i ? 'listener' : 'host',
-    seatIndex: i ? null : 0,
+    role: i ? (studioPreview ? 'speaker' : 'listener') : 'host',
+    seatIndex: studioPreview ? i : i ? null : 0,
     handRaised: false,
     requestedSeat: null,
     muted: true,
@@ -44,11 +46,11 @@ async function main() {
   const snapshot: VoiceSnapshot = {
     room: {
       id: 'responsive-fixture',
-      name: 'المجلس الملكي · تحدي لايف',
+      name: studioPreview ? 'معاينة محلية · استوديو تحدي لايف' : 'المجلس الملكي · تحدي لايف',
       description: 'مجلس السهر والحديث مع أصدقاء تحدي لايف',
       category: 'مجالس',
       cover: '/voice/covers/studio.webp',
-      seatCount: 8,
+      seatCount: studioPreview ? 9 : 8,
       isPrivate: false,
       allowMicRequests: true,
       chatEnabled: true,
@@ -60,8 +62,8 @@ async function main() {
       active: true,
       lockedSeats: [],
       participantCount: participants.length,
-      listenerCount: participants.length - 1,
-      speakers: [participants[0]],
+      listenerCount: studioPreview ? 0 : participants.length - 1,
+      speakers: studioPreview ? participants : [participants[0]],
       passwordRequired: false,
     },
     participants,

@@ -4,16 +4,16 @@
 /* Desktop broadcast desk. Audio, membership, and moderation remain in VoiceRoom. */
 @media (min-width: 1021px) {
   .desktopRoom[data-room-visible='true'] {
-    --room-avatar-size: 58px;
+    --room-avatar-size: 66px;
     --room-desktop-height: calc(
       var(--room-viewport-height, 100dvh) - var(--room-controls-height, 100px) -
         max(12px, env(safe-area-inset-bottom)) - var(--room-topbar-height, 56px) - 20px
     );
     --room-chat-height: max(
       0px,
-      calc(var(--room-desktop-height) - var(--room-header-height, 77px) - 12px)
+      calc(var(--room-desktop-height) - var(--room-header-height, 77px) - 16px)
     );
-    padding-inline: 20px;
+    padding-inline: 24px;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-topbar) {
@@ -44,19 +44,19 @@
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-workspace),
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
     inline-size: 100%;
-    max-inline-size: 1880px;
-    max-width: 1880px;
+    max-inline-size: 1520px;
+    max-width: 1520px;
     min-inline-size: 0;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
-    grid-template-columns: minmax(0, 1fr) clamp(300px, 29vw, 390px);
-    grid-template-areas: 'header header' 'heading chat' 'stage chat' 'audio chat' 'close chat';
-    gap: 12px 18px;
+    grid-template-columns: minmax(0, 1fr) clamp(350px, 29vw, 420px);
+    grid-template-areas: 'header header' 'stage chat' 'audio chat' 'close chat';
+    gap: 16px 24px;
   }
 
   .desktopRoom[data-room-visible='true'] :global([data-room-heading]) {
-    text-align: start;
+    text-align: center;
     padding-block-start: 0;
   }
 
@@ -93,25 +93,29 @@
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px 10px;
+    gap: 10px;
+    max-inline-size: 680px;
+    margin-inline: auto;
     align-items: stretch;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seats .v-seat) {
-    border-radius: 12px;
-    padding: 4px;
-    background: linear-gradient(160deg, var(--voice-card), var(--voice-bg));
+    min-block-size: 128px;
+    border-radius: 14px;
+    padding: 12px 8px;
+    border-color: var(--voice-line);
+    background: color-mix(in srgb, var(--voice-bg) 68%, transparent);
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-seats .v-seat-person),
   .desktopRoom[data-room-visible='true'] :global(.v-seats .v-empty-seat) {
-    gap: 1px;
+    gap: 6px;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-person > strong),
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
-    font-size: 13px;
-    line-height: 1.6;
+    font-size: 14px;
+    line-height: 1.7;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-person > small),
@@ -149,17 +153,18 @@
     order: initial;
     justify-self: stretch;
     inline-size: auto;
-    border-color: var(--voice-gold);
+    border-color: transparent;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > span) {
-    inline-size: 44px;
-    block-size: 44px;
-    border: 1px solid var(--voice-line);
+    inline-size: 52px;
+    block-size: 52px;
+    border: 1px dashed var(--voice-border);
     color: var(--voice-muted);
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat-column) {
+    display: contents;
     min-block-size: 0;
     block-size: auto;
   }
@@ -170,14 +175,18 @@
     min-block-size: 280px;
     block-size: auto;
     max-block-size: none;
-    border-radius: 14px;
-    background: var(--voice-bg);
+    border: 0;
+    border-inline-start: 1px solid var(--voice-line);
+    border-radius: 0;
+    background: color-mix(in srgb, var(--voice-bg) 96%, transparent);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat > header) {
-    min-block-size: 48px;
-    padding: 8px 12px;
-    background: var(--voice-card);
+    min-block-size: 64px;
+    padding: 12px 20px;
+    background: transparent;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message) {
@@ -187,15 +196,14 @@
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body) {
     padding: 10px 12px;
-    border: 1px solid var(--voice-line);
-    border-radius: 16px;
-    border-start-start-radius: 5px;
-    background: var(--voice-card);
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-message-body > p) {
-    font-size: 14px;
-    line-height: 1.8;
+    font-size: 16px;
+    line-height: 1.85;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-avatar-button) {
@@ -208,9 +216,9 @@
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose) {
-    padding: 8px;
-    gap: 6px;
-    background: var(--voice-card);
+    padding: 16px;
+    gap: 8px;
+    background: transparent;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat .v-chat-compose textarea) {
@@ -221,39 +229,15 @@
     background: var(--voice-bg);
   }
 
+  /* Members remain available through the header's existing members dialog. */
   .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
-    min-block-size: 0;
-    max-block-size: 220px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-self: stretch;
-    border-radius: 14px;
-    padding: 12px;
-    background: var(--voice-bg);
-  }
-
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience-list]) {
-    flex: 1 1 auto;
-    align-content: start;
-    grid-auto-rows: max-content;
-    min-block-size: 0;
-    max-block-size: none;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-  }
-
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience-nav]),
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience-header]),
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience] > button) {
-    flex: none;
+    display: none;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-room-controls) {
-    max-inline-size: 760px;
-    border-block-start: 1px solid var(--voice-line);
-    border-radius: 16px;
+    max-inline-size: 680px;
+    border: 1px solid var(--voice-line);
+    border-radius: 999px;
     background: var(--voice-bg);
     box-shadow: var(--voice-shadow);
   }
@@ -292,64 +276,14 @@
     overflow-y: auto;
     overscroll-behavior-y: contain;
     scroll-padding-block: 12px;
-    grid-template-rows: auto auto minmax(180px, 1fr) auto auto;
+    grid-template-rows: max-content minmax(180px, 1fr) max-content max-content;
     align-content: stretch;
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
     min-block-size: 0;
-    max-block-size: var(--room-chat-height);
-  }
-}
-
-@media (min-width: 1021px) and (max-width: 1279px) and (min-height: 640px) {
-  .desktopRoom[data-room-visible='true'] :global(.v-chat-column) {
-    display: grid;
     block-size: var(--room-chat-height);
-    grid-template-rows: minmax(0, 1fr) minmax(220px, 2fr);
-  }
-
-  .desktopRoom[data-room-visible='true'] :global(.v-chat-column > [data-room-audience]),
-  .desktopRoom[data-room-visible='true'] :global(.v-chat-column > .v-chat) {
-    grid-area: auto;
-  }
-
-  .desktopRoom[data-room-visible='true'] :global(.v-chat-column > .v-chat) {
-    min-block-size: 0;
-    min-height: 0;
-  }
-
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
-    min-block-size: 0;
-    max-block-size: 100%;
-    overflow-y: auto;
-  }
-
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience-list]) {
-    max-block-size: none;
-    overflow: visible;
-  }
-}
-
-@media (min-width: 1280px) {
-  .desktopRoom[data-room-visible='true'] :global(.v-room-app .v-main) {
-    grid-template-columns: clamp(164px, 14vw, 224px) minmax(0, 1fr) clamp(300px, 25vw, 420px);
-    grid-template-areas:
-      'header header header'
-      'audience heading chat'
-      'audience stage chat'
-      'audience audio chat'
-      'audience close chat';
-  }
-
-  .desktopRoom[data-room-visible='true'] :global([data-room-audience]) {
-    position: static;
-    max-block-size: none;
-  }
-
-  .desktopRoom[data-room-visible='true'] :global(.v-chat-column .v-chat) {
-    flex: none;
-    align-self: stretch;
+    max-block-size: var(--room-chat-height);
   }
 }
 

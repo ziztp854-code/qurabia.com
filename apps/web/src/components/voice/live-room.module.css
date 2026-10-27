@@ -1,10 +1,10 @@
 /* Scoped voice-room composition; state and audio stay in VoiceRoomView. */
 .liveRoom {
-  --room-avatar-size: 64px;
+  --room-avatar-size: 56px;
   --room-controls-space: 170px;
   /* The voice stage stays dark even when the surrounding site uses light mode. */
-  --royal-material-solid: var(--brand-navy);
-  --royal-material-tint: color-mix(in srgb, var(--brand-navy) 92%, transparent);
+  --royal-material-solid: var(--voice-card);
+  --royal-material-tint: color-mix(in srgb, var(--voice-card) 96%, transparent);
   --royal-material-light: color-mix(in srgb, var(--voice-text) 15%, transparent);
 }
 .liveRoom[data-room-visible='true'] {
@@ -13,7 +13,7 @@
   min-block-size: 100dvh;
   padding: 0 12px calc(var(--room-controls-space) + env(safe-area-inset-bottom));
   color: var(--voice-text);
-  background: var(--voice-bg);
+  background: transparent;
 }
 .backdrop {
   position: fixed;
@@ -26,18 +26,24 @@
   object-fit: cover;
   opacity: 0.08;
 }
-/* Quiet navy stage: portrait rings and live controls carry the accents. */
+/* The actual OpenDesign studio artwork is decorative; identities remain real avatars. */
 .backdrop::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, var(--voice-card), transparent 65%);
+  background: url('/voice/live-studio-night.png') center / cover no-repeat;
+  opacity: 0.62;
 }
 .backdrop::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--voice-soft-shade), var(--voice-glass));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--voice-bg) 25%, transparent),
+    color-mix(in srgb, var(--voice-bg) 60%, transparent) 50%,
+    var(--voice-bg)
+  );
 }
 .liveRoom :global(.v-room-app) {
   background: transparent;
@@ -59,7 +65,7 @@
   flex-direction: column;
   gap: 18px;
   min-inline-size: 0;
-  max-inline-size: 1880px;
+  max-inline-size: 1520px;
   margin-inline: auto;
   padding: 0;
   border: 0;
@@ -178,10 +184,16 @@
 .mobileAudioSettings {
   display: none;
 }
+/* Keep the route heading for assistive technology; the room name lives in the host strip. */
 .roomHeading {
-  grid-area: heading;
-  text-align: center;
-  padding: 12px 0 0;
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .roomHeading > span {
   display: inline-flex;
@@ -196,16 +208,7 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
   text-wrap: balance;
-  color: var(--voice-gold);
-  background: linear-gradient(
-    180deg,
-    var(--voice-text),
-    var(--voice-gold-light) 45%,
-    var(--voice-gold)
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--voice-text);
 }
 .roomHeading p {
   margin: 0;
@@ -327,6 +330,26 @@
   border-radius: 50%;
   color: var(--voice-gold);
   background: var(--voice-raised);
+}
+.liveRoom :global(.v-seat-portrait-art) {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 50%;
+  background-image: url('/voice/guest-portraits-grid.png');
+  background-size: 300% 300%;
+  pointer-events: none;
+}
+.liveRoom :global(.v-seat-avatar[data-has-photo='false'] > .v-avatar) {
+  z-index: 1;
+  background: transparent;
+}
+.liveRoom :global(.v-seat-avatar[data-has-photo='false'] > .v-avatar > span[style]) {
+  visibility: hidden;
+}
+.liveRoom :global(.v-seat-avatar .v-mic-status),
+.liveRoom :global(.v-seat-avatar .v-seat-hand) {
+  z-index: 2;
 }
 .liveRoom :global(.v-stage .v-seat-avatar .v-speaking) {
   border: 0 !important;
@@ -678,8 +701,8 @@
 }
 .liveRoom :global(.v-chat .v-message-body > p) {
   color: var(--voice-text);
-  font-size: 14px;
-  line-height: 1.9;
+  font-size: 16px;
+  line-height: 1.85;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -1057,10 +1080,17 @@
     gap: 4px;
   }
   .hostPill {
-    flex-basis: 150px;
+    flex: 1 1 100px;
   }
-  .hostPill strong {
-    max-inline-size: 120px;
+  .hostPill > button:first-child > span:last-child {
+    max-inline-size: 9rem;
+  }
+  .hostPill strong,
+  .hostPill small {
+    max-inline-size: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .presence :global(.v-live) {
     display: none;

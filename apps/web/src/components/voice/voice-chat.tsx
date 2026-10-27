@@ -195,6 +195,7 @@ export const VoiceChat = memo(function VoiceChat({
         className="v-messages"
         ref={scroll}
         role="log"
+        tabIndex={0}
         aria-label="رسائل الغرفة"
         aria-live="polite"
         aria-relevant="additions"

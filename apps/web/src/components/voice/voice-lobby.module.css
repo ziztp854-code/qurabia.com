@@ -1,4 +1,4 @@
-/* Discovery uses the existing Tahaddi Live palette; room-stage styles stay separate. */
+/* Generated OpenDesign LIVE direction: immersive room previews, no marketing hero panel. */
 .discovery {
   min-inline-size: 0;
   max-inline-size: 1280px;
@@ -43,11 +43,10 @@
   grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
   align-items: center;
   gap: var(--space-6);
-  padding: var(--space-6) var(--space-8);
-  border: 1px solid var(--voice-border);
-  border-radius: var(--voice-radius-card);
-  background:
-    radial-gradient(ellipse at 8% 50%, var(--voice-glow), transparent 65%), var(--voice-card);
+  padding: var(--space-5) 0 var(--space-7);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .invitationCopy {
   min-inline-size: 0;
@@ -71,8 +70,8 @@
 }
 .invitation p {
   color: var(--voice-muted);
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 16px;
+  line-height: 1.85;
   margin-block: 0 var(--space-4);
 }
 .invitation :global(.v-button) {
@@ -176,12 +175,15 @@
   font-size: 12px;
 }
 .discovery :global(.v-room-grid) {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-6);
 }
 .discovery :global(.v-room-card) {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
+  min-block-size: 300px;
   border-color: var(--voice-line);
   border-radius: var(--voice-radius-card);
   box-shadow: none;
@@ -191,9 +193,13 @@
   border-color: var(--voice-gold);
 }
 .discovery :global(.v-card-cover) {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   flex: none;
-  block-size: 128px;
+  block-size: 100%;
   min-block-size: 0;
+  opacity: 0.8;
 }
 .discovery :global(.v-card-identity) {
   position: absolute;
@@ -201,7 +207,8 @@
   display: grid;
   place-items: center;
   background:
-    radial-gradient(ellipse at 50% 100%, var(--voice-glow), transparent 75%), var(--voice-card);
+    linear-gradient(180deg, transparent, var(--voice-bg)),
+    url('/voice/live-studio-night.png') center / cover;
 }
 .discovery :global(.v-card-identity .v-avatar) {
   border-color: var(--voice-border);
@@ -212,7 +219,10 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: var(--space-2) var(--space-4) var(--space-4);
+  justify-content: flex-end;
+  padding: var(--space-5);
+  padding-block-start: 8rem;
+  background: linear-gradient(180deg, transparent, var(--voice-bg) 85%);
 }
 .discovery :global(.v-card-title) {
   margin: 0;
@@ -357,11 +367,11 @@
     padding-inline: var(--space-4);
   }
   .discovery :global(.v-room-grid) {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5em), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
     gap: var(--space-3);
   }
   .discovery :global(.v-card-cover) {
-    block-size: 6.5rem;
+    block-size: 100%;
   }
   .discovery :global(.v-card-identity) {
     padding-block-start: var(--space-5);
@@ -381,14 +391,15 @@
     display: none;
   }
   .discovery :global(.v-card-body) {
-    padding: var(--space-1) var(--space-2) var(--space-3);
+    padding: var(--space-4);
+    padding-block-start: 8rem;
   }
   .discovery :global(.v-card-title) {
     align-items: start;
     gap: var(--space-1);
   }
   .discovery :global(.v-card-title h3) {
-    font-size: 14px;
+    font-size: 17px;
   }
   .discovery :global(.v-host-line) {
     margin-block-start: var(--space-1);
@@ -397,8 +408,8 @@
     margin-block: var(--space-2);
   }
   .discovery :global(.v-enter) {
-    font-size: 12px;
-    padding-inline: var(--space-2);
+    font-size: 14px;
+    padding-inline: var(--space-4);
   }
   .spotlight {
     gap: 0;
