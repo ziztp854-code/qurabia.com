@@ -82,6 +82,10 @@
     padding: 3px;
   }
 
+  .desktopRoom[data-room-visible='true'] :global(.v-audio-session) {
+    margin-block: 0;
+  }
+
   .desktopRoom[data-room-visible='true'] :global(.v-stage-column > .v-stage),
   .desktopRoom[data-room-visible='true'] :global(.v-stage-column > .v-requests) {
     flex: none;
@@ -124,8 +128,21 @@
     display: none;
   }
 
-  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-is-empty) {
+  .desktopRoom[data-room-visible='true']
+    :global(.v-stage .v-seats[data-show-empty='true'] .v-seat-is-empty:has(.v-seat-lock)) {
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) 44px;
+    align-items: center;
+    gap: 8px;
     padding-block-end: 6px;
+  }
+
+  .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > small) {
@@ -134,9 +151,7 @@
   }
 
   .desktopRoom[data-room-visible='true'] :global(.v-stage .v-seat-lock) {
-    position: absolute;
-    inset-inline-end: 2px;
-    inset-block-end: 2px;
+    position: static;
     min-inline-size: 44px;
     min-block-size: 44px;
     margin: 0;

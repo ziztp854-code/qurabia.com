@@ -11,7 +11,7 @@ async function openRoom(page: Page) {
   await page.route('**/*', (route) => {
     const url = new URL(route.request().url());
     return url.hostname === '127.0.0.1' || ['data:', 'blob:'].includes(url.protocol)
-      ? route.continue()
+      ? route.fallback()
       : route.abort();
   });
   await page.goto('/');
@@ -231,6 +231,65 @@ test('nine-guest presentation keeps the last row clear and full chat actions ava
       await dialog.getByRole('button', { name: 'إلغاء البلاغ', exact: true }).click();
       await page.keyboard.press('Escape');
     }
+  }
+});
+
+test('expanded empty seats keep moderator locks reachable above mobile chat', async ({ page }) => {
+  await page.route(
+    /\/api\/voice\/rooms\/responsive-fixture(?:\/(?:events|join))?\/?$/,
+    async (route) => {
+      const response = await route.fetch();
+      const snapshot = await response.json();
+      snapshot.participants = snapshot.participants.filter(
+        (person: { role: string }) => person.role === 'host',
+      );
+      snapshot.me = snapshot.participants[0];
+      snapshot.room.seatCount = 9;
+      snapshot.room.participantCount = 1;
+      snapshot.room.listenerCount = 0;
+      snapshot.room.speakers = snapshot.participants;
+      snapshot.room.lockedSeats = [];
+      await route.fulfill({ response, json: snapshot });
+    },
+  );
+  await mkdir(output, { recursive: true });
+  for (const [width, height] of [
+    [320, 720],
+    [390, 844],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await openRoom(page);
+    const expand = page.locator('.v-seat-expand');
+    if ((await expand.getAttribute('aria-expanded')) === 'false') await expand.click();
+    await expect(page.locator('.v-seat-lock')).toHaveCount(8);
+    const result = await page.locator('.v-seat-lock').evaluateAll((buttons) => {
+      const chatTop = document.querySelector('.v-chat')!.getBoundingClientRect().top;
+      const stageBottom = document.querySelector('.v-stage-column')!.getBoundingClientRect().bottom;
+      return buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        return {
+          width: rect.width,
+          height: rect.height,
+          bottom: rect.bottom,
+          chatTop,
+          stageBottom,
+          reachable: hit === button || button.contains(hit),
+        };
+      });
+    });
+    for (const lock of result) {
+      expect(lock.width).toBeGreaterThanOrEqual(44);
+      expect(lock.height).toBeGreaterThanOrEqual(44);
+      expect(lock.bottom).toBeLessThanOrEqual(lock.stageBottom);
+      expect(lock.bottom).toBeLessThan(lock.chatTop);
+      expect(lock.reachable).toBe(true);
+    }
+    await writeFile(
+      path.join(output, `empty-seats-${width}.json`),
+      JSON.stringify(result, null, 2),
+    );
+    await page.screenshot({ path: path.join(output, `empty-seats-${width}.png`), fullPage: true });
   }
 });
 

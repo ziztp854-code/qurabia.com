@@ -259,6 +259,34 @@
     padding: 4px;
     font-size: 11px;
   }
+  .mobileRoom[data-room-visible='true']
+    :global(.v-stage .v-seats[data-show-empty='true'] .v-seat-is-empty:has(.v-seat-lock)) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
+    align-items: center;
+    gap: 2px;
+    padding-inline: 2px;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat) {
+    inline-size: 44px;
+    justify-self: center;
+    gap: 0;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > span) {
+    inline-size: 44px;
+    block-size: 44px;
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > strong) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .mobileRoom[data-room-visible='true'] :global(.v-stage .v-empty-seat > small) {
+    font-size: 10px;
+    line-height: 1.5;
+  }
   .mobileRoom[data-room-visible='true'] :global(.v-room-columns:not(.v-chat-open) .v-chat-column) {
     position: fixed;
     inset-inline: max(12px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
