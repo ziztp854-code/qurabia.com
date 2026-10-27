@@ -62,6 +62,16 @@ test('discovery: responsive controls, Arabic text zoom, accessibility and filter
     elements.forEach((e, i) => e.style.setProperty('font-size', `${sizes[i] * 2}px`, 'important'));
   });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const titles = await page.locator('.v-room-grid article h3').evaluateAll((elements) =>
+    elements.map((element) => ({
+      clippedX: element.scrollWidth > element.clientWidth + 1,
+      clippedY: element.scrollHeight > element.clientHeight + 1,
+    })),
+  );
+  for (const title of titles) {
+    expect(title.clippedX, 'room title fits horizontally at 200% Arabic text').toBe(false);
+    expect(title.clippedY, 'room title grows to contain wrapped Arabic text at 200%').toBe(false);
+  }
   await page.screenshot({ path: info.outputPath('discovery-320-text200.png'), fullPage: true });
   expect(errors).toEqual([]);
 });

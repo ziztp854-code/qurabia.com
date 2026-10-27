@@ -230,6 +230,8 @@
 .discovery :global(.v-card-title h3) {
   white-space: normal;
   overflow-wrap: anywhere;
+  overflow: visible;
+  padding-block: 2px;
   line-height: 1.75;
 }
 .discovery :global(.v-card-title h3 a) {
