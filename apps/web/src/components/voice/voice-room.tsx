@@ -1746,6 +1746,7 @@ export function VoiceRoomView({
                 <VoiceGifts
                   reduced={effects.reduced}
                   participants={participants}
+                  messages={snapshot?.messages || []}
                   selfId={user.id}
                   initialRecipientId={giftRecipient}
                   enabled={Boolean(me && room.active && room.chatEnabled)}

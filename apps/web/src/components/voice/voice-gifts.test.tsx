@@ -26,6 +26,29 @@ const other: VoiceParticipant = {
 const base = { participants: [self, other], selfId: self.id, enabled: true, onClose: vi.fn() };
 
 describe('trial gift interface', () => {
+  it('switches between gifting and a ranking based on visible room messages', () => {
+    const message = {
+      id: 'gift',
+      userId: self.id,
+      name: self.name,
+      image: null,
+      text: '',
+      createdAt: 1,
+      replyTo: null,
+      pinned: false,
+      reactions: {},
+      gift: { id: 'rose', recipientId: other.id, recipientName: other.name },
+    } satisfies VoiceMessage;
+    render(<VoiceGifts {...base} messages={[message]} onEvent={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'الترتيب' }));
+    expect(screen.getByRole('button', { name: 'الترتيب' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('القستات الأكثر استقبالًا')).toBeInTheDocument();
+    expect(screen.getByText('أميرة')).toBeInTheDocument();
+    expect(screen.getByText('الهدايا الأكثر إرسالًا')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /إرسال وردة/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'إرسال هدية' }));
+    expect(screen.getByRole('button', { name: 'إرسال وردة مجانًا' })).toBeEnabled();
+  });
   it('sends the selected catalog gift to the selected member and confirms only after success', async () => {
     let confirm!: () => void;
     const onEvent = vi.fn(

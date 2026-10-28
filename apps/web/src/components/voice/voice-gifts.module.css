@@ -1,4 +1,5 @@
 .dialog:global(.v-dialog) {
+  direction: rtl;
   inline-size: min(640px, calc(100vw - 24px));
   max-inline-size: 640px;
   max-block-size: calc(100dvh - 32px);
@@ -26,6 +27,24 @@
 }
 .trial svg {
   flex-shrink: 0;
+}
+.ranking {
+  padding: 12px 16px;
+  border: 1px solid var(--voice-border);
+  border-radius: 12px;
+  background: var(--voice-bg);
+}
+.ranking h3,
+.ranking p {
+  margin: 0 0 8px;
+}
+.ranking p {
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.ranking ol {
+  margin-block: 4px 12px;
+  padding-inline-start: 24px;
 }
 .recipient {
   display: grid;
@@ -574,4 +593,145 @@
 .receipt [data-effect-art] i,
 .choice [data-effect-art] i {
   display: none;
+}
+
+/* Keep the two room activities close without crowding the gift chooser. */
+.switcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--voice-border);
+  border-radius: 14px;
+  background: var(--voice-bg);
+}
+.switcher button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-block-size: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--voice-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.switcher button[aria-pressed='true'] {
+  background: var(--voice-glow);
+  color: var(--voice-text);
+  font-weight: 700;
+}
+.ranking {
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.rankingHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-block-end: 12px;
+}
+.trophy {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 54px;
+  block-size: 54px;
+  border: 1px solid var(--voice-border);
+  border-radius: 16px;
+  color: var(--voice-gold-light);
+  background: var(--voice-glow);
+}
+.rankingEyebrow {
+  color: var(--voice-gold-light);
+  font-size: 12px;
+}
+.rankingHeader h3 {
+  margin: 0;
+  font-size: 20px;
+}
+.rankingColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-block-start: 20px;
+}
+.rankingColumns h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.rankingColumns ol {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.rankingColumns li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-inline-size: 0;
+  padding: 8px;
+  border: 1px solid var(--voice-border);
+  border-radius: 10px;
+}
+.rankingColumns li bdi,
+.rankingColumns li > span:nth-child(2) {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.rankNumber {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 9px;
+  background: var(--voice-glow);
+  color: var(--voice-gold-light);
+  font-weight: 700;
+}
+.rankCount {
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+.emptyRanking {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-block-start: 16px;
+  padding: 28px 12px;
+  text-align: center;
+  border: 1px solid var(--voice-border);
+  border-radius: 14px;
+  color: var(--voice-muted);
+}
+.emptyRanking svg {
+  color: var(--voice-gold-light);
+}
+.emptyRanking strong {
+  color: var(--voice-text);
+}
+.emptyRanking button {
+  min-block-size: 44px;
+  padding-inline: 20px;
+  border: 1px solid var(--voice-border);
+  border-radius: 10px;
+  background: var(--voice-glow);
+  color: var(--voice-text);
+  font: inherit;
+  cursor: pointer;
+}
+@media (max-width: 480px) {
+  .ranking {
+    padding: 16px;
+  }
+  .rankingColumns {
+    grid-template-columns: 1fr;
+  }
 }
