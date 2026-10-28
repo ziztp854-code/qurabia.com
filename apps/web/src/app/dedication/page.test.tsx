@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@/components/theme-provider';
 import DedicationPage, { metadata } from './page';
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/dedication',
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 vi.mock('@/lib/auth/session', () => ({
   getCurrentSession: vi.fn().mockResolvedValue(null),
 }));
