@@ -4,6 +4,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { getLiveStats } from '@/lib/presence/live-stats';
 import GamesPage from './page';
 
+vi.mock('next/navigation', () => ({ usePathname: () => '/games', useRouter: () => ({ push: vi.fn() }) }));
+
 vi.mock('@/lib/auth/session', () => ({
   getCurrentSession: vi.fn().mockResolvedValue(null),
 }));

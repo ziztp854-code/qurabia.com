@@ -425,7 +425,6 @@ export function createWorld(host, onSelect) {
     lastSignature = '',
     spin = [],
     plants = [],
-    currentMode = null,
     night = false,
     frameId,
     disposed = false,
@@ -446,7 +445,6 @@ export function createWorld(host, onSelect) {
   const plotPoint = (i) => [-8 + (i % 3) * 1.7, -4.4 + Math.floor(i / 3) * 2];
   function update(s, selection, mode) {
     currentState = s;
-    currentMode = mode;
     const signature = JSON.stringify([
       s.plots.map((p) => (p ? [p.crop, p.start, p.ready] : null)),
       s.positions,

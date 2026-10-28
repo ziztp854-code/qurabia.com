@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { QuestionBankIndex, QuestionBankStats } from './question-bank-index';
 
@@ -45,6 +45,13 @@ describe('QuestionBankIndex', () => {
     expect(screen.getAllByText('رياضيات وتفكير منطقي').length).toBeGreaterThan(0);
     expect(screen.getAllByText('تقنية وبرمجة').length).toBeGreaterThan(0);
     expect(screen.getAllByText('لا أسئلة بعد').length).toBeGreaterThan(0);
+  });
+
+  it('preserves explicit zero totals rather than substituting category counts', () => {
+    render(<QuestionBankStats categories={mockCategories} totalQuestionsCount={0} categoryCount={0} />);
+    const stats = screen.getByRole('region', { name: 'إحصاءات البنك' });
+    expect(within(stats).getAllByText('0')).toHaveLength(4);
+    expect(within(stats).queryByText('390')).not.toBeInTheDocument();
   });
 
   it('highlights the active domain card when activeDomain is set', () => {

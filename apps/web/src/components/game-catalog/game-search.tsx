@@ -60,9 +60,9 @@ export function GameSearch({ catalog }: { catalog: UseGameCatalogReturn }) {
       const next = (activeSuggestionIndex - 1 + suggestions.length) % suggestions.length;
       setActiveSuggestionIndex(next);
       setSuggestionsOpen(true);
-    } else if (event.key === 'Enter') {
+    } else if (event.key === 'Enter' && suggestionsOpen && activeSuggestionIndex >= 0) {
       event.preventDefault();
-      const picked = suggestions[activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0];
+      const picked = suggestions[activeSuggestionIndex];
       if (picked) applySuggestion(picked);
     } else if (event.key === 'Escape') {
       event.preventDefault();

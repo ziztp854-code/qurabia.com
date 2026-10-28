@@ -9,6 +9,7 @@ import {
   Award,
   Check,
   Crown,
+  Copy,
   Medal,
   RotateCcw,
   SkipForward,
@@ -134,6 +135,7 @@ export function LiveFinaleExperience({
   const revealPlayers = useMemo(() => rankedPlayers.slice(0, 3).reverse(), [rankedPlayers]);
   const [revealStep, setRevealStep] = useState(0);
   const [skipped, setSkipped] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
   const [runId, setRunId] = useState(0);
   const finalStep = revealPlayers.length + 1;
   const isFinal = revealStep === finalStep;
@@ -329,6 +331,23 @@ export function LiveFinaleExperience({
       )}
 
       <div className="royal-finale-actions">
+        {personalResult && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(
+                  `حققت المركز ${formatNumber(personalResult.rank)} برصيد ${formatNumber(personalResult.score)} نقطة في تحدّي!`,
+                );
+                setShareMessage('تم نسخ نتيجتك.');
+              } catch {
+                setShareMessage('تعذّر النسخ. حاول مرة أخرى.');
+              }
+            }}
+          >
+            <Copy aria-hidden="true" /> نسخ نتيجتي
+          </button>
+        )}
         <Link href="/">
           العودة إلى اللوحة الرئيسية <ArrowLeft aria-hidden="true" />
         </Link>
@@ -336,6 +355,8 @@ export function LiveFinaleExperience({
           <RotateCcw aria-hidden="true" /> إعادة التتويج
         </button>
       </div>
+
+      {shareMessage && <p role="status">{shareMessage}</p>}
 
       <section className="royal-full-ranking">
         <h2>ترتيب المتسابقين</h2>

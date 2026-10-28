@@ -4,6 +4,7 @@ import { LiveHostExperience } from './live-host-experience';
 
 const nextQuestion = vi.fn();
 const revealQuestion = vi.fn();
+const finishGame = vi.fn();
 const mockGame = vi.hoisted(() => ({
   connected: true,
   busy: false,
@@ -64,7 +65,7 @@ vi.mock('./use-live-game', () => ({
     nextQuestion,
     revealQuestion,
     skipQuestion: vi.fn(),
-    finishGame: vi.fn(),
+    finishGame,
     submitAnswer: vi.fn(),
   }),
 }));
@@ -73,6 +74,7 @@ describe('LiveHostExperience auto advance', () => {
   beforeEach(() => {
     nextQuestion.mockClear();
     revealQuestion.mockClear();
+    finishGame.mockClear();
     mockGame.connected = true;
     mockGame.busy = false;
     mockGame.message = '';
@@ -84,6 +86,16 @@ describe('LiveHostExperience auto advance', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('confirms before ending the round', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    render(<LiveHostExperience sessionId="session-1" hostId="host-1" accessToken="token" roomCode="ABC123" joinUrl="https://example.test/join/ABC123" initialAutoAdvance={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'إنهاء الجولة' }));
+    expect(finishGame).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'إنهاء الجولة' }));
+    expect(finishGame).toHaveBeenCalledOnce();
+    confirm.mockRestore();
   });
 
   it('waits for the minimum players before enabling start', () => {

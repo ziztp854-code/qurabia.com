@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { availableGamesCount, publicGames } from './games';
+import { availableGamesCount, publicGames, toCatalogGames } from './games';
 
 describe('public games source', () => {
   it('يشتق العدد المتاح من الحالة ويحصر الصور في الأصول المحلية', () => {
@@ -8,6 +8,17 @@ describe('public games source', () => {
     );
     expect(publicGames.every((game) => game.image.startsWith('/game-art/'))).toBe(true);
     expect(publicGames.every((game) => game.imageAlt.trim().length > 0)).toBe(true);
+  });
+
+  it('يحتفظ بجميع تصنيفات اللعبة في الكتالوج', () => {
+    const game = toCatalogGames().find((item) => item.id === 'fastest-button');
+    expect(game?.categories).toEqual(['سرعة', 'اجتماعي', 'تركيز']);
+  });
+
+  it('يعرض من القائل كتحد فردي دون ادعاء اللعب المباشر', () => {
+    expect(toCatalogGames().find((game) => game.id === 'quote-master')).toMatchObject({
+      minimumPlayers: 1, maximumPlayers: 1, requiresRealtime: false,
+    });
   });
 
   it('يبقي الطيف قريبًا ولا يمنحه وجهة منشورة', () => {

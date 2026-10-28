@@ -4,16 +4,13 @@ import {
   Crown,
   Eye,
   Medal,
-  Pause,
-  Play,
   RotateCcw,
-  SkipForward,
   Sparkles,
   Trophy,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { QUESTION_WORD_BANK, QUESTION_WORD_STORAGE_KEY } from '@/components/instant-games';
 import { Button } from '@/components/ui';
 import { formatNumber } from '@/lib/utils';
@@ -24,7 +21,6 @@ const questionWordBankSchema = z.array(z.object({
   hint: z.string().max(300), letters: z.array(z.string().length(1)).min(1).max(50),
 })).min(1).max(50);
 
-const ROOM_CODE = '739421';
 type RoomSnapshot = {
   players: string[];
   playerScores: Record<string, number>;
@@ -33,6 +29,7 @@ type RoomSnapshot = {
   roundIndex: number;
   seconds: number;
   questions?: z.infer<typeof questionWordBankSchema>;
+  screen?: 'intro' | 'play' | 'summary' | 'final';
 };
 
 const EMPTY_ROOM: RoomSnapshot = {
@@ -68,9 +65,9 @@ function readRoomSnapshot(): RoomSnapshot {
 export function QuestionWordHost() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [seconds, setSeconds] = useState(60);
-  const [paused, setPaused] = useState(false);
-  const [answerVisible, setAnswerVisible] = useState(false);
-  const [finished, setFinished] = useState(false);
+  const [revealedQuestion, setRevealedQuestion] = useState<number | null>(null);
+  const answerVisible = revealedQuestion === questionIndex;
+  const lastQuestionRef = useRef<number | null>(null);
   const [room, setRoom] = useState<RoomSnapshot>(EMPTY_ROOM);
   const questions = room.questions ?? QUESTION_WORD_BANK;
   const question = questions[questionIndex] ?? questions[0]!;
@@ -86,6 +83,10 @@ export function QuestionWordHost() {
   useEffect(() => {
     const syncRoom = () => {
       const next = readRoomSnapshot();
+      if (next.roundIndex !== lastQuestionRef.current || next.screen === 'final' || next.screen === 'intro') {
+        setRevealedQuestion(null);
+      }
+      lastQuestionRef.current = next.roundIndex;
       setRoom(next);
       setQuestionIndex(next.roundIndex);
       setSeconds(next.seconds);
@@ -95,20 +96,7 @@ export function QuestionWordHost() {
     return () => window.removeEventListener('storage', syncRoom);
   }, []);
 
-  useEffect(() => {
-    if (paused || finished || seconds <= 0) return;
-    const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, [finished, paused, seconds]);
-
-  const nextQuestion = () => {
-    setQuestionIndex((value) => (value + 1) % questions.length);
-    setSeconds(60);
-    setAnswerVisible(false);
-    setPaused(false);
-  };
-
-  if (finished) {
+  if (room.screen === 'final') {
     const champion = hostPlayers[0];
     return (
       <main className="question-word-host question-word-host--final">
@@ -158,10 +146,10 @@ export function QuestionWordHost() {
               <h1>لا توجد نتائج للتتويج</h1>
             </div>
           )}
-          <Button variant="gold" size="lg" onClick={() => setFinished(false)}>
+          <Link className="button button-gold button-lg" href="/games/question-word">
             <RotateCcw aria-hidden="true" />
-            إعادة العرض
-          </Button>
+            العودة للعبة
+          </Link>
         </div>
       </main>
     );
@@ -171,12 +159,12 @@ export function QuestionWordHost() {
     <main className="question-word-host">
       <header className="question-word-host__header">
         <div>
-          <span>لوحة المضيف · الغرفة الحالية</span>
+          <span>شاشة عرض على الجهاز نفسه</span>
           <h1>كلمة وسؤال</h1>
         </div>
         <div className="question-word-host__room">
-          <small>رمز الدخول</small>
-          <strong dir="ltr">{ROOM_CODE}</strong>
+          <small>طريقة اللعب</small>
+          <strong>أدوار متتالية</strong>
         </div>
         <nav aria-label="روابط اللعبة">
           <Link href="/games/question-word">فتح شاشة اللاعبين</Link>
@@ -188,7 +176,7 @@ export function QuestionWordHost() {
         <section className="question-word-host__stage" aria-labelledby="host-question">
           <div className="question-word-host__status">
             <span>
-              السؤال {formatNumber(questionIndex + 1)} / {formatNumber(QUESTION_WORD_BANK.length)}
+              السؤال {formatNumber(questionIndex + 1)} / {formatNumber(questions.length)}
             </span>
             <strong data-ending={seconds <= 10 || undefined}>{formatNumber(seconds)}</strong>
             <span role="status" aria-atomic="true">
@@ -218,22 +206,11 @@ export function QuestionWordHost() {
           </div>
 
           <div className="question-word-host__controls">
-            <Button variant="outline" onClick={() => setPaused((value) => !value)}>
-              {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
-              {paused ? 'استئناف الوقت' : 'إيقاف الوقت'}
-            </Button>
-            <Button variant="outline" onClick={() => setAnswerVisible(true)}>
+            <Button variant="outline" onClick={() => setRevealedQuestion(questionIndex)}>
               <Eye aria-hidden="true" />
               إظهار الإجابة
             </Button>
-            <Button variant="gold" onClick={nextQuestion}>
-              <SkipForward aria-hidden="true" />
-              السؤال التالي
-            </Button>
-            <Button variant="destructive" onClick={() => setFinished(true)}>
-              <Trophy aria-hidden="true" />
-              إنهاء وتتويج
-            </Button>
+            <p>تُدار الأدوار والوقت من شاشة اللاعبين في المتصفح نفسه.</p>
           </div>
         </section>
 
@@ -258,7 +235,7 @@ export function QuestionWordHost() {
                   <span>{formatNumber(index + 1)}</span>
                   <div>
                     <strong>{player.name}</strong>
-                    <small>{formatNumber(player.correctAnswers)} إجابات صحيحة</small>
+                    <small>{player.correctAnswers ? 'أجاب في هذا السؤال' : 'لم يجب في هذا السؤال'}</small>
                   </div>
                   <b>{formatNumber(player.score)}</b>
                 </li>

@@ -10,6 +10,7 @@ import {
   Heart,
   LogIn,
   LogOut,
+  Link2,
   Maximize2,
   Minimize2,
   Expand,
@@ -332,7 +333,7 @@ function subscribeFullscreen(listener: () => void) {
   return () => document.removeEventListener('fullscreenchange', listener);
 }
 
-export function BalootRoom() {
+export function BalootRoom({ initialCode = '' }: { initialCode?: string }) {
   const {
     connected,
     latencyMs,
@@ -359,10 +360,10 @@ export function BalootRoom() {
     document.addEventListener('fullscreenchange', changed);
     return () => document.removeEventListener('fullscreenchange', changed);
   }, []);
-  const [joinMode, setJoinMode] = useState(false);
+  const [joinMode, setJoinMode] = useState(Boolean(initialCode));
   const [playerName, setPlayerName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [roomCode, setRoomCode] = useState(initialCode);
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [copyError, setCopyError] = useState('');
   const copyTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(copyTimer.current), []);
@@ -570,17 +571,37 @@ export function BalootRoom() {
                     try {
                       await navigator.clipboard.writeText(room.roomCode);
                       setCopyError('');
-                      setCopied(true);
+                      setCopied('code');
                       window.clearTimeout(copyTimer.current);
-                      copyTimer.current = window.setTimeout(() => setCopied(false), 1500);
+                      copyTimer.current = window.setTimeout(() => setCopied(null), 1500);
                     } catch {
-                      setCopied(false);
+                      setCopied(null);
                       setCopyError('تعذّر النسخ. حدّد رمز المجلس وانسخه يدوياً.');
                     }
                   }}
                 >
-                  {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                  {copied === 'code' ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
                 </button>
+                <button
+                  type="button"
+                  aria-label="نسخ رابط دعوة البلوت"
+                  onClick={async () => {
+                    try {
+                      const url = new URL(`/games/baloot/join/${room.roomCode}`, window.location.origin);
+                      await navigator.clipboard.writeText(url.href);
+                      setCopyError('');
+                      setCopied('link');
+                      window.clearTimeout(copyTimer.current);
+                      copyTimer.current = window.setTimeout(() => setCopied(null), 1500);
+                    } catch {
+                      setCopied(null);
+                      setCopyError('تعذّر نسخ رابط الدعوة. يمكنك مشاركة رمز المجلس.');
+                    }
+                  }}
+                >
+                  {copied === 'link' ? <Check aria-hidden="true" /> : <Link2 aria-hidden="true" />}
+                </button>
+                <span className="sr-only" role="status">{copied === 'link' ? 'نُسخ رابط الدعوة.' : copied === 'code' ? 'نُسخ رمز المجلس.' : ''}</span>
               </div>
             </div>
           </header>

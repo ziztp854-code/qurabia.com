@@ -42,6 +42,7 @@ export default async function GamesPage() {
     <SiteLayout user={session?.user ? { name: session.user.name, role: session.user.role } : null}>
       <GameCatalogWrapper
         sessionUserName={userName}
+        isSignedIn={Boolean(session?.user)}
         initialGames={toCatalogGames(publicGames)}
         earlyAccess={earlyAccess}
       />

@@ -4,8 +4,8 @@ import { QuoteMasterJoin } from '@/components/special-games/quote-master-join';
 import { getCurrentSession } from '@/lib/auth/session';
 
 export const metadata: Metadata = {
-  title: 'انضمام إلى «من القائل؟» | تحدّي',
-  description: 'ادخل غرفة «من القائل؟» بمسح الباركود أو رمز الغرفة، وأدخل اسمك للمشاركة.',
+  title: '«من القائل؟» | تحدّي',
+  description: 'معلومات عن روابط الدعوة السابقة للعبة «من القائل؟» وطريقة بدء التحدي الفردي.',
 };
 
 export default async function QuoteMasterJoinPage({

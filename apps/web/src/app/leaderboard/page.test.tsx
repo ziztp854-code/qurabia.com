@@ -2,6 +2,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import LeaderboardPage from './page';
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/leaderboard',
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 const mocks = vi.hoisted(() => ({
   getLeaderboardPayload: vi.fn(),
 }));

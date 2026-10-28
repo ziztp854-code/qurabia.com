@@ -409,7 +409,7 @@ export function MemoryFlash() {
 
   const choose = useCallback(
     (symbolIndex: number) => {
-      if (preview || !started || screen !== 'play' || paused) return;
+      if (preview || pendingNextRound || !started || screen !== 'play' || paused) return;
 
       if (sequence[inputIndex] !== symbolIndex) {
         setMistakeSymbol(symbolIndex);
@@ -455,6 +455,7 @@ export function MemoryFlash() {
       inputIndex,
       lives,
       paused,
+      pendingNextRound,
       preview,
       screen,
       sequence,
@@ -604,7 +605,9 @@ export function MemoryFlash() {
           <p className="memory-prompt" aria-live="polite">
             {paused
               ? 'إيقاف مؤقت'
-              : `أعد التسلسل — بقي ${formatNumber(sequence.length - inputIndex)}`}
+              : pendingNextRound
+                ? 'استعد للمستوى التالي…'
+                : `أعد التسلسل — بقي ${formatNumber(sequence.length - inputIndex)}`}
           </p>
         )}
 
@@ -617,7 +620,7 @@ export function MemoryFlash() {
                   type="button"
                   key={symbol.label}
                   aria-label={symbol.label}
-                  disabled={preview || !started || screen !== 'play'}
+                  disabled={preview || pendingNextRound || !started || screen !== 'play'}
                   onClick={() => choose(index)}
                   className={`
                     memory-chip
@@ -667,7 +670,6 @@ export function MemoryFlash() {
 }
 
 const QUESTION_WORD_RANK_POINTS = [1000, 850, 700] as const;
-const QUESTION_WORD_ROOM_CODE = '739421';
 export const QUESTION_WORD_STORAGE_KEY = 'tahaddi.question-word.room.739421';
 type QuestionWordAssist = 'reveal' | 'remove' | 'first' | 'time' | 'hint';
 
@@ -694,6 +696,7 @@ function QuestionWord() {
   const [answeredPlayers, setAnsweredPlayers] = useState<string[]>([]);
   const [playerScores, setPlayerScores] = useState<Record<string, number>>({});
   const [roundMessage, setRoundMessage] = useState('');
+  const composingLetterRef = useRef(false);
 
   const round = QUESTION_WORD_BANK[roundIndex] ?? QUESTION_WORD_BANK[0]!;
   const answerLetters = useMemo(() => [...round.answer], [round.answer]);
@@ -761,7 +764,7 @@ function QuestionWord() {
       const nextScores = correct
         ? { ...playerScores, [activePlayer]: (playerScores[activePlayer] ?? 0) + gained }
         : playerScores;
-      const nextAnswered = correct ? [...answeredPlayers, activePlayer] : players;
+      const nextAnswered = correct ? [...answeredPlayers, activePlayer] : answeredPlayers;
 
       setScore(Math.max(0, ...Object.values(nextScores)));
       setPlayerScores(nextScores);
@@ -837,12 +840,32 @@ function QuestionWord() {
 
   const deleteLast = () => setSelectedTileIds((current) => current.slice(0, -1));
 
+  const acceptTypedLetter = (input: HTMLInputElement) => {
+    const characters = [...input.value];
+    input.value = '';
+    const character = characters[characters.length - 1];
+    const tileId = round.letters.findIndex(
+      (letter, index) => letter === character && !pickedSet.has(index) && !removedSet.has(index),
+    );
+    if (tileId >= 0) chooseLetter(tileId);
+  };
+
   const revealSlot = (slotIndex: number, assist: QuestionWordAssist) => {
     const selectedPosition = answerLetters
       .slice(0, slotIndex)
       .filter((_, index) => !revealedSet.has(index)).length;
     setSelectedTileIds((current) => current.filter((_, index) => index !== selectedPosition));
-    setRevealedSlots((current) => [...new Set([...current, slotIndex])]);
+    const nextRevealed = new Set([...revealedSlots, slotIndex]);
+    const remainingTiles = selectedTileIds.filter((_, index) => index !== selectedPosition);
+    let cursor = 0;
+    const completedWord = answerLetters.map((letter, index) =>
+      nextRevealed.has(index) ? letter : (round.letters[remainingTiles[cursor++]] ?? ''),
+    ).join('');
+    setRevealedSlots([...nextRevealed]);
+    if (completedWord === round.answer) {
+      finishRound(true);
+      return;
+    }
     setUsedAssists((current) => [...current, assist]);
   };
 
@@ -873,7 +896,7 @@ function QuestionWord() {
         : slots.findIndex(
             (slot, index) => !revealedSet.has(index) && slot.letter !== answerLetters[index],
           );
-    if (slotIndex >= 0) revealSlot(slotIndex, assist);
+    if (slotIndex >= 0 && !revealedSet.has(slotIndex)) revealSlot(slotIndex, assist);
   };
 
   if (screen === 'intro') {
@@ -883,22 +906,20 @@ function QuestionWord() {
         <Card className="instant-board question-word-intro">
           <div className="instant-intro">
             <HelpCircle aria-hidden="true" />
-            <span className="question-word__eyebrow">معاينة جماعية سريعة</span>
-            <h2>سؤال واحد، كلمة واحدة، أسرع إصبع يفوز</h2>
+            <span className="question-word__eyebrow">لعب جماعي على جهاز واحد</span>
+            <h2>سؤال واحد، كلمة واحدة، وأدوار متتالية</h2>
             <p>
-              ركّب الإجابة من الحروف المبعثرة. كل جولة دقيقة واحدة، والمركز الأسرع يأخذ أعلى نقاط.
+              أضف اللاعبين ومرّر الجهاز بينهم. لكل سؤال دقيقة مشتركة، وتحصل الإجابات الأولى على نقاط أكثر.
             </p>
             <div className="question-word__rules" aria-label="قواعد المباراة">
-              <span>١٠ أسئلة</span>
+              <span>{formatNumber(QUESTION_WORD_BANK.length)} أسئلة</span>
               <span>٦٠ ثانية</span>
-              <span>Top 3</span>
+              <span>٢–١٢ لاعبًا</span>
             </div>
             <div className="question-word__lobby" aria-label="دخول اللاعبين">
-              <div className="question-word__room-code">
-                <span>رمز الدخول الجماعي</span>
-                <strong dir="ltr">{QUESTION_WORD_ROOM_CODE}</strong>
-                <small>يدخل اللاعبون بهذا الرقم ثم تبدأ المنافسة</small>
-              </div>
+              <p className="question-word__local-note">
+                أضف الأسماء هنا؛ يتناوب اللاعبون على الجهاز نفسه. شاشة العرض تعمل في متصفح هذا الجهاز.
+              </p>
               <form className="question-word__join" onSubmit={addPlayer}>
                 <label htmlFor="question-word-player">اسم اللاعب</label>
                 <div>
@@ -943,9 +964,11 @@ function QuestionWord() {
                 <NextLink
                   className="button button-outline button-md"
                   href="/games/question-word/host"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   <Gauge aria-hidden="true" />
-                  شاشة المضيف
+                  شاشة العرض في تبويب جديد
                 </NextLink>
                 <NextLink
                   className="button button-ghost button-md"
@@ -1028,7 +1051,7 @@ function QuestionWord() {
       <ScoreBar score={score} seconds={seconds} isPaused={false} />
       <Card className="instant-board question-word-board">
         <div className="question-word__hud" aria-label="حالة كلمة وسؤال">
-          <span>غرفة {QUESTION_WORD_ROOM_CODE}</span>
+          <span>لعب على جهاز واحد</span>
           <span>
             السؤال {formatNumber(roundIndex + 1)} / {formatNumber(QUESTION_WORD_BANK.length)}
           </span>
@@ -1062,10 +1085,38 @@ function QuestionWord() {
             <span style={{ transform: `scaleX(${progress})` }} />
           </div>
           <p className="question-word__turn" aria-live="polite">
-            {roundMessage ||
-              `ركّب الإجابة الآن يا ${activePlayer}. ترتيبك الحالي ${formatNumber(playerRank)}.`}
+            {progress >= 1
+              ? 'الإجابة غير مكتملة بشكل صحيح؛ احذف آخر حرف وحاول مجددًا.'
+              : roundMessage ||
+                `ركّب الإجابة الآن يا ${activePlayer}. ترتيبك الحالي ${formatNumber(playerRank)}.`}
           </p>
           {showHint && <p className="question-word__hint">{round.hint}</p>}
+        </div>
+
+        <div className="question-word__typing">
+          <label htmlFor="question-word-letter-input">اكتب حرفًا أو اختره من الحروف</label>
+          <input
+            id="question-word-letter-input"
+            type="text"
+            dir="rtl"
+            autoComplete="off"
+            placeholder="اكتب هنا بلوحة المفاتيح العربية"
+            onCompositionStart={() => { composingLetterRef.current = true; }}
+            onCompositionEnd={(event) => {
+              composingLetterRef.current = false;
+              acceptTypedLetter(event.currentTarget);
+            }}
+            onChange={(event) => {
+              if (!composingLetterRef.current) acceptTypedLetter(event.currentTarget);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Backspace' && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                deleteLast();
+              }
+            }}
+          />
+          <small>يمكنك حذف آخر حرف بزر الحذف في لوحة المفاتيح.</small>
         </div>
 
         <div className="question-word__letters" role="group" aria-label="الحروف المتاحة">
@@ -1114,7 +1165,7 @@ function QuestionWord() {
             type="button"
             variant="ghost"
             onClick={() => applyAssist('first')}
-            disabled={usedAssists.includes('first')}
+            disabled={usedAssists.includes('first') || revealedSet.has(0)}
           >
             <Pin aria-hidden="true" />
             تثبيت أول حرف
@@ -1207,7 +1258,7 @@ function createColorRushRound(previous?: ColorRushRound): ColorRushRound {
 function ColorRush() {
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
-  const [seconds, setSeconds] = useState(45);
+  const [seconds, setSeconds] = useState(INSTANT_GAME_META['color-rush'].roundSeconds);
   const [started, setStarted] = useState(false);
   const [practice, setPractice] = useState(false);
   const [message, setMessage] = useState('');
@@ -1243,7 +1294,7 @@ function ColorRush() {
     if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
     setRound(0);
     setScore(0);
-    setSeconds(45);
+    setSeconds(INSTANT_GAME_META['color-rush'].roundSeconds);
     setMessage('');
     setFeedback(null);
     setLocked(false);
@@ -1886,7 +1937,7 @@ function RiskGame() {
   );
 }
 
-export function InstantGameRoom({ mode }: { mode: InstantGameMode }) {
+export function InstantGameRoom({ mode, initialCode = '' }: { mode: InstantGameMode; initialCode?: string }) {
   const meta = useMemo(() => INSTANT_GAME_META[mode], [mode]);
 
   return (
@@ -1907,7 +1958,7 @@ export function InstantGameRoom({ mode }: { mode: InstantGameMode }) {
         ) : mode === 'question-word' ? (
           <QuestionWord />
         ) : mode === 'baloot' ? (
-          <BalootRoom />
+          <BalootRoom initialCode={initialCode} />
         ) : mode === 'risk' ? (
           <RiskGame />
         ) : (

@@ -13432,3 +13432,8 @@ select:focus-visible {
   }
   .site-header::after { display: none; }
 }
+
+.join-box > .join-room-type {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+}

@@ -4,6 +4,7 @@ import { BalootRoom } from './baloot-room';
 import { formatNumber } from '@/lib/utils';
 
 const mock = vi.hoisted(() => ({
+  showLobby: false,
   room: {
     roomCode: '123456',
     phase: 'BIDDING',
@@ -38,7 +39,7 @@ const mock = vi.hoisted(() => ({
 }));
 vi.mock('./use-baloot-socket', () => ({
   useBalootSocket: () => ({
-    room: mock.room,
+    room: mock.showLobby ? null : mock.room,
     connected: true,
     latencyMs: 20,
     connectionQuality: 'excellent',
@@ -52,10 +53,33 @@ vi.mock('./use-baloot-socket', () => ({
 }));
 
 afterEach(() => {
+  mock.showLobby = false;
   vi.restoreAllMocks();
 });
 
 describe('Baloot table', () => {
+  it('opens the join form with the invited room code', () => {
+    mock.showLobby = true;
+    render(<BalootRoom initialCode="123456" />);
+    expect(screen.getByRole('button', { name: 'دخول برمز' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('رمز المجلس')).toHaveValue('123456');
+  });
+
+  it('copies an invitation that opens the same room without a seat token', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    try {
+      render(<BalootRoom />);
+      fireEvent.click(screen.getByRole('button', { name: 'نسخ رابط دعوة البلوت' }));
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/games/baloot/join/123456`));
+      expect(screen.getByText('نُسخ رابط الدعوة.')).toBeInTheDocument();
+    } finally {
+      if (descriptor) Object.defineProperty(navigator, 'clipboard', descriptor);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
+  });
+
   it('shows scores and the active buyer from team B’s perspective', () => {
     render(<BalootRoom />);
     const info = screen.getByLabelText('معلومات الجولة');

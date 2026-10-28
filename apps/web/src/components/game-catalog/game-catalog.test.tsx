@@ -1,6 +1,6 @@
 import { formatNumber } from '@/lib/utils';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameSearch, GameFilters, GameSortBar, GameCard, GameCatalogWrapper } from './index';
 import type { UseGameCatalogReturn } from './use-game-catalog';
@@ -62,6 +62,7 @@ describe('GameCatalog UI', () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('groups shared-screen games with multiplayer games and filters individual games', async () => {
@@ -78,6 +79,53 @@ describe('GameCatalog UI', () => {
     expect(screen.getByRole('button', { name: 'الألعاب الفردية' })).toHaveAttribute('aria-pressed', 'true');
     await user.click(screen.getByRole('button', { name: 'جميع الألعاب' }));
     expect(screen.getByRole('list', { name: 'الألعاب الجماعية' })).toBeInTheDocument();
+  });
+
+  it('filters games by the selected number of players', async () => {
+    const user = userEvent.setup();
+    render(<GameCatalogWrapper sessionUserName={null} initialGames={catalogSample} />);
+    const picker = screen.getByRole('group', { name: 'تصفح حسب عدد اللاعبين' });
+    await user.click(within(picker).getByRole('button', { name: 'لاعب واحد' }));
+    expect(screen.getByRole('heading', { name: 'من سيربح المليون؟' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'البلوت' })).not.toBeInTheDocument();
+    await user.click(within(picker).getByRole('button', { name: '٤ لاعبين' }));
+    expect(screen.getByRole('heading', { name: 'البلوت' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'من سيربح المليون؟' })).not.toBeInTheDocument();
+  });
+
+  it('saves and filters favorites after the server confirms the change', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ gameIds: [] }) })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<GameCatalogWrapper sessionUserName="نورة" isSignedIn initialGames={catalogSample} />);
+    const save = await screen.findByRole('button', { name: 'إضافة البلوت إلى المفضلة' });
+    await user.click(save);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'إزالة البلوت من المفضلة' })).toHaveAttribute('aria-pressed', 'true'));
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/game-favorites', expect.objectContaining({ method: 'PUT', body: JSON.stringify({ gameId: 'baloot', favorite: true }) }));
+    await user.click(screen.getByRole('button', { name: 'ألعابي المفضلة' }));
+    expect(screen.getByRole('heading', { name: 'البلوت' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'من سيربح المليون؟' })).not.toBeInTheDocument();
+  });
+
+  it('does not mark a favorite when saving fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ gameIds: [] }) }).mockResolvedValueOnce({ ok: false }));
+    const user = userEvent.setup();
+    render(<GameCatalogWrapper sessionUserName="نورة" isSignedIn initialGames={catalogSample} />);
+    await user.click(await screen.findByRole('button', { name: 'إضافة البلوت إلى المفضلة' }));
+    expect(await screen.findByText('تعذّر تحديث المفضلة. حاول مجددًا.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إضافة البلوت إلى المفضلة' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows only games with a verified short timed session when requested', async () => {
+    const user = userEvent.setup();
+    render(<GameCatalogWrapper sessionUserName={null} initialGames={catalogSample} />);
+    await user.click(screen.getByRole('button', { name: 'جلسة موقّتة حتى دقيقة' }));
+    expect(screen.getByRole('heading', { name: 'خدعة الألوان' })).toBeInTheDocument();
+    expect(screen.getByText('45 ثانية للطور الموقّت')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'ومضة الذاكرة' })).not.toBeInTheDocument();
+    expect(screen.getByText(/تظهر الألعاب التي عُرفت مدة جلستها فقط/)).toBeInTheDocument();
   });
 
   it('assigns a unique generated cover to every catalog game', () => {
@@ -211,6 +259,21 @@ describe('GameCatalog UI', () => {
     expect(screen.queryByLabelText('التقييم الأدنى للألعاب')).not.toBeInTheDocument();
   });
 
+  it('keeps keyboard focus inside the mobile filter dialog', () => {
+    const catalog = makeCatalog();
+    const { container, rerender } = render(<><button>خارج الفلاتر</button><GameFilters catalog={catalog} open={false} onClose={() => {}} /></>);
+    const panel = container.querySelector('.gc-filters-panel') as HTMLElement;
+    panel.style.position = 'fixed';
+    rerender(<><button>خارج الفلاتر</button><GameFilters catalog={catalog} open onClose={() => {}} /></>);
+    const close = screen.getByRole('button', { name: 'إغلاق لوحة الفلاتر' });
+    expect(screen.getByRole('dialog', { name: 'الفلاتر' })).toHaveAttribute('aria-modal', 'true');
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(panel.contains(document.activeElement)).toBe(true);
+    screen.getByRole('button', { name: 'خارج الفلاتر' }).focus();
+    expect(panel.contains(document.activeElement)).toBe(true);
+  });
+
   it('يجعل لعبة الطيف القادمة غير قابلة للنقر', () => {
     const game = catalogSample.find((item) => item.id === 'spectrum');
     expect(game).toBeDefined();
@@ -339,6 +402,24 @@ describe('GameCatalog UI', () => {
     await user.click(screen.getByRole('button', { name: 'مسح البحث والفلاتر' }));
     expect(screen.getByRole('link', { name: 'برج المعرفة' })).toBeInTheDocument();
   }, 15_000);
+
+  it('clears the search text when a category suggestion is selected', async () => {
+    render(<GameCatalogWrapper sessionUserName={null} initialGames={catalogSample} />);
+    const user = userEvent.setup();
+    const input = screen.getByRole('combobox', { name: 'ابحث عن لعبة' });
+    await user.type(input, 'استرا');
+    await act(() => vi.advanceTimersByTimeAsync(200));
+    await user.click(screen.getByRole('option', { name: /التصنيف: استراتيجية/ }));
+    expect(input).toHaveValue('');
+    await act(() => vi.advanceTimersByTimeAsync(200));
+    expect(screen.getByRole('link', { name: 'تحدي الممالك' })).toBeInTheDocument();
+  }, 15000);
+
+  it('shows the actual player capacity for large games', () => {
+    const game = catalogSample.find((item) => item.id === 'fastest-button')!;
+    render(<GameCard game={game} index={0} view="grid" />);
+    expect(screen.getByText(new RegExp(formatNumber(game.maximumPlayers)))).toBeInTheDocument();
+  });
 
   it('does not offer early access when the upcoming game has no destination', () => {
     const game = catalogSample.find((item) => item.id === 'spectrum')!;

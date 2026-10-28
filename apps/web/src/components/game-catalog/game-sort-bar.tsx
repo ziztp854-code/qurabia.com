@@ -11,20 +11,20 @@ const SORT_OPTIONS: Array<{ key: GameSortKey; label: string }> = [
   { key: 'newest', label: 'الأحدث' },
   { key: 'oldest', label: 'الأقدم' },
   { key: 'players', label: 'الأكبر سعة للاعبين' },
-  { key: 'manual', label: 'ترتيب المسؤول' },
-];
+  ];
 
 export const GameSortBar = forwardRef<HTMLButtonElement, {
   catalog: UseGameCatalogReturn;
   onOpenFilters: () => void;
-}>(function GameSortBar({ catalog, onOpenFilters }, ref) {
+  filtersOpen?: boolean;
+}>(function GameSortBar({ catalog, onOpenFilters, filtersOpen = false }, ref) {
   const { filters, setSort, setView, filtered, activeFiltersCount } = catalog;
   return (
     <div className="gc-toolbar" role="toolbar" aria-label="أدوات عرض الألعاب">
       <div className="gc-toolbar-left">
         <span className="gc-result-count" aria-live="polite">
           <b dir="ltr">{formatNumber(filtered.length)}</b>{' '}
-          {filtered.length === 1 ? 'نتيجة' : 'نتيجة'}
+          نتيجة
         </span>
       </div>
       <div className="gc-toolbar-right">
@@ -35,6 +35,7 @@ export const GameSortBar = forwardRef<HTMLButtonElement, {
           onClick={onOpenFilters}
           aria-label="فتح لوحة الفلاتر"
           aria-haspopup="dialog"
+          aria-expanded={filtersOpen}
         >
           <SlidersHorizontal aria-hidden="true" size={16} />
           الفلاتر

@@ -91,6 +91,16 @@ describe('LiveFinaleExperience', () => {
     expect(screen.getByText('خالد الدوسري').closest('li')).toHaveClass('is-current-player');
   });
 
+  it('copies only the personal result without private session details', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    render(<LiveFinaleExperience players={players} participantId="player-4" soundEnabled={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'عرض النتيجة الآن' }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'نسخ نتيجتي' })); });
+    expect(writeText).toHaveBeenCalledWith('حققت المركز 4 برصيد 8,100 نقطة في تحدّي!');
+    expect(screen.getByText('تم نسخ نتيجتك.')).toBeInTheDocument();
+  });
+
   it('shows the live round progress instead of a fixed example', () => {
     render(
       <LiveFinaleExperience

@@ -52,6 +52,22 @@ describe('MemoryFlash', () => {
     expect(screen.getByText(/المستوى 2/)).toBeInTheDocument();
   });
 
+  it('locks the symbols while preparing the next level', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    render(<MemoryFlash />);
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ التحدّي' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    const symbol = screen.getByRole('button', { name: 'برق' });
+    fireEvent.click(symbol);
+    expect(symbol).toBeDisabled();
+    expect(screen.getByText('استعد للمستوى التالي…')).toBeInTheDocument();
+    fireEvent.click(symbol);
+    fireEvent.click(screen.getByRole('button', { name: 'خروج' }));
+    expect(localStorage.getItem('tahaddi.memory-flash.high-score.medium')).toBe('50');
+  });
+
   it('reveals a growing sequence as one focused flash at a time', async () => {
     vi.useFakeTimers();
     vi.spyOn(Math, 'random').mockReturnValue(0);
@@ -145,8 +161,8 @@ describe('QuestionWord', () => {
     render(<InstantGameRoom mode="question-word" />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'كلمة وسؤال' })).toBeInTheDocument();
-    expect(screen.getByText('739421')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'شاشة المضيف' })).toHaveAttribute(
+    expect(screen.getByText(/يتناوب اللاعبون على الجهاز نفسه/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'شاشة العرض في تبويب جديد' })).toHaveAttribute(
       'href',
       '/games/question-word/host',
     );
@@ -184,6 +200,40 @@ describe('QuestionWord', () => {
     expect(screen.getByText('1,000 نقطة')).toBeInTheDocument();
     expect(screen.getByText('850 نقطة')).toBeInTheDocument();
   });
+  it('accepts typed letters and backspace, then submits the completed word', () => {
+    render(<InstantGameRoom mode="question-word" />);
+    for (const name of ['أحمد', 'سارة']) {
+      fireEvent.change(screen.getByLabelText('اسم اللاعب'), { target: { value: name } });
+      fireEvent.click(screen.getByRole('button', { name: 'دخول' }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ المنافسة' }));
+    const input = screen.getByLabelText('اكتب حرفًا أو اختره من الحروف');
+    fireEvent.change(input, { target: { value: 'ع' } });
+    expect(screen.getByRole('button', { name: 'اختر حرف ع' })).toBeDisabled();
+    fireEvent.keyDown(input, { key: 'Backspace' });
+    expect(screen.getByRole('button', { name: 'اختر حرف ع' })).toBeEnabled();
+    for (const letter of QUESTION_WORD_BANK[0].answer) {
+      fireEvent.change(input, { target: { value: letter } });
+    }
+    expect(screen.getByText(/أحمد · المركز 1/)).toBeInTheDocument();
+    expect(screen.getByText(/دور اللاعب سارة/)).toBeInTheDocument();
+  });
+
+  it('accepts an answer completed by a revealed letter', () => {
+    render(<InstantGameRoom mode="question-word" />);
+    for (const name of ['أحمد', 'سارة']) {
+      fireEvent.change(screen.getByLabelText('اسم اللاعب'), { target: { value: name } });
+      fireEvent.click(screen.getByRole('button', { name: 'دخول' }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'ابدأ المنافسة' }));
+    for (const letter of ['ع', 'ط', 'ا', 'ر']) {
+      fireEvent.click(screen.getByRole('button', { name: `اختر حرف ${letter}` }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'كشف حرف' }));
+    expect(screen.getByText(/أحمد · المركز 1/)).toBeInTheDocument();
+    expect(screen.getByText(/دور اللاعب سارة/)).toBeInTheDocument();
+  });
+
 });
 
 describe('ColorRush accessibility and practice', () => {

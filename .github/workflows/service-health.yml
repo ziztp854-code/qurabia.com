@@ -1,0 +1,28 @@
+name: Service availability
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-availability
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      TAHADDI_WEB_HEALTH_URL: https://qurabia.com/
+      TAHADDI_REALTIME_HEALTH_URL: https://tahaddi-realtime.onrender.com/realtime/health
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Check configured services
+        run: node scripts/check-service-health.mjs

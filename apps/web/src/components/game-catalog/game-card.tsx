@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, UserRound, Users, Wifi } from 'lucide-react';
+import { ArrowLeft, Clock3, Heart, LockKeyhole, UserRound, Users, Wifi } from 'lucide-react';
 import { GAME_PLAY_MODE_LABELS, getGamePlayMode } from './game-catalog-types';
 import type { CatalogGame } from '@/data/games';
 import { formatNumber } from '@/lib/utils';
@@ -14,12 +14,18 @@ export function GameCard({
   view,
   prefetch,
   earlyAccess = false,
+  favorite,
+  favoriteBusy = false,
+  onToggleFavorite,
 }: {
   game: CatalogGame;
   index: number;
   view: 'grid' | 'list';
   prefetch?: boolean;
   earlyAccess?: boolean;
+  favorite?: boolean;
+  favoriteBusy?: boolean;
+  onToggleFavorite?: () => void;
 }) {
   const isDisabled = !game.href || (game.kind === 'upcoming' && !earlyAccess);
   const playMode = getGamePlayMode(game);
@@ -85,12 +91,40 @@ export function GameCard({
                 ? 'لاعبان'
                 : game.minimumPlayers === game.maximumPlayers
                   ? `${formatNumber(game.minimumPlayers)} لاعبين`
-                  : `${formatNumber(game.minimumPlayers)}–${game.maximumPlayers >= 20 ? '∞' : formatNumber(game.maximumPlayers)} لاعب`}
+                  : `${formatNumber(game.minimumPlayers)}–${formatNumber(game.maximumPlayers)} لاعب`}
           </span>
+          {game.timedSessionSeconds !== undefined ? (
+            <span className="gc-meta-chip">
+              <Clock3 aria-hidden="true" size={12} />
+              {formatNumber(game.timedSessionSeconds)} ثانية للطور الموقّت
+            </span>
+          ) : null}
+          {game.id === 'question-word' ? (
+            <span className="gc-meta-chip">جهاز واحد بالتناوب</span>
+          ) : null}
+          {game.requiresAuth ? (
+            <span className="gc-meta-chip">
+              <LockKeyhole aria-hidden="true" size={12} />
+              يتطلب تسجيل الدخول
+            </span>
+          ) : null}
           <span className="gc-meta-chip">{game.categories.join('، ')}</span>
         </div>
       </div>
 
+      {onToggleFavorite && game.status !== 'soon' && (
+        <button
+          type="button"
+          className="gc-favorite"
+          aria-pressed={favorite}
+          aria-label={`${favorite ? 'إزالة' : 'إضافة'} ${game.title} ${favorite ? 'من' : 'إلى'} المفضلة`}
+          disabled={favoriteBusy}
+          onClick={onToggleFavorite}
+        >
+          <Heart aria-hidden="true" size={16} fill={favorite ? 'currentColor' : 'none'} />
+          {favorite ? 'في المفضلة' : 'أضف للمفضلة'}
+        </button>
+      )}
       <div className="gc-card-foot">
         <span className="gc-card-year">
           {isDisabled ? (

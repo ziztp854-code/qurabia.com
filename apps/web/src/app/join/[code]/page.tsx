@@ -23,9 +23,9 @@ export default async function JoinCodePage({ params }: { params: Promise<{ code:
         <div className="container join-page">
           <Card>
             <span className="eyebrow">دعوة مباشرة</span>
-            <h1>ادخل المسابقة كزائر</h1>
+            <h1>ادخل غرفة اللعب كزائر</h1>
             <p className="muted">
-              الرمز جاهز من رابط المضيف. اكتب اسمك وسيتم إدخالك إلى غرفة اللعب.
+              الرمز جاهز من رابط المضيف. اختر نوع الغرفة ثم أكمل خطوات الدخول.
             </p>
             <JoinQuizForm initialCode={code} inviteMode />
           </Card>

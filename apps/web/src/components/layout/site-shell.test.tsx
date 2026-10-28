@@ -1,17 +1,29 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Header, SiteLayout, DashboardLayout } from './site-shell';
+import { Header, SiteLayout, DashboardLayout, PageBackButton } from './site-shell';
 
 const signOut = vi.hoisted(() => vi.fn());
+const routerPush = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/questions',
+  useRouter: () => ({ push: routerPush }),
 }));
 vi.mock('next-auth/react', () => ({ signOut }));
 vi.mock('../theme-toggle', () => ({
   ThemeToggle: () => <button type="button">المظهر</button>,
 }));
+
+describe('PageBackButton', () => {
+  it('uses app navigation when there is no previous history entry', () => {
+    const length = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
+    render(<PageBackButton />);
+    fireEvent.click(screen.getByRole('button', { name: 'رجوع' }));
+    expect(routerPush).toHaveBeenCalledWith('/');
+    length.mockRestore();
+  });
+});
 
 describe('Header user menu', () => {
   beforeEach(() => signOut.mockReset());

@@ -60,18 +60,18 @@ function questionsHref(domain?: string, canonical?: string, view?: string) {
 
 export function QuestionBankStats({
   categories,
-  totalQuestionsCount = 0,
+  totalQuestionsCount,
   publishedCount = 0,
   draftCount = 0,
-  categoryCount = 0,
+  categoryCount,
 }: Pick<
   QuestionBankIndexProps,
   'categories' | 'totalQuestionsCount' | 'publishedCount' | 'draftCount' | 'categoryCount'
 >) {
   const domainAggregations: MasterDomainAggregation[] = aggregateCategoriesIntoDomains(categories);
   const calculatedTotal = domainAggregations.reduce((sum, d) => sum + d.totalQuestions, 0);
-  const displayTotal = totalQuestionsCount > 0 ? totalQuestionsCount : calculatedTotal;
-  const displayCategories = categoryCount > 0 ? categoryCount : categories.length;
+  const displayTotal = totalQuestionsCount ?? calculatedTotal;
+  const displayCategories = categoryCount ?? categories.length;
   const activeDomains = domainAggregations.filter((item) => item.totalQuestions > 0).length;
   const publishedFill = fillPercent(publishedCount, displayTotal);
   const draftFill = fillPercent(draftCount, displayTotal);

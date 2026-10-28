@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, X as CloseIcon } from 'lucide-react';
+import { lockOverlayScroll } from '@/lib/overlay-scroll-lock';
 import type { UseGameCatalogReturn } from './use-game-catalog';
 import { GAME_PLAY_MODE_LABELS, type DifficultyValue, type GamePlayMode, type PlatformValue } from './game-catalog-types';
 
@@ -178,15 +179,50 @@ export function GameFilters({
   const firstFocusRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    const target = firstFocusRef.current ?? panelRef.current?.querySelector<HTMLElement>('button, [role="switch"], input[type="range"]');
-    target?.focus();
+    const panel = panelRef.current;
+    if (!open || !panel) return;
+    const isModal = getComputedStyle(panel).position === 'fixed';
+    if (!isModal) {
+      panel.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled])')?.focus();
+      return;
+    }
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    const releaseScroll = lockOverlayScroll();
+    const controls = () => [...panel.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]')]
+      .filter((element) => !element.closest('[hidden], [inert], [aria-hidden="true"]') && getComputedStyle(element).visibility !== 'hidden' && getComputedStyle(element).display !== 'none');
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const items = controls();
+      const first = items[0];
+      const last = items.at(-1);
+      if (!first) { event.preventDefault(); panel.focus(); return; }
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    const onFocus = (event: FocusEvent) => {
+      if (!panel.contains(event.target as Node)) (controls()[0] ?? panel).focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('focusin', onFocus);
+    (controls()[0] ?? panel).focus();
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('focusin', onFocus);
+      panel.setAttribute('role', 'region');
+      panel.removeAttribute('aria-modal');
+      releaseScroll();
+    };
   }, [open]);
 
   return (
     <div
       ref={panelRef}
-      role="dialog"
+      role="region"
+      tabIndex={-1}
       aria-labelledby="gc-filter-title"
       className="gc-filters-panel"
       data-open={open}
