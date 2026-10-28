@@ -32,8 +32,8 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     imageAlt: 'زر منافسة أحمر ثلاثي الأبعاد على قاعدة ذهبية تحت إشارة الاستعداد',
   },
   kingdoms: {
-    image: '/game-art/catalog-v2/kingdoms.svg',
-    imageAlt: 'قلعة ذهبية أصلية على خريطة أراض تصل بين قرى تحدي الممالك',
+    image: '/game-art/catalog-v2/kingdoms.webp',
+    imageAlt: 'مدينة محصّنة بقلعة وأسوار تحيط بها واحة في تحدي الممالك',
   },
   'quote-master': {
     image: '/game-art/catalog-v2/quote-master.webp',
