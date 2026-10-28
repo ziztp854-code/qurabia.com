@@ -231,3 +231,87 @@
   border-color: rgb(212 175 55 / 0.45);
   background: rgb(212 175 55 / 0.1);
 }
+
+/* Explain how sorting interacts with the play-mode sections. */
+.gc-sort-hint {
+  margin: 0.75rem 0 0.35rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+/* Let each game's artwork provide its own light and detail. */
+.gc-card-visual[data-artwork='true']::before,
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-visual[data-artwork='true']::before {
+  background: linear-gradient(to bottom, transparent 72%, rgb(0 0 0 / 0.18));
+  opacity: 1;
+  animation: none;
+}
+
+.gc-card-visual[data-artwork='true']::after,
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card-visual[data-artwork='true']::after {
+  content: none;
+  animation: none;
+}
+
+.gc-player-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-block-start: 0.8rem;
+}
+
+.gc-player-picker > span {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+  }
+
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-toolbar-right {
+    min-inline-size: 0;
+    width: 100%;
+  }
+}
+
+.gc-favorite-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-block-start: 0.75rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.gc-favorite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gc-line);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.gc-favorite[aria-pressed='true'] { color: var(--gold); }
+.gc-favorite:disabled { opacity: 0.6; cursor: wait; }
+.gc-favorite:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.gc-duration-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.8rem;
+  margin-block-start: 0.8rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}

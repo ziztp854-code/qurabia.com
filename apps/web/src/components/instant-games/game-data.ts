@@ -1,3 +1,5 @@
+import { COLOR_RUSH_TIMED_SECONDS } from '@tahaddi/domain';
+
 export type InstantGameMode =
   | 'memory-flash'
   | 'question-word'
@@ -35,7 +37,7 @@ export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
     mode: 'color-rush',
     title: 'خدعة الألوان',
     description: 'اقرأ لون الكلمة لا معناها، واضغط الإجابة الصحيحة بأقصى سرعة.',
-    roundSeconds: 45,
+    roundSeconds: COLOR_RUSH_TIMED_SECONDS,
     minimumPlayers: 1,
     contentLabel: 'جولات تلقائية',
   },

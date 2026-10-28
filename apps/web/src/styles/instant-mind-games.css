@@ -2469,3 +2469,160 @@
     transition: none;
   }
 }
+
+.instant-game[data-game='question-word'] .question-word__local-note {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-inline-start: 3px solid var(--mind-cyan);
+  border-radius: 0.7rem;
+  background: var(--surface-glass);
+  color: var(--mind-ivory);
+  text-align: start;
+  line-height: 1.7;
+}
+
+.question-word-host__controls p {
+  margin: 0;
+  color: var(--mind-muted, var(--text-soft));
+  line-height: 1.6;
+}
+
+.instant-game[data-game='question-word'] .question-word__typing {
+  grid-column: 1;
+  display: grid;
+  gap: 0.4rem;
+  color: var(--mind-ivory);
+  font-weight: 700;
+}
+
+.instant-game[data-game='question-word'] .question-word__typing input {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--mind-cyan);
+  border-radius: 0.8rem;
+  background: var(--surface-glass);
+  color: var(--mind-ivory);
+  font: inherit;
+}
+
+.instant-game[data-game='question-word'] .question-word__typing small {
+  color: var(--mind-muted);
+  font-weight: 500;
+}
+
+/* Question Word: keep the current question and answer controls in one clear reading path. */
+.instant-game[data-game='question-word'] .question-word-board {
+  gap: 1rem 1.4rem;
+  align-items: start;
+}
+
+.instant-game[data-game='question-word'] .question-word__hud {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.instant-game[data-game='question-word'] .question-word__hud span {
+  min-width: 0;
+  padding: 0.6rem;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.instant-game[data-game='question-word'] .question-word__stage {
+  min-height: 0;
+  gap: 0.85rem;
+  align-content: start;
+  background: radial-gradient(circle at 100% 0, color-mix(in srgb, var(--mind-cyan) 10%, transparent), transparent 55%), var(--mind-panel);
+}
+
+.instant-game[data-game='question-word'] .question-word__stage h2 {
+  max-width: 30ch;
+  font-size: clamp(1.5rem, 2.6vw, 2.5rem);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.instant-game[data-game='question-word'] .question-word__active-player {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  width: 100%;
+  min-height: 3.5rem;
+}
+
+.instant-game[data-game='question-word'] .question-word__slots {
+  min-height: 3rem;
+}
+
+.instant-game[data-game='question-word'] .question-word__slots span {
+  inline-size: clamp(2.75rem, 5vw, 3.7rem);
+}
+
+.instant-game[data-game='question-word'] .question-word__typing {
+  justify-items: stretch;
+  text-align: start;
+}
+
+.instant-game[data-game='question-word'] .question-word__typing input {
+  box-sizing: border-box;
+  max-width: none;
+}
+
+.instant-game[data-game='question-word'] .question-word__typing input:focus-visible,
+.instant-game[data-game='question-word'] .question-word__letters button:focus-visible {
+  outline: 2px solid var(--mind-cyan);
+  outline-offset: 3px;
+}
+
+.instant-game[data-game='question-word'] .question-word__leaderboard {
+  grid-row: 1 / span 5;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.instant-game[data-game='question-word'] .question-word__actions button {
+  min-height: 2.75rem;
+}
+
+@media (max-width: 48rem) {
+  .instant-game[data-game='question-word'] .question-word__rules {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .instant-game[data-game='question-word'] .question-word__rules span {
+    min-width: 0;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .instant-game[data-game='question-word'] .question-word__hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .instant-game[data-game='question-word'] .question-word__hud span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .instant-game[data-game='question-word'] .question-word__stage {
+    min-height: 0;
+    padding: 1rem;
+  }
+
+  .instant-game[data-game='question-word'] .question-word__active-player {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .instant-game[data-game='question-word'] .question-word__active-player span {
+    display: none;
+  }
+
+  .instant-game[data-game='question-word'] .question-word__leaderboard {
+    grid-row: auto;
+  }
+}
+
+.instant-game[data-game='question-word'] .question-word-board {
+  justify-items: stretch;
+}

@@ -43,7 +43,7 @@ export type JoinLiveSessionResult =
       participantId: string;
       roomCode: string;
     }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; reason?: 'not_found' | 'name_taken' };
 
 function normalizePlayerName(value: string) {
   return value.trim().replace(/\s+/g, ' ').slice(0, MAX_PLAYER_NAME_LENGTH);
@@ -315,7 +315,7 @@ export async function joinLiveSessionByCode(
     });
 
     if (mafiaJoin.status === 'closed') {
-      return { status: 'error', message: 'لم نجد غرفة مفتوحة بهذا الرمز.' };
+      return { status: 'error', message: 'لم نجد غرفة مفتوحة بهذا الرمز.', reason: 'not_found' };
     }
     if (mafiaJoin.status === 'full') {
       return { status: 'error', message: 'اكتمل عدد اللاعبين المسموح به في هذه الغرفة.' };
@@ -332,7 +332,7 @@ export async function joinLiveSessionByCode(
     };
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      return { status: 'error', message: 'هذا الاسم مستخدم في الغرفة. اختر اسمًا آخر.' };
+      return { status: 'error', message: 'هذا الاسم مستخدم في الغرفة. اختر اسمًا آخر.', reason: 'name_taken' };
     }
     return { status: 'error', message: 'تعذّر الانضمام الآن. حاول مرة أخرى.' };
   }

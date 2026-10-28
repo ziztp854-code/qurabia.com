@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   useCallback,
@@ -336,14 +336,15 @@ function HomeSidebar() {
 }
 
 export function PageBackButton({ className }: { className?: string }) {
+  const router = useRouter();
   const handleBack = useCallback(() => {
     if (typeof window === 'undefined') return;
     if (window.history.length > 1) {
       window.history.back();
       return;
     }
-    window.location.assign('/');
-  }, []);
+    router.push('/');
+  }, [router]);
 
   return (
     <button type="button" className={cn('page-back-button', className)} onClick={handleBack}>

@@ -6,18 +6,14 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpenText,
-  Check,
-  Clipboard,
   Feather,
   Flame,
   Heart,
   Play,
   RotateCcw,
   Trophy,
-  Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import QRCode from 'react-qr-code';
 import { Button, ButtonLink } from '@/components/ui';
 import { formatNumber } from '@/lib/utils';
 import {
@@ -34,20 +30,6 @@ import styles from './quote-master-room.module.css';
 
 type Phase = 'lobby' | 'question' | 'reveal' | 'finished';
 const optionLabels = ['A', 'B', 'C', 'D'] as const;
-
-const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-function makeRoomCode(): string {
-  let code = '';
-  const buffer = new Uint32Array(6);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(buffer);
-  }
-  for (let i = 0; i < 6; i += 1) {
-    const value = buffer[i] || Math.floor(Math.random() * ROOM_ALPHABET.length);
-    code += ROOM_ALPHABET[value % ROOM_ALPHABET.length];
-  }
-  return code;
-}
 
 /** بطاقات شخصيات الغلاف — تظهر في ردهة المضيف قبل البدء. */
 const COVER_ROLES = [
@@ -69,20 +51,6 @@ export function QuoteMasterRoom() {
   const [choice, setChoice] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>('lobby');
   const [seconds, setSeconds] = useState(QUOTE_MASTER_SECONDS);
-  const [copied, setCopied] = useState(false);
-  const [roomCode, setRoomCode] = useState('');
-
-  // يُولّد رمز الغرفة على العميل فقط (تعيين الحالة أثناء التصيير لا داخل effect
-  // حتى لا يحدث اختلاف ترطيب مع الخادم ولا يُخالف قاعدة set-state-in-effect).
-  if (roomCode === '' && typeof window !== 'undefined') {
-    setRoomCode(makeRoomCode());
-  }
-
-  const shareUrl = useMemo(() => {
-    if (!roomCode || typeof window === 'undefined') return '';
-    return `${window.location.origin}/games/quote-master/join/${roomCode}`;
-  }, [roomCode]);
-
   const current = run[index];
   const total = run.length || 12;
   const multiplier = comboMultiplier(streak);
@@ -176,17 +144,6 @@ export function QuoteMasterRoom() {
     setSeconds(QUOTE_MASTER_SECONDS);
   }
 
-  async function copyInvite() {
-    if (!shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2400);
-    } catch {
-      /* المتصفح رفض النسخ */
-    }
-  }
-
   const timerRatio = phase === 'question' ? seconds / QUOTE_MASTER_SECONDS : phase === 'reveal' ? 0 : 1;
   const ringLength = 2 * Math.PI * 52;
 
@@ -222,42 +179,24 @@ export function QuoteMasterRoom() {
                   ))}
                 </div>
                 <ul className={styles.rules}>
-                  <li>يعرض المضيف القول على الشاشة الكبيرة، والمتسابقون يجيبون من هواتفهم.</li>
+                  <li>اقرأ القول واختر صاحبه من بين أربعة أسماء على الجهاز نفسه.</li>
                   <li>إجابات صحيحة متتالية ترفع مضاعف النقاط حتى ×5، والسرعة تمنح مكافأة.</li>
-                  <li>اثنا عشر قولاً من عمالقة الأدب العربي، وأعلى نقاط يتصدّر.</li>
+                  <li>اثنا عشر قولاً من عمالقة الأدب العربي، واجمع أعلى رصيد تستطيع.</li>
                 </ul>
-                <Button variant="gold" size="lg" onClick={startGame} disabled={!roomCode} fullWidth>
+                <Button variant="gold" size="lg" onClick={startGame} fullWidth>
                   <Play aria-hidden="true" />
                   ابدأ اللعبة
                 </Button>
               </div>
 
               <div className={styles.invitePanel}>
-                <span className={styles.inviteEyebrow}>
-                  <Users size={15} aria-hidden="true" /> دعوة المتسابقين
-                </span>
-                <div className={styles.qrFrame}>
-                  {shareUrl ? (
-                    <QRCode
-                      value={shareUrl}
-                      size={168}
-                      bgColor="var(--qr-paper)"
-                      fgColor="var(--qr-ink)"
-                      aria-label={`رمز باركود للانضمام إلى الغرفة ${roomCode}`}
-                    />
-                  ) : (
-                    <div className={styles.qrLoading} aria-hidden="true" />
-                  )}
-                </div>
-                <p className={styles.inviteHint}>امسح الباركود بكاميرا الهاتف للانضمام</p>
+                <span className={styles.inviteEyebrow}>تحدٍّ فردي</span>
+                <p className={styles.inviteHint}>العب على هذا الجهاز، واختر إجابتك قبل انتهاء الوقت.</p>
                 <div className={styles.roomCodeBox}>
-                  <span>رمز الغرفة</span>
-                  <strong dir="ltr">{roomCode || '••••••'}</strong>
+                  <span>مدة السؤال</span>
+                  <strong>{formatNumber(QUOTE_MASTER_SECONDS)} ثانية</strong>
                 </div>
-                <Button variant="outline" size="sm" onClick={copyInvite} disabled={!shareUrl} fullWidth>
-                  {copied ? <Check aria-hidden="true" /> : <Clipboard aria-hidden="true" />}
-                  {copied ? 'نُسخ رابط الدعوة' : 'انسخ رابط الدعوة'}
-                </Button>
+                <p className={styles.inviteHint}>لا تتوفر دعوات اللاعبين أو المزامنة بين الأجهزة حاليًا.</p>
               </div>
             </div>
           </div>

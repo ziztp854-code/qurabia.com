@@ -77,6 +77,74 @@ describe('JoinQuizForm', () => {
     );
   });
 
+  it('يربط خطأ الاسم بحقل الاسم', async () => {
+    const user = userEvent.setup();
+    render(<JoinQuizForm initialCode="A7K9PQ" />);
+    await user.click(screen.getByRole('button', { name: 'انضم الآن' }));
+    expect(screen.getByLabelText('اسم اللاعب')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('رمز الغرفة')).toHaveAttribute('aria-invalid', 'false');
+  });
+
+  it('يعرض فشل الاتصال بدل توجيه اللاعب إلى الشطرنج', async () => {
+    const user = userEvent.setup();
+    mockedJoin.mockRejectedValue(new Error('offline'));
+    render(<JoinQuizForm initialCode="234567" />);
+    await user.type(screen.getByLabelText('اسم اللاعب'), 'نورة');
+    await user.click(screen.getByRole('button', { name: 'انضم الآن' }));
+    expect(await screen.findByText(/تعذّر الاتصال بخدمة الانضمام/)).toBeInTheDocument();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('يحاول الشطرنج عند عدم وجود غرفة مسابقة لرمز رقمي مشترك', async () => {
+    const user = userEvent.setup();
+    mockedJoin.mockResolvedValue({ status: 'error', message: 'لم نجد غرفة مفتوحة', reason: 'not_found' });
+    render(<JoinQuizForm initialCode="234567" />);
+    await user.type(screen.getByLabelText('اسم اللاعب'), 'نورة');
+    await user.click(screen.getByRole('button', { name: 'انضم الآن' }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/games/chess/?join=234567'));
+  });
+
+  it('لا يحوّل الغرفة المكتملة إلى لعبة شطرنج', async () => {
+    const user = userEvent.setup();
+    mockedJoin.mockResolvedValue({ status: 'error', message: 'اكتمل عدد اللاعبين' });
+    render(<JoinQuizForm initialCode="234567" />);
+    await user.type(screen.getByLabelText('اسم اللاعب'), 'نورة');
+    await user.click(screen.getByRole('button', { name: 'انضم الآن' }));
+    expect(await screen.findByText('اكتمل عدد اللاعبين')).toBeInTheDocument();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['chess', '123456', '/games/chess?join=123456'],
+    ['baloot', '123456', '/games/baloot/join/123456'],
+    ['parallel', '123456', '/games/parallel-world?join=123456'],
+    ['reverse', '123456', '/games/reverse-time?join=123456'],
+    ['infiltrator', '123456', '/games/infiltrator?join=123456'],
+    ['fastest', '123456', '/games/fastest-button/join/123456'],
+    ['ladder', 'AB12CD34', '/games/ladder/join/AB12CD34'],
+    ['elimination', 'A7K9PQ', '/games/elimination-live/join/A7K9PQ'],
+    ['scrambled', 'A7K9PQ', '/games/scrambled-words-live/join/A7K9PQ'],
+  ])('يوجه رمز %s إلى صفحة اللعبة الصحيحة', async (type, code, path) => {
+    const user = userEvent.setup();
+    render(<JoinQuizForm />);
+    await user.selectOptions(screen.getByLabelText('نوع الغرفة'), type);
+    expect(screen.queryByLabelText('اسم اللاعب')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('رمز الغرفة'), code);
+    await user.click(screen.getByRole('button', { name: 'انضم الآن' }));
+    expect(router.push).toHaveBeenCalledWith(path);
+    expect(mockedJoin).not.toHaveBeenCalled();
+  });
+
+  it('يرفض صيغة رمز لا تطابق اللعبة المختارة', async () => {
+    const user = userEvent.setup();
+    render(<JoinQuizForm />);
+    await user.selectOptions(screen.getByLabelText('نوع الغرفة'), 'ladder');
+    await user.type(screen.getByLabelText('رمز الغرفة'), '123456');
+    await user.click(screen.getByRole('button', { name: 'انضم الآن' }));
+    expect(screen.getByText(/تحقق من رمز السلم/)).toBeInTheDocument();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
   it('يوجه رمز دعوة الشطرنج الرقمي إلى غرفة الشطرنج', async () => {
     const user = userEvent.setup();
     render(<JoinQuizForm initialCode="889188" inviteMode />);

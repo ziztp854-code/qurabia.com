@@ -2223,3 +2223,14 @@
     block-size: 44px;
   }
 }
+
+/* Keep join fields identifiable after the visitor starts typing. */
+.join-page .join-field .field-label {
+  position: static;
+  inline-size: auto;
+  block-size: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}

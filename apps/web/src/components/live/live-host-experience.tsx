@@ -117,6 +117,9 @@ export function LiveHostExperience({
   const showInsights = insightsOpen && phase !== 'FINISHED' && phase !== 'LEADERBOARD';
   const questionId = snapshot?.question?.questionId;
   const nextQuestion = game.nextQuestion;
+  const confirmFinish = () => {
+    if (window.confirm('هل تريد إنهاء الجولة وعرض النتائج الآن؟')) game.finishGame();
+  };
   const participantCount = snapshot?.participantCount ?? 0;
   const answeredCount = game.stats?.answeredCount ?? 0;
   const activeCount = game.stats?.participantCount ?? participantCount;
@@ -220,7 +223,7 @@ export function LiveHostExperience({
         questionToggleRef={questionToggleRef}
         questionNavigatorRef={questionNavigatorRef}
         onStart={game.startQuestion}
-        onFinish={game.finishGame}
+        onFinish={confirmFinish}
         onToggleSound={() => setSoundEnabled((value) => !value)}
         onToggleSettings={() => setSettingsOpen((value) => !value)}
         onToggleAutoAdvance={() => setAutoAdvance((value) => !value)}
@@ -591,7 +594,7 @@ export function LiveHostExperience({
                 type="button"
                 variant="destructive"
                 className="royal-host-tool-danger"
-                onClick={game.finishGame}
+                onClick={confirmFinish}
                 disabled={commandsDisabled}
               >
                 <Square />

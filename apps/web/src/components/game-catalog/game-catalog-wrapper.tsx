@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles, Users, Zap, Castle } from 'lucide-react';
 import { useGameCatalog } from './use-game-catalog';
@@ -19,6 +19,7 @@ type GameCatalogWrapperProps = {
   initialGames: readonly CatalogGame[];
   embedded?: boolean;
   earlyAccess?: boolean;
+  isSignedIn?: boolean;
 };
 
 function GameCatalogShell({
@@ -26,8 +27,57 @@ function GameCatalogShell({
   initialGames,
   embedded = false,
   earlyAccess = false,
+  isSignedIn = false,
 }: GameCatalogWrapperProps) {
-  const catalog = useGameCatalog(initialGames);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [shortOnly, setShortOnly] = useState(false);
+  const [favoritesReady, setFavoritesReady] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
+  const [favoriteMessage, setFavoriteMessage] = useState('');
+  const catalogGames = useMemo(
+    () => initialGames.filter((game) =>
+      (!favoritesOnly || favoriteIds.includes(game.id)) &&
+      (!shortOnly || (game.timedSessionSeconds !== undefined && game.timedSessionSeconds <= 60)),
+    ),
+    [favoriteIds, favoritesOnly, initialGames, shortOnly],
+  );
+  const catalog = useGameCatalog(catalogGames);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const controller = new AbortController();
+    fetch('/api/game-favorites', { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('favorites unavailable');
+        const data: unknown = await response.json();
+        if (!data || typeof data !== 'object' || !('gameIds' in data) || !Array.isArray(data.gameIds)) throw new Error('invalid favorites');
+        setFavoriteIds(data.gameIds.filter((id): id is string => typeof id === 'string'));
+        setFavoritesReady(true);
+      })
+      .catch(() => { if (!controller.signal.aborted) setFavoriteMessage('تعذّر تحميل المفضلة. أعد تحميل الصفحة للمحاولة مجددًا.'); });
+    return () => controller.abort();
+  }, [isSignedIn]);
+
+  async function toggleFavorite(gameId: string) {
+    if (favoriteBusy) return;
+    const favorite = !favoriteIds.includes(gameId);
+    setFavoriteBusy(gameId);
+    setFavoriteMessage('');
+    try {
+      const response = await fetch('/api/game-favorites', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId, favorite }),
+      });
+      if (!response.ok) throw new Error('favorite update failed');
+      setFavoriteIds((ids) => favorite ? [...ids, gameId] : ids.filter((id) => id !== gameId));
+      setFavoriteMessage(favorite ? 'أُضيفت اللعبة إلى المفضلة.' : 'أُزيلت اللعبة من المفضلة.');
+    } catch {
+      setFavoriteMessage('تعذّر تحديث المفضلة. حاول مجددًا.');
+    } finally {
+      setFavoriteBusy(null);
+    }
+  }
   const [filtersOpen, setFiltersOpen] = useState(false);
   const isGrid = catalog.filters.view === 'grid';
   const filtersTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -58,7 +108,7 @@ function GameCatalogShell({
           <div>
             <span className="gc-hero-kicker">
               <Sparkles aria-hidden="true" size={16} />
-              {formatNumber(catalog.allGames.filter((game) => game.status !== 'soon').length)} لعبة
+              {formatNumber(initialGames.filter((game) => game.status !== 'soon').length)} لعبة
               متاحة الآن
             </span>
             <HeroHeading className="gc-hero-title">
@@ -143,10 +193,48 @@ function GameCatalogShell({
             </button>
           ))}
         </div>
+        {isSignedIn && (
+          <div className="gc-favorite-filter">
+            <button type="button" className="gc-chip" aria-pressed={favoritesOnly} data-active={favoritesOnly} disabled={!favoritesReady} onClick={() => setFavoritesOnly((value) => !value)}>
+              ألعابي المفضلة
+            </button>
+            {favoriteMessage && <span role="status">{favoriteMessage}</span>}
+          </div>
+        )}
+        <div className="gc-player-picker" role="group" aria-label="تصفح حسب عدد اللاعبين">
+          <span>عدد اللاعبين</span>
+          <div className="gc-chips">
+            {[
+              { label: 'الكل', min: 0, max: 20 },
+              { label: 'لاعب واحد', min: 1, max: 1 },
+              { label: 'لاعبان', min: 2, max: 2 },
+              { label: '٤ لاعبين', min: 4, max: 4 },
+            ].map(({ label, min, max }) => (
+              <button
+                key={label}
+                type="button"
+                className="gc-chip"
+                aria-pressed={catalog.filters.playersMin === min && catalog.filters.playersMax === max}
+                data-active={catalog.filters.playersMin === min && catalog.filters.playersMax === max}
+                onClick={() => catalog.setFilterPatch({ playersMin: min, playersMax: max })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="gc-duration-filter">
+          <button type="button" className="gc-chip" aria-pressed={shortOnly} data-active={shortOnly} onClick={() => setShortOnly((value) => !value)}>
+            جلسة موقّتة حتى دقيقة
+          </button>
+          {shortOnly && <span>تظهر الألعاب التي عُرفت مدة جلستها فقط؛ لا يشمل التدريب.</span>}
+        </div>
+        <p className="gc-sort-hint">تُرتّب النتائج داخل كل قسم حسب اختيارك.</p>
         <GameSortBar
           ref={filtersTriggerRef}
           catalog={catalog}
           onOpenFilters={() => setFiltersOpen(true)}
+          filtersOpen={filtersOpen}
         />
         <div className="gc-main">
           <GameFilters catalog={catalog} open={filtersOpen} onClose={closeFilters} />
@@ -154,8 +242,8 @@ function GameCatalogShell({
             {catalog.filtered.length === 0 ? (
               <div className="gc-empty">
                 <b>لا توجد ألعاب مطابقة</b>
-                <p>جرّب اسمًا آخر، أو امسح البحث والفلاتر لاستعراض جميع الألعاب.</p>
-                <button type="button" className="gc-chip" onClick={catalog.resetFilters}>
+                <p>جرّب تغيير الاختيارات أو مسح البحث والفلاتر لاستعراض جميع الألعاب.</p>
+                <button type="button" className="gc-chip" onClick={() => { catalog.resetFilters(); setFavoritesOnly(false); setShortOnly(false); }}>
                   مسح البحث والفلاتر
                 </button>
               </div>
@@ -196,6 +284,9 @@ function GameCatalogShell({
                                 index={globalIndex >= 0 ? globalIndex : i}
                                 view={catalog.filters.view}
                                 earlyAccess={earlyAccess}
+                                favorite={favoriteIds.includes(game.id)}
+                                favoriteBusy={favoriteBusy !== null}
+                                onToggleFavorite={isSignedIn && favoritesReady ? () => toggleFavorite(game.id) : undefined}
                               />
                             </div>
                           );
@@ -235,15 +326,21 @@ function GameCardWrap({
   index,
   view,
   earlyAccess,
+  favorite,
+  favoriteBusy,
+  onToggleFavorite,
 }: {
   game: Parameters<typeof GameCard>[0]['game'];
   index: number;
   view: Parameters<typeof GameCard>[0]['view'];
   earlyAccess?: boolean;
+  favorite?: boolean;
+  favoriteBusy?: boolean;
+  onToggleFavorite?: () => void;
 }) {
   return (
     <LinkWrap>
-      <GameCard game={game} index={index} view={view} prefetch={false} earlyAccess={earlyAccess} />
+      <GameCard game={game} index={index} view={view} prefetch={false} earlyAccess={earlyAccess} favorite={favorite} favoriteBusy={favoriteBusy} onToggleFavorite={onToggleFavorite} />
     </LinkWrap>
   );
 }

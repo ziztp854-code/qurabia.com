@@ -143,7 +143,7 @@ test('anchors, route changes and browser back do not multiply the runtime', asyn
     .evaluate((element: HTMLAnchorElement) => element.click());
   await expect(page).toHaveURL(/\/join\/?$/);
   await expect(
-    page.getByRole('heading', { name: 'انضم كزائر إلى المسابقة', level: 1 }),
+    page.getByRole('heading', { name: 'انضم إلى غرفة لعب', level: 1 }),
   ).toBeVisible();
   await expect(runtime(page)).not.toHaveAttribute('data-scroll-runtime', 'active');
   expect((await runtime(page).getAttribute('class')) ?? '').not.toContain('lenis');

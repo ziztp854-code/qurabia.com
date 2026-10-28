@@ -152,6 +152,7 @@ model User {
   accounts           Account[]
   sessions           Session[]
   profile            Profile?
+  gameFavorites      GameFavorite[]
   badges             UserBadge[]
   cosmetics          UserCosmetic[]
   communityVoiceRooms CommunityVoiceRoom[]
@@ -178,6 +179,15 @@ model User {
   @@index([role])
   @@index([status])
   @@index([createdAt])
+}
+
+model GameFavorite {
+  userId    String
+  gameId    String   @db.VarChar(80)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, gameId])
 }
 
 model AuditLog {

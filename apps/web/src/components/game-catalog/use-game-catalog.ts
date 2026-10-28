@@ -191,11 +191,13 @@ export function useGameCatalog(initialGames: readonly CatalogGame[]) {
           .replace(/^التصنيف:\s*/, '')
           .trim() as GameFilterState['categories'][number];
         setFilterPatch((prev) =>
-          prev.categories.includes(cat) ? {} : { categories: [...prev.categories, cat] },
+          prev.categories.includes(cat)
+            ? { query: '' }
+            : { query: '', categories: [...prev.categories, cat] },
         );
       } else if (s.type === 'tag') {
         const tag = s.label.replace(/^الوسم:\s*/, '').trim();
-        setFilterPatch((prev) => (prev.tags.includes(tag) ? {} : { tags: [...prev.tags, tag] }));
+        setFilterPatch((prev) => (prev.tags.includes(tag) ? { query: '' } : { query: '', tags: [...prev.tags, tag] }));
       }
       setSuggestionsOpen(false);
       setActiveSuggestionIndex(-1);

@@ -1,6 +1,8 @@
 import type { SpecialGameMode, SpecialGameMeta } from './special-games';
 import { SPECIAL_GAME_META, SPECIAL_GAME_ORDER, UPCOMING_SPECIAL_GAMES } from './special-games';
 
+export const COLOR_RUSH_TIMED_SECONDS = 45;
+
 export type InstantGameMode =
   | 'quote-master'
   | 'memory-flash'
@@ -54,7 +56,7 @@ export const INSTANT_GAME_META: Record<InstantGameMode, InstantGameMeta> = {
     mode: 'color-rush',
     title: 'خدعة الألوان',
     description: 'اقرأ لون الكلمة لا معناها، واضغط الإجابة الصحيحة بأقصى سرعة.',
-    roundSeconds: 45,
+    roundSeconds: COLOR_RUSH_TIMED_SECONDS,
     minimumPlayers: 1,
     contentLabel: 'جولات تلقائية',
   },
@@ -318,23 +320,23 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
   {
     id: 'quote-master',
     mode: 'quote-master',
-    kind: 'room',
+    kind: 'instant',
     title: 'من القائل؟',
     shortTitle: 'من القائل؟',
     description:
-      'شاشة عرض فاخرة يقودها المضيف: بيت شعر أو حكمة خالدة وأربعة أسماء من عمالقة الأدب العربي. يدخل المتسابقون بمسح الباركود، وتظهر أسماؤهم في ردهة المضيف، ثم يتنافسون على أعلى نقاط.',
-    minimumPlayers: 2,
-    maximumPlayers: 40,
+      'بيت شعر أو حكمة خالدة وأربعة أسماء من عمالقة الأدب العربي. اختر صاحب القول واجمع النقاط على جهازك.',
+    minimumPlayers: 1,
+    maximumPlayers: 1,
     roundSeconds: 20,
     contentLabel: '١٢ قولاً',
     year: 2026,
     difficulty: 4,
     platforms: ['web', 'pwa', 'mobile'],
     categories: ['ثقافة', 'ذكاء', 'اجتماعي'],
-    tags: ['شعر', 'حكمة', 'أدب', 'اقتباس', 'باركود', 'مضيف'],
+    tags: ['شعر', 'حكمة', 'أدب', 'اقتباس', 'فردي'],
     accent: '#e8b64c',
     href: '/games/quote-master',
-    requiresRealtime: true,
+    requiresRealtime: false,
     requiresAuth: false,
   },
   {
@@ -660,7 +662,7 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
     shortTitle: 'كلمة وسؤال',
     description: 'سؤال واحد للجميع، كلمة واحدة، وحروف مبعثرة تضغطها بالترتيب قبل انتهاء الدقيقة.',
     minimumPlayers: 2,
-    maximumPlayers: 20,
+    maximumPlayers: 12,
     roundSeconds: 60,
     contentLabel: '١٠ أسئلة',
     year: 2026,
@@ -682,7 +684,7 @@ export const INJECTED_GAME_CATALOG: EnhancedGameMeta[] = [
     description: 'اقرأ لون الكلمة لا معناها، واضغط الإجابة الصحيحة بأقصى سرعة.',
     minimumPlayers: 1,
     maximumPlayers: 1,
-    roundSeconds: 45,
+    roundSeconds: COLOR_RUSH_TIMED_SECONDS,
     contentLabel: 'جولات تلقائية',
     year: 2025,
     difficulty: 3,

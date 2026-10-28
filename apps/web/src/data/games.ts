@@ -1,4 +1,4 @@
-import { INJECTED_GAME_CATALOG, type EnhancedGameMeta } from '@tahaddi/domain';
+import { COLOR_RUSH_TIMED_SECONDS, INJECTED_GAME_CATALOG, type EnhancedGameMeta } from '@tahaddi/domain';
 
 export type PublicGameStatus = 'live' | 'soon';
 
@@ -32,8 +32,8 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     imageAlt: 'زر منافسة أحمر ثلاثي الأبعاد على قاعدة ذهبية تحت إشارة الاستعداد',
   },
   kingdoms: {
-    image: '/game-art/catalog-v2/kingdoms.svg',
-    imageAlt: 'قلعة ذهبية أصلية على خريطة أراض تصل بين قرى تحدي الممالك',
+    image: '/game-art/catalog-v2/kingdoms.webp',
+    imageAlt: 'مدينة محصّنة بقلعة وأسوار تحيط بها واحة في تحدي الممالك',
   },
   'quote-master': {
     image: '/game-art/catalog-v2/quote-master.webp',
@@ -143,6 +143,7 @@ export type CatalogGame = Omit<EnhancedGameMeta, 'href'> & {
   status: PublicGameStatus;
   image: string;
   imageAlt: string;
+  timedSessionSeconds?: number;
 };
 
 export function toCatalogGames(games: readonly PublicGame[] = publicGames): CatalogGame[] {
@@ -160,12 +161,15 @@ export function toCatalogGames(games: readonly PublicGame[] = publicGames): Cata
       description: game.description,
       minimumPlayers: game.minPlayers,
       maximumPlayers: game.maxPlayers,
-      categories: [game.category as CatalogGame['categories'][number]],
+      categories: base?.categories.includes(game.category as CatalogGame['categories'][number])
+        ? base.categories
+        : [game.category as CatalogGame['categories'][number]],
       href: game.href,
       requiresRealtime: game.requiresRealtime,
       status: game.status,
       image: game.image,
       imageAlt: game.imageAlt,
+      timedSessionSeconds: game.id === 'color-rush' ? COLOR_RUSH_TIMED_SECONDS : undefined,
     };
   });
 }

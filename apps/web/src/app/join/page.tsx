@@ -15,9 +15,9 @@ export default async function JoinPage() {
         <div className="container join-page">
           <Card>
             <span className="eyebrow">دخول اللاعبين</span>
-            <h1>انضم كزائر إلى المسابقة</h1>
+            <h1>انضم إلى غرفة لعب</h1>
             <p className="muted">
-              أدخل الرمز الذي يظهر على شاشة المضيف، ثم اختر اسمًا يظهر في لوحة اللاعبين.
+              اختر نوع الغرفة وأدخل الرمز الذي يشاركه المضيف، ثم أكمل خطوات الدخول.
             </p>
             <JoinQuizForm inviteMode />
           </Card>
