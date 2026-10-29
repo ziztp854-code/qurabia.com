@@ -28,8 +28,8 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     imageAlt: 'مسارات منطق ذهبية تتصل عبر ثلاث مراحل في تحدي الذكاء',
   },
   'fastest-button': {
-    image: '/game-art/catalog-v2/fastest-button.svg',
-    imageAlt: 'زر منافسة أحمر ثلاثي الأبعاد على قاعدة ذهبية تحت إشارة الاستعداد',
+    image: '/game-art/catalog-v2/fastest-button-cinematic.webp',
+    imageAlt: 'زر منافسة أحمر مضيء على منصة زرقاء تحيط بها خطوط ضوئية',
   },
   kingdoms: {
     image: '/game-art/catalog-v2/kingdoms.webp',
@@ -60,8 +60,8 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     imageAlt: 'تسلسل من بلاطات مضيئة وثلاث فرص في ومضة الذاكرة',
   },
   'question-word': {
-    image: '/game-art/catalog-v2/question-word.webp',
-    imageAlt: 'كرة سؤال ذهبية فوق مساحة إجابة وقطع كلمات متناثرة',
+    image: '/game-art/catalog-v2/question-word-cinematic.webp',
+    imageAlt: 'قطعة ذهبية محاطة بعلامات استفهام فوق منصة زمردية',
   },
   'color-rush': {
     image: '/game-art/catalog-v2/color-rush.webp',
@@ -88,7 +88,7 @@ const GAME_IMAGES: Record<string, { image: string; imageAlt: string }> = {
     imageAlt: 'مساران سماوي وذهبي يتسابقان صعودًا على سلم كبير',
   },
   chess: {
-    image: '/game-art/catalog-v2/chess.webp',
+    image: '/game-art/catalog-v2/chess-cinematic.webp',
     imageAlt: 'حصان عاجي يواجه ملكًا أسود على رقعة شطرنج فاخرة',
   },
   mafia: {
