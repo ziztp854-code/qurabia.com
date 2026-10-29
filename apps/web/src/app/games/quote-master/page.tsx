@@ -1,21 +1,10 @@
-import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
 import { SiteLayout } from '@/components/layout';
-import { QuoteMasterRoom } from '@/components/special-games';
+import { SpecialGameRoom } from '@/components/special-games/special-game-room';
 import { getCurrentSession } from '@/lib/auth/session';
 
-export const metadata: Metadata = {
-  title: 'من القائل؟ | تحدّي',
-  description:
-    'تحدٍّ أدبي فوري: يظهر بيت شعر أو حكمة خالدة وأمامك أربعة أسماء من عمالقة الأدب العربي، اكتشف صاحب القول وابنِ سلسلة إجابات لتضاعف نقاطك.',
-};
-
-export default async function QuoteMasterPage() {
-  const session = await getCurrentSession();
-
-  return (
-    <SiteLayout user={session?.user ? { name: session.user.name } : null}>
-      <AiGameQuestionRefresh game="quote-master"><QuoteMasterRoom /></AiGameQuestionRefresh>
-    </SiteLayout>
-  );
+export const metadata: Metadata = { title: 'من القائل؟ | تحدّي', description: 'تحدٍّ جماعي في الشعر العربي.' };
+export default async function QuoteMasterPage({ searchParams }: { searchParams: Promise<{ join?: string }> }) {
+  const [query, session] = await Promise.all([searchParams, getCurrentSession()]);
+  return <SiteLayout user={session?.user ? { name: session.user.name } : null}><SpecialGameRoom mode="quote-master" initialPin={query.join?.replace(/\D/g, '').slice(0, 6) ?? ''} /></SiteLayout>;
 }

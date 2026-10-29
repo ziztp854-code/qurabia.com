@@ -49,6 +49,8 @@ export type SpecialGameRoom = {
   readyPlayerIds: string[];
   parallelAssignments: Record<string, number>;
   parallelAnswers: Record<string, string>;
+  quoteRoundIds?: string[];
+  quoteDeadline?: number;
   reverseSubmissions: ReverseSubmission[];
   reverseVoterIds: string[];
   infiltratorId: string | null;

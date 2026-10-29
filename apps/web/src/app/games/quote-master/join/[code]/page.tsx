@@ -1,24 +1,5 @@
-import type { Metadata } from 'next';
-import { SiteLayout } from '@/components/layout';
-import { QuoteMasterJoin } from '@/components/special-games/quote-master-join';
-import { getCurrentSession } from '@/lib/auth/session';
-
-export const metadata: Metadata = {
-  title: '«من القائل؟» | تحدّي',
-  description: 'معلومات عن روابط الدعوة السابقة للعبة «من القائل؟» وطريقة بدء التحدي الفردي.',
-};
-
-export default async function QuoteMasterJoinPage({
-  params,
-}: {
-  params: Promise<{ code: string }>;
-}) {
+import { redirect } from 'next/navigation';
+export default async function QuoteMasterJoinPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const session = await getCurrentSession().catch(() => null);
-
-  return (
-    <SiteLayout user={session?.user ? { name: session.user.name } : null}>
-      <QuoteMasterJoin roomCode={(code ?? '').toUpperCase().slice(0, 6)} />
-    </SiteLayout>
-  );
+  redirect(`/games/quote-master?join=${encodeURIComponent(code.replace(/\D/g, '').slice(0, 6))}`);
 }

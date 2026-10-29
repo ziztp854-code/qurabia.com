@@ -14,3 +14,5 @@ export * from './elimination';
 export * from './risk';
 export * from './plans';
 export * from './fastest-button';
+
+export * from './quote-master';

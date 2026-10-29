@@ -4,7 +4,6 @@ import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh'
 
 import {
   ArrowLeft,
-  ArrowRight,
   BookOpenText,
   Feather,
   Flame,
@@ -14,8 +13,10 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'react-qr-code';
 import { Button, ButtonLink } from '@/components/ui';
 import { formatNumber } from '@/lib/utils';
+import { SITE_URL } from '@/lib/metadata/site';
 import {
   buildQuoteMasterRun,
   comboMultiplier,
@@ -42,6 +43,7 @@ const COVER_ROLES = [
 export function QuoteMasterRoom() {
   const originalQuestions = useMemo(() => buildQuoteMasterRun(1000), []);
   const generated = useAiGameQuestions('quote-master', originalQuestions.map((question) => question.quote));
+  const shareUrl = new URL('/games/quote-master', SITE_URL).href;
   const [run, setRun] = useState<QuoteQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [lives, setLives] = useState(QUOTE_MASTER_LIVES);
@@ -113,12 +115,12 @@ export function QuoteMasterRoom() {
 
   function hostReveal() {
     if (!current || phase !== 'question') return;
-    setPhase('reveal');
+    reveal(-1);
   }
 
   function goNext() {
     if (!current) return;
-    if (index + 1 >= run.length) {
+    if (lives === 0 || index + 1 >= run.length) {
       setPhase('finished');
       return;
     }
@@ -134,14 +136,6 @@ export function QuoteMasterRoom() {
       return;
     }
     goNext();
-  }
-
-  function goPrev() {
-    if (index === 0) return;
-    setIndex((value) => value - 1);
-    setChoice(null);
-    setPhase('question');
-    setSeconds(QUOTE_MASTER_SECONDS);
   }
 
   const timerRatio = phase === 'question' ? seconds / QUOTE_MASTER_SECONDS : phase === 'reveal' ? 0 : 1;
@@ -179,9 +173,9 @@ export function QuoteMasterRoom() {
                   ))}
                 </div>
                 <ul className={styles.rules}>
-                  <li>اقرأ القول واختر صاحبه من بين أربعة أسماء على الجهاز نفسه.</li>
+                  <li>اقرأ البيت واختر قائله من بين أربعة أسماء على الجهاز نفسه.</li>
                   <li>إجابات صحيحة متتالية ترفع مضاعف النقاط حتى ×5، والسرعة تمنح مكافأة.</li>
-                  <li>اثنا عشر قولاً من عمالقة الأدب العربي، واجمع أعلى رصيد تستطيع.</li>
+                  <li>اثنا عشر بيتًا من الشعر العربي؛ تنتهي الجولة عند نفاد المحاولات.</li>
                 </ul>
                 <Button variant="gold" size="lg" onClick={startGame} fullWidth>
                   <Play aria-hidden="true" />
@@ -191,12 +185,15 @@ export function QuoteMasterRoom() {
 
               <div className={styles.invitePanel}>
                 <span className={styles.inviteEyebrow}>تحدٍّ فردي</span>
-                <p className={styles.inviteHint}>العب على هذا الجهاز، واختر إجابتك قبل انتهاء الوقت.</p>
+                <p className={styles.inviteHint}>امسح الرمز لفتح اللعبة على هاتفك.</p>
+                <div className={styles.qrFrame}>
+                  <QRCode value={shareUrl} size={168} bgColor="var(--qr-paper)" fgColor="var(--qr-ink)" aria-label="رمز QR لفتح لعبة من القائل" />
+                </div>
                 <div className={styles.roomCodeBox}>
                   <span>مدة السؤال</span>
                   <strong>{formatNumber(QUOTE_MASTER_SECONDS)} ثانية</strong>
                 </div>
-                <p className={styles.inviteHint}>لا تتوفر دعوات اللاعبين أو المزامنة بين الأجهزة حاليًا.</p>
+                <p className={styles.inviteHint}>كل جهاز يبدأ جولة فردية مستقلة؛ لا تتوفر المزامنة بين الأجهزة حاليًا.</p>
               </div>
             </div>
           </div>
@@ -348,12 +345,8 @@ export function QuoteMasterRoom() {
 
             {/* شريط التحكم */}
             <div className={styles.controls}>
-              <Button variant="outline" size="sm" onClick={goPrev} disabled={index === 0}>
-                <ArrowRight aria-hidden="true" />
-                السؤال السابق
-              </Button>
               <Button variant="gold" size="sm" onClick={advance}>
-                {phase === 'question' ? 'كشف الإجابة' : index + 1 >= run.length ? 'النتيجة' : 'السؤال التالي'}
+                {phase === 'question' ? 'كشف الإجابة' : lives === 0 || index + 1 >= run.length ? 'النتيجة' : 'السؤال التالي'}
                 <ArrowLeft aria-hidden="true" />
               </Button>
             </div>

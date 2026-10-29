@@ -342,8 +342,8 @@ export function SpecialGameRoom({
   const phaseTitle = useMemo(() => {
     if (!room) return activeMeta.title;
     if (room.phase === 'lobby') return 'غرفة الانتظار';
-    if (room.phase === 'parallel-answering') return 'العوالم مفتوحة';
-    if (room.phase === 'parallel-reveal') return 'انكشفت العوالم';
+    if (room.phase === 'parallel-answering') return activeMode === 'quote-master' ? 'من القائل؟' : 'العوالم مفتوحة';
+    if (room.phase === 'parallel-reveal') return activeMode === 'quote-master' ? 'الإجابة والنتائج' : 'انكشفت العوالم';
     if (room.phase === 'reverse-writing') return 'اصنع السؤال';
     if (room.phase === 'reverse-voting') return 'صوّت للأذكى';
     if (room.phase === 'reverse-results') return 'نتيجة التصويت';
@@ -352,7 +352,7 @@ export function SpecialGameRoom({
     if (room.phase === 'infiltrator-reveal') return 'انكشف الدخيل';
     if (room.phase === 'risk-turn') return 'المجازفة مباشرة';
     return 'النتيجة النهائية';
-  }, [activeMeta.title, room]);
+  }, [activeMeta.title, activeMode, room]);
 
   /* ---------------------------------------------------------------- */
   /* Entry screen (no room yet)                                        */
@@ -475,7 +475,7 @@ export function SpecialGameRoom({
                     <p>
                       سيظهر رمز وQR للضيوف. افتح الرابط من هواتفهم، اكتبوا الأسماء، ثم ابدأ الجولة.
                     </p>
-                    {mode !== 'chess' && mode !== 'risk' && (
+                    {mode !== 'chess' && mode !== 'risk' && mode !== 'quote-master' && (
                       <GameContentGenerator game={mode} onApprove={setApprovedContentToken} />
                     )}
                     <Button
@@ -700,8 +700,9 @@ export function SpecialGameRoom({
                   (isHost ? (
                     <Card className="special-host-monitor">
                       <Orbit aria-hidden="true" />
-                      <h2>لكل لاعب عالمه الآن</h2>
-                      <p>الأسئلة موزعة سرًا، والإجابة المشتركة لا تظهر حتى تضغط «اكشف العوالم».</p>
+                      <h2>{activeMode === 'quote-master' ? 'اللاعبون يجيبون الآن' : 'لكل لاعب عالمه الآن'}</h2>
+                      {activeMode === 'quote-master' && parallelRound && <><p className="quote-host-verse">{parallelRound.prompt}</p><Timer startsAt={parallelRound.startsAt} timeLimit={parallelRound.timeLimit} /></>}
+                      <p>{activeMode === 'quote-master' ? 'انتظر إجابات اللاعبين، ثم اكشف الإجابة للانتقال إلى السؤال التالي.' : 'الأسئلة موزعة سرًا، والإجابة المشتركة لا تظهر حتى تضغط «اكشف العوالم».'}</p>
                       <Button
                         variant="gold"
                         size="lg"
@@ -712,7 +713,7 @@ export function SpecialGameRoom({
                         }}
                       >
                         <Sparkles aria-hidden="true" />
-                        اكشف العوالم
+                        {activeMode === 'quote-master' ? 'اكشف الإجابة' : 'اكشف العوالم'}
                       </Button>
                     </Card>
                   ) : parallelRound ? (
@@ -773,7 +774,7 @@ export function SpecialGameRoom({
                         >
                           {parallelAck.correct
                             ? `إجابة صحيحة +${formatNumber(parallelAck.earned)}`
-                            : 'سُجلت الإجابة. انتظر كشف العوالم.'}
+                            : activeMode === 'quote-master' ? 'سُجلت الإجابة. انتظر النتيجة.' : 'سُجلت الإجابة. انتظر كشف العوالم.'}
                         </p>
                       )}
                     </Card>

@@ -15,9 +15,9 @@ describe('public games source', () => {
     expect(game?.categories).toEqual(['سرعة', 'اجتماعي', 'تركيز']);
   });
 
-  it('يعرض من القائل كتحد فردي دون ادعاء اللعب المباشر', () => {
+  it('يعرض من القائل كلعبة جماعية مباشرة', () => {
     expect(toCatalogGames().find((game) => game.id === 'quote-master')).toMatchObject({
-      minimumPlayers: 1, maximumPlayers: 1, requiresRealtime: false,
+      minimumPlayers: 2, maximumPlayers: 8, requiresRealtime: true,
     });
   });
 

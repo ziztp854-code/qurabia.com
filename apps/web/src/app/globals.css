@@ -7843,6 +7843,21 @@ tr:last-child td {
   line-height: 1.25;
 }
 
+/* Preserve the two hemistiches and leave room for Arabic diacritics. */
+.special-game-stage[data-game='quote-master'] .special-question-panel > h2 {
+  white-space: pre-line;
+  font-size: clamp(1.4rem, 4vw, 2.5rem);
+  line-height: 1.9;
+}
+
+.special-game-stage[data-game='quote-master'] .special-host-monitor .quote-host-verse {
+  white-space: pre-line;
+  max-inline-size: none;
+  color: var(--foreground);
+  font-size: clamp(1.2rem, 2.5vw, 2rem);
+  line-height: 1.9;
+}
+
 .special-options {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

@@ -1,4 +1,4 @@
-export type SpecialGameMode = 'parallel-world' | 'reverse-time' | 'infiltrator' | 'risk' | 'chess';
+export type SpecialGameMode = 'parallel-world' | 'reverse-time' | 'infiltrator' | 'risk' | 'chess' | 'quote-master';
 
 export type SpecialGameMeta = {
   mode: SpecialGameMode;
@@ -115,6 +115,7 @@ export function isSpecialGameContentPack(value: unknown): value is SpecialGameCo
 }
 
 export const SPECIAL_GAME_META: Record<SpecialGameMode, SpecialGameMeta> = {
+  'quote-master': { mode: 'quote-master', title: 'من القائل؟', shortTitle: 'من القائل؟', description: 'تنافسوا في معرفة قائلي أشهر أبيات الشعر العربي.', minimumPlayers: 2, roundSeconds: 20, contentLabel: '١٢ بيتًا' },
   'parallel-world': {
     mode: 'parallel-world',
     title: 'العالم الموازي',
@@ -468,5 +469,5 @@ export const REVERSE_TIME_BANK: ReverseTimeRound[] = [
 ];
 
 export function isSpecialGameMode(value: string): value is SpecialGameMode {
-  return value === 'risk' || SPECIAL_GAME_ORDER.includes(value as SpecialGameMode);
+  return value === 'risk' || value === 'quote-master' || SPECIAL_GAME_ORDER.includes(value as SpecialGameMode);
 }
