@@ -46,7 +46,7 @@ function shuffled<T>(items: readonly T[]): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);
-    [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
 }
@@ -65,7 +65,10 @@ export class SpecialGamesService {
   constructor(private readonly redis: RedisService) {}
 
   private parallelBank(room: SpecialGameRoom) {
-    if (room.mode === 'quote-master') return (room.quoteRoundIds ?? QUOTE_MASTER_BANK.map((round) => round.id)).map((id) => QUOTE_MASTER_BANK.find((round) => round.id === id)!).filter(Boolean);
+    if (room.mode === 'quote-master')
+      return (room.quoteRoundIds ?? QUOTE_MASTER_BANK.map((round) => round.id))
+        .map((id) => QUOTE_MASTER_BANK.find((round) => round.id === id)!)
+        .filter(Boolean);
     return room.contentPack &&
       (room.contentPack.mode === 'parallel-world' ||
         room.contentPack.mode === 'infiltrator')
@@ -83,7 +86,9 @@ export class SpecialGamesService {
     if (room.mode === 'risk') return 5;
     return (
       room.roundCount ||
-      (room.mode === 'parallel-world' || room.mode === 'quote-master' || room.mode === 'infiltrator'
+      (room.mode === 'parallel-world' ||
+      room.mode === 'quote-master' ||
+      room.mode === 'infiltrator'
         ? this.parallelBank(room).length
         : this.reverseBank(room).length)
     );
@@ -175,14 +180,20 @@ export class SpecialGamesService {
           : mode === 'quote-master'
             ? 12
             : mode === 'parallel-world' || mode === 'infiltrator'
-            ? PARALLEL_WORLD_BANK.length
-            : REVERSE_TIME_BANK.length),
+              ? PARALLEL_WORLD_BANK.length
+              : REVERSE_TIME_BANK.length),
       ...(contentPack ? { contentPack } : {}),
       players: [],
       readyPlayerIds: [],
       parallelAssignments: {},
       parallelAnswers: {},
-      ...(mode === 'quote-master' ? { quoteRoundIds: shuffled(QUOTE_MASTER_BANK).slice(0, 12).map((round) => round.id) } : {}),
+      ...(mode === 'quote-master'
+        ? {
+            quoteRoundIds: shuffled(QUOTE_MASTER_BANK)
+              .slice(0, 12)
+              .map((round) => round.id),
+          }
+        : {}),
       reverseSubmissions: [],
       reverseVoterIds: [],
       infiltratorId: null,
@@ -662,27 +673,40 @@ export class SpecialGamesService {
         room.parallelAssignments[player.id] = index % round.variants.length;
       });
       const startsAt = Date.now() + 500;
-      if (room.mode === 'quote-master') room.quoteDeadline = startsAt + SPECIAL_GAME_META[room.mode].roundSeconds * 1000;
+      if (room.mode === 'quote-master')
+        room.quoteDeadline =
+          startsAt + SPECIAL_GAME_META[room.mode].roundSeconds * 1000;
       await this.redis.saveSpecialRoom(room.pin, room);
       this.emitState(room);
       if (room.mode === 'quote-master') {
         const roundId = round.id;
-        const timer = setTimeout(() => {
-          void this.executeWithRoomLock(room.pin, async () => {
-            const latest = await this.load(room.pin);
-            if (latest?.phase === 'parallel-answering' && this.parallelBank(latest)[latest.roundIndex]?.id === roundId) {
-              await this.revealParallel(room.pin, latest.hostId);
-            }
-          });
-        }, Math.max(0, room.quoteDeadline! - Date.now()));
+        const timer = setTimeout(
+          () => {
+            void this.executeWithRoomLock(room.pin, async () => {
+              const latest = await this.load(room.pin);
+              if (
+                latest?.phase === 'parallel-answering' &&
+                this.parallelBank(latest)[latest.roundIndex]?.id === roundId
+              ) {
+                await this.revealParallel(room.pin, latest.hostId);
+              }
+            });
+          },
+          Math.max(0, room.quoteDeadline! - Date.now()),
+        );
         timer.unref();
       }
       if (room.mode === 'quote-master' && round.variants[0]) {
         const variant = round.variants[0];
         this.io.to(room.hostId).emit('parallel:round', {
-          roundId: round.id, roundNumber: nextIndex + 1, roundCount,
-          face: variant.face, faceLabel: variant.faceLabel, prompt: variant.prompt,
-          options: shuffled(variant.options), startsAt,
+          roundId: round.id,
+          roundNumber: nextIndex + 1,
+          roundCount,
+          face: variant.face,
+          faceLabel: variant.faceLabel,
+          prompt: variant.prompt,
+          options: shuffled(variant.options),
+          startsAt,
           timeLimit: SPECIAL_GAME_META[room.mode].roundSeconds,
         });
       }
@@ -697,7 +721,10 @@ export class SpecialGamesService {
           face: variant.face,
           faceLabel: variant.faceLabel,
           prompt: variant.prompt,
-          options: room.mode === 'quote-master' ? shuffled(variant.options) : variant.options,
+          options:
+            room.mode === 'quote-master'
+              ? shuffled(variant.options)
+              : variant.options,
           startsAt,
           timeLimit: SPECIAL_GAME_META[room.mode].roundSeconds,
         });
@@ -785,7 +812,11 @@ export class SpecialGamesService {
   ): Promise<ActionResult> {
     const room = await this.load(pin);
     const round = room ? this.parallelBank(room)[room.roundIndex] : undefined;
-    if (!room || !round || room.mode !== 'parallel-world' && room.mode !== 'quote-master') {
+    if (
+      !room ||
+      !round ||
+      (room.mode !== 'parallel-world' && room.mode !== 'quote-master')
+    ) {
       return {
         ok: false,
         code: 'ROUND_NOT_FOUND',
@@ -814,12 +845,20 @@ export class SpecialGamesService {
       };
     }
 
-    if (room.mode === 'quote-master' && room.quoteDeadline && Date.now() >= room.quoteDeadline) {
+    if (
+      room.mode === 'quote-master' &&
+      room.quoteDeadline &&
+      Date.now() >= room.quoteDeadline
+    ) {
       return { ok: false, code: 'ROUND_CLOSED', message: 'انتهى وقت الإجابة.' };
     }
     const variant = round.variants[room.parallelAssignments[socketId] ?? 0];
     if (room.mode === 'quote-master' && !variant?.options.includes(answer)) {
-      return { ok: false, code: 'INVALID_ANSWER', message: 'اختر إجابة من الخيارات.' };
+      return {
+        ok: false,
+        code: 'INVALID_ANSWER',
+        message: 'اختر إجابة من الخيارات.',
+      };
     }
     room.parallelAnswers[socketId] = answer;
     const correct = answer === round.answer;
@@ -843,7 +882,11 @@ export class SpecialGamesService {
   async revealParallel(pin: string, hostId: string): Promise<ActionResult> {
     const room = await this.load(pin);
     const round = room ? this.parallelBank(room)[room.roundIndex] : undefined;
-    if (!room || !round || room.mode !== 'parallel-world' && room.mode !== 'quote-master') {
+    if (
+      !room ||
+      !round ||
+      (room.mode !== 'parallel-world' && room.mode !== 'quote-master')
+    ) {
       return {
         ok: false,
         code: 'ROUND_NOT_FOUND',

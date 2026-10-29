@@ -103,15 +103,50 @@ describe('SpecialGamesService', () => {
     await service.joinRoom('p1', room.pin, 'سارة');
     await service.joinRoom('p2', room.pin, 'فيصل');
     expect((await service.startGame(room.pin, 'host')).ok).toBe(true);
-    const questions = events.filter((event) => event.event === 'parallel:round' && event.target !== 'host').map((event) => event.payload as { roundId: string; prompt: string; options: string[] });
+    const questions = events
+      .filter(
+        (event) => event.event === 'parallel:round' && event.target !== 'host',
+      )
+      .map(
+        (event) =>
+          event.payload as {
+            roundId: string;
+            prompt: string;
+            options: string[];
+          },
+      );
     expect(questions).toHaveLength(2);
     expect(questions[0]?.prompt).toBe(questions[1]?.prompt);
-    const question = QUOTE_MASTER_BANK.find((item) => item.id === questions[0]?.roundId)!;
-    expect((await service.submitParallelAnswer('p1', room.pin, question.id, question.answer)).ok).toBe(true);
-    expect((await service.submitParallelAnswer('p1', room.pin, question.id, question.answer)).ok).toBe(false);
-    const wrong = questions[1]!.options.find((option) => option !== question.answer)!;
+    const question = QUOTE_MASTER_BANK.find(
+      (item) => item.id === questions[0]?.roundId,
+    )!;
+    expect(
+      (
+        await service.submitParallelAnswer(
+          'p1',
+          room.pin,
+          question.id,
+          question.answer,
+        )
+      ).ok,
+    ).toBe(true);
+    expect(
+      (
+        await service.submitParallelAnswer(
+          'p1',
+          room.pin,
+          question.id,
+          question.answer,
+        )
+      ).ok,
+    ).toBe(false);
+    const wrong = questions[1].options.find(
+      (option) => option !== question.answer,
+    )!;
     await service.submitParallelAnswer('p2', room.pin, question.id, wrong);
-    expect(events.find((event) => event.event === 'parallel:reveal')).toBeDefined();
+    expect(
+      events.find((event) => event.event === 'parallel:reveal'),
+    ).toBeDefined();
   });
 
   it('distributes different parallel questions that share one answer', async () => {
