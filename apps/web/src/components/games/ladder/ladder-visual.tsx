@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowUp, ArrowDown, Star, Trophy } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Diamond, Trophy } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { formatNumber } from '@/lib/utils';
 import styles from './ladder-room.module.css';
 
@@ -53,6 +53,7 @@ export function LadderVisual({
               <div
                 key={`${team}-${step}`}
                 className={styles.ladderStep}
+                style={{ width: `${55 + (winningPosition - step) / Math.max(winningPosition, 1) * 45}%` }}
                 data-team={team}
                 data-active={isActive || undefined}
                 data-current={isCurrent || undefined}
@@ -61,24 +62,18 @@ export function LadderVisual({
                   {formatNumber(step)}
                 </span>
 
-                <AnimatePresence mode="wait">
-                  {isCurrent && (
-                    <motion.div
-                      key="indicator"
-                      initial={reduceMotion ? false : { scale: 0.6, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={reduceMotion ? undefined : { opacity: 0 }}
-                      className={styles.ladderStepIcon}
-                      data-team={team}
-                    >
-                      {isFinish ? (
-                        <Trophy aria-hidden="true" size={18} />
-                      ) : (
-                        <Star aria-hidden="true" size={16} />
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {isCurrent && (
+                  <motion.div
+                    layoutId={reduceMotion ? undefined : `ladder-marker-${team}`}
+                    transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 170, damping: 24 }}
+                    className={styles.ladderStepIcon}
+                    data-team={team}
+                    role="img"
+                    aria-label={`موقع ${team === 'right' ? 'فريق اليمين' : 'فريق اليسار'}: ${formatNumber(step)}`}
+                  >
+                    {isFinish ? <Trophy aria-hidden="true" size={17} /> : <Diamond aria-hidden="true" size={14} />}
+                  </motion.div>
+                )}
               </div>
             );
           })}
@@ -93,7 +88,6 @@ export function LadderVisual({
         {renderColumn('right', rightPosition)}
 
         <div className={styles.ladderConnector} data-testid="ladder-question-center">
-          <ArrowUp aria-hidden="true" className={styles.connectorArrowUp} size={20} />
 
           <div className={styles.connectorMeta}>
             <span className={styles.ladderConnectorLabel}>القمة</span>
@@ -104,7 +98,6 @@ export function LadderVisual({
 
           {children && <div className={styles.ladderQuestionCenter}>{children}</div>}
 
-          <ArrowDown aria-hidden="true" className={styles.connectorArrowDown} size={20} />
         </div>
 
         {renderColumn('left', leftPosition)}

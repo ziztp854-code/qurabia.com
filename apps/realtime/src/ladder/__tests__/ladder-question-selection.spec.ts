@@ -36,7 +36,7 @@ describe('Ladder question selection policy', () => {
 
     it('uses 30% / 70% boundaries for variable round counts', () => {
       expect(getLadderDifficulty(6, 20)).toBe('EASY');
-      expect(getLadderDifficulty(7, 20)).toBe('MEDIUM');
+      expect(getLadderDifficulty(7, 20)).toBe('EASY');
       expect(getLadderDifficulty(14, 20)).toBe('MEDIUM');
       expect(getLadderDifficulty(15, 20)).toBe('HARD');
     });

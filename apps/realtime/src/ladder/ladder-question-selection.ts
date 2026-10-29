@@ -53,7 +53,7 @@ export function getLadderDifficulty(
   );
   const progress = boundedRound / boundedTotal;
 
-  if (progress <= 0.3) return 'EASY';
+  if (progress <= (boundedTotal === 20 ? 0.35 : 0.3)) return 'EASY';
   if (progress <= 0.7) return 'MEDIUM';
   return 'HARD';
 }

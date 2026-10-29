@@ -1,6 +1,10 @@
 import type { LadderRoomRuntime } from './ladder.types.js';
 import type { DatabaseService } from '../game/database.service.js';
-import type { LadderQuestionCandidate } from './ladder-question-selection.js';
+import {
+  isValidLadderQuestionCandidate,
+  type LadderDifficulty,
+  type LadderQuestionCandidate,
+} from './ladder-question-selection.js';
 
 const MAX_CANDIDATE_POOL = 80;
 const MIN_CANDIDATE_POOL = 16;
@@ -89,6 +93,7 @@ async function loadPackCandidates(
 async function loadBankCandidates(
   database: DatabaseService,
   room: LadderRoomRuntime,
+  difficulty?: LadderDifficulty,
 ): Promise<LadderQuestionCandidate[]> {
   const usedQuestionIds = room.usedQuestionIds ?? [];
   const rows = await database.client.question.findMany({
@@ -97,6 +102,7 @@ async function loadBankCandidates(
       type: { in: ['MULTIPLE_CHOICE', 'TRUE_FALSE'] },
       category: { is: { isActive: true } },
       gameTypes: { has: 'LADDER' },
+      ...(difficulty ? { difficulty } : {}),
       ...(usedQuestionIds.length > 0 ? { id: { notIn: usedQuestionIds } } : {}),
     },
     select: {
@@ -124,6 +130,7 @@ async function loadBankCandidates(
 export async function loadLadderQuestionCandidates(
   database: DatabaseService,
   room: LadderRoomRuntime,
+  difficulty?: LadderDifficulty,
 ): Promise<LadderQuestionCandidate[]> {
   const packCandidates = await loadPackCandidates(database, room);
   const minNeeded = Math.max(MIN_CANDIDATE_POOL, room.totalRounds);
@@ -132,7 +139,7 @@ export async function loadLadderQuestionCandidates(
   }
 
   if (packCandidates.length > 0) {
-    const bank = await loadBankCandidates(database, room);
+    const bank = await loadPreferredBankCandidates(database, room, difficulty);
     const seen = new Set(packCandidates.map((candidate) => candidate.id));
     const merged = [
       ...packCandidates,
@@ -141,5 +148,17 @@ export async function loadLadderQuestionCandidates(
     return merged.slice(0, MAX_CANDIDATE_POOL);
   }
 
+  return loadPreferredBankCandidates(database, room, difficulty);
+}
+
+async function loadPreferredBankCandidates(
+  database: DatabaseService,
+  room: LadderRoomRuntime,
+  difficulty?: LadderDifficulty,
+): Promise<LadderQuestionCandidate[]> {
+  if (difficulty) {
+    const targeted = await loadBankCandidates(database, room, difficulty);
+    if (targeted.some(isValidLadderQuestionCandidate)) return targeted;
+  }
   return loadBankCandidates(database, room);
 }

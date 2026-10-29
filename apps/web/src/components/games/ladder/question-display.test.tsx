@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { LadderQuestion } from '@tahaddi/domain';
 import { describe, expect, it, vi } from 'vitest';
@@ -44,4 +44,53 @@ describe('QuestionDisplay', () => {
     expect(screen.getByText('تم إرسال الإجابة.')).toBeInTheDocument();
     expect(screen.queryByText(/الإجابة الصحيحة:/)).not.toBeInTheDocument();
   });
+  it('keeps the server deadline and answer selection across room updates', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_800_000_000_000);
+    const onAnswer = vi.fn();
+    const current = question(4);
+    const view = render(
+      <QuestionDisplay question={current} timeLimit={20} roundNumber={1} totalRounds={20}
+        onAnswer={onAnswer} selectedOption={null} disabled={false} />,
+    );
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(5_000); });
+    view.rerender(
+      <QuestionDisplay question={current} timeLimit={15} roundNumber={1} totalRounds={20}
+        onAnswer={onAnswer} selectedOption={null} disabled={false} />,
+    );
+    expect(screen.getByRole('timer')).toHaveTextContent('15');
+    expect(screen.getAllByRole('button')[0]).toHaveAttribute('aria-pressed', 'true');
+    act(() => { vi.advanceTimersByTime(15_000); });
+    expect(screen.getByRole('timer')).toHaveTextContent('0');
+    expect(screen.getAllByRole('button').every((button) => button.hasAttribute('disabled'))).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it('locks unanswered options when the server deadline is reached', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_800_000_000_000);
+    const onAnswer = vi.fn();
+    render(<QuestionDisplay question={question(4)}
+      timeLimit={2} roundNumber={1} totalRounds={20} onAnswer={onAnswer}
+      selectedOption={null} disabled={false} />);
+    act(() => { vi.advanceTimersByTime(2_000); });
+    expect(screen.getAllByRole('button').every((button) => button.hasAttribute('disabled'))).toBe(true);
+    expect(onAnswer).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('uses remaining time even if the device clock is far ahead', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(2_000_000_000_000);
+    render(<QuestionDisplay question={question(4)}
+      timeLimit={5} roundNumber={1} totalRounds={20}
+      onAnswer={vi.fn()} selectedOption={null} disabled={false} />);
+    expect(screen.getAllByRole('button')[0]).toBeEnabled();
+    act(() => { vi.advanceTimersByTime(5_000); });
+    expect(screen.getAllByRole('button')[0]).toBeDisabled();
+    vi.useRealTimers();
+  });
+
 });

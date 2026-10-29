@@ -128,17 +128,23 @@ export class LadderGateway
     const questionId = room.currentQuestionId;
     const delay = Math.max(0, room.questionDeadlineAt - Date.now()) + 5;
     const timer = setTimeout(() => {
-      void this.handleQuestionDeadline(room.roomCode, questionId);
+      void this.handleQuestionDeadline(room.roomCode, questionId).catch(() => {
+        this.server.to(room.roomCode).emit('ladder:error', {
+          code: 'ROOM_SYNC_FAILED',
+          message: 'تعذّرت مزامنة السؤال. أعد الاتصال بالغرفة.',
+        });
+      });
     }, delay);
     timer.unref?.();
     this.questionDeadlineTimers.set(room.roomCode, timer);
   }
 
   private emitGameEnd(room: LadderRoomRuntime) {
-    const winner =
-      room.rightPosition >= room.winningPosition
+    const winner = room.stopReason
+      ? null
+      : room.rightPosition > room.leftPosition
         ? 'right'
-        : room.leftPosition >= room.winningPosition
+        : room.leftPosition > room.rightPosition
           ? 'left'
           : 'draw';
     this.server.to(room.roomCode).emit('ladder:game:end', {
@@ -456,7 +462,7 @@ export class LadderGateway
     if (!(await this.canHandleEvent(client, 'answer'))) {
       return this.rejectRateLimited(client);
     }
-    const guestId = this.resolveGuestId(client);
+    const guestId = this.socketGuestIds.get(client.id) ?? '';
     const roomCode =
       typeof payload?.roomCode === 'string'
         ? payload.roomCode.trim().toUpperCase()
@@ -465,7 +471,13 @@ export class LadderGateway
       typeof payload?.questionId === 'string' ? payload.questionId : '';
     const optionId =
       typeof payload?.optionId === 'string' ? payload.optionId : '';
-    if (!guestId || !roomCode || !questionId || !optionId) {
+    if (
+      !guestId ||
+      !roomCode ||
+      this.socketRooms.get(client.id) !== roomCode ||
+      !questionId ||
+      !optionId
+    ) {
       return this.emitError(client, 'INVALID_SESSION', 'جلسة غير صالحة.');
     }
 
@@ -488,12 +500,12 @@ export class LadderGateway
     @MessageBody() payload: { roomCode?: string },
   ) {
     const hostId = this.resolveAuthenticatedHostId(client);
-    const guestId = this.resolveGuestId(client);
+    const guestId = this.socketGuestIds.get(client.id) ?? '';
     const roomCode =
       typeof payload?.roomCode === 'string'
         ? payload.roomCode.trim().toUpperCase()
         : (this.socketRooms.get(client.id) ?? '');
-    if (!roomCode) return;
+    if (!roomCode || this.socketRooms.get(client.id) !== roomCode) return;
 
     if (hostId) {
       await client.leave(roomCode);
@@ -570,8 +582,12 @@ export class LadderGateway
       return this.emitError(client, 'INVALID_GUEST', 'اتصال غير مصرح به.');
     }
 
-    const identity = await this.ladder.validateGuest(guestId, guestToken);
-    if (!identity) {
+    const identity = await this.ladder.validateGuest(
+      guestId,
+      guestToken,
+      false,
+    );
+    if (!identity || identity.roomCode !== roomCode) {
       return this.emitError(
         client,
         'INVALID_GUEST',
@@ -601,7 +617,7 @@ export class LadderGateway
       typeof payload?.roomCode === 'string'
         ? payload.roomCode.trim().toUpperCase()
         : (this.socketRooms.get(client.id) ?? '');
-    if (!roomCode) return;
+    if (!roomCode || this.socketRooms.get(client.id) !== roomCode) return;
     const storedRoom = await this.ladder.getRoom(roomCode);
     if (!storedRoom) {
       return this.emitError(client, 'ROOM_NOT_FOUND', 'الغرفة غير موجودة.');

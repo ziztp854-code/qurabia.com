@@ -20,7 +20,7 @@ export const createLadderRoomPayloadSchema = z
   .object({
     totalRounds: z.number().int().min(5).max(20).default(10),
     winningPosition: z.number().int().min(5).max(20).default(10),
-    questionTimeLimit: z.number().int().min(20).max(60).default(30),
+    questionTimeLimit: z.number().int().min(20).max(60).optional(),
     quizId: z.string().trim().min(1).max(64).optional(),
   })
   .strict();
@@ -102,6 +102,7 @@ export type ServerToClientLadderEvents = {
 };
 
 export type LadderRoomRuntime = LadderRoom & {
+  automaticQuestionTime?: boolean;
   usedQuestionIds?: string[];
   recentCategoryIds?: string[];
   currentQuestionId?: string | null;

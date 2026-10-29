@@ -118,9 +118,9 @@ export function LadderRoom({
   const entryMode = role === 'host' ? 'create' : 'join';
   const [playerName, setPlayerName] = useState('');
   const [team, setTeam] = useState<'right' | 'left'>('right');
-  const [totalRounds, setTotalRounds] = useState(10);
+  const [totalRounds, setTotalRounds] = useState(20);
   const [winningPosition, setWinningPosition] = useState(10);
-  const [questionTimeLimit, setQuestionTimeLimit] = useState(30);
+  const [questionTimeLimit, setQuestionTimeLimit] = useState('auto');
   const [copied, setCopied] = useState(false);
   const [answerSelection, setAnswerSelection] = useState<{
     questionId: string;
@@ -156,7 +156,7 @@ export function LadderRoom({
     socketRef.current.emit('ladder:host', {
       totalRounds,
       winningPosition,
-      questionTimeLimit,
+      ...(questionTimeLimit === 'auto' ? {} : { questionTimeLimit: Number(questionTimeLimit) }),
       ...(quizId ? { quizId } : {}),
     });
   };
@@ -426,8 +426,9 @@ export function LadderRoom({
                           id="ladder-question-time"
                           className={styles.entrySelect}
                           value={questionTimeLimit}
-                          onChange={(e) => setQuestionTimeLimit(Number(e.target.value))}
+                          onChange={(e) => setQuestionTimeLimit(e.target.value)}
                         >
+                          <option value="auto">حسب صعوبة السؤال</option>
                           {[20, 30, 45, 60].map((seconds) => (
                             <option key={seconds} value={seconds}>
                               {formatNumber(seconds)} ثانية
@@ -664,7 +665,9 @@ export function LadderRoom({
           <Card className={styles.ladderFinale} role="status" aria-live="assertive">
             <Trophy aria-hidden="true" className={styles.finaleTrophy} />
             <h2 className={styles.finaleTitle}>
-              {gameEnd.winner === 'draw'
+              {gameEnd.winner === null
+                ? 'توقفت الجولة'
+                : gameEnd.winner === 'draw'
                 ? 'تعادل'
                 : gameEnd.winner === 'right'
                   ? 'يفوز فريق اليمين'
@@ -674,9 +677,9 @@ export function LadderRoom({
               النتيجة النهائية: {formatNumber(gameEnd.rightScore)} -{' '}
               {formatNumber(gameEnd.leftScore)}
             </p>
-            <Button type="button" onClick={handleLeave}>
+            <ButtonLink href="/games" onClick={handleLeave}>
               العودة للألعاب
-            </Button>
+            </ButtonLink>
           </Card>
         )}
 

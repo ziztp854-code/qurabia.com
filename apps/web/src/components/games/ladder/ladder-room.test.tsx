@@ -156,6 +156,30 @@ describe('LadderRoom guest identity recovery', () => {
     expect(screen.queryByText('اختر الفريق')).not.toBeInTheDocument();
   });
 
+  it('creates a 20-question room using the difficulty-based default timing', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
+    connectSocket();
+    await user.click(screen.getByRole('button', { name: /إنشاء الغرفة/ }));
+    expect(socketMock.emit).toHaveBeenCalledWith('ladder:host', {
+      totalRounds: 20,
+      winningPosition: 10,
+    });
+  });
+
+  it('sends an explicit minimum time only when the host chooses one', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
+    connectSocket();
+    await user.selectOptions(screen.getByLabelText('الحد الأدنى لوقت السؤال'), '45');
+    await user.click(screen.getByRole('button', { name: /إنشاء الغرفة/ }));
+    expect(socketMock.emit).toHaveBeenCalledWith('ladder:host', {
+      totalRounds: 20,
+      winningPosition: 10,
+      questionTimeLimit: 45,
+    });
+  });
+
   it('regenerates identity and reconnects when the user clicks "تجديد الهوية"', async () => {
     const user = userEvent.setup();
     render(<LadderRoom />);
@@ -226,6 +250,19 @@ describe('LadderRoom guest identity recovery', () => {
         screen.queryByText('هوية الضيف السابقة انتهت. أنشئ هوية جديدة للمتابعة دون فقدان التقدم.'),
       ).not.toBeInTheDocument();
     });
+  });
+
+  it('does not announce a winner when the server stops the game', () => {
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
+    connectSocket();
+    emitRoomState({ roomCode: 'AB12CD', phase: 'finished', currentRound: 3, totalRounds: 20,
+      rightScore: 1, leftScore: 0, rightPosition: 1, leftPosition: 0, winningPosition: 10,
+      currentQuestion: null, rightTeam: [], leftTeam: [], isHost: true });
+    act(() => socketMock.listeners.get('ladder:game:end')?.({
+      winner: null, rightScore: 1, leftScore: 0, durationMs: 1000,
+    }));
+    expect(screen.getByText('توقفت الجولة')).toBeInTheDocument();
+    expect(screen.queryByText('يفوز فريق اليسار')).not.toBeInTheDocument();
   });
 
   it('uses persistent websocket transport for the ladder realtime connection', () => {

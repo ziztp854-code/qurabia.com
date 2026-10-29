@@ -28,10 +28,8 @@ export function QuestionDisplay({
   selectedOption,
   disabled,
 }: QuestionDisplayProps) {
-  // Use a stable derived key so a new question/time-limit remounts the
-  // inner state cleanly without firing cascading setState calls inside
-  // useEffect (forbidden by react-hooks/set-state-in-effect).
-  const resetKey = `${question.id}:${timeLimit}`;
+  // A periodic room snapshot can update remaining time without starting a new question.
+  const resetKey = question.id;
 
   return (
     <QuestionDisplayBody
@@ -58,32 +56,23 @@ function QuestionDisplayBody({
   selectedOption: serverSelectedOption,
   disabled,
 }: QuestionDisplayBodyProps) {
+  // The server snapshot provides remaining seconds; the monotonic clock avoids
+  // premature expiry when the device clock is misconfigured.
+  const remainingMs = timeLimit * 1000;
+  const deadline = useRef(0);
+  const [initialTimeLimit] = useState(timeLimit);
   const [seconds, setSeconds] = useState(timeLimit);
   const [phase, setPhase] = useState<Phase>('question');
   const [localSelected, setLocalSelected] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (phase !== 'question') return;
+    deadline.current = performance.now() + remainingMs;
     const timer = window.setInterval(() => {
-      setSeconds((value) => {
-        if (value <= 1) {
-          if (timerRef.current !== null) {
-            window.clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          return 0;
-        }
-        return value - 1;
-      });
-    }, 1000);
-    timerRef.current = timer;
-    return () => {
-      window.clearInterval(timer);
-      timerRef.current = null;
-    };
-  }, [phase, question.id]);
+      setSeconds(Math.max(0, Math.ceil((deadline.current - performance.now()) / 1000)));
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [remainingMs]);
 
   // When the server-driven reveal arrives (e.g. another player answered
   // first) promote the local phase + selection so the UI stays in sync
@@ -93,7 +82,7 @@ function QuestionDisplayBody({
   const effectivePhase: Phase = serverRevealed ? 'reveal' : phase;
 
   const handleAnswer = (optionId: string) => {
-    if (phase !== 'question' || disabled) return;
+    if (phase !== 'question' || disabled || seconds <= 0) return;
     setLocalSelected(optionId);
     setPhase('reveal');
     onAnswer(optionId);
@@ -102,7 +91,7 @@ function QuestionDisplayBody({
   const optionLabels = ['أ', 'ب', 'ج', 'د'] as const;
   const timerEnding = seconds <= 5;
   const timerWarning = seconds <= 10 && seconds > 5;
-  const fillScale = timeLimit > 0 ? Math.max(0, seconds / timeLimit) : 0;
+  const fillScale = initialTimeLimit > 0 ? Math.min(1, seconds / initialTimeLimit) : 0;
   const timerLabelId = `ladder-timer-${question.id}`;
 
   return (
@@ -113,12 +102,12 @@ function QuestionDisplayBody({
     >
       <div className={styles.questionHeader}>
         <span className={styles.ladderCategory}>
-          الجولة {formatNumber(roundNumber)} من {formatNumber(totalRounds)}
+          السؤال {formatNumber(roundNumber)} من {formatNumber(totalRounds)} · {question.category.name} · {question.difficulty === 'EASY' ? 'سهل' : question.difficulty === 'MEDIUM' ? 'متوسط' : 'صعب'}
         </span>
         <div
           className={styles.timerPill}
           role="timer"
-          aria-live={timerEnding ? 'assertive' : 'polite'}
+          aria-live="off"
           aria-atomic="true"
           aria-labelledby={timerLabelId}
         >
@@ -148,7 +137,7 @@ function QuestionDisplayBody({
               transition={reduceMotion ? { duration: 0 } : { delay: index * 0.08 }}
               type="button"
               className={styles.ladderOption}
-              disabled={effectivePhase !== 'question' || disabled}
+              disabled={effectivePhase !== 'question' || disabled || seconds <= 0}
               aria-pressed={isChosen}
               onClick={() => handleAnswer(option.id)}
             >

@@ -237,6 +237,29 @@ describe('LadderService', () => {
       }
     });
 
+    it.each([
+      ['EASY', 20],
+      ['MEDIUM', 30],
+      ['HARD', 45],
+    ] as const)(
+      'uses the automatic time for actual %s questions',
+      async (difficulty, seconds) => {
+        const room = { ...waitingRoom(), automaticQuestionTime: true };
+        redis.loadLadderRoom.mockResolvedValue(room);
+        findManyQuestions.mockResolvedValue([
+          publishedQuestion('auto', 4, difficulty),
+        ]);
+        const result = await service.startGame('AB12CD34', 'guest_right');
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.room.currentQuestion?.timeLimit).toBe(seconds);
+          expect(result.room.questionDeadlineAt).toBe(
+            result.room.questionOpenedAt! + seconds * 1000,
+          );
+        }
+      },
+    );
+
     it('skips candidates outside the supported two-to-four option range', async () => {
       const oneOption = publishedQuestion('one-option', 2);
       oneOption.options = oneOption.options.slice(0, 1);
@@ -301,6 +324,85 @@ describe('LadderService', () => {
   });
 
   describe('answer security and scoring', () => {
+    it('persists the guest identity only after a successful room join', async () => {
+      const room = { ...activeRoom(), status: 'waiting' as const, teams: [] };
+      redis.loadLadderRoom.mockResolvedValue(room);
+      const result = await service.joinRoom(
+        { roomCode: room.roomCode, playerName: 'لاعب', team: 'right' },
+        'guest-new',
+        'token-new',
+      );
+      expect(result.ok).toBe(true);
+      expect(redis.setLadderGuestIdentity).toHaveBeenCalled();
+    });
+    it('does not create an identity from a rejected join before reconnect', async () => {
+      const room = activeRoom();
+      redis.loadLadderRoom.mockResolvedValue(room);
+      redis.getLadderGuestIdentity.mockResolvedValue(null);
+      expect(
+        await service.validateGuest('guest_right', 'new-token'),
+      ).not.toBeNull();
+      const rejected = await service.joinRoom(
+        { roomCode: room.roomCode, playerName: 'لاعب', team: 'right' },
+        'guest_right',
+        'new-token',
+      );
+      expect(rejected).toMatchObject({ ok: false, code: 'GAME_STARTED' });
+      expect(redis.setLadderGuestIdentity).not.toHaveBeenCalled();
+      expect(
+        await service.validateGuest('guest_right', 'new-token', false),
+      ).toBeNull();
+    });
+    it('rejects reconnect identity recreation if the guest record disappeared', async () => {
+      redis.getLadderGuestIdentity.mockResolvedValue(null);
+      expect(
+        await service.validateGuest('guest_right', 'new-token', false),
+      ).toBeNull();
+      expect(redis.setLadderGuestIdentity).not.toHaveBeenCalled();
+    });
+
+    it('stops clearly when the bank fails at a question timeout', async () => {
+      const room = activeRoom();
+      redis.loadLadderRoom.mockResolvedValue(room);
+      findManyQuestions.mockRejectedValue(new Error('database unavailable'));
+      jest.spyOn(Date, 'now').mockReturnValue(room.questionDeadlineAt! + 1);
+      const result = await service.expireQuestion(
+        room.roomCode,
+        room.currentQuestion!.id,
+      );
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.room.rightPosition).toBe(0);
+        expect(result.room.status).toBe('finished');
+        expect(result.room.stopReason?.code).toBe('QUESTION_BANK_UNAVAILABLE');
+        expect(redis.saveLadderRoom).toHaveBeenCalledWith(
+          room.roomCode,
+          result.room,
+        );
+      }
+    });
+    it('preserves an accepted answer and stops clearly when the bank fails', async () => {
+      const room = activeRoom();
+      redis.loadLadderRoom.mockResolvedValue(room);
+      findManyQuestions.mockRejectedValue(new Error('database unavailable'));
+      const result = await service.submitAnswer(
+        'guest_right',
+        room.roomCode,
+        room.currentQuestion!.id,
+        room.currentQuestion!.options[0].id,
+      );
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.room.rightPosition).toBe(1);
+        expect(result.room.rightScore).toBe(100);
+        expect(result.room.status).toBe('finished');
+        expect(result.room.stopReason?.code).toBe('QUESTION_BANK_UNAVAILABLE');
+        expect(redis.saveLadderRoom).toHaveBeenCalledWith(
+          room.roomCode,
+          result.room,
+        );
+      }
+    });
     it('rejects an option that does not belong to the current question', async () => {
       const room = activeRoom();
       redis.loadLadderRoom.mockResolvedValue(room);
@@ -552,7 +654,7 @@ describe('LadderService', () => {
       expect(result).toBeNull();
     });
 
-    it('creates a fresh identity when no record exists for the guestId', async () => {
+    it('returns a provisional identity without persisting it before an accepted join', async () => {
       redis.getLadderGuestIdentity.mockResolvedValue(null);
       redis.setLadderGuestIdentity.mockResolvedValue(undefined);
 
@@ -561,8 +663,7 @@ describe('LadderService', () => {
       expect(result).not.toBeNull();
       expect(result?.guestId).toBe('guest_123');
       expect(result?.guestToken).toBe('token_abc');
-      // Side effect: a new identity is written to Redis
-      expect(redis.setLadderGuestIdentity).toHaveBeenCalled();
+      expect(redis.setLadderGuestIdentity).not.toHaveBeenCalled();
     });
 
     it('returns the stored identity when token matches and has not expired', async () => {

@@ -37,6 +37,11 @@ describe('LadderGateway host access', () => {
     createRoom: jest.fn().mockResolvedValue({ ok: true, room }),
     startGame: jest.fn().mockResolvedValue({ ok: true, room }),
     buildSnapshot: jest.fn().mockReturnValue({ roomCode: room.roomCode }),
+    submitAnswer: jest.fn(),
+    leaveRoom: jest.fn(),
+    validateGuest: jest.fn(),
+    joinRoom: jest.fn(),
+    handleReconnect: jest.fn(),
   };
   const redis = {
     consumeRateLimit: jest.fn().mockResolvedValue(true),
@@ -122,6 +127,91 @@ describe('LadderGateway host access', () => {
       code: 'NOT_HOST',
       message: 'المضيف الموثّق وحده يستطيع بدء اللعبة.',
     });
+  });
+
+  it('rejects an answer from an unattached socket claiming another guest identity', async () => {
+    const gateway = createGateway();
+    const client = createClient({ guestId: 'guest-1', guestToken: 'forged' });
+    await gateway.submitAnswer(client as never, {
+      roomCode: room.roomCode,
+      questionId: 'q1',
+      optionId: 'a',
+    });
+    expect(ladder.submitAnswer).not.toHaveBeenCalled();
+    expect(client.emit).toHaveBeenCalledWith(
+      'ladder:error',
+      expect.objectContaining({ code: 'INVALID_SESSION' }),
+    );
+  });
+
+  it.each(['join', 'reconnect'] as const)(
+    'accepts answers after an authenticated %s',
+    async (method) => {
+      const gateway = createGateway();
+      const client = createClient({ guestId: 'guest-1', guestToken: 'valid' });
+      ladder.validateGuest.mockResolvedValue({
+        guestId: 'guest-1',
+        roomCode: room.roomCode,
+      });
+      ladder.joinRoom.mockResolvedValue({ ok: true, room });
+      ladder.handleReconnect.mockResolvedValue({ ok: true, room });
+      ladder.submitAnswer.mockResolvedValue({ ok: true, room });
+      if (method === 'join') {
+        await gateway.joinRoom(client as never, {
+          roomCode: room.roomCode,
+          playerName: 'لاعب',
+          team: 'right',
+        });
+      } else {
+        await gateway.reconnect(client as never, { roomCode: room.roomCode });
+      }
+      await gateway.submitAnswer(client as never, {
+        roomCode: room.roomCode,
+        questionId: 'q1',
+        optionId: 'a',
+      });
+      expect(ladder.submitAnswer).toHaveBeenCalledWith(
+        'guest-1',
+        room.roomCode,
+        'q1',
+        'a',
+      );
+    },
+  );
+
+  it('rejects reconnect with a valid identity bound to another room', async () => {
+    const gateway = createGateway();
+    const client = createClient({ guestId: 'guest-1', guestToken: 'valid' });
+    ladder.validateGuest.mockResolvedValue({
+      guestId: 'guest-1',
+      roomCode: 'ZZ11ZZ11',
+    });
+    await gateway.reconnect(client as never, { roomCode: room.roomCode });
+    expect(ladder.handleReconnect).not.toHaveBeenCalled();
+    expect(client.emit).toHaveBeenCalledWith(
+      'ladder:error',
+      expect.objectContaining({ code: 'INVALID_GUEST' }),
+    );
+  });
+
+  it('declares the team higher on the ladder the winner when rounds end', async () => {
+    const gateway = createGateway();
+    const emit = jest.fn();
+    gateway.server = { to: jest.fn().mockReturnValue({ emit }) } as never;
+    const hostAccessToken = createLadderHostAccessToken(AUTH_SECRET, {
+      hostId: 'user-host',
+      expiresAt: Date.now() + 60_000,
+    });
+    const client = createClient({ hostId: 'user-host', hostAccessToken });
+    ladder.startGame.mockResolvedValue({
+      ok: true,
+      room: { ...room, status: 'finished', rightPosition: 4, leftPosition: 3 },
+    });
+    await gateway.startGame(client as never, { roomCode: room.roomCode });
+    expect(emit).toHaveBeenCalledWith(
+      'ladder:game:end',
+      expect.objectContaining({ winner: 'right' }),
+    );
   });
 
   it('rejects a signed token when the claimed host identity does not match', async () => {

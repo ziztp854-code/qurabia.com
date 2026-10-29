@@ -93,4 +93,19 @@ describe('loadLadderQuestionCandidates', () => {
     expect(findMany).toHaveBeenCalled();
     expect(candidates.map((candidate) => candidate.id)).toEqual(['bank-1']);
   });
+
+  it('queries the target difficulty before the bounded general pool', async () => {
+    const queries: Array<{ where: { difficulty?: string } }> = [];
+    const findMany = jest.fn((query: { where: { difficulty?: string } }) => {
+      queries.push(query);
+      return Promise.resolve([]);
+    });
+    const database = {
+      client: { quiz: { findFirst: jest.fn() }, question: { findMany } },
+    } as unknown as DatabaseService;
+    await loadLadderQuestionCandidates(database, room(), 'HARD');
+    expect(queries).toHaveLength(2);
+    expect(queries[0]?.where.difficulty).toBe('HARD');
+    expect(queries[1]?.where.difficulty).toBeUndefined();
+  });
 });

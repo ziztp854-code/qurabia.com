@@ -133,6 +133,7 @@ export class LadderService {
     const candidates = await loadLadderQuestionCandidates(
       this.database,
       normalizedRoom,
+      difficulty,
     );
     const selection = selectLadderQuestionCandidate({
       candidates,
@@ -144,10 +145,10 @@ export class LadderService {
 
     const { candidate } = selection;
     const openedAt = Date.now();
-    const timeLimit = Math.max(
-      candidate.timeLimit,
-      room.questionTimeLimit ?? 30,
-    );
+    const automaticTimes = { EASY: 20, MEDIUM: 30, HARD: 45 } as const;
+    const timeLimit = room.automaticQuestionTime
+      ? automaticTimes[candidate.difficulty]
+      : Math.max(candidate.timeLimit, room.questionTimeLimit ?? 30);
     const deadlineAt = openedAt + timeLimit * 1000;
     const correctOption = candidate.options.find((option) => option.isCorrect);
     if (!correctOption) return null;
@@ -210,6 +211,25 @@ export class LadderService {
         message: 'نفدت الأسئلة الصالحة غير المكررة لهذه الغرفة.',
       },
     };
+  }
+
+  private async openNextQuestion(
+    room: LadderRoomRuntime,
+  ): Promise<LadderRoomRuntime> {
+    try {
+      return (
+        (await this.openQuestion(room, room.currentRound + 1)) ??
+        this.stopForExhaustedPool(room)
+      );
+    } catch {
+      return {
+        ...this.stopForExhaustedPool(room),
+        stopReason: {
+          code: 'QUESTION_BANK_UNAVAILABLE',
+          message: 'تعذّر تحميل السؤال التالي. حُفظت نتيجة الجولة الحالية.',
+        },
+      };
+    }
   }
 
   buildSnapshot(
@@ -315,7 +335,8 @@ export class LadderService {
       rightPosition: 0,
       leftPosition: 0,
       winningPosition: input.winningPosition,
-      questionTimeLimit: input.questionTimeLimit,
+      questionTimeLimit: input.questionTimeLimit ?? 30,
+      automaticQuestionTime: input.questionTimeLimit === undefined,
       quizId: input.quizId ?? null,
       currentQuestion: null,
       usedQuestionIds: [],
@@ -358,6 +379,14 @@ export class LadderService {
             ok: false,
             code: 'GAME_STARTED',
             message: 'بدأت هذه اللعبة بالفعل.',
+          };
+        }
+
+        if (room.teams.some((member) => member.id === guestId)) {
+          return {
+            ok: false,
+            code: 'ALREADY_JOINED',
+            message: 'هذه الهوية مسجلة بالفعل في الغرفة.',
           };
         }
 
@@ -471,24 +500,33 @@ export class LadderService {
       }
 
       const startedAt = Date.now();
-      const roomWithQuestion = await this.openQuestion(
-        {
-          ...room,
-          status: 'active',
-          currentRound: 1,
-          startedAt,
-          usedQuestionIds: [],
-          recentCategoryIds: [],
-          currentQuestionId: null,
-          currentDifficulty: null,
-          questionOpenedAt: null,
-          questionDeadlineAt: null,
-          currentCorrectOptionId: null,
-          stopReason: undefined,
-          updatedAt: startedAt,
-        },
-        1,
-      );
+      let roomWithQuestion: LadderRoomRuntime | null;
+      try {
+        roomWithQuestion = await this.openQuestion(
+          {
+            ...room,
+            status: 'active',
+            currentRound: 1,
+            startedAt,
+            usedQuestionIds: [],
+            recentCategoryIds: [],
+            currentQuestionId: null,
+            currentDifficulty: null,
+            questionOpenedAt: null,
+            questionDeadlineAt: null,
+            currentCorrectOptionId: null,
+            stopReason: undefined,
+            updatedAt: startedAt,
+          },
+          1,
+        );
+      } catch {
+        return {
+          ok: false,
+          code: 'QUESTION_BANK_UNAVAILABLE',
+          message: 'تعذّر تحميل الأسئلة. حاول بدء اللعبة مرة أخرى.',
+        };
+      }
       if (!roomWithQuestion) {
         return {
           ok: false,
@@ -628,11 +666,7 @@ export class LadderService {
           updatedAt: endedAt,
         };
       } else {
-        nextRoom =
-          (await this.openQuestion(
-            answeredRoom,
-            answeredRoom.currentRound + 1,
-          )) ?? this.stopForExhaustedPool(answeredRoom);
+        nextRoom = await this.openNextQuestion(answeredRoom);
       }
 
       await this.saveRoom(roomCode, nextRoom);
@@ -683,11 +717,7 @@ export class LadderService {
           updatedAt: endedAt,
         };
       } else {
-        nextRoom =
-          (await this.openQuestion(
-            expiredRoom,
-            expiredRoom.currentRound + 1,
-          )) ?? this.stopForExhaustedPool(expiredRoom);
+        nextRoom = await this.openNextQuestion(expiredRoom);
       }
 
       await this.saveRoom(roomCode, nextRoom);
@@ -746,10 +776,12 @@ export class LadderService {
   async validateGuest(
     guestId: string,
     guestToken?: string,
+    createIfMissing = true,
   ): Promise<LadderGuestIdentity | null> {
     if (!guestToken) return null;
     let identity = await this.getGuestIdentity(guestId);
     if (!identity) {
+      if (!createIfMissing) return null;
       const now = Date.now();
       identity = {
         guestId,
@@ -757,7 +789,6 @@ export class LadderService {
         createdAt: now,
         expiresAt: now + LADDER_TTL_SECONDS * 1000,
       };
-      await this.setGuestIdentity(identity);
       return identity;
     }
     if (Date.now() > identity.expiresAt) {
