@@ -10,14 +10,16 @@ export const metadata: Metadata = {
 export default async function LadderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ room?: string }>;
+  searchParams: Promise<{ room?: string; name?: string; team?: string }>;
 }) {
-  const { room } = await searchParams;
+  const { room, name, team } = await searchParams;
   const roomCode = typeof room === 'string' ? room : undefined;
+  const playerName = typeof name === 'string' ? name.trim() : undefined;
+  const playerTeam = team === 'left' || team === 'right' ? team : undefined;
 
   return (
     <SiteLayout user={null}>
-      <LadderRoom initialRoomCode={roomCode} />
+      <LadderRoom initialRoomCode={roomCode} initialPlayerName={playerName} initialTeam={playerTeam} />
     </SiteLayout>
   );
 }

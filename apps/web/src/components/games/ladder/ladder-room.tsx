@@ -2,7 +2,7 @@
 
 import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Play, Swords, Trophy, CircleDot, Circle, Copy, Check, UserPlus } from 'lucide-react';
 import { Button, ButtonLink, Card, Input } from '@/components/ui';
@@ -15,11 +15,14 @@ import styles from './ladder-room.module.css';
 import { LadderVisual } from './ladder-visual';
 import { QuestionDisplay } from './question-display';
 import { TeamPanel } from './team-panel';
+import { LadderInviteQr } from './ladder-invite-qr';
 import {
   clearLadderGuestIdentity,
   getOrCreateLadderGuestId,
   getOrCreateLadderGuestToken,
+  getJoinedLadderRoomCode,
   isLadderSessionStorageAvailable,
+  setJoinedLadderRoomCode,
 } from './ladder-session-storage';
 
 type Phase = 'join' | 'waiting' | 'countdown' | 'question' | 'finished';
@@ -63,6 +66,8 @@ function readStoredIdentity(): GuestIdentity {
 
 export function LadderRoom({
   initialRoomCode,
+  initialPlayerName,
+  initialTeam,
   role = 'player',
   hostIdentity,
   hostName,
@@ -70,6 +75,8 @@ export function LadderRoom({
   packTitle = null,
 }: {
   initialRoomCode?: string;
+  initialPlayerName?: string;
+  initialTeam?: 'right' | 'left';
   role?: 'player' | 'host';
   hostIdentity?: HostIdentity;
   hostName?: string;
@@ -97,6 +104,7 @@ export function LadderRoom({
     connected,
     room,
     error,
+    errorCode,
     busy,
     gameEnd,
     countdown,
@@ -116,8 +124,8 @@ export function LadderRoom({
   // previous `onClick={() => {}}` bug where the tab buttons had no
   // effect.
   const entryMode = role === 'host' ? 'create' : 'join';
-  const [playerName, setPlayerName] = useState('');
-  const [team, setTeam] = useState<'right' | 'left'>('right');
+  const [playerName, setPlayerName] = useState(() => initialPlayerName?.trim().slice(0, 30) ?? '');
+  const [team, setTeam] = useState<'right' | 'left'>(initialTeam ?? 'right');
   const [totalRounds, setTotalRounds] = useState(20);
   const [winningPosition, setWinningPosition] = useState(10);
   const [questionTimeLimit, setQuestionTimeLimit] = useState('auto');
@@ -131,6 +139,49 @@ export function LadderRoom({
   const roomCode = room?.roomCode ?? joinCode;
   const identityBlocked =
     role === 'host' ? !hostIdentity : guestIdentityInvalid || !guestIdentityKey;
+
+  const inviteAttempted = useRef(false);
+  const invitePending = useRef(false);
+  const inviteSentOnConnection = useRef(false);
+  useEffect(() => {
+    if (!connected) {
+      inviteSentOnConnection.current = false;
+      return;
+    }
+    const code = joinCode.trim().toUpperCase();
+    const name = playerName.trim();
+    const inviteCode = initialRoomCode?.trim().toUpperCase() ?? '';
+    const inviteName = initialPlayerName?.trim() ?? '';
+    if (role !== 'player' || inviteSentOnConnection.current || room || identityBlocked || !socketRef.current ||
+        (inviteAttempted.current && !invitePending.current) ||
+        !/^[A-Z0-9]{8}$/.test(inviteCode) || inviteName.length < 2 || inviteName.length > 30 ||
+        !/^[A-Z0-9]{8}$/.test(code) || name.length < 2 || name.length > 30 ||
+        (initialTeam !== 'left' && initialTeam !== 'right')) return;
+    inviteSentOnConnection.current = true;
+    setBusy(true);
+    setError('');
+    if (invitePending.current || getJoinedLadderRoomCode() === code) {
+      socketRef.current.emit('ladder:reconnect', { roomCode: code });
+    } else {
+      socketRef.current.emit('ladder:join', { roomCode: code, playerName: name, team });
+    }
+    inviteAttempted.current = true;
+    invitePending.current = true;
+  }, [connected, identityBlocked, initialPlayerName, initialRoomCode, initialTeam, joinCode, playerName, role, room, setBusy, setError, socketRef, team]);
+
+  useEffect(() => {
+    if (role === 'player' && room?.roomCode) {
+      invitePending.current = false;
+      setJoinedLadderRoomCode(room.roomCode);
+    }
+  }, [role, room?.roomCode]);
+
+  useEffect(() => {
+    if (errorCode === 'ROOM_NOT_FOUND' || errorCode === 'INVALID_SESSION' || errorCode === 'INVALID_GUEST') {
+      invitePending.current = false;
+      setJoinedLadderRoomCode('');
+    }
+  }, [errorCode]);
 
   // Derive the local UI phase from the server-authoritative room state.
   // The two purely-local phases ('join' and 'countdown') live in
@@ -193,6 +244,7 @@ export function LadderRoom({
   const handleLeave = () => {
     if (!socketRef.current || !roomCode) return;
     socketRef.current.emit('ladder:leave', { roomCode: roomCode.toUpperCase() });
+    if (role === 'player') setJoinedLadderRoomCode('');
     clearRoom();
     setPhase('join');
   };
@@ -247,7 +299,18 @@ export function LadderRoom({
 
         {role === 'player' && guestIdentityInvalid && phase === 'join' && (
           <Card className={`${styles.ladderError} ${styles.identityAlert}`} role="alert">
-            <p>هوية الضيف السابقة انتهت. أنشئ هوية جديدة للمتابعة دون فقدان التقدم.</p>
+            <p>تعذر استعادة جلسة الضيف. يمكنك إعادة محاولة الانضمام بالهوية الحالية أو تجديدها.</p>
+            {initialTeam && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={busy || !connected || !guestIdentityKey || !/^[A-Z0-9]{8}$/i.test(joinCode.trim()) || playerName.trim().length < 2}
+                onClick={handleJoin}
+              >
+                إعادة محاولة الانضمام بالهوية الحالية
+              </Button>
+            )}
             <Button type="button" variant="outline" size="sm" onClick={handleRecoverGuest}>
               تجديد الهوية الآن
             </Button>
@@ -547,6 +610,8 @@ export function LadderRoom({
                   رمز الدخول
                   <strong dir="ltr">{roomCode}</strong>
                 </p>
+
+                {isHost && <LadderInviteQr inviteUrl={shareUrl} roomCode={room.roomCode} />}
 
                 <div className={styles.waitingActions}>
                   {isHost && (

@@ -3,6 +3,7 @@
 const LADDER_GUEST_ID_KEY = 'tahaddi-ladder-guest-id';
 const LADDER_GUEST_TOKEN_KEY = 'tahaddi-ladder-guest-token';
 const LADDER_LAST_ROOM_KEY = 'tahaddi-ladder-last-room';
+const LADDER_JOINED_ROOM_KEY = 'tahaddi-ladder-joined-room';
 
 function probeSessionStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
@@ -151,6 +152,7 @@ export function clearLadderGuestIdentity() {
   try {
     storage.removeItem(LADDER_GUEST_ID_KEY);
     storage.removeItem(LADDER_GUEST_TOKEN_KEY);
+    storage.removeItem(LADDER_JOINED_ROOM_KEY);
   } catch {
     // ignore
   }
@@ -164,4 +166,17 @@ export function clearLadderGuestIdentity() {
  */
 export function isLadderSessionStorageAvailable() {
   return getSessionStorage() !== null;
+}
+
+export function getJoinedLadderRoomCode() {
+  try { return getSessionStorage()?.getItem(LADDER_JOINED_ROOM_KEY) ?? ''; }
+  catch { return ''; }
+}
+
+export function setJoinedLadderRoomCode(roomCode: string) {
+  try {
+    const storage = getSessionStorage();
+    if (roomCode) storage?.setItem(LADDER_JOINED_ROOM_KEY, roomCode);
+    else storage?.removeItem(LADDER_JOINED_ROOM_KEY);
+  } catch { /* Storage can become unavailable after the initial probe. */ }
 }

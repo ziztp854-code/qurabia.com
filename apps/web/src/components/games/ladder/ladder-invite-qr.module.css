@@ -1,0 +1,59 @@
+.invite {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: min(100%, 27rem);
+  margin-inline: auto;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--card) 92%, var(--gold));
+}
+
+.paper {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 12.5rem;
+  height: 12.5rem;
+  padding: 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--qr-paper, #ffffff);
+  color: var(--qr-ink, #111827);
+}
+
+.paper svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.copy {
+  display: grid;
+  flex: 1 1 10rem;
+  gap: 0.4rem;
+  text-align: start;
+  line-height: 1.6;
+}
+
+.copy strong {
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+.copy span {
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+
+.loading {
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 28rem) {
+  .invite { flex-direction: column; }
+  .copy { flex: auto; text-align: center; }
+}

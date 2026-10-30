@@ -114,6 +114,104 @@ describe('LadderRoom guest identity recovery', () => {
     expect(joinButton).toBeEnabled();
   });
 
+  it.each(['left', 'right'] as const)('automatically joins the invited %s team once when connected', async (team) => {
+    render(<LadderRoom initialRoomCode="ab12cd34" initialPlayerName=" لاعب اختبار " initialTeam={team} />);
+    expect(screen.getByLabelText('اسم اللاعب')).toHaveValue('لاعب اختبار');
+    expect(screen.getByRole('radio', { name: team === 'left' ? /فريق اليسار/ : /فريق اليمين/ })).toBeChecked();
+    expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
+      roomCode: 'AB12CD34', playerName: 'لاعب اختبار', team,
+    }));
+    emitError('ROOM_NOT_FOUND', 'الغرفة غير موجودة');
+    expect(screen.getByText('الغرفة غير موجودة أو انتهت.')).toBeInTheDocument();
+    connectSocket();
+    expect(socketMock.emit.mock.calls.filter(([event]) => event === 'ladder:join')).toHaveLength(1);
+  });
+
+  it('restores an already joined invitation on reload without joining a second time', async () => {
+    const first = render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="لاعب اختبار" initialTeam="left" />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', expect.anything()));
+    emitRoomState({ roomCode: 'AB12CD34', phase: 'waiting', rightTeam: [], leftTeam: [], isHost: false });
+    first.unmount();
+    socketMock.emit.mockClear();
+    render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="لاعب اختبار" initialTeam="left" />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:reconnect', { roomCode: 'AB12CD34' }));
+    expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
+  });
+
+  it('does not automatically join for invalid invitation data, even when corrected manually', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom initialRoomCode="bad" initialPlayerName="x" initialTeam="left" />);
+    connectSocket();
+    expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
+    await user.clear(screen.getByLabelText('اسم اللاعب'));
+    await user.type(screen.getByLabelText('اسم اللاعب'), 'لاعب اختبار');
+    await user.clear(screen.getByLabelText('رمز الغرفة'));
+    await user.type(screen.getByLabelText('رمز الغرفة'), 'AB12CD34');
+    expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
+  });
+
+  it('uses the edited name and team when the connection arrives', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="الاسم الأول" initialTeam="right" />);
+    await user.clear(screen.getByLabelText('اسم اللاعب'));
+    await user.type(screen.getByLabelText('اسم اللاعب'), 'الاسم الجديد');
+    await user.click(screen.getByRole('radio', { name: /فريق اليسار/ }));
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
+      roomCode: 'AB12CD34', playerName: 'الاسم الجديد', team: 'left',
+    }));
+  });
+
+  it('reconnects rather than repeating join when the connection drops before acknowledgement', async () => {
+    render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="لاعب اختبار" initialTeam="left" />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', expect.anything()));
+    act(() => socketMock.listeners.get('disconnect')?.());
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:reconnect', { roomCode: 'AB12CD34' }));
+    expect(socketMock.emit.mock.calls.filter(([event]) => event === 'ladder:join')).toHaveLength(1);
+  });
+
+  it('offers a retry with the same guest identity if reconnect cannot find the unacknowledged join', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="لاعب اختبار" initialTeam="left" />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', expect.anything()));
+    const initialAuth = ioMock.mock.calls[0]?.[1];
+    act(() => socketMock.listeners.get('disconnect')?.());
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:reconnect', { roomCode: 'AB12CD34' }));
+    emitError('INVALID_GUEST', 'هوية الضيف غير صالحة');
+    expect(socketMock.emit.mock.calls.filter(([event]) => event === 'ladder:join')).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'إعادة محاولة الانضمام بالهوية الحالية' }));
+    expect(socketMock.emit.mock.calls.filter(([event]) => event === 'ladder:join')).toHaveLength(2);
+    expect(ioMock).toHaveBeenCalledTimes(1);
+    expect(ioMock.mock.calls[0]?.[1]).toEqual(initialAuth);
+  });
+
+  it('clears the saved membership when the server reports an invalid session', async () => {
+    sessionStorage.setItem('tahaddi-ladder-joined-room', 'AB12CD34');
+    render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="لاعب اختبار" initialTeam="left" />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:reconnect', { roomCode: 'AB12CD34' }));
+    emitError('INVALID_SESSION', 'انتهت الجلسة');
+    expect(sessionStorage.getItem('tahaddi-ladder-joined-room')).toBeNull();
+    expect(screen.getByText('انتهت الجلسة')).toBeInTheDocument();
+  });
+
+  it.each([true, false])('shows the invitation QR only for the host: %s', async (isHost) => {
+    render(<LadderRoom />);
+    connectSocket();
+    emitRoomState({ roomCode: 'AB12CD34', phase: 'waiting', rightTeam: [], leftTeam: [], isHost });
+    const qr = screen.queryByRole('img', { name: /رمز مسح للانضمام إلى غرفة السلم AB12CD34/ });
+    if (isHost) expect(qr).toBeInTheDocument();
+    else expect(qr).not.toBeInTheDocument();
+  });
+
   it('disables player join while the guest identity is invalid', async () => {
     const user = userEvent.setup();
     render(<LadderRoom />);
@@ -220,7 +318,7 @@ describe('LadderRoom guest identity recovery', () => {
     emitError('INVALID_GUEST', 'هوية الضيف غير صالحة أو منتهية.');
 
     expect(
-      screen.getByText('هوية الضيف السابقة انتهت. أنشئ هوية جديدة للمتابعة دون فقدان التقدم.'),
+      screen.getByText('تعذر استعادة جلسة الضيف. يمكنك إعادة محاولة الانضمام بالهوية الحالية أو تجديدها.'),
     ).toBeInTheDocument();
 
     // Recover -> reconnect -> receive a room snapshot
