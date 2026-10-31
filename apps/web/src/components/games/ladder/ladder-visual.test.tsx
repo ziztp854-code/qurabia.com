@@ -19,15 +19,22 @@ describe('LadderVisual', () => {
     const center = screen.getByTestId('ladder-question-center');
     expect(center).toContainElement(screen.getByTestId('question-between-ladders'));
   });
-  it('shows each team marker at its server-provided position', () => {
-    const { rerender } = render(<LadderVisual rightPosition={2} leftPosition={1}
-      winningPosition={10} currentRound={1} totalRounds={20} />);
-    expect(screen.getByRole('img', { name: 'موقع فريق اليمين: 2' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'موقع فريق اليسار: 1' })).toBeInTheDocument();
+  it('lights only each contestant’s current position and reports the score', () => {
+    const { container, rerender } = render(<LadderVisual rightPosition={2} leftPosition={1}
+      rightName="خالد" leftName="فهد" rightScore={7000} leftScore={6000}
+      winningPosition={10} currentRound={1} totalRounds={10} />);
+    expect(screen.getByLabelText(/خالد، الدرجة/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/فهد، الدرجة/)).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-current="true"]')).toHaveLength(2);
     rerender(<LadderVisual rightPosition={3} leftPosition={0}
-      winningPosition={10} currentRound={2} totalRounds={20} />);
-    expect(screen.getByRole('img', { name: 'موقع فريق اليمين: 3' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'موقع فريق اليسار: 0' })).toBeInTheDocument();
+      winningPosition={10} currentRound={2} totalRounds={10} />);
+    expect(container.querySelectorAll('[data-current="true"]')).toHaveLength(2);
   });
-
+  it('announces the winner and the deciding rule inside the stage', () => {
+    render(<LadderVisual rightPosition={10} leftPosition={10} winningPosition={10} currentRound={10} totalRounds={10}
+      finale={{ title: 'يفوز خالد', detail: '٧٠٠٠ مقابل ٦٠٠٠ نقطة', reason: 'الحسم بأعلى مجموع نقاط' }} />);
+    const center = screen.getByTestId('ladder-question-center');
+    expect(center).toHaveTextContent('يفوز خالد');
+    expect(center).toHaveTextContent('الحسم بأعلى مجموع نقاط');
+  });
 });

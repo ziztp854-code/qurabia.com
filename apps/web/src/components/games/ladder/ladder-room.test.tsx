@@ -117,7 +117,7 @@ describe('LadderRoom guest identity recovery', () => {
   it.each(['left', 'right'] as const)('automatically joins the invited %s team once when connected', async (team) => {
     render(<LadderRoom initialRoomCode="ab12cd34" initialPlayerName=" لاعب اختبار " initialTeam={team} />);
     expect(screen.getByLabelText('اسم اللاعب')).toHaveValue('لاعب اختبار');
-    expect(screen.getByRole('radio', { name: team === 'left' ? /فريق اليسار/ : /فريق اليمين/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: team === 'left' ? /المتسابق الأيسر/ : /المتسابق الأيمن/ })).toBeChecked();
     expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
     connectSocket();
     await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
@@ -159,7 +159,7 @@ describe('LadderRoom guest identity recovery', () => {
     render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="الاسم الأول" initialTeam="right" />);
     await user.clear(screen.getByLabelText('اسم اللاعب'));
     await user.type(screen.getByLabelText('اسم اللاعب'), 'الاسم الجديد');
-    await user.click(screen.getByRole('radio', { name: /فريق اليسار/ }));
+    await user.click(screen.getByRole('radio', { name: /المتسابق الأيسر/ }));
     connectSocket();
     await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
       roomCode: 'AB12CD34', playerName: 'الاسم الجديد', team: 'left',
@@ -254,13 +254,13 @@ describe('LadderRoom guest identity recovery', () => {
     expect(screen.queryByText('اختر الفريق')).not.toBeInTheDocument();
   });
 
-  it('creates a 20-question room using the difficulty-based default timing', async () => {
+  it('creates a ten-question room using difficulty-based timing', async () => {
     const user = userEvent.setup();
     render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
     connectSocket();
     await user.click(screen.getByRole('button', { name: /إنشاء الغرفة/ }));
     expect(socketMock.emit).toHaveBeenCalledWith('ladder:host', {
-      totalRounds: 20,
+      totalRounds: 10,
       winningPosition: 10,
     });
   });
@@ -269,10 +269,10 @@ describe('LadderRoom guest identity recovery', () => {
     const user = userEvent.setup();
     render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
     connectSocket();
-    await user.selectOptions(screen.getByLabelText('الحد الأدنى لوقت السؤال'), '45');
+    await user.selectOptions(screen.getByLabelText('وقت السؤال'), '45');
     await user.click(screen.getByRole('button', { name: /إنشاء الغرفة/ }));
     expect(socketMock.emit).toHaveBeenCalledWith('ladder:host', {
-      totalRounds: 20,
+      totalRounds: 10,
       winningPosition: 10,
       questionTimeLimit: 45,
     });
@@ -353,7 +353,7 @@ describe('LadderRoom guest identity recovery', () => {
   it('does not announce a winner when the server stops the game', () => {
     render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
     connectSocket();
-    emitRoomState({ roomCode: 'AB12CD', phase: 'finished', currentRound: 3, totalRounds: 20,
+    emitRoomState({ roomCode: 'AB12CD', phase: 'finished', currentRound: 3, totalRounds: 10,
       rightScore: 1, leftScore: 0, rightPosition: 1, leftPosition: 0, winningPosition: 10,
       currentQuestion: null, rightTeam: [], leftTeam: [], isHost: true });
     act(() => socketMock.listeners.get('ladder:game:end')?.({
@@ -361,6 +361,77 @@ describe('LadderRoom guest identity recovery', () => {
     }));
     expect(screen.getByText('توقفت الجولة')).toBeInTheDocument();
     expect(screen.queryByText('يفوز فريق اليسار')).not.toBeInTheDocument();
+  });
+
+
+  it('restores the same host room after a reload in the same tab', async () => {
+    const first = render(<LadderRoom role="host" hostIdentity={{ hostId: 'host', accessToken: 'token' }} />);
+    connectSocket();
+    emitRoomState({ roomCode: 'AB12CD34', phase: 'waiting', rightTeam: [], leftTeam: [], isHost: true });
+    first.unmount();
+    socketMock.emit.mockClear();
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'host', accessToken: 'new-token' }} />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:reconnect', { roomCode: 'AB12CD34' }));
+  });
+
+  it('restores a player room after reload even when the link has no name parameters', async () => {
+    sessionStorage.setItem('tahaddi-ladder-joined-room', 'AB12CD34');
+    render(<LadderRoom />);
+    connectSocket();
+    await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:reconnect', { roomCode: 'AB12CD34' }));
+  });
+
+  it('does not restore a previous player room when opening a different invitation', () => {
+    sessionStorage.setItem('tahaddi-ladder-joined-room', 'AB12CD34');
+    render(<LadderRoom initialRoomCode="EF56GH78" />);
+    connectSocket();
+    expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:reconnect', expect.anything());
+  });
+
+  it('clears the saved host room on explicit exit', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'host', accessToken: 'token' }} />);
+    connectSocket();
+    emitRoomState({ roomCode: 'AB12CD34', phase: 'waiting', rightTeam: [], leftTeam: [], isHost: true });
+    expect(sessionStorage.getItem('tahaddi-ladder-host-room')).toContain('AB12CD34');
+    await user.click(screen.getByRole('button', { name: 'خروج' }));
+    expect(sessionStorage.getItem('tahaddi-ladder-host-room')).toBeNull();
+  });
+
+  it('does not restore a different host account room', () => {
+    sessionStorage.setItem('tahaddi-ladder-host-room', JSON.stringify({ hostId: 'other', roomCode: 'AB12CD34' }));
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'host', accessToken: 'token' }} />);
+    connectSocket();
+    expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:reconnect', expect.anything());
+  });
+
+  it('starts only when both contestant slots are filled and shows the real invite QR', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'host', accessToken: 'token' }} />);
+    connectSocket();
+    const waiting = { roomCode: 'AB12CD34', phase: 'waiting', rightTeam: [{ playerName: 'خالد', isHost: false }], leftTeam: [], isHost: true };
+    emitRoomState(waiting);
+    expect(screen.getByText('خالد')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /رمز مسح للانضمام/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /بدء اللعبة/ })).toBeDisabled();
+    emitRoomState({ ...waiting, leftTeam: [{ playerName: 'فهد', isHost: false }] });
+    await user.click(screen.getByRole('button', { name: /بدء اللعبة/ }));
+    expect(socketMock.emit).toHaveBeenCalledWith('ladder:start', { roomCode: 'AB12CD34' });
+  });
+
+  it('shows the winner and answer history after reconnecting to a finished room', () => {
+    render(<LadderRoom />);
+    connectSocket();
+    emitRoomState({ roomCode: 'AB12CD34', phase: 'finished', currentRound: 10, totalRounds: 10,
+      rightScore: 7000, leftScore: 6000, rightPosition: 8, leftPosition: 8, winningPosition: 10,
+      currentQuestion: null, rightTeam: [{ playerName: 'خالد', isHost: false }], leftTeam: [{ playerName: 'فهد', isHost: false }], isHost: false,
+      winner: 'right', winnerMethod: 'score', roundHistory: [{ roundNumber: 1, questionId: 'q1', questionText: 'ما الإجابة؟', options: [{ id: 'a', text: 'الصواب' }], correctOptionId: 'a',
+        right: { optionId: 'a', correct: true, elapsedMs: 1200, points: 1000 }, left: { optionId: null, correct: false, elapsedMs: null, points: -200 } }] });
+    expect(screen.getByText('يفوز خالد')).toBeInTheDocument();
+    expect(screen.getByText('الحسم بأعلى مجموع نقاط')).toBeInTheDocument();
+    expect(screen.getByText(/1.2 ثانية/)).toBeInTheDocument();
+    expect(screen.getByText('لم يجب')).toBeInTheDocument();
   });
 
   it('uses persistent websocket transport for the ladder realtime connection', () => {

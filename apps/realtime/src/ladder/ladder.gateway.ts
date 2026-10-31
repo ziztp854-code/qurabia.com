@@ -8,6 +8,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { ConfigService } from '@nestjs/config';
+import { Logger, type OnModuleDestroy } from '@nestjs/common';
 import type { Server, Socket } from 'socket.io';
 import { createHash } from 'node:crypto';
 import { verifyLadderHostAccessToken } from '@tahaddi/contracts';
@@ -60,7 +61,10 @@ const LADDER_RATE_LIMITS: Record<
   namespace: '/ladder',
 })
 export class LadderGateway
-  implements OnGatewayInit<LadderServer>, OnGatewayDisconnect<LadderSocket>
+  implements
+    OnGatewayInit<LadderServer>,
+    OnGatewayDisconnect<LadderSocket>,
+    OnModuleDestroy
 {
   @WebSocketServer()
   server!: LadderServer;
@@ -73,6 +77,17 @@ export class LadderGateway
     ReturnType<typeof setTimeout>
   >();
   private readonly rateLimiter = new SocketEventRateLimiter();
+  private readonly logger = new Logger(LadderGateway.name);
+  private recoveryTimer?: ReturnType<typeof setTimeout>;
+  private stopped = false;
+  private readonly remoteRefreshVersion = new Map<string, number>();
+  private readonly highestRoomRevision = new Map<string, number>();
+  private readonly remoteStateListener = (roomCode: unknown) => {
+    if (typeof roomCode !== 'string' || !/^[A-Z0-9]{8}$/.test(roomCode)) return;
+    const version = (this.remoteRefreshVersion.get(roomCode) ?? 0) + 1;
+    this.remoteRefreshVersion.set(roomCode, version);
+    void this.refreshRemoteState(roomCode, version);
+  };
 
   constructor(
     private readonly ladder: LadderService,
@@ -81,7 +96,51 @@ export class LadderGateway
   ) {}
 
   afterInit() {
-    // no-op
+    this.stopped = false;
+    const server = this.server as unknown as
+      | { on?: (event: string, listener: (roomCode: unknown) => void) => void }
+      | undefined;
+    server?.on?.('ladder:internal:state', this.remoteStateListener);
+    void this.restoreTimers();
+  }
+
+  onModuleDestroy() {
+    this.stopped = true;
+    const server = this.server as unknown as
+      | { off?: (event: string, listener: (roomCode: unknown) => void) => void }
+      | undefined;
+    server?.off?.('ladder:internal:state', this.remoteStateListener);
+    this.remoteRefreshVersion.clear();
+    this.highestRoomRevision.clear();
+    if (this.recoveryTimer) clearTimeout(this.recoveryTimer);
+    for (const timer of this.questionDeadlineTimers.values())
+      clearTimeout(timer);
+    this.questionDeadlineTimers.clear();
+  }
+
+  private async restoreTimers() {
+    try {
+      let cursor = '0';
+      do {
+        const page = await this.redis.listActiveLadderRoomCodes(cursor);
+        cursor = page.cursor;
+        for (const code of page.codes) {
+          if (this.stopped) return;
+          const room = await this.ladder.getRoom(code);
+          if (this.stopped) return;
+          if (
+            room?.status === 'active' &&
+            !this.questionDeadlineTimers.has(code)
+          )
+            this.scheduleQuestionDeadline(room);
+        }
+      } while (cursor !== '0' && !this.stopped);
+    } catch {
+      if (this.stopped) return;
+      this.logger.warn('تعذّرت استعادة مؤقتات السلم؛ ستُعاد المحاولة.');
+      this.recoveryTimer = setTimeout(() => void this.restoreTimers(), 2000);
+      this.recoveryTimer.unref?.();
+    }
   }
 
   async handleDisconnect(client: LadderSocket) {
@@ -114,21 +173,30 @@ export class LadderGateway
     this.questionDeadlineTimers.delete(roomCode);
   }
 
-  private scheduleQuestionDeadline(room: LadderRoomRuntime) {
-    this.clearQuestionDeadline(room.roomCode);
-    if (
-      room.status !== 'active' ||
-      !room.currentQuestionId ||
-      room.questionDeadlineAt === null ||
-      room.questionDeadlineAt === undefined
-    ) {
-      return;
-    }
+  private acceptRoomRevision(room: LadderRoomRuntime): boolean {
+    const revision = room.revision ?? 0;
+    const current = this.highestRoomRevision.get(room.roomCode) ?? -1;
+    if (revision < current) return false;
+    this.highestRoomRevision.set(room.roomCode, revision);
+    return true;
+  }
 
+  private scheduleQuestionDeadline(room: LadderRoomRuntime) {
+    if (!this.acceptRoomRevision(room)) return;
+    this.clearQuestionDeadline(room.roomCode);
+    if (room.status !== 'active' || !room.currentQuestionId) return;
     const questionId = room.currentQuestionId;
-    const delay = Math.max(0, room.questionDeadlineAt - Date.now()) + 5;
+    const reveal = Boolean(room.roundResult);
+    const deadline = reveal ? room.revealUntil : room.questionDeadlineAt;
+    if (deadline == null) return;
+    const delay = Math.max(0, deadline - Date.now()) + (reveal ? 5 : 250);
     const timer = setTimeout(() => {
-      void this.handleQuestionDeadline(room.roomCode, questionId).catch(() => {
+      void (
+        reveal
+          ? this.handleRevealDeadline(room.roomCode, questionId)
+          : this.handleQuestionDeadline(room.roomCode, questionId)
+      ).catch(() => {
+        this.retryRoomTimer(room.roomCode);
         this.server.to(room.roomCode).emit('ladder:error', {
           code: 'ROOM_SYNC_FAILED',
           message: 'تعذّرت مزامنة السؤال. أعد الاتصال بالغرفة.',
@@ -139,14 +207,48 @@ export class LadderGateway
     this.questionDeadlineTimers.set(room.roomCode, timer);
   }
 
+  private retryRoomTimer(roomCode: string) {
+    if (this.stopped || this.questionDeadlineTimers.has(roomCode)) return;
+    const version = this.remoteRefreshVersion.get(roomCode) ?? 0;
+    const timer = setTimeout(() => {
+      this.questionDeadlineTimers.delete(roomCode);
+      void this.ladder
+        .getRoom(roomCode)
+        .then((room) => {
+          if (
+            this.stopped ||
+            !room ||
+            (this.remoteRefreshVersion.get(roomCode) ?? 0) !== version
+          )
+            return;
+          if (!this.acceptRoomRevision(room)) return;
+          this.emitLocalSnapshots(roomCode, room);
+          if (room.status === 'active') this.scheduleQuestionDeadline(room);
+        })
+        .catch(() => this.retryRoomTimer(roomCode));
+    }, 2000);
+    timer.unref?.();
+    this.questionDeadlineTimers.set(roomCode, timer);
+  }
+
+  private async refreshRemoteState(roomCode: string, version: number) {
+    try {
+      const room = await this.ladder.getRoom(roomCode);
+      if (this.stopped || this.remoteRefreshVersion.get(roomCode) !== version)
+        return;
+      if (room && this.acceptRoomRevision(room)) {
+        this.emitLocalSnapshots(roomCode, room);
+        if (room.status === 'active') this.scheduleQuestionDeadline(room);
+        else this.clearQuestionDeadline(roomCode);
+      }
+    } catch {
+      this.logger.warn('تعذّرت مزامنة غرفة السلم بين نسخ الخادم.');
+      this.retryRoomTimer(roomCode);
+    }
+  }
+
   private emitGameEnd(room: LadderRoomRuntime) {
-    const winner = room.stopReason
-      ? null
-      : room.rightPosition > room.leftPosition
-        ? 'right'
-        : room.leftPosition > room.rightPosition
-          ? 'left'
-          : 'draw';
+    const winner = room.stopReason ? null : (room.winner ?? null);
     this.server.to(room.roomCode).emit('ladder:game:end', {
       winner,
       rightScore: room.rightScore,
@@ -158,7 +260,7 @@ export class LadderGateway
   }
 
   private publishRoomState(room: LadderRoomRuntime) {
-    this.emitPerClientSnapshots(room.roomCode, room);
+    if (!this.emitPerClientSnapshots(room.roomCode, room)) return;
     if (room.stopReason) {
       this.server.to(room.roomCode).emit('ladder:error', room.stopReason);
     }
@@ -174,7 +276,10 @@ export class LadderGateway
     this.questionDeadlineTimers.delete(roomCode);
     const result = await this.ladder.expireQuestion(roomCode, questionId);
     if (!result.ok) {
-      if (result.code === 'QUESTION_NOT_EXPIRED') {
+      if (
+        result.code === 'QUESTION_NOT_EXPIRED' ||
+        result.code === 'ROOM_BUSY'
+      ) {
         const room = await this.ladder.getRoom(roomCode);
         if (room) this.scheduleQuestionDeadline(room);
       }
@@ -183,17 +288,37 @@ export class LadderGateway
     this.publishRoomState(result.room);
   }
 
+  private async handleRevealDeadline(roomCode: string, questionId: string) {
+    this.questionDeadlineTimers.delete(roomCode);
+    const result = await this.ladder.advanceRound(roomCode, questionId);
+    if (result.ok) this.publishRoomState(result.room);
+    else if (
+      result.code === 'REVEAL_NOT_FINISHED' ||
+      result.code === 'ROOM_BUSY'
+    ) {
+      const room = await this.ladder.getRoom(roomCode);
+      if (room) this.scheduleQuestionDeadline(room);
+    }
+  }
+
   private async refreshExpiredRoom(
     room: LadderRoomRuntime,
   ): Promise<LadderRoomRuntime> {
-    if (
-      room.status !== 'active' ||
-      !room.currentQuestionId ||
-      room.questionDeadlineAt == null ||
-      Date.now() < room.questionDeadlineAt
-    ) {
-      return room;
+    if (room.status !== 'active' || !room.currentQuestionId) return room;
+    if (room.roundResult) {
+      if (room.revealUntil == null || Date.now() < room.revealUntil)
+        return room;
+      const advanced = await this.ladder.advanceRound(
+        room.roomCode,
+        room.currentQuestionId,
+      );
+      return advanced.ok ? advanced.room : room;
     }
+    if (
+      room.questionDeadlineAt == null ||
+      Date.now() < room.questionDeadlineAt + 250
+    )
+      return room;
     const result = await this.ladder.expireQuestion(
       room.roomCode,
       room.currentQuestionId,
@@ -306,7 +431,24 @@ export class LadderGateway
     return hostId;
   }
 
-  private emitPerClientSnapshots(roomCode: string, room: LadderRoomRuntime) {
+  private emitPerClientSnapshots(
+    roomCode: string,
+    room: LadderRoomRuntime,
+  ): boolean {
+    if (!this.acceptRoomRevision(room)) return false;
+    this.remoteRefreshVersion.set(
+      roomCode,
+      (this.remoteRefreshVersion.get(roomCode) ?? 0) + 1,
+    );
+    this.emitLocalSnapshots(roomCode, room);
+    const server = this.server as unknown as {
+      serverSideEmit?: (event: string, code: string) => void;
+    };
+    server.serverSideEmit?.('ladder:internal:state', roomCode);
+    return true;
+  }
+
+  private emitLocalSnapshots(roomCode: string, room: LadderRoomRuntime) {
     const emittedSocketIds = new Set<string>();
     const emitToSocket = (
       socketId: string,
@@ -325,10 +467,6 @@ export class LadderGateway
           this.ladder.buildSnapshot(room, team, guestId, hostId),
         );
     };
-
-    for (const team of room.teams) {
-      emitToSocket(team.id, team.id);
-    }
 
     for (const [socketId, roomPin] of this.socketRooms.entries()) {
       if (roomPin !== roomCode) continue;
@@ -459,6 +597,7 @@ export class LadderGateway
     @MessageBody()
     payload: { roomCode?: string; questionId?: string; optionId?: string },
   ) {
+    const receivedAt = Date.now();
     if (!(await this.canHandleEvent(client, 'answer'))) {
       return this.rejectRateLimited(client);
     }
@@ -486,6 +625,7 @@ export class LadderGateway
       roomCode,
       questionId,
       optionId,
+      receivedAt,
     );
     if (!result.ok) {
       return this.emitError(client, result.code, result.message);

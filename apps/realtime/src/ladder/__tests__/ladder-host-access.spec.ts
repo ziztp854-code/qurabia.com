@@ -175,6 +175,7 @@ describe('LadderGateway host access', () => {
         room.roomCode,
         'q1',
         'a',
+        expect.any(Number),
       );
     },
   );
@@ -205,7 +206,13 @@ describe('LadderGateway host access', () => {
     const client = createClient({ hostId: 'user-host', hostAccessToken });
     ladder.startGame.mockResolvedValue({
       ok: true,
-      room: { ...room, status: 'finished', rightPosition: 4, leftPosition: 3 },
+      room: {
+        ...room,
+        status: 'finished',
+        rightPosition: 4,
+        leftPosition: 3,
+        winner: 'right',
+      },
     });
     await gateway.startGame(client as never, { roomCode: room.roomCode });
     expect(emit).toHaveBeenCalledWith(

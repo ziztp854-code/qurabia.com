@@ -1,9 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { Diamond, Trophy } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { Trophy } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import styles from './ladder-room.module.css';
 
@@ -13,95 +11,34 @@ type LadderVisualProps = {
   winningPosition: number;
   currentRound: number;
   totalRounds: number;
+  rightName?: string;
+  leftName?: string;
+  rightScore?: number;
+  leftScore?: number;
+  finale?: { title: string; detail: string; reason: string };
   children?: ReactNode;
 };
 
-export function LadderVisual({
-  rightPosition,
-  leftPosition,
-  winningPosition,
-  currentRound,
-  totalRounds,
-  children,
-}: LadderVisualProps) {
-  const reduceMotion = useReducedMotion();
-  const steps = useMemo(() => {
-    const arr: number[] = [];
-    for (let i = winningPosition; i >= 0; i--) arr.push(i);
-    return arr;
-  }, [winningPosition]);
-
-  const renderColumn = (team: 'right' | 'left', currentPos: number) => {
-    return (
-      <div className={styles.ladderVisualColumn} data-team={team}>
-        <div className={styles.ladderVisualColumnHeader}>
-          <span className={styles.ladderVisualColumnLabel} data-team={team}>
-            {team === 'right' ? 'فريق اليمين' : 'فريق اليسار'}
-          </span>
-          <span className={styles.ladderVisualColumnValue}>
-            {formatNumber(currentPos)} / {formatNumber(winningPosition)}
-          </span>
-        </div>
-
-        <div className={styles.ladderSteps}>
-          {steps.map((step) => {
-            const isActive = step <= currentPos;
-            const isCurrent = step === currentPos;
-            const isFinish = step === winningPosition;
-
-            return (
-              <div
-                key={`${team}-${step}`}
-                className={styles.ladderStep}
-                style={{ width: `${55 + (winningPosition - step) / Math.max(winningPosition, 1) * 45}%` }}
-                data-team={team}
-                data-active={isActive || undefined}
-                data-current={isCurrent || undefined}
-              >
-                <span className={styles.ladderStepIndex} data-team={team} data-active={isActive}>
-                  {formatNumber(step)}
-                </span>
-
-                {isCurrent && (
-                  <motion.div
-                    layoutId={reduceMotion ? undefined : `ladder-marker-${team}`}
-                    transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 170, damping: 24 }}
-                    className={styles.ladderStepIcon}
-                    data-team={team}
-                    role="img"
-                    aria-label={`موقع ${team === 'right' ? 'فريق اليمين' : 'فريق اليسار'}: ${formatNumber(step)}`}
-                  >
-                    {isFinish ? <Trophy aria-hidden="true" size={17} /> : <Diamond aria-hidden="true" size={14} />}
-                  </motion.div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+export function LadderVisual({ rightPosition, leftPosition, winningPosition, currentRound, totalRounds, rightName = 'المتسابق الأول', leftName = 'المتسابق الثاني', rightScore = 0, leftScore = 0, finale, children }: LadderVisualProps) {
+  const steps = Array.from({ length: winningPosition + 1 }, (_, index) => winningPosition - index);
+  const column = (side: 'right' | 'left', position: number, name: string, score: number) => (
+    <div className={styles.stageCompetitor} data-side={side} aria-label={`${name}، الدرجة ${formatNumber(position)}، ${formatNumber(score)} نقطة`}>
+      <div className={styles.stageAvatar} aria-hidden="true">{name.trim().charAt(0)}</div>
+      <strong className={styles.stageName}>{name}</strong>
+      <div className={styles.stageSteps} aria-hidden="true">
+        {steps.map((step) => <div key={step} className={styles.stageRung} data-current={step === position || undefined}>{formatNumber(step)}</div>)}
       </div>
-    );
-  };
-
+      <div className={styles.stagePoints}><strong>{formatNumber(score)}</strong> نقطة</div>
+    </div>
+  );
   return (
-    <div className={styles.ladderStage}>
-      <div className={styles.ladderVisualGrid}>
-        {renderColumn('right', rightPosition)}
-
-        <div className={styles.ladderConnector} data-testid="ladder-question-center">
-
-          <div className={styles.connectorMeta}>
-            <span className={styles.ladderConnectorLabel}>القمة</span>
-            <span className={styles.connectorRound}>
-              الجولة {formatNumber(currentRound)} / {formatNumber(totalRounds)}
-            </span>
-          </div>
-
-          {children && <div className={styles.ladderQuestionCenter}>{children}</div>}
-
-        </div>
-
-        {renderColumn('left', leftPosition)}
+    <div className={styles.prestigeStage} dir="ltr">
+      <div className={styles.stageLogo} dir="rtl"><i aria-hidden="true" /> السلم</div>
+      {column('right', rightPosition, rightName, rightScore)}
+      <div className={styles.stageCenter} data-testid="ladder-question-center" dir="rtl">
+        {finale ? <div className={styles.stageWinner} role="status"><Trophy aria-hidden="true" /><strong>{finale.title}</strong><span>{finale.detail}</span><small>{finale.reason}</small></div> : children || <span className={styles.stageRound}>الجولة {formatNumber(currentRound)} من {formatNumber(totalRounds)}</span>}
       </div>
+      {column('left', leftPosition, leftName, leftScore)}
     </div>
   );
 }

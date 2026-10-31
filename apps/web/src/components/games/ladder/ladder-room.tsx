@@ -14,15 +14,17 @@ import { useLadderSocket } from './use-ladder-socket';
 import styles from './ladder-room.module.css';
 import { LadderVisual } from './ladder-visual';
 import { QuestionDisplay } from './question-display';
-import { TeamPanel } from './team-panel';
+import { LadderResults } from './ladder-results';
 import { LadderInviteQr } from './ladder-invite-qr';
 import {
   clearLadderGuestIdentity,
   getOrCreateLadderGuestId,
   getOrCreateLadderGuestToken,
   getJoinedLadderRoomCode,
+  getHostedLadderRoomCode,
   isLadderSessionStorageAvailable,
   setJoinedLadderRoomCode,
+  setHostedLadderRoomCode,
 } from './ladder-session-storage';
 
 type Phase = 'join' | 'waiting' | 'countdown' | 'question' | 'finished';
@@ -106,7 +108,6 @@ export function LadderRoom({
     error,
     errorCode,
     busy,
-    gameEnd,
     countdown,
     guestIdentityInvalid,
     setError,
@@ -126,19 +127,27 @@ export function LadderRoom({
   const entryMode = role === 'host' ? 'create' : 'join';
   const [playerName, setPlayerName] = useState(() => initialPlayerName?.trim().slice(0, 30) ?? '');
   const [team, setTeam] = useState<'right' | 'left'>(initialTeam ?? 'right');
-  const [totalRounds, setTotalRounds] = useState(20);
-  const [winningPosition, setWinningPosition] = useState(10);
+  const totalRounds = 10;
+  const winningPosition = 10;
   const [questionTimeLimit, setQuestionTimeLimit] = useState('auto');
   const [copied, setCopied] = useState(false);
-  const [answerSelection, setAnswerSelection] = useState<{
-    questionId: string;
-    optionId: string;
-  } | null>(null);
   const [joinCode, setJoinCode] = useState(() => initialRoomCode?.toUpperCase() ?? '');
 
   const roomCode = room?.roomCode ?? joinCode;
   const identityBlocked =
     role === 'host' ? !hostIdentity : guestIdentityInvalid || !guestIdentityKey;
+
+  const restoreAttempted = useRef(false);
+  useEffect(() => {
+    if (!connected || room || identityBlocked || restoreAttempted.current || !socketRef.current) return;
+    const code = role === 'host' && hostIdentity ? getHostedLadderRoomCode(hostIdentity.hostId) :
+      role === 'player' && !(initialPlayerName && initialTeam) ? getJoinedLadderRoomCode() : '';
+    if (!/^[A-Z0-9]{8}$/.test(code)) return;
+    if (role === 'player' && initialRoomCode && initialRoomCode.toUpperCase() !== code) return;
+    restoreAttempted.current = true;
+    setBusy(true);
+    socketRef.current.emit('ladder:reconnect', { roomCode: code });
+  }, [connected, room, identityBlocked, role, hostIdentity, initialRoomCode, initialPlayerName, initialTeam, setBusy, socketRef]);
 
   const inviteAttempted = useRef(false);
   const invitePending = useRef(false);
@@ -173,15 +182,18 @@ export function LadderRoom({
     if (role === 'player' && room?.roomCode) {
       invitePending.current = false;
       setJoinedLadderRoomCode(room.roomCode);
+    } else if (role === 'host' && hostIdentity && room?.roomCode) {
+      setHostedLadderRoomCode(hostIdentity.hostId, room.roomCode);
     }
-  }, [role, room?.roomCode]);
+  }, [role, hostIdentity, room?.roomCode]);
 
   useEffect(() => {
     if (errorCode === 'ROOM_NOT_FOUND' || errorCode === 'INVALID_SESSION' || errorCode === 'INVALID_GUEST') {
       invitePending.current = false;
-      setJoinedLadderRoomCode('');
+      if (role === 'player') setJoinedLadderRoomCode('');
+      else if (hostIdentity) setHostedLadderRoomCode(hostIdentity.hostId, '');
     }
-  }, [errorCode]);
+  }, [errorCode, role, hostIdentity]);
 
   // Derive the local UI phase from the server-authoritative room state.
   // The two purely-local phases ('join' and 'countdown') live in
@@ -232,7 +244,6 @@ export function LadderRoom({
 
   const handleAnswer = (optionId: string) => {
     if (!socketRef.current || !room?.currentQuestion || !roomCode) return;
-    setAnswerSelection({ questionId: room.currentQuestion.id, optionId });
     setBusy(true);
     socketRef.current.emit('ladder:answer', {
       roomCode: roomCode.toUpperCase(),
@@ -245,6 +256,8 @@ export function LadderRoom({
     if (!socketRef.current || !roomCode) return;
     socketRef.current.emit('ladder:leave', { roomCode: roomCode.toUpperCase() });
     if (role === 'player') setJoinedLadderRoomCode('');
+    else if (hostIdentity) setHostedLadderRoomCode(hostIdentity.hostId, '');
+    restoreAttempted.current = true;
     clearRoom();
     setPhase('join');
   };
@@ -271,10 +284,16 @@ export function LadderRoom({
 
   const currentQuestion = room?.currentQuestion;
   useAiGameQuestions('ladder', currentQuestion ? [currentQuestion.questionText] : []);
-  const selectedOption =
-    currentQuestion && answerSelection?.questionId === currentQuestion.id
-      ? answerSelection.optionId
-      : null;
+  const selectedOption = room?.myAnswer ?? null;
+  const winner = room?.winner ?? null;
+  const winnerTitle = winner === 'right' ? `يفوز ${room?.rightTeam[0]?.playerName ?? 'المتسابق الأيمن'}` :
+    winner === 'left' ? `يفوز ${room?.leftTeam[0]?.playerName ?? 'المتسابق الأيسر'}` :
+    winner === 'draw' ? 'تعادل' : 'توقفت الجولة';
+  const winnerReason = room?.winnerMethod === 'position' ? 'الحسم بأعلى درجة على السلم' :
+    room?.winnerMethod === 'score' ? 'الحسم بأعلى مجموع نقاط' :
+    room?.winnerMethod === 'time' ? 'الحسم بأقل متوسط زمن للإجابات الصحيحة' :
+    room?.winnerMethod === 'lottery' ? 'الحسم بقرعة بعد تساوي الدرجات والنقاط والزمن' : '';
+
   const createPanelId = 'ladder-panel-create';
   const joinPanelId = 'ladder-panel-join';
   const teamPress = reduceMotion ? undefined : { scale: 0.98 };
@@ -291,8 +310,7 @@ export function LadderRoom({
         {role === 'player' && storageProbeReady && !storageAvailable && (
           <Card className={`${styles.ladderError} ${styles.identityAlert}`} role="status">
             <p>
-              جلسة المتصفح لا تحتفظ بالتخزين المؤقت. سيلعب السلم في هذه الجلسة كزائر مجهول، وستنتهي
-              صلاحية الغرفة فور إغلاق التبويب.
+تعذر حفظ هوية الجلسة في هذا المتصفح. فعّل تخزين الجلسة ثم أعد تحميل الصفحة للانضمام.
             </p>
           </Card>
         )}
@@ -330,16 +348,16 @@ export function LadderRoom({
                   <Swords aria-hidden="true" size={18} /> لعبة تنافسية
                 </span>
                 <h1>{meta.title}</h1>
-                <p>{meta.description}</p>
+                <p>متسابقان يواجهان الأسئلة نفسها على سلم من عشر درجات.</p>
                 <ul className={styles.ladderRules}>
-                  <li>فريقان: يمين (ذهبي) ويسار (سماوي).</li>
+                  <li>متسابقان: أحدهما في اليمين والآخر في اليسار.</li>
                   <li>
                     {quizId
                       ? `الأسئلة تُسحب من الحزمة المحفوظة${packTitle ? ` «${packTitle}»` : ''}، مع الرجوع لبنك السلم عند الحاجة.`
                       : 'الأسئلة تُسحب تلقائيًا من بنك الأسئلة الموسوم بـ«لعبة السلم»، بلا تكرار داخل الغرفة.'}
                   </li>
                   <li>إجابة صحيحة = صعود درجة، إجابة خاطئة = هبوط درجة.</li>
-                  <li>أول فريق يبلغ القمة ({formatNumber(winningPosition)} درجات) يفوز.</li>
+                  <li>بعد عشرة أسئلة يفوز صاحب الدرجة الأعلى، ثم النقاط، ثم متوسط زمن الإجابات الصحيحة الأقل. وعند التعادل التام تُجرى قرعة.</li>
                 </ul>
               </Card>
 
@@ -386,7 +404,7 @@ export function LadderRoom({
                 {role === 'player' && (
                   <div className={styles.entryTeamBlock}>
                     <span id="ladder-team-label" className={styles.entryFieldLabel}>
-                      اختر الفريق
+                      اختر مكانك
                     </span>
                     <div
                       className={styles.entryTeamChoice}
@@ -411,7 +429,7 @@ export function LadderRoom({
                             size={24}
                           />
                         </span>
-                        <span className={styles.entryTeamLabel}>فريق اليمين</span>
+                        <span className={styles.entryTeamLabel}>المتسابق الأيمن</span>
                       </motion.button>
                       <motion.button
                         whileHover={teamHover}
@@ -431,7 +449,7 @@ export function LadderRoom({
                             size={24}
                           />
                         </span>
-                        <span className={styles.entryTeamLabel}>فريق اليسار</span>
+                        <span className={styles.entryTeamLabel}>المتسابق الأيسر</span>
                       </motion.button>
                     </div>
                   </div>
@@ -447,43 +465,10 @@ export function LadderRoom({
                     className={styles.tabpanel}
                   >
                     <div className={styles.entryFieldRow}>
-                      <div>
-                        <label htmlFor="ladder-rounds" className={styles.entryFieldLabel}>
-                          عدد الجولات
-                        </label>
-                        <select
-                          id="ladder-rounds"
-                          className={styles.entrySelect}
-                          value={totalRounds}
-                          onChange={(e) => setTotalRounds(Number(e.target.value))}
-                        >
-                          {[5, 10, 15, 20].map((n) => (
-                            <option key={n} value={n}>
-                              {formatNumber(n)} جولات
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label htmlFor="ladder-winning" className={styles.entryFieldLabel}>
-                          درجة الفوز
-                        </label>
-                        <select
-                          id="ladder-winning"
-                          className={styles.entrySelect}
-                          value={winningPosition}
-                          onChange={(e) => setWinningPosition(Number(e.target.value))}
-                        >
-                          {[5, 10, 15, 20].map((n) => (
-                            <option key={n} value={n}>
-                              {formatNumber(n)} درجات
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <p>١٠ أسئلة · سلم من ٠ إلى ١٠ درجات</p>
                       <div>
                         <label htmlFor="ladder-question-time" className={styles.entryFieldLabel}>
-                          الحد الأدنى لوقت السؤال
+                          وقت السؤال
                         </label>
                         <select
                           id="ladder-question-time"
@@ -551,7 +536,7 @@ export function LadderRoom({
                       {initialRoomCode ? 'انضمام للغرفة' : 'انضمام برمز'}
                     </Button>
                     <p className={styles.tabpanelHint}>
-                      {!initialRoomCode ? 'أدخل رمز الغرفة للانضمام.' : 'ستنضم للغرفة فور الاتصال.'}
+                      {!initialRoomCode ? 'أدخل رمز الغرفة للانضمام.' : 'اختر مكانك ثم اضغط انضمام.'}
                     </p>
                   </motion.div>
                 )}
@@ -570,8 +555,8 @@ export function LadderRoom({
               <Card className={styles.waitingStage}>
                 <div className={styles.ladderWaitingMatchup}>
                   <div className={styles.ladderWaitingPlayer} data-team="right">
-                    <strong>فريق اليمين</strong>
-                    <span>{formatNumber(room.rightTeam?.length ?? 0)} لاعب</span>
+                    <strong>المتسابق الأيمن</strong>
+                    <span>{room.rightTeam?.length ? 'انضم' : 'بانتظار المتسابق'}</span>
                     <ul className={styles.waitingRoster}>
                       {(room.rightTeam ?? []).length > 0 ? (
                         (room.rightTeam ?? []).map((player, index) => (
@@ -581,7 +566,7 @@ export function LadderRoom({
                           </li>
                         ))
                       ) : (
-                        <li>بانتظار اللاعبين</li>
+                        <li>بانتظار المتسابق</li>
                       )}
                     </ul>
                   </div>
@@ -589,8 +574,8 @@ export function LadderRoom({
                     VS
                   </div>
                   <div className={styles.ladderWaitingPlayer} data-team="left">
-                    <strong>فريق اليسار</strong>
-                    <span>{formatNumber(room.leftTeam?.length ?? 0)} لاعب</span>
+                    <strong>المتسابق الأيسر</strong>
+                    <span>{room.leftTeam?.length ? 'انضم' : 'بانتظار المتسابق'}</span>
                     <ul className={styles.waitingRoster}>
                       {(room.leftTeam ?? []).length > 0 ? (
                         (room.leftTeam ?? []).map((player, index) => (
@@ -600,7 +585,7 @@ export function LadderRoom({
                           </li>
                         ))
                       ) : (
-                        <li>بانتظار اللاعبين</li>
+                        <li>بانتظار المتسابق</li>
                       )}
                     </ul>
                   </div>
@@ -619,7 +604,7 @@ export function LadderRoom({
                       variant="gold"
                       size="lg"
                       onClick={handleStart}
-                      disabled={busy || !connected}
+                      disabled={busy || !connected || room.rightTeam.length !== 1 || room.leftTeam.length !== 1}
                     >
                       <Play aria-hidden="true" /> بدء اللعبة
                     </Button>
@@ -660,48 +645,11 @@ export function LadderRoom({
           )}
         </AnimatePresence>
 
-        {(phase === 'question' || phase === 'finished') && room && (
-          <div className={styles.ladderBoard}>
-            <TeamPanel
-              team="right"
-              players={room.rightTeam ?? []}
-              score={room.rightScore}
-              position={room.rightPosition}
-              winningPosition={room.winningPosition}
-              isHost={isHost}
-            />
-            <div className={styles.ladderCenter}>
-              <div className={styles.ladderBoardScores} role="group" aria-label="النتيجة">
-                <div
-                  className={styles.scoreMain}
-                  data-team="right"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {formatNumber(room.rightScore)}
-                </div>
-                <div className={styles.scoreVersus} aria-hidden="true">
-                  VS
-                </div>
-                <div
-                  className={styles.scoreMain}
-                  data-team="left"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {formatNumber(room.leftScore)}
-                </div>
-              </div>
-            </div>
-            <TeamPanel
-              team="left"
-              players={room.leftTeam ?? []}
-              score={room.leftScore}
-              position={room.leftPosition}
-              winningPosition={room.winningPosition}
-              isHost={isHost}
-            />
-          </div>
+        {phase === 'question' && room && (
+          <p className={styles.ladderCategory} role="status" aria-live="polite">
+            {room.rightTeam[0]?.playerName ?? 'المتسابق الأيمن'}: {room.answerStatus?.right ? 'أرسل الإجابة' : 'بانتظار الإجابة'} ·{' '}
+            {room.leftTeam[0]?.playerName ?? 'المتسابق الأيسر'}: {room.answerStatus?.left ? 'أرسل الإجابة' : 'بانتظار الإجابة'}
+          </p>
         )}
 
         {(phase === 'question' || phase === 'finished') && room && (
@@ -711,6 +659,15 @@ export function LadderRoom({
             winningPosition={room.winningPosition}
             currentRound={room.currentRound}
             totalRounds={room.totalRounds}
+            rightName={room.rightTeam[0]?.playerName}
+            leftName={room.leftTeam[0]?.playerName}
+            rightScore={room.rightScore}
+            leftScore={room.leftScore}
+            finale={phase === 'finished' ? {
+              title: winnerTitle,
+              detail: `${formatNumber(room.rightScore)} - ${formatNumber(room.leftScore)} نقطة`,
+              reason: winnerReason,
+            } : undefined}
           >
             {phase === 'question' && currentQuestion ? (
               <QuestionDisplay
@@ -720,28 +677,30 @@ export function LadderRoom({
                 totalRounds={room.totalRounds}
                 onAnswer={handleAnswer}
                 selectedOption={selectedOption}
-                disabled={busy || isHost}
+                correctOptionId={room.roundResult?.correctOptionId}
+                disabled={busy || isHost || !connected || !!room.roundResult}
               />
             ) : null}
           </LadderVisual>
         )}
+        {phase === 'question' && room?.roundResult && (
+          <LadderResults results={[room.roundResult]} rightName={room.rightTeam[0]?.playerName} leftName={room.leftTeam[0]?.playerName} />
+        )}
 
-        {phase === 'finished' && gameEnd && (
+        {phase === 'finished' && room && (
           <Card className={styles.ladderFinale} role="status" aria-live="assertive">
             <Trophy aria-hidden="true" className={styles.finaleTrophy} />
             <h2 className={styles.finaleTitle}>
-              {gameEnd.winner === null
-                ? 'توقفت الجولة'
-                : gameEnd.winner === 'draw'
-                ? 'تعادل'
-                : gameEnd.winner === 'right'
-                  ? 'يفوز فريق اليمين'
-                  : 'يفوز فريق اليسار'}
+              {winnerTitle}
             </h2>
             <p className={styles.finaleSubtitle}>
-              النتيجة النهائية: {formatNumber(gameEnd.rightScore)} -{' '}
-              {formatNumber(gameEnd.leftScore)}
+              النتيجة النهائية: {formatNumber(room.rightScore)} -{' '}
+              {formatNumber(room.leftScore)}
             </p>
+            {winnerReason && <p className={styles.finaleSubtitle}>{winnerReason}</p>}
+            {!!room.roundHistory?.length && (
+              <LadderResults results={room.roundHistory} rightName={room.rightTeam[0]?.playerName} leftName={room.leftTeam[0]?.playerName} />
+            )}
             <ButtonLink href="/games" onClick={handleLeave}>
               العودة للألعاب
             </ButtonLink>

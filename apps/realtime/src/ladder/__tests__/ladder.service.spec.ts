@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await -- asynchronous test doubles model Redis methods */
 /* eslint-disable @typescript-eslint/unbound-method --
  * The jest matcher API (toHaveBeenCalled etc.) detaches the matcher
  * function from the mock object; this is safe and idiomatic, but the
@@ -35,6 +36,7 @@ describe('LadderService', () => {
     setLadderGuestIdentity: jest.fn(),
     getLadderGuestIdentity: jest.fn(),
     deleteLadderGuestIdentity: jest.fn(),
+    deleteExpiredLadderGuestIdentity: jest.fn(),
     acquireLadderRoomLock: jest.fn(),
     releaseLadderRoomLock: jest.fn(),
     consumeRateLimit: jest.fn(),
@@ -140,6 +142,7 @@ describe('LadderService', () => {
     jest.clearAllMocks();
     redis.acquireLadderRoomLock.mockResolvedValue(true);
     redis.releaseLadderRoomLock.mockResolvedValue(undefined);
+    redis.saveLadderRoom.mockResolvedValue(1);
   });
 
   afterEach(() => {
@@ -291,9 +294,14 @@ describe('LadderService', () => {
     it('does not expose the correct answer in the public snapshot', () => {
       const room = activeRoom();
 
+      // A room persisted by an older version may contain private option metadata.
+      Object.assign(room.currentQuestion!.options[0], { isCorrect: true });
       const snapshot = service.buildSnapshot(room, 'right', 'guest_right');
 
       expect(snapshot.currentQuestion).not.toHaveProperty('correctOptionId');
+      expect(snapshot.currentQuestion!.options[0]).not.toHaveProperty(
+        'isCorrect',
+      );
       expect(JSON.stringify(snapshot)).not.toContain('currentCorrectOptionId');
     });
 
@@ -333,7 +341,13 @@ describe('LadderService', () => {
         'token-new',
       );
       expect(result.ok).toBe(true);
-      expect(redis.setLadderGuestIdentity).toHaveBeenCalled();
+      expect(redis.saveLadderRoom).toHaveBeenCalledWith(
+        room.roomCode,
+        expect.any(Object),
+        expect.any(String),
+        expect.objectContaining({ guestId: 'guest-new' }),
+        undefined,
+      );
     });
     it('does not create an identity from a rejected join before reconnect', async () => {
       const room = activeRoom();
@@ -361,290 +375,296 @@ describe('LadderService', () => {
       expect(redis.setLadderGuestIdentity).not.toHaveBeenCalled();
     });
 
-    it('stops clearly when the bank fails at a question timeout', async () => {
-      const room = activeRoom();
-      redis.loadLadderRoom.mockResolvedValue(room);
-      findManyQuestions.mockRejectedValue(new Error('database unavailable'));
-      jest.spyOn(Date, 'now').mockReturnValue(room.questionDeadlineAt! + 1);
-      const result = await service.expireQuestion(
-        room.roomCode,
-        room.currentQuestion!.id,
+    it('records each answer privately and reveals only after both submit', async () => {
+      let room = activeRoom();
+      redis.loadLadderRoom.mockImplementation(async () =>
+        structuredClone(room),
       );
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.room.rightPosition).toBe(0);
-        expect(result.room.status).toBe('finished');
-        expect(result.room.stopReason?.code).toBe('QUESTION_BANK_UNAVAILABLE');
-        expect(redis.saveLadderRoom).toHaveBeenCalledWith(
-          room.roomCode,
-          result.room,
-        );
-      }
-    });
-    it('preserves an accepted answer and stops clearly when the bank fails', async () => {
-      const room = activeRoom();
-      redis.loadLadderRoom.mockResolvedValue(room);
-      findManyQuestions.mockRejectedValue(new Error('database unavailable'));
-      const result = await service.submitAnswer(
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        room = structuredClone(value as LadderRoomRuntime);
+        return room.revision ?? 1;
+      });
+      const id = room.currentQuestion!.id;
+      const right = await service.submitAnswer(
         'guest_right',
         room.roomCode,
-        room.currentQuestion!.id,
+        id,
         room.currentQuestion!.options[0].id,
       );
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.room.rightPosition).toBe(1);
-        expect(result.room.rightScore).toBe(100);
-        expect(result.room.status).toBe('finished');
-        expect(result.room.stopReason?.code).toBe('QUESTION_BANK_UNAVAILABLE');
-        expect(redis.saveLadderRoom).toHaveBeenCalledWith(
-          room.roomCode,
-          result.room,
-        );
-      }
-    });
-    it('rejects an option that does not belong to the current question', async () => {
-      const room = activeRoom();
-      redis.loadLadderRoom.mockResolvedValue(room);
-
-      const result = await service.submitAnswer(
-        'guest_right',
-        room.roomCode,
-        room.currentQuestion!.id,
-        'forged-option',
-      );
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.code).toBe('INVALID_OPTION');
-      expect(redis.saveLadderRoom).not.toHaveBeenCalled();
-    });
-
-    it('rejects an answer after the server-side deadline without changing score or position', async () => {
-      const room = activeRoom();
-      redis.loadLadderRoom.mockResolvedValue(room);
-      jest.spyOn(Date, 'now').mockReturnValue(room.questionDeadlineAt! + 1);
-
-      const result = await service.submitAnswer(
-        'guest_right',
-        room.roomCode,
-        room.currentQuestion!.id,
-        room.currentQuestion!.options[0].id,
-      );
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.code).toBe('QUESTION_EXPIRED');
-      expect(room.rightScore).toBe(0);
+      expect(right.ok).toBe(true);
       expect(room.rightPosition).toBe(0);
-    });
-
-    it('uses the authenticated guest identity to credit and move the correct team', async () => {
-      let capturedQuery: unknown;
-      const room = activeRoom();
-      room.teams = room.teams.map((member) => ({
-        ...member,
-        id: `${member.id}-roster-id`,
-      }));
-      redis.loadLadderRoom.mockResolvedValue(room);
-      redis.getLadderGuestIdentity.mockResolvedValue({
-        guestId: 'guest_right',
-        guestToken: 'token',
-        roomCode: room.roomCode,
-        team: 'right',
-        createdAt: 0,
-        expiresAt: Date.now() + 10_000,
+      expect(
+        service.buildSnapshot(room, 'left', 'guest_left').myAnswer,
+      ).toBeNull();
+      expect(
+        service.buildSnapshot(room, 'left', 'guest_left').roundResult,
+      ).toBeNull();
+      expect(
+        await service.submitAnswer(
+          'guest_right',
+          room.roomCode,
+          id,
+          room.currentQuestion!.options[0].id,
+        ),
+      ).toMatchObject({ ok: false, code: 'ALREADY_ANSWERED' });
+      expect(
+        (
+          await service.submitAnswer(
+            'guest_left',
+            room.roomCode,
+            id,
+            room.currentQuestion!.options[0].id,
+          )
+        ).ok,
+      ).toBe(true);
+      expect(room.rightPosition).toBe(1);
+      expect(room.leftPosition).toBe(1);
+      expect(room.roundResult?.right.correct).toBe(true);
+      expect(room.roundResult?.left.correct).toBe(true);
+      expect(room.roundHistory).toHaveLength(1);
+      expect(await service.advanceRound(room.roomCode, id)).toMatchObject({
+        ok: false,
+        code: 'REVEAL_NOT_FINISHED',
       });
-      findManyQuestions.mockImplementation((query: unknown) => {
-        capturedQuery = query;
-        return Promise.resolve([
-          publishedQuestion('bank-q2', 2, 'EASY', 'history'),
-        ]);
+    });
+
+    it('serializes simultaneous submissions without dropping either answer', async () => {
+      let room = activeRoom();
+      let held = false;
+      redis.acquireLadderRoomLock.mockImplementation(async () => {
+        if (held) return false;
+        held = true;
+        return true;
       });
-
-      const result = await service.submitAnswer(
-        'guest_right',
-        room.roomCode,
-        room.currentQuestion!.id,
-        room.currentQuestion!.options[0].id,
+      redis.releaseLadderRoomLock.mockImplementation(async () => {
+        held = false;
+      });
+      redis.loadLadderRoom.mockImplementation(async () =>
+        structuredClone(room),
       );
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.room.rightScore).toBe(100);
-        expect(result.room.rightPosition).toBe(1);
-        expect(result.room.leftScore).toBe(0);
-        expect(result.room.leftPosition).toBe(0);
-        expect(result.room.usedQuestionIds).toEqual(['bank-q1', 'bank-q2']);
-        expect(result.room.currentDifficulty).toBe('EASY');
-      }
-      const query = capturedQuery as FindManyQuery;
-      expect(query.where.id).toEqual({ notIn: ['bank-q1'] });
-    });
-
-    it('applies a wrong answer movement to the authenticated left team only', async () => {
-      const room = activeRoom();
-      room.leftPosition = 2;
-      redis.loadLadderRoom.mockResolvedValue(room);
-      findManyQuestions.mockResolvedValue([
-        publishedQuestion('bank-q2', 2, 'EASY', 'history'),
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        room = structuredClone(value as LadderRoomRuntime);
+        return room.revision ?? 1;
+      });
+      const q = room.currentQuestion!;
+      const results = await Promise.all([
+        service.submitAnswer(
+          'guest_right',
+          room.roomCode,
+          q.id,
+          q.options[0].id,
+        ),
+        service.submitAnswer(
+          'guest_left',
+          room.roomCode,
+          q.id,
+          q.options[0].id,
+        ),
       ]);
-
-      const result = await service.submitAnswer(
-        'guest_left',
-        room.roomCode,
-        room.currentQuestion!.id,
-        room.currentQuestion!.options[1].id,
-      );
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.room.leftPosition).toBe(1);
-        expect(result.room.leftScore).toBe(0);
-        expect(result.room.rightPosition).toBe(0);
-        expect(result.room.rightScore).toBe(0);
-      }
+      expect(results.every((result) => result.ok)).toBe(true);
+      expect(room.rightPosition).toBe(1);
+      expect(room.leftPosition).toBe(1);
+      expect(room.roundHistory).toHaveLength(1);
     });
 
-    it('advances the round from the server when the question deadline expires', async () => {
-      const room = activeRoom();
-      redis.loadLadderRoom.mockResolvedValue(room);
-      findManyQuestions.mockResolvedValue([
-        publishedQuestion('bank-q2', 2, 'EASY', 'history'),
-      ]);
-      jest.spyOn(Date, 'now').mockReturnValue(room.questionDeadlineAt! + 1);
-
-      const result = await service.expireQuestion(
-        room.roomCode,
-        room.currentQuestion!.id,
+    it('uses server receipt time even if processing is delayed across the deadline', async () => {
+      let room = activeRoom();
+      redis.loadLadderRoom.mockImplementation(async () =>
+        structuredClone(room),
       );
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.room.currentRound).toBe(2);
-        expect(result.room.currentQuestion?.id).toBe('bank-q2');
-        expect(result.room.rightScore).toBe(0);
-        expect(result.room.leftScore).toBe(0);
-      }
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        room = structuredClone(value as LadderRoomRuntime);
+        return room.revision ?? 1;
+      });
+      const deadline = room.questionDeadlineAt!;
+      jest.spyOn(Date, 'now').mockReturnValue(deadline + 50);
+      const q = room.currentQuestion!;
+      expect(
+        (
+          await service.submitAnswer(
+            'guest_right',
+            room.roomCode,
+            q.id,
+            q.options[0].id,
+            deadline - 1,
+          )
+        ).ok,
+      ).toBe(true);
+      expect(room.answers?.right?.elapsedMs).toBe(19_999);
+      expect(
+        await service.submitAnswer(
+          'guest_left',
+          room.roomCode,
+          q.id,
+          q.options[0].id,
+          deadline,
+        ),
+      ).toMatchObject({ ok: false, code: 'QUESTION_EXPIRED' });
     });
 
-    it('stops clearly instead of repeating when the pool is exhausted mid-game', async () => {
-      const room = activeRoom();
-      redis.loadLadderRoom.mockResolvedValue(room);
-      findManyQuestions.mockResolvedValue([]);
-
-      const result = await service.submitAnswer(
-        'guest_right',
-        room.roomCode,
-        room.currentQuestion!.id,
-        room.currentQuestion!.options[0].id,
+    it('enforces option, player, deadline and timeout rules', async () => {
+      let room = activeRoom();
+      room.rightPosition = 2;
+      room.rightScore = 1000;
+      redis.loadLadderRoom.mockImplementation(async () =>
+        structuredClone(room),
       );
-
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.room.status).toBe('finished');
-        expect(result.room.currentQuestion).toBeNull();
-        expect(result.room.stopReason).toEqual({
-          code: 'NO_QUESTIONS_AVAILABLE',
-          message: 'نفدت الأسئلة الصالحة غير المكررة لهذه الغرفة.',
-        });
-      }
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        room = structuredClone(value as LadderRoomRuntime);
+        return room.revision ?? 1;
+      });
+      const id = room.currentQuestion!.id;
+      expect(
+        await service.submitAnswer('guest_right', room.roomCode, id, 'forged'),
+      ).toMatchObject({ ok: false, code: 'INVALID_OPTION' });
+      expect(
+        await service.submitAnswer(
+          'stranger',
+          room.roomCode,
+          id,
+          room.currentQuestion!.options[0].id,
+        ),
+      ).toMatchObject({ ok: false, code: 'NOT_A_PLAYER' });
+      jest.spyOn(Date, 'now').mockReturnValue(room.questionDeadlineAt!);
+      expect(
+        await service.submitAnswer(
+          'guest_right',
+          room.roomCode,
+          id,
+          room.currentQuestion!.options[0].id,
+        ),
+      ).toMatchObject({ ok: false, code: 'QUESTION_EXPIRED' });
+      expect((await service.expireQuestion(room.roomCode, id)).ok).toBe(true);
+      expect(room.rightPosition).toBe(1);
+      expect(room.leftPosition).toBe(0);
+      expect(room.rightScore).toBe(850);
+      expect(room.roundResult?.right.elapsedMs).toBeNull();
+      expect(room.roundResult?.left.points).toBe(0);
     });
   });
 
-  describe('multi-round bank flow', () => {
-    it('runs consecutive correct, wrong, and timeout rounds without repetition', async () => {
+  describe('ten-round game flow', () => {
+    it('persists one lottery result through repeat advancement and reconnect snapshots', async () => {
+      let held = false;
+      redis.acquireLadderRoomLock.mockImplementation(async () => {
+        if (held) return false;
+        held = true;
+        return true;
+      });
+      redis.releaseLadderRoomLock.mockImplementation(async () => {
+        held = false;
+      });
+      let room: LadderRoomRuntime = {
+        ...activeRoom(),
+        currentRound: 10,
+        revealUntil: Date.now() - 1,
+      };
+      const q = room.currentQuestion!;
+      const answer = {
+        optionId: q.options[0].id,
+        correct: true,
+        elapsedMs: 1000,
+        points: 1000,
+      };
+      const result = {
+        roundNumber: 10,
+        questionId: q.id,
+        questionText: q.questionText,
+        options: q.options,
+        correctOptionId: q.options[0].id,
+        right: answer,
+        left: answer,
+      };
+      room = { ...room, roundResult: result, roundHistory: [result] };
+      redis.loadLadderRoom.mockImplementation(async () =>
+        structuredClone(room),
+      );
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        room = structuredClone(value as LadderRoomRuntime);
+        return room.revision ?? 1;
+      });
+      const results = await Promise.all([
+        service.advanceRound(room.roomCode, q.id),
+        service.advanceRound(room.roomCode, q.id),
+      ]);
+      expect(results.filter((value) => value.ok)).toHaveLength(1);
+      expect(room.winnerMethod).toBe('lottery');
+      expect(['right', 'left']).toContain(room.winner);
+      expect(service.buildSnapshot(room, 'right', 'guest_right').winner).toBe(
+        room.winner,
+      );
+      expect(service.buildSnapshot(room, 'left', 'guest_left').winner).toBe(
+        room.winner,
+      );
+      expect(
+        await service.handleReconnect('guest_left', room.roomCode),
+      ).toMatchObject({
+        ok: true,
+        room: { winner: room.winner, winnerMethod: 'lottery' },
+      });
+    });
+
+    it('plays ten shared questions without an eleventh and awards the higher score on a position tie', async () => {
       let now = 1_800_000_000_000;
       jest.spyOn(Date, 'now').mockImplementation(() => now);
-      let storedRoom: LadderRoomRuntime = {
-        roomCode: 'AB12CD34',
-        hostId: 'guest_right',
-        status: 'waiting',
+      let room = {
+        ...activeRoom(),
+        status: 'waiting' as const,
         currentRound: 0,
-        totalRounds: 5,
-        rightScore: 0,
-        leftScore: 0,
-        rightPosition: 0,
-        leftPosition: 0,
-        winningPosition: 5,
         currentQuestion: null,
-        teams: [
-          {
-            id: 'guest_right',
-            team: 'right',
-            playerName: 'يمين',
-            isHost: true,
-            joinedAt: now,
-          },
-          {
-            id: 'guest_left',
-            team: 'left',
-            playerName: 'يسار',
-            isHost: false,
-            joinedAt: now,
-          },
-        ],
-        createdAt: now,
-        updatedAt: now,
-      };
-      const pool = [
-        publishedQuestion('q-easy', 2, 'EASY', 'science'),
-        publishedQuestion('q-medium-1', 4, 'MEDIUM', 'history'),
-        publishedQuestion('q-medium-2', 2, 'MEDIUM', 'culture'),
-        publishedQuestion('q-hard', 4, 'HARD', 'science'),
-      ];
-      const seenQuestionIds: string[] = [];
-      redis.loadLadderRoom.mockImplementation(() =>
-        Promise.resolve(storedRoom),
+        usedQuestionIds: [],
+        recentCategoryIds: [],
+      } as LadderRoomRuntime;
+      redis.loadLadderRoom.mockImplementation(async () =>
+        structuredClone(room),
       );
-      redis.saveLadderRoom.mockImplementation((_roomCode, room) => {
-        storedRoom = structuredClone(room as LadderRoomRuntime);
-        return Promise.resolve();
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        room = structuredClone(value as LadderRoomRuntime);
+        return room.revision ?? 1;
       });
-      findManyQuestions.mockResolvedValue(pool);
-
-      const started = await service.startGame('AB12CD34', 'guest_right');
-      expect(started.ok).toBe(true);
-      if (!started.ok) return;
-      seenQuestionIds.push(started.room.currentQuestion!.id);
-      expect(started.room.currentDifficulty).toBe('EASY');
-
-      now += 1_000;
-      const correct = await service.submitAnswer(
-        'guest_right',
-        storedRoom.roomCode,
-        storedRoom.currentQuestion!.id,
-        storedRoom.currentQuestion!.options[0].id,
+      findManyQuestions.mockResolvedValue(
+        Array.from({ length: 12 }, (_, i) => publishedQuestion(`q-${i}`)),
       );
-      expect(correct.ok).toBe(true);
-      if (!correct.ok) return;
-      seenQuestionIds.push(correct.room.currentQuestion!.id);
-      expect(correct.room.currentDifficulty).toBe('MEDIUM');
-      expect(correct.room.rightScore).toBe(100);
-      expect(correct.room.rightPosition).toBe(1);
-
-      now += 1_000;
-      const wrong = await service.submitAnswer(
-        'guest_left',
-        storedRoom.roomCode,
-        storedRoom.currentQuestion!.id,
-        storedRoom.currentQuestion!.options[1].id,
+      expect((await service.startGame(room.roomCode, room.hostId)).ok).toBe(
+        true,
       );
-      expect(wrong.ok).toBe(true);
-      if (!wrong.ok) return;
-      seenQuestionIds.push(wrong.room.currentQuestion!.id);
-      expect(wrong.room.currentDifficulty).toBe('MEDIUM');
-      expect(wrong.room.leftScore).toBe(0);
-
-      now = storedRoom.questionDeadlineAt!;
-      const timedOut = await service.expireQuestion(
-        storedRoom.roomCode,
-        storedRoom.currentQuestion!.id,
-      );
-      expect(timedOut.ok).toBe(true);
-      if (!timedOut.ok) return;
-      seenQuestionIds.push(timedOut.room.currentQuestion!.id);
-      expect(timedOut.room.currentDifficulty).toBe('HARD');
-      expect(new Set(seenQuestionIds).size).toBe(seenQuestionIds.length);
-      expect(timedOut.room.usedQuestionIds).toEqual(seenQuestionIds);
+      for (let i = 1; i <= 10; i++) {
+        const q = room.currentQuestion!;
+        now += 1000;
+        expect(
+          (
+            await service.submitAnswer(
+              'guest_right',
+              room.roomCode,
+              q.id,
+              q.options[0].id,
+            )
+          ).ok,
+        ).toBe(true);
+        now += 1000;
+        expect(
+          (
+            await service.submitAnswer(
+              'guest_left',
+              room.roomCode,
+              q.id,
+              q.options[0].id,
+            )
+          ).ok,
+        ).toBe(true);
+        expect(room.currentRound).toBe(i);
+        now += 4001;
+        expect((await service.advanceRound(room.roomCode, q.id)).ok).toBe(true);
+      }
+      expect(room.status).toBe('finished');
+      expect(room.currentRound).toBe(10);
+      expect(room.rightPosition).toBe(10);
+      expect(room.leftPosition).toBe(10);
+      expect(room.roundHistory).toHaveLength(10);
+      expect(service.buildSnapshot(room).winner).toBe('right');
+      expect(
+        new Set(room.roundHistory!.map((result) => result.questionId)).size,
+      ).toBe(10);
     });
   });
 
@@ -706,12 +726,12 @@ describe('LadderService', () => {
         createdAt: Date.now() - 4 * 60 * 60 * 1000, // 4 hours ago
         expiresAt: Date.now() - 60 * 60 * 1000, // 1 hour ago
       });
-      redis.deleteLadderGuestIdentity.mockResolvedValue(undefined);
+      redis.deleteExpiredLadderGuestIdentity.mockResolvedValue(undefined);
 
       const result = await service.validateGuest('guest_123', 'token_abc');
 
       expect(result).toBeNull();
-      expect(redis.deleteLadderGuestIdentity).toHaveBeenCalled();
+      expect(redis.deleteExpiredLadderGuestIdentity).toHaveBeenCalled();
     });
 
     it('keeps an identity valid at the exact moment of expiry (strictly-after check)', async () => {
@@ -743,12 +763,12 @@ describe('LadderService', () => {
         createdAt: now - 3_600_000,
         expiresAt: now - 1,
       });
-      redis.deleteLadderGuestIdentity.mockResolvedValue(undefined);
+      redis.deleteExpiredLadderGuestIdentity.mockResolvedValue(undefined);
 
       const result = await service.validateGuest('guest_123', 'token_abc');
 
       expect(result).toBeNull();
-      expect(redis.deleteLadderGuestIdentity).toHaveBeenCalled();
+      expect(redis.deleteExpiredLadderGuestIdentity).toHaveBeenCalled();
       dateSpy.mockRestore();
     });
   });
@@ -756,7 +776,7 @@ describe('LadderService', () => {
   describe('createRoom', () => {
     it('creates a host-owned room without adding the host to either team', async () => {
       redis.isLadderRoomCodeActive.mockResolvedValue(false);
-      redis.saveLadderRoom.mockResolvedValue(undefined);
+      redis.saveLadderRoom.mockResolvedValue(1);
       redis.addActiveLadderRoomCode.mockResolvedValue(undefined);
       redis.setLadderGuestIdentity.mockResolvedValue(undefined);
 

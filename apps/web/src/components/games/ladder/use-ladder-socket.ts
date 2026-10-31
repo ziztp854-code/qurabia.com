@@ -190,6 +190,8 @@ export function useLadderSocket(
       setError(message);
     });
     socket.on('ladder:room:state', (payload) => {
+      const current = roomRef.current;
+      if (current?.roomCode === payload.roomCode && (payload.revision ?? 0) < (current.revision ?? 0)) return;
       setBusy(false);
       setErrorCode('');
       setGuestIdentityInvalid(false);

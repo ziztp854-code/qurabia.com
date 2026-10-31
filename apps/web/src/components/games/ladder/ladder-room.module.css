@@ -1487,3 +1487,156 @@
   .ladderSideHeader strong, .teamCount { font-size: 0.75rem; }
   .ladderPlayerItem { padding: var(--space-1) var(--space-2); }
 }
+
+/* Broadcast stage: artwork is decorative; all game state remains real text. */
+.prestigeStage {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 1672 / 941;
+  container-type: inline-size;
+  overflow: hidden;
+  background: var(--ladder-stage-color-1) url('/game-art/ladder/stage.webp') center / 100% 100% no-repeat;
+  color: var(--ladder-stage-color-2);
+}
+.stageLogo {
+  position: absolute; top: 3%; left: 38%; width: 24%; text-align: center;
+  font-size: 6.3cqw; font-weight: 900; line-height: 1.15; color: var(--ladder-stage-color-3);
+  text-shadow: 0 2px var(--ladder-stage-color-4), 0 5px var(--ladder-stage-color-5), 0 9px 5px var(--ladder-stage-color-6), 0 0 16px var(--ladder-stage-color-7);
+}
+.stageLogo i {
+  display: inline-block; width: 2cqw; height: 6cqw; vertical-align: middle;
+  border-inline: .3cqw solid var(--ladder-stage-color-8);
+  background: repeating-linear-gradient(to bottom, transparent 0 1cqw, var(--ladder-stage-color-9) 1cqw 1.3cqw, transparent 1.3cqw 1.5cqw);
+  transform: rotate(-5deg);
+}
+.stageCompetitor { position: absolute; inset: 0; pointer-events: none; }
+.stageAvatar, .stageName, .stageSteps, .stagePoints { position: absolute; text-align: center; }
+.stageAvatar {
+  top: 7.3%; width: 9.6%; height: 14%; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 35%, var(--ladder-stage-color-10), var(--ladder-stage-color-11) 75%); color: var(--ladder-stage-color-12);
+  font-size: 4cqw; font-weight: 800;
+}
+.stageName { top: 23%; width: 10%; font-size: 1.8cqw; color: var(--ladder-stage-color-12); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; direction: rtl; }
+.stageSteps { top: 28.3%; width: 6.8%; height: 47.5%; display: flex; flex-direction: column; gap: 1px; }
+.stageRung {
+  flex: 1; display: grid; place-items: center; min-height: 0; font-size: 1.3cqw; line-height: 1;
+  clip-path: polygon(5% 0,95% 0,100% 12%,100% 88%,95% 100%,5% 100%,0 88%,0 12%);
+  background: linear-gradient(180deg,var(--ladder-stage-color-13),var(--ladder-stage-color-14) 7%,var(--ladder-stage-color-15) 15%,var(--ladder-stage-color-1) 74%,var(--ladder-stage-color-16) 87%,var(--ladder-stage-color-17) 94%,var(--ladder-stage-color-18));
+  box-shadow: inset 0 3px 2px var(--ladder-stage-color-19), inset 0 -5px 5px var(--ladder-stage-color-20);
+}
+.stageRung[data-current='true'] { background: linear-gradient(180deg,var(--ladder-stage-color-21),var(--ladder-stage-color-22) 8%,var(--ladder-stage-color-23) 20%,var(--ladder-stage-color-24) 70%,var(--ladder-stage-color-25) 90%,var(--ladder-stage-color-26)); filter: drop-shadow(0 0 7px var(--ladder-stage-color-27)); }
+.stagePoints { top: 77%; width: 11%; font-size: 1.1cqw; direction: rtl; color: var(--ladder-stage-color-28); font-weight: 700; text-shadow: 0 2px 4px var(--ladder-stage-color-20); }
+.stagePoints strong { font-size: 1.6cqw; }
+.stageCompetitor[data-side='right'] .stageAvatar { left: 9.3%; }
+.stageCompetitor[data-side='right'] .stageName { left: 9.1%; }
+.stageCompetitor[data-side='right'] .stageSteps { left: 10.6%; }
+.stageCompetitor[data-side='right'] .stagePoints { left: 8.4%; }
+.stageCompetitor[data-side='left'] .stageAvatar { left: 80.8%; color: var(--ladder-stage-color-29); }
+.stageCompetitor[data-side='left'] .stageName { left: 80.8%; color: var(--ladder-stage-color-30); }
+.stageCompetitor[data-side='left'] .stageSteps { left: 82.6%; }
+.stageCompetitor[data-side='left'] .stagePoints { left: 80.3%; color: var(--ladder-stage-color-30); }
+.stageCompetitor[data-side='left'] .stageRung { background: linear-gradient(180deg,var(--ladder-stage-color-31),var(--ladder-stage-color-32) 7%,var(--ladder-stage-color-33) 15%,var(--ladder-stage-color-34) 74%,var(--ladder-stage-color-35) 87%,var(--ladder-stage-color-36) 94%,var(--ladder-stage-color-37)); }
+.stageCompetitor[data-side='left'] .stageRung[data-current='true'] { background: linear-gradient(180deg,var(--ladder-stage-color-38),var(--ladder-stage-color-39) 8%,var(--ladder-stage-color-40) 20%,var(--ladder-stage-color-41) 70%,var(--ladder-stage-color-42) 90%,var(--ladder-stage-color-43)); filter: drop-shadow(0 0 7px var(--ladder-stage-color-44)); }
+.stageCenter { position: absolute; inset: 0; pointer-events: none; }
+.stageCenter .ladderQuestionCard { position: static; display: contents; }
+.stageCenter .questionHeader { position: static; }
+.stageCenter .ladderCategory { position: absolute; top: 30%; right: 25.5%; max-width: 19%; padding: .4% .9%; font-size: 1cqw; text-align: center; border: 1px solid var(--ladder-stage-color-45); background: var(--ladder-stage-color-46); }
+.stageCenter .timerPill { position: absolute; top: 23.9%; left: 46.7%; width: 6.7%; height: 11.7%; min-height: 0; display: grid; place-items: center; padding: 0; border: .6cqw solid var(--ladder-stage-color-47); border-left-color: var(--ladder-stage-color-48); border-top-color: var(--ladder-stage-color-49); background: var(--ladder-stage-color-50); font-size: 2cqw; }
+.stageCenter .timerIcon, .stageCenter .timerTrack { display: none; }
+.stageCenter .ladderPrompt { position: absolute; top: 39%; left: 29%; width: 42%; height: 15%; display: grid; place-items: center; text-align: center; font-size: 2.4cqw; line-height: 1.3; overflow-wrap: anywhere; }
+.stageCenter .ladderOptions { position: absolute; top: 56.5%; left: 26.4%; width: 47%; height: 21.5%; gap: 6% 2%; direction: ltr; }
+.stageCenter .ladderOption { pointer-events: auto; min-height: 0; padding: 0 5%; direction: rtl; justify-content: flex-start; text-align: center; font-size: 1.8cqw; color: var(--ladder-stage-color-51); border: 0; border-radius: 0; background: transparent; }
+.stageCenter .ladderOption span:last-child { flex: 1; overflow-wrap: anywhere; }
+.stageCenter .ladderOptionIndex { width: auto; height: auto; background: none; color: var(--ladder-stage-color-52); font-size: 1.4cqw; }
+.stageCenter .ladderOption:disabled { opacity: 1; }
+.stageCenter .ladderOption[aria-pressed='true'] { outline: 2px solid var(--ladder-stage-color-53); outline-offset: -4px; }
+.stageCenter .ladderReveal { position: absolute; top: 80%; left: 30%; width: 40%; padding: .3rem; text-align: center; font-size: 1cqw; }
+.stageRound { position: absolute; top: 45%; left: 30%; width: 40%; text-align: center; font-size: 2cqw; }
+@media (max-width: 48rem) {
+  .prestigeStage { aspect-ratio: auto; min-height: 760px; background: linear-gradient(var(--ladder-stage-color-54),var(--ladder-stage-color-55)), url('/game-art/ladder/stage.webp') center / auto 100% no-repeat; }
+  .stageLogo { top: 1%; left: 25%; width: 50%; font-size: 11cqw; }
+  .stageLogo i { width: 3cqw; height: 10cqw; }
+  .stageAvatar { top: 12%; width: 20%; height: auto; aspect-ratio: 1; font-size: 8cqw; border: 2px solid var(--ladder-stage-color-56); }
+  .stageCompetitor[data-side='right'] .stageAvatar { left: 3%; }
+  .stageCompetitor[data-side='left'] .stageAvatar { left: 77%; border-color: var(--ladder-stage-color-57); }
+  .stageName { top: 23%; width: 23%; font-size: 4cqw; background: var(--ladder-stage-color-58); border: 1px solid var(--ladder-stage-color-59); border-radius: 5px; }
+  .stageCompetitor[data-side='right'] .stageName { left: 2%; }
+  .stageCompetitor[data-side='left'] .stageName { left: 75%; }
+  .stageSteps { top: 30%; width: 18%; height: 55%; }
+  .stageCompetitor[data-side='right'] .stageSteps { left: 4.5%; }
+  .stageCompetitor[data-side='left'] .stageSteps { left: 77.5%; }
+  .stageRung { font-size: 4cqw; }
+  .stagePoints { top: 87%; width: 23%; font-size: 3cqw; }
+  .stagePoints strong { font-size: 4cqw; }
+  .stageCompetitor[data-side='right'] .stagePoints { left: 2%; }
+  .stageCompetitor[data-side='left'] .stagePoints { left: 75%; }
+  .stageCenter .timerPill { top: 15%; left: 41%; width: 18%; height: auto; aspect-ratio: 1; border-width: 1.5cqw; font-size: 5cqw; }
+  .stageCenter .ladderCategory { top: 26%; right: 26%; max-width: none; width: 48%; font-size: 2.8cqw; }
+  .stageCenter .ladderPrompt { top: 32%; left: 24%; width: 52%; height: 19%; font-size: 4.8cqw; background: var(--ladder-stage-color-60); border: 1px solid var(--ladder-stage-color-61); border-radius: 8px; padding: 2%; }
+  .stageCenter .ladderOptions { top: 53%; left: 24%; width: 52%; height: 32%; grid-template-columns: 1fr; gap: 3%; }
+  .stageCenter .ladderOption { min-height: 44px; font-size: 4cqw; background: linear-gradient(145deg,var(--ladder-stage-color-62),var(--ladder-stage-color-63)); border: 1px solid var(--ladder-stage-color-64); border-radius: 7px; }
+  .stageCenter .ladderOptionIndex { font-size: 3.5cqw; }
+  .stageCenter .ladderReveal { top: 91%; left: 24%; width: 52%; font-size: 3cqw; }
+  .stageRound { top: 45%; font-size: 4cqw; }
+}
+.stageCenter .ladderOption[data-correct='true'] { outline: 3px solid var(--success); outline-offset: -3px; background: color-mix(in srgb, var(--success) 22%, transparent); }
+.stageCenter .ladderOption[data-wrong='true'] { outline: 3px solid var(--danger); outline-offset: -3px; background: color-mix(in srgb, var(--danger) 22%, transparent); }
+
+/* Winner ceremony */
+.ladderFinale {
+  position: relative;
+  justify-items: center;
+  padding: clamp(2rem, 6vw, 5rem);
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 0%, var(--ladder-gold-tint), transparent 58%), var(--surface-stage);
+  border-color: var(--ladder-gold-edge);
+  box-shadow: inset 0 0 0 4px var(--surface-stage), inset 0 0 0 5px var(--ladder-gold-edge), var(--shadow-lg);
+}
+.ladderFinale::before {
+  content: ''; position: absolute; inset: 1rem; border: 1px solid var(--ladder-gold-edge); border-radius: inherit; pointer-events: none;
+}
+.ladderFinale > * { position: relative; z-index: 1; }
+.ladderFinale .finaleTrophy { width: clamp(3.5rem, 8vw, 6rem); filter: drop-shadow(0 0 1rem var(--ladder-gold-edge)); }
+.ladderFinale .finaleTitle { color: var(--ladder-gold); }
+.ladderFinale .finaleSubtitle { font-size: clamp(1.1rem, 3vw, 1.5rem); font-weight: 700; }
+.ladderFinale > section { width: 100%; text-align: start; }
+.stageCenter .ladderPrompt[data-long='true'] { font-size: 1.8cqw; }
+.stageCenter .ladderOption[data-long='true'] { font-size: 1.3cqw; line-height: 1.2; }
+@media (max-width: 48rem) {
+  .stageCenter .ladderPrompt[data-long='true'] { font-size: 3.6cqw; }
+  .stageCenter .ladderOption[data-long='true'] { font-size: 3.2cqw; }
+}
+/* Keep accumulated scores legible when the stage is embedded in a broadcast. */
+.stagePoints { top: 77.5%; font-size: 1.25cqw; }
+.stagePoints strong { font-size: 2.2cqw; }
+@media (max-width: 48rem) {
+  .stagePoints { top: 87%; font-size: 3.2cqw; }
+  .stagePoints strong { font-size: 5cqw; }
+}
+.stagePoints {
+  padding: .15em .25em;
+  border: 1px solid var(--ladder-gold-edge);
+  border-radius: var(--radius-full);
+  background: var(--surface-stage);
+  white-space: nowrap;
+}
+.stageCompetitor[data-side='left'] .stagePoints { border-color: var(--ladder-cyan-edge); }
+.stageWinner {
+  position: absolute; top: 22%; left: 24%; width: 52%; height: 58%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.2cqw; padding: 3%; text-align: center; border: .18cqw solid var(--ladder-gold);
+  border-radius: 3cqw 3cqw 1cqw 1cqw;
+  background: radial-gradient(ellipse at center top, var(--ladder-gold-tint), transparent 65%), var(--ladder-stage-color-1);
+  box-shadow: inset 0 0 0 .4cqw var(--surface-stage), inset 0 0 0 .5cqw var(--ladder-gold-edge), 0 0 2cqw var(--ladder-gold-edge);
+}
+.stageWinner svg { width: 6cqw; height: 6cqw; color: var(--ladder-gold); filter: drop-shadow(0 0 1cqw var(--ladder-gold-edge)); }
+.stageWinner strong { color: var(--ladder-gold); font-size: 4cqw; line-height: 1.2; overflow-wrap: anywhere; }
+.stageWinner span { color: var(--foreground); font-size: 1.8cqw; font-weight: 800; }
+.stageWinner small { color: var(--text-soft); font-size: 1.2cqw; font-weight: 700; }
+@media (max-width: 48rem) {
+  .stageWinner { top: 32%; left: 24%; width: 52%; height: 52%; gap: 3cqw; padding: 3%; border-radius: 4cqw 4cqw 2cqw 2cqw; }
+  .stageWinner svg { width: 12cqw; height: 12cqw; }
+  .stageWinner strong { font-size: 6cqw; }
+  .stageWinner span { font-size: 3.8cqw; }
+  .stageWinner small { font-size: 3.2cqw; }
+}

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID, randomBytes } from 'node:crypto';
+import { randomUUID, randomBytes, randomInt } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type {
   LadderQuestion,
   LadderRoomSnapshot,
@@ -19,6 +20,7 @@ import {
   selectLadderQuestionCandidate,
 } from './ladder-question-selection.js';
 import { loadLadderQuestionCandidates } from './ladder-question-bank.js';
+import { resolveLadderWinner, scoreLadderAnswer } from './ladder-scoring.js';
 
 type LadderGuestIdentity = {
   guestId: string;
@@ -32,6 +34,10 @@ type LadderGuestIdentity = {
 
 @Injectable()
 export class LadderService {
+  private readonly roomLocks = new AsyncLocalStorage<{
+    roomCode: string;
+    token: string;
+  }>();
   constructor(
     private readonly redis: RedisService,
     private readonly database: DatabaseService,
@@ -48,26 +54,25 @@ export class LadderService {
   private async saveRoom(
     roomCode: string,
     room: LadderRoomRuntime,
-  ): Promise<void> {
-    await this.redis.saveLadderRoom(roomCode, room);
-  }
-
-  private async setGuestIdentity(identity: LadderGuestIdentity): Promise<void> {
-    await this.redis.setLadderGuestIdentity(
-      identity.guestId,
-      identity,
-      24 * 60 * 60,
+    identity?: LadderGuestIdentity,
+    unbindGuestId?: string,
+  ): Promise<LadderRoomRuntime> {
+    const lock = this.roomLocks.getStore();
+    const updated = { ...room, revision: (room.revision ?? 0) + 1 };
+    const revision = await this.redis.saveLadderRoom(
+      roomCode,
+      updated,
+      lock?.roomCode === roomCode ? lock.token : undefined,
+      identity ? { guestId: identity.guestId, identity } : undefined,
+      unbindGuestId,
     );
+    return { ...updated, revision };
   }
 
   private async getGuestIdentity(
     guestId: string,
   ): Promise<LadderGuestIdentity | null> {
     return this.redis.getLadderGuestIdentity<LadderGuestIdentity>(guestId);
-  }
-
-  private async deleteGuestIdentity(guestId: string): Promise<void> {
-    await this.redis.deleteLadderGuestIdentity(guestId);
   }
 
   private generateRoomCode(): Promise<string> {
@@ -169,6 +174,9 @@ export class LadderService {
       ...normalizedRoom,
       currentRound: roundNumber,
       currentQuestion: publicQuestion,
+      answers: {},
+      roundResult: null,
+      revealUntil: null,
       usedQuestionIds: [
         ...(normalizedRoom.usedQuestionIds ?? []),
         candidate.id,
@@ -238,8 +246,9 @@ export class LadderService {
     viewerGuestId?: string,
     viewerHostId?: string,
   ): LadderRoomSnapshot {
-    const remainingSeconds =
-      room.questionDeadlineAt == null
+    const remainingSeconds = room.roundResult
+      ? 0
+      : room.questionDeadlineAt == null
         ? room.currentQuestion?.timeLimit
         : Math.max(0, Math.ceil((room.questionDeadlineAt - Date.now()) / 1000));
     const currentQuestion = room.currentQuestion
@@ -247,8 +256,9 @@ export class LadderService {
           id: room.currentQuestion.id,
           roomId: room.currentQuestion.roomId,
           questionText: room.currentQuestion.questionText,
-          options: room.currentQuestion.options.map((option) => ({
-            ...option,
+          options: room.currentQuestion.options.map(({ id, text }) => ({
+            id,
+            text,
           })),
           category: room.currentQuestion.category,
           difficulty: room.currentQuestion.difficulty,
@@ -266,6 +276,29 @@ export class LadderService {
     const isHost = viewerHostId === room.hostId;
     return {
       roomCode: room.roomCode,
+      revision: room.revision ?? 0,
+      answerStatus: {
+        right: Boolean(room.answers?.right),
+        left: Boolean(room.answers?.left),
+      },
+      myAnswer:
+        viewerTeam &&
+        room.teams.some(
+          (member) => member.id === viewerGuestId && member.team === viewerTeam,
+        )
+          ? (room.answers?.[viewerTeam]?.optionId ?? null)
+          : null,
+      roundResult: room.roundResult ?? null,
+      roundHistory: room.roundHistory ?? [],
+      winner:
+        room.status === 'finished' && !room.stopReason
+          ? (room.winner ?? null)
+          : null,
+      winnerMethod:
+        room.status === 'finished' && !room.stopReason
+          ? (room.winnerMethod ?? null)
+          : null,
+      questionDeadlineAt: room.questionDeadlineAt ?? null,
       phase: room.status,
       currentRound: room.currentRound,
       totalRounds: room.totalRounds,
@@ -292,9 +325,29 @@ export class LadderService {
     for (let attempt = 0; attempt < 80; attempt += 1) {
       const acquired = await this.redis.acquireLadderRoomLock(roomCode, token);
       if (acquired) {
+        let renewing = false;
+        const timer = setInterval(() => {
+          if (renewing) return;
+          renewing = true;
+          void this.redis
+            .renewLadderRoomLock(roomCode, token)
+            .catch(() => false)
+            .finally(() => {
+              renewing = false;
+            });
+        }, 2000);
+        timer.unref?.();
         try {
-          return { acquired: true, value: await action() };
+          return {
+            acquired: true,
+            value: await this.roomLocks.run({ roomCode, token }, action),
+          };
+        } catch (error) {
+          if (error instanceof Error && error.message === 'LADDER_LOCK_LOST')
+            return { acquired: false };
+          throw error;
         } finally {
+          clearInterval(timer);
           await this.redis.releaseLadderRoomLock(roomCode, token);
         }
       }
@@ -329,12 +382,12 @@ export class LadderService {
       hostId,
       status: 'waiting',
       currentRound: 0,
-      totalRounds: input.totalRounds,
+      totalRounds: 10,
       rightScore: 0,
       leftScore: 0,
       rightPosition: 0,
       leftPosition: 0,
-      winningPosition: input.winningPosition,
+      winningPosition: 10,
       questionTimeLimit: input.questionTimeLimit ?? 30,
       automaticQuestionTime: input.questionTimeLimit === undefined,
       quizId: input.quizId ?? null,
@@ -351,10 +404,10 @@ export class LadderService {
       updatedAt: now,
     };
 
-    await this.saveRoom(roomCode, room);
+    const savedRoom = await this.saveRoom(roomCode, room);
     await this.redis.addActiveLadderRoomCode(roomCode);
 
-    return { ok: true, room };
+    return { ok: true, room: savedRoom };
   }
 
   async joinRoom(
@@ -406,7 +459,7 @@ export class LadderService {
           return {
             ok: false,
             code: 'TEAM_FULL',
-            message: 'اكتمل عدد اللاعبين في هذا الفريق.',
+            message: 'هذا المقعد مشغول بالفعل.',
           };
         }
 
@@ -436,8 +489,6 @@ export class LadderService {
           ],
           updatedAt: now,
         };
-        await this.saveRoom(roomCode, updatedRoom);
-
         const guestIdentity: LadderGuestIdentity = {
           guestId,
           guestToken,
@@ -447,9 +498,20 @@ export class LadderService {
           createdAt: now,
           expiresAt: now + LADDER_TTL_SECONDS * 1000,
         };
-        await this.setGuestIdentity(guestIdentity);
+        let savedRoom: LadderRoomRuntime;
+        try {
+          savedRoom = await this.saveRoom(roomCode, updatedRoom, guestIdentity);
+        } catch (error) {
+          if (error instanceof Error && error.message === 'LADDER_GUEST_BOUND')
+            return {
+              ok: false,
+              code: 'GUEST_IN_ANOTHER_ROOM',
+              message: 'هذه الهوية مرتبطة بغرفة أخرى. غادرها أولاً.',
+            };
+          throw error;
+        }
 
-        return { ok: true, room: updatedRoom };
+        return { ok: true, room: savedRoom };
       },
     );
     if (!locked.acquired) {
@@ -491,11 +553,11 @@ export class LadderService {
       }
       const rightPlayers = room.teams.filter((t) => t.team === 'right');
       const leftPlayers = room.teams.filter((t) => t.team === 'left');
-      if (rightPlayers.length === 0 || leftPlayers.length === 0) {
+      if (rightPlayers.length !== 1 || leftPlayers.length !== 1) {
         return {
           ok: false,
           code: 'NOT_ENOUGH_PLAYERS',
-          message: 'تحتاج لاعب واحد على الأقل في كل فريق.',
+          message: 'تحتاج متسابقًا واحدًا في كل جهة.',
         };
       }
 
@@ -506,6 +568,8 @@ export class LadderService {
           {
             ...room,
             status: 'active',
+            totalRounds: 10,
+            winningPosition: 10,
             currentRound: 1,
             startedAt,
             usedQuestionIds: [],
@@ -535,9 +599,67 @@ export class LadderService {
         };
       }
 
-      await this.saveRoom(roomCode, roomWithQuestion);
-      return { ok: true, room: roomWithQuestion };
+      const savedRoom = await this.saveRoom(roomCode, roomWithQuestion);
+      return { ok: true, room: savedRoom };
     });
+  }
+
+  private revealRound(room: LadderRoomRuntime): LadderRoomRuntime {
+    const question = room.currentQuestion!;
+    const correctOptionId = room.currentCorrectOptionId!;
+    const answerFor = (side: LadderTeam) => {
+      const answer = room.answers?.[side];
+      const correct = answer?.optionId === correctOptionId;
+      return {
+        optionId: answer?.optionId ?? null,
+        correct,
+        elapsedMs: answer?.elapsedMs ?? null,
+        points: scoreLadderAnswer(
+          question.difficulty,
+          correct,
+          answer?.elapsedMs ?? question.timeLimit * 1000,
+          question.timeLimit * 1000,
+        ),
+      };
+    };
+    const rightRaw = answerFor('right');
+    const leftRaw = answerFor('left');
+    const right = {
+      ...rightRaw,
+      points: Math.max(0, room.rightScore + rightRaw.points) - room.rightScore,
+    };
+    const left = {
+      ...leftRaw,
+      points: Math.max(0, room.leftScore + leftRaw.points) - room.leftScore,
+    };
+    const result = {
+      roundNumber: room.currentRound,
+      questionId: question.id,
+      questionText: question.questionText,
+      options: question.options,
+      correctOptionId,
+      right,
+      left,
+    };
+    const now = Date.now();
+    return {
+      ...room,
+      rightPosition: Math.max(
+        0,
+        Math.min(10, room.rightPosition + (right.correct ? 1 : -1)),
+      ),
+      leftPosition: Math.max(
+        0,
+        Math.min(10, room.leftPosition + (left.correct ? 1 : -1)),
+      ),
+      rightScore: Math.max(0, room.rightScore + right.points),
+      leftScore: Math.max(0, room.leftScore + left.points),
+      roundResult: result,
+      roundHistory: [...(room.roundHistory ?? []), result],
+      revealUntil: now + 4000,
+      questionDeadlineAt: null,
+      updatedAt: now,
+    };
   }
 
   async submitAnswer(
@@ -545,132 +667,88 @@ export class LadderService {
     roomCode: string,
     questionId: string,
     optionId: string,
+    receivedAt = Date.now(),
   ): Promise<LadderActionResult> {
     return this.executeRoomAction(roomCode, async () => {
-      const loadedRoom = await this.loadRoom(roomCode);
-      if (!loadedRoom) {
+      const loaded = await this.loadRoom(roomCode);
+      if (!loaded)
         return {
           ok: false,
           code: 'ROOM_NOT_FOUND',
           message: 'الغرفة غير موجودة.',
         };
-      }
-      const room = this.normalizeQuestionState(loadedRoom);
-      if (room.status !== 'active') {
-        return {
-          ok: false,
-          code: 'GAME_NOT_ACTIVE',
-          message: 'اللعبة غير نشطة حاليًا.',
-        };
-      }
-      if (room.currentQuestion?.id !== questionId) {
+      const room = this.normalizeQuestionState(loaded);
+      if (
+        room.status !== 'active' ||
+        room.currentQuestion?.id !== questionId ||
+        room.roundResult
+      )
         return {
           ok: false,
           code: 'QUESTION_MISMATCH',
-          message: 'السؤال الحالي غير مطابق.',
+          message: 'السؤال الحالي غير متاح للإجابة.',
         };
-      }
-
       if (
         !room.currentQuestion.options.some((option) => option.id === optionId)
-      ) {
+      )
         return {
           ok: false,
           code: 'INVALID_OPTION',
-          message: 'خيار الإجابة غير صالح لهذا السؤال.',
+          message: 'خيار الإجابة غير صالح.',
         };
-      }
-
       if (
-        room.questionDeadlineAt != null &&
-        Date.now() >= room.questionDeadlineAt
-      ) {
+        room.questionDeadlineAt == null ||
+        receivedAt >= room.questionDeadlineAt
+      )
         return {
           ok: false,
           code: 'QUESTION_EXPIRED',
-          message: 'انتهى وقت الإجابة عن هذا السؤال.',
+          message: 'انتهى وقت الإجابة.',
         };
-      }
-
-      const team = room.teams.find((member) => member.id === guestId);
-      let teamSide: LadderTeam | undefined = team?.team;
-
-      if (!teamSide) {
-        const identity = await this.getGuestIdentity(guestId);
-        if (!identity?.team || identity.roomCode !== roomCode) {
-          return {
-            ok: false,
-            code: 'NOT_A_PLAYER',
-            message: 'لست لاعبًا في هذه الغرفة.',
-          };
-        }
-        teamSide = identity.team;
-      }
-
+      const member = room.teams.find((player) => player.id === guestId);
+      if (!member)
+        return {
+          ok: false,
+          code: 'NOT_A_PLAYER',
+          message: 'لست لاعبًا في هذه الغرفة.',
+        };
+      if (room.answers?.[member.team])
+        return {
+          ok: false,
+          code: 'ALREADY_ANSWERED',
+          message: 'تم تسجيل إجابتك بالفعل.',
+        };
       if (
         !room.currentCorrectOptionId ||
         !room.currentQuestion.options.some(
           (option) => option.id === room.currentCorrectOptionId,
         )
-      ) {
+      )
         return {
           ok: false,
           code: 'QUESTION_STATE_INVALID',
-          message: 'تعذّر التحقق من السؤال الحالي. أعد مزامنة الغرفة.',
+          message: 'تعذّر التحقق من السؤال.',
         };
-      }
-
-      const isCorrect = room.currentCorrectOptionId === optionId;
-      const scoredRoom: LadderRoomRuntime =
-        teamSide === 'right'
-          ? {
-              ...room,
-              rightScore: room.rightScore + (isCorrect ? 100 : 0),
-              rightPosition: isCorrect
-                ? Math.min(room.rightPosition + 1, room.winningPosition)
-                : Math.max(room.rightPosition - 1, 0),
-              updatedAt: Date.now(),
-            }
-          : {
-              ...room,
-              leftScore: room.leftScore + (isCorrect ? 100 : 0),
-              leftPosition: isCorrect
-                ? Math.min(room.leftPosition + 1, room.winningPosition)
-                : Math.max(room.leftPosition - 1, 0),
-              updatedAt: Date.now(),
-            };
-      const answeredRoom = this.closeCurrentQuestion(scoredRoom);
-
-      const winner =
-        answeredRoom.rightPosition >= answeredRoom.winningPosition
-          ? 'right'
-          : answeredRoom.leftPosition >= answeredRoom.winningPosition
-            ? 'left'
-            : null;
-
-      let nextRoom: LadderRoomRuntime;
-      if (winner) {
-        const endedAt = Date.now();
-        nextRoom = {
-          ...answeredRoom,
-          status: 'finished',
-          endedAt,
-          updatedAt: endedAt,
-        };
-      } else if (answeredRoom.currentRound >= answeredRoom.totalRounds) {
-        const endedAt = Date.now();
-        nextRoom = {
-          ...answeredRoom,
-          status: 'finished',
-          endedAt,
-          updatedAt: endedAt,
-        };
-      } else {
-        nextRoom = await this.openNextQuestion(answeredRoom);
-      }
-
-      await this.saveRoom(roomCode, nextRoom);
-      return { ok: true, room: nextRoom };
+      const updated: LadderRoomRuntime = {
+        ...room,
+        answers: {
+          ...room.answers,
+          [member.team]: {
+            optionId,
+            elapsedMs: Math.max(
+              0,
+              receivedAt - (room.questionOpenedAt ?? receivedAt),
+            ),
+          },
+        },
+        updatedAt: receivedAt,
+      };
+      const next =
+        updated.answers?.right && updated.answers?.left
+          ? this.revealRound(updated)
+          : updated;
+      const savedRoom = await this.saveRoom(roomCode, next);
+      return { ok: true, room: savedRoom };
     });
   }
 
@@ -679,49 +757,101 @@ export class LadderService {
     questionId: string,
   ): Promise<LadderActionResult> {
     return this.executeRoomAction(roomCode, async () => {
-      const loadedRoom = await this.loadRoom(roomCode);
-      if (!loadedRoom) {
+      const loaded = await this.loadRoom(roomCode);
+      if (!loaded)
         return {
           ok: false,
           code: 'ROOM_NOT_FOUND',
           message: 'الغرفة غير موجودة.',
         };
-      }
-      const room = this.normalizeQuestionState(loadedRoom);
-      if (room.status !== 'active' || room.currentQuestionId !== questionId) {
+      const room = this.normalizeQuestionState(loaded);
+      if (
+        room.status !== 'active' ||
+        room.currentQuestionId !== questionId ||
+        room.roundResult
+      )
         return {
           ok: false,
           code: 'QUESTION_MISMATCH',
           message: 'السؤال الحالي غير مطابق.',
         };
-      }
       if (
         room.questionDeadlineAt == null ||
         Date.now() < room.questionDeadlineAt
-      ) {
+      )
         return {
           ok: false,
           code: 'QUESTION_NOT_EXPIRED',
           message: 'وقت السؤال لم ينته بعد.',
         };
-      }
-
-      const expiredRoom = this.closeCurrentQuestion(room);
-      let nextRoom: LadderRoomRuntime;
-      if (expiredRoom.currentRound >= expiredRoom.totalRounds) {
-        const endedAt = Date.now();
-        nextRoom = {
-          ...expiredRoom,
-          status: 'finished',
-          endedAt,
-          updatedAt: endedAt,
+      if (!room.currentQuestion || !room.currentCorrectOptionId)
+        return {
+          ok: false,
+          code: 'QUESTION_STATE_INVALID',
+          message: 'تعذّر التحقق من السؤال.',
         };
-      } else {
-        nextRoom = await this.openNextQuestion(expiredRoom);
-      }
+      const next = this.revealRound(room);
+      const savedRoom = await this.saveRoom(roomCode, next);
+      return { ok: true, room: savedRoom };
+    });
+  }
 
-      await this.saveRoom(roomCode, nextRoom);
-      return { ok: true, room: nextRoom };
+  async advanceRound(
+    roomCode: string,
+    questionId: string,
+  ): Promise<LadderActionResult> {
+    return this.executeRoomAction(roomCode, async () => {
+      const room = await this.loadRoom(roomCode);
+      if (
+        !room ||
+        room.status !== 'active' ||
+        room.currentQuestionId !== questionId ||
+        !room.roundResult
+      )
+        return {
+          ok: false,
+          code: 'QUESTION_MISMATCH',
+          message: 'لا توجد نتيجة جاهزة.',
+        };
+      if (room.revealUntil == null || Date.now() < room.revealUntil)
+        return {
+          ok: false,
+          code: 'REVEAL_NOT_FINISHED',
+          message: 'عرض النتيجة لم ينته بعد.',
+        };
+      const now = Date.now();
+      const elapsed = (side: LadderTeam) =>
+        (room.roundHistory ?? []).reduce(
+          (sum, result) =>
+            sum + (result[side].correct ? (result[side].elapsedMs ?? 0) : 0),
+          0,
+        );
+      const correctCount = (side: LadderTeam) =>
+        (room.roundHistory ?? []).filter((result) => result[side].correct)
+          .length;
+      const next =
+        room.currentRound >= 10
+          ? {
+              ...room,
+              ...resolveLadderWinner(
+                room.rightPosition,
+                room.leftPosition,
+                room.rightScore,
+                room.leftScore,
+                elapsed('right'),
+                elapsed('left'),
+                correctCount('right'),
+                correctCount('left'),
+                () => (randomInt(2) === 0 ? 'right' : 'left'),
+              ),
+              status: 'finished' as const,
+              endedAt: now,
+              updatedAt: now,
+              revealUntil: null,
+            }
+          : await this.openNextQuestion(room);
+      const savedRoom = await this.saveRoom(roomCode, next);
+      return { ok: true, room: savedRoom };
     });
   }
 
@@ -754,23 +884,35 @@ export class LadderService {
           message: 'لست في هذه الغرفة.',
         };
       }
+      if (room.status === 'active') {
+        return {
+          ok: false,
+          code: 'GAME_IN_PROGRESS',
+          message:
+            'يمكنك إعادة الاتصال؛ تستمر اللعبة وتُحسب المهلة عند عدم الإجابة.',
+        };
+      }
       room.teams.splice(teamIndex, 1);
       if (room.teams.length === 0) {
-        await this.deleteRoom(roomCode);
+        await this.deleteRoom(roomCode, guestId);
         return { ok: true, room };
       }
       if (room.status === 'waiting') {
         room.status = 'waiting';
       }
       room.updatedAt = Date.now();
-      await this.saveRoom(roomCode, room);
-      return { ok: true, room };
+      const savedRoom = await this.saveRoom(roomCode, room, undefined, guestId);
+      return { ok: true, room: savedRoom };
     });
   }
 
-  async deleteRoom(roomCode: string): Promise<void> {
-    await this.redis.deleteLadderRoom(roomCode);
-    await this.redis.removeActiveLadderRoomCode(roomCode);
+  async deleteRoom(roomCode: string, unbindGuestId?: string): Promise<void> {
+    const lock = this.roomLocks.getStore();
+    await this.redis.deleteLadderRoom(
+      roomCode,
+      lock?.roomCode === roomCode ? lock.token : undefined,
+      unbindGuestId,
+    );
   }
 
   async validateGuest(
@@ -792,7 +934,7 @@ export class LadderService {
       return identity;
     }
     if (Date.now() > identity.expiresAt) {
-      await this.redis.deleteLadderGuestIdentity(guestId);
+      await this.redis.deleteExpiredLadderGuestIdentity(guestId, Date.now());
       return null;
     }
     if (identity.guestToken !== guestToken) {

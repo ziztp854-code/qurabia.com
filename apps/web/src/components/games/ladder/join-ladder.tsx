@@ -35,14 +35,14 @@ export function JoinLadder({ roomCode }: JoinLadderProps) {
             <Swords aria-hidden="true" /> لعبة تنافسية
           </span>
           <h1>السلم</h1>
-          <p>فريقان يتنافسان على السلم: إجابة صحيحة تصعد، وخاطئة تنزل. أول من يبلغ القمة يفوز.</p>
+          <p>متسابقان يجيبان عن عشرة أسئلة؛ الدرجة الأعلى تفوز، ثم النقاط عند التعادل.</p>
         </Card>
 
         <Card className={styles.ladderEntryPanel}>
           <div
             className={styles.entryTeamChoice}
             role="radiogroup"
-            aria-label="اختيار الفريق"
+            aria-label="اختيار مكان المتسابق"
           >
             <motion.button
               whileHover={teamHover}
@@ -62,7 +62,7 @@ export function JoinLadder({ roomCode }: JoinLadderProps) {
                   size={24}
                 />
               </span>
-              <span className={styles.entryTeamLabel}>فريق اليمين</span>
+              <span className={styles.entryTeamLabel}>اليمين</span>
             </motion.button>
             <motion.button
               whileHover={teamHover}
@@ -82,7 +82,7 @@ export function JoinLadder({ roomCode }: JoinLadderProps) {
                   size={24}
                 />
               </span>
-              <span className={styles.entryTeamLabel}>فريق اليسار</span>
+              <span className={styles.entryTeamLabel}>اليسار</span>
             </motion.button>
           </div>
 

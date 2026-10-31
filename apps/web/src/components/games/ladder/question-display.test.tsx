@@ -41,7 +41,7 @@ describe('QuestionDisplay', () => {
     await user.click(options[0]);
 
     expect(onAnswer).toHaveBeenCalledWith('option-1');
-    expect(screen.getByText('تم إرسال الإجابة.')).toBeInTheDocument();
+    expect(screen.queryByText('تم إرسال الإجابة.')).not.toBeInTheDocument();
     expect(screen.queryByText(/الإجابة الصحيحة:/)).not.toBeInTheDocument();
   });
   it('keeps the server deadline and answer selection across room updates', async () => {
@@ -58,7 +58,7 @@ describe('QuestionDisplay', () => {
     act(() => { vi.advanceTimersByTime(5_000); });
     view.rerender(
       <QuestionDisplay question={current} timeLimit={15} roundNumber={1} totalRounds={20}
-        onAnswer={onAnswer} selectedOption={null} disabled={false} />,
+        onAnswer={onAnswer} selectedOption="option-1" disabled={false} />,
     );
     expect(screen.getByRole('timer')).toHaveTextContent('15');
     expect(screen.getAllByRole('button')[0]).toHaveAttribute('aria-pressed', 'true');
@@ -93,4 +93,16 @@ describe('QuestionDisplay', () => {
     vi.useRealTimers();
   });
 
+
+  it('waits for the server to confirm an answer before locking it', async () => {
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+    const { rerender } = render(<QuestionDisplay question={question(2)} timeLimit={20} roundNumber={1} totalRounds={10} onAnswer={onAnswer} selectedOption={null} disabled={false} />);
+    await user.click(screen.getAllByRole('button')[0]);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole('button')[0]).toBeEnabled();
+    rerender(<QuestionDisplay question={question(2)} timeLimit={20} roundNumber={1} totalRounds={10} onAnswer={onAnswer} selectedOption="option-1" disabled={false} />);
+    expect(screen.getAllByRole('button')[0]).toBeDisabled();
+    expect(screen.getByText('تم إرسال الإجابة.')).toBeInTheDocument();
+  });
 });

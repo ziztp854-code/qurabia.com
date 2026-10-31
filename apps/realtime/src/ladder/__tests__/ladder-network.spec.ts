@@ -227,6 +227,9 @@ network('ladder real network and Redis', () => {
       currentQuestion: { id: string; timeLimit: number };
       currentRound: number;
       rightPosition: number;
+      leftPosition: number;
+      answerStatus: { right: boolean; left: boolean };
+      roundResult: { correctOptionId: string } | null;
     };
     const started = clients.map((client) =>
       waitEvent<Snapshot>(client, 'ladder:room:state'),
@@ -234,51 +237,70 @@ network('ladder real network and Redis', () => {
     host.emit('ladder:start', { roomCode });
     const views = await Promise.all(started);
     expect(new Set(views.map((view) => view.currentQuestion.id)).size).toBe(1);
-    expect(views.every((view) => view.currentQuestion.timeLimit === 20)).toBe(
-      true,
-    );
-    const currentId = views[0].currentQuestion.id;
-    const advanced = clients.map((client) =>
+    const id = views[0].currentQuestion.id;
+    const first = clients.map((client) =>
       waitEvent<Snapshot>(client, 'ladder:room:state'),
     );
     right.emit('ladder:answer', {
       roomCode,
-      questionId: currentId,
-      optionId: `${currentId}-a`,
+      questionId: id,
+      optionId: `${id}-a`,
     });
-    const after = await Promise.all(advanced);
+    const waiting = await Promise.all(first);
     expect(
-      after.every(
-        (view) => view.rightPosition === 1 && view.currentRound === 2,
+      waiting.every(
+        (view) =>
+          view.currentRound === 1 &&
+          view.rightPosition === 0 &&
+          view.answerStatus.right &&
+          !view.roundResult,
       ),
     ).toBe(true);
-    const rejected = waitEvent<{ code: string }>(right, 'ladder:error');
+    const duplicate = waitEvent<{ code: string }>(right, 'ladder:error');
     right.emit('ladder:answer', {
       roomCode,
-      questionId: currentId,
-      optionId: `${currentId}-a`,
+      questionId: id,
+      optionId: `${id}-a`,
     });
-    expect((await rejected).code).toBe('QUESTION_MISMATCH');
+    expect((await duplicate).code).toBe('ALREADY_ANSWERED');
     left.disconnect();
     left.connect();
     await waitEvent(left, 'connect');
-    const restored = waitEvent<Snapshot>(left, 'ladder:room:state');
+    const restored = clients.map((client) =>
+      waitEvent<Snapshot>(client, 'ladder:room:state'),
+    );
     left.emit('ladder:reconnect', { roomCode });
-    const rejoined = await restored;
-    expect(rejoined.rightPosition).toBe(1);
-    const afterLeft = clients.map((client) =>
+    expect(
+      (await Promise.all(restored)).every((view) => view.answerStatus.right),
+    ).toBe(true);
+    const reveal = clients.map((client) =>
       waitEvent<Snapshot>(client, 'ladder:room:state'),
     );
     left.emit('ladder:answer', {
       roomCode,
-      questionId: rejoined.currentQuestion.id,
-      optionId: `${rejoined.currentQuestion.id}-b`,
+      questionId: id,
+      optionId: `${id}-a`,
     });
-    const thirdViews = await Promise.all(afterLeft);
+    const results = await Promise.all(reveal);
     expect(
-      thirdViews.every(
-        (view) => view.rightPosition === 1 && view.currentRound === 3,
+      results.every(
+        (view) =>
+          view.rightPosition === 1 &&
+          view.leftPosition === 1 &&
+          view.roundResult?.correctOptionId === `${id}-a`,
       ),
     ).toBe(true);
-  }, 20_000);
+    const next = clients.map((client) =>
+      waitEvent<Snapshot>(client, 'ladder:room:state'),
+    );
+    const nextViews = await Promise.all(next);
+    expect(
+      nextViews.every(
+        (view) =>
+          view.currentRound === 2 &&
+          view.currentQuestion.id !== id &&
+          !view.roundResult,
+      ),
+    ).toBe(true);
+  }, 30_000);
 });

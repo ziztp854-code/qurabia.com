@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type {
   LadderQuestionDifficulty,
+  LadderRoundResult,
   LadderQuestion,
   LadderRoom,
   LadderRoomSnapshot,
@@ -8,7 +9,7 @@ import type {
 
 export const LADDER_TTL_SECONDS = 3 * 60 * 60;
 export const LADDER_ROOM_LOCK_MILLISECONDS = 10_000;
-export const LADDER_MAX_TEAM_PLAYERS = 10;
+export const LADDER_MAX_TEAM_PLAYERS = 1;
 
 const playerNameSchema = z.string().trim().min(2).max(30);
 const roomCodeSchema = z
@@ -103,6 +104,14 @@ export type ServerToClientLadderEvents = {
 
 export type LadderRoomRuntime = LadderRoom & {
   automaticQuestionTime?: boolean;
+  winner?: 'right' | 'left' | null;
+  winnerMethod?: 'position' | 'score' | 'time' | 'lottery' | null;
+  answers?: Partial<
+    Record<'right' | 'left', { optionId: string; elapsedMs: number }>
+  >;
+  roundResult?: LadderRoundResult | null;
+  roundHistory?: LadderRoundResult[];
+  revealUntil?: number | null;
   usedQuestionIds?: string[];
   recentCategoryIds?: string[];
   currentQuestionId?: string | null;

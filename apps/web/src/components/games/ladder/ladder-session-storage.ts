@@ -180,3 +180,24 @@ export function setJoinedLadderRoomCode(roomCode: string) {
     else storage?.removeItem(LADDER_JOINED_ROOM_KEY);
   } catch { /* Storage can become unavailable after the initial probe. */ }
 }
+
+const LADDER_HOST_ROOM_KEY = 'tahaddi-ladder-host-room';
+
+export function getHostedLadderRoomCode(hostId: string) {
+  try {
+    const raw = getSessionStorage()?.getItem(LADDER_HOST_ROOM_KEY);
+    if (!raw) return '';
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== 'object') return '';
+    const item = value as { hostId?: unknown; roomCode?: unknown };
+    return item.hostId === hostId && typeof item.roomCode === 'string' && /^[A-Z0-9]{8}$/.test(item.roomCode) ? item.roomCode : '';
+  } catch { return ''; }
+}
+
+export function setHostedLadderRoomCode(hostId: string, roomCode: string) {
+  try {
+    const storage = getSessionStorage();
+    if (roomCode) storage?.setItem(LADDER_HOST_ROOM_KEY, JSON.stringify({ hostId, roomCode }));
+    else storage?.removeItem(LADDER_HOST_ROOM_KEY);
+  } catch { /* Storage can become unavailable after the initial probe. */ }
+}

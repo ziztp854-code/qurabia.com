@@ -7,8 +7,6 @@ import { formatNumber } from '@/lib/utils';
 import type { LadderQuestion } from '@tahaddi/domain';
 import styles from './ladder-room.module.css';
 
-type Phase = 'question' | 'reveal';
-
 type QuestionDisplayProps = {
   question: LadderQuestion;
   timeLimit: number;
@@ -17,6 +15,7 @@ type QuestionDisplayProps = {
   onAnswer: (optionId: string) => void;
   selectedOption: string | null;
   disabled: boolean;
+  correctOptionId?: string;
 };
 
 export function QuestionDisplay({
@@ -27,6 +26,7 @@ export function QuestionDisplay({
   onAnswer,
   selectedOption,
   disabled,
+  correctOptionId,
 }: QuestionDisplayProps) {
   // A periodic room snapshot can update remaining time without starting a new question.
   const resetKey = question.id;
@@ -41,6 +41,7 @@ export function QuestionDisplay({
       onAnswer={onAnswer}
       selectedOption={selectedOption}
       disabled={disabled}
+      correctOptionId={correctOptionId}
     />
   );
 }
@@ -53,8 +54,9 @@ function QuestionDisplayBody({
   roundNumber,
   totalRounds,
   onAnswer,
-  selectedOption: serverSelectedOption,
+  selectedOption,
   disabled,
+  correctOptionId,
 }: QuestionDisplayBodyProps) {
   // The server snapshot provides remaining seconds; the monotonic clock avoids
   // premature expiry when the device clock is misconfigured.
@@ -62,8 +64,6 @@ function QuestionDisplayBody({
   const deadline = useRef(0);
   const [initialTimeLimit] = useState(timeLimit);
   const [seconds, setSeconds] = useState(timeLimit);
-  const [phase, setPhase] = useState<Phase>('question');
-  const [localSelected, setLocalSelected] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -74,17 +74,8 @@ function QuestionDisplayBody({
     return () => window.clearInterval(timer);
   }, [remainingMs]);
 
-  // When the server-driven reveal arrives (e.g. another player answered
-  // first) promote the local phase + selection so the UI stays in sync
-  // with the room state.
-  const serverRevealed = serverSelectedOption !== null;
-  const effectiveSelected = serverRevealed ? serverSelectedOption : localSelected;
-  const effectivePhase: Phase = serverRevealed ? 'reveal' : phase;
-
   const handleAnswer = (optionId: string) => {
-    if (phase !== 'question' || disabled || seconds <= 0) return;
-    setLocalSelected(optionId);
-    setPhase('reveal');
+    if (selectedOption !== null || disabled || seconds <= 0) return;
     onAnswer(optionId);
   };
 
@@ -112,7 +103,7 @@ function QuestionDisplayBody({
           aria-labelledby={timerLabelId}
         >
           <Timer aria-hidden="true" className={styles.timerIcon} />
-          <span id={timerLabelId}>{formatNumber(seconds)} ثانية</span>
+          <span id={timerLabelId} aria-label={`${formatNumber(seconds)} ثانية`}>{formatNumber(seconds)}</span>
         </div>
         <div className={styles.timerTrack} aria-hidden="true">
           <div
@@ -124,11 +115,11 @@ function QuestionDisplayBody({
         </div>
       </div>
 
-      <h2 className={styles.ladderPrompt}>{question.questionText}</h2>
+      <h2 className={styles.ladderPrompt} data-long={question.questionText.length > 90 || undefined}>{question.questionText}</h2>
 
       <div className={styles.ladderOptions}>
         {question.options.map((option, index) => {
-          const isChosen = effectiveSelected === option.id;
+          const isChosen = selectedOption === option.id;
           return (
             <motion.button
               key={option.id}
@@ -137,7 +128,10 @@ function QuestionDisplayBody({
               transition={reduceMotion ? { duration: 0 } : { delay: index * 0.08 }}
               type="button"
               className={styles.ladderOption}
-              disabled={effectivePhase !== 'question' || disabled || seconds <= 0}
+              data-long={option.text.length > 30 || undefined}
+              disabled={selectedOption !== null || disabled || seconds <= 0 || Boolean(correctOptionId)}
+              data-correct={correctOptionId === option.id || undefined}
+              data-wrong={Boolean(correctOptionId && isChosen && correctOptionId !== option.id) || undefined}
               aria-pressed={isChosen}
               onClick={() => handleAnswer(option.id)}
             >
@@ -149,7 +143,7 @@ function QuestionDisplayBody({
       </div>
 
       <AnimatePresence>
-        {effectivePhase === 'reveal' && (
+        {selectedOption !== null && !correctOptionId && (
           <motion.div
             initial={reduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}

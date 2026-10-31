@@ -16,8 +16,32 @@ export type LadderQuestion = {
   createdAt: number;
 };
 
+export type LadderRoundAnswer = {
+  optionId: string | null;
+  correct: boolean;
+  elapsedMs: number | null;
+  points: number;
+};
+export type LadderRoundResult = {
+  roundNumber: number;
+  questionId: string;
+  questionText: string;
+  options: Array<{ id: string; text: string }>;
+  correctOptionId: string;
+  right: LadderRoundAnswer;
+  left: LadderRoundAnswer;
+};
+
 export type LadderRoomSnapshot = {
   roomCode: string;
+  revision?: number;
+  answerStatus?: { right: boolean; left: boolean };
+  myAnswer?: string | null;
+  roundResult?: LadderRoundResult | null;
+  roundHistory?: LadderRoundResult[];
+  winner?: 'right' | 'left' | 'draw' | null;
+  winnerMethod?: 'position' | 'score' | 'time' | 'lottery' | null;
+  questionDeadlineAt?: number | null;
   phase: LadderRoomPhase;
   currentRound: number;
   totalRounds: number;
