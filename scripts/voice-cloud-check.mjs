@@ -141,14 +141,17 @@ async function rejectsToken(jwt, label = 'revoked token') {
   const response = await fetch(validation, { signal: AbortSignal.timeout(8_000) });
   if (response.status !== 401) {
     console.error(`[voice-cloud-check] ${label}: unexpected validation HTTP status ${response.status}`);
-    throw new Error('Revoked token did not receive an authentication rejection');
   }
   phase = `${label}: signaling replay`;
   try {
     const session = await join(jwt);
     session.socket.close();
+    console.error(`[voice-cloud-check] ${label}: revoked token joined signaling`);
   } catch (error) {
-    if (error.message === 'Signal join rejected') return;
+    if (error.message === 'Signal join rejected') {
+      if (response.status === 401) return;
+      throw new Error('Revoked token did not receive an authentication rejection');
+    }
     throw error; // A timeout alone is not evidence of revocation.
   }
   throw new Error('Revoked token unexpectedly rejoined');
