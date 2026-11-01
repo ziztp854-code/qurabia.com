@@ -6,13 +6,16 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Daily full validation at 03:00 UTC.
+    - cron: "0 3 * * *"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: false
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   voice-postgres:
@@ -65,7 +68,7 @@ jobs:
         working-directory: apps/web
         run: pnpm exec vitest run --config vitest.voice-quota.config.ts
 
-  validate:
+  quality:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tahaddi?schema=public
@@ -127,12 +130,116 @@ jobs:
       - name: Verify production gate and decoded voice signal measurement
         run: node --test scripts/vercel-ci-gate.test.mjs scripts/voice-audio-signal.test.mjs
 
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tahaddi?schema=public
+      AUTH_SECRET: ci-only-playwright-secret
+      AUTH_URL: http://127.0.0.1:3000
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      RUN_AUTH_E2E: 'true'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tahaddi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tahaddi"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Test
         # Unit requests use fixed origins; runtime URLs remain set for browser tests.
         run: NEXTAUTH_URL= AUTH_URL= NEXT_PUBLIC_SITE_URL= pnpm test
 
       - name: Test deployment migration connection
         run: node --test scripts/deploy-migrations.test.mjs
+
+  browser:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tahaddi?schema=public
+      AUTH_SECRET: ci-only-playwright-secret
+      AUTH_URL: http://127.0.0.1:3000
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      RUN_AUTH_E2E: 'true'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tahaddi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tahaddi"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Apply migrations to the test database
         run: pnpm db:migrate:deploy
@@ -149,38 +256,89 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter @tahaddi/web exec playwright install chromium
 
-      - name: Verify Tahaddi Live reference room against its standalone fixture
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.tahaddi-reference.config.ts
-
-      - name: Verify Tahaddi Live surfaces against their standalone fixture
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.tahaddi-surfaces.config.ts
-
       - name: Playwright end-to-end tests
         working-directory: apps/web
-        run: pnpm test:e2e
-
-      - name: Verify voice gifts, reactions and reduced motion
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.voice-effects.config.ts
-
-      - name: Verify Sultan Farm and management against the local fixture
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.sultan-farm.config.ts
-
-      - name: Verify market controls against the local fixture
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.visual-excellence.config.ts
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/2
 
       - name: Preserve failed browser evidence
         if: failure()
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: browser-failures-${{ github.run_attempt }}
+          name: browser-failures-${{ matrix.shard }}-${{ github.run_attempt }}
           path: apps/web/test-results/
           retention-days: 7
 
-      - name: Verify public atlas opening on desktop and mobile
+  browser-fixtures:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tahaddi?schema=public
+      AUTH_SECRET: ci-only-playwright-secret
+      AUTH_URL: http://127.0.0.1:3000
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      RUN_AUTH_E2E: 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: tahaddi-reference
+            args: --config playwright.tahaddi-reference.config.ts
+          - name: tahaddi-surfaces
+            args: --config playwright.tahaddi-surfaces.config.ts
+          - name: voice-effects
+            args: --config playwright.voice-effects.config.ts
+          - name: sultan-farm-desktop
+            args: --config playwright.sultan-farm.config.ts --project farm-desktop
+          - name: sultan-farm-mobile
+            args: --config playwright.sultan-farm.config.ts --project farm-mobile
+          - name: market
+            args: --config playwright.visual-excellence.config.ts
+          - name: public-atlas
+            args: --config playwright.globe-scene.config.ts --grep 'public atlas opens'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages for fixtures
+        run: pnpm exec turbo build --filter=@tahaddi/web^...
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @tahaddi/web exec playwright install chromium
+
+      - name: Run isolated browser fixture
         working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.globe-scene.config.ts --grep 'public atlas opens'
+        run: pnpm exec playwright test ${{ matrix.args }}
+
+      - name: Preserve failed browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: fixture-failures-${{ matrix.name }}-${{ github.run_attempt }}
+          path: apps/web/test-results/
+          retention-days: 7
+
+  # Keep the existing required check name and fail it if any suite fails or is skipped.
+  validate:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [voice-postgres, quality, tests, browser, browser-fixtures]
+    steps:
+      - name: Require every validation job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node -e "const needs = JSON.parse(process.env.RESULTS); if (Object.values(needs).some(job => job.result !== 'success')) process.exit(1)"
