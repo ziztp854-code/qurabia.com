@@ -244,6 +244,9 @@ jobs:
       - name: Apply migrations to the test database
         run: pnpm db:migrate:deploy
 
+      - name: Build shared packages for database seed
+        run: pnpm exec turbo build --filter=@tahaddi/web^...
+
       - name: Seed Playwright test data
         run: pnpm db:seed
 
