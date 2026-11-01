@@ -453,10 +453,16 @@ export class LadderService {
         }
 
         const team: LadderTeam | undefined = (['right', 'left'] as const).find(
-          (side) => room.teams.filter((member) => member.team === side).length < LADDER_MAX_TEAM_PLAYERS,
+          (side) =>
+            room.teams.filter((member) => member.team === side).length <
+            LADDER_MAX_TEAM_PLAYERS,
         );
         if (!team) {
-          return { ok: false, code: 'TEAM_FULL', message: 'اكتمل عدد المتسابقين في هذه الغرفة.' };
+          return {
+            ok: false,
+            code: 'TEAM_FULL',
+            message: 'اكتمل عدد المتسابقين في هذه الغرفة.',
+          };
         }
 
         const existingNames = room.teams.map((t) =>
