@@ -15,6 +15,7 @@ import styles from './ladder-room.module.css';
 import { LadderVisual } from './ladder-visual';
 import { QuestionDisplay } from './question-display';
 import { LadderResults } from './ladder-results';
+import { LadderReport } from './ladder-report';
 import { LadderInviteQr } from './ladder-invite-qr';
 import {
   clearLadderGuestIdentity,
@@ -698,6 +699,7 @@ export function LadderRoom({
               {formatNumber(room.leftScore)}
             </p>
             {winnerReason && <p className={styles.finaleSubtitle}>{winnerReason}</p>}
+            <LadderReport room={room} />
             {!!room.roundHistory?.length && (
               <LadderResults results={room.roundHistory} rightName={room.rightTeam[0]?.playerName} leftName={room.leftTeam[0]?.playerName} />
             )}
