@@ -242,6 +242,16 @@
 /* Product-wide semantic contract. Legacy aliases above remain for component
  * compatibility; new UI should consume these semantic names. */
 :root {
+  --ladder-report-ink: #171717;
+  --ladder-report-paper: #fff;
+  --ladder-report-gold: #785300;
+  --ladder-report-gold-dark: #5c4000;
+  --ladder-report-muted: #454545;
+  --ladder-report-border: #a3a3a3;
+  --ladder-report-label: #202020;
+  --ladder-report-badge-border: #777;
+  --ladder-report-success: #174a30;
+  --ladder-report-divider: #ccc;
   --brand-ink: #050a0e;
   --brand-navy: #111827;
   --brand-gold: #d4af37;
