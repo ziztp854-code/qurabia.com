@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { checkCloudAudio } from './voice-cloud-audio-check.mjs';
+import { signalFailureCategory } from './voice-cloud-diagnostic.mjs';
 
 if (process.env.VERCEL_ENV !== 'production' || process.env.LIVEKIT_MODE !== 'cloud') {
   console.log('[voice-cloud-check] skipped outside production Cloud mode');
@@ -140,7 +141,9 @@ async function rejectsToken(jwt, label = 'revoked token') {
   });
   const response = await fetch(validation, { signal: AbortSignal.timeout(8_000) });
   if (response.status !== 401) {
-    console.error(`[voice-cloud-check] ${label}: unexpected validation HTTP status ${response.status}`);
+    console.error(
+      `[voice-cloud-check] ${label}: unexpected validation HTTP status ${response.status}`,
+    );
   }
   phase = `${label}: signaling replay`;
   try {
@@ -229,8 +232,10 @@ try {
   console.log(
     '[voice-cloud-check] listener promotion with strict old-token revocation and fresh microphone grant passed',
   );
-} catch {
+} catch (error) {
   // SDK errors may include request URLs. Keep build logs free of tokens.
+  if (phase.endsWith(': signaling replay'))
+    console.error(`[voice-cloud-check] signaling result: ${signalFailureCategory(error)}`);
   console.error(`[voice-cloud-check] FAILED at ${phase}; production activation blocked`);
   process.exitCode = 1;
 } finally {
