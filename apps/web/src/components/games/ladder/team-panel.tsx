@@ -34,7 +34,7 @@ export function TeamPanel({
       <div className={styles.ladderSideHeader} data-team={team}>
         <div className={styles.headerCluster}>
           <Users aria-hidden="true" size={18} />
-          <strong>{isRight ? 'فريق اليمين' : 'فريق اليسار'}</strong>
+          <strong>{isRight ? 'المتسابق الأول' : 'المتسابق الثاني'}</strong>
           {teamHasHost && <span className={styles.hostBadge}>مضيف</span>}
         </div>
         <span className={styles.teamCount}>

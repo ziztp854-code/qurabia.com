@@ -117,11 +117,11 @@ describe('LadderRoom guest identity recovery', () => {
   it.each(['left', 'right'] as const)('automatically joins the invited %s team once when connected', async (team) => {
     render(<LadderRoom initialRoomCode="ab12cd34" initialPlayerName=" لاعب اختبار " initialTeam={team} />);
     expect(screen.getByLabelText('اسم اللاعب')).toHaveValue('لاعب اختبار');
-    expect(screen.getByRole('radio', { name: team === 'left' ? /المتسابق الأيسر/ : /المتسابق الأيمن/ })).toBeChecked();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
     connectSocket();
     await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
-      roomCode: 'AB12CD34', playerName: 'لاعب اختبار', team,
+      roomCode: 'AB12CD34', playerName: 'لاعب اختبار',
     }));
     emitError('ROOM_NOT_FOUND', 'الغرفة غير موجودة');
     expect(screen.getByText('الغرفة غير موجودة أو انتهت.')).toBeInTheDocument();
@@ -154,15 +154,14 @@ describe('LadderRoom guest identity recovery', () => {
     expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
   });
 
-  it('uses the edited name and team when the connection arrives', async () => {
+  it('uses the edited name when the connection arrives', async () => {
     const user = userEvent.setup();
     render(<LadderRoom initialRoomCode="AB12CD34" initialPlayerName="الاسم الأول" initialTeam="right" />);
     await user.clear(screen.getByLabelText('اسم اللاعب'));
     await user.type(screen.getByLabelText('اسم اللاعب'), 'الاسم الجديد');
-    await user.click(screen.getByRole('radio', { name: /المتسابق الأيسر/ }));
     connectSocket();
     await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
-      roomCode: 'AB12CD34', playerName: 'الاسم الجديد', team: 'left',
+      roomCode: 'AB12CD34', playerName: 'الاسم الجديد',
     }));
   });
 

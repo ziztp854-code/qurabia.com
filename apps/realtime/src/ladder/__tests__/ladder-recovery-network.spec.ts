@@ -346,7 +346,7 @@ network('ladder recovery with isolated Redis', () => {
       totalRounds: 10,
       winningPosition: 10,
       questionTimeLimit: 30,
-    };
+    } as const;
     const first = await service.createRoom(settings, 'host-one');
     const second = await service.createRoom(settings, 'host-two');
     if (!first.ok || !second.ok) throw new Error('room creation failed');

@@ -37,3 +37,24 @@
   .printRoot .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .question { break-inside: avoid; }
 }
+
+/* A white paper surface and dark text remain legible in print and grayscale. */
+.report { color: #171717; background: #fff; }
+.header { border-color: #785300; }
+.brand { color: #5c4000; }
+.heading p, .heading span, .meta span, .stats span, .details > p, .footer { color: #454545; }
+.stats strong { color: #5c4000; }
+.question { border-color: #a3a3a3; border-inline-start-color: #785300; border-radius: .35rem; }
+.questionHeader { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-size: .85rem; font-weight: 700; }
+.questionHeader > span { color: #5c4000; }
+.correct, .incorrect { color: #202020; border: 1px solid #777; border-radius: .25rem; padding: .1rem .45rem; }
+.options { margin: .5rem 0; padding-inline-start: 1.5rem; }
+.options li { padding-block: .1rem; }
+.options strong { color: #174a30; }
+.answerDetails { border-top: 1px solid #ccc; padding-top: .5rem; }
+@media print {
+  @page { size: A4; margin: 15mm; }
+  .printRoot .report { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .question { break-inside: avoid; page-break-inside: avoid; }
+  .options strong { color: #171717; }
+}

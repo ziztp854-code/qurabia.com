@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CircleDot, Circle, UserPlus, Swords } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { UserPlus, Swords } from 'lucide-react';
 import { Button, Card, Input } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import styles from './ladder-room.module.css';
@@ -13,16 +12,11 @@ type JoinLadderProps = {
 
 export function JoinLadder({ roomCode }: JoinLadderProps) {
   const [playerName, setPlayerName] = useState('');
-  const [team, setTeam] = useState<'right' | 'left'>('right');
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
-  const teamPress = reduceMotion ? undefined : { scale: 0.98 };
-  const teamHover = reduceMotion ? undefined : { y: -2 };
 
   const handleStart = () => {
     const params = new URLSearchParams();
     params.set('name', playerName.trim());
-    params.set('team', team);
     if (roomCode) params.set('room', roomCode);
     router.push(`/games/ladder?${params.toString()}`);
   };
@@ -39,53 +33,6 @@ export function JoinLadder({ roomCode }: JoinLadderProps) {
         </Card>
 
         <Card className={styles.ladderEntryPanel}>
-          <div
-            className={styles.entryTeamChoice}
-            role="radiogroup"
-            aria-label="اختيار مكان المتسابق"
-          >
-            <motion.button
-              whileHover={teamHover}
-              whileTap={teamPress}
-              type="button"
-              role="radio"
-              aria-checked={team === 'right'}
-              data-team="right"
-              onClick={() => setTeam('right')}
-              className={styles.entryTeamOption}
-            >
-              <span className={styles.entryTeamIconWrap}>
-                <CircleDot
-                  aria-hidden="true"
-                  className={styles.entryTeamIcon}
-                  data-team="right"
-                  size={24}
-                />
-              </span>
-              <span className={styles.entryTeamLabel}>اليمين</span>
-            </motion.button>
-            <motion.button
-              whileHover={teamHover}
-              whileTap={teamPress}
-              type="button"
-              role="radio"
-              aria-checked={team === 'left'}
-              data-team="left"
-              onClick={() => setTeam('left')}
-              className={styles.entryTeamOption}
-            >
-              <span className={styles.entryTeamIconWrap}>
-                <Circle
-                  aria-hidden="true"
-                  className={styles.entryTeamIcon}
-                  data-team="left"
-                  size={24}
-                />
-              </span>
-              <span className={styles.entryTeamLabel}>اليسار</span>
-            </motion.button>
-          </div>
-
           <Input
             id="ladder-player-name"
             label="اسم اللاعب"

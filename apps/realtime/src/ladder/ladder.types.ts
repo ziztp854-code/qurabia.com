@@ -9,7 +9,7 @@ import type {
 
 export const LADDER_TTL_SECONDS = 3 * 60 * 60;
 export const LADDER_ROOM_LOCK_MILLISECONDS = 10_000;
-export const LADDER_MAX_TEAM_PLAYERS = 1;
+export { LADDER_MAX_TEAM_PLAYERS } from '@tahaddi/domain';
 
 const playerNameSchema = z.string().trim().min(2).max(30);
 const roomCodeSchema = z
@@ -19,8 +19,8 @@ const roomCodeSchema = z
 
 export const createLadderRoomPayloadSchema = z
   .object({
-    totalRounds: z.number().int().min(5).max(20).default(10),
-    winningPosition: z.number().int().min(5).max(20).default(10),
+    totalRounds: z.literal(10).default(10),
+    winningPosition: z.literal(10).default(10),
     questionTimeLimit: z.number().int().min(20).max(60).optional(),
     quizId: z.string().trim().min(1).max(64).optional(),
   })
@@ -30,7 +30,7 @@ export const joinLadderRoomPayloadSchema = z
   .object({
     roomCode: roomCodeSchema,
     playerName: playerNameSchema,
-    team: z.enum(['right', 'left']),
+    team: z.enum(['right', 'left']).optional(),
   })
   .strict();
 

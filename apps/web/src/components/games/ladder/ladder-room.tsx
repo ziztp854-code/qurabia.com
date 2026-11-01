@@ -4,7 +4,7 @@ import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh'
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Play, Swords, Trophy, CircleDot, Circle, Copy, Check, UserPlus } from 'lucide-react';
+import { Play, Swords, Trophy, Copy, Check, UserPlus } from 'lucide-react';
 import { Button, ButtonLink, Card, Input } from '@/components/ui';
 import { MotionScene } from '@/components/motion/motion-scene';
 import { getGameMotionScene } from '@/lib/motion';
@@ -127,7 +127,6 @@ export function LadderRoom({
   // effect.
   const entryMode = role === 'host' ? 'create' : 'join';
   const [playerName, setPlayerName] = useState(() => initialPlayerName?.trim().slice(0, 30) ?? '');
-  const [team, setTeam] = useState<'right' | 'left'>(initialTeam ?? 'right');
   const totalRounds = 10;
   const winningPosition = 10;
   const [questionTimeLimit, setQuestionTimeLimit] = useState('auto');
@@ -142,7 +141,7 @@ export function LadderRoom({
   useEffect(() => {
     if (!connected || room || identityBlocked || restoreAttempted.current || !socketRef.current) return;
     const code = role === 'host' && hostIdentity ? getHostedLadderRoomCode(hostIdentity.hostId) :
-      role === 'player' && !(initialPlayerName && initialTeam) ? getJoinedLadderRoomCode() : '';
+      role === 'player' && !initialPlayerName ? getJoinedLadderRoomCode() : '';
     if (!/^[A-Z0-9]{8}$/.test(code)) return;
     if (role === 'player' && initialRoomCode && initialRoomCode.toUpperCase() !== code) return;
     restoreAttempted.current = true;
@@ -165,19 +164,18 @@ export function LadderRoom({
     if (role !== 'player' || inviteSentOnConnection.current || room || identityBlocked || !socketRef.current ||
         (inviteAttempted.current && !invitePending.current) ||
         !/^[A-Z0-9]{8}$/.test(inviteCode) || inviteName.length < 2 || inviteName.length > 30 ||
-        !/^[A-Z0-9]{8}$/.test(code) || name.length < 2 || name.length > 30 ||
-        (initialTeam !== 'left' && initialTeam !== 'right')) return;
+        !/^[A-Z0-9]{8}$/.test(code) || name.length < 2 || name.length > 30) return;
     inviteSentOnConnection.current = true;
     setBusy(true);
     setError('');
     if (invitePending.current || getJoinedLadderRoomCode() === code) {
       socketRef.current.emit('ladder:reconnect', { roomCode: code });
     } else {
-      socketRef.current.emit('ladder:join', { roomCode: code, playerName: name, team });
+      socketRef.current.emit('ladder:join', { roomCode: code, playerName: name });
     }
     inviteAttempted.current = true;
     invitePending.current = true;
-  }, [connected, identityBlocked, initialPlayerName, initialRoomCode, initialTeam, joinCode, playerName, role, room, setBusy, setError, socketRef, team]);
+  }, [connected, identityBlocked, initialPlayerName, initialRoomCode, initialTeam, joinCode, playerName, role, room, setBusy, setError, socketRef]);
 
   useEffect(() => {
     if (role === 'player' && room?.roomCode) {
@@ -232,7 +230,6 @@ export function LadderRoom({
     socketRef.current.emit('ladder:join', {
       roomCode: roomCode.toUpperCase(),
       playerName: playerName.trim(),
-      team,
     });
   };
 
@@ -287,8 +284,8 @@ export function LadderRoom({
   useAiGameQuestions('ladder', currentQuestion ? [currentQuestion.questionText] : []);
   const selectedOption = room?.myAnswer ?? null;
   const winner = room?.winner ?? null;
-  const winnerTitle = winner === 'right' ? `يفوز ${room?.rightTeam[0]?.playerName ?? 'المتسابق الأيمن'}` :
-    winner === 'left' ? `يفوز ${room?.leftTeam[0]?.playerName ?? 'المتسابق الأيسر'}` :
+  const winnerTitle = winner === 'right' ? `يفوز ${room?.rightTeam[0]?.playerName ?? 'المتسابق الأول'}` :
+    winner === 'left' ? `يفوز ${room?.leftTeam[0]?.playerName ?? 'المتسابق الثاني'}` :
     winner === 'draw' ? 'تعادل' : 'توقفت الجولة';
   const winnerReason = room?.winnerMethod === 'position' ? 'الحسم بأعلى درجة على السلم' :
     room?.winnerMethod === 'score' ? 'الحسم بأعلى مجموع نقاط' :
@@ -297,8 +294,6 @@ export function LadderRoom({
 
   const createPanelId = 'ladder-panel-create';
   const joinPanelId = 'ladder-panel-join';
-  const teamPress = reduceMotion ? undefined : { scale: 0.98 };
-  const teamHover = reduceMotion ? undefined : { y: -2 };
 
   return (
     <MotionScene scene={getGameMotionScene(phase)} sceneKey={phase}>
@@ -319,7 +314,7 @@ export function LadderRoom({
         {role === 'player' && guestIdentityInvalid && phase === 'join' && (
           <Card className={`${styles.ladderError} ${styles.identityAlert}`} role="alert">
             <p>تعذر استعادة جلسة الضيف. يمكنك إعادة محاولة الانضمام بالهوية الحالية أو تجديدها.</p>
-            {initialTeam && (
+            {initialRoomCode && (
               <Button
                 type="button"
                 variant="outline"
@@ -351,7 +346,7 @@ export function LadderRoom({
                 <h1>{meta.title}</h1>
                 <p>متسابقان يواجهان الأسئلة نفسها على سلم من عشر درجات.</p>
                 <ul className={styles.ladderRules}>
-                  <li>متسابقان: أحدهما في اليمين والآخر في اليسار.</li>
+                  <li>تتسع الغرفة لمتسابقين اثنين فقط.</li>
                   <li>
                     {quizId
                       ? `الأسئلة تُسحب من الحزمة المحفوظة${packTitle ? ` «${packTitle}»` : ''}، مع الرجوع لبنك السلم عند الحاجة.`
@@ -400,60 +395,6 @@ export function LadderRoom({
                     autoComplete="nickname"
                     description="يجب أن يكون الاسم من حرفين على الأقل"
                   />
-                )}
-
-                {role === 'player' && (
-                  <div className={styles.entryTeamBlock}>
-                    <span id="ladder-team-label" className={styles.entryFieldLabel}>
-                      اختر مكانك
-                    </span>
-                    <div
-                      className={styles.entryTeamChoice}
-                      role="radiogroup"
-                      aria-labelledby="ladder-team-label"
-                    >
-                      <motion.button
-                        whileHover={teamHover}
-                        whileTap={teamPress}
-                        type="button"
-                        role="radio"
-                        aria-checked={team === 'right'}
-                        className={styles.entryTeamOption}
-                        data-team="right"
-                        onClick={() => setTeam('right')}
-                      >
-                        <span className={styles.entryTeamIconWrap}>
-                          <CircleDot
-                            aria-hidden="true"
-                            className={styles.entryTeamIcon}
-                            data-team="right"
-                            size={24}
-                          />
-                        </span>
-                        <span className={styles.entryTeamLabel}>المتسابق الأيمن</span>
-                      </motion.button>
-                      <motion.button
-                        whileHover={teamHover}
-                        whileTap={teamPress}
-                        type="button"
-                        role="radio"
-                        aria-checked={team === 'left'}
-                        className={styles.entryTeamOption}
-                        data-team="left"
-                        onClick={() => setTeam('left')}
-                      >
-                        <span className={styles.entryTeamIconWrap}>
-                          <Circle
-                            aria-hidden="true"
-                            className={styles.entryTeamIcon}
-                            data-team="left"
-                            size={24}
-                          />
-                        </span>
-                        <span className={styles.entryTeamLabel}>المتسابق الأيسر</span>
-                      </motion.button>
-                    </div>
-                  </div>
                 )}
 
                 {entryMode === 'create' ? (
@@ -556,7 +497,7 @@ export function LadderRoom({
               <Card className={styles.waitingStage}>
                 <div className={styles.ladderWaitingMatchup}>
                   <div className={styles.ladderWaitingPlayer} data-team="right">
-                    <strong>المتسابق الأيمن</strong>
+                    <strong>المتسابق الأول</strong>
                     <span>{room.rightTeam?.length ? 'انضم' : 'بانتظار المتسابق'}</span>
                     <ul className={styles.waitingRoster}>
                       {(room.rightTeam ?? []).length > 0 ? (
@@ -575,7 +516,7 @@ export function LadderRoom({
                     VS
                   </div>
                   <div className={styles.ladderWaitingPlayer} data-team="left">
-                    <strong>المتسابق الأيسر</strong>
+                    <strong>المتسابق الثاني</strong>
                     <span>{room.leftTeam?.length ? 'انضم' : 'بانتظار المتسابق'}</span>
                     <ul className={styles.waitingRoster}>
                       {(room.leftTeam ?? []).length > 0 ? (
@@ -648,8 +589,8 @@ export function LadderRoom({
 
         {phase === 'question' && room && (
           <p className={styles.ladderCategory} role="status" aria-live="polite">
-            {room.rightTeam[0]?.playerName ?? 'المتسابق الأيمن'}: {room.answerStatus?.right ? 'أرسل الإجابة' : 'بانتظار الإجابة'} ·{' '}
-            {room.leftTeam[0]?.playerName ?? 'المتسابق الأيسر'}: {room.answerStatus?.left ? 'أرسل الإجابة' : 'بانتظار الإجابة'}
+            {room.rightTeam[0]?.playerName ?? 'المتسابق الأول'}: {room.answerStatus?.right ? 'أرسل الإجابة' : 'بانتظار الإجابة'} ·{' '}
+            {room.leftTeam[0]?.playerName ?? 'المتسابق الثاني'}: {room.answerStatus?.left ? 'أرسل الإجابة' : 'بانتظار الإجابة'}
           </p>
         )}
 

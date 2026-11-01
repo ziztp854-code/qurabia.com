@@ -90,4 +90,4 @@ export type LadderRoomSnapshot = {
 
 export const LADDER_TTL_SECONDS = 3 * 60 * 60;
 export const LADDER_ROOM_LOCK_MILLISECONDS = 10_000;
-export const LADDER_MAX_TEAM_PLAYERS = 10;
+export const LADDER_MAX_TEAM_PLAYERS = 1;

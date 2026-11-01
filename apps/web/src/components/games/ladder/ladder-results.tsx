@@ -22,7 +22,7 @@ function Answer({ answer, options }: { answer: LadderRoundAnswer; options: Array
   );
 }
 
-export function LadderResults({ results, rightName = 'المتسابق الأيمن', leftName = 'المتسابق الأيسر' }: Props) {
+export function LadderResults({ results, rightName = 'المتسابق الأول', leftName = 'المتسابق الثاني' }: Props) {
   return (
     <section className={styles.results} aria-label="ملخص الإجابات">
       <h3>{results.length === 1 ? 'نتيجة السؤال' : 'ملخص الإجابات والسرعة'}</h3>

@@ -207,7 +207,7 @@ network('ladder real network and Redis', () => {
     clients.push(host, right, left);
     await Promise.all(clients.map((client) => waitEvent(client, 'connect')));
     const hosted = waitEvent<{ roomCode: string }>(host, 'ladder:room:state');
-    host.emit('ladder:host', { totalRounds: 20, winningPosition: 10 });
+    host.emit('ladder:host', { totalRounds: 10, winningPosition: 10 });
     const { roomCode } = await hosted;
     const joinedRight = waitEvent(right, 'ladder:room:state');
     right.emit('ladder:join', {

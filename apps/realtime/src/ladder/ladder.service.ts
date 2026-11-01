@@ -452,15 +452,11 @@ export class LadderService {
           };
         }
 
-        const existingTeamPlayers = room.teams.filter(
-          (t) => t.team === input.team,
+        const team: LadderTeam | undefined = (['right', 'left'] as const).find(
+          (side) => room.teams.filter((member) => member.team === side).length < LADDER_MAX_TEAM_PLAYERS,
         );
-        if (existingTeamPlayers.length >= LADDER_MAX_TEAM_PLAYERS) {
-          return {
-            ok: false,
-            code: 'TEAM_FULL',
-            message: 'هذا المقعد مشغول بالفعل.',
-          };
+        if (!team) {
+          return { ok: false, code: 'TEAM_FULL', message: 'اكتمل عدد المتسابقين في هذه الغرفة.' };
         }
 
         const existingNames = room.teams.map((t) =>
@@ -481,7 +477,7 @@ export class LadderService {
             ...room.teams,
             {
               id: guestId,
-              team: input.team,
+              team,
               playerName: name,
               isHost: false,
               joinedAt: now,
@@ -493,7 +489,7 @@ export class LadderService {
           guestId,
           guestToken,
           roomCode,
-          team: input.team,
+          team,
           name,
           createdAt: now,
           expiresAt: now + LADDER_TTL_SECONDS * 1000,

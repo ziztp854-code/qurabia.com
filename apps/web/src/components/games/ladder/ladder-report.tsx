@@ -36,17 +36,27 @@ function Report({ room, side }: Props & { side: LadderTeam }) {
         <div><strong>{position}</strong><span>درجة السلم</span></div>
       </div>
       <section className={styles.details}>
-        <h3>أسئلة للمراجعة</h3>
-        <p>الإجابات الخاطئة والأسئلة التي لم تتم الإجابة عنها خلال اللقاء.</p>
-        {mistakes.length === 0 ? <p className={styles.empty}>أحسنت! لم تسجّل أي إجابات تحتاج إلى مراجعة.</p> : mistakes.map((round) => {
+        <h3>تفاصيل الأسئلة والإجابات</h3>
+        <p>جميع أسئلة اللقاء، مع خيارات كل سؤال ونتيجة إجابتك.</p>
+        {history.map((round) => {
           const answer = round[side];
           const selected = round.options.find((option) => option.id === answer.optionId)?.text;
           const correct = round.options.find((option) => option.id === round.correctOptionId)?.text ?? 'غير متوفرة';
           return <section className={styles.question} key={`${round.roundNumber}-${round.questionId}`}>
-            <h4>السؤال {round.roundNumber}: {round.questionText}</h4>
-            <p><strong>إجابتك:</strong> {answer.optionId === null ? 'لم تتم الإجابة' : selected ?? 'غير متوفرة'}</p>
-            <p><strong>الإجابة الصحيحة:</strong> {correct}</p>
-            <p><strong>وقت الإجابة:</strong> {answer.elapsedMs === null ? 'لم يُسجّل وقت' : `${(answer.elapsedMs / 1000).toFixed(1)} ثانية`}</p>
+            <div className={styles.questionHeader}>
+              <span>السؤال {round.roundNumber}</span>
+              <strong className={answer.correct ? styles.correct : styles.incorrect}>{answer.correct ? 'إجابة صحيحة' : answer.optionId === null ? 'لم تتم الإجابة' : 'إجابة خاطئة'}</strong>
+            </div>
+            <h4>{round.questionText}</h4>
+            <ol className={styles.options}>
+              {round.options.map((option) => <li key={option.id}>{option.text}{option.id === round.correctOptionId && <strong> — الإجابة الصحيحة</strong>}</li>)}
+            </ol>
+            <div className={styles.answerDetails}>
+              <p><strong>إجابتك:</strong> {answer.optionId === null ? 'لم تتم الإجابة' : selected ?? 'غير متوفرة'}</p>
+              <p><strong>الإجابة الصحيحة:</strong> {correct}</p>
+              <p><strong>وقت الإجابة:</strong> {answer.elapsedMs === null ? 'لم يُسجّل وقت' : `${(answer.elapsedMs / 1000).toFixed(1)} ثانية`}</p>
+              <p><strong>تغير النقاط:</strong> {answer.points > 0 ? `+${answer.points}` : answer.points}</p>
+            </div>
           </section>;
         })}
       </section>
@@ -57,13 +67,13 @@ function Report({ room, side }: Props & { side: LadderTeam }) {
 
 export function LadderReport({ room }: Props) {
   const [side, setSide] = useState<LadderTeam | null>(null);
-  const names = { right: room.rightTeam[0]?.playerName ?? 'المتسابق الأيمن', left: room.leftTeam[0]?.playerName ?? 'المتسابق الأيسر' };
+  const names = { right: room.rightTeam[0]?.playerName ?? 'المتسابق الأول', left: room.leftTeam[0]?.playerName ?? 'المتسابق الثاني' };
   if (!room.roundHistory?.length) return null;
   return <section className={styles.container} aria-label="تقرير المباراة">
     <h3>تقرير إجاباتك</h3>
-    <p>اختر اسم اللاعب لمراجعة أخطائه وحفظ تقريره بصيغة PDF.</p>
+    <p>اختر اسم اللاعب لعرض جميع أسئلته وإجاباته وحفظ تقريره بصيغة PDF.</p>
     <div className={styles.actions}>
-      {(['right', 'left'] as const).map((playerSide) => <Button key={playerSide} type="button" variant="secondary" onClick={() => setSide(playerSide)} aria-pressed={side === playerSide}>تقرير {names[playerSide]} · {playerSide === 'right' ? 'اليمين' : 'اليسار'}</Button>)}
+      {(['right', 'left'] as const).map((playerSide) => <Button key={playerSide} type="button" variant="secondary" onClick={() => setSide(playerSide)} aria-pressed={side === playerSide}>تقرير {names[playerSide]}</Button>)}
     </div>
     {side && <>
       <div className={styles.preview}><Report room={room} side={side} /></div>

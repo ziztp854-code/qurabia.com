@@ -17,22 +17,22 @@ const room: LadderRoomSnapshot = {
 };
 
 describe('LadderReport', () => {
-  it('shows only the selected player’s mistakes and prints their report', async () => {
+  it('shows all questions and the selected player’s answers in the printed report', async () => {
     const user = userEvent.setup();
     const print = vi.spyOn(window, 'print').mockImplementation(() => {});
     render(<LadderReport room={room} />);
     await user.click(screen.getByRole('button', { name: /تقرير أحمد/ }));
     let report = screen.getByRole('article', { name: 'تقرير اللاعب أحمد' });
     expect(within(report).getByText(/السؤال الأول/)).toBeInTheDocument();
-    expect(within(report).queryByText(/السؤال الثاني/)).not.toBeInTheDocument();
+    expect(within(report).getByText('السؤال الثاني')).toBeInTheDocument();
     expect(within(report).getByText(/2.3 ثانية/)).toBeInTheDocument();
-    expect(within(report).getByText('صحيح')).toBeInTheDocument();
+    expect(within(report).getAllByText(/صحيح/).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: /حفظه PDF/ }));
     expect(print).toHaveBeenCalledOnce();
     await user.click(screen.getByRole('button', { name: /تقرير سارة/ }));
     report = screen.getByRole('article', { name: 'تقرير اللاعب سارة' });
     expect(within(report).getByText(/السؤال الثاني/)).toBeInTheDocument();
-    expect(within(report).getByText('لم تتم الإجابة', { exact: true })).toBeInTheDocument();
+    expect(within(report).getAllByText('لم تتم الإجابة', { exact: true })[0]).toBeInTheDocument();
     expect(within(report).getByText(/لم يُسجّل وقت/)).toBeInTheDocument();
     print.mockRestore();
   });

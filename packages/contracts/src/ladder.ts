@@ -67,9 +67,9 @@ const roomCodeSchema = z
 
 export const createLadderRoomPayloadSchema = z
   .object({
-    totalRounds: z.number().int().min(5).max(20).default(10),
-    winningPosition: z.number().int().min(5).max(20).default(10),
-    questionTimeLimit: z.number().int().min(20).max(60).default(30),
+    totalRounds: z.literal(10).default(10),
+    winningPosition: z.literal(10).default(10),
+    questionTimeLimit: z.number().int().min(20).max(60).optional(),
     quizId: z.string().trim().min(1).max(64).optional(),
   })
   .strict();
@@ -78,7 +78,7 @@ export const joinLadderRoomPayloadSchema = z
   .object({
     roomCode: roomCodeSchema,
     playerName: playerNameSchema,
-    team: z.enum(['right', 'left']),
+    team: z.enum(['right', 'left']).optional(),
   })
   .strict();
 

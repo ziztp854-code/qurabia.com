@@ -349,6 +349,18 @@ describe('LadderService', () => {
         undefined,
       );
     });
+    it('assigns the free seat automatically and rejects a third player', async () => {
+      const room: LadderRoomRuntime = { ...activeRoom(), status: 'waiting', teams: [] };
+      redis.loadLadderRoom.mockImplementation(async () => structuredClone(room));
+      redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+        Object.assign(room, structuredClone(value));
+        return 1;
+      });
+      expect((await service.joinRoom({ roomCode: room.roomCode, playerName: 'الأول' }, 'one', 'token-one')).ok).toBe(true);
+      expect((await service.joinRoom({ roomCode: room.roomCode, playerName: 'الثاني' }, 'two', 'token-two')).ok).toBe(true);
+      expect(room.teams.map((member) => member.team)).toEqual(['right', 'left']);
+      expect(await service.joinRoom({ roomCode: room.roomCode, playerName: 'الثالث' }, 'three', 'token-three')).toMatchObject({ ok: false, code: 'TEAM_FULL' });
+    });
     it('does not create an identity from a rejected join before reconnect', async () => {
       const room = activeRoom();
       redis.loadLadderRoom.mockResolvedValue(room);
