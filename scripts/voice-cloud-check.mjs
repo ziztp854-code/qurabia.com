@@ -188,10 +188,11 @@ try {
     '[voice-cloud-check] original and freshly refreshed tokens rejected after strict removal',
   );
   const offline = await token('cloud-check-offline');
-  phase = 'offline identity revocation';
+  phase = 'offline identity removal request';
   await client.removeParticipant(roomName, 'cloud-check-offline', {
     revokeTokenTs: BigInt(Math.ceil(Date.now() / 1000) + 1),
   });
+  phase = 'offline identity revoked-token verification';
   await rejectsToken(offline);
   console.log('[voice-cloud-check] offline identity token revocation passed');
   await delay(2_100);
