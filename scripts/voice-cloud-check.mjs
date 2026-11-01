@@ -129,7 +129,8 @@ function join(jwt) {
     });
   });
 }
-async function rejectsToken(jwt) {
+async function rejectsToken(jwt, label = 'revoked token') {
+  phase = `${label}: HTTP validation`;
   const validation = new URL('rtc/validate', endpoint.href.replace(/^ws/, 'http'));
   validation.search = new URLSearchParams({
     access_token: jwt,
@@ -138,8 +139,11 @@ async function rejectsToken(jwt) {
     version: '2.23.0',
   });
   const response = await fetch(validation, { signal: AbortSignal.timeout(8_000) });
-  if (response.status !== 401)
+  if (response.status !== 401) {
+    console.error(`[voice-cloud-check] ${label}: unexpected validation HTTP status ${response.status}`);
     throw new Error('Revoked token did not receive an authentication rejection');
+  }
+  phase = `${label}: signaling replay`;
   try {
     const session = await join(jwt);
     session.socket.close();
@@ -193,7 +197,7 @@ try {
     revokeTokenTs: BigInt(Math.ceil(Date.now() / 1000) + 1),
   });
   phase = 'offline identity revoked-token verification';
-  await rejectsToken(offline);
+  await rejectsToken(offline, 'offline identity');
   console.log('[voice-cloud-check] offline identity token revocation passed');
   await delay(2_100);
   phase = 'fresh listener reconnect';
