@@ -59,7 +59,7 @@ packageExtensions:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-  '@react-three/fiber@9.7.0':
+  '@react-three/fiber@>=9.7.0 <10':
     peerDependencies:
       '@types/react': '*'
     peerDependenciesMeta:

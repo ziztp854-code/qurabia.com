@@ -28,7 +28,7 @@ overrides:
   zod@>=4.0.0 <4.6.6: 4.6.6
   http-cache-semantics@>=4.0.0 <4.3.0: 4.3.0
 
-packageExtensionsChecksum: sha256-pVIilkGi9rzDDVNSyBWxEUeb7Unck3HxdDM1GG+pVqg=
+packageExtensionsChecksum: sha256-uWtQl1sGMK7fBoHveziKwkSxyeF8rHbSxNvxxT4vR0c=
 
 importers:
 

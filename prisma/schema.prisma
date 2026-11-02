@@ -489,6 +489,7 @@ model MafiaMessage {
   participant   MafiaParticipant?    @relation(fields: [participantId], references: [id], onDelete: SetNull)
 
   @@index([gameId, channel, createdAt])
+  @@index([participantId])
 }
 
 model MafiaAction {
@@ -507,6 +508,7 @@ model MafiaAction {
   @@unique([gameId, round, type, actorId])
   @@index([gameId, round, type])
   @@index([targetId])
+  @@index([actorId])
 }
 
 model MafiaVote {
@@ -522,6 +524,8 @@ model MafiaVote {
 
   @@unique([gameId, round, voterId])
   @@index([gameId, round, targetId])
+  @@index([voterId])
+  @@index([targetId])
 }
 
 model Account {
@@ -746,6 +750,7 @@ model KingdomReportEntry {
   world KingdomWorld @relation(fields: [worldId], references: [id], onDelete: Cascade)
   player User @relation(fields: [playerId], references: [id], onDelete: Cascade)
   @@id([worldId, playerId, reportId])
+  @@index([playerId])
   @@index([worldId, playerId, eventAt, ordinal, reportId], map: "royal_report_timeline_idx")
   @@index([worldId, playerId, category, eventAt, ordinal, reportId], map: "royal_report_category_idx")
   @@index([worldId, playerId, readAt, eventAt, ordinal, reportId], map: "royal_report_unread_idx")
@@ -769,6 +774,8 @@ model CommunityBadge {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([category, archived])
+  @@index([effectId])
+  @@index([frameId])
 }
 
 model UserBadge {
@@ -783,6 +790,7 @@ model UserBadge {
   badge CommunityBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
   @@unique([userId, badgeId])
   @@index([userId, revokedAt, expiresAt])
+  @@index([badgeId])
 }
 
 model ProfileCosmetic {
@@ -815,6 +823,7 @@ model UserCosmetic {
   cosmetic ProfileCosmetic @relation(fields: [cosmeticId], references: [id], onDelete: Cascade)
   @@unique([userId, cosmeticId])
   @@index([userId, revokedAt, expiresAt])
+  @@index([cosmeticId])
 }
 
 model CommunityVoiceRoom {
@@ -969,4 +978,5 @@ model AlfazaaWorldCommand {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([worldId, userId, key])
   @@index([createdAt])
+  @@index([userId])
 }

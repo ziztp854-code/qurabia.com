@@ -42,7 +42,7 @@ export async function verifyProductionCi({
   sleep = delay,
   now = Date.now,
   log = console.log,
-  timeoutMs = 20 * 60_000,
+  timeoutMs = 35 * 60_000,
   pollMs = 60_000,
 } = {}) {
   if (env.VERCEL_ENV !== 'production') return;

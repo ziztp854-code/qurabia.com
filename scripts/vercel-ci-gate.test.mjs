@@ -48,6 +48,19 @@ test('the exact production commit can proceed only after CI completes successful
   });
   assert.equal(calls, 2);
 });
+test('production can wait for a CI run lasting more than twenty minutes', async () => {
+  let time = 0;
+  await verifyProductionCi({
+    env,
+    now: () => time,
+    sleep: async (ms) => {
+      time += ms;
+    },
+    log: () => {},
+    fetchRuns: async () => [time < 21 * 60_000 ? { ...success, status: 'in_progress' } : success],
+  });
+  assert.equal(time, 21 * 60_000);
+});
 test('failed, cancelled, skipped and neutral CI never release production', async () => {
   for (const conclusion of ['failure', 'cancelled', 'skipped', 'neutral', 'timed_out']) {
     await assert.rejects(
