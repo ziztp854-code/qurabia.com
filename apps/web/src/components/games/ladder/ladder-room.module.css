@@ -1621,6 +1621,106 @@
   white-space: nowrap;
 }
 .stageCompetitor[data-side='left'] .stagePoints { border-color: var(--ladder-cyan-edge); }
+
+/* A question is content, not part of the stage artwork: let it grow with
+   translated and long bank entries instead of squeezing it into fixed slots. */
+.prestigeStage:has(.ladderQuestionCard) {
+  aspect-ratio: auto;
+  min-height: 56.28cqw;
+  background-size: 100% auto;
+  background-position: center top;
+}
+.prestigeStage:has(.ladderQuestionCard) .stageLogo { top: 1.7cqw; }
+.prestigeStage:has(.ladderQuestionCard) .stageCompetitor {
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 56.28cqw;
+}
+.prestigeStage:has(.ladderQuestionCard) .stageCenter {
+  position: relative;
+  inset: auto;
+  padding: 20cqw 26% 3cqw;
+}
+.stageCenter .ladderQuestionCard {
+  position: relative;
+  display: grid;
+  gap: .65rem;
+  padding: .8rem;
+  overflow: visible;
+  pointer-events: auto;
+  border: 1px solid var(--ladder-stage-color-61);
+  border-radius: .75rem;
+  background: var(--ladder-stage-color-60);
+}
+.stageCenter .questionHeader { position: static; display: flex; }
+.stageCenter .ladderCategory {
+  position: static;
+  width: auto;
+  max-width: calc(100% - 3.5rem);
+  font-size: .8rem;
+  overflow-wrap: anywhere;
+}
+.stageCenter .timerPill {
+  position: static;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  border-width: .2rem;
+  font-size: 1rem;
+}
+.stageCenter .ladderPrompt,
+.stageCenter .ladderPrompt[data-long='true'] {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: clamp(1rem, 1.8cqw, 1.3rem);
+  line-height: 1.6;
+}
+.stageCenter .ladderOptions {
+  position: static;
+  width: auto;
+  height: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+}
+.stageCenter .ladderOption,
+.stageCenter .ladderOption[data-long='true'] {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .5rem;
+  border: 1px solid var(--ladder-stage-color-64);
+  border-radius: .5rem;
+  background: linear-gradient(145deg,var(--ladder-stage-color-62),var(--ladder-stage-color-63));
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.stageCenter .ladderOption span:last-child { min-width: 0; }
+.stageCenter .ladderOptionIndex { font-size: 1rem; }
+.stageCenter .ladderReveal {
+  position: static;
+  width: auto;
+  font-size: .875rem;
+}
+.stageCenter .ladderOption[data-correct='true'] { background: color-mix(in srgb, var(--success) 22%, var(--ladder-stage-color-60)); }
+.stageCenter .ladderOption[data-wrong='true'] { background: color-mix(in srgb, var(--danger) 22%, var(--ladder-stage-color-60)); }
+@media (max-width: 48rem) {
+  .prestigeStage:has(.ladderQuestionCard) { min-height: 0; }
+  .prestigeStage:has(.ladderQuestionCard) .stageCompetitor { height: 270px; }
+  .prestigeStage:has(.ladderQuestionCard) .stageLogo { top: .5rem; font-size: clamp(2rem, 11cqw, 3.25rem); }
+  .prestigeStage:has(.ladderQuestionCard) .stageLogo i { width: .75rem; height: 2rem; }
+  .prestigeStage:has(.ladderQuestionCard) .stageAvatar { top: 30px; width: min(20%, 4rem); font-size: clamp(1.25rem, 8cqw, 2rem); }
+  .prestigeStage:has(.ladderQuestionCard) .stageName { top: 98px; font-size: clamp(.75rem, 3cqw, 1rem); }
+  .prestigeStage:has(.ladderQuestionCard) .stageSteps { top: 125px; height: 100px; }
+  .prestigeStage:has(.ladderQuestionCard) .stageRung { font-size: .7rem; }
+  .prestigeStage:has(.ladderQuestionCard) .stagePoints { top: 230px; font-size: .75rem; }
+  .prestigeStage:has(.ladderQuestionCard) .stagePoints strong { font-size: 1rem; }
+  .prestigeStage:has(.ladderQuestionCard) .stageCenter { padding: 270px .75rem 1rem; }
+  .stageCenter .ladderOptions { grid-template-columns: 1fr; }
+}
 .stageWinner {
   position: absolute; top: 22%; left: 24%; width: 52%; height: 58%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
