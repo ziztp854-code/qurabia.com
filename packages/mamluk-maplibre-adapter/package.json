@@ -29,9 +29,9 @@
   },
   "devDependencies": {
     "maplibre-gl": "6.11.2",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.12",
     "prettier": "^3.9.6",
     "typescript": "5.9.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.12"
   }
 }
