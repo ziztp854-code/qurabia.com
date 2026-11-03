@@ -267,11 +267,22 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('rolls back a failed insert and releases the quota lock for another client', async () => {
     const owner = { ...host, id: `quota-rollback-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    // No host row exists, so the real FK constraint fails inside the quota transaction.
-    await expect(
-      context.run(clients[0], () => createVoiceRoom(owner, input)),
-    ).rejects.toMatchObject({ code: 'P2003' });
     await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    // A valid account passes the session guard. Fail the queue's real FK insert
+    // after the room insert, so the transaction must roll the room back.
+    const failingClient = clients[0].$extends({
+      query: {
+        voiceMediaReconcileJob: {
+          create({ args, query }) {
+            return query({ ...args, data: { roomId: `missing-room-${fixtureId}`, generation: args.data.generation } });
+          },
+        },
+      },
+    }) as unknown as Database;
+    await expect(
+      context.run(failingClient, () => createVoiceRoom(owner, input)),
+    ).rejects.toMatchObject({ code: 'P2003' });
+    expect(await clients[2].voiceRoom.count({ where: { hostId: owner.id } })).toBe(0);
     await expect(
       context.run(clients[1], () => createVoiceRoom(owner, input)),
     ).resolves.toMatchObject({ room: { active: true, hostId: owner.id } });
