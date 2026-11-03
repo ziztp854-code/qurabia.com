@@ -56,6 +56,25 @@ describe('voice server room permissions', () => {
     expect(JSON.stringify(snapshot)).not.toContain('mediaGrants');
     expect(state.participants[0].tokenVersion).toBe(42);
   });
+  it('creates a private unique membership for each join, even at the same time', () => {
+    const state = room();
+    const old = state.participants.find((p) => p.id === 'alice')!.membershipId;
+    expect(old).toBeTruthy();
+    joinVoiceState(state, { id: 'alice', name: 'عائشة', image: null }, now);
+    expect(state.participants.find((p) => p.id === 'alice')!.membershipId).toBe(old);
+    leaveVoiceState(state, 'alice');
+    joinVoiceState(state, { id: 'alice', name: 'عائشة', image: null }, now);
+    const current = state.participants.find((p) => p.id === 'alice')!.membershipId;
+    expect(current).toBeTruthy();
+    expect(current).not.toBe(old);
+    expect(JSON.stringify(voiceSnapshot('room', state, 1, 'alice'))).not.toContain('membershipId');
+  });
+  it('upgrades legacy membership on authenticated join', () => {
+    const state = room();
+    delete state.participants[1].membershipId;
+    joinVoiceState(state, { id: 'alice', name: 'عائشة', image: null }, now);
+    expect(state.participants[1].membershipId).toBeTruthy();
+  });
   it('rejects listener publication, moderation, room closing and arbitrary role changes', () => {
     const state = room();
     const forbidden: VoiceEvent[] = [

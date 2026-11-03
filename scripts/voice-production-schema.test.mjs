@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import {
   voiceMigrationPlan,
   VOICE_MIGRATION,
@@ -13,6 +14,10 @@ import {
   EXCLUSIVE_FRAMES_MIGRATION,
   EXCLUSIVE_ENTRANCES_MIGRATION,
   VOICE_EMOJI_MIGRATION,
+  VOICE_MEDIA_RECONCILE_MIGRATION,
+  ACCOUNT_VOICE_OUTBOX_MIGRATION,
+  assertTokenVersionGuard,
+  isAccountVoiceOutboxTriggerValid,
 } from './voice-production-schema.mjs';
 
 const old = '20260101000000_existing_schema';
@@ -20,6 +25,56 @@ const complete = (migration_name) => ({
   migration_name,
   finished_at: new Date(),
   rolled_back_at: null,
+});
+
+test('requires the precise normal-mode account outbox trigger and function', () => {
+  const valid = {
+    enabled_trigger: true,
+    trigger_definition: 'CREATE TRIGGER "User_account_voice_outbox" AFTER UPDATE ON public."User" FOR EACH ROW WHEN (((old.status IS DISTINCT FROM new.status) OR (old."tokenVersion" IS DISTINCT FROM new."tokenVersion"))) EXECUTE FUNCTION enqueue_account_voice_reconcile()',
+    function_source: `BEGIN
+  INSERT INTO "AccountVoiceOutbox" ("userId") VALUES (NEW."id");
+  RETURN NEW;
+END;`,
+  };
+  assert.equal(isAccountVoiceOutboxTriggerValid(valid), true);
+  assert.equal(isAccountVoiceOutboxTriggerValid({ ...valid, enabled_trigger: false }), false);
+  assert.equal(isAccountVoiceOutboxTriggerValid({ ...valid, trigger_definition: valid.trigger_definition.replace(' OR ', ' AND ') }), false);
+  assert.equal(isAccountVoiceOutboxTriggerValid({ ...valid, function_source: 'BEGIN RETURN NEW; END;' }), false);
+  assert.equal(isAccountVoiceOutboxTriggerValid(null), false);
+  const migration = readFileSync(new URL('../prisma/migrations/20261103000000_account_voice_outbox/migration.sql', import.meta.url), 'utf8');
+  const body = migration.match(/CREATE FUNCTION enqueue_account_voice_reconcile\(\)[\s\S]*?AS \$\$([\s\S]*?)\$\$;/)?.[1];
+  assert.ok(body);
+  assert.equal(isAccountVoiceOutboxTriggerValid({ ...valid, function_source: body }), true);
+});
+
+test('requires the enabled User status-change token version trigger and exact function', () => {
+  const valid = {
+    token_version_column: true,
+    status_column: true,
+    enabled_trigger: true,
+    function_source: `BEGIN
+  IF NEW."status" IS DISTINCT FROM OLD."status"
+    OR NEW."role" IS DISTINCT FROM OLD."role"
+    OR NEW."passwordHash" IS DISTINCT FROM OLD."passwordHash"
+  THEN
+    NEW."tokenVersion" := OLD."tokenVersion" + 1;
+  END IF;
+
+  RETURN NEW;
+END;`,
+  };
+  assert.doesNotThrow(() => assertTokenVersionGuard(valid));
+  const migration = readFileSync(new URL('../prisma/migrations/20260722090000_user_token_version/migration.sql', import.meta.url), 'utf8');
+  const migrationBody = migration.match(/AS \$\$([\s\S]*?)\$\$;/)?.[1];
+  assert.ok(migrationBody);
+  assert.doesNotThrow(() => assertTokenVersionGuard({ ...valid, function_source: migrationBody }));
+  for (const key of ['token_version_column', 'status_column', 'enabled_trigger']) {
+    assert.throws(() => assertTokenVersionGuard({ ...valid, [key]: false }), /token version guard/);
+  }
+  assert.throws(() => assertTokenVersionGuard({ ...valid, function_source: 'BEGIN RETURN NEW; END;' }), /token version guard/);
+  assert.throws(() => assertTokenVersionGuard({ ...valid, function_source: valid.function_source.replaceAll('"status"', '"Status"') }), /token version guard/);
+  assert.throws(() => assertTokenVersionGuard({ ...valid, function_source: valid.function_source.replaceAll('"status"', '"sta tus"') }), /token version guard/);
+  assert.throws(() => assertTokenVersionGuard(null), /token version guard/);
 });
 
 test('allows only absent additive profile columns; rejects partial or missing applied columns', () => {
@@ -56,6 +111,40 @@ test('allows only absent additive profile columns; rejects partial or missing ap
 });
 const absent = [false, false, false, false];
 const present = [true, true, true, true];
+
+test('checks all account outbox metadata before and after its migration', () => {
+  const prior = [old, VOICE_MIGRATION, VOICE_MEDIA_RECONCILE_MIGRATION];
+  const available = [...prior, ACCOUNT_VOICE_OUTBOX_MIGRATION];
+  const plan = (applied, accountVoiceOutbox) => voiceMigrationPlan(available, applied.map(complete), present, [], {
+    voiceMediaReconcile: Array(6).fill(true), accountVoiceOutbox,
+  });
+  assert.equal(plan(prior, Array(10).fill(false)), 'apply');
+  assert.equal(plan(available, Array(10).fill(true)), 'ready');
+  for (let i = 0; i < 10; i++) {
+    const before = Array(10).fill(false); before[i] = true;
+    const after = Array(10).fill(true); after[i] = false;
+    assert.throws(() => plan(prior, before), /Account voice outbox schema drift/);
+    assert.throws(() => plan(available, after), /Account voice outbox schema drift/);
+  }
+});
+
+test('permits the reviewed media-reconciliation queue only when its metadata is complete', () => {
+  const previous = [old, VOICE_MIGRATION];
+  const available = [...previous, VOICE_MEDIA_RECONCILE_MIGRATION];
+  const plan = (applied, voiceMediaReconcile) =>
+    voiceMigrationPlan(available, applied.map(complete), present, [], { voiceMediaReconcile });
+  assert.equal(plan(previous, Array(6).fill(false)), 'apply');
+  assert.equal(plan(available, Array(6).fill(true)), 'ready');
+  for (let i = 0; i < 6; i++) {
+    const unexpected = Array(6).fill(false);
+    unexpected[i] = true;
+    const missing = Array(6).fill(true);
+    missing[i] = false;
+    assert.throws(() => plan(previous, unexpected), /Voice media reconciliation schema drift/);
+    assert.throws(() => plan(available, missing), /Voice media reconciliation schema drift/);
+  }
+  assert.throws(() => plan(previous, []), /Voice media reconciliation schema drift/);
+});
 
 test('allows the reviewed emoji migration and refuses partial or missing emoji structures', () => {
   const previous = [old, VOICE_MIGRATION];

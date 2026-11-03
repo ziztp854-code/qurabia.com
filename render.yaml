@@ -27,3 +27,7 @@ services:
         sync: false
       - key: KINGDOMS_WORKER_SECRET
         sync: false
+      - key: VOICE_RECONCILE_WEB_ORIGIN
+        sync: false
+      - key: VOICE_RECONCILE_SECRET
+        sync: false

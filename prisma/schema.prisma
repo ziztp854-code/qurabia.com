@@ -857,8 +857,22 @@ model VoiceRoom {
   host        User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
   reports     VoiceReport[]
   chatCommands VoiceChatCommand[]
+  mediaReconcileJob VoiceMediaReconcileJob?
   @@index([active, isPrivate, updatedAt])
   @@index([hostId, active])
+}
+
+// Work persists until a media reconciliation completes for the current generation.
+model VoiceMediaReconcileJob {
+  roomId         String @id
+  generation     String
+  attempts       Int @default(0)
+  nextAttemptAt  DateTime @default(now())
+  leaseToken     String?
+  leaseExpiresAt DateTime?
+  updatedAt      DateTime @default(now()) @updatedAt
+  room           VoiceRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  @@index([nextAttemptAt, leaseExpiresAt])
 }
 
 model VoicePreference {

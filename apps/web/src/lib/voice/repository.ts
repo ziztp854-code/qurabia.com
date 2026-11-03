@@ -1,3 +1,4 @@
+import { markChangedCloudGrants, voiceMediaStateKey } from './cloud-grants';
 import { customEmojiIds } from './emojis';
 import { voiceAccountBadges, voiceBadgeAccountSelect } from './account-badges';
 import { syncVoiceCommunityIdentity, voiceCommunityIdentities } from './community-identity';
@@ -288,18 +289,23 @@ export async function createVoiceRoom(
     participants: [],
     messages: [],
     bannedUsers: [],
+    mediaSyncPending: true,
   };
   joinVoiceState(state, user, now);
   const room = await db.$transaction(async (tx) => {
     // Serialize quota checks across app instances without holding a lock while hashing.
     await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-create:${user.id}`}, 0))`;
+    const accounts = await tx.$queryRaw<{ status: string; tokenVersion: number }[]>`
+      SELECT status, "tokenVersion" FROM "User" WHERE id = ${user.id} FOR SHARE`;
+    if (!accounts[0] || accounts[0].status !== 'ACTIVE' || accounts[0].tokenVersion !== (user.tokenVersion ?? 0))
+      throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
     if (
       (await tx.voiceRoom.count({
         where: { hostId: user.id, active: true },
       })) >= 5
     )
       throw new VoiceHttpError(409, 'لديك خمس غرف نشطة. أغلق غرفة قبل إنشاء أخرى.');
-    return tx.voiceRoom.create({
+    const room = await tx.voiceRoom.create({
       data: {
         hostId: user.id,
         state: json(state),
@@ -307,6 +313,8 @@ export async function createVoiceRoom(
         passwordHash,
       },
     });
+    await tx.voiceMediaReconcileJob.create({ data: { roomId: room.id, generation: randomUUID() } });
+    return room;
   });
   await addHistory(user.id, room.id, settings.name);
   return voiceSnapshot(room.id, state, room.revision, user.id, Boolean(room.passwordHash));
@@ -333,12 +341,14 @@ async function mutateRoom(
   commandId?: string,
   localMode?: 'message' | 'heartbeat' | 'gift',
   recipientId?: string,
+  joiningUser?: VoiceIdentity,
 ) {
   const db = getPrismaClient();
   for (let attempt = 0; attempt < 8; attempt++) {
     const record = await db.voiceRoom.findUnique({ where: { id: roomId } });
     if (!record) missing();
     const state = stateOf(record.state);
+    const previousMediaState = voiceMediaStateKey(state);
     pruneVoicePresence(state, Date.now());
     await pruneInactiveAccounts(state);
     if (commandId) {
@@ -353,11 +363,22 @@ async function mutateRoom(
         return getVoiceSnapshot(roomId, userId);
     }
     await mutate(state, record);
+    const mediaGeneration = !localMode && previousMediaState !== voiceMediaStateKey(state) ? randomUUID() : null;
+    if (mediaGeneration) {
+      state.mediaSyncPending = true;
+      markChangedCloudGrants(state);
+    }
     const changed = await db.$transaction(
       async (tx) => {
         // Permission changes share the SFU lock. Chat/presence change no media grants.
         if (!localMode)
           await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+        if (joiningUser) {
+          const accounts = await tx.$queryRaw<{ status: string; tokenVersion: number }[]>`
+            SELECT status, "tokenVersion" FROM "User" WHERE id = ${joiningUser.id} FOR SHARE`;
+          if (!accounts[0] || accounts[0].status !== 'ACTIVE' || accounts[0].tokenVersion !== (joiningUser.tokenVersion ?? 0))
+            throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
+        }
         if (
           commandId &&
           (await tx.voiceChatCommand.findUnique({
@@ -405,6 +426,12 @@ async function mutateRoom(
                 ...extra,
               },
             });
+        if (result.count && mediaGeneration)
+          await tx.voiceMediaReconcileJob.upsert({
+            where: { roomId },
+            create: { roomId, generation: mediaGeneration },
+            update: { generation: mediaGeneration, attempts: 0, nextAttemptAt: new Date() },
+          });
         if (result.count && report) {
           const message = report.messageId
             ? state.messages.find((m) => m.id === report.messageId)
@@ -508,6 +535,45 @@ export async function requireVoiceMembership(
     throw new VoiceHttpError(403, 'انضم إلى الغرفة أولًا.', 'NOT_JOINED');
   return snapshot;
 }
+/** Upgrade only an existing authenticated legacy membership, serialized with removals. */
+export async function upgradeVoiceMembership(roomId: string, userId: string, tokenVersion: number) {
+  return getPrismaClient().$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(${`voice-media:${roomId}`}, 0))`;
+      const accounts = await tx.$queryRaw<{ status: string; tokenVersion: number }[]>`
+      SELECT status, "tokenVersion" FROM "User" WHERE id = ${userId} FOR SHARE`;
+      if (
+        !accounts[0] ||
+        accounts[0].status !== 'ACTIVE' ||
+        accounts[0].tokenVersion !== tokenVersion
+      )
+        throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
+      await tx.$queryRaw`SELECT id FROM "VoiceRoom" WHERE id = ${roomId} FOR UPDATE`;
+      const record = await tx.voiceRoom.findUnique({ where: { id: roomId } });
+      if (!record) missing();
+      const state = stateOf(record.state);
+      pruneVoicePresence(state, Date.now());
+      const member = requireParticipant(state, userId);
+      if (state.bannedUsers.includes(userId) || (member.tokenVersion ?? 0) !== tokenVersion)
+        throw new VoiceHttpError(403, 'انضم إلى الغرفة أولًا.', 'NOT_JOINED');
+      if (member.membershipId) return;
+      member.membershipId = randomUUID();
+      state.mediaSyncPending = true;
+      markChangedCloudGrants(state);
+      await tx.voiceRoom.update({
+        where: { id: roomId },
+        data: { state: json(state), revision: { increment: 1 } },
+      });
+      const generation = randomUUID();
+      await tx.voiceMediaReconcileJob.upsert({
+        where: { roomId },
+        create: { roomId, generation },
+        update: { generation, attempts: 0, nextAttemptAt: new Date() },
+      });
+    },
+    { timeout: 20_000, maxWait: 5_000 },
+  );
+}
 async function addHistory(userId: string, roomId: string, name: string) {
   await mutatePreferences(userId, (state) => {
     state.history = [
@@ -542,7 +608,7 @@ export async function joinVoiceRoom(roomId: string, user: VoiceIdentity, input: 
     if (hostPreferences.blockedUsers.includes(user.id))
       throw new VoiceHttpError(403, 'لا يمكنك دخول هذه الغرفة.', 'FORBIDDEN');
     joinVoiceState(state, user, Date.now());
-  });
+  }, undefined, undefined, undefined, undefined, undefined, user);
   await addHistory(user.id, roomId, snapshot.room.name);
   return snapshot;
 }

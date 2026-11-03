@@ -14,6 +14,8 @@ import {
 } from './livekit';
 import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
 import { VoiceHttpError } from './http';
+import { synchronizeVoiceMedia } from './media-sync';
+import { markChangedCloudGrants } from './cloud-grants';
 const mocks = vi.hoisted(() => ({
   snapshot: undefined as unknown,
   list: vi.fn(),
@@ -56,6 +58,7 @@ vi.mock('livekit-server-sdk', async (importOriginal) => {
 });
 const speaker: VoiceParticipant = {
   id: 'member-1',
+  membershipId: '11111111-1111-4111-8111-111111111111',
   name: 'عضو',
   image: null,
   role: 'speaker',
@@ -80,6 +83,16 @@ beforeEach(() => {
   mocks.busy = false;
 });
 describe('voice SFU admission', () => {
+  it('reports pending enforcement when the media configuration is unavailable', async () => {
+    vi.stubEnv('LIVEKIT_API_SECRET', '');
+    const snapshot = { room: { active: true }, participants: [speaker] } as VoiceSnapshot;
+    mocks.snapshot = snapshot;
+    await expect(reconcileVoiceMedia('one-room')).rejects.toBeInstanceOf(VoiceMediaUnavailable);
+    await expect(synchronizeVoiceMedia('one-room', snapshot)).resolves.toMatchObject({
+      mediaSyncPending: true,
+    });
+    expect(mocks.list).not.toHaveBeenCalled();
+  });
   it('fails closed with absent or insecure configuration', async () => {
     vi.stubEnv('LIVEKIT_API_SECRET', '');
     expect(voiceMediaConfig()).toBeNull();
@@ -104,7 +117,10 @@ describe('voice SFU admission', () => {
     expect(decoded.video?.canPublishData).toBe(false);
     expect(decoded.exp! - decoded.nbf!).toBe(60);
     expect(response.canPublish).toBe(true);
-    expect(JSON.parse(decoded.metadata!)).toEqual({ voiceSessionVersion: 0 });
+    expect(JSON.parse(decoded.metadata!)).toEqual({
+      voiceSessionVersion: 0,
+      voiceMembershipId: speaker.membershipId,
+    });
     expect(decoded.video?.canUpdateOwnMetadata).toBe(false);
     expect(response).not.toHaveProperty('apiSecret');
   });
@@ -136,7 +152,14 @@ describe('voice SFU admission', () => {
   });
   it('revokes SFU publish rights and mutes already published tracks after moderator mute', async () => {
     mocks.list.mockResolvedValue([
-      { identity: speaker.id, tracks: [{ sid: 'mic-track', source: 2 }] },
+      {
+        identity: speaker.id,
+        metadata: JSON.stringify({
+          voiceMembershipId: speaker.membershipId,
+          voiceSessionVersion: 0,
+        }),
+        tracks: [{ sid: 'mic-track', source: 2 }],
+      },
     ]);
     const snapshot = {
       room: { active: true },
@@ -157,6 +180,19 @@ describe('voice SFU admission', () => {
       true,
     );
   });
+  it('removes a late connection from an older membership of the same identity', async () => {
+    mocks.snapshot = { room: { active: true }, participants: [speaker] };
+    mocks.list.mockResolvedValue([
+      {
+        identity: speaker.id,
+        metadata: JSON.stringify({ voiceMembershipId: '22222222-2222-4222-8222-222222222222' }),
+        tracks: [],
+      },
+    ]);
+    await reconcileVoiceMedia('one-room');
+    expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-one-room', speaker.id);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
   it('kicks removed identities including old-token reconnects', async () => {
     mocks.list.mockResolvedValue([{ identity: 'removed-user', tracks: [] }]);
     mocks.snapshot = { room: { active: true }, participants: [speaker] };
@@ -165,15 +201,38 @@ describe('voice SFU admission', () => {
     expect(mocks.update).not.toHaveBeenCalled();
   });
   it('evicts all connected participants after room closes', async () => {
-    mocks.list.mockResolvedValue([{ identity: speaker.id, tracks: [] }]);
+    mocks.list.mockResolvedValue([
+      {
+        identity: speaker.id,
+        metadata: JSON.stringify({
+          voiceMembershipId: speaker.membershipId,
+          voiceSessionVersion: 0,
+        }),
+        tracks: [],
+      },
+    ]);
     mocks.snapshot = { room: { active: false }, participants: [speaker] };
     await reconcileVoiceMedia('one-room');
     expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-one-room', speaker.id);
   });
   it('waits for every pending SFU write before a failed reconciliation releases its lock', async () => {
     mocks.list.mockResolvedValue([
-      { identity: speaker.id, tracks: [] },
-      { identity: 'other', tracks: [] },
+      {
+        identity: speaker.id,
+        metadata: JSON.stringify({
+          voiceMembershipId: speaker.membershipId,
+          voiceSessionVersion: 0,
+        }),
+        tracks: [],
+      },
+      {
+        identity: 'other',
+        metadata: JSON.stringify({
+          voiceMembershipId: speaker.membershipId,
+          voiceSessionVersion: 0,
+        }),
+        tracks: [],
+      },
     ]);
     mocks.snapshot = {
       room: { active: true },
@@ -218,6 +277,7 @@ describe('LiveKit Cloud strict revocation', () => {
     canPublish: true,
     tokenVersion: 0,
     joinedAt: speaker.joinedAt,
+    membershipId: speaker.membershipId,
     revokedBefore: 0,
   });
   it('requires explicit Cloud mode and an exact TLS Cloud project hostname', () => {
@@ -236,11 +296,69 @@ describe('LiveKit Cloud strict revocation', () => {
     vi.stubEnv('LIVEKIT_INTERNAL_URL', 'http://localhost:7880');
     expect(voiceMediaConfig()).toBeNull();
   });
+  it('uses distinct Cloud identities for separate membership generations', async () => {
+    const ledger: VoiceMediaLedger = {};
+    const first = await createVoiceToken('room', speaker, 0, ledger);
+    const changed = { ...speaker, membershipId: '22222222-2222-4222-8222-222222222222' };
+    mocks.ledger = ledger;
+    mocks.snapshot = { room: { active: true }, participants: [changed] };
+    await reconcileVoiceMedia('room');
+    const second = await createVoiceToken('room', changed, 0, ledger);
+    const verifier = new TokenVerifier('local-test', 'this-is-only-a-unit-test-secret-32');
+    const a = await verifier.verify(first.token);
+    const b = await verifier.verify(second.token);
+    expect(a.sub).not.toBe(b.sub);
+    expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-room', a.sub, { revokeTokenTs: expect.any(BigInt) });
+    expect(JSON.parse(b.metadata!).voiceUserId).toBe(speaker.id);
+    expect(ledger[a.sub!].active).toBe(false);
+    expect(ledger[b.sub!].active).toBe(true);
+  });
+  it('keeps a later generation distinct from a timed-out removal target', async () => {
+    const ledger: VoiceMediaLedger = {};
+    const first = await createVoiceToken('room', speaker, 0, ledger);
+    const verifier = new TokenVerifier('local-test', 'this-is-only-a-unit-test-secret-32');
+    const firstId = (await verifier.verify(first.token)).sub!;
+    const changed = { ...speaker, membershipId: '22222222-2222-4222-8222-222222222222' };
+    mocks.ledger = ledger;
+    mocks.snapshot = { room: { active: true }, participants: [changed] };
+    mocks.remove.mockRejectedValueOnce(new Error('timeout')).mockResolvedValue(undefined);
+    await expect(reconcileVoiceMedia('room')).rejects.toThrow('timeout');
+    expect(ledger[firstId].active).toBe(true);
+    await reconcileVoiceMedia('room');
+    const second = await createVoiceToken('room', changed, 0, ledger);
+    const secondId = (await verifier.verify(second.token)).sub!;
+    const connected = new Set([secondId]);
+    connected.delete(firstId); // Model the delayed old removal arriving after the new join.
+    expect(connected.has(secondId)).toBe(true);
+    expect(mocks.remove).toHaveBeenCalledTimes(2);
+    expect(mocks.remove.mock.calls.every((call) => call[1] === firstId)).toBe(true);
+  });
+  it('quarantines a generation after an uncertain removal even if permissions revert', async () => {
+    const ledger: VoiceMediaLedger = {};
+    await createVoiceToken('room', speaker, 0, ledger);
+    mocks.ledger = ledger;
+    mocks.snapshot = { room: { active: true }, participants: [{ ...speaker, moderatorMuted: true }] };
+    markChangedCloudGrants({ active: true, participants: [{ ...speaker, moderatorMuted: true }], mediaGrants: ledger } as any);
+    mocks.remove.mockRejectedValueOnce(new Error('timeout'));
+    await expect(reconcileVoiceMedia('room')).rejects.toThrow('timeout');
+    mocks.snapshot = { room: { active: true }, participants: [speaker] };
+    await expect(createVoiceToken('room', speaker, 0, ledger)).rejects.toMatchObject({ code: 'MEDIA_RETRY' });
+  });
+  it('targets only current Cloud generations for a private message', async () => {
+    const token = await createVoiceToken('room', speaker, 0, mocks.ledger);
+    const claims = await new TokenVerifier('local-test', 'this-is-only-a-unit-test-secret-32').verify(token.token);
+    mocks.delivery.mockResolvedValue({ message: { id: 'm' }, recipients: [speaker.id], cursor: 9 });
+    await notifyVoiceRoomChanged('room', 9, 'm');
+    expect(mocks.send).toHaveBeenCalledWith('tahaddi-voice-room', expect.any(Uint8Array), expect.anything(), {
+      topic: 'tahaddi-voice-message-v1', destinationIdentities: [claims.sub],
+    });
+  });
   it('records every issued token in a server ledger and refuses untracked issuance', async () => {
     await expect(createVoiceToken('room', speaker)).rejects.toBeInstanceOf(VoiceMediaUnavailable);
     const ledger: VoiceMediaLedger = {};
     const token = await createVoiceToken('room', speaker, 0, ledger);
-    expect(ledger[speaker.id]).toEqual(grant());
+    const claims = await new TokenVerifier('local-test', 'this-is-only-a-unit-test-secret-32').verify(token.token);
+    expect(ledger[claims.sub!]).toEqual({ ...grant(), userId: speaker.id });
     expect(token).not.toHaveProperty('ledger');
   });
   it('revokes removed identities even when they are offline at the SFU', async () => {
@@ -258,6 +376,7 @@ describe('LiveKit Cloud strict revocation', () => {
     { ...speaker, role: 'listener' as const, seatIndex: null },
     { ...speaker, tokenVersion: 1 },
     { ...speaker, joinedAt: 2 },
+    { ...speaker, membershipId: '22222222-2222-4222-8222-222222222222' },
   ])(
     'invalidates cached grants when rights or session/join version changes: %j',
     async (member) => {
@@ -270,17 +389,23 @@ describe('LiveKit Cloud strict revocation', () => {
       expect(mocks.ledger[speaker.id].active).toBe(false);
     },
   );
-  it('does not issue a replacement JWT before the strict cutoff has passed', async () => {
+  it('revokes legacy cloud grants and refuses issuing tokens for legacy members', async () => {
+    mocks.ledger[speaker.id] = { ...grant(), membershipId: undefined };
+    await reconcileVoiceMedia('room');
+    expect(mocks.remove).toHaveBeenCalled();
+    await expect(
+      createVoiceToken('room', { ...speaker, membershipId: undefined }, 0, {}),
+    ).rejects.toMatchObject({ code: 'NOT_MEMBER' });
+  });
+  it('never reuses the identity of an inactive grant even while its cutoff is pending', async () => {
     const ledger: VoiceMediaLedger = {
-      [speaker.id]: { ...grant(), active: false, revokedBefore: Math.floor(Date.now() / 1000) + 5 },
+      'voice-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa': {
+        ...grant(), userId: speaker.id, active: false, revokedBefore: Math.floor(Date.now() / 1000) + 5,
+      },
     };
-    await expect(createVoiceToken('room', speaker, 0, ledger)).rejects.toMatchObject({
-      code: 'MEDIA_RETRY',
-    });
-    ledger[speaker.id].revokedBefore = Math.floor(Date.now() / 1000) - 1;
-    await expect(createVoiceToken('room', speaker, 0, ledger)).resolves.toMatchObject({
-      canPublish: true,
-    });
+    const token = await createVoiceToken('room', speaker, 0, ledger);
+    const claims = await new TokenVerifier('local-test', 'this-is-only-a-unit-test-secret-32').verify(token.token);
+    expect(claims.sub).not.toBe('voice-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
   });
   it('requires reconciliation before a changed grant can be reissued', async () => {
     const ledger = { [speaker.id]: grant() };
@@ -296,21 +421,21 @@ describe('LiveKit Cloud strict revocation', () => {
       revokeTokenTs: expect.any(BigInt),
     });
   });
+  it('removes a stale connection even when an inactive ledger tombstone exists', async () => {
+    mocks.ledger[speaker.id] = { ...grant(), active: false };
+    mocks.list.mockResolvedValue([{ identity: speaker.id, metadata: '{}', tracks: [] }]);
+    await reconcileVoiceMedia('room');
+    expect(mocks.remove).toHaveBeenCalledWith('tahaddi-voice-room', speaker.id, {
+      revokeTokenTs: expect.any(BigInt),
+    });
+  });
   it('preserves a connected participant whose current grant matches the ledger', async () => {
-    mocks.ledger[speaker.id] = grant();
-    mocks.list.mockResolvedValue([
-      {
-        identity: speaker.id,
-        tracks: [],
-        permission: {
-          canPublish: true,
-          canSubscribe: true,
-          canPublishData: false,
-          canUpdateMetadata: false,
-          canPublishSources: [2],
-        },
-      },
-    ]);
+    const token = await createVoiceToken('room', speaker, 0, mocks.ledger);
+    const claims = await new TokenVerifier('local-test', 'this-is-only-a-unit-test-secret-32').verify(token.token);
+    mocks.list.mockResolvedValue([{
+      identity: claims.sub, metadata: claims.metadata, tracks: [],
+      permission: { canPublish: true, canSubscribe: true, canPublishData: false, canUpdateMetadata: false, canPublishSources: [2] },
+    }]);
     await reconcileVoiceMedia('room');
     expect(mocks.remove).not.toHaveBeenCalled();
     expect(mocks.update).not.toHaveBeenCalled();

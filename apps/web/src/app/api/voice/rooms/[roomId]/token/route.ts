@@ -1,6 +1,11 @@
 import { voiceIdentity, voiceRateLimit } from '@/lib/voice/identity';
+import { processVoiceMediaJob } from '@/lib/voice/media-sync-queue';
 import { jsonFailure, jsonSuccess, voiceOrigin, VoiceHttpError } from '@/lib/voice/http';
-import { requireVoiceMembership, withVoiceMediaSnapshot } from '@/lib/voice/repository';
+import {
+  requireVoiceMembership,
+  upgradeVoiceMembership,
+  withVoiceMediaSnapshot,
+} from '@/lib/voice/repository';
 import {
   createVoiceToken,
   reconcileVoiceMedia,
@@ -19,10 +24,17 @@ export async function POST(request: Request, context: { params: Promise<{ roomId
     const snapshot = await requireVoiceMembership(roomId, identity.id);
     if (!snapshot.room.active || !snapshot.me)
       throw new VoiceHttpError(403, 'انضم إلى غرفة نشطة قبل تشغيل الصوت.', 'NOT_MEMBER');
+    await upgradeVoiceMembership(roomId, identity.id, identity.tokenVersion ?? 0);
     // Commit strict Cloud revocations before issuing a replacement token.
-    if (voiceMediaConfig()?.mode === 'cloud') await reconcileVoiceMedia(roomId);
+    if (voiceMediaConfig()?.mode === 'cloud') {
+      const result = await processVoiceMediaJob(roomId);
+      if (result === 'empty') await reconcileVoiceMedia(roomId);
+    }
     // Serialize issuance with moderation and read current unfiltered membership.
     const grant = await withVoiceMediaSnapshot(roomId, (current, ledger) => {
+      if (voiceMediaConfig()?.mode === 'cloud' &&
+          (current.mediaSyncPending || Object.values(ledger).some((item) => item.active && item.revoking)))
+        throw new VoiceHttpError(409, 'تحدّثت صلاحيات الصوت. أعد الاتصال بعد لحظات.', 'MEDIA_RETRY');
       const member = current.participants.find((person) => person.id === identity.id);
       if (!current.room.active || !member)
         throw new VoiceHttpError(403, 'انضم إلى غرفة نشطة قبل تشغيل الصوت.', 'NOT_MEMBER');

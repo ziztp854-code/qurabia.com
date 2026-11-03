@@ -14,6 +14,44 @@ export const RESERVED_ACCOUNT_NUMBER_MIGRATION = '20261022010000_reserved_accoun
 export const EXCLUSIVE_FRAMES_MIGRATION = '20261022020000_exclusive_profile_frames';
 export const EXCLUSIVE_ENTRANCES_MIGRATION = '20261022030000_exclusive_entrances';
 export const VOICE_EMOJI_MIGRATION = '20261022040000_voice_emojis';
+export const VOICE_MEDIA_RECONCILE_MIGRATION = '20261101230000_voice_media_reconcile';
+export const ACCOUNT_VOICE_OUTBOX_MIGRATION = '20261103000000_account_voice_outbox';
+
+const EXPECTED_TOKEN_VERSION_FUNCTION = `
+BEGIN
+  IF NEW."status" IS DISTINCT FROM OLD."status"
+    OR NEW."role" IS DISTINCT FROM OLD."role"
+    OR NEW."passwordHash" IS DISTINCT FROM OLD."passwordHash"
+  THEN
+    NEW."tokenVersion" := OLD."tokenVersion" + 1;
+  END IF;
+
+  RETURN NEW;
+END;`;
+const normalizeFunctionBody = (body) => body.replace(/\r\n/g, '\n').trim();
+
+export function assertTokenVersionGuard(metadata) {
+  if (!metadata || metadata.token_version_column !== true || metadata.status_column !== true ||
+      metadata.enabled_trigger !== true || typeof metadata.function_source !== 'string' ||
+      normalizeFunctionBody(metadata.function_source) !== normalizeFunctionBody(EXPECTED_TOKEN_VERSION_FUNCTION)) {
+    throw new Error('User token version guard is missing, disabled, or has unexpected behavior.');
+  }
+}
+
+const EXPECTED_ACCOUNT_OUTBOX_FUNCTION = `
+BEGIN
+  INSERT INTO "AccountVoiceOutbox" ("userId") VALUES (NEW."id");
+  RETURN NEW;
+END;`;
+const EXPECTED_OUTBOX_WHEN = ' WHEN (((old.status IS DISTINCT FROM new.status) OR (old."tokenVersion" IS DISTINCT FROM new."tokenVersion"))) EXECUTE FUNCTION ';
+
+export function isAccountVoiceOutboxTriggerValid(metadata) {
+  return Boolean(metadata && metadata.enabled_trigger === true &&
+    typeof metadata.trigger_definition === 'string' &&
+    metadata.trigger_definition.includes(EXPECTED_OUTBOX_WHEN) &&
+    typeof metadata.function_source === 'string' &&
+    normalizeFunctionBody(metadata.function_source) === normalizeFunctionBody(EXPECTED_ACCOUNT_OUTBOX_FUNCTION));
+}
 const VOICE_TABLES = [
   'VoiceRoom',
   'VoicePreference',
@@ -49,6 +87,8 @@ const ALLOWLIST = [
   EXCLUSIVE_FRAMES_MIGRATION,
   EXCLUSIVE_ENTRANCES_MIGRATION,
   VOICE_EMOJI_MIGRATION,
+  VOICE_MEDIA_RECONCILE_MIGRATION,
+  ACCOUNT_VOICE_OUTBOX_MIGRATION,
 ];
 
 function verifyAdditiveMetadata(pending, name, actual, expectedLength, error) {
@@ -160,6 +200,24 @@ export function voiceMigrationPlan(
       'Voice emoji schema drift detected; refusing to repair it automatically.',
     );
   }
+  if (available.includes(VOICE_MEDIA_RECONCILE_MIGRATION)) {
+    if (!available.includes(VOICE_MIGRATION))
+      throw new Error('Voice media reconciliation dependencies are missing from this release.');
+    verifyAdditiveMetadata(
+      pending,
+      VOICE_MEDIA_RECONCILE_MIGRATION,
+      identitySchema.voiceMediaReconcile ?? [],
+      6,
+      'Voice media reconciliation schema drift detected; refusing to repair it automatically.',
+    );
+  }
+  if (available.includes(ACCOUNT_VOICE_OUTBOX_MIGRATION)) {
+    if (!available.includes(VOICE_MEDIA_RECONCILE_MIGRATION))
+      throw new Error('Account voice outbox dependencies are missing from this release.');
+    verifyAdditiveMetadata(pending, ACCOUNT_VOICE_OUTBOX_MIGRATION,
+      identitySchema.accountVoiceOutbox ?? [], 10,
+      'Account voice outbox schema drift detected; refusing to repair it automatically.');
+  }
   const expected = socialAvailable ? tables : tables.slice(0, 4);
   if (pending.length === 0) {
     if (!expected.every(Boolean))
@@ -198,6 +256,24 @@ async function main() {
     if (schema)
       await client.query("SELECT set_config('search_path', quote_ident($1), false)", [schema]);
     // Metadata only: never read accounts, rooms, messages or credentials for deployment.
+    const tokenVersionGuard = await client.query(`SELECT
+      EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema()
+        AND table_name = 'User' AND column_name = 'tokenVersion' AND data_type = 'integer'
+        AND is_nullable = 'NO') AS token_version_column,
+      EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema()
+        AND table_name = 'User' AND column_name = 'status' AND is_nullable = 'NO') AS status_column,
+      EXISTS(SELECT 1 FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE t.tgrelid = to_regclass('"User"') AND t.tgname = 'User_increment_token_version'
+        AND NOT t.tgisinternal AND t.tgenabled IN ('O', 'A') AND t.tgtype = 19
+        AND t.tgqual IS NULL AND t.tgnargs = 0 AND t.tgconstraint = 0
+        AND t.tgattr::text = ''
+        AND n.nspname = current_schema() AND p.proname = 'increment_user_token_version_on_sensitive_change'
+        AND p.pronargs = 0 AND p.prorettype = 'pg_catalog.trigger'::regtype) AS enabled_trigger,
+      (SELECT p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = current_schema() AND p.proname = 'increment_user_token_version_on_sensitive_change'
+        AND p.pronargs = 0 AND p.prorettype = 'pg_catalog.trigger'::regtype) AS function_source`);
+    assertTokenVersionGuard(tokenVersionGuard.rows[0]);
     const { rows } = await client.query(
       'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"',
     );
@@ -262,6 +338,58 @@ async function main() {
         AND confrelid = to_regclass('"VoiceEmojiPack"') AND contype = 'f') AS pack_fk,
       EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid = to_regclass('"VoiceChatCommand"')
         AND confrelid = to_regclass('"VoiceRoom"') AND contype = 'f') AS room_fk`);
+    const mediaReconcile = await client.query(`SELECT
+      to_regclass('"VoiceMediaReconcileJob"') IS NOT NULL AS table_present,
+      (SELECT count(*) = 7 FROM information_schema.columns WHERE table_schema = current_schema()
+        AND table_name = 'VoiceMediaReconcileJob' AND (column_name, data_type, is_nullable) IN (
+          ('roomId', 'text', 'NO'), ('generation', 'text', 'NO'), ('attempts', 'integer', 'NO'),
+          ('nextAttemptAt', 'timestamp without time zone', 'NO'),
+          ('leaseToken', 'text', 'YES'), ('leaseExpiresAt', 'timestamp without time zone', 'YES'),
+          ('updatedAt', 'timestamp without time zone', 'NO')
+        )) AS columns_present,
+      (to_regclass('"VoiceMediaReconcileJob_pkey"') IS NOT NULL AND
+       to_regclass('"VoiceMediaReconcileJob_nextAttemptAt_leaseExpiresAt_idx"') IS NOT NULL) AS indexes_present,
+      EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid = to_regclass('"VoiceMediaReconcileJob"')
+        AND confrelid = to_regclass('"VoiceRoom"') AND contype = 'f') AS room_fk,
+      EXISTS(SELECT 1 FROM pg_class WHERE oid = to_regclass('"VoiceMediaReconcileJob"')
+        AND relrowsecurity) AS rls_enabled,
+      (to_regclass('"VoiceMediaReconcileJob"') IS NOT NULL AND NOT EXISTS(
+        SELECT 1 FROM pg_policy WHERE polrelid = to_regclass('"VoiceMediaReconcileJob"')
+      )) AS no_public_policies`);
+    const accountOutbox = await client.query(`SELECT
+      to_regclass('"AccountVoiceOutbox"') IS NOT NULL AS table_present,
+      (SELECT count(*) = 7 FROM information_schema.columns WHERE table_schema = current_schema()
+        AND table_name = 'AccountVoiceOutbox' AND (column_name, data_type, is_nullable) IN (
+          ('id', 'bigint', 'NO'), ('userId', 'text', 'NO'), ('createdAt', 'timestamp without time zone', 'NO'),
+          ('attempts', 'integer', 'NO'), ('nextAttemptAt', 'timestamp without time zone', 'NO'),
+          ('cursorRoomId', 'text', 'YES'), ('hadBusyRoom', 'boolean', 'NO')
+        )) AS columns_present,
+      (to_regclass('"AccountVoiceOutbox_pkey"') IS NOT NULL AND to_regclass('"AccountVoiceOutbox_userId_idx"') IS NOT NULL AND to_regclass('"AccountVoiceOutbox_nextAttemptAt_id_idx"') IS NOT NULL) AS indexes_present,
+      to_regclass('"AccountVoiceOutbox_id_seq"') IS NOT NULL AS sequence_present,
+      EXISTS(SELECT 1 FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE t.tgrelid = to_regclass('"User"') AND t.tgname = 'User_account_voice_outbox'
+        AND NOT t.tgisinternal AND t.tgenabled IN ('O', 'A') AND t.tgtype = 17
+        AND t.tgqual IS NOT NULL AND t.tgnargs = 0 AND t.tgconstraint = 0 AND t.tgattr::text = ''
+        AND n.nspname = current_schema() AND p.proname = 'enqueue_account_voice_reconcile'
+        AND p.pronargs = 0 AND p.prorettype = 'pg_catalog.trigger'::regtype) AS trigger_present,
+      EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = current_schema() AND p.proname = 'enqueue_account_voice_reconcile') AS function_present,
+      (SELECT pg_get_triggerdef(t.oid) FROM pg_trigger t WHERE t.tgrelid = to_regclass('"User"') AND t.tgname = 'User_account_voice_outbox' AND NOT t.tgisinternal) AS trigger_definition,
+      (SELECT p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = current_schema() AND p.proname = 'enqueue_account_voice_reconcile' AND p.pronargs = 0 AND p.prorettype = 'pg_catalog.trigger'::regtype) AS function_source,
+      (EXISTS(SELECT 1 FROM pg_class WHERE oid = to_regclass('"AccountVoiceOutbox"') AND relrowsecurity)
+       AND NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid = to_regclass('"AccountVoiceOutbox"'))
+       AND NOT EXISTS(SELECT 1 FROM aclexplode(COALESCE((SELECT relacl FROM pg_class WHERE oid = to_regclass('"AccountVoiceOutbox"')), acldefault('r', (SELECT relowner FROM pg_class WHERE oid = to_regclass('"AccountVoiceOutbox"'))))) a WHERE a.grantee = 0)
+       AND NOT EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname IN ('anon','authenticated') AND has_table_privilege(r.oid, to_regclass('"AccountVoiceOutbox"'), 'SELECT,INSERT,UPDATE,DELETE'))) AS rls_private,
+      to_regclass('"AccountVoiceOutboxRoom"') IS NOT NULL AS room_table,
+      (to_regclass('"AccountVoiceOutboxRoom_pkey"') IS NOT NULL AND EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid = to_regclass('"AccountVoiceOutboxRoom"') AND confrelid = to_regclass('"AccountVoiceOutbox"') AND contype = 'f' AND confdeltype = 'c')) AS room_constraints,
+      (EXISTS(SELECT 1 FROM pg_class WHERE oid = to_regclass('"AccountVoiceOutboxRoom"') AND relrowsecurity)
+       AND NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid = to_regclass('"AccountVoiceOutboxRoom"'))
+       AND NOT EXISTS(SELECT 1 FROM aclexplode(COALESCE((SELECT relacl FROM pg_class WHERE oid = to_regclass('"AccountVoiceOutboxRoom"')), acldefault('r', (SELECT relowner FROM pg_class WHERE oid = to_regclass('"AccountVoiceOutboxRoom"'))))) a WHERE a.grantee = 0)
+       AND NOT EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname IN ('anon','authenticated') AND has_table_privilege(r.oid, to_regclass('"AccountVoiceOutboxRoom"'), 'SELECT,INSERT,UPDATE,DELETE'))) AS room_private`);
+    const { trigger_definition, function_source, ...accountOutboxFlags } = accountOutbox.rows[0];
+    accountOutboxFlags.trigger_present = isAccountVoiceOutboxTriggerValid({
+      enabled_trigger: accountOutboxFlags.trigger_present, trigger_definition, function_source,
+    });
     plan = voiceMigrationPlan(
       available,
       rows,
@@ -275,6 +403,8 @@ async function main() {
         communityTables: community.rows.map((row) => row.present),
         communityProfileColumns: communityProfile.rows.map((row) => row.present),
         voiceEmojis: Object.values(emojis.rows[0]),
+        voiceMediaReconcile: Object.values(mediaReconcile.rows[0]),
+        accountVoiceOutbox: Object.values(accountOutboxFlags),
       },
     );
   } finally {
@@ -325,6 +455,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
         'Voice schema migration did not complete.',
         'Voice emoji dependencies are missing from this release.',
         'Voice emoji schema drift detected; refusing to repair it automatically.',
+        'Voice media reconciliation dependencies are missing from this release.',
+        'Voice media reconciliation schema drift detected; refusing to repair it automatically.',
+        'Account voice outbox dependencies are missing from this release.',
+        'Account voice outbox schema drift detected; refusing to repair it automatically.',
+        'User token version guard is missing, disabled, or has unexpected behavior.',
       ].includes(error.message);
     console.error(
       safe

@@ -44,7 +44,7 @@ export function createVoiceGateway({
         status: [401, 403, 429].includes(response.status) ? response.status : 503,
       });
     const data = await response.json();
-    if (typeof data.token !== 'string' || data.token.length > 16_384)
+    if (typeof data.token !== 'string' || !data.token.trim() || data.token.length > 16_384)
       throw new Error('Invalid admission response');
     return data.token;
   };

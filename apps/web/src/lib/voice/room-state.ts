@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { VoiceHttpError } from './http';
 import { voiceGift, VOICE_GIFT_INTERVAL } from './gifts';
 import {
@@ -37,6 +38,7 @@ export function joinVoiceState(state: VoiceRoomState, user: VoiceIdentity, now: 
   if (state.bannedUsers.includes(user.id)) forbidden();
   let participant = state.participants.find((p) => p.id === user.id);
   if (participant) {
+    participant.membershipId ||= randomUUID();
     participant.lastSeenAt = now;
     participant.name = user.name;
     participant.image = user.image;
@@ -52,6 +54,7 @@ export function joinVoiceState(state: VoiceRoomState, user: VoiceIdentity, now: 
     muted: true,
     moderatorMuted: false,
     joinedAt: now,
+    membershipId: randomUUID(),
     lastSeenAt: now,
   };
   if (state.participants.length >= 250)
@@ -358,6 +361,7 @@ export function applyVoiceEvent(
 function publicParticipant(participant: VoiceParticipant): VoiceParticipant {
   const publicValue = { ...participant };
   delete publicValue.tokenVersion;
+  delete publicValue.membershipId;
   delete publicValue.lastGiftAt;
   delete publicValue.lastRoomReactionAt;
   return publicValue;
@@ -394,5 +398,6 @@ export function voiceSnapshot(
       ? publicParticipant(state.participants.find((p) => p.id === userId)!)
       : null,
     cursor: revision,
+    mediaSyncPending: state.mediaSyncPending ?? false,
   };
 }

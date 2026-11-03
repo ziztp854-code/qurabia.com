@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import 'server-only';
 import { AccessToken, RoomServiceClient, TrackSource, DataPacket_Kind } from 'livekit-server-sdk';
 import type { VoiceMediaLedger, VoiceParticipant, VoiceSnapshot } from './types';
@@ -81,28 +82,43 @@ export async function createVoiceToken(
 ) {
   const config = voiceMediaConfig();
   if (!config) throw new VoiceMediaUnavailable();
+  if (
+    !participant.membershipId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      participant.membershipId,
+    )
+  )
+    throw new VoiceHttpError(403, 'انضم إلى الغرفة مجددًا.', 'NOT_MEMBER');
   const canPublish = canPublishVoice(participant);
+  let mediaIdentity = participant.id;
   if (config.mode === 'cloud') {
     if (!ledger) throw new VoiceMediaUnavailable();
-    const previous = ledger[participant.id];
-    if (previous?.active && !sameCloudGrant(previous, participant))
+    const previous = Object.entries(ledger).find(
+      ([identity, grant]) => (grant.userId ?? identity) === participant.id && grant.active,
+    );
+    if (previous && (previous[1].revoking || !previous[1].userId || !sameCloudGrant(previous[1], participant)))
       throw new VoiceHttpError(409, 'تحدّثت صلاحيات الصوت. أعد الاتصال بعد لحظات.', 'MEDIA_RETRY');
-    // A strict cutoff also rejects tokens minted earlier in the same second.
-    // Wait for the next explicit client retry rather than issue an unusable JWT.
-    if (Math.floor(Date.now() / 1000) < (ledger[participant.id]?.revokedBefore ?? 0))
-      throw new VoiceHttpError(409, 'تحدّثت صلاحيات الصوت. أعد الاتصال بعد لحظات.', 'MEDIA_RETRY');
-    ledger[participant.id] = {
+    // Never reuse a retired identity: an old, delayed provider request must not
+    // target the next membership or permission generation.
+    mediaIdentity = previous?.[0] ?? `voice-${randomUUID()}`;
+    ledger[mediaIdentity] = {
       active: true,
       canPublish,
       tokenVersion: sessionVersion,
       joinedAt: participant.joinedAt,
-      revokedBefore: ledger[participant.id]?.revokedBefore ?? 0,
+      membershipId: participant.membershipId,
+      userId: participant.id,
+      revokedBefore: 0,
     };
   }
   const token = new AccessToken(config.apiKey, config.apiSecret, {
-    identity: participant.id,
+    identity: mediaIdentity,
     name: participant.name,
-    metadata: JSON.stringify({ voiceSessionVersion: sessionVersion }),
+    metadata: JSON.stringify({
+      voiceSessionVersion: sessionVersion,
+      voiceMembershipId: participant.membershipId,
+      ...(config.mode === 'cloud' ? { voiceUserId: participant.id } : {}),
+    }),
     ttl: VOICE_TOKEN_TTL_SECONDS,
   });
   token.addGrant({
@@ -129,7 +145,7 @@ export async function reconcileVoiceMedia(
   periodic = false,
 ) {
   void _snapshot; // Caller revisions are never used to grant media permissions.
-  if (!voiceMediaConfig()) return;
+  if (!voiceMediaConfig()) throw new VoiceMediaUnavailable();
   const startBy = Date.now() + 12_000;
   try {
     await withVoiceMediaSnapshot(
@@ -165,7 +181,9 @@ function sameCloudGrant(grant: VoiceMediaLedger[string], member: VoiceParticipan
   return (
     grant.canPublish === canPublishVoice(member) &&
     grant.tokenVersion === (member.tokenVersion ?? 0) &&
-    grant.joinedAt === member.joinedAt
+    grant.joinedAt === member.joinedAt &&
+    !!member.membershipId &&
+    grant.membershipId === member.membershipId
   );
 }
 async function revokeCloudGrant(
@@ -180,12 +198,26 @@ async function revokeCloudGrant(
     revokeTokenTs: BigInt(cutoff),
   });
   ledger[identity] = {
+    ...ledger[identity],
     active: false,
+    revoking: false,
     canPublish: false,
     tokenVersion: 0,
     joinedAt: 0,
     revokedBefore: cutoff,
   };
+}
+function matchesMembershipMetadata(metadata: string, member: VoiceParticipant | undefined) {
+  if (!member?.membershipId) return false;
+  try {
+    const claims = JSON.parse(metadata);
+    return (
+      claims.voiceMembershipId === member.membershipId &&
+      claims.voiceSessionVersion === (member.tokenVersion ?? 0)
+    );
+  } catch {
+    return false;
+  }
 }
 async function applyVoiceMediaPermissions(
   roomId: string,
@@ -193,16 +225,16 @@ async function applyVoiceMediaPermissions(
   ledger: VoiceMediaLedger,
 ) {
   const config = voiceMediaConfig();
-  if (!config) return;
+  if (!config) throw new VoiceMediaUnavailable();
   const client = mediaClient(config);
   const roomName = voiceMediaRoomName(roomId);
   if (config.mode === 'cloud') {
     const outcomes = await Promise.allSettled(
       Object.entries(ledger).map(async ([id, grant]) => {
         const member = snapshot.room.active
-          ? snapshot.participants.find((p) => p.id === id)
+          ? snapshot.participants.find((p) => p.id === (grant.userId ?? id))
           : undefined;
-        if (grant.active && (!member || !sameCloudGrant(grant, member)))
+        if (grant.active && (grant.revoking || !grant.userId || !member || !sameCloudGrant(grant, member)))
           await revokeCloudGrant(client, roomId, id, ledger);
         // Cloud refresh tokens expire in ten minutes. Retain inactive tombstones
         // beyond that window; never discard a still-active grant based on age.
@@ -222,21 +254,24 @@ async function applyVoiceMediaPermissions(
   }
   const outcomes = await Promise.allSettled(
     mediaParticipants.map(async (media) => {
+      const grant = ledger[media.identity];
       const member = snapshot.room.active
-        ? snapshot.participants.find((p) => p.id === media.identity)
+        ? snapshot.participants.find((p) => p.id === (grant?.userId ?? media.identity))
         : undefined;
+      const matchesMembership = matchesMembershipMetadata(media.metadata, member);
       if (
         config.mode === 'cloud' &&
         (!member ||
+          !matchesMembership ||
           !ledger[media.identity]?.active ||
           !sameCloudGrant(ledger[media.identity], member))
       ) {
         // A revocation in the first stage already removed this identity.
-        if (ledger[media.identity]?.active !== false)
+        if (!matchesMembership || ledger[media.identity]?.active !== false)
           await revokeCloudGrant(client, roomId, media.identity, ledger);
         return;
       }
-      if (!member) {
+      if (!member || !matchesMembership) {
         await client.removeParticipant(roomName, media.identity);
         return;
       }
@@ -286,15 +321,31 @@ export async function notifyVoiceRoomChanged(roomId: string, cursor: number, mes
   if (messageId) {
     try {
       const delivery = await voiceMessageDelivery(roomId, messageId);
-      if (delivery?.recipients.length)
-        await mediaClient(config).sendData(
-          voiceMediaRoomName(roomId),
-          new TextEncoder().encode(
-            JSON.stringify({ roomId, cursor: delivery.cursor, message: delivery.message }),
-          ),
-          DataPacket_Kind.RELIABLE,
-          { topic: 'tahaddi-voice-message-v1', destinationIdentities: delivery.recipients },
-        );
+      if (delivery?.recipients.length) {
+        const sendTo = async (destinationIdentities: string[]) => {
+          if (!destinationIdentities.length) return;
+          await mediaClient(config).sendData(
+            voiceMediaRoomName(roomId),
+            new TextEncoder().encode(
+              JSON.stringify({ roomId, cursor: delivery.cursor, message: delivery.message }),
+            ),
+            DataPacket_Kind.RELIABLE,
+            { topic: 'tahaddi-voice-message-v1', destinationIdentities },
+          );
+        };
+        if (config.mode === 'cloud') {
+          await withVoiceMediaSnapshot(roomId, async (snapshot, ledger) => {
+            const destinations = Object.entries(ledger)
+              .filter(([, grant]) => {
+                if (!snapshot.room.active || !grant.active || grant.revoking || !grant.userId || !delivery.recipients.includes(grant.userId)) return false;
+                const member = snapshot.participants.find((person) => person.id === grant.userId);
+                return !!member && sameCloudGrant(grant, member);
+              })
+              .map(([identity]) => identity);
+            await sendTo(destinations);
+          });
+        } else await sendTo(delivery.recipients);
+      }
     } catch {
       /* Authorized HTTP polling recovers any missed data packet. */
     }

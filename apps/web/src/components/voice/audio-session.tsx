@@ -13,6 +13,7 @@ import {
 } from 'livekit-client';
 import type { VoiceParticipant } from '@/lib/voice/types';
 import { SoundCheck } from './sound-check';
+import { voiceUserIdForParticipant } from './voice-media-identity';
 import { VoiceConnectionCheck } from './voice-connection-check';
 import { inspectVoiceConnection } from './voice-connection-report';
 import { requestVoiceMediaToken, VoiceMediaTokenError } from './voice-media-token';
@@ -260,13 +261,15 @@ export function AudioSession({
         });
         room.on(RoomEvent.TrackSubscribed, (track, _publication, remote: RemoteParticipant) => {
           if (track.kind !== Track.Kind.Audio || disposed) return;
+          const userId = voiceUserIdForParticipant(remote.identity, remote.metadata);
+          if (!userId) return;
           const audioTrack = track as RemoteAudioTrack;
           const element = audioTrack.attach();
           const current = playback.current;
           element.volume = Math.max(0, Math.min(1, current.volume));
-          element.muted = current.deafened || current.mutedUserIds.includes(remote.identity);
+          element.muted = current.deafened || current.mutedUserIds.includes(userId);
           element.autoplay = true;
-          element.dataset.voiceAudio = remote.identity;
+          element.dataset.voiceAudio = userId;
           element.style.display = 'none';
           document.body.appendChild(element);
           const recordPlayback = (blocked: boolean) => {
@@ -281,7 +284,7 @@ export function AudioSession({
           audioTrack.on(TrackEvent.AudioPlaybackFailed, failed);
           attached.set(audioTrack, {
             element,
-            identity: remote.identity,
+            identity: userId,
             blocked: false,
             stopPlaybackWatch: () => {
               audioTrack.off(TrackEvent.AudioPlaybackStarted, started);
@@ -298,7 +301,7 @@ export function AudioSession({
           if (!disposed) updatePlaybackBlocked();
         });
         room.on(RoomEvent.ActiveSpeakersChanged, (speakers) =>
-          callbacks.current.onSpeakersChange?.(speakers.map((s) => s.identity)),
+          callbacks.current.onSpeakersChange?.(speakers.map((s) => voiceUserIdForParticipant(s.identity, s.metadata)).filter((id): id is string => id !== null)),
         );
         room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
           if (!disposed) updatePlaybackBlocked();
@@ -322,7 +325,7 @@ export function AudioSession({
         });
         room.on(RoomEvent.MediaDevicesChanged, refreshDevices);
         room.on(RoomEvent.ParticipantPermissionsChanged, (_previous, changed) => {
-          if (!disposed && changed.identity === participantId)
+          if (!disposed && changed === room?.localParticipant)
             setPermissionsRevision((value) => value + 1);
         });
         room.on(RoomEvent.MediaDevicesError, () => {

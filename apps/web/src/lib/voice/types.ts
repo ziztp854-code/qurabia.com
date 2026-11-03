@@ -31,6 +31,8 @@ export type VoiceParticipant = VoiceIdentity & {
   muted: boolean;
   moderatorMuted: boolean;
   joinedAt: number;
+  /** Server-only unique identifier for this membership; absent in legacy state. */
+  membershipId?: string;
   lastSeenAt: number;
   /** Server-only trial gift throttle for this membership. */
   lastGiftAt?: number;
@@ -111,6 +113,8 @@ export type VoiceRoomState = {
   /** Server-only Cloud token ledger; never included in public snapshots. */
   mediaGrants?: VoiceMediaLedger;
   mediaReconciledAt?: number;
+  /** Persisted until the current media permission change has been reconciled. */
+  mediaSyncPending?: boolean;
 };
 export type VoiceMediaLedger = Record<
   string,
@@ -119,6 +123,9 @@ export type VoiceMediaLedger = Record<
     canPublish: boolean;
     tokenVersion: number;
     joinedAt: number;
+    membershipId?: string;
+    userId?: string;
+    revoking?: boolean;
     revokedBefore: number;
   }
 >;

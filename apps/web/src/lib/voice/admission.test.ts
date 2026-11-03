@@ -31,14 +31,19 @@ const member: VoiceParticipant = {
   joinedAt: 1,
   lastSeenAt: 1,
   tokenVersion: 2,
+  membershipId: '11111111-1111-4111-8111-111111111111',
 };
 const key = 'gateway-unit',
   secret = 'local-unit-secret-with-enough-entropy-only';
-async function token(version = 2, room = 'tahaddi-voice-room-one') {
+async function token(
+  version = 2,
+  room = 'tahaddi-voice-room-one',
+  membershipId = member.membershipId,
+) {
   const t = new AccessToken(key, secret, {
     identity: member.id,
     ttl: 60,
-    metadata: JSON.stringify({ voiceSessionVersion: version }),
+    metadata: JSON.stringify({ voiceSessionVersion: version, voiceMembershipId: membershipId }),
   });
   t.addGrant({ roomJoin: true, room, canSubscribe: true, canPublish: true });
   return t.toJwt();
@@ -78,6 +83,30 @@ describe('voice signaling admission', () => {
     await expect(admitVoiceSignal(original)).rejects.toMatchObject({ status: 401 });
     mocks.account.mockResolvedValue({ status: 'SUSPENDED', tokenVersion: 2 });
     await expect(admitVoiceSignal(await token())).rejects.toMatchObject({ status: 401 });
+  });
+  it('rejects an old membership after rejoining with the same account version and timestamp', async () => {
+    const original = await token();
+    (mocks.snapshot as VoiceSnapshot).participants[0] = {
+      ...member,
+      membershipId: '22222222-2222-4222-8222-222222222222',
+    };
+    await expect(admitVoiceSignal(original)).rejects.toMatchObject({ status: 403 });
+    const renewed = await token(
+      2,
+      'tahaddi-voice-room-one',
+      '22222222-2222-4222-8222-222222222222',
+    );
+    await expect(admitVoiceSignal(renewed)).resolves.toHaveProperty('token');
+  });
+  it('rejects legacy tokens and memberships without an epoch', async () => {
+    const legacy = new AccessToken(key, secret, {
+      identity: member.id,
+      metadata: JSON.stringify({ voiceSessionVersion: 2 }),
+    });
+    legacy.addGrant({ roomJoin: true, room: 'tahaddi-voice-room-one' });
+    await expect(admitVoiceSignal(await legacy.toJwt())).rejects.toMatchObject({ status: 401 });
+    (mocks.snapshot as VoiceSnapshot).participants[0] = { ...member, membershipId: undefined };
+    await expect(admitVoiceSignal(await token())).rejects.toMatchObject({ status: 403 });
   });
   it('rejects tampered tokens and grants for unrelated rooms', async () => {
     await expect(admitVoiceSignal('invalid.jwt')).rejects.toMatchObject({ status: 401 });

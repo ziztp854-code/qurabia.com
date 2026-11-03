@@ -28,12 +28,20 @@ export async function admitVoiceSignal(token: string) {
   if (!/^[a-zA-Z0-9_-]{1,160}$/.test(roomId))
     throw new VoiceHttpError(403, 'الاتصال غير مصرح به.', 'SIGNAL_FORBIDDEN');
   let sessionVersion: unknown;
+  let membershipId: unknown;
   try {
-    sessionVersion = JSON.parse(claims.metadata || '{}').voiceSessionVersion;
+    const metadata = JSON.parse(claims.metadata || '{}');
+    sessionVersion = metadata.voiceSessionVersion;
+    membershipId = metadata.voiceMembershipId;
   } catch {
     /* Invalid metadata is denied below. */
   }
-  if (!Number.isSafeInteger(sessionVersion) || Number(sessionVersion) < 0)
+  if (
+    !Number.isSafeInteger(sessionVersion) ||
+    Number(sessionVersion) < 0 ||
+    typeof membershipId !== 'string' ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(membershipId)
+  )
     throw new VoiceHttpError(401, 'أعد فتح جلسة الصوت.', 'SIGNAL_VERSION_INVALID');
   await voiceRateLimit(claims.sub, true, 'signal-admit');
   const identity = await getPrismaClient().user.findUnique({
@@ -44,7 +52,12 @@ export async function admitVoiceSignal(token: string) {
     throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
   return withVoiceMediaSnapshot(roomId, (snapshot, ledger) => {
     const member = snapshot.participants.find((person) => person.id === claims.sub);
-    if (!snapshot.room.active || !member || (member.tokenVersion ?? 0) !== sessionVersion)
+    if (
+      !snapshot.room.active ||
+      !member ||
+      (member.tokenVersion ?? 0) !== sessionVersion ||
+      member.membershipId !== membershipId
+    )
       throw new VoiceHttpError(403, 'انضم إلى الغرفة مجددًا.', 'NOT_MEMBER');
     return createVoiceToken(roomId, member, Number(sessionVersion), ledger);
   });
