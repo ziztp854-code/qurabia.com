@@ -253,12 +253,18 @@ function ProfileEditor({
   const [preview, setPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [error, setError] = useState('');
+  const [errorRevision, setErrorRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
+  useEffect(() => {
+    if (!error) return;
+    const frame = requestAnimationFrame(() => summary.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [error, errorRevision]);
   useEffect(
     () => () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -267,7 +273,7 @@ function ProfileEditor({
   );
   const report = (message: string) => {
     setError(message);
-    requestAnimationFrame(() => summary.current?.focus());
+    setErrorRevision((current) => current + 1);
   };
   const validate = (key: keyof typeof fields) => {
     const parsed = profileIdentitySchema.safeParse(fields);

@@ -37,6 +37,9 @@ describe('ProfileOverview', () => {
     expect(within(alert).getByRole('link')).toHaveAttribute('href', '#profile-username');
     expect(screen.getByLabelText('اسم المستخدم')).toHaveValue('x');
     expect(mocks.fetch).not.toHaveBeenCalled();
+    screen.getByLabelText('اسم المستخدم').focus();
+    fireEvent.click(screen.getByRole('button', { name: 'حفظ التغييرات' }));
+    await waitFor(() => expect(alert).toHaveFocus());
   });
   it('prevents duplicate submissions and updates identity only after confirmed persistence', async () => {
     let resolve!: (value: unknown) => void;
@@ -83,5 +86,25 @@ describe('ProfileOverview', () => {
     expect(screen.getByLabelText('اسم المستخدم')).toHaveValue('aziz');
     await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
     expect(screen.getByRole('button', { name: 'حفظ التغييرات' })).toBeEnabled();
+  });
+  it('focuses the server error even when the animation frame runs before React commits', async () => {
+    const frame = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 0;
+    });
+    try {
+      mocks.fetch.mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ code: 'USERNAME_TAKEN', error: 'اسم المستخدم مستخدم بالفعل.' }),
+      });
+      render(<ProfileOverview {...props} />);
+      open();
+      fireEvent.click(screen.getByRole('button', { name: 'حفظ التغييرات' }));
+      await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
+      expect(screen.getByLabelText('اسم المستخدم')).toHaveValue('aziz');
+    } finally {
+      frame.mockRestore();
+    }
   });
 });
