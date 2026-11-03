@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   lock: vi.fn(),
   track: { enabled: true, stop: vi.fn() },
   events: new Map<string, (...args: unknown[]) => void>(),
+  localParticipant: null as object | null,
 }));
 vi.mock('livekit-client', () => ({
   ConnectionState: { Connected: 'connected' },
@@ -48,6 +49,9 @@ vi.mock('livekit-client', () => ({
       setMicrophoneEnabled: mocks.mic,
       getTrackPublication: () => ({ track: { mediaStreamTrack: mocks.track } }),
     };
+    constructor() {
+      mocks.localParticipant = this.localParticipant;
+    }
     connect = mocks.connect;
     disconnect = mocks.disconnect;
     startAudio = mocks.startAudio;
@@ -77,6 +81,7 @@ const participant: VoiceParticipant = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.events.clear();
+  mocks.localParticipant = null;
   mocks.canPlaybackAudio = true;
   mocks.permissions = { canSubscribe: true, canPublish: true };
   mocks.track.enabled = true;
@@ -443,7 +448,7 @@ it.each(['membership-first', 'grant-first'] as const)(
     const grantPublishing = () => {
       const previous = mocks.permissions;
       mocks.permissions = { canSubscribe: true, canPublish: true };
-      act(() => mocks.events.get('permissions')?.(previous, { identity: participant.id }));
+      act(() => mocks.events.get('permissions')?.(previous, mocks.localParticipant));
     };
     const promoteMembership = () => {
       view.rerender(<AudioSession roomId="room" participant={participant} muted={false} />);
