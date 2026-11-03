@@ -1798,7 +1798,7 @@
 .prestigeStage[data-finale='true'] .stageWinner span,
 .prestigeStage[data-finale='true'] .stageWinner small { position: absolute; display: block; text-align: center; }
 .prestigeStage[data-finale='true'] .stageWinner strong {
-  top: 42%; left: 26%; width: 48%; color: var(--ladder-stage-color-22); font-size: 5.6cqw;
+  top: 45%; left: 26%; width: 48%; color: var(--ladder-stage-color-22); font-size: 5.6cqw;
   background: linear-gradient(180deg, var(--ladder-stage-color-21), var(--ladder-stage-color-22) 52%, var(--ladder-stage-color-25));
   background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   line-height: 1.15; filter: drop-shadow(0 .2cqw .2cqw var(--surface-stage));
