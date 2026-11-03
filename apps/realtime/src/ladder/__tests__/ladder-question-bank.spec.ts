@@ -26,19 +26,143 @@ function room(overrides: Partial<LadderRoomRuntime> = {}): LadderRoomRuntime {
 }
 
 describe('loadLadderQuestionCandidates', () => {
+  it('continues past duplicate bank rows to find another valid question', async () => {
+    const all = Array.from({ length: 501 }, (_, index) => ({
+      id: `q-${index}`,
+      type: 'TRUE_FALSE' as const,
+      prompt: index === 500 ? 'هل الأرض تدور حول الشمس؟' : 'هل الماء سائل؟',
+      difficulty: 'EASY' as const,
+      timeLimit: 20,
+      category: { id: 'science', name: 'علوم' },
+      options: [
+        { id: `${index}-yes`, text: 'نعم', isCorrect: true },
+        { id: `${index}-no`, text: 'لا', isCorrect: false },
+      ],
+    }));
+    const findMany = jest.fn(
+      ({ skip = 0, take }: { skip?: number; take: number }) =>
+        Promise.resolve(all.slice(skip, skip + take)),
+    );
+    const database = {
+      client: { quiz: { findFirst: jest.fn() }, question: { findMany } },
+    } as unknown as DatabaseService;
+    const candidates = await loadLadderQuestionCandidates(database, room());
+    expect(candidates.map((item) => item.prompt)).toContain(
+      'هل الأرض تدور حول الشمس؟',
+    );
+    expect(
+      candidates.filter((item) => item.prompt === 'هل الماء سائل؟'),
+    ).toHaveLength(1);
+    expect(findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('samples across a large unique page instead of always taking its first questions', async () => {
+    const all = Array.from({ length: 500 }, (_, index) => ({
+      id: `q-${index}`,
+      type: 'TRUE_FALSE' as const,
+      prompt: `هل السؤال رقم ${index} صحيح؟`,
+      difficulty: 'EASY' as const,
+      timeLimit: 20,
+      category: { id: 'science', name: 'علوم' },
+      options: [
+        { id: `${index}-yes`, text: 'نعم', isCorrect: true },
+        { id: `${index}-no`, text: 'لا', isCorrect: false },
+      ],
+    }));
+    const findMany = jest.fn(
+      ({ skip = 0, take }: { skip?: number; take: number }) =>
+        Promise.resolve(all.slice(skip, skip + take)),
+    );
+    const database = {
+      client: { quiz: { findFirst: jest.fn() }, question: { findMany } },
+    } as unknown as DatabaseService;
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0.999);
+    try {
+      const candidates = await loadLadderQuestionCandidates(database, room());
+      expect(findMany).toHaveBeenCalledTimes(1);
+      expect(candidates).toHaveLength(80);
+      expect(candidates.some((item) => Number(item.id.slice(2)) > 80)).toBe(
+        true,
+      );
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it('bounds scanning an exhausted bank to eight queries', async () => {
+    const duplicate = {
+      id: 'same',
+      type: 'TRUE_FALSE' as const,
+      prompt: 'هل الماء سائل؟',
+      difficulty: 'EASY' as const,
+      timeLimit: 20,
+      category: { id: 'science', name: 'علوم' },
+      options: [
+        { id: 'y', text: 'نعم', isCorrect: true },
+        { id: 'n', text: 'لا', isCorrect: false },
+      ],
+    };
+    const findMany = jest.fn().mockResolvedValue(Array(500).fill(duplicate));
+    const database = {
+      client: { quiz: { findFirst: jest.fn() }, question: { findMany } },
+    } as unknown as DatabaseService;
+    const candidates = await loadLadderQuestionCandidates(
+      database,
+      room({
+        usedQuestionFingerprints: ['هل الماء سائل؟'],
+      }),
+    );
+    expect(candidates).toEqual([]);
+    expect(findMany).toHaveBeenCalledTimes(8);
+  });
+
+  it('supplements a pack containing only copies of the same question', async () => {
+    const q = (id: string, prompt: string) => ({
+      id,
+      type: 'TRUE_FALSE' as const,
+      prompt,
+      difficulty: 'EASY' as const,
+      timeLimit: 20,
+      status: 'PUBLISHED' as const,
+      gameTypes: ['LADDER' as const],
+      category: { id: 'science', name: 'علوم' },
+      options: [
+        { id: `${id}-y`, text: 'نعم', isCorrect: true },
+        { id: `${id}-n`, text: 'لا', isCorrect: false },
+      ],
+    });
+    const pack = Array.from({ length: 20 }, (_, i) => ({
+      question: q(`pack-${i}`, 'هل الماء سائل؟'),
+    }));
+    const findMany = jest
+      .fn()
+      .mockResolvedValue([q('bank-other', 'هل الأرض كوكب؟')]);
+    const database = {
+      client: {
+        quiz: { findFirst: jest.fn().mockResolvedValue({ questions: pack }) },
+        question: { findMany },
+      },
+    } as unknown as DatabaseService;
+    const candidates = await loadLadderQuestionCandidates(
+      database,
+      room({ quizId: 'pack' }),
+    );
+    expect(candidates.map((item) => item.id)).toEqual(['pack-0', 'bank-other']);
+  });
   it('prefers quiz pack candidates when quizId is set and pool is large enough', async () => {
     const packQuestions = Array.from({ length: 20 }, (_, index) => ({
       id: `pack-${index}`,
       type: 'MULTIPLE_CHOICE' as const,
-      prompt: `سؤال ${index}`,
+      prompt: `سؤال ثقافي رقم ${index}`,
       difficulty: 'EASY' as const,
       timeLimit: 25,
       status: 'PUBLISHED' as const,
       gameTypes: ['LADDER' as const],
       category: { id: `cat-${index % 3}`, name: `فئة ${index % 3}` },
       options: [
-        { id: `pack-${index}-a`, text: 'أ', isCorrect: true },
-        { id: `pack-${index}-b`, text: 'ب', isCorrect: false },
+        { id: `pack-${index}-a`, text: 'الخيار الأول', isCorrect: true },
+        { id: `pack-${index}-b`, text: 'الخيار الثاني', isCorrect: false },
+        { id: `pack-${index}-c`, text: 'الخيار الثالث', isCorrect: false },
       ],
     }));
 

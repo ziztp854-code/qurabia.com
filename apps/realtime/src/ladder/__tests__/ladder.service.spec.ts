@@ -201,7 +201,7 @@ describe('LadderService', () => {
       });
       expect(query.where.category).toEqual({ is: { isActive: true } });
       expect(query.where.gameTypes).toEqual({ has: 'LADDER' });
-      expect(query.take).toBeLessThanOrEqual(80);
+      expect(query.take).toBeLessThanOrEqual(500);
       if (result.ok) {
         expect(result.room.currentQuestion?.options).toHaveLength(2);
       }
@@ -709,6 +709,117 @@ describe('LadderService', () => {
         new Set(room.roundHistory!.map((result) => result.questionId)).size,
       ).toBe(10);
     });
+
+    it.each(['missing', 'incomplete'] as const)(
+      'keeps duplicate prompts excluded after reload with %s fingerprints',
+      async (fingerprintsState) => {
+        let now = 1_800_000_000_000;
+        jest.spyOn(Date, 'now').mockImplementation(() => now);
+        jest.spyOn(Math, 'random').mockReturnValue(0);
+        let room = {
+          ...activeRoom(),
+          status: 'waiting',
+          currentRound: 0,
+          currentQuestion: null,
+          usedQuestionIds: [],
+          recentCategoryIds: [],
+        } as LadderRoomRuntime;
+        redis.loadLadderRoom.mockImplementation(async () =>
+          structuredClone(room),
+        );
+        redis.saveLadderRoom.mockImplementation(async (_code, value) => {
+          room = structuredClone(value as LadderRoomRuntime);
+          return room.revision ?? 1;
+        });
+        const original = {
+          ...publishedQuestion('original'),
+          prompt: 'هل الأرض كوكب؟',
+        };
+        const duplicate = {
+          ...publishedQuestion('duplicate'),
+          prompt: 'هل الأرض كوكب؟',
+        };
+        const different = {
+          ...publishedQuestion('different'),
+          prompt: 'هل الماء سائل؟',
+        };
+        const third = {
+          ...publishedQuestion('third'),
+          prompt: 'هل الثلج بارد؟',
+        };
+        findManyQuestions.mockResolvedValue([
+          original,
+          duplicate,
+          different,
+          third,
+        ]);
+
+        expect((await service.startGame(room.roomCode, room.hostId)).ok).toBe(
+          true,
+        );
+        const first = room.currentQuestion!;
+        expect(first.questionText).toBe(original.prompt);
+        expect(room.usedQuestionFingerprints).toHaveLength(1);
+        expect(
+          (
+            await service.submitAnswer(
+              'guest_right',
+              room.roomCode,
+              first.id,
+              first.options[0].id,
+            )
+          ).ok,
+        ).toBe(true);
+        expect(
+          (
+            await service.submitAnswer(
+              'guest_left',
+              room.roomCode,
+              first.id,
+              first.options[0].id,
+            )
+          ).ok,
+        ).toBe(true);
+        now += 4001;
+        expect((await service.advanceRound(room.roomCode, first.id)).ok).toBe(
+          true,
+        );
+        expect(room.currentQuestion?.questionText).toBe(different.prompt);
+        expect(room.usedQuestionFingerprints).toHaveLength(2);
+        const second = room.currentQuestion!;
+        expect(
+          (
+            await service.submitAnswer(
+              'guest_right',
+              room.roomCode,
+              second.id,
+              second.options[0].id,
+            )
+          ).ok,
+        ).toBe(true);
+        expect(
+          (
+            await service.submitAnswer(
+              'guest_left',
+              room.roomCode,
+              second.id,
+              second.options[0].id,
+            )
+          ).ok,
+        ).toBe(true);
+        if (fingerprintsState === 'missing') {
+          delete room.usedQuestionFingerprints;
+        } else {
+          // An older server can preserve the field but fail to add a played round.
+          room.usedQuestionFingerprints = [second.questionText];
+        }
+        now += 4001;
+        expect((await service.advanceRound(room.roomCode, second.id)).ok).toBe(
+          true,
+        );
+        expect(room.currentQuestion?.questionText).toBe(third.prompt);
+      },
+    );
   });
 
   describe('validateGuest', () => {

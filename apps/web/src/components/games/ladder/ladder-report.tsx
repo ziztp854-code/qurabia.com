@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import type { LadderRoomSnapshot, LadderTeam } from '@tahaddi/domain';
 import { BrandMark } from '@/components/brand';
 import { Button } from '@/components/ui';
+import { formatLadderQuestion } from './format-ladder-question';
 import styles from './ladder-report.module.css';
 
 type Props = { room: LadderRoomSnapshot };
@@ -47,7 +48,7 @@ function Report({ room, side }: Props & { side: LadderTeam }) {
               <span>السؤال {round.roundNumber}</span>
               <strong className={answer.correct ? styles.correct : styles.incorrect}>{answer.correct ? 'إجابة صحيحة' : answer.optionId === null ? 'لم تتم الإجابة' : 'إجابة خاطئة'}</strong>
             </div>
-            <h4>{round.questionText}</h4>
+            <h4>{formatLadderQuestion(round.questionText)}</h4>
             <ol className={styles.options}>
               {round.options.map((option) => <li key={option.id}>{option.text}{option.id === round.correctOptionId && <strong> — الإجابة الصحيحة</strong>}</li>)}
             </ol>

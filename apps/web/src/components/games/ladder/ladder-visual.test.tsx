@@ -37,4 +37,25 @@ describe('LadderVisual', () => {
     expect(center).toHaveTextContent('يفوز خالد');
     expect(center).toHaveTextContent('الحسم بأعلى مجموع نقاط');
   });
+
+  it('shows the crown only for the winning side and never for a draw', () => {
+    const finale = { title: 'يفوز خالد', detail: '٧٠٠٠ - ٦٠٠٠ نقطة', reason: 'الحسم بالنقاط' };
+    const { rerender } = render(<LadderVisual rightPosition={4} leftPosition={3}
+      rightName="خالد" leftName="فهد" rightScore={7000} leftScore={6000}
+      winningPosition={10} currentRound={10} totalRounds={10}
+      finale={{ ...finale, winnerSide: 'right' }} />);
+    expect(screen.getByTestId('ladder-winner-crown')).toHaveAttribute('data-side', 'right');
+    expect(screen.getByLabelText(/خالد، الدرجة/)).toHaveTextContent('خالد');
+    rerender(<LadderVisual rightPosition={2} leftPosition={5}
+      rightName="خالد" leftName="عبدالعزيز بن سلطان آل العتيبيي" rightScore={4000} leftScore={8000}
+      winningPosition={10} currentRound={10} totalRounds={10}
+      finale={{ title: 'يفوز عبدالعزيز بن سلطان آل العتيبيي', detail: '٤٠٠٠ - ٨٠٠٠ نقطة', reason: 'الحسم بالدرجة', winnerSide: 'left' }} />);
+    expect(screen.getByTestId('ladder-winner-crown')).toHaveAttribute('data-side', 'left');
+    expect(screen.getByText('عبدالعزيز بن سلطان آل العتيبيي')).toHaveAttribute('data-long', 'true');
+    rerender(<LadderVisual rightPosition={4} leftPosition={4}
+      rightName="خالد" leftName="فهد" rightScore={7000} leftScore={7000}
+      winningPosition={10} currentRound={10} totalRounds={10}
+      finale={{ title: 'تعادل', detail: '٧٠٠٠ - ٧٠٠٠ نقطة', reason: '' }} />);
+    expect(screen.queryByTestId('ladder-winner-crown')).not.toBeInTheDocument();
+  });
 });

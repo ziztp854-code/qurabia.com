@@ -2,6 +2,7 @@
 
 import type { LadderRoundAnswer, LadderRoundResult } from '@tahaddi/domain';
 import { formatNumber } from '@/lib/utils';
+import { formatLadderQuestion } from './format-ladder-question';
 import styles from './ladder-results.module.css';
 
 type Props = {
@@ -28,7 +29,7 @@ export function LadderResults({ results, rightName = 'المتسابق الأو�
       <h3>{results.length === 1 ? 'نتيجة السؤال' : 'ملخص الإجابات والسرعة'}</h3>
       {results.map((result) => (
         <article className={styles.round} key={result.questionId}>
-          <p><strong>السؤال {formatNumber(result.roundNumber)}:</strong> {result.questionText}</p>
+          <p><strong>السؤال {formatNumber(result.roundNumber)}:</strong> {formatLadderQuestion(result.questionText)}</p>
           <p>الإجابة الصحيحة: {result.options.find((option) => option.id === result.correctOptionId)?.text ?? '—'}</p>
           <div className={styles.players}>
             <div><h4>{rightName}</h4><Answer answer={result.right} options={result.options} /></div>

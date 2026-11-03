@@ -113,6 +113,7 @@ export type LadderRoomRuntime = LadderRoom & {
   roundHistory?: LadderRoundResult[];
   revealUntil?: number | null;
   usedQuestionIds?: string[];
+  usedQuestionFingerprints?: string[];
   recentCategoryIds?: string[];
   currentQuestionId?: string | null;
   currentDifficulty?: LadderQuestionDifficulty | null;

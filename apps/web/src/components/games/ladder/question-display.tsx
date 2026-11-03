@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Timer, ShieldCheck } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import type { LadderQuestion } from '@tahaddi/domain';
+import { formatLadderQuestion } from './format-ladder-question';
 import styles from './ladder-room.module.css';
 
 type QuestionDisplayProps = {
@@ -84,6 +85,7 @@ function QuestionDisplayBody({
   const timerWarning = seconds <= 10 && seconds > 5;
   const fillScale = initialTimeLimit > 0 ? Math.min(1, seconds / initialTimeLimit) : 0;
   const timerLabelId = `ladder-timer-${question.id}`;
+  const questionText = formatLadderQuestion(question.questionText);
 
   return (
     <motion.div
@@ -115,7 +117,7 @@ function QuestionDisplayBody({
         </div>
       </div>
 
-      <h2 className={styles.ladderPrompt} data-long={question.questionText.length > 90 || undefined}>{question.questionText}</h2>
+      <h2 className={styles.ladderPrompt} data-long={questionText.length > 90 || undefined}>{questionText}</h2>
 
       <div className={styles.ladderOptions}>
         {question.options.map((option, index) => {

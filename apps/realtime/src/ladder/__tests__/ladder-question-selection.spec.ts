@@ -146,6 +146,21 @@ describe('Ladder question selection policy', () => {
       expect(result).toBeNull();
     });
 
+    it('does not repeat the same prompt with a different question id', () => {
+      const duplicate = {
+        ...candidate('copy', 'EASY', 'science'),
+        prompt: 'ما عاصمة المملكة العربية السعودية؟',
+      };
+      const result = selectLadderQuestionCandidate({
+        candidates: [duplicate],
+        targetDifficulty: 'EASY',
+        usedQuestionIds: ['original'],
+        usedQuestionFingerprints: ['ما عاصمة المملكة العربية السعودية؟'],
+        recentCategoryIds: [],
+      });
+      expect(result).toBeNull();
+    });
+
     it('does not repeat when the pool has fewer questions than rounds', () => {
       const candidates = [
         candidate('q1', 'EASY', 'science'),

@@ -609,6 +609,7 @@ export function LadderRoom({
               title: winnerTitle,
               detail: `${formatNumber(room.rightScore)} - ${formatNumber(room.leftScore)} نقطة`,
               reason: winnerReason,
+              winnerSide: winner === 'right' || winner === 'left' ? winner : undefined,
             } : undefined}
           >
             {phase === 'question' && currentQuestion ? (

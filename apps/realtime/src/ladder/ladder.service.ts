@@ -17,6 +17,7 @@ import type {
 import { LADDER_MAX_TEAM_PLAYERS, LADDER_TTL_SECONDS } from './ladder.types.js';
 import {
   getLadderDifficulty,
+  ladderQuestionFingerprint,
   selectLadderQuestionCandidate,
 } from './ladder-question-selection.js';
 import { loadLadderQuestionCandidates } from './ladder-question-bank.js';
@@ -117,6 +118,17 @@ export class LadderService {
     return {
       ...room,
       usedQuestionIds: [...(room.usedQuestionIds ?? [])],
+      usedQuestionFingerprints: Array.from(
+        new Set(
+          [
+            ...(room.usedQuestionFingerprints ?? []),
+            ...(room.roundHistory ?? []).map((result) => result.questionText),
+            ...(room.currentQuestion
+              ? [room.currentQuestion.questionText]
+              : []),
+          ].map(ladderQuestionFingerprint),
+        ),
+      ),
       recentCategoryIds: [...(room.recentCategoryIds ?? [])],
       currentQuestionId:
         room.currentQuestionId ?? room.currentQuestion?.id ?? null,
@@ -144,6 +156,7 @@ export class LadderService {
       candidates,
       targetDifficulty: difficulty,
       usedQuestionIds: normalizedRoom.usedQuestionIds ?? [],
+      usedQuestionFingerprints: normalizedRoom.usedQuestionFingerprints ?? [],
       recentCategoryIds: normalizedRoom.recentCategoryIds ?? [],
     });
     if (!selection) return null;
@@ -180,6 +193,10 @@ export class LadderService {
       usedQuestionIds: [
         ...(normalizedRoom.usedQuestionIds ?? []),
         candidate.id,
+      ],
+      usedQuestionFingerprints: [
+        ...(normalizedRoom.usedQuestionFingerprints ?? []),
+        ladderQuestionFingerprint(candidate.prompt),
       ],
       recentCategoryIds: [
         ...(normalizedRoom.recentCategoryIds ?? []).slice(-3),
@@ -393,6 +410,7 @@ export class LadderService {
       quizId: input.quizId ?? null,
       currentQuestion: null,
       usedQuestionIds: [],
+      usedQuestionFingerprints: [],
       recentCategoryIds: [],
       currentQuestionId: null,
       currentDifficulty: null,
@@ -575,6 +593,7 @@ export class LadderService {
             currentRound: 1,
             startedAt,
             usedQuestionIds: [],
+            usedQuestionFingerprints: [],
             recentCategoryIds: [],
             currentQuestionId: null,
             currentDifficulty: null,

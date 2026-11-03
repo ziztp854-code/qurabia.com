@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { LadderRoomSnapshot } from '@tahaddi/domain';
 import { LadderReport } from './ladder-report';
+import { LadderResults } from './ladder-results';
 
 const room: LadderRoomSnapshot = {
   roomCode: 'ABCD1234', phase: 'finished', currentRound: 2, totalRounds: 2,
@@ -17,6 +18,18 @@ const room: LadderRoomSnapshot = {
 };
 
 describe('LadderReport', () => {
+  it('omits the answer-letter hint from the round summary and printable report', async () => {
+    const user = userEvent.setup();
+    const roundHistory = [{ ...room.roundHistory![0], questionText: 'ما الفاكهة؟ وتبدأ بحرف (ع)' }];
+    const reportRoom = { ...room, roundHistory };
+    render(<><LadderResults results={roundHistory} /><LadderReport room={reportRoom} /></>);
+    expect(screen.getByText(/ما الفاكهة؟/)).toHaveTextContent('ما الفاكهة؟');
+    expect(screen.queryByText(/تبدأ بحرف/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /تقرير أحمد/ }));
+    expect(within(screen.getByRole('article', { name: 'تقرير اللاعب أحمد' })).getByRole('heading', { name: 'ما الفاكهة؟' })).toBeInTheDocument();
+    expect(document.querySelector('[data-ladder-print-root]')).toHaveTextContent('ما الفاكهة؟');
+    expect(document.querySelector('[data-ladder-print-root]')).not.toHaveTextContent('تبدأ بحرف');
+  });
   it('shows all questions and the selected player’s answers in the printed report', async () => {
     const user = userEvent.setup();
     const print = vi.spyOn(window, 'print').mockImplementation(() => {});

@@ -16,6 +16,7 @@ type SelectLadderQuestionCandidateInput = {
   candidates: LadderQuestionCandidate[];
   targetDifficulty: LadderDifficulty;
   usedQuestionIds: string[];
+  usedQuestionFingerprints?: string[];
   recentCategoryIds: string[];
   /** Injected for tests; defaults to Math.random. */
   random?: () => number;
@@ -41,6 +42,16 @@ const ADJACENT_DIFFICULTIES: Record<LadderDifficulty, LadderDifficulty[]> = {
   MEDIUM: ['EASY', 'HARD'],
   HARD: ['MEDIUM'],
 };
+
+/** Normalize presentation differences without treating a shared answer as a duplicate. */
+export function ladderQuestionFingerprint(prompt: string): string {
+  return prompt
+    .normalize('NFKC')
+    .replace(/\u0640/gu, '')
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .toLocaleLowerCase('ar');
+}
 
 export function getLadderDifficulty(
   roundNumber: number,
@@ -97,6 +108,7 @@ export function selectLadderQuestionCandidate({
   candidates,
   targetDifficulty,
   usedQuestionIds,
+  usedQuestionFingerprints = [],
   recentCategoryIds,
   random = Math.random,
 }: SelectLadderQuestionCandidateInput): {
@@ -104,9 +116,14 @@ export function selectLadderQuestionCandidate({
   tier: LadderQuestionSelectionTier;
 } | null {
   const usedIds = new Set(usedQuestionIds);
+  const usedPrompts = new Set(
+    usedQuestionFingerprints.map(ladderQuestionFingerprint),
+  );
   const available = candidates.filter(
     (candidate) =>
-      !usedIds.has(candidate.id) && isValidLadderQuestionCandidate(candidate),
+      !usedIds.has(candidate.id) &&
+      !usedPrompts.has(ladderQuestionFingerprint(candidate.prompt)) &&
+      isValidLadderQuestionCandidate(candidate),
   );
   if (available.length === 0) return null;
 

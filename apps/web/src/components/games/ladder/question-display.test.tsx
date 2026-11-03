@@ -20,6 +20,28 @@ const question = (optionCount: 2 | 4): LadderQuestion => ({
 });
 
 describe('QuestionDisplay', () => {
+  it.each([
+    ['ما الفاكهة؟ تبدأ الإجابة بحرف (ع).', 'ما الفاكهة؟'],
+    ['ما الكلمة؟ وتبدأ بحرف (ب)', 'ما الكلمة؟'],
+    ['ما اسم الطائر؟ وتبدأ الإجابة بالحرف (هـ).', 'ما اسم الطائر؟'],
+    ['متى تبدأ الجولة؟', 'متى تبدأ الجولة؟'],
+  ])('shows the question without an answer-letter hint', (questionText, expected) => {
+    render(<QuestionDisplay question={{ ...question(4), questionText }}
+      timeLimit={20} roundNumber={1} totalRounds={10}
+      onAnswer={vi.fn()} selectedOption={null} disabled={false} />);
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(expected);
+    expect(screen.queryByText(/تبدأ (?:الإجابة )?ب(?:حرف|الحرف)/)).not.toBeInTheDocument();
+  });
+  it.each([
+    'ما هي أكبر دولة تبدأ بحرف (م)؟',
+    'اذكر كلمة تبدأ بحرف (ب)؟',
+    'ما القصيدة التي تبدأ بـ «قفا نبك من ذكرى»؟',
+  ])('preserves a beginning or letter that is part of the question', (questionText) => {
+    render(<QuestionDisplay question={{ ...question(4), questionText }}
+      timeLimit={20} roundNumber={1} totalRounds={10}
+      onAnswer={vi.fn()} selectedOption={null} disabled={false} />);
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(questionText);
+  });
   it.each([2, 4] as const)('renders and submits a %s-option question', async (optionCount) => {
     const onAnswer = vi.fn();
     const user = userEvent.setup();
