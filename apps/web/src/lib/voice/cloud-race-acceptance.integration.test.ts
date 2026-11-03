@@ -1,3 +1,4 @@
+import type { VoiceIdentity } from './types';
 // Opt-in acceptance test: real Cloud and isolated PostgreSQL. Never log tokens or SDK errors.
 import { randomBytes, randomUUID } from 'node:crypto';
 import { request as httpsRequest } from 'node:https';
@@ -14,7 +15,7 @@ import { voiceMediaRoomName } from './livekit';
 type Database = ReturnType<typeof createPrismaClient>;
 const fixture = vi.hoisted(() => ({
   database: (): Database => { throw new Error('Fixture database is not initialized'); },
-  identity: undefined as any,
+  identity: undefined as unknown as VoiceIdentity,
 }));
 vi.mock('@/lib/auth/prisma', () => ({ getPrismaClient: () => fixture.database() }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession: async () => null }));
@@ -75,7 +76,7 @@ describe('Cloud delayed revocation acceptance', () => {
     }
   });
 
-  function signal(token: string): Promise<{ socket: WebSocket; participant: any; closed: () => boolean }> {
+  function signal(token: string): Promise<{ socket: WebSocket; participant: { identity: string; sid: string; permission: { canSubscribe: boolean } }; closed: () => boolean }> {
     return new Promise((resolve, reject) => {
       const url = new URL('/rtc', expectedOrigin);
       url.search = new URLSearchParams({ access_token: token, protocol: '15', sdk: 'js', version: '2.23.0', auto_subscribe: '0' }).toString();
@@ -137,9 +138,8 @@ describe('Cloud delayed revocation acceptance', () => {
     let delayed: (() => Promise<unknown>) | undefined;
     const remove = vi.spyOn(RoomServiceClient.prototype, 'removeParticipant').mockImplementation(function (this: RoomServiceClient, room, identity, options) {
       if (!delayed && room === voiceMediaRoomName(roomId) && identity === claimsA.sub) {
-        const client = this;
         // Simulate a timeout before sending; release this captured request later.
-        delayed = () => original.call(client, room, identity, options);
+        delayed = original.bind(this, room, identity, options);
         return Promise.reject(new Error('simulated provider timeout'));
       }
       return original.call(this, room, identity, options);

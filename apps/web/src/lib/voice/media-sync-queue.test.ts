@@ -1,12 +1,14 @@
+type Job = { roomId: string; generation: string; attempts: number; leaseToken: string | null; leaseExpiresAt: Date | null; nextAttemptAt: Date };
+type JobWhere = { generation?: string; leaseToken?: string };
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ job: null as any, reconcile: vi.fn(), stateCleared: false }));
+const mocks = vi.hoisted(() => ({ job: null as unknown as Job, reconcile: vi.fn(), stateCleared: false }));
 vi.mock('./livekit', () => ({ reconcileVoiceMedia: mocks.reconcile }));
 vi.mock('@/lib/auth/prisma', () => {
   const jobs = {
     findFirst: vi.fn(async () => structuredClone(mocks.job)),
     findUnique: vi.fn(async () => structuredClone(mocks.job)),
-    updateMany: vi.fn(async ({ where, data }: any) => {
+    updateMany: vi.fn(async ({ where, data }: { where: JobWhere; data: Partial<Job> }) => {
       const job = mocks.job;
       if (
         !job ||
@@ -17,11 +19,11 @@ vi.mock('@/lib/auth/prisma', () => {
       Object.assign(job, data);
       return { count: 1 };
     }),
-    deleteMany: vi.fn(async ({ where }: any) => {
+    deleteMany: vi.fn(async ({ where }: { where: JobWhere }) => {
       const job = mocks.job;
       if (!job || job.generation !== where.generation || job.leaseToken !== where.leaseToken)
         return { count: 0 };
-      mocks.job = null;
+      mocks.job = null as unknown as Job;
       return { count: 1 };
     }),
   };
@@ -32,7 +34,7 @@ vi.mock('@/lib/auth/prisma', () => {
       mocks.stateCleared = true;
       return 1;
     }),
-    $transaction: vi.fn(async (fn: any) => fn(db)),
+    $transaction: vi.fn(async (fn: (client: typeof db) => Promise<unknown>) => fn(db)),
   };
   return { getPrismaClient: () => db };
 });

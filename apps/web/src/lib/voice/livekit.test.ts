@@ -1,3 +1,4 @@
+import type { VoiceRoomState } from './types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextEncoder, TextDecoder } from 'node:util';
 vi.stubGlobal('TextEncoder', TextEncoder);
@@ -338,7 +339,7 @@ describe('LiveKit Cloud strict revocation', () => {
     await createVoiceToken('room', speaker, 0, ledger);
     mocks.ledger = ledger;
     mocks.snapshot = { room: { active: true }, participants: [{ ...speaker, moderatorMuted: true }] };
-    markChangedCloudGrants({ active: true, participants: [{ ...speaker, moderatorMuted: true }], mediaGrants: ledger } as any);
+    markChangedCloudGrants({ active: true, participants: [{ ...speaker, moderatorMuted: true }], mediaGrants: ledger } as unknown as VoiceRoomState);
     mocks.remove.mockRejectedValueOnce(new Error('timeout'));
     await expect(reconcileVoiceMedia('room')).rejects.toThrow('timeout');
     mocks.snapshot = { room: { active: true }, participants: [speaker] };

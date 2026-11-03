@@ -1,3 +1,4 @@
+import type { VoiceIdentity, VoiceRoomState } from './types';
 import { randomUUID } from 'node:crypto';
 import { TextEncoder, TextDecoder } from 'node:util';
 vi.stubGlobal('TextEncoder', TextEncoder);
@@ -19,7 +20,7 @@ import { createRoomSchema } from './schemas';
 import { upgradeVoiceMembership } from './repository';
 
 type Database = ReturnType<typeof createPrismaClient>;
-const auth = vi.hoisted(() => ({ identity: undefined as any }));
+const auth = vi.hoisted(() => ({ identity: undefined as unknown as VoiceIdentity }));
 const boundary = vi.hoisted(() => ({
   client: (): Database => {
     throw new Error('DB not initialized');
@@ -100,7 +101,7 @@ describe.skipIf(!url)('membership-bound voice admission with PostgreSQL', () => 
       await update;
       await expect(joined).rejects.toMatchObject({ code: 'SESSION_REVOKED' });
       const saved = await db.voiceRoom.findUniqueOrThrow({ where: { id: room.room.id } });
-      expect((saved.state as any).participants.some((p: any) => p.id === user.id)).toBe(false);
+      expect((saved.state as unknown as VoiceRoomState).participants.some((p) => p.id === user.id)).toBe(false);
     } finally {
       unblock();
       await update.catch(() => undefined);
@@ -112,9 +113,9 @@ describe.skipIf(!url)('membership-bound voice admission with PostgreSQL', () => 
     const roomId = room.room.id;
     await joinVoiceRoom(roomId, member, {});
     const record = await db.voiceRoom.findUniqueOrThrow({ where: { id: roomId } });
-    const state = structuredClone(record.state) as any;
-    delete state.participants.find((p: any) => p.id === member.id).membershipId;
-    await db.voiceRoom.update({ where: { id: roomId }, data: { state } });
+    const state = structuredClone(record.state) as unknown as VoiceRoomState;
+    delete state.participants.find((p) => p.id === member.id)!.membershipId;
+    await db.voiceRoom.update({ where: { id: roomId }, data: { state: state as unknown as NonNullable<typeof record.state> } });
     const old = new AccessToken(
       'local-membership-test',
       'local-membership-test-secret-32-characters',
@@ -169,9 +170,9 @@ describe.skipIf(!url)('membership-bound voice admission with PostgreSQL', () => 
     const roomId = room.room.id;
     await joinVoiceRoom(roomId, member, {});
     const record = await db.voiceRoom.findUniqueOrThrow({ where: { id: roomId } });
-    const state = structuredClone(record.state) as any;
-    delete state.participants.find((p: any) => p.id === member.id).membershipId;
-    await db.voiceRoom.update({ where: { id: roomId }, data: { state } });
+    const state = structuredClone(record.state) as unknown as VoiceRoomState;
+    delete state.participants.find((p) => p.id === member.id)!.membershipId;
+    await db.voiceRoom.update({ where: { id: roomId }, data: { state: state as unknown as NonNullable<typeof record.state> } });
     await expect(upgradeVoiceMembership(roomId, member.id, 1)).rejects.toMatchObject({
       code: 'SESSION_REVOKED',
     });
@@ -185,7 +186,7 @@ describe.skipIf(!url)('membership-bound voice admission with PostgreSQL', () => 
     }
     const after = await db.voiceRoom.findUniqueOrThrow({ where: { id: roomId } });
     expect(
-      (after.state as any).participants.find((p: any) => p.id === member.id).membershipId,
+      (after.state as unknown as VoiceRoomState).participants.find((p) => p.id === member.id)!.membershipId,
     ).toBeUndefined();
   });
 });

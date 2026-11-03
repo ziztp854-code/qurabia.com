@@ -1,3 +1,4 @@
+import type { VoiceIdentity } from './types';
 // Opt-in acceptance test: real Cloud and isolated PostgreSQL. Never log tokens or SDK errors.
 import { randomBytes, randomUUID } from 'node:crypto';
 import { request as httpsRequest } from 'node:https';
@@ -23,7 +24,7 @@ function cloudFailure(error: unknown) {
 type Database = ReturnType<typeof createPrismaClient>;
 const fixture = vi.hoisted(() => ({
   database: (): Database => { throw new Error('Fixture database is not initialized'); },
-  identity: undefined as any,
+  identity: undefined as unknown as VoiceIdentity,
 }));
 vi.mock('@/lib/auth/prisma', () => ({ getPrismaClient: () => fixture.database() }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession: async () => null }));
@@ -89,7 +90,7 @@ describe('Cloud delayed response acceptance', () => {
     }
   });
 
-  function signal(token: string): Promise<{ socket: WebSocket; participant: any; closed: () => boolean }> {
+  function signal(token: string): Promise<{ socket: WebSocket; participant: { identity: string; sid: string; permission: { canSubscribe: boolean } }; closed: () => boolean }> {
     return new Promise((resolve, reject) => {
       const url = new URL('/rtc', expectedOrigin);
       url.search = new URLSearchParams({ access_token: token, protocol: '15', sdk: 'js', version: '2.23.0', auto_subscribe: '0' }).toString();
