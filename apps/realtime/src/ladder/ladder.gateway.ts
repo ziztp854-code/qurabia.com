@@ -378,6 +378,8 @@ export class LadderGateway
   ) {
     try {
       await client.join(roomCode);
+      this.socketGuestIds.delete(client.id);
+      this.socketHostIds.delete(client.id);
       if (guestId) {
         this.socketGuestIds.set(client.id, guestId);
       }
@@ -824,7 +826,7 @@ export class LadderGateway
       this.publishRoomState(room);
       return;
     }
-    const guestId = this.resolveGuestId(client);
+    const guestId = this.socketGuestIds.get(client.id);
     const hostId = this.socketHostIds.get(client.id);
     const team = guestId
       ? room.teams.find((t) => t.id === guestId)?.team

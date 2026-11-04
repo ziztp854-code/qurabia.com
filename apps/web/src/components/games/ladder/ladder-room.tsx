@@ -226,11 +226,11 @@ export function LadderRoom({
   };
 
   const handleJoin = () => {
-    if (!socketRef.current || !roomCode) return;
+    if (!socketRef.current || !/^[A-Z0-9]{8}$/i.test(roomCode.trim())) return;
     setBusy(true);
     setError('');
     socketRef.current.emit('ladder:join', {
-      roomCode: roomCode.toUpperCase(),
+      roomCode: roomCode.trim().toUpperCase(),
       playerName: playerName.trim(),
       introVersion: 1,
     });
@@ -454,7 +454,7 @@ export function LadderRoom({
                     <Input
                       id="ladder-join-code"
                       label="رمز الغرفة"
-                      placeholder="أدخل الرمز (مثلاً: ABCD12)"
+                      placeholder="أدخل الرمز (مثلاً: ABCD1234)"
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                       dir="ltr"
@@ -472,7 +472,7 @@ export function LadderRoom({
                         busy ||
                         identityBlocked ||
                         playerName.trim().length < 2 ||
-                        !joinCode.trim()
+                        !/^[A-Z0-9]{8}$/i.test(joinCode.trim())
                       }
                       onClick={handleJoin}
                       fullWidth

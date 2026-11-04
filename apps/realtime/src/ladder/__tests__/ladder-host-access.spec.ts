@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { createLadderHostAccessToken } from '@tahaddi/contracts';
 import { LadderGateway } from '../ladder.gateway.js';
-import type { LadderService } from '../ladder.service.js';
+import { LadderService } from '../ladder.service.js';
 import type { RedisService } from '../../game/redis.service.js';
 
 const AUTH_SECRET = 'x'.repeat(32);
@@ -42,6 +42,7 @@ describe('LadderGateway host access', () => {
     validateGuest: jest.fn(),
     joinRoom: jest.fn(),
     handleReconnect: jest.fn(),
+    getRoom: jest.fn().mockResolvedValue(room),
   };
   const redis = {
     consumeRateLimit: jest.fn().mockResolvedValue(true),
@@ -144,6 +145,67 @@ describe('LadderGateway host access', () => {
     );
   });
 
+  it('does not use a host’s unverified guest identity for sync', async () => {
+    const gateway = createGateway();
+    const hostAccessToken = createLadderHostAccessToken(AUTH_SECRET, {
+      hostId: 'user-host',
+      expiresAt: Date.now() + 60_000,
+    });
+    const client = createClient({
+      hostId: 'user-host',
+      hostAccessToken,
+      guestId: 'guest-1',
+    });
+    await gateway.hostRoom(client as never, {
+      totalRounds: 10,
+      winningPosition: 10,
+    });
+    ladder.buildSnapshot.mockClear();
+    await gateway.syncRoom(client as never, { roomCode: room.roomCode });
+    expect(ladder.buildSnapshot).toHaveBeenCalledWith(
+      room,
+      undefined,
+      undefined,
+      'user-host',
+    );
+  });
+
+  it('keeps a player answer private from a host claiming the player id', async () => {
+    const gateway = createGateway();
+    const activeRoom = {
+      ...room,
+      teams: [
+        { id: 'guest-1', team: 'right', playerName: 'لاعب', isHost: false },
+      ],
+      answers: { right: { optionId: 'answer-1', elapsedMs: 1000 } },
+    };
+    const hostAccessToken = createLadderHostAccessToken(AUTH_SECRET, {
+      hostId: 'user-host',
+      expiresAt: Date.now() + 60_000,
+    });
+    const client = createClient({
+      hostId: 'user-host',
+      hostAccessToken,
+      guestId: 'guest-1',
+    });
+    await gateway.hostRoom(client as never, {
+      totalRounds: 10,
+      winningPosition: 10,
+    });
+    ladder.getRoom.mockResolvedValueOnce(activeRoom);
+    ladder.buildSnapshot.mockImplementationOnce((...args) =>
+      LadderService.prototype.buildSnapshot.apply(
+        {} as LadderService,
+        args as never,
+      ),
+    );
+    await gateway.syncRoom(client as never, { roomCode: room.roomCode });
+    expect(client.emit).toHaveBeenLastCalledWith(
+      'ladder:room:state',
+      expect.objectContaining({ myAnswer: null, isHost: true }),
+    );
+  });
+
   it.each(['join', 'reconnect'] as const)(
     'accepts answers after an authenticated %s',
     async (method) => {
@@ -165,6 +227,14 @@ describe('LadderGateway host access', () => {
       } else {
         await gateway.reconnect(client as never, { roomCode: room.roomCode });
       }
+      ladder.buildSnapshot.mockClear();
+      await gateway.syncRoom(client as never, { roomCode: room.roomCode });
+      expect(ladder.buildSnapshot).toHaveBeenCalledWith(
+        room,
+        undefined,
+        'guest-1',
+        undefined,
+      );
       await gateway.submitAnswer(client as never, {
         roomCode: room.roomCode,
         questionId: 'q1',

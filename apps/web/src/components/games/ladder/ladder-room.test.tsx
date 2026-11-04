@@ -111,6 +111,8 @@ describe('LadderRoom guest identity recovery', () => {
 
     await user.type(screen.getByLabelText('رمز الغرفة'), 'ab12cd');
     expect(screen.getByLabelText('رمز الغرفة')).toHaveValue('AB12CD');
+    expect(joinButton).toBeDisabled();
+    await user.type(screen.getByLabelText('رمز الغرفة'), '34');
     expect(joinButton).toBeEnabled();
   });
 
