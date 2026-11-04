@@ -332,9 +332,9 @@ describe('LadderService', () => {
     });
 
     it.each([
-      ['EASY', 20],
-      ['MEDIUM', 30],
-      ['HARD', 45],
+      ['EASY', 15],
+      ['MEDIUM', 20],
+      ['HARD', 25],
     ] as const)(
       'uses the automatic time for actual %s questions',
       async (difficulty, seconds) => {

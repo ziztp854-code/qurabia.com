@@ -167,7 +167,7 @@ export class LadderService {
 
     const { candidate } = selection;
     const openedAt = Date.now();
-    const automaticTimes = { EASY: 20, MEDIUM: 30, HARD: 45 } as const;
+    const automaticTimes = { EASY: 15, MEDIUM: 20, HARD: 25 } as const;
     const timeLimit = room.automaticQuestionTime
       ? automaticTimes[candidate.difficulty]
       : Math.max(candidate.timeLimit, room.questionTimeLimit ?? 30);
