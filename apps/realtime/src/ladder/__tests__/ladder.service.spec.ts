@@ -182,6 +182,97 @@ describe('LadderService', () => {
       updatedAt: 0,
     });
 
+    it('holds the first question until the shared intro deadline', async () => {
+      jest.spyOn(Date, 'now').mockReturnValue(100_000);
+      const waiting = waitingRoom();
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waiting,
+        teams: waiting.teams.map((team) => ({ ...team, introVersion: 1 })),
+      });
+      const result = await service.startGame('AB12CD34', 'guest_right', 1);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.code);
+      expect(result.room.status).toBe('intro');
+      expect(result.room.introEndsAt).toBe(109_775);
+      expect(result.room.currentQuestion).toBeNull();
+      expect(result.room.questionDeadlineAt).toBeNull();
+      expect(findManyQuestions).not.toHaveBeenCalled();
+      redis.loadLadderRoom.mockResolvedValue(result.room);
+      expect((await service.completeIntro('AB12CD34', 100_000)).ok).toBe(false);
+      jest.spyOn(Date, 'now').mockReturnValue(110_000);
+      findManyQuestions.mockResolvedValue([publishedQuestion('intro-first')]);
+      const opened = await service.completeIntro('AB12CD34', 100_000);
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) throw new Error(opened.code);
+      expect(opened.room.status).toBe('active');
+      expect(opened.room.currentRound).toBe(1);
+      expect(opened.room.questionOpenedAt).toBe(110_000);
+      expect(opened.room.questionDeadlineAt).toBe(140_000);
+      redis.loadLadderRoom.mockResolvedValue(opened.room);
+      expect((await service.completeIntro('AB12CD34', 100_000)).ok).toBe(false);
+      expect(findManyQuestions).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps legacy start when a player has not advertised intro support', async () => {
+      const waiting = waitingRoom();
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waiting,
+        teams: waiting.teams.map((team, index) => ({
+          ...team,
+          ...(index === 0 ? { introVersion: 1 as const } : {}),
+        })),
+      });
+      findManyQuestions.mockResolvedValue([publishedQuestion('legacy-first')]);
+      const result = await service.startGame('AB12CD34', 'guest_right', 1);
+      expect(result.ok && result.room.status).toBe('active');
+    });
+
+    it('rejects answers and player departure during intro and exposes its shared clock', async () => {
+      jest.spyOn(Date, 'now').mockReturnValue(101_000);
+      const room: LadderRoomRuntime = {
+        ...waitingRoom(),
+        status: 'intro',
+        introStartedAt: 100_000,
+        introEndsAt: 109_775,
+      };
+      redis.loadLadderRoom.mockResolvedValue(room);
+      expect(
+        (await service.submitAnswer('guest_left', room.roomCode, 'q1', 'a')).ok,
+      ).toBe(false);
+      expect((await service.leaveRoom('guest_left', room.roomCode)).ok).toBe(
+        false,
+      );
+      expect((await service.startGame(room.roomCode, 'guest_left', 1)).ok).toBe(
+        false,
+      );
+      expect(
+        (await service.startGame(room.roomCode, 'guest_right', 1)).ok,
+      ).toBe(false);
+      expect(service.buildSnapshot(room)).toMatchObject({
+        phase: 'intro',
+        introStartedAt: 100_000,
+        introEndsAt: 109_775,
+        serverNow: 101_000,
+        currentQuestion: null,
+      });
+    });
+
+    it('ends the intro visibly if the question bank fails instead of leaving players stuck', async () => {
+      jest.spyOn(Date, 'now').mockReturnValue(110_000);
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waitingRoom(),
+        status: 'intro',
+        introStartedAt: 100_000,
+        introEndsAt: 109_775,
+      });
+      findManyQuestions.mockRejectedValue(new Error('bank unavailable'));
+      const result = await service.completeIntro('AB12CD34', 100_000);
+      expect(result.ok && result.room.status).toBe('finished');
+      expect(result.ok && result.room.stopReason?.code).toBe(
+        'QUESTION_BANK_UNAVAILABLE',
+      );
+    });
+
     it('queries only published active-category MCQ/true-false candidates with a bounded pool', async () => {
       let capturedQuery: unknown;
       redis.loadLadderRoom.mockResolvedValue(waitingRoom());
@@ -336,11 +427,17 @@ describe('LadderService', () => {
       const room = { ...activeRoom(), status: 'waiting' as const, teams: [] };
       redis.loadLadderRoom.mockResolvedValue(room);
       const result = await service.joinRoom(
-        { roomCode: room.roomCode, playerName: 'لاعب', team: 'right' },
+        {
+          roomCode: room.roomCode,
+          playerName: 'لاعب',
+          team: 'right',
+          introVersion: 1,
+        },
         'guest-new',
         'token-new',
       );
       expect(result.ok).toBe(true);
+      expect(result.ok && result.room.teams[0].introVersion).toBe(1);
       expect(redis.saveLadderRoom).toHaveBeenCalledWith(
         room.roomCode,
         expect.any(Object),

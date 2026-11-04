@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LadderRoom } from './ladder-room';
@@ -121,7 +121,7 @@ describe('LadderRoom guest identity recovery', () => {
     expect(socketMock.emit).not.toHaveBeenCalledWith('ladder:join', expect.anything());
     connectSocket();
     await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
-      roomCode: 'AB12CD34', playerName: 'لاعب اختبار',
+      roomCode: 'AB12CD34', playerName: 'لاعب اختبار', introVersion: 1,
     }));
     emitError('ROOM_NOT_FOUND', 'الغرفة غير موجودة');
     expect(screen.getByText('الغرفة غير موجودة أو انتهت.')).toBeInTheDocument();
@@ -161,7 +161,7 @@ describe('LadderRoom guest identity recovery', () => {
     await user.type(screen.getByLabelText('اسم اللاعب'), 'الاسم الجديد');
     connectSocket();
     await waitFor(() => expect(socketMock.emit).toHaveBeenCalledWith('ladder:join', {
-      roomCode: 'AB12CD34', playerName: 'الاسم الجديد',
+      roomCode: 'AB12CD34', playerName: 'الاسم الجديد', introVersion: 1,
     }));
   });
 
@@ -416,7 +416,29 @@ describe('LadderRoom guest identity recovery', () => {
     expect(screen.getByRole('button', { name: /بدء اللعبة/ })).toBeDisabled();
     emitRoomState({ ...waiting, leftTeam: [{ playerName: 'فهد', isHost: false }] });
     await user.click(screen.getByRole('button', { name: /بدء اللعبة/ }));
-    expect(socketMock.emit).toHaveBeenCalledWith('ladder:start', { roomCode: 'AB12CD34' });
+    expect(socketMock.emit).toHaveBeenCalledWith('ladder:start', { roomCode: 'AB12CD34', introVersion: 1 });
+  });
+
+  it('shows the server intro without a question and leaves only on the active snapshot', async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+    render(<LadderRoom />);
+    connectSocket();
+    const snapshot = { roomCode: 'AB12CD34', phase: 'intro', revision: 2,
+      rightTeam: [{ playerName: 'خالد' }], leftTeam: [{ playerName: 'فهد' }],
+      introStartedAt: 1000, introEndsAt: 10775, serverNow: 2000,
+      currentRound: 0, totalRounds: 10, currentQuestion: null };
+    emitRoomState({ ...snapshot, phase: 'waiting', revision: 1 });
+    const preloadedVideo = screen.getByLabelText('مقدمة مواجهة السلم');
+    emitRoomState(snapshot);
+    expect(screen.getByLabelText('مقدمة مواجهة السلم')).toBe(preloadedVideo);
+    expect(screen.queryByTestId('mock-ladder-visual')).not.toBeInTheDocument();
+    await act(async () => fireEvent.ended(screen.getByLabelText('مقدمة مواجهة السلم')));
+    expect(screen.queryByTestId('mock-ladder-visual')).not.toBeInTheDocument();
+    emitRoomState({ ...snapshot, phase: 'active', revision: 3, currentRound: 1 });
+    expect(screen.queryByLabelText('مقدمة مواجهة السلم')).not.toBeInTheDocument();
+    expect(screen.getByTestId('mock-ladder-visual')).toBeInTheDocument();
+    play.mockRestore(); pause.mockRestore();
   });
 
   it('shows the winner and answer history after reconnecting to a finished room', () => {

@@ -11,6 +11,7 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   testIgnore: [
+    'ladder-intro.spec.ts',
     // Standalone room fixtures use their own loopback servers/configurations.
     'chat-typing-performance.spec.ts',
     'live-chat-typing.spec.ts',

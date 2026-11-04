@@ -79,12 +79,14 @@ export const joinLadderRoomPayloadSchema = z
     roomCode: roomCodeSchema,
     playerName: playerNameSchema,
     team: z.enum(['right', 'left']).optional(),
+    introVersion: z.literal(1).optional(),
   })
   .strict();
 
 export const startLadderGamePayloadSchema = z
   .object({
     roomCode: roomCodeSchema,
+    introVersion: z.literal(1).optional(),
   })
   .strict();
 

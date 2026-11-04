@@ -7,6 +7,7 @@ import type {
   LadderRoomSnapshot,
 } from '@tahaddi/domain';
 
+export const LADDER_INTRO_DURATION_MS = 9775;
 export const LADDER_TTL_SECONDS = 3 * 60 * 60;
 export const LADDER_ROOM_LOCK_MILLISECONDS = 10_000;
 export { LADDER_MAX_TEAM_PLAYERS } from '@tahaddi/domain';
@@ -31,12 +32,14 @@ export const joinLadderRoomPayloadSchema = z
     roomCode: roomCodeSchema,
     playerName: playerNameSchema,
     team: z.enum(['right', 'left']).optional(),
+    introVersion: z.literal(1).optional(),
   })
   .strict();
 
 export const startLadderGamePayloadSchema = z
   .object({
     roomCode: roomCodeSchema,
+    introVersion: z.literal(1).optional(),
   })
   .strict();
 

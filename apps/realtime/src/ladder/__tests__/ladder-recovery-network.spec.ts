@@ -72,6 +72,72 @@ network('ladder recovery with isolated Redis', () => {
     rmdirSync(directory);
   });
 
+  it('recovers an elapsed intro once across two instances and grants a fresh question deadline', async () => {
+    const findMany = jest.fn().mockResolvedValue([
+      {
+        id: 'intro-q1',
+        prompt: 'Intro question',
+        type: 'TRUE_FALSE',
+        difficulty: 'EASY',
+        timeLimit: 20,
+        category: { id: 'general', name: 'General' },
+        options: [
+          { id: 'a', text: 'Yes', isCorrect: true },
+          { id: 'b', text: 'No', isCorrect: false },
+        ],
+      },
+    ]);
+    const service = new LadderService(redis, {
+      client: { question: { findMany } },
+    } as never);
+    const now = Date.now();
+    const room: LadderRoomRuntime = {
+      roomCode: 'INTRO123',
+      hostId: 'host',
+      status: 'intro',
+      currentRound: 0,
+      totalRounds: 10,
+      winningPosition: 10,
+      rightScore: 0,
+      leftScore: 0,
+      rightPosition: 0,
+      leftPosition: 0,
+      currentQuestion: null,
+      teams: [],
+      introStartedAt: now - 20_000,
+      introEndsAt: now - 10_225,
+      questionDeadlineAt: null,
+      questionOpenedAt: null,
+      automaticQuestionTime: true,
+      createdAt: now - 30_000,
+      updatedAt: now - 20_000,
+    };
+    await redis.saveLadderRoom(room.roomCode, room);
+    for (let i = 0; i < 2; i++) {
+      const gateway = new LadderGateway(service, redis, {} as never);
+      gateway.server = { to: () => ({ emit: () => undefined }) } as never;
+      gateways.push(gateway);
+      gateway.afterInit();
+    }
+    let result: LadderRoomRuntime | null = null;
+    for (let i = 0; i < 50; i++) {
+      await pause(100);
+      result = await service.getRoom(room.roomCode);
+      if (result?.status === 'active') break;
+    }
+    expect(result?.status).toBe('active');
+    expect(result?.currentRound).toBe(1);
+    expect(result?.questionOpenedAt).toBeGreaterThanOrEqual(now);
+    expect(result!.questionDeadlineAt! - result!.questionOpenedAt!).toBe(
+      20_000,
+    );
+    await pause(200);
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect((await service.getRoom(room.roomCode))?.currentQuestionId).toBe(
+      'intro-q1',
+    );
+  }, 10_000);
+
   it('resumes an expired final question after gateway restart without any client reconnect, even with two instances', async () => {
     const service = new LadderService(redis, {} as never);
     const now = Date.now();

@@ -41,8 +41,9 @@ type ClientEvents = {
     roomCode?: string;
     playerName?: string;
     team?: 'right' | 'left';
+    introVersion?: 1;
   }) => void;
-  'ladder:start': (payload: { roomCode?: string }) => void;
+  'ladder:start': (payload: { roomCode?: string; introVersion?: 1 }) => void;
   'ladder:answer': (payload: { roomCode?: string; questionId?: string; optionId?: string }) => void;
   'ladder:leave': (payload: { roomCode?: string }) => void;
   'ladder:reconnect': (payload: { roomCode?: string }) => void;

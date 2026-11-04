@@ -1,0 +1,113 @@
+.intro {
+  min-inline-size: 0;
+  inline-size: 100%;
+}
+
+.intro[hidden] { display: none; }
+
+.stage {
+  position: relative;
+  isolation: isolate;
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--surface-stage-line);
+  border-radius: var(--radius-xl);
+  background: var(--ladder-stage-color-1);
+  container-type: inline-size;
+}
+
+.video {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+
+.names {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 7%;
+  pointer-events: none;
+}
+
+.names strong {
+  inline-size: 36%;
+  min-inline-size: 0;
+  text-align: center;
+  font-size: clamp(1rem, 4cqi, 2.625rem);
+  line-height: 1.5;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 12px var(--ladder-stage-color-20), 0 0 24px var(--ladder-stage-color-20);
+  opacity: 0;
+  transition: transform 650ms cubic-bezier(.16, 1, .3, 1), opacity 500ms;
+}
+
+.rightName {
+  color: var(--ladder-stage-color-4);
+  transform: translateX(70px);
+}
+
+.leftName {
+  color: var(--ladder-cyan);
+  transform: translateX(-70px);
+}
+
+.names[data-visible] strong { opacity: 1; transform: translateX(0); }
+.names bdi {
+  padding-inline: 0.25em;
+  padding-block: 0.08em;
+  border-radius: 0.2em;
+  background: color-mix(in srgb, var(--ladder-stage-color-1) 90%, transparent);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.stage[data-static] .video { visibility: hidden; }
+.versus {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ladder-stage-color-2);
+  font-size: clamp(1.4rem, 6cqi, 3.5rem);
+  font-weight: 800;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+}
+
+.footer p { flex: 1 1 14rem; margin: 0; }
+.footer button { min-block-size: 44px; min-inline-size: 44px; }
+
+/* Long names need their own height on narrow screens, especially at text zoom. */
+@media (max-width: 30rem) {
+  .stage[data-long-names] { aspect-ratio: auto; }
+  .stage[data-long-names] .video { aspect-ratio: 16 / 9; block-size: auto; }
+  .stage[data-long-names] .names {
+    position: relative;
+    padding-block: var(--space-4);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+  .stage[data-long-names] .names strong { inline-size: 100%; }
+  .stage[data-long-names] .versus {
+    inset-block-end: auto;
+    inline-size: 100%;
+    aspect-ratio: 16 / 9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .names strong { transition: none; transform: none; }
+}

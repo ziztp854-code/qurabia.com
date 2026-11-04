@@ -17,6 +17,7 @@ import { QuestionDisplay } from './question-display';
 import { LadderResults } from './ladder-results';
 import { LadderReport } from './ladder-report';
 import { LadderInviteQr } from './ladder-invite-qr';
+import { LadderIntro } from './ladder-intro';
 import {
   clearLadderGuestIdentity,
   getOrCreateLadderGuestId,
@@ -28,7 +29,7 @@ import {
   setHostedLadderRoomCode,
 } from './ladder-session-storage';
 
-type Phase = 'join' | 'waiting' | 'countdown' | 'question' | 'finished';
+type Phase = 'join' | 'waiting' | 'intro' | 'countdown' | 'question' | 'finished';
 type GuestIdentity = { guestId: string; guestToken: string };
 type HostIdentity = { hostId: string; accessToken: string };
 
@@ -171,7 +172,7 @@ export function LadderRoom({
     if (invitePending.current || getJoinedLadderRoomCode() === code) {
       socketRef.current.emit('ladder:reconnect', { roomCode: code });
     } else {
-      socketRef.current.emit('ladder:join', { roomCode: code, playerName: name });
+      socketRef.current.emit('ladder:join', { roomCode: code, playerName: name, introVersion: 1 });
     }
     inviteAttempted.current = true;
     invitePending.current = true;
@@ -202,6 +203,7 @@ export function LadderRoom({
     if (localPhase === 'countdown') return 'countdown';
     if (!room) return 'join';
     if (room.phase === 'waiting') return 'waiting';
+    if (room.phase === 'intro') return 'intro';
     if (room.phase === 'active') return 'question';
     if (room.phase === 'finished') return 'finished';
     return 'join';
@@ -230,6 +232,7 @@ export function LadderRoom({
     socketRef.current.emit('ladder:join', {
       roomCode: roomCode.toUpperCase(),
       playerName: playerName.trim(),
+      introVersion: 1,
     });
   };
 
@@ -237,7 +240,7 @@ export function LadderRoom({
     if (!socketRef.current || !roomCode) return;
     setBusy(true);
     setError('');
-    socketRef.current.emit('ladder:start', { roomCode: roomCode.toUpperCase() });
+    socketRef.current.emit('ladder:start', { roomCode: roomCode.toUpperCase(), introVersion: 1 });
   };
 
   const handleAnswer = (optionId: string) => {
@@ -296,7 +299,7 @@ export function LadderRoom({
   const joinPanelId = 'ladder-panel-join';
 
   return (
-    <MotionScene scene={getGameMotionScene(phase)} sceneKey={phase}>
+    <MotionScene scene={getGameMotionScene(phase)} sceneKey={phase === 'intro' ? 'waiting' : phase}>
       <section className={styles.ladderRoom} dir="rtl">
         <div className={styles.ladderShell}>
         <ButtonLink href="/games" variant="ghost" className={styles.ladderBack}>
@@ -586,6 +589,18 @@ export function LadderRoom({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {(phase === 'waiting' || phase === 'intro') && room && (
+          <LadderIntro
+            key={room.roomCode}
+            active={phase === 'intro'}
+            rightName={room.rightTeam[0]?.playerName ?? 'المتسابق الأول'}
+            leftName={room.leftTeam[0]?.playerName ?? 'المتسابق الثاني'}
+            startedAt={room.introStartedAt ?? 0}
+            endsAt={room.introEndsAt ?? 0}
+            serverNow={room.serverNow ?? 0}
+          />
+        )}
 
         {phase === 'question' && room && (
           <p className={styles.ladderCategory} role="status" aria-live="polite">

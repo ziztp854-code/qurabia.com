@@ -14,7 +14,11 @@ import type {
   LadderActionResult,
   LadderRoomRuntime,
 } from './ladder.types.js';
-import { LADDER_MAX_TEAM_PLAYERS, LADDER_TTL_SECONDS } from './ladder.types.js';
+import {
+  LADDER_INTRO_DURATION_MS,
+  LADDER_MAX_TEAM_PLAYERS,
+  LADDER_TTL_SECONDS,
+} from './ladder.types.js';
 import {
   getLadderDifficulty,
   ladderQuestionFingerprint,
@@ -317,6 +321,9 @@ export class LadderService {
           : null,
       questionDeadlineAt: room.questionDeadlineAt ?? null,
       phase: room.status,
+      introStartedAt: room.introStartedAt,
+      introEndsAt: room.introEndsAt,
+      serverNow: Date.now(),
       currentRound: room.currentRound,
       totalRounds: room.totalRounds,
       rightScore: room.rightScore,
@@ -505,6 +512,7 @@ export class LadderService {
               playerName: name,
               isHost: false,
               joinedAt: now,
+              ...(input.introVersion === 1 ? { introVersion: 1 as const } : {}),
             },
           ],
           updatedAt: now,
@@ -547,6 +555,7 @@ export class LadderService {
   async startGame(
     roomCode: string,
     guestId: string,
+    introVersion?: 1,
   ): Promise<LadderActionResult> {
     return this.executeRoomAction(roomCode, async () => {
       const room = await this.loadRoom(roomCode);
@@ -582,6 +591,20 @@ export class LadderService {
       }
 
       const startedAt = Date.now();
+      if (
+        introVersion === 1 &&
+        room.teams.every((team) => team.introVersion === 1)
+      ) {
+        const intro = await this.saveRoom(roomCode, {
+          ...this.closeCurrentQuestion(room),
+          status: 'intro',
+          currentRound: 0,
+          introStartedAt: startedAt,
+          introEndsAt: startedAt + LADDER_INTRO_DURATION_MS,
+          updatedAt: startedAt,
+        });
+        return { ok: true, room: intro };
+      }
       let roomWithQuestion: LadderRoomRuntime | null;
       try {
         roomWithQuestion = await this.openQuestion(
@@ -622,6 +645,47 @@ export class LadderService {
 
       const savedRoom = await this.saveRoom(roomCode, roomWithQuestion);
       return { ok: true, room: savedRoom };
+    });
+  }
+
+  async completeIntro(
+    roomCode: string,
+    expectedStartedAt: number,
+  ): Promise<LadderActionResult> {
+    return this.executeRoomAction(roomCode, async () => {
+      const room = await this.loadRoom(roomCode);
+      if (
+        !room ||
+        room.status !== 'intro' ||
+        room.introStartedAt !== expectedStartedAt
+      ) {
+        return {
+          ok: false,
+          code: 'INTRO_NOT_ACTIVE',
+          message: 'المقدمة غير نشطة.',
+        };
+      }
+      if (room.introEndsAt == null || Date.now() < room.introEndsAt) {
+        return {
+          ok: false,
+          code: 'INTRO_NOT_FINISHED',
+          message: 'لم تنته المقدمة بعد.',
+        };
+      }
+      const now = Date.now();
+      const active: LadderRoomRuntime = {
+        ...room,
+        status: 'active',
+        startedAt: now,
+        usedQuestionIds: [],
+        usedQuestionFingerprints: [],
+        recentCategoryIds: [],
+        stopReason: undefined,
+        updatedAt: now,
+      };
+      const opened = await this.openNextQuestion(active);
+      const saved = await this.saveRoom(roomCode, opened);
+      return { ok: true, room: saved };
     });
   }
 
@@ -905,7 +969,7 @@ export class LadderService {
           message: 'لست في هذه الغرفة.',
         };
       }
-      if (room.status === 'active') {
+      if (room.status === 'active' || room.status === 'intro') {
         return {
           ok: false,
           code: 'GAME_IN_PROGRESS',

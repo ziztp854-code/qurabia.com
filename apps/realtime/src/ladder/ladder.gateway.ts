@@ -23,6 +23,7 @@ import { LadderService } from './ladder.service.js';
 import {
   createLadderRoomPayloadSchema,
   joinLadderRoomPayloadSchema,
+  startLadderGamePayloadSchema,
 } from './ladder.types.js';
 import type {
   ClientToServerLadderEvents,
@@ -129,7 +130,7 @@ export class LadderGateway
           const room = await this.ladder.getRoom(code);
           if (this.stopped) return;
           if (
-            room?.status === 'active' &&
+            (room?.status === 'active' || room?.status === 'intro') &&
             !this.questionDeadlineTimers.has(code)
           )
             this.scheduleQuestionDeadline(room);
@@ -184,6 +185,22 @@ export class LadderGateway
   private scheduleQuestionDeadline(room: LadderRoomRuntime) {
     if (!this.acceptRoomRevision(room)) return;
     this.clearQuestionDeadline(room.roomCode);
+    if (room.status === 'intro') {
+      if (room.introStartedAt == null || room.introEndsAt == null) return;
+      const startedAt = room.introStartedAt;
+      const timer = setTimeout(
+        () => {
+          this.questionDeadlineTimers.delete(room.roomCode);
+          void this.handleIntroDeadline(room.roomCode, startedAt).catch(() => {
+            this.retryRoomTimer(room.roomCode);
+          });
+        },
+        Math.max(0, room.introEndsAt - Date.now()),
+      );
+      timer.unref?.();
+      this.questionDeadlineTimers.set(room.roomCode, timer);
+      return;
+    }
     if (room.status !== 'active' || !room.currentQuestionId) return;
     const questionId = room.currentQuestionId;
     const reveal = Boolean(room.roundResult);
@@ -223,7 +240,8 @@ export class LadderGateway
             return;
           if (!this.acceptRoomRevision(room)) return;
           this.emitLocalSnapshots(roomCode, room);
-          if (room.status === 'active') this.scheduleQuestionDeadline(room);
+          if (room.status === 'active' || room.status === 'intro')
+            this.scheduleQuestionDeadline(room);
         })
         .catch(() => this.retryRoomTimer(roomCode));
     }, 2000);
@@ -238,7 +256,8 @@ export class LadderGateway
         return;
       if (room && this.acceptRoomRevision(room)) {
         this.emitLocalSnapshots(roomCode, room);
-        if (room.status === 'active') this.scheduleQuestionDeadline(room);
+        if (room.status === 'active' || room.status === 'intro')
+          this.scheduleQuestionDeadline(room);
         else this.clearQuestionDeadline(roomCode);
       }
     } catch {
@@ -270,6 +289,16 @@ export class LadderGateway
       return;
     }
     this.scheduleQuestionDeadline(room);
+  }
+
+  private async handleIntroDeadline(roomCode: string, startedAt: number) {
+    const result = await this.ladder.completeIntro(roomCode, startedAt);
+    if (result.ok) this.publishRoomState(result.room);
+    else {
+      // Reload after contention or another instance winning the transition.
+      const current = await this.ladder.getRoom(roomCode);
+      if (current) this.publishRoomState(current);
+    }
   }
 
   private async handleQuestionDeadline(roomCode: string, questionId: string) {
@@ -304,6 +333,21 @@ export class LadderGateway
   private async refreshExpiredRoom(
     room: LadderRoomRuntime,
   ): Promise<LadderRoomRuntime> {
+    if (room.status === 'intro') {
+      if (
+        room.introStartedAt == null ||
+        room.introEndsAt == null ||
+        Date.now() < room.introEndsAt
+      )
+        return room;
+      const result = await this.ladder.completeIntro(
+        room.roomCode,
+        room.introStartedAt,
+      );
+      return result.ok
+        ? result.room
+        : ((await this.ladder.getRoom(room.roomCode)) ?? room);
+    }
     if (room.status !== 'active' || !room.currentQuestionId) return room;
     if (room.roundResult) {
       if (room.revealUntil == null || Date.now() < room.revealUntil)
@@ -526,6 +570,7 @@ export class LadderGateway
       roomCode?: string;
       playerName?: string;
       team?: 'right' | 'left';
+      introVersion?: 1;
     },
   ) {
     if (!(await this.canHandleEvent(client, 'join'))) {
@@ -564,7 +609,7 @@ export class LadderGateway
   @SubscribeMessage('ladder:start')
   async startGame(
     @ConnectedSocket() client: LadderSocket,
-    @MessageBody() payload: { roomCode?: string },
+    @MessageBody() payload: { roomCode?: string; introVersion?: 1 },
   ) {
     if (!(await this.canHandleEvent(client, 'start'))) {
       return this.rejectRateLimited(client);
@@ -582,13 +627,25 @@ export class LadderGateway
       );
     }
 
-    const result = await this.ladder.startGame(roomCode, hostId);
+    const parsed = startLadderGamePayloadSchema.safeParse(payload);
+    if (!parsed.success)
+      return this.emitError(
+        client,
+        'INVALID_START',
+        'إعدادات البدء غير صالحة.',
+      );
+    const result = await this.ladder.startGame(
+      roomCode,
+      hostId,
+      parsed.data.introVersion,
+    );
     if (!result.ok) {
       return this.emitError(client, result.code, result.message);
     }
     const room = result.room;
     this.publishRoomState(room);
-    this.server.to(room.roomCode).emit('ladder:countdown', { remaining: 3 });
+    if (room.status !== 'intro')
+      this.server.to(room.roomCode).emit('ladder:countdown', { remaining: 3 });
   }
 
   @SubscribeMessage('ladder:answer')

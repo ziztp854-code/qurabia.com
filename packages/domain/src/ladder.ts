@@ -1,6 +1,6 @@
 export type LadderTeam = 'right' | 'left';
 
-export type LadderRoomPhase = 'waiting' | 'active' | 'finished';
+export type LadderRoomPhase = 'waiting' | 'intro' | 'active' | 'finished';
 
 export type LadderQuestionDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -38,7 +38,10 @@ export type LadderRoom = {
     playerName: string;
     isHost: boolean;
     joinedAt: number;
+    introVersion?: 1;
   }>;
+  introStartedAt?: number;
+  introEndsAt?: number;
   startedAt?: number;
   endedAt?: number;
   createdAt: number;
@@ -71,6 +74,7 @@ export type LadderRoomSnapshot = {
   winner?: 'right' | 'left' | 'draw' | null;
   winnerMethod?: 'position' | 'score' | 'time' | 'lottery' | null;
   questionDeadlineAt?: number | null;
+  serverNow?: number;
   phase: LadderRoomPhase;
   currentRound: number;
   totalRounds: number;
@@ -84,6 +88,8 @@ export type LadderRoomSnapshot = {
   rightTeam: Array<{ playerName: string; isHost: boolean }>;
   leftTeam: Array<{ playerName: string; isHost: boolean }>;
   isHost: boolean;
+  introStartedAt?: number;
+  introEndsAt?: number;
   startedAt?: number;
   endedAt?: number;
 };
