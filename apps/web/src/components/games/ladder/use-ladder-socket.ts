@@ -35,6 +35,8 @@ type ClientEvents = {
     totalRounds?: number;
     winningPosition?: number;
     questionTimeLimit?: number;
+    competitionMode?: boolean;
+    competitionId?: string;
     quizId?: string;
   }) => void;
   'ladder:join': (payload: {
@@ -193,6 +195,9 @@ export function useLadderSocket(
     socket.on('ladder:room:state', (payload) => {
       const current = roomRef.current;
       if (current?.roomCode === payload.roomCode && (payload.revision ?? 0) < (current.revision ?? 0)) return;
+      if (current?.roomCode === payload.roomCode && current.currentRound !== payload.currentRound) {
+        setError((message) => message === 'انتهى وقت الإجابة.' ? '' : message);
+      }
       setBusy(false);
       setErrorCode('');
       setGuestIdentityInvalid(false);

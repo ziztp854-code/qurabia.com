@@ -131,6 +131,8 @@ export function LadderRoom({
   const totalRounds = 10;
   const winningPosition = 10;
   const [questionTimeLimit, setQuestionTimeLimit] = useState('auto');
+  const [competitionMode, setCompetitionMode] = useState(false);
+  const [competitionId, setCompetitionId] = useState('');
   const [copied, setCopied] = useState(false);
   const [joinCode, setJoinCode] = useState(() => initialRoomCode?.toUpperCase() ?? '');
 
@@ -222,6 +224,7 @@ export function LadderRoom({
       winningPosition,
       ...(questionTimeLimit === 'auto' ? {} : { questionTimeLimit: Number(questionTimeLimit) }),
       ...(quizId ? { quizId } : {}),
+      ...(competitionMode && !quizId ? { competitionMode: true, competitionId: competitionId.trim().toUpperCase() } : {}),
     });
   };
 
@@ -351,7 +354,9 @@ export function LadderRoom({
                 <ul className={styles.ladderRules}>
                   <li>تتسع الغرفة لمتسابقين اثنين فقط.</li>
                   <li>
-                    {quizId
+                    {competitionMode && !quizId
+                      ? 'استخدم رمز المسابقة نفسه في المواجهات الثماني لتوزيع مجموعات مختلفة، مع حساب المضيف نفسه.'
+                      : quizId
                       ? `الأسئلة تُسحب من الحزمة المحفوظة${packTitle ? ` «${packTitle}»` : ''}، مع الرجوع لبنك السلم عند الحاجة.`
                       : 'الأسئلة تُسحب تلقائيًا من بنك الأسئلة الموسوم بـ«لعبة السلم»، بلا تكرار داخل الغرفة.'}
                   </li>
@@ -411,6 +416,8 @@ export function LadderRoom({
                   >
                     <div className={styles.entryFieldRow}>
                       <p>١٠ أسئلة · سلم من ٠ إلى ١٠ درجات</p>
+                      {!quizId && <label><input type="checkbox" checked={competitionMode} onChange={(event) => setCompetitionMode(event.target.checked)} /> أسئلة المسابقة المدققة (٣ سهلة، ٣ متوسطة، ٤ صعبة)</label>}
+                      {competitionMode && !quizId && <Input id="ladder-competition-id" label="رمز المسابقة" value={competitionId} onChange={(event) => setCompetitionId(event.target.value.toUpperCase())} placeholder="مثال: QUIZ2026" maxLength={32} dir="ltr" description="٤ إلى ٣٢ حرفًا إنجليزيًا أو رقمًا. استخدم الرمز نفسه لكل المواجهات الثماني؛ يبقى السجل ٣٠ يومًا بعد آخر حجز للمجموعة." />}
                       <div>
                         <label htmlFor="ladder-question-time" className={styles.entryFieldLabel}>
                           وقت السؤال
@@ -434,7 +441,7 @@ export function LadderRoom({
                       variant="gold"
                       size="lg"
                       loading={busy}
-                      disabled={!connected || busy || identityBlocked}
+                      disabled={!connected || busy || identityBlocked || (competitionMode && !quizId && !/^[A-Z0-9_-]{4,32}$/.test(competitionId.trim()))}
                       onClick={handleHost}
                       fullWidth
                     >

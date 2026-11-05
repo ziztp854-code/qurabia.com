@@ -264,6 +264,18 @@ describe('LadderRoom guest identity recovery', () => {
     });
   });
 
+  it('lets the host choose the reviewed competition questions', async () => {
+    const user = userEvent.setup();
+    render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
+    connectSocket();
+    await user.click(screen.getByRole('checkbox', { name: /أسئلة المسابقة المدققة/ }));
+    expect(screen.getByText(/رمز المسابقة نفسه/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /إنشاء الغرفة/ })).toBeDisabled();
+    await user.type(screen.getByLabelText('رمز المسابقة'), 'TEST2026');
+    await user.click(screen.getByRole('button', { name: /إنشاء الغرفة/ }));
+    expect(socketMock.emit).toHaveBeenCalledWith('ladder:host', { totalRounds: 10, winningPosition: 10, competitionMode: true, competitionId: 'TEST2026' });
+  });
+
   it('sends an explicit minimum time only when the host chooses one', async () => {
     const user = userEvent.setup();
     render(<LadderRoom role="host" hostIdentity={{ hostId: 'user-host', accessToken: 'signed-host-token' }} />);
