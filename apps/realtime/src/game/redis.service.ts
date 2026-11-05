@@ -527,6 +527,32 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return `ladder:room:${roomCode}`;
   }
 
+  async reserveLadderCompetitionPack(
+    hostId: string,
+    competitionId: string,
+    reservationId: string,
+  ): Promise<number | null> {
+    const eventHash = createHash('sha256')
+      .update(JSON.stringify([hostId, competitionId]))
+      .digest('hex');
+    const result = await this.client.eval(
+      `local existing = redis.call('HGET', KEYS[1], ARGV[1])
+       if existing then return tonumber(existing) end
+       local count = redis.call('HLEN', KEYS[1])
+       if count >= 8 then return -1 end
+       redis.call('HSET', KEYS[1], ARGV[1], count)
+       redis.call('EXPIRE', KEYS[1], 2592000)
+       return count`,
+      1,
+      `ladder:competition:sets:${eventHash}`,
+      reservationId,
+    );
+    if (result === -1) return null;
+    if (typeof result !== 'number' || result < 0 || result > 7)
+      throw new Error('Competition allocation failed');
+    return result;
+  }
+
   private ladderRoomLockKey(roomCode: string) {
     return `ladder:room:${roomCode}:lock`;
   }

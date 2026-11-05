@@ -528,6 +528,8 @@ export class LadderGateway
       totalRounds?: number;
       winningPosition?: number;
       questionTimeLimit?: number;
+      competitionMode?: boolean;
+      competitionId?: string;
     },
   ) {
     if (!(await this.canHandleEvent(client, 'host'))) {

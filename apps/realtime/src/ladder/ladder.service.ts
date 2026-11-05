@@ -25,6 +25,7 @@ import {
   selectLadderQuestionCandidate,
 } from './ladder-question-selection.js';
 import { loadLadderQuestionCandidates } from './ladder-question-bank.js';
+import { loadCompetitionQuestions } from './ladder-competition.js';
 import { resolveLadderWinner, scoreLadderAnswer } from './ladder-scoring.js';
 
 type LadderGuestIdentity = {
@@ -151,21 +152,25 @@ export class LadderService {
   ): Promise<LadderRoomRuntime | null> {
     const normalizedRoom = this.normalizeQuestionState(room);
     const difficulty = getLadderDifficulty(roundNumber, room.totalRounds);
-    const candidates = await loadLadderQuestionCandidates(
-      this.database,
-      normalizedRoom,
-      difficulty,
-    );
-    const selection = selectLadderQuestionCandidate({
-      candidates,
-      targetDifficulty: difficulty,
-      usedQuestionIds: normalizedRoom.usedQuestionIds ?? [],
-      usedQuestionFingerprints: normalizedRoom.usedQuestionFingerprints ?? [],
-      recentCategoryIds: normalizedRoom.recentCategoryIds ?? [],
-    });
-    if (!selection) return null;
-
-    const { candidate } = selection;
+    const candidate = normalizedRoom.competitionMode
+      ? normalizedRoom.competitionQuestions?.[roundNumber - 1]
+      : selectLadderQuestionCandidate({
+          candidates: await loadLadderQuestionCandidates(
+            this.database,
+            normalizedRoom,
+            difficulty,
+          ),
+          targetDifficulty: difficulty,
+          usedQuestionIds: normalizedRoom.usedQuestionIds ?? [],
+          usedQuestionFingerprints:
+            normalizedRoom.usedQuestionFingerprints ?? [],
+          recentCategoryIds: normalizedRoom.recentCategoryIds ?? [],
+        })?.candidate;
+    if (
+      !candidate ||
+      (normalizedRoom.competitionMode && candidate.difficulty !== difficulty)
+    )
+      return null;
     const openedAt = Date.now();
     const automaticTimes = { EASY: 15, MEDIUM: 20, HARD: 25 } as const;
     const timeLimit = room.automaticQuestionTime
@@ -415,6 +420,13 @@ export class LadderService {
       questionTimeLimit: input.questionTimeLimit ?? 30,
       automaticQuestionTime: input.questionTimeLimit === undefined,
       quizId: input.quizId ?? null,
+      competitionMode: input.competitionMode === true,
+      ...(input.competitionMode && input.competitionId
+        ? {
+            competitionId: input.competitionId.toUpperCase(),
+            competitionReservationId: randomUUID(),
+          }
+        : {}),
       currentQuestion: null,
       usedQuestionIds: [],
       usedQuestionFingerprints: [],
@@ -590,13 +602,47 @@ export class LadderService {
         };
       }
 
+      let preparedRoom = room;
+      if (room.competitionMode) {
+        try {
+          if (!room.competitionId || !room.competitionReservationId)
+            throw new Error('Missing competition identity');
+          const packs = await Promise.all(
+            Array.from({ length: 8 }, (_, index) =>
+              loadCompetitionQuestions(this.database, index),
+            ),
+          );
+          const packIndex = await this.redis.reserveLadderCompetitionPack(
+            room.hostId,
+            room.competitionId,
+            room.competitionReservationId,
+          );
+          if (packIndex === null)
+            return {
+              ok: false,
+              code: 'COMPETITION_EXHAUSTED',
+              message:
+                'استُخدمت مجموعات هذا الرمز الثماني. أنشئ رمز مسابقة جديدًا لمجموعة أخرى.',
+            };
+          preparedRoom = {
+            ...room,
+            competitionQuestions: packs[packIndex],
+          };
+        } catch {
+          return {
+            ok: false,
+            code: 'COMPETITION_QUESTIONS_UNAVAILABLE',
+            message: 'تعذّر تجهيز الأسئلة المدققة كاملة. لم تبدأ المواجهة.',
+          };
+        }
+      }
       const startedAt = Date.now();
       if (
         introVersion === 1 &&
         room.teams.every((team) => team.introVersion === 1)
       ) {
         const intro = await this.saveRoom(roomCode, {
-          ...this.closeCurrentQuestion(room),
+          ...this.closeCurrentQuestion(preparedRoom),
           status: 'intro',
           currentRound: 0,
           introStartedAt: startedAt,
@@ -609,7 +655,7 @@ export class LadderService {
       try {
         roomWithQuestion = await this.openQuestion(
           {
-            ...room,
+            ...preparedRoom,
             status: 'active',
             totalRounds: 10,
             winningPosition: 10,

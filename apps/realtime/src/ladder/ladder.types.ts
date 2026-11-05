@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { LadderQuestionCandidate } from './ladder-question-selection.js';
 import type {
   LadderQuestionDifficulty,
   LadderRoundResult,
@@ -24,8 +25,15 @@ export const createLadderRoomPayloadSchema = z
     winningPosition: z.literal(10).default(10),
     questionTimeLimit: z.number().int().min(20).max(60).optional(),
     quizId: z.string().trim().min(1).max(64).optional(),
+    competitionMode: z.boolean().optional(),
+    competitionId: z
+      .string()
+      .trim()
+      .regex(/^[A-Z0-9_-]{4,32}$/i)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => !value.competitionMode || Boolean(value.competitionId));
 
 export const joinLadderRoomPayloadSchema = z
   .object({
@@ -106,6 +114,10 @@ export type ServerToClientLadderEvents = {
 };
 
 export type LadderRoomRuntime = LadderRoom & {
+  competitionMode?: boolean;
+  competitionId?: string;
+  competitionReservationId?: string;
+  competitionQuestions?: LadderQuestionCandidate[];
   automaticQuestionTime?: boolean;
   winner?: 'right' | 'left' | null;
   winnerMethod?: 'position' | 'score' | 'time' | 'lottery' | null;

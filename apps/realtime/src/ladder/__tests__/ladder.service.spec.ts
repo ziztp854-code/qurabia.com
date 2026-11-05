@@ -9,6 +9,9 @@ import type { LadderRoomRuntime } from '../ladder.types.js';
 import { DatabaseService } from '../../game/database.service.js';
 import { RedisService } from '../../game/redis.service.js';
 import { LadderService } from '../ladder.service.js';
+import { COMPETITION_FIXTURE } from './competition-fixture.js';
+import * as privateBank from '../ladder-private-bank.js';
+const REVIEWED_COMPETITION_QUESTIONS = COMPETITION_FIXTURE.sets[0];
 
 type FindManyQuery = {
   take: number;
@@ -40,6 +43,7 @@ describe('LadderService', () => {
     acquireLadderRoomLock: jest.fn(),
     releaseLadderRoomLock: jest.fn(),
     consumeRateLimit: jest.fn(),
+    reserveLadderCompetitionPack: jest.fn(),
   } as unknown as jest.Mocked<RedisService>;
 
   const publishedQuestion = (
@@ -125,6 +129,9 @@ describe('LadderService', () => {
   };
 
   beforeEach(async () => {
+    jest
+      .spyOn(privateBank, 'readPrivateCompetitionBank')
+      .mockReturnValue(COMPETITION_FIXTURE);
     findManyQuestions = jest.fn();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -143,6 +150,7 @@ describe('LadderService', () => {
     redis.acquireLadderRoomLock.mockResolvedValue(true);
     redis.releaseLadderRoomLock.mockResolvedValue(undefined);
     redis.saveLadderRoom.mockResolvedValue(1);
+    redis.reserveLadderCompetitionPack.mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -180,6 +188,138 @@ describe('LadderService', () => {
       ],
       createdAt: 0,
       updatedAt: 0,
+    });
+
+    it('checks all reviewed questions before starting a competition and never exposes the future answers', async () => {
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waitingRoom(),
+        competitionMode: true,
+        competitionId: 'TEST2026',
+        competitionReservationId: 'room-uuid',
+      });
+      findManyQuestions.mockResolvedValue(
+        REVIEWED_COMPETITION_QUESTIONS.slice(1),
+      );
+      const shortage = await service.startGame('AB12CD34', 'guest_right');
+      expect(shortage).toMatchObject({
+        ok: false,
+        code: 'COMPETITION_QUESTIONS_UNAVAILABLE',
+      });
+      expect(redis.saveLadderRoom).not.toHaveBeenCalled();
+      findManyQuestions.mockResolvedValue(REVIEWED_COMPETITION_QUESTIONS);
+      const started = await service.startGame('AB12CD34', 'guest_right');
+      expect(started.ok).toBe(true);
+      if (!started.ok) throw new Error(started.code);
+      const snapshot = service.buildSnapshot(started.room);
+      expect(JSON.stringify(snapshot)).not.toContain('competitionQuestions');
+      expect(JSON.stringify(snapshot)).not.toContain('isCorrect');
+      expect(started.room.currentQuestion?.difficulty).toBe('EASY');
+    });
+
+    it('plays all ten reviewed questions with shared views, correct scoring and no repetitions', async () => {
+      let now = 100_000;
+      jest.spyOn(Date, 'now').mockImplementation(() => now);
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waitingRoom(),
+        competitionMode: true,
+        competitionId: 'TEST2026',
+        competitionReservationId: 'room-uuid',
+      });
+      findManyQuestions.mockResolvedValue(REVIEWED_COMPETITION_QUESTIONS);
+      const started = await service.startGame('AB12CD34', 'guest_right');
+      if (!started.ok) throw new Error(started.code);
+      let room = started.room;
+      const questions: string[] = [];
+      const levels: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        const q = room.currentQuestion!;
+        questions.push(q.id);
+        levels.push(q.difficulty);
+        const right = service.buildSnapshot(room, 'right', 'guest_right');
+        const left = service.buildSnapshot(room, 'left', 'guest_left');
+        expect(right.currentQuestion).toEqual(left.currentQuestion);
+        const correct = room.currentCorrectOptionId!;
+        redis.loadLadderRoom.mockResolvedValue(room);
+        const first = await service.submitAnswer(
+          'guest_right',
+          room.roomCode,
+          q.id,
+          correct,
+          now + 100,
+        );
+        if (!first.ok) throw new Error(first.code);
+        redis.loadLadderRoom.mockResolvedValue(first.room);
+        const second = await service.submitAnswer(
+          'guest_left',
+          room.roomCode,
+          q.id,
+          correct,
+          now + 200,
+        );
+        if (!second.ok) throw new Error(second.code);
+        expect(second.room.roundResult?.correctOptionId).toBe(correct);
+        expect(second.room.roundResult?.right.correct).toBe(true);
+        expect(second.room.roundResult?.left.correct).toBe(true);
+        now += 5_000;
+        redis.loadLadderRoom.mockResolvedValue(second.room);
+        const next = await service.advanceRound(room.roomCode, q.id);
+        if (!next.ok) throw new Error(next.code);
+        room = next.room;
+      }
+      expect(new Set(questions).size).toBe(10);
+      expect(levels).toEqual([
+        'EASY',
+        'EASY',
+        'EASY',
+        'MEDIUM',
+        'MEDIUM',
+        'MEDIUM',
+        'HARD',
+        'HARD',
+        'HARD',
+        'HARD',
+      ]);
+      expect(room.status).toBe('finished');
+      expect(room.roundHistory).toHaveLength(10);
+    });
+
+    it('refuses a ninth room for the same competition without reusing questions', async () => {
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waitingRoom(),
+        competitionMode: true,
+        competitionId: 'TEST2026',
+        competitionReservationId: 'room-uuid',
+      });
+      findManyQuestions.mockResolvedValue(REVIEWED_COMPETITION_QUESTIONS);
+      redis.reserveLadderCompetitionPack.mockResolvedValue(null);
+      const result = await service.startGame('AB12CD34', 'guest_right');
+      expect(result).toMatchObject({
+        ok: false,
+        code: 'COMPETITION_EXHAUSTED',
+      });
+      expect(redis.saveLadderRoom).not.toHaveBeenCalled();
+    });
+
+    it('opens the second allocated set without reusing the first set', async () => {
+      redis.loadLadderRoom.mockResolvedValue({
+        ...waitingRoom(),
+        competitionMode: true,
+        competitionId: 'TEST2026',
+        competitionReservationId: 'second-room-uuid',
+      });
+      findManyQuestions.mockResolvedValue(REVIEWED_COMPETITION_QUESTIONS);
+      redis.reserveLadderCompetitionPack.mockResolvedValue(1);
+      const result = await service.startGame('AB12CD34', 'guest_right');
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.code);
+      expect(result.room.competitionQuestions).toHaveLength(10);
+      expect(
+        result.room.competitionQuestions!.every(
+          (q) =>
+            !REVIEWED_COMPETITION_QUESTIONS.some((first) => first.id === q.id),
+        ),
+      ).toBe(true);
+      expect(result.room.currentQuestion?.id).toMatch(/^fixture-1-/);
     });
 
     it('holds the first question until the shared intro deadline', async () => {

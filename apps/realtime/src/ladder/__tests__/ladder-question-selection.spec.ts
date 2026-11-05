@@ -27,7 +27,8 @@ describe('Ladder question selection policy', () => {
       [1, 'EASY'],
       [3, 'EASY'],
       [4, 'MEDIUM'],
-      [7, 'MEDIUM'],
+      [6, 'MEDIUM'],
+      [7, 'HARD'],
       [8, 'HARD'],
       [10, 'HARD'],
     ] as const)('maps round %s of 10 to %s', (round, expected) => {
