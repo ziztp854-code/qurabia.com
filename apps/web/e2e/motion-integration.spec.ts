@@ -102,6 +102,24 @@ test('wheel, touch and keyboard preserve natural scroll and independent panels',
   const previous = await page.evaluate(() => scrollY);
   await page.keyboard.press('PageDown');
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(previous + 100);
+  // PageDown can still be animating after it has crossed the threshold above.
+  // Wait until native scrolling settles before checking the next key independently.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let timer: number;
+        const finish = () => {
+          window.removeEventListener('scroll', onScroll);
+          resolve();
+        };
+        const onScroll = () => {
+          window.clearTimeout(timer);
+          timer = window.setTimeout(finish, 200);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }),
+  );
   await page.keyboard.press('Home');
   await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(5);
   await page.evaluate(() => {
