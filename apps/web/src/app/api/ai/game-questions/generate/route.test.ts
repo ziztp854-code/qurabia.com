@@ -21,7 +21,10 @@ vi.mock('@/lib/auth/prisma', () => ({
 }));
 vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: mocks.rate }));
 vi.mock('@/lib/subscription/entitlements', () => ({ consumeQuota: mocks.quota }));
-vi.mock('@/lib/ai/game-question-refresh', () => ({ generateFreshGameQuestions: mocks.generate }));
+vi.mock('@/lib/ai/game-question-refresh', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/ai/game-question-refresh')>()),
+  generateFreshGameQuestions: mocks.generate,
+}));
 vi.mock('@/lib/quiz/room-code', () => ({ generateUniqueActivityRoomCode: async () => 'ABC123' }));
 import { POST } from './route';
 
@@ -37,6 +40,8 @@ describe('game question refresh API', () => {
     vi.clearAllMocks();
     vi.stubEnv('XAI_API_KEY', 'test-only');
     vi.stubEnv('XAI_DISABLED', 'false');
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    vi.stubEnv('VERCEL', '');
     vi.stubEnv('NEXTAUTH_URL', 'http://localhost');
     mocks.database.mockReturnValue(true);
     mocks.session.mockResolvedValue({ user: { id: 'user-1', tokenVersion: 1 } });
@@ -108,6 +113,12 @@ describe('game question refresh API', () => {
     expect(response.headers.get('cache-control')).toContain('no-store');
     expect((await response.json()).questions).toHaveLength(1);
     expect(mocks.transaction).not.toHaveBeenCalled();
+  });
+  it('accepts a configured gateway without a direct xAI key', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-test');
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.generate).toHaveBeenCalledOnce();
   });
   it('creates a private owned ladder pack outside the public tagged bank', async () => {
     const response = await POST(request('ladder'));

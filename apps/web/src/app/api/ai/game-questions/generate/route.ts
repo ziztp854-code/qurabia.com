@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { gameQuestionRefreshInputSchema } from '@/lib/ai/game-question-refresh-contract';
-import { generateFreshGameQuestions } from '@/lib/ai/game-question-refresh';
+import {
+  generateFreshGameQuestions,
+  isGameQuestionGenerationConfigured,
+} from '@/lib/ai/game-question-refresh';
 import { GameContentGenerationError } from '@/lib/ai/game-content-generation';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { getCurrentSession, isSessionUserCurrent } from '@/lib/auth/session';
@@ -75,7 +78,7 @@ export async function POST(request: Request) {
       { ok: false, message: 'انتهت الجلسة. سجّل الدخول مجددًا.' },
       { status: 401 },
     );
-  if (process.env.XAI_DISABLED === 'true' || !process.env.XAI_API_KEY)
+  if (!isGameQuestionGenerationConfigured())
     return NextResponse.json(
       { ok: false, message: 'خدمة توليد الأسئلة غير متاحة حاليًا.' },
       { status: 503 },

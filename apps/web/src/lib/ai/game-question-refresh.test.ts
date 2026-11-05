@@ -28,6 +28,10 @@ describe('fresh game question generation', () => {
     vi.clearAllMocks();
     vi.stubEnv('XAI_API_KEY', 'test-only');
     vi.stubEnv('XAI_DISABLED', 'false');
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    vi.stubEnv('VERCEL', '');
+    vi.stubEnv('AI_QUESTIONS_MODEL', '');
+    vi.stubEnv('AI_GATEWAY_MODEL', '');
   });
   afterEach(() => vi.unstubAllEnvs());
   it('generates a complete validated ladder of levels without provider storage', async () => {
@@ -48,6 +52,31 @@ describe('fresh game question generation', () => {
       generateFreshGameQuestions({ game: 'millionaire', topic: 'ثقافة عامة' }),
     ).rejects.toMatchObject({ code: 'CONFIG' });
     expect(mocks.generateText).not.toHaveBeenCalled();
+  });
+  it('uses the configured gateway without an xAI key', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-test');
+    vi.stubEnv('AI_QUESTIONS_MODEL', 'xai/test-model');
+    const questions = Array.from({ length: 15 }, (_, index) => question(index + 1));
+    mocks.generateText.mockResolvedValue({ output: { questions } });
+    expect(await generateFreshGameQuestions({ game: 'millionaire', topic: 'ثقافة عامة' })).toEqual(
+      questions,
+    );
+    expect(mocks.generateText).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'xai/test-model' }),
+    );
+    expect(mocks.responses).not.toHaveBeenCalled();
+  });
+  it('falls back to direct xAI when gateway generation fails', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-test');
+    const questions = Array.from({ length: 15 }, (_, index) => question(index + 1));
+    mocks.generateText
+      .mockRejectedValueOnce(new Error('gateway unavailable'))
+      .mockResolvedValueOnce({ output: { questions } });
+    expect(await generateFreshGameQuestions({ game: 'millionaire', topic: 'ثقافة عامة' })).toEqual(
+      questions,
+    );
+    expect(mocks.responses).toHaveBeenCalledOnce();
   });
   it('rejects repeated questions, old prompts, incomplete levels, and mismatched answers', () => {
     const input = { game: 'millionaire' as const, topic: 'ثقافة عامة', excludePrompts: [] };
