@@ -99,6 +99,59 @@ describe('fresh game question generation', () => {
     expect(mocks.generateText).toHaveBeenCalledTimes(1);
     expect(mocks.responses).not.toHaveBeenCalled();
   });
+  it('logs only a safe provider error class and HTTP status', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = Object.assign(new Error('private provider response'), {
+      name: 'AI_APICallError',
+      statusCode: 429,
+      responseBody: 'private provider response',
+    });
+    mocks.generateText.mockRejectedValue(error);
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'private user topic' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledOnce();
+    expect(log).toHaveBeenCalledWith('[game-questions-openrouter]', {
+      stage: 'generation',
+      errorClass: 'AI_APICallError',
+      statusCode: 429,
+    });
+    log.mockRestore();
+  });
+  it('logs validation failure without recording generated question text', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.generateText.mockResolvedValue({ output: { questions: [question(1)] } });
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'private user topic' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledOnce();
+    expect(log).toHaveBeenCalledWith('[game-questions-openrouter]', {
+      stage: 'validation',
+      errorClass: 'ZodError',
+      statusCode: null,
+    });
+    log.mockRestore();
+  });
+  it('does not log arbitrary error names or invalid status values', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = Object.assign(new Error('private data'), {
+      name: 'private user content',
+      statusCode: 'private response',
+    });
+    mocks.generateText.mockRejectedValue(error);
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'private user topic' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledWith('[game-questions-openrouter]', {
+      stage: 'generation',
+      errorClass: 'Unknown',
+      statusCode: null,
+    });
+    log.mockRestore();
+  });
   it('keeps other games on their existing provider when OpenRouter is configured', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
     const questions = Array.from({ length: 15 }, (_, index) => question(index + 1));
