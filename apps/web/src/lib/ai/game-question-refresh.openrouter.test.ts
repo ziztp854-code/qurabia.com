@@ -50,6 +50,8 @@ describe('OpenRouter request for ladder questions', () => {
     expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
     const body = JSON.parse(String(request.body));
     expect(body.model).toBe('openrouter/free');
+    expect(body.reasoning).toEqual({ enabled: false });
+    expect(body.max_tokens).toBe(8192);
     expect(body.response_format.type).toBe('json_schema');
     expect(body.response_format.json_schema.schema).toBeDefined();
   });

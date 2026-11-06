@@ -62,6 +62,7 @@ describe('fresh game question generation', () => {
     expect(mocks.generateText).not.toHaveBeenCalled();
   });
   it('generates a validated ladder with the free OpenRouter model', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
     vi.stubEnv('XAI_API_KEY', '');
     vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
     const questions = Array.from({ length: 24 }, (_, index) => question(index + 1));
@@ -78,7 +79,15 @@ describe('fresh game question generation', () => {
       }),
     );
     expect(mocks.openrouterModel).toHaveBeenCalledWith('openrouter/free');
+    expect(mocks.generateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxOutputTokens: 8192,
+        providerOptions: { openrouter: { reasoning: { enabled: false } } },
+      }),
+    );
     expect(mocks.responses).not.toHaveBeenCalled();
+    expect(timeout).toHaveBeenCalledWith(80_000);
+    timeout.mockRestore();
   });
   it('does not fall back to a paid provider when free OpenRouter fails', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');

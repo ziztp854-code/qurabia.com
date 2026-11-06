@@ -158,7 +158,9 @@ export async function generateFreshGameQuestions(
         model: openrouter('openrouter/free'),
         output: Output.object({ schema: generatedGameQuestionsSchema }),
         prompt,
-        abortSignal: AbortSignal.timeout(60_000),
+        maxOutputTokens: 8192,
+        providerOptions: { openrouter: { reasoning: { enabled: false } } },
+        abortSignal: AbortSignal.timeout(80_000),
       });
       return validateGameQuestionBatch(
         input,
