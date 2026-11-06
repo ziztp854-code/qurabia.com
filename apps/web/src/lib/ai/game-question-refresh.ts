@@ -12,6 +12,31 @@ import {
 } from './game-question-refresh-contract';
 import type { z } from 'zod';
 
+function logOpenRouterFailure(stage: 'generation' | 'validation', error: unknown) {
+  const allowedClasses = new Set([
+    'AI_APICallError',
+    'AI_NoObjectGeneratedError',
+    'AI_TypeValidationError',
+    'AI_InvalidArgumentError',
+    'AI_RetryError',
+    'TimeoutError',
+    'AbortError',
+    'ZodError',
+    'Error',
+  ]);
+  const name = error instanceof Error ? error.name : '';
+  const status =
+    error && typeof error === 'object' && 'statusCode' in error ? error.statusCode : null;
+  console.error('[game-questions-openrouter]', {
+    stage,
+    errorClass: allowedClasses.has(name) ? name : 'Unknown',
+    statusCode:
+      typeof status === 'number' && Number.isInteger(status) && status >= 100 && status <= 599
+        ? status
+        : null,
+  });
+}
+
 export function isGameQuestionGenerationConfigured(
   game: z.infer<typeof gameQuestionRefreshInputSchema>['game'],
 ) {
@@ -148,24 +173,31 @@ export async function generateFreshGameQuestions(
   try {
     const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
     if (input.game === 'ladder' && openrouterKey) {
-      const openrouter = createOpenAICompatible({
-        name: 'openrouter',
-        baseURL: 'https://openrouter.ai/api/v1',
-        apiKey: openrouterKey,
-        supportsStructuredOutputs: true,
-      });
-      const result = await generateText({
-        model: openrouter('openrouter/free'),
-        output: Output.object({ schema: generatedGameQuestionsSchema }),
-        prompt,
-        maxOutputTokens: 8192,
-        providerOptions: { openrouter: { reasoning: { enabled: false } } },
-        abortSignal: AbortSignal.timeout(80_000),
-      });
-      return validateGameQuestionBatch(
-        input,
-        generatedGameQuestionsSchema.parse(result.output).questions,
-      );
+      let stage: 'generation' | 'validation' = 'generation';
+      try {
+        const openrouter = createOpenAICompatible({
+          name: 'openrouter',
+          baseURL: 'https://openrouter.ai/api/v1',
+          apiKey: openrouterKey,
+          supportsStructuredOutputs: true,
+        });
+        const result = await generateText({
+          model: openrouter('openrouter/free'),
+          output: Output.object({ schema: generatedGameQuestionsSchema }),
+          prompt,
+          maxOutputTokens: 8192,
+          providerOptions: { openrouter: { reasoning: { enabled: false } } },
+          abortSignal: AbortSignal.timeout(80_000),
+        });
+        stage = 'validation';
+        return validateGameQuestionBatch(
+          input,
+          generatedGameQuestionsSchema.parse(result.output).questions,
+        );
+      } catch (error) {
+        logOpenRouterFailure(stage, error);
+        throw error;
+      }
     }
     if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL) {
       try {
