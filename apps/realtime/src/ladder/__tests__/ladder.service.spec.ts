@@ -452,7 +452,7 @@ describe('LadderService', () => {
       }
     });
 
-    it('uses the host minimum question time when a bank question is faster', async () => {
+    it('uses the host selected question time when a bank question is faster', async () => {
       const room = waitingRoom();
       room.questionTimeLimit = 30;
       redis.loadLadderRoom.mockResolvedValue(room);
@@ -467,6 +467,24 @@ describe('LadderService', () => {
         expect(result.room.currentQuestion?.timeLimit).toBe(30);
         expect(result.room.questionDeadlineAt).toBe(
           result.room.questionOpenedAt! + 30_000,
+        );
+      }
+    });
+
+    it('uses the time selected by the host even when the bank question allows longer', async () => {
+      const room = { ...waitingRoom(), questionTimeLimit: 20 };
+      redis.loadLadderRoom.mockResolvedValue(room);
+      findManyQuestions.mockResolvedValue([
+        { ...publishedQuestion('longer-bank-time', 4), timeLimit: 60 },
+      ]);
+
+      const result = await service.startGame('AB12CD34', 'guest_right');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.room.currentQuestion?.timeLimit).toBe(20);
+        expect(result.room.questionDeadlineAt).toBe(
+          result.room.questionOpenedAt! + 20_000,
         );
       }
     });
