@@ -29,9 +29,12 @@ const question = (index: number): GeneratedGameQuestion => ({
   slot: index,
   difficulty: 'EASY',
 });
+const ladderBatch = (difficulty: 'EASY' | 'MEDIUM' | 'HARD', offset: number) =>
+  Array.from({ length: 8 }, (_, i) => ({ ...question(offset + i + 1), difficulty }));
 describe('fresh game question generation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.generateText.mockReset();
     vi.stubEnv('XAI_API_KEY', 'test-only');
     vi.stubEnv('XAI_DISABLED', 'false');
     vi.stubEnv('AI_GATEWAY_API_KEY', '');
@@ -61,12 +64,80 @@ describe('fresh game question generation', () => {
     ).rejects.toMatchObject({ code: 'CONFIG' });
     expect(mocks.generateText).not.toHaveBeenCalled();
   });
+  it('combines three complete distinct difficulty batches', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    const questions = [
+      ...ladderBatch('EASY', 0),
+      ...ladderBatch('MEDIUM', 8),
+      ...ladderBatch('HARD', 16),
+    ];
+    mocks.generateText
+      .mockReset()
+      .mockResolvedValueOnce({ finishReason: 'stop', output: { questions: questions.slice(0, 8) } })
+      .mockResolvedValueOnce({
+        finishReason: 'stop',
+        output: { questions: questions.slice(8, 16) },
+      })
+      .mockResolvedValueOnce({ finishReason: 'stop', output: { questions: questions.slice(16) } });
+    expect(await generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' })).toEqual(
+      questions,
+    );
+    expect(mocks.generateText).toHaveBeenCalledTimes(3);
+  });
+  it.each(['length', 'incomplete', 'duplicate', 'difficulty'])(
+    'rejects a %s batch without returning partial questions',
+    async (failure) => {
+      vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const easy = ladderBatch('EASY', 0);
+      const medium = ladderBatch('MEDIUM', 8);
+      const hard = ladderBatch('HARD', 16);
+      if (failure === 'duplicate') medium[0] = { ...medium[0]!, prompt: easy[0]!.prompt };
+      if (failure === 'difficulty') hard[0] = { ...hard[0]!, difficulty: 'MEDIUM' };
+      mocks.generateText
+        .mockReset()
+        .mockResolvedValueOnce({
+          finishReason: failure === 'length' ? 'length' : 'stop',
+          usage: { outputTokens: 8192 },
+          output: { questions: easy },
+        })
+        .mockResolvedValueOnce({
+          finishReason: 'stop',
+          output: { questions: failure === 'incomplete' ? medium.slice(0, 7) : medium },
+        })
+        .mockResolvedValueOnce({ finishReason: 'stop', output: { questions: hard } });
+      await expect(
+        generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
+      ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+      expect(mocks.generateText).toHaveBeenCalledTimes(3);
+      expect(mocks.responses).not.toHaveBeenCalled();
+      if (failure === 'length')
+        expect(log).toHaveBeenCalledWith('[game-questions-openrouter]', {
+          stage: 'validation',
+          errorClass: 'Error',
+          statusCode: null,
+          finishReason: 'length',
+          outputTokens: 8192,
+        });
+      log.mockRestore();
+    },
+  );
   it('generates a validated ladder with the free OpenRouter model', async () => {
     const timeout = vi.spyOn(AbortSignal, 'timeout');
     vi.stubEnv('XAI_API_KEY', '');
     vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
-    const questions = Array.from({ length: 24 }, (_, index) => question(index + 1));
-    mocks.generateText.mockResolvedValue({ output: { questions } });
+    const questions = [
+      ...ladderBatch('EASY', 0),
+      ...ladderBatch('MEDIUM', 8),
+      ...ladderBatch('HARD', 16),
+    ];
+    mocks.generateText
+      .mockResolvedValueOnce({ finishReason: 'stop', output: { questions: questions.slice(0, 8) } })
+      .mockResolvedValueOnce({
+        finishReason: 'stop',
+        output: { questions: questions.slice(8, 16) },
+      })
+      .mockResolvedValueOnce({ finishReason: 'stop', output: { questions: questions.slice(16) } });
     expect(await generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' })).toEqual(
       questions,
     );
@@ -78,10 +149,12 @@ describe('fresh game question generation', () => {
         supportsStructuredOutputs: true,
       }),
     );
+    expect(mocks.openrouterModel).toHaveBeenCalledTimes(3);
     expect(mocks.openrouterModel).toHaveBeenCalledWith('openrouter/free');
     expect(mocks.generateText).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 8192,
+        maxRetries: 0,
         providerOptions: { openrouter: { reasoning: { enabled: false } } },
       }),
     );
@@ -96,8 +169,30 @@ describe('fresh game question generation', () => {
     await expect(
       generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
     ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
-    expect(mocks.generateText).toHaveBeenCalledTimes(1);
+    expect(mocks.generateText).toHaveBeenCalledTimes(3);
     expect(mocks.responses).not.toHaveBeenCalled();
+  });
+  it('cancels the shared signal when one batch fails', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.generateText
+      .mockReset()
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+      .mockResolvedValueOnce({
+        finishReason: 'stop',
+        output: { questions: ladderBatch('MEDIUM', 8) },
+      })
+      .mockResolvedValueOnce({
+        finishReason: 'stop',
+        output: { questions: ladderBatch('HARD', 16) },
+      });
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    const signals = mocks.generateText.mock.calls.map(([args]) => args.abortSignal as AbortSignal);
+    expect(signals).toHaveLength(3);
+    expect(signals.every((signal) => signal === signals[0] && signal.aborted)).toBe(true);
+    log.mockRestore();
   });
   it('logs only a safe provider error class and HTTP status', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
@@ -116,6 +211,8 @@ describe('fresh game question generation', () => {
       stage: 'generation',
       errorClass: 'AI_APICallError',
       statusCode: 429,
+      finishReason: null,
+      outputTokens: null,
     });
     log.mockRestore();
   });
@@ -131,6 +228,8 @@ describe('fresh game question generation', () => {
       stage: 'validation',
       errorClass: 'ZodError',
       statusCode: null,
+      finishReason: null,
+      outputTokens: null,
     });
     log.mockRestore();
   });
@@ -149,6 +248,8 @@ describe('fresh game question generation', () => {
       stage: 'generation',
       errorClass: 'Unknown',
       statusCode: null,
+      finishReason: null,
+      outputTokens: null,
     });
     log.mockRestore();
   });

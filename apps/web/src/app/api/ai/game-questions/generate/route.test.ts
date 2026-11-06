@@ -142,4 +142,11 @@ describe('game question refresh API', () => {
       }),
     );
   });
+  it('does not create a partial ladder pack when generation fails', async () => {
+    mocks.generate.mockRejectedValueOnce(new Error('generation failed'));
+    const response = await POST(request('ladder'));
+    expect(response.status).toBe(502);
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.quiz).not.toHaveBeenCalled();
+  });
 });

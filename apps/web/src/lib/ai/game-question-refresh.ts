@@ -7,15 +7,26 @@ import { GameContentGenerationError } from './game-content-generation';
 import {
   AI_QUESTION_COUNTS,
   gameQuestionRefreshInputSchema,
+  generatedGameQuestionSchema,
   generatedGameQuestionsSchema,
   type GeneratedGameQuestion,
 } from './game-question-refresh-contract';
-import type { z } from 'zod';
+import { z } from 'zod';
 
-function logOpenRouterFailure(stage: 'generation' | 'validation', error: unknown) {
+const ladderBatchSchema = z
+  .object({ questions: z.array(generatedGameQuestionSchema).length(8) })
+  .strict();
+
+function logOpenRouterFailure(
+  stage: 'generation' | 'validation',
+  error: unknown,
+  finishReason: string | null,
+  outputTokens: number | null,
+) {
   const allowedClasses = new Set([
     'AI_APICallError',
     'AI_NoObjectGeneratedError',
+    'AI_NoOutputGeneratedError',
     'AI_TypeValidationError',
     'AI_InvalidArgumentError',
     'AI_RetryError',
@@ -34,6 +45,8 @@ function logOpenRouterFailure(stage: 'generation' | 'validation', error: unknown
       typeof status === 'number' && Number.isInteger(status) && status >= 100 && status <= 599
         ? status
         : null,
+    finishReason,
+    outputTokens,
   });
 }
 
@@ -174,6 +187,8 @@ export async function generateFreshGameQuestions(
     const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
     if (input.game === 'ladder' && openrouterKey) {
       let stage: 'generation' | 'validation' = 'generation';
+      let finishReason: string | null = null;
+      let outputTokens: number | null = null;
       try {
         const openrouter = createOpenAICompatible({
           name: 'openrouter',
@@ -181,21 +196,61 @@ export async function generateFreshGameQuestions(
           apiKey: openrouterKey,
           supportsStructuredOutputs: true,
         });
-        const result = await generateText({
-          model: openrouter('openrouter/free'),
-          output: Output.object({ schema: generatedGameQuestionsSchema }),
-          prompt,
-          maxOutputTokens: 8192,
-          providerOptions: { openrouter: { reasoning: { enabled: false } } },
-          abortSignal: AbortSignal.timeout(80_000),
-        });
+        const controller = new AbortController();
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(80_000)]);
+        const difficulties = ['EASY', 'MEDIUM', 'HARD'] as const;
+        const results = await Promise.all(
+          difficulties.map((difficulty) =>
+            generateText({
+              model: openrouter('openrouter/free'),
+              output: Output.object({ schema: ladderBatchSchema }),
+              prompt: prompt.replace(
+                `العدد: 24. ${instructions.ladder}`,
+                `العدد: 8. أنشئ ثمانية أسئلة مختلفة لمستوى الصعوبة ${difficulty} فقط، واجعل difficulty لكل سؤال ${difficulty}، ولكل سؤال أربعة خيارات فريدة.`,
+              ),
+              maxOutputTokens: 8192,
+              maxRetries: 0,
+              providerOptions: { openrouter: { reasoning: { enabled: false } } },
+              abortSignal: signal,
+            }).catch((error: unknown) => {
+              controller.abort();
+              throw error;
+            }),
+          ),
+        );
         stage = 'validation';
+        const questions = results.flatMap((result, index) => {
+          const allowedFinishReasons = [
+            'stop',
+            'length',
+            'content-filter',
+            'tool-calls',
+            'error',
+            'other',
+            'unknown',
+          ];
+          finishReason = allowedFinishReasons.includes(result.finishReason)
+            ? result.finishReason
+            : null;
+          const tokens = result.usage?.outputTokens;
+          outputTokens =
+            typeof tokens === 'number' && Number.isSafeInteger(tokens) && tokens >= 0
+              ? tokens
+              : null;
+          if (result.finishReason === 'length') throw new Error('Incomplete generation');
+          const batch = ladderBatchSchema.parse(result.output).questions;
+          if (batch.some((question) => question.difficulty !== difficulties[index]))
+            throw new Error('Invalid difficulty');
+          return batch;
+        });
+        finishReason = null;
+        outputTokens = null;
         return validateGameQuestionBatch(
           input,
-          generatedGameQuestionsSchema.parse(result.output).questions,
+          generatedGameQuestionsSchema.parse({ questions }).questions,
         );
       } catch (error) {
-        logOpenRouterFailure(stage, error);
+        logOpenRouterFailure(stage, error, finishReason, outputTokens);
         throw error;
       }
     }
