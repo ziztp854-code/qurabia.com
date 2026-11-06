@@ -43,9 +43,13 @@ export function useAiGameQuestions(game: AiQuestionGame, prompts: readonly strin
 export function AiGameQuestionRefresh({
   game,
   children,
+  showExternalTopicNotice = false,
+  showGenerator = true,
 }: {
   game: AiQuestionGame;
   children?: ReactNode;
+  showExternalTopicNotice?: boolean;
+  showGenerator?: boolean;
 }) {
   const router = useRouter();
   const id = useId();
@@ -142,58 +146,65 @@ export function AiGameQuestionRefresh({
 
   return (
     <Context.Provider value={context}>
-      <section
-        className={`game-pack-picker ${styles.refresh}`}
-        aria-label="تجديد أسئلة اللعبة بالذكاء الاصطناعي"
-      >
-        <details>
-          <summary>جلب أسئلة جديدة بالذكاء الاصطناعي</summary>
-          <div className="stack-form">
-            <p>
-              استخدم هذا الخيار إذا سبق لعب الأسئلة. راجع المجموعة الجديدة ثم اعتمدها لبدء جولة
-              جديدة.
-            </p>
-            <Input
-              id={id}
-              label="موضوع الأسئلة الجديدة"
-              value={topic}
-              maxLength={120}
-              onChange={(event) => setTopic(event.target.value)}
-              disabled={loading}
-            />
-            <Button type="button" variant="outline" loading={loading} onClick={generate}>
-              <Sparkles aria-hidden="true" />
-              جلب أسئلة جديدة بالذكاء الاصطناعي
-            </Button>
-            {loading ? <p role="status">جارٍ جلب أسئلة جديدة…</p> : null}
-            {error ? <p role="alert">{error}</p> : null}
-            {active ? (
-              <p role="status">تم اعتماد {active.questions.length} سؤالًا جديدًا لهذه اللعبة.</p>
-            ) : null}
-            {draft ? (
-              <div className="notice-card">
-                <strong>{draft.questions.length} سؤالًا جديدًا للمراجعة</strong>
-                <details>
-                  <summary>مراجعة الأسئلة والإجابات</summary>
-                  <ol>
-                    {draft.questions.map((question, index) => (
-                      <li key={index}>
-                        {question.prompt}
-                        <p>الإجابة: {question.answer}</p>
-                      </li>
-                    ))}
-                  </ol>
-                </details>
-                <Button type="button" variant="gold" disabled={loading} onClick={approve}>
-                  {game === 'ladder' || game === 'elimination-live'
-                    ? 'اعتماد الأسئلة لغرفة جديدة'
-                    : 'اعتماد الأسئلة وبدء جولة جديدة'}
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        </details>
-      </section>
+      {showGenerator && (
+        <section
+          className={`game-pack-picker ${styles.refresh}`}
+          aria-label="تجديد أسئلة اللعبة بالذكاء الاصطناعي"
+        >
+          <details>
+            <summary>جلب أسئلة جديدة بالذكاء الاصطناعي</summary>
+            <div className="stack-form">
+              <p>
+                استخدم هذا الخيار إذا سبق لعب الأسئلة. راجع المجموعة الجديدة ثم اعتمدها لبدء جولة
+                جديدة.
+              </p>
+              <Input
+                id={id}
+                label="موضوع الأسئلة الجديدة"
+                description={
+                  showExternalTopicNotice
+                    ? 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
+                    : undefined
+                }
+                value={topic}
+                maxLength={120}
+                onChange={(event) => setTopic(event.target.value)}
+                disabled={loading}
+              />
+              <Button type="button" variant="outline" loading={loading} onClick={generate}>
+                <Sparkles aria-hidden="true" />
+                جلب أسئلة جديدة بالذكاء الاصطناعي
+              </Button>
+              {loading ? <p role="status">جارٍ جلب أسئلة جديدة…</p> : null}
+              {error ? <p role="alert">{error}</p> : null}
+              {active ? (
+                <p role="status">تم اعتماد {active.questions.length} سؤالًا جديدًا لهذه اللعبة.</p>
+              ) : null}
+              {draft ? (
+                <div className="notice-card">
+                  <strong>{draft.questions.length} سؤالًا جديدًا للمراجعة</strong>
+                  <details>
+                    <summary>مراجعة الأسئلة والإجابات</summary>
+                    <ol>
+                      {draft.questions.map((question, index) => (
+                        <li key={index}>
+                          {question.prompt}
+                          <p>الإجابة: {question.answer}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                  <Button type="button" variant="gold" disabled={loading} onClick={approve}>
+                    {game === 'ladder' || game === 'elimination-live'
+                      ? 'اعتماد الأسئلة لغرفة جديدة'
+                      : 'اعتماد الأسئلة وبدء جولة جديدة'}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </details>
+        </section>
+      )}
       <div key={active?.batchId ?? 'initial'}>{children}</div>
     </Context.Provider>
   );
