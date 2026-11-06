@@ -39,6 +39,7 @@ describe('game question refresh API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('XAI_API_KEY', 'test-only');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
     vi.stubEnv('XAI_DISABLED', 'false');
     vi.stubEnv('AI_GATEWAY_API_KEY', '');
     vi.stubEnv('VERCEL', '');
@@ -78,6 +79,14 @@ describe('game question refresh API', () => {
     mocks.session.mockResolvedValue(null);
     expect((await POST(request())).status).toBe(401);
     expect(mocks.generate).not.toHaveBeenCalled();
+  });
+  it('accepts OpenRouter configuration for ladder only', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    expect((await POST(request('millionaire'))).status).toBe(503);
+    expect(mocks.generate).not.toHaveBeenCalled();
+    expect((await POST(request('ladder'))).status).toBe(200);
+    expect(mocks.generate).toHaveBeenCalledOnce();
   });
 
   it('uses the configured canonical origin behind an internal upstream host', async () => {

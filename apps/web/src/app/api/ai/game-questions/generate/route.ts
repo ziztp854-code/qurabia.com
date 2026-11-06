@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       { ok: false, message: 'انتهت الجلسة. سجّل الدخول مجددًا.' },
       { status: 401 },
     );
-  if (!isGameQuestionGenerationConfigured())
+  if (!isGameQuestionGenerationConfigured(parsed.data.game))
     return NextResponse.json(
       { ok: false, message: 'خدمة توليد الأسئلة غير متاحة حاليًا.' },
       { status: 503 },

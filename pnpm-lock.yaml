@@ -296,6 +296,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@ai-sdk/openai-compatible':
+        specifier: ^2.0.64
+        version: 2.0.64(zod@4.6.6)
       '@ai-sdk/xai':
         specifier: ^3.0.115
         version: 3.0.115(zod@4.6.6)
