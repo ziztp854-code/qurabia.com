@@ -1,4 +1,5 @@
 import { xai } from '@ai-sdk/xai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { generateText, Output } from 'ai';
 import { BOARD_LETTERS } from '@/lib/letter-game/questions';
 import { foldKeyword } from '@/lib/questions/keywords';
@@ -11,10 +12,17 @@ import {
 } from './game-question-refresh-contract';
 import type { z } from 'zod';
 
-export function isGameQuestionGenerationConfigured() {
+export function isGameQuestionGenerationConfigured(
+  game: z.infer<typeof gameQuestionRefreshInputSchema>['game'],
+) {
   return (
     process.env.XAI_DISABLED !== 'true' &&
-    Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL || process.env.XAI_API_KEY)
+    Boolean(
+      (game === 'ladder' && process.env.OPENROUTER_API_KEY?.trim()) ||
+      process.env.AI_GATEWAY_API_KEY ||
+      process.env.VERCEL ||
+      process.env.XAI_API_KEY,
+    )
   );
 }
 
@@ -88,7 +96,7 @@ export async function generateFreshGameQuestions(
   rawInput: z.input<typeof gameQuestionRefreshInputSchema>,
 ) {
   const input = gameQuestionRefreshInputSchema.parse(rawInput);
-  if (!isGameQuestionGenerationConfigured())
+  if (!isGameQuestionGenerationConfigured(input.game))
     throw new GameContentGenerationError('خدمة توليد الأسئلة غير متاحة حاليًا.', 'CONFIG');
   const instructions: Record<typeof input.game, string> = {
     'letter-challenge': `سؤالان مختلفان لكل حرف من ${BOARD_LETTERS.join('، ')}. يبدأ الجواب بالحرف المحدد، letter يحمل ذلك الحرف وoptions فارغة.`,
@@ -138,6 +146,25 @@ export async function generateFreshGameQuestions(
     );
   };
   try {
+    const openrouterKey = process.env.OPENROUTER_API_KEY?.trim();
+    if (input.game === 'ladder' && openrouterKey) {
+      const openrouter = createOpenAICompatible({
+        name: 'openrouter',
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: openrouterKey,
+        supportsStructuredOutputs: true,
+      });
+      const result = await generateText({
+        model: openrouter('openrouter/free'),
+        output: Output.object({ schema: generatedGameQuestionsSchema }),
+        prompt,
+        abortSignal: AbortSignal.timeout(60_000),
+      });
+      return validateGameQuestionBatch(
+        input,
+        generatedGameQuestionsSchema.parse(result.output).questions,
+      );
+    }
     if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL) {
       try {
         return await generate(true);
