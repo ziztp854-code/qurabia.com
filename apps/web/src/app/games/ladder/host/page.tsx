@@ -1,5 +1,6 @@
 import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refresh';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { SiteLayout } from '@/components/layout';
 import { GamePackPicker } from '@/components/games/game-pack-picker';
 import { LadderRoom } from '@/components/games/ladder/ladder-room';
@@ -41,6 +42,7 @@ export default async function LadderHostPage({
 
   return (
     <SiteLayout user={{ name: user.name, role: user.role }}>
+      {user.role === 'OWNER' && <Link href="/admin/ladder">لوحة تحكم السلم</Link>}
       <GamePackPicker gameMode="LADDER" packs={packs} selectedQuizId={resolvedQuizId} />
       <AiGameQuestionRefresh
         game="ladder"

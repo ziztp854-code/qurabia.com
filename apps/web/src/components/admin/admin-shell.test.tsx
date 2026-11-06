@@ -21,6 +21,7 @@ describe('AdminShell navigation', () => {
     );
     expect(screen.queryByRole('link', { name: 'المستخدمون' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'سجل النشاط' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'لوحة السلم' })).not.toBeInTheDocument();
     expect(screen.getByText('أدمن')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الملف الشخصي' })).toHaveAttribute('href', '/profile');
   });
@@ -32,6 +33,10 @@ describe('AdminShell navigation', () => {
       </AdminShell>,
     );
 
+    expect(screen.getByRole('link', { name: 'لوحة السلم' })).toHaveAttribute(
+      'href',
+      '/admin/ladder',
+    );
     expect(screen.getByText('المدير')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /عزيز/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'المستخدمون' })).toBeInTheDocument();

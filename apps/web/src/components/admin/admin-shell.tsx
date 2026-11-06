@@ -32,6 +32,7 @@ const navigation: readonly {
   icon: typeof Gauge;
   permission?: AdminPermission;
   managersOnly?: boolean;
+  ownerOnly?: boolean;
 }[] = [
   { href: '/admin', label: 'النظرة العامة', icon: Gauge },
   { href: '/admin/monitor', label: 'مراقبة الموقع', icon: MonitorDot, managersOnly: true },
@@ -40,8 +41,14 @@ const navigation: readonly {
   { href: '/admin/stamps', label: 'أختام الأوسمة', icon: Stamp, permission: 'MANAGE_USERS' },
   { href: '/admin/identity', label: 'الشارات والمقتنيات', icon: Crown, managersOnly: true },
   { href: '/admin/content', label: 'المحتوى', icon: FileQuestion, permission: 'MANAGE_CONTENT' },
-  { href: '/admin/voice-emojis', label: 'فيسات تحدي لايف', icon: SmilePlus, permission: 'MANAGE_CONTENT' },
+  {
+    href: '/admin/voice-emojis',
+    label: 'فيسات تحدي لايف',
+    icon: SmilePlus,
+    permission: 'MANAGE_CONTENT',
+  },
   { href: '/admin/rooms', label: 'الغرف المباشرة', icon: Radio, permission: 'MANAGE_ROOMS' },
+  { href: '/admin/ladder', label: 'لوحة السلم', icon: BarChart3, ownerOnly: true },
   { href: '/admin/kingdoms', label: 'تحدي الممالك', icon: ShieldCheck, managersOnly: true },
   { href: '/questions', label: 'بنك الأسئلة', icon: Layers },
   { href: '/admin/users', label: 'المستخدمون', icon: Users, permission: 'platform.users.manage' },
@@ -64,7 +71,8 @@ export function AdminShell({
   const visibleNavigation = navigation.filter(
     (item) =>
       (!item.permission || hasPermission(role, item.permission)) &&
-      (!item.managersOnly || isManager),
+      (!item.managersOnly || isManager) &&
+      (!item.ownerOnly || role === 'OWNER'),
   );
 
   return (
