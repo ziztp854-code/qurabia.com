@@ -129,7 +129,7 @@ network('ladder recovery with isolated Redis', () => {
     expect(result?.currentRound).toBe(1);
     expect(result?.questionOpenedAt).toBeGreaterThanOrEqual(now);
     expect(result!.questionDeadlineAt! - result!.questionOpenedAt!).toBe(
-      20_000,
+      15_000,
     );
     await pause(200);
     expect(findMany).toHaveBeenCalledTimes(1);
