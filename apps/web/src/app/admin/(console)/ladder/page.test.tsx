@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LadderAdminPage from './page';
 
@@ -40,22 +40,20 @@ describe('owner ladder dashboard', () => {
     mocks.user.mockResolvedValue({ role: 'OWNER' });
     mocks.redis.mockReturnValue({
       smembers: vi.fn().mockResolvedValue(['A', 'B']),
-      get: vi
-        .fn()
-        .mockImplementation((key: string) =>
-          Promise.resolve(
-            key.endsWith('A')
-              ? {
-                  roomCode: 'A',
-                  status: 'finished',
-                  roundHistory: [{ questionId: 'q' }],
-                  teams: [],
-                  rightScore: 1,
-                  leftScore: 0,
-                }
-              : { status: 'playing', roundHistory: [{ questionId: 'q' }] },
-          ),
+      get: vi.fn().mockImplementation((key: string) =>
+        Promise.resolve(
+          key.endsWith('A')
+            ? {
+                roomCode: 'A',
+                status: 'finished',
+                roundHistory: [{ questionId: 'q' }],
+                teams: [],
+                rightScore: 1,
+                leftScore: 0,
+              }
+            : { status: 'playing', roundHistory: [{ questionId: 'q' }] },
         ),
+      ),
     });
     render(await LadderAdminPage({ searchParams: Promise.resolve({ q: 'تاريخ' }) }));
     expect(mocks.findMany).toHaveBeenCalledWith(
@@ -66,7 +64,7 @@ describe('owner ladder dashboard', () => {
         }),
       }),
     );
-    expect(screen.getByText('A').closest('summary')).toHaveTextContent('غرفة');
+    fireEvent.click(screen.getByRole('button', { name: /غرفة A/ }));
     expect(screen.getByText('تفاصيل التقرير')).toBeInTheDocument();
   });
 });
