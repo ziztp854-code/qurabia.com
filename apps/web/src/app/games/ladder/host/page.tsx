@@ -42,17 +42,24 @@ export default async function LadderHostPage({
   return (
     <SiteLayout user={{ name: user.name, role: user.role }}>
       <GamePackPicker gameMode="LADDER" packs={packs} selectedQuizId={resolvedQuizId} />
-      <AiGameQuestionRefresh game="ladder">
-      <LadderRoom
-        role="host"
-        quizId={resolvedQuizId}
-        packTitle={packTitle}
-        hostIdentity={{
-          hostId: user.id,
-          accessToken: createHostLadderAccessToken(user.id),
-        }}
-        hostName={user.name ?? 'المضيف'}
-      />
+      <AiGameQuestionRefresh
+        game="ladder"
+        showGenerator={user.role === 'ADMIN' || user.role === 'OWNER'}
+        showExternalTopicNotice={
+          Boolean(process.env.UNOROUTER_API_KEY?.trim()) &&
+          (user.role === 'ADMIN' || user.role === 'OWNER')
+        }
+      >
+        <LadderRoom
+          role="host"
+          quizId={resolvedQuizId}
+          packTitle={packTitle}
+          hostIdentity={{
+            hostId: user.id,
+            accessToken: createHostLadderAccessToken(user.id),
+          }}
+          hostName={user.name ?? 'المضيف'}
+        />
       </AiGameQuestionRefresh>
     </SiteLayout>
   );

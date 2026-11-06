@@ -1,10 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+const testUnoKey = randomUUID();
+
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
   current: vi.fn(),
   database: vi.fn(),
   user: vi.fn(),
   rate: vi.fn(),
+  redis: vi.fn(),
+  redisSet: vi.fn(),
   quota: vi.fn(),
   generate: vi.fn(),
   transaction: vi.fn(),
@@ -19,7 +24,10 @@ vi.mock('@/lib/auth/prisma', () => ({
   hasDatabaseUrl: mocks.database,
   getPrismaClient: () => ({ user: { findUnique: mocks.user }, $transaction: mocks.transaction }),
 }));
-vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: mocks.rate }));
+vi.mock('@/lib/auth/rate-limit', () => ({
+  checkRateLimit: mocks.rate,
+  getSharedRedis: mocks.redis,
+}));
 vi.mock('@/lib/subscription/entitlements', () => ({ consumeQuota: mocks.quota }));
 vi.mock('@/lib/ai/game-question-refresh', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/ai/game-question-refresh')>()),
@@ -40,6 +48,7 @@ describe('game question refresh API', () => {
     vi.clearAllMocks();
     vi.stubEnv('XAI_API_KEY', 'test-only');
     vi.stubEnv('OPENROUTER_API_KEY', '');
+    vi.stubEnv('UNOROUTER_API_KEY', '');
     vi.stubEnv('XAI_DISABLED', 'false');
     vi.stubEnv('AI_GATEWAY_API_KEY', '');
     vi.stubEnv('VERCEL', '');
@@ -49,6 +58,8 @@ describe('game question refresh API', () => {
     mocks.current.mockReturnValue(true);
     mocks.user.mockResolvedValue({ id: 'user-1', status: 'ACTIVE', role: 'USER', tokenVersion: 1 });
     mocks.rate.mockResolvedValue(true);
+    mocks.redis.mockReturnValue({ set: mocks.redisSet });
+    mocks.redisSet.mockReset().mockResolvedValue('OK');
     mocks.quota.mockResolvedValue({ ok: true });
     mocks.generate.mockResolvedValue([
       {
@@ -80,13 +91,89 @@ describe('game question refresh API', () => {
     expect((await POST(request())).status).toBe(401);
     expect(mocks.generate).not.toHaveBeenCalled();
   });
-  it('accepts OpenRouter configuration for ladder only', async () => {
-    vi.stubEnv('XAI_API_KEY', '');
+  it('does not allow ladder fallback when UnoRouter is not configured', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'test-gateway');
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
+    expect((await POST(request('ladder'))).status).toBe(503);
+    expect(mocks.generate).not.toHaveBeenCalled();
+    expect(mocks.quota).not.toHaveBeenCalled();
+  });
+  it('blocks regular ladder hosts even when UnoRouter is unconfigured', async () => {
+    vi.stubEnv('UNOROUTER_API_KEY', '');
+    expect((await POST(request('ladder'))).status).toBe(403);
+    expect(mocks.quota).not.toHaveBeenCalled();
+    expect(mocks.generate).not.toHaveBeenCalled();
+  });
+  it('accepts UnoRouter configuration for ladder only', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
     expect((await POST(request('millionaire'))).status).toBe(503);
     expect(mocks.generate).not.toHaveBeenCalled();
     expect((await POST(request('ladder'))).status).toBe(200);
     expect(mocks.generate).toHaveBeenCalledOnce();
+  });
+  it('blocks regular users before calling the provider or consuming quota', async () => {
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    const response = await POST(request('ladder'));
+    expect(response.status).toBe(403);
+    expect(mocks.redisSet).not.toHaveBeenCalled();
+    expect(mocks.quota).not.toHaveBeenCalled();
+    expect(mocks.generate).not.toHaveBeenCalled();
+  });
+  it.each(['ADMIN', 'OWNER'])('allows %s through the global UnoRouter limiter', async (role) => {
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    mocks.user.mockResolvedValue({ id: 'user-1', status: 'ACTIVE', role, tokenVersion: 1 });
+    expect((await POST(request('ladder'))).status).toBe(200);
+    expect(mocks.redisSet).toHaveBeenCalledWith('tahaddi:ai:unorouter:glm-5.3-flash:rate:v1', '1', {
+      nx: true,
+      ex: 150,
+    });
+    expect(mocks.quota).toHaveBeenCalledOnce();
+  });
+  it('accepts only one simulated concurrent host before consuming quota', async () => {
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
+    let taken = false;
+    mocks.redisSet.mockImplementation(async () => {
+      if (taken) return null;
+      taken = true;
+      return 'OK';
+    });
+    const responses = await Promise.all([POST(request('ladder')), POST(request('ladder'))]);
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 429]);
+    expect(mocks.generate).toHaveBeenCalledOnce();
+    expect(mocks.quota).toHaveBeenCalledOnce();
+  });
+  it.each(['unavailable', 'failure'])('fails closed when shared limiter is %s', async (failure) => {
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
+    if (failure === 'unavailable') mocks.redis.mockReturnValue(null);
+    else mocks.redisSet.mockRejectedValue(new Error('private redis error'));
+    expect((await POST(request('ladder'))).status).toBe(503);
+    expect(mocks.quota).not.toHaveBeenCalled();
+    expect(mocks.generate).not.toHaveBeenCalled();
   });
 
   it('uses the configured canonical origin behind an internal upstream host', async () => {
@@ -130,6 +217,13 @@ describe('game question refresh API', () => {
     expect(mocks.generate).toHaveBeenCalledOnce();
   });
   it('creates a private owned ladder pack outside the public tagged bank', async () => {
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
     const response = await POST(request('ladder'));
     expect(response.status).toBe(200);
     expect((await response.json()).playHref).toBe('/games/ladder/host?quizId=private-quiz');
@@ -143,6 +237,13 @@ describe('game question refresh API', () => {
     );
   });
   it('does not create a partial ladder pack when generation fails', async () => {
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
     mocks.generate.mockRejectedValueOnce(new Error('generation failed'));
     const response = await POST(request('ladder'));
     expect(response.status).toBe(502);

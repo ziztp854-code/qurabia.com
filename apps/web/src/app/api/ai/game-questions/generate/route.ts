@@ -8,7 +8,7 @@ import {
 import { GameContentGenerationError } from '@/lib/ai/game-content-generation';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { getCurrentSession, isSessionUserCurrent } from '@/lib/auth/session';
-import { checkRateLimit } from '@/lib/auth/rate-limit';
+import { checkRateLimit, getSharedRedis } from '@/lib/auth/rate-limit';
 import { consumeQuota } from '@/lib/subscription/entitlements';
 import { generateUniqueActivityRoomCode } from '@/lib/quiz/room-code';
 
@@ -78,9 +78,21 @@ export async function POST(request: Request) {
       { ok: false, message: 'انتهت الجلسة. سجّل الدخول مجددًا.' },
       { status: 401 },
     );
+  const usesUnoRouter = parsed.data.game === 'ladder';
+  if (usesUnoRouter && user.role !== 'ADMIN' && user.role !== 'OWNER')
+    return NextResponse.json(
+      { ok: false, message: 'توليد أسئلة السلم متاح للمشرفين فقط.' },
+      { status: 403 },
+    );
   if (!isGameQuestionGenerationConfigured(parsed.data.game))
     return NextResponse.json(
-      { ok: false, message: 'خدمة توليد الأسئلة غير متاحة حاليًا.' },
+      {
+        ok: false,
+        message:
+          parsed.data.game === 'ladder'
+            ? 'خدمة توليد أسئلة السلم غير مهيأة حاليًا.'
+            : 'خدمة توليد الأسئلة غير متاحة حاليًا.',
+      },
       { status: 503 },
     );
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
@@ -93,6 +105,30 @@ export async function POST(request: Request) {
       { ok: false, message: 'بلغت الحد المؤقت. حاول لاحقًا.' },
       { status: 429 },
     );
+  if (usesUnoRouter) {
+    try {
+      const redis = getSharedRedis();
+      if (!redis)
+        return NextResponse.json(
+          { ok: false, message: 'خدمة التوليد غير متاحة مؤقتًا.' },
+          { status: 503 },
+        );
+      const reserved = await redis.set('tahaddi:ai:unorouter:glm-5.3-flash:rate:v1', '1', {
+        nx: true,
+        ex: 150,
+      });
+      if (reserved !== 'OK')
+        return NextResponse.json(
+          { ok: false, message: 'استُخدمت خدمة التوليد مؤخرًا. حاول بعد دقيقتين ونصف.' },
+          { status: 429 },
+        );
+    } catch {
+      return NextResponse.json(
+        { ok: false, message: 'خدمة التوليد غير متاحة مؤقتًا.' },
+        { status: 503 },
+      );
+    }
+  }
   const quota = await consumeQuota(user.id, 'aiQuestionsPerMonth', user.role);
   if (!quota.ok) return NextResponse.json({ ok: false, message: quota.message }, { status: 402 });
   try {

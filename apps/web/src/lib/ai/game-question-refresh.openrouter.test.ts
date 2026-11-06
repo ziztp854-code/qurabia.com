@@ -1,62 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { generateFreshGameQuestions } from './game-question-refresh';
 
-describe('OpenRouter request for ladder questions', () => {
+describe('ladder provider isolation', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
-  it('sends a free model and structured output request and validates its response', async () => {
+  it('makes no HTTP request to another provider when UnoRouter is missing', async () => {
     vi.stubEnv('XAI_DISABLED', 'false');
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-only-key');
-    const questions = Array.from({ length: 24 }, (_, index) => ({
-      prompt: `سؤال ثقافي مختلف رقم ${index + 1}؟`,
-      answer: 'إجابة',
-      options: ['إجابة', 'خيار ثانٍ', 'خيار ثالث', 'خيار رابع'],
-      answerIndex: 0,
-      category: 'ثقافة',
-      explanation: 'توضيح الإجابة الصحيحة.',
-      letter: '',
-      slot: index + 1,
-      difficulty: index < 8 ? 'EASY' : index < 16 ? 'MEDIUM' : 'HARD',
-    }));
-    let batchIndex = 0;
-    const fetchMock = vi.fn(async () => {
-      const batch = questions.slice(batchIndex * 8, ++batchIndex * 8);
-      return new Response(
-        JSON.stringify({
-          id: 'test-response',
-          object: 'chat.completion',
-          created: 1700000000,
-          model: 'openrouter/free',
-          choices: [
-            {
-              index: 0,
-              message: { role: 'assistant', content: JSON.stringify({ questions: batch }) },
-              finish_reason: 'stop',
-            },
-          ],
-          usage: { prompt_tokens: 20, completion_tokens: 200, total_tokens: 220 },
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      );
-    });
+    vi.stubEnv('UNOROUTER_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-openrouter');
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'test-gateway');
+    vi.stubEnv('XAI_API_KEY', 'test-xai');
+    const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
-    expect(await generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' })).toEqual(
-      questions,
-    );
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    for (const call of fetchMock.mock.calls) {
-      const [url, request] = call as unknown as [string, RequestInit];
-      expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
-      const body = JSON.parse(String(request.body));
-      expect(body.model).toBe('openrouter/free');
-      expect(body.reasoning).toEqual({ enabled: false });
-      expect(body.max_tokens).toBe(8192);
-      expect(body.response_format.type).toBe('json_schema');
-      expect(body.response_format.json_schema.schema.properties.questions.minItems).toBe(8);
-      expect(body.response_format.json_schema.schema.properties.questions.maxItems).toBe(8);
-    }
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
+    ).rejects.toMatchObject({ code: 'CONFIG' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

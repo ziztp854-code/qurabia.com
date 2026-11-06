@@ -7,6 +7,22 @@ import { LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 afterEach(() => vi.unstubAllGlobals());
 describe('AI game question refresh', () => {
+  it('keeps the game visible while hiding the generator when access is denied', () => {
+    render(
+      <AiGameQuestionRefresh game="ladder" showGenerator={false}>
+        <p>اللعبة متاحة</p>
+      </AiGameQuestionRefresh>,
+    );
+    expect(screen.getByText('اللعبة متاحة')).toBeInTheDocument();
+    expect(screen.queryByText('جلب أسئلة جديدة بالذكاء الاصطناعي')).not.toBeInTheDocument();
+  });
+  it('shows the external-provider privacy notice next to the ladder topic field when requested', () => {
+    render(<AiGameQuestionRefresh game="ladder" showExternalTopicNotice />);
+    const input = screen.getByLabelText('موضوع الأسئلة الجديدة');
+    expect(input).toHaveAccessibleDescription(
+      'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.',
+    );
+  });
   it('previews generated questions before applying them to the actual letter game', async () => {
     const questions = LETTER_QUESTION_POOL.map((question, index) => ({
       prompt: `سؤال جديد من الذكاء الاصطناعي ${index}: ${question.prompt}`,
@@ -19,12 +35,10 @@ describe('AI game question refresh', () => {
       slot: (index % 25) + 1,
       difficulty: 'EASY',
     }));
-    const fetch = vi
-      .fn()
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ ok: true, game: 'letter-challenge', questions, batchId: 'batch-1' }),
-      });
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, game: 'letter-challenge', questions, batchId: 'batch-1' }),
+    });
     vi.stubGlobal('fetch', fetch);
     render(
       <AiGameQuestionRefresh game="letter-challenge">
@@ -48,12 +62,10 @@ describe('AI game question refresh', () => {
   it('preserves the current game when generation fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          json: async () => ({ ok: false, message: 'خدمة توليد الأسئلة غير متاحة حاليًا.' }),
-        }),
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ ok: false, message: 'خدمة توليد الأسئلة غير متاحة حاليًا.' }),
+      }),
     );
     render(
       <AiGameQuestionRefresh game="letter-challenge">
