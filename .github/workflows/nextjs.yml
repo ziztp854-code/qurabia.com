@@ -11,8 +11,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: false
+  # PR runs may be superseded; push runs still complete for the release gate.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   voice-postgres:
@@ -65,7 +66,7 @@ jobs:
         working-directory: apps/web
         run: pnpm exec vitest run --config vitest.voice-quota.config.ts
 
-  validate:
+  validate-core:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tahaddi?schema=public
@@ -165,10 +166,6 @@ jobs:
         working-directory: apps/web
         run: pnpm exec playwright test --config playwright.voice-effects.config.ts
 
-      - name: Verify Sultan Farm and management against the local fixture
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.sultan-farm.config.ts
-
       - name: Verify market controls against the local fixture
         working-directory: apps/web
         run: pnpm exec playwright test --config playwright.visual-excellence.config.ts
@@ -184,3 +181,59 @@ jobs:
       - name: Verify public atlas opening on desktop and mobile
         working-directory: apps/web
         run: pnpm exec playwright test --config playwright.globe-scene.config.ts --grep 'public atlas opens'
+
+  sultan-farm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages for the fixture
+        run: pnpm exec turbo build --filter=@tahaddi/database --filter=@tahaddi/contracts --filter=@tahaddi/domain --filter=@mamluk/world-map-core --filter=@mamluk/maplibre-adapter
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @tahaddi/web exec playwright install chromium
+
+      - name: Verify Sultan Farm and management against the local fixture
+        working-directory: apps/web
+        run: pnpm exec playwright test --config playwright.sultan-farm.config.ts
+
+      - name: Preserve failed farm browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: farm-browser-failures-${{ github.run_attempt }}
+          path: apps/web/test-results/sultan-farm/
+          retention-days: 7
+
+  # Keep the protected check name and fail closed on failed, skipped or cancelled jobs.
+  validate:
+    if: ${{ always() }}
+    needs: [validate-core, sultan-farm]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all validation jobs to succeed
+        env:
+          CORE_RESULT: ${{ needs.validate-core.result }}
+          FARM_RESULT: ${{ needs.sultan-farm.result }}
+        run: |
+          if [[ "$CORE_RESULT" != "success" || "$FARM_RESULT" != "success" ]]; then
+            echo "Required validation failed: core=$CORE_RESULT farm=$FARM_RESULT"
+            exit 1
+          fi
+          echo "Required validation passed"
