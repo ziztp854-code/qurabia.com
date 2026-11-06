@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { LadderRoom, LadderRoomSnapshot, LadderRoundResult } from '@tahaddi/domain';
 import { Button } from '@/components/ui';
-import { LadderReport } from '@/components/games/ladder/ladder-report';
+import { LadderReportList } from './report-list';
 import styles from '@/components/admin/admin.module.css';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { getSharedRedis } from '@/lib/auth/rate-limit';
@@ -179,22 +179,7 @@ export default async function LadderAdminPage({
         ) : reports.length === 0 ? (
           <p className={styles.notice}>لا توجد تقارير متاحة حاليًا.</p>
         ) : (
-          reports.map((room) => (
-            <details key={room.roomCode}>
-              <summary>
-                غرفة <bdi>{room.roomCode}</bdi> ·{' '}
-                {room.endedAt
-                  ? new Intl.DateTimeFormat('ar-SA', {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                      timeZone: 'Asia/Riyadh',
-                    }).format(new Date(room.endedAt))
-                  : 'التاريخ غير متوفر'}{' '}
-                · {room.rightScore} - {room.leftScore}
-              </summary>
-              <LadderReport room={reportSnapshot(room)} />
-            </details>
-          ))
+          <LadderReportList rooms={reports.map(reportSnapshot)} />
         )}
       </section>
     </div>
