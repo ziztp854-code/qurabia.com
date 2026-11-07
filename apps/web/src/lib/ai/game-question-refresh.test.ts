@@ -163,6 +163,74 @@ describe('fresh game question generation', () => {
       expect(mocks.generateText).toHaveBeenCalledOnce();
     },
   );
+  it('logs bounded Kimi failure diagnostics without private content', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.generateText.mockRejectedValue(
+      Object.assign(new Error('private upstream content'), {
+        name: 'AI_APICallError',
+        statusCode: 429,
+        responseBody: 'private upstream content',
+      }),
+    );
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'private user topic' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledWith('[game-questions-kimi]', {
+      stage: 'generation',
+      errorClass: 'AI_APICallError',
+      statusCode: 429,
+      finishReason: null,
+      outputTokens: null,
+      causeClass: null,
+      validationReason: null,
+      elapsedMs: expect.any(Number),
+    });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private');
+    expect(JSON.stringify(log.mock.calls)).not.toContain('test-kimi');
+    log.mockRestore();
+  });
+  it('classifies wrapped timeouts without logging their message', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const cause = Object.assign(new Error('private timeout detail'), { name: 'TimeoutError' });
+    mocks.generateText.mockRejectedValue(new Error('private provider detail', { cause }));
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'private topic' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledWith(
+      '[game-questions-kimi]',
+      expect.objectContaining({
+        causeClass: 'TimeoutError',
+        stage: 'generation',
+        validationReason: null,
+      }),
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private');
+    log.mockRestore();
+  });
+  it('classifies known validation failures without logging questions', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const questions = [
+      ...ladderBatch('EASY', 0),
+      ...ladderBatch('MEDIUM', 8),
+      ...ladderBatch('EASY', 16),
+    ];
+    mocks.generateText.mockResolvedValue({ finishReason: 'stop', output: { questions } });
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'private topic' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledWith(
+      '[game-questions-kimi]',
+      expect.objectContaining({
+        stage: 'validation',
+        validationReason: 'Invalid difficulty distribution',
+      }),
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private');
+    log.mockRestore();
+  });
   it.each(['length', 'incomplete', 'duplicate', 'difficulty', 'upstream'])(
     'rejects an UnoRouter %s failure without falling back',
     async (failure) => {
