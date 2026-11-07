@@ -20,26 +20,31 @@ it('sends a bounded JSON-mode request to Kimi without sending excluded questions
     slot: index + 1,
     difficulty: index < 8 ? 'EASY' : index < 16 ? 'MEDIUM' : 'HARD',
   }));
-  const fetchMock = vi.fn(
-    async () =>
-      new Response(
-        JSON.stringify({
-          id: 'test-response',
-          object: 'chat.completion',
-          created: 1700000000,
-          model: 'kimi-k3.1-pro',
-          choices: [
-            {
-              index: 0,
-              message: { role: 'assistant', content: JSON.stringify({ questions }) },
-              finish_reason: 'stop',
+  const fetchMock = vi.fn(async (_url: unknown, request: RequestInit) => {
+    const body = JSON.parse(String(request.body));
+    const content = JSON.stringify(body.messages);
+    const index = content.includes('EASY') ? 0 : content.includes('MEDIUM') ? 1 : 2;
+    return new Response(
+      JSON.stringify({
+        id: 'test-response',
+        object: 'chat.completion',
+        created: 1700000000,
+        model: 'kimi-k3.1-pro',
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: JSON.stringify({ questions: questions.slice(index * 8, index * 8 + 8) }),
             },
-          ],
-          usage: { prompt_tokens: 20, completion_tokens: 200, total_tokens: 220 },
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      ),
-  );
+            finish_reason: 'stop',
+          },
+        ],
+        usage: { prompt_tokens: 20, completion_tokens: 200, total_tokens: 220 },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  });
   vi.stubGlobal('fetch', fetchMock);
   expect(
     await generateFreshGameQuestions({
@@ -48,7 +53,7 @@ it('sends a bounded JSON-mode request to Kimi without sending excluded questions
       excludePrompts: ['نص خاص مستبعد'],
     }),
   ).toEqual(questions);
-  expect(fetchMock).toHaveBeenCalledOnce();
+  expect(fetchMock).toHaveBeenCalledTimes(3);
   const [url, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
   expect(url).toBe('https://api.moonshot.ai/v1/chat/completions');
   expect(new Headers(request.headers).get('authorization')).toBe('Bearer test-only-kimi');
@@ -57,5 +62,5 @@ it('sends a bounded JSON-mode request to Kimi without sending excluded questions
   expect(body.model).toBe('kimi-k3.1-pro');
   expect(body.reasoning_effort).toBe('low');
   expect(body.response_format.type).toBe('json_object');
-  expect(body.max_tokens).toBe(8192);
+  expect(body.max_tokens).toBe(4096);
 });

@@ -117,7 +117,11 @@ describe('fresh game question generation', () => {
       ...ladderBatch('MEDIUM', 8),
       ...ladderBatch('HARD', 16),
     ];
-    mocks.generateText.mockResolvedValue({ finishReason: 'stop', output: { questions } });
+    for (let i = 0; i < 3; i++)
+      mocks.generateText.mockResolvedValueOnce({
+        finishReason: 'stop',
+        output: { questions: questions.slice(i * 8, i * 8 + 8) },
+      });
     expect(await generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' })).toEqual(
       questions,
     );
@@ -130,6 +134,7 @@ describe('fresh game question generation', () => {
       }),
     );
     expect(mocks.openrouterModel).toHaveBeenCalledWith('kimi-k3.1-pro');
+    expect(mocks.generateText).toHaveBeenCalledTimes(3);
     expect(mocks.generateText).toHaveBeenCalledWith(
       expect.objectContaining({
         maxRetries: 0,
@@ -153,14 +158,15 @@ describe('fresh game question generation', () => {
       if (failure === 'upstream')
         mocks.generateText.mockRejectedValue(new Error('private provider error'));
       else
-        mocks.generateText.mockResolvedValue({
-          finishReason: failure === 'length' ? 'length' : 'stop',
-          output: { questions },
-        });
+        for (let i = 0; i < 3; i++)
+          mocks.generateText.mockResolvedValueOnce({
+            finishReason: failure === 'length' ? 'length' : 'stop',
+            output: { questions: questions.slice(i * 8, i * 8 + 8) },
+          });
       await expect(
         generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
       ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
-      expect(mocks.generateText).toHaveBeenCalledOnce();
+      expect(mocks.generateText).toHaveBeenCalledTimes(3);
     },
   );
   it('logs bounded Kimi failure diagnostics without private content', async () => {
@@ -217,7 +223,11 @@ describe('fresh game question generation', () => {
       ...ladderBatch('MEDIUM', 8),
       ...ladderBatch('EASY', 16),
     ];
-    mocks.generateText.mockResolvedValue({ finishReason: 'stop', output: { questions } });
+    for (let i = 0; i < 3; i++)
+      mocks.generateText.mockResolvedValueOnce({
+        finishReason: 'stop',
+        output: { questions: questions.slice(i * 8, i * 8 + 8) },
+      });
     await expect(
       generateFreshGameQuestions({ game: 'ladder', topic: 'private topic' }),
     ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
