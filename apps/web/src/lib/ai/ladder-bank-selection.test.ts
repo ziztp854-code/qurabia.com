@@ -17,7 +17,7 @@ function bank() {
     id: `bank-${index}`,
     prompt: `سؤال ثقافي مختلف رقم ${index}؟`,
     categoryName: 'ثقافة',
-    difficulty: 'MEDIUM',
+    difficulty: index < 10 ? 'EASY' : index < 20 ? 'MEDIUM' : 'HARD',
     timeLimit: 20,
     explanation: 'شرح الإجابة الصحيحة',
     options: ['الأول', 'الثاني', 'الثالث', 'الرابع'].map((text, position) => ({
@@ -31,11 +31,11 @@ it('selects only original bank questions, preserving their answers', async () =>
   vi.stubEnv('XAI_DISABLED', 'false');
   mocks.load.mockResolvedValue({ rows: bank() });
   mocks.generate.mockResolvedValue({
-    output: { indices: Array.from({ length: 24 }, (_, i) => i) },
+    output: { indices: [0, 1, 2, 10, 11, 12, 20, 21, 22, 23] },
     finishReason: 'stop',
   });
   const selected = await selectLadderBankQuestions({ topic: 'ثقافة عامة', excludePrompts: [] });
-  expect(selected).toHaveLength(24);
+  expect(selected).toHaveLength(10);
   expect(selected[0]).toMatchObject({
     id: 'bank-0',
     question: { answer: 'الثاني', answerIndex: 1, prompt: bank()[0]!.prompt },
@@ -45,24 +45,37 @@ it('selects only original bank questions, preserving their answers', async () =>
     expect.objectContaining({ types: ['MULTIPLE_CHOICE'] }),
   );
   const prompt = mocks.generate.mock.calls[0]![0].prompt;
-  expect(prompt).not.toContain('الثاني');
+  expect(prompt).not.toContain('isCorrect');
+  expect(selected.map((item) => item.question.difficulty)).toEqual([
+    'EASY',
+    'EASY',
+    'EASY',
+    'MEDIUM',
+    'MEDIUM',
+    'MEDIUM',
+    'HARD',
+    'HARD',
+    'HARD',
+    'HARD',
+  ]);
 });
-it.each([Array(24).fill(0), [...Array.from({ length: 23 }, (_, i) => i), 999]])(
-  'rejects repeated or unknown selections',
-  async (indices) => {
-    vi.stubEnv('KIMI_API_KEY', 'test');
-    vi.stubEnv('XAI_DISABLED', 'false');
-    mocks.load.mockResolvedValue({ rows: bank() });
-    mocks.generate.mockResolvedValue({ output: { indices }, finishReason: 'stop' });
-    await expect(
-      selectLadderBankQuestions({ topic: 'ثقافة عامة', excludePrompts: [] }),
-    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
-  },
-);
+it.each([
+  Array(10).fill(0),
+  [0, 1, 2, 10, 11, 12, 20, 21, 22, 999],
+  [0, 1, 2, 3, 10, 11, 20, 21, 22, 23],
+])('rejects repeated or unknown selections', async (indices) => {
+  vi.stubEnv('KIMI_API_KEY', 'test');
+  vi.stubEnv('XAI_DISABLED', 'false');
+  mocks.load.mockResolvedValue({ rows: bank() });
+  mocks.generate.mockResolvedValue({ output: { indices }, finishReason: 'stop' });
+  await expect(
+    selectLadderBankQuestions({ topic: 'ثقافة عامة', excludePrompts: [] }),
+  ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+});
 it('fails without calling Kimi when not enough distinct questions remain', async () => {
   vi.stubEnv('KIMI_API_KEY', 'test');
   vi.stubEnv('XAI_DISABLED', 'false');
-  mocks.load.mockResolvedValue({ rows: bank().slice(0, 23) });
+  mocks.load.mockResolvedValue({ rows: bank().slice(0, 22) });
   await expect(
     selectLadderBankQuestions({ topic: 'ثقافة عامة', excludePrompts: [] }),
   ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });

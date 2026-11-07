@@ -14,10 +14,12 @@ import {
 import { useRouter } from 'next/navigation';
 import styles from './ai-game-question-refresh.module.css';
 import { Sparkles } from 'lucide-react';
+import { z } from 'zod';
 import { Button, Input } from '@/components/ui';
 import { foldKeyword } from '@/lib/questions/keywords';
 import {
   generatedGameQuestionsSchema,
+  generatedGameQuestionSchema,
   type AiQuestionGame,
   type GeneratedGameQuestion,
 } from '@/lib/ai/game-question-refresh-contract';
@@ -111,9 +113,11 @@ export function AiGameQuestionRefresh({
       };
       if (!response.ok || !payload.ok || payload.game !== game || !payload.batchId)
         throw new Error(payload.message || 'تعذّر جلب الأسئلة الآن.');
-      const questions = generatedGameQuestionsSchema.parse({
-        questions: payload.questions,
-      }).questions;
+      const schema =
+        game === 'ladder'
+          ? z.object({ questions: z.array(generatedGameQuestionSchema).length(10) })
+          : generatedGameQuestionsSchema;
+      const questions = schema.parse({ questions: payload.questions }).questions;
       const previousPrompts = new Set([...seen.current].map(foldKeyword));
       if (questions.some((question) => previousPrompts.has(foldKeyword(question.prompt)))) {
         throw new Error('تضمنت المجموعة سؤالًا سبق استخدامه. أعد جلب الأسئلة.');

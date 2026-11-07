@@ -184,7 +184,10 @@ export async function loadLadderQuestionCandidates(
   difficulty?: LadderDifficulty,
 ): Promise<LadderQuestionCandidate[]> {
   const packCandidates = await loadPackCandidates(database, room);
-  const minNeeded = Math.max(MIN_CANDIDATE_POOL, room.totalRounds);
+  const minNeeded = Math.max(
+    1,
+    room.totalRounds - (room.usedQuestionIds?.length ?? 0),
+  );
   if (packCandidates.length >= minNeeded) {
     return packCandidates.slice(0, MAX_CANDIDATE_POOL);
   }

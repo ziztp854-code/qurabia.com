@@ -188,6 +188,45 @@ describe('loadLadderQuestionCandidates', () => {
     expect(candidates[0]?.id).toBe('pack-0');
   });
 
+  it('keeps the remaining selected pack questions without mixing in bank questions', async () => {
+    const questions = Array.from({ length: 10 }, (_, index) => ({
+      question: {
+        id: `pack-${index}`,
+        type: 'MULTIPLE_CHOICE',
+        prompt: `سؤال ثقافي مختلف رقم ${index}؟`,
+        difficulty: 'HARD',
+        timeLimit: 20,
+        status: 'PUBLISHED',
+        gameTypes: ['LADDER'],
+        category: { id: 'category', name: 'ثقافة' },
+        options: [
+          { id: `${index}-a`, text: 'الأول', isCorrect: true },
+          { id: `${index}-b`, text: 'الثاني', isCorrect: false },
+          { id: `${index}-c`, text: 'الثالث', isCorrect: false },
+        ],
+      },
+    }));
+    const findMany = jest.fn();
+    const database = {
+      client: {
+        quiz: { findFirst: jest.fn().mockResolvedValue({ questions }) },
+        question: { findMany },
+      },
+    } as unknown as DatabaseService;
+    const candidates = await loadLadderQuestionCandidates(
+      database,
+      room({
+        quizId: 'pack',
+        totalRounds: 10,
+        usedQuestionIds: Array.from(
+          { length: 9 },
+          (_, index) => `pack-${index}`,
+        ),
+      }),
+    );
+    expect(candidates.map((candidate) => candidate.id)).toEqual(['pack-9']);
+    expect(findMany).not.toHaveBeenCalled();
+  });
   it('falls back to bank tags when no quizId is present', async () => {
     const findFirst = jest.fn();
     const findMany = jest.fn().mockResolvedValue([

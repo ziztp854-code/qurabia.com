@@ -59,6 +59,37 @@ describe('AI game question refresh', () => {
     fireEvent.click(screen.getByRole('button', { name: 'تغيير السؤال' }));
     expect(screen.getByRole('heading', { name: questions[25]!.prompt })).toBeInTheDocument();
   });
+  it('previews a ten-question ladder bank selection', async () => {
+    const questions = Array.from({ length: 10 }, (_, index) => ({
+      prompt: `سؤال ثقافي مختلف رقم ${index}؟`,
+      answer: 'الأول',
+      options: ['الأول', 'الثاني', 'الثالث', 'الرابع'],
+      answerIndex: 0,
+      category: 'ثقافة',
+      explanation: 'شرح الإجابة الصحيحة',
+      letter: '',
+      slot: index + 1,
+      difficulty: index < 3 ? 'EASY' : index < 6 ? 'MEDIUM' : 'HARD',
+    }));
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            ok: true,
+            game: 'ladder',
+            questions,
+            batchId: 'batch',
+            playHref: '/games/ladder/host?quizId=pack',
+          }),
+        }),
+    );
+    render(<AiGameQuestionRefresh game="ladder" />);
+    fireEvent.click(screen.getByRole('button', { name: 'اختيار أسئلة من البنك' }));
+    expect(await screen.findByText('10 سؤالًا جديدًا للمراجعة')).toBeInTheDocument();
+  });
   it('preserves the current game when generation fails', async () => {
     vi.stubGlobal(
       'fetch',
