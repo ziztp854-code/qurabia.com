@@ -46,6 +46,7 @@ describe('fresh game question generation', () => {
     vi.stubEnv('AI_GATEWAY_MODEL', '');
     vi.stubEnv('OPENROUTER_API_KEY', '');
     vi.stubEnv('UNOROUTER_API_KEY', '');
+    vi.stubEnv('KIMI_API_KEY', '');
     mocks.createCompatible.mockReturnValue(mocks.openrouterModel);
   });
   afterEach(() => vi.unstubAllEnvs());
@@ -108,6 +109,60 @@ describe('fresh game question generation', () => {
     );
     expect(mocks.generateText).toHaveBeenCalledOnce();
   });
+  it('uses Kimi for ladder when its key is configured, even with UnoRouter present', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    const questions = [
+      ...ladderBatch('EASY', 0),
+      ...ladderBatch('MEDIUM', 8),
+      ...ladderBatch('HARD', 16),
+    ];
+    mocks.generateText.mockResolvedValue({ finishReason: 'stop', output: { questions } });
+    expect(await generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' })).toEqual(
+      questions,
+    );
+    expect(mocks.createCompatible).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'kimi',
+        baseURL: 'https://api.moonshot.ai/v1',
+        apiKey: 'test-kimi',
+        supportsStructuredOutputs: false,
+      }),
+    );
+    expect(mocks.openrouterModel).toHaveBeenCalledWith('kimi-k3.1-pro');
+    expect(mocks.generateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxRetries: 0,
+        providerOptions: { kimi: { reasoningEffort: 'low' } },
+      }),
+    );
+  });
+  it.each(['length', 'difficulty', 'duplicate', 'upstream'])(
+    'rejects a Kimi %s failure without falling back',
+    async (failure) => {
+      vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+      vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+      const questions = [
+        ...ladderBatch('EASY', 0),
+        ...ladderBatch('MEDIUM', 8),
+        ...ladderBatch('HARD', 16),
+      ];
+      if (failure === 'difficulty') questions[16] = { ...questions[16]!, difficulty: 'EASY' };
+      if (failure === 'duplicate')
+        questions[8] = { ...questions[8]!, prompt: questions[0]!.prompt };
+      if (failure === 'upstream')
+        mocks.generateText.mockRejectedValue(new Error('private provider error'));
+      else
+        mocks.generateText.mockResolvedValue({
+          finishReason: failure === 'length' ? 'length' : 'stop',
+          output: { questions },
+        });
+      await expect(
+        generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
+      ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+      expect(mocks.generateText).toHaveBeenCalledOnce();
+    },
+  );
   it.each(['length', 'incomplete', 'duplicate', 'difficulty', 'upstream'])(
     'rejects an UnoRouter %s failure without falling back',
     async (failure) => {
