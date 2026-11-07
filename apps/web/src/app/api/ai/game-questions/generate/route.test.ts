@@ -49,6 +49,7 @@ describe('game question refresh API', () => {
     vi.stubEnv('XAI_API_KEY', 'test-only');
     vi.stubEnv('OPENROUTER_API_KEY', '');
     vi.stubEnv('UNOROUTER_API_KEY', '');
+    vi.stubEnv('KIMI_API_KEY', '');
     vi.stubEnv('XAI_DISABLED', 'false');
     vi.stubEnv('AI_GATEWAY_API_KEY', '');
     vi.stubEnv('VERCEL', '');
@@ -122,6 +123,18 @@ describe('game question refresh API', () => {
     expect((await POST(request('millionaire'))).status).toBe(503);
     expect(mocks.generate).not.toHaveBeenCalled();
     expect((await POST(request('ladder'))).status).toBe(200);
+    expect(mocks.generate).toHaveBeenCalledOnce();
+  });
+  it('accepts Kimi for an authorized ladder host with the shared limiter', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
+    expect((await POST(request('ladder'))).status).toBe(200);
+    expect(mocks.redisSet).toHaveBeenCalledOnce();
     expect(mocks.generate).toHaveBeenCalledOnce();
   });
   it('blocks regular users before calling the provider or consuming quota', async () => {
