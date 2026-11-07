@@ -189,11 +189,36 @@ describe('fresh game question generation', () => {
       finishReason: null,
       outputTokens: null,
       causeClass: null,
+      providerLimit: 'unknown',
       validationReason: null,
       elapsedMs: expect.any(Number),
     });
     expect(JSON.stringify(log.mock.calls)).not.toContain('private');
     expect(JSON.stringify(log.mock.calls)).not.toContain('test-kimi');
+    log.mockRestore();
+  });
+  it.each([
+    ['concurrency limit reached', 'concurrency'],
+    ['insufficient balance', 'quota'],
+    ['rate limit exceeded', 'rate'],
+  ])('classifies a provider limit without logging its response', async (body, category) => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.generateText.mockRejectedValue(
+      Object.assign(new Error('private'), {
+        name: 'AI_APICallError',
+        statusCode: 429,
+        responseBody: body + ' private-secret',
+      }),
+    );
+    await expect(
+      generateFreshGameQuestions({ game: 'ladder', topic: 'ثقافة عامة' }),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+    expect(log).toHaveBeenCalledWith(
+      '[game-questions-kimi]',
+      expect.objectContaining({ providerLimit: category }),
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private-secret');
     log.mockRestore();
   });
   it('classifies wrapped timeouts without logging their message', async () => {

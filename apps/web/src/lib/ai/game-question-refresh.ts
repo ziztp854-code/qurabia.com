@@ -51,6 +51,17 @@ function logProviderFailure(
     if (cause instanceof Error && allowedClasses.has(cause.name)) causeClass = cause.name;
     if (causeClass === 'TimeoutError' || causeClass === 'AbortError') break;
   }
+  let providerLimit: 'concurrency' | 'quota' | 'rate' | 'unknown' | null = null;
+  if (provider === 'kimi' && status === 429) {
+    providerLimit = 'unknown';
+    const body =
+      error && typeof error === 'object' && 'responseBody' in error ? error.responseBody : null;
+    if (typeof body === 'string') {
+      if (/concurren|parallel|并发/i.test(body)) providerLimit = 'concurrency';
+      else if (/quota|balance|credit|billing|余额|额度/i.test(body)) providerLimit = 'quota';
+      else if (/rate.limit|too many requests|请求频率/i.test(body)) providerLimit = 'rate';
+    }
+  }
   console.error(`[game-questions-${provider}]`, {
     stage,
     errorClass: allowedClasses.has(name) ? name : 'Unknown',
@@ -63,6 +74,7 @@ function logProviderFailure(
     ...(provider === 'kimi'
       ? {
           causeClass,
+          providerLimit,
           validationReason:
             stage === 'validation' &&
             error instanceof Error &&
