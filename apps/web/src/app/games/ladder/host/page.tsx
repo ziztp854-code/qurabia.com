@@ -48,7 +48,7 @@ export default async function LadderHostPage({
         game="ladder"
         showGenerator={user.role === 'ADMIN' || user.role === 'OWNER'}
         showExternalTopicNotice={
-          Boolean(process.env.KIMI_API_KEY?.trim() || process.env.UNOROUTER_API_KEY?.trim()) &&
+          Boolean(process.env.KIMI_API_KEY?.trim()) &&
           (user.role === 'ADMIN' || user.role === 'OWNER')
         }
       >

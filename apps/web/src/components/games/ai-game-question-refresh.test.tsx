@@ -20,7 +20,7 @@ describe('AI game question refresh', () => {
     render(<AiGameQuestionRefresh game="ladder" showExternalTopicNotice />);
     const input = screen.getByLabelText('موضوع الأسئلة الجديدة');
     expect(input).toHaveAccessibleDescription(
-      'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.',
+      'يُرسل الموضوع ونصوص أسئلة منشورة من البنك إلى مزوّد الذكاء الاصطناعي لاختيار الأنسب. لا تدخل بيانات شخصية.',
     );
   });
   it('previews generated questions before applying them to the actual letter game', async () => {

@@ -1,3 +1,4 @@
+import { selectLadderBankQuestions } from '@/lib/ai/ladder-bank-selection';
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { gameQuestionRefreshInputSchema } from '@/lib/ai/game-question-refresh-contract';
@@ -84,7 +85,11 @@ export async function POST(request: Request) {
       { ok: false, message: 'توليد أسئلة السلم متاح للمشرفين فقط.' },
       { status: 403 },
     );
-  if (!isGameQuestionGenerationConfigured(parsed.data.game))
+  if (
+    !(parsed.data.game === 'ladder'
+      ? process.env.XAI_DISABLED !== 'true' && Boolean(process.env.KIMI_API_KEY?.trim())
+      : isGameQuestionGenerationConfigured(parsed.data.game))
+  )
     return NextResponse.json(
       {
         ok: false,
@@ -132,59 +137,95 @@ export async function POST(request: Request) {
   const quota = await consumeQuota(user.id, 'aiQuestionsPerMonth', user.role);
   if (!quota.ok) return NextResponse.json({ ok: false, message: quota.message }, { status: 402 });
   try {
-    const questions = await generateFreshGameQuestions(parsed.data);
+    const bankSelection =
+      parsed.data.game === 'ladder' ? await selectLadderBankQuestions(parsed.data) : null;
+    const questions = bankSelection
+      ? bankSelection.map((item) => item.question)
+      : await generateFreshGameQuestions(parsed.data);
     const batchId = randomUUID();
     let playHref: string | undefined;
     if (parsed.data.game === 'ladder' || parsed.data.game === 'elimination-live') {
       const gameMode = parsed.data.game === 'ladder' ? ('LADDER' as const) : ('QUIZ' as const);
       const roomCode = await generateUniqueActivityRoomCode(prisma);
-      const quiz = await prisma.$transaction(async (tx) => {
-        // Inactive categories keep private generated packs out of the public tagged bank.
-        const category = await tx.category.upsert({
-          where: { name: 'أسئلة الألعاب الخاصة المولّدة' },
-          update: {},
-          create: { name: 'أسئلة الألعاب الخاصة المولّدة', isActive: false },
-        });
-        if (category.isActive) throw new Error('Private category unavailable');
-        return tx.quiz.create({
-          data: {
-            ownerId: user.id,
-            title: `أسئلة جديدة: ${parsed.data.topic}`,
-            roomCode,
-            gameMode,
-            status: 'ACTIVE',
-            isPublic: false,
-            questions: {
-              create: questions.map((question, position) => ({
-                position,
-                questionVersion: 1,
-                question: {
-                  create: {
-                    ownerId: user.id,
-                    status: 'PUBLISHED',
-                    type: 'MULTIPLE_CHOICE',
-                    gameTypes: [gameMode],
-                    prompt: question.prompt,
-                    expectedAnswer: question.answer,
-                    explanation: question.explanation,
-                    difficulty: question.difficulty,
-                    categoryId: category.id,
-                    source: 'AI_GAME_PRIVATE',
-                    options: {
-                      create: question.options.map((text, index) => ({
-                        text,
-                        position: index,
-                        isCorrect: index === question.answerIndex,
-                      })),
-                    },
-                  },
+      const quiz = bankSelection
+        ? await prisma.$transaction(async (tx) => {
+            const rows = await tx.question.findMany({
+              where: {
+                id: { in: bankSelection.map((item) => item.id) },
+                status: 'PUBLISHED',
+                gameTypes: { has: 'LADDER' },
+                category: { is: { isActive: true } },
+              },
+              select: { id: true, version: true },
+            });
+            const versions = new Map(rows.map((row) => [row.id, row.version]));
+            if (versions.size !== bankSelection.length) throw new Error('Bank questions changed');
+            return tx.quiz.create({
+              data: {
+                ownerId: user.id,
+                title: `أسئلة البنك: ${parsed.data.topic}`,
+                roomCode,
+                gameMode,
+                status: 'ACTIVE',
+                isPublic: false,
+                questions: {
+                  create: bankSelection.map((item, position) => ({
+                    position,
+                    questionId: item.id,
+                    questionVersion: versions.get(item.id)!,
+                  })),
                 },
-              })),
-            },
-          },
-          select: { id: true },
-        });
-      });
+              },
+              select: { id: true },
+            });
+          })
+        : await prisma.$transaction(async (tx) => {
+            // Inactive categories keep private generated packs out of the public tagged bank.
+            const category = await tx.category.upsert({
+              where: { name: 'أسئلة الألعاب الخاصة المولّدة' },
+              update: {},
+              create: { name: 'أسئلة الألعاب الخاصة المولّدة', isActive: false },
+            });
+            if (category.isActive) throw new Error('Private category unavailable');
+            return tx.quiz.create({
+              data: {
+                ownerId: user.id,
+                title: `أسئلة جديدة: ${parsed.data.topic}`,
+                roomCode,
+                gameMode,
+                status: 'ACTIVE',
+                isPublic: false,
+                questions: {
+                  create: questions.map((question, position) => ({
+                    position,
+                    questionVersion: 1,
+                    question: {
+                      create: {
+                        ownerId: user.id,
+                        status: 'PUBLISHED',
+                        type: 'MULTIPLE_CHOICE',
+                        gameTypes: [gameMode],
+                        prompt: question.prompt,
+                        expectedAnswer: question.answer,
+                        explanation: question.explanation,
+                        difficulty: question.difficulty,
+                        categoryId: category.id,
+                        source: 'AI_GAME_PRIVATE',
+                        options: {
+                          create: question.options.map((text, index) => ({
+                            text,
+                            position: index,
+                            isCorrect: index === question.answerIndex,
+                          })),
+                        },
+                      },
+                    },
+                  })),
+                },
+              },
+              select: { id: true },
+            });
+          });
       playHref = `/games/${parsed.data.game}/host?quizId=${encodeURIComponent(quiz.id)}`;
     }
     return NextResponse.json(

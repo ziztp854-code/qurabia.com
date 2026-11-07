@@ -1,6 +1,4 @@
-import { randomUUID } from 'node:crypto';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-const testUnoKey = randomUUID();
 
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
@@ -12,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   redisSet: vi.fn(),
   quota: vi.fn(),
   generate: vi.fn(),
+  selectBank: vi.fn(),
+  bankRows: vi.fn(),
   transaction: vi.fn(),
   category: vi.fn(),
   quiz: vi.fn(),
@@ -33,6 +33,7 @@ vi.mock('@/lib/ai/game-question-refresh', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/ai/game-question-refresh')>()),
   generateFreshGameQuestions: mocks.generate,
 }));
+vi.mock('@/lib/ai/ladder-bank-selection', () => ({ selectLadderBankQuestions: mocks.selectBank }));
 vi.mock('@/lib/quiz/room-code', () => ({ generateUniqueActivityRoomCode: async () => 'ABC123' }));
 import { POST } from './route';
 
@@ -72,10 +73,16 @@ describe('game question refresh API', () => {
         answerIndex: 0,
       },
     ]);
+    mocks.selectBank.mockResolvedValue([{ id: 'bank-1', question: { prompt: 'سؤال من البنك' } }]);
+    mocks.bankRows.mockResolvedValue([{ id: 'bank-1', version: 3 }]);
     mocks.category.mockResolvedValue({ id: 'private-category', isActive: false });
     mocks.quiz.mockResolvedValue({ id: 'private-quiz' });
     mocks.transaction.mockImplementation(async (work) =>
-      work({ category: { upsert: mocks.category }, quiz: { create: mocks.quiz } }),
+      work({
+        category: { upsert: mocks.category },
+        quiz: { create: mocks.quiz },
+        question: { findMany: mocks.bankRows },
+      }),
     );
   });
   afterEach(() => vi.unstubAllEnvs());
@@ -111,20 +118,6 @@ describe('game question refresh API', () => {
     expect(mocks.quota).not.toHaveBeenCalled();
     expect(mocks.generate).not.toHaveBeenCalled();
   });
-  it('accepts UnoRouter configuration for ladder only', async () => {
-    vi.stubEnv('XAI_API_KEY', '');
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
-    mocks.user.mockResolvedValue({
-      id: 'user-1',
-      status: 'ACTIVE',
-      role: 'ADMIN',
-      tokenVersion: 1,
-    });
-    expect((await POST(request('millionaire'))).status).toBe(503);
-    expect(mocks.generate).not.toHaveBeenCalled();
-    expect((await POST(request('ladder'))).status).toBe(200);
-    expect(mocks.generate).toHaveBeenCalledOnce();
-  });
   it('accepts Kimi for an authorized ladder host with the shared limiter', async () => {
     vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({
@@ -135,10 +128,10 @@ describe('game question refresh API', () => {
     });
     expect((await POST(request('ladder'))).status).toBe(200);
     expect(mocks.redisSet).toHaveBeenCalledOnce();
-    expect(mocks.generate).toHaveBeenCalledOnce();
+    expect(mocks.selectBank).toHaveBeenCalledOnce();
   });
   it('blocks regular users before calling the provider or consuming quota', async () => {
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     const response = await POST(request('ladder'));
     expect(response.status).toBe(403);
     expect(mocks.redisSet).not.toHaveBeenCalled();
@@ -146,7 +139,7 @@ describe('game question refresh API', () => {
     expect(mocks.generate).not.toHaveBeenCalled();
   });
   it.each(['ADMIN', 'OWNER'])('allows %s through the global UnoRouter limiter', async (role) => {
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({ id: 'user-1', status: 'ACTIVE', role, tokenVersion: 1 });
     expect((await POST(request('ladder'))).status).toBe(200);
     expect(mocks.redisSet).toHaveBeenCalledWith('tahaddi:ai:unorouter:glm-5.3-flash:rate:v1', '1', {
@@ -156,7 +149,7 @@ describe('game question refresh API', () => {
     expect(mocks.quota).toHaveBeenCalledOnce();
   });
   it('accepts only one simulated concurrent host before consuming quota', async () => {
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({
       id: 'user-1',
       status: 'ACTIVE',
@@ -171,11 +164,11 @@ describe('game question refresh API', () => {
     });
     const responses = await Promise.all([POST(request('ladder')), POST(request('ladder'))]);
     expect(responses.map((response) => response.status).sort()).toEqual([200, 429]);
-    expect(mocks.generate).toHaveBeenCalledOnce();
+    expect(mocks.selectBank).toHaveBeenCalledOnce();
     expect(mocks.quota).toHaveBeenCalledOnce();
   });
   it.each(['unavailable', 'failure'])('fails closed when shared limiter is %s', async (failure) => {
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({
       id: 'user-1',
       status: 'ACTIVE',
@@ -230,7 +223,7 @@ describe('game question refresh API', () => {
     expect(mocks.generate).toHaveBeenCalledOnce();
   });
   it('creates a private owned ladder pack outside the public tagged bank', async () => {
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({
       id: 'user-1',
       status: 'ACTIVE',
@@ -240,24 +233,37 @@ describe('game question refresh API', () => {
     const response = await POST(request('ladder'));
     expect(response.status).toBe(200);
     expect((await response.json()).playHref).toBe('/games/ladder/host?quizId=private-quiz');
-    expect(mocks.category).toHaveBeenCalledWith(
-      expect.objectContaining({ create: expect.objectContaining({ isActive: false }) }),
-    );
+    expect(mocks.category).not.toHaveBeenCalled();
+    expect(mocks.quiz.mock.calls[0][0].data.questions.create).toEqual([
+      { position: 0, questionId: 'bank-1', questionVersion: 3 },
+    ]);
     expect(mocks.quiz).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ ownerId: 'user-1', isPublic: false, gameMode: 'LADDER' }),
       }),
     );
   });
-  it('does not create a partial ladder pack when generation fails', async () => {
-    vi.stubEnv('UNOROUTER_API_KEY', testUnoKey);
+  it('does not save a pack if a selected bank question is no longer available', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({
       id: 'user-1',
       status: 'ACTIVE',
       role: 'ADMIN',
       tokenVersion: 1,
     });
-    mocks.generate.mockRejectedValueOnce(new Error('generation failed'));
+    mocks.bankRows.mockResolvedValue([]);
+    expect((await POST(request('ladder'))).status).toBe(502);
+    expect(mocks.quiz).not.toHaveBeenCalled();
+  });
+  it('does not create a partial ladder pack when generation fails', async () => {
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    mocks.user.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      role: 'ADMIN',
+      tokenVersion: 1,
+    });
+    mocks.selectBank.mockRejectedValueOnce(new Error('selection failed'));
     const response = await POST(request('ladder'));
     expect(response.status).toBe(502);
     expect(mocks.transaction).not.toHaveBeenCalled();

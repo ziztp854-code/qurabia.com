@@ -149,21 +149,32 @@ export function AiGameQuestionRefresh({
       {showGenerator && (
         <section
           className={`game-pack-picker ${styles.refresh}`}
-          aria-label="تجديد أسئلة اللعبة بالذكاء الاصطناعي"
+          aria-label={
+            game === 'ladder'
+              ? 'اختيار أسئلة من البنك بالذكاء الاصطناعي'
+              : 'تجديد أسئلة اللعبة بالذكاء الاصطناعي'
+          }
         >
           <details>
-            <summary>جلب أسئلة جديدة بالذكاء الاصطناعي</summary>
+            <summary>
+              {game === 'ladder'
+                ? 'اختيار أسئلة من البنك بالذكاء الاصطناعي'
+                : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
+            </summary>
             <div className="stack-form">
               <p>
-                استخدم هذا الخيار إذا سبق لعب الأسئلة. راجع المجموعة الجديدة ثم اعتمدها لبدء جولة
-                جديدة.
+                {game === 'ladder'
+                  ? 'اختر موضوعًا ليختار الذكاء الاصطناعي أسئلة منشورة من البنك، ثم راجعها واعتمدها.'
+                  : 'استخدم هذا الخيار إذا سبق لعب الأسئلة. راجع المجموعة الجديدة ثم اعتمدها لبدء جولة جديدة.'}
               </p>
               <Input
                 id={id}
                 label="موضوع الأسئلة الجديدة"
                 description={
                   showExternalTopicNotice
-                    ? 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
+                    ? game === 'ladder'
+                      ? 'يُرسل الموضوع ونصوص أسئلة منشورة من البنك إلى مزوّد الذكاء الاصطناعي لاختيار الأنسب. لا تدخل بيانات شخصية.'
+                      : 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
                     : undefined
                 }
                 value={topic}
@@ -173,7 +184,7 @@ export function AiGameQuestionRefresh({
               />
               <Button type="button" variant="outline" loading={loading} onClick={generate}>
                 <Sparkles aria-hidden="true" />
-                جلب أسئلة جديدة بالذكاء الاصطناعي
+                {game === 'ladder' ? 'اختيار أسئلة من البنك' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
               </Button>
               {loading ? <p role="status">جارٍ جلب أسئلة جديدة…</p> : null}
               {error ? <p role="alert">{error}</p> : null}
