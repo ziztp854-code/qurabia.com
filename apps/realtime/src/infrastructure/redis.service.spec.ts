@@ -1,4 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
+import { ChessStore } from '../chess/chess.store.js';
+import { GameStore } from '../game/game.store.js';
 import { RedisService } from './redis.service.js';
 
 describe('RedisService distributed rate limiter', () => {
@@ -21,7 +23,7 @@ describe('RedisService distributed rate limiter', () => {
     };
     (service as unknown as { client: typeof client }).client = client;
 
-    await service.releaseTransition('session-1', 'owner-a');
+    await new GameStore(service).releaseTransition('session-1', 'owner-a');
     expect(owner).toBe('owner-b');
     expect(client.del).not.toHaveBeenCalled();
     expect(client.eval).toHaveBeenCalledWith(
@@ -30,7 +32,7 @@ describe('RedisService distributed rate limiter', () => {
       'live:session-1:transition',
       'owner-a',
     );
-    await service.releaseTransition('session-1', 'owner-b');
+    await new GameStore(service).releaseTransition('session-1', 'owner-b');
     expect(owner).toBeNull();
   });
 
@@ -112,9 +114,9 @@ describe('RedisService distributed rate limiter', () => {
     (service as unknown as { client: typeof client }).client = client;
 
     await expect(
-      service.acquireChessRoomLock('123456', 'token_1'),
+      new ChessStore(service).acquireChessRoomLock('123456', 'token_1'),
     ).resolves.toBe(true);
-    await service.releaseChessRoomLock('123456', 'token_1');
+    await new ChessStore(service).releaseChessRoomLock('123456', 'token_1');
 
     expect(client.set).toHaveBeenCalledWith(
       'chess:room:123456:lock',

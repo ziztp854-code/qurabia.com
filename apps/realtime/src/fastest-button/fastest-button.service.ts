@@ -24,7 +24,7 @@ import type {
   FastestButtonSnapshot,
   FastestButtonIdentity,
 } from '@tahaddi/contracts';
-import { RedisService } from '../game/redis.service.js';
+import { FastestButtonStore } from './fastest-button.store.js';
 const LEASE_MS = 45_000;
 const hash = (value: string) =>
   createHash('sha256').update(value).digest('hex');
@@ -41,7 +41,7 @@ function arrays(round: FastestRound): FastestRound {
 }
 @Injectable()
 export class FastestButtonService {
-  constructor(private readonly redis: RedisService) {}
+  constructor(private readonly redis: FastestButtonStore) {}
   async get(code: string): Promise<FastestRoom | null> {
     const room = await this.redis.loadFastestRoom<FastestRoom>(code);
     if (!room) return null;

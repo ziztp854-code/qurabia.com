@@ -6,8 +6,8 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import type { LadderRoomRuntime } from '../ladder.types.js';
-import { DatabaseService } from '../../game/database.service.js';
-import { RedisService } from '../../game/redis.service.js';
+import { DatabaseService } from '../../infrastructure/database.service.js';
+import { LadderStore } from '../ladder.store.js';
 import { LadderService } from '../ladder.service.js';
 import { COMPETITION_FIXTURE } from './competition-fixture.js';
 import * as privateBank from '../ladder-private-bank.js';
@@ -26,7 +26,7 @@ type FindManyQuery = {
 
 describe('LadderService', () => {
   let service: LadderService;
-  let redis: jest.Mocked<RedisService>;
+  let redis: jest.Mocked<LadderStore>;
   let findManyQuestions: jest.Mock;
 
   const mockRedis = {
@@ -44,7 +44,7 @@ describe('LadderService', () => {
     releaseLadderRoomLock: jest.fn(),
     consumeRateLimit: jest.fn(),
     reserveLadderCompetitionPack: jest.fn(),
-  } as unknown as jest.Mocked<RedisService>;
+  } as unknown as jest.Mocked<LadderStore>;
 
   const publishedQuestion = (
     id: string,
@@ -136,7 +136,7 @@ describe('LadderService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LadderService,
-        { provide: RedisService, useValue: mockRedis },
+        { provide: LadderStore, useValue: mockRedis },
         {
           provide: DatabaseService,
           useValue: { client: { question: { findMany: findManyQuestions } } },
@@ -145,7 +145,7 @@ describe('LadderService', () => {
     }).compile();
 
     service = module.get<LadderService>(LadderService);
-    redis = module.get(RedisService);
+    redis = module.get(LadderStore);
     jest.clearAllMocks();
     redis.acquireLadderRoomLock.mockResolvedValue(true);
     redis.releaseLadderRoomLock.mockResolvedValue(undefined);

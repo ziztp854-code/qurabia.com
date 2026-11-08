@@ -18,9 +18,9 @@ import type {
   ServerToClientEvents,
 } from '@tahaddi/contracts';
 import type { Server } from 'socket.io';
-import { DatabaseService } from './database.service.js';
+import { DatabaseService } from '../infrastructure/database.service.js';
 import { calculateQuestionScore, canTransition } from './game-engine.js';
-import { RedisService } from './redis.service.js';
+import { GameStore } from './game.store.js';
 import type {
   LiveConnectionMetadata,
   LiveGameState,
@@ -103,7 +103,7 @@ export class GameService {
   private readonly leaderboardTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
-    private readonly redis: RedisService,
+    private readonly redis: GameStore,
     private readonly database: DatabaseService,
   ) {}
 

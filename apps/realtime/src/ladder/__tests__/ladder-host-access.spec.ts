@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { createLadderHostAccessToken } from '@tahaddi/contracts';
 import { LadderGateway } from '../ladder.gateway.js';
 import type { LadderService } from '../ladder.service.js';
-import type { RedisService } from '../../game/redis.service.js';
+import type { LadderStore } from '../ladder.store.js';
 
 const AUTH_SECRET = 'x'.repeat(32);
 
@@ -53,7 +53,7 @@ describe('LadderGateway host access', () => {
   const createGateway = () => {
     const gateway = new LadderGateway(
       ladder as unknown as LadderService,
-      redis as unknown as RedisService,
+      redis as unknown as LadderStore,
       config as unknown as ConfigService,
     );
     gateway.server = {

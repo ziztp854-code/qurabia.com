@@ -9,7 +9,7 @@ import {
 import type { Namespace, Socket } from 'socket.io';
 import { z } from 'zod';
 import { allowWebSocketOrigin } from '../config/web-origins.js';
-import { SocketEventRateLimiter } from '../special-games/socket-event-rate-limiter.js';
+import { SocketEventRateLimiter } from '../common/socket-event-rate-limiter.js';
 
 export const kingdomWorldId = z
   .string()

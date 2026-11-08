@@ -13,7 +13,7 @@ import {
   allowWebSocketOrigin,
   allowWebSocketRequest,
 } from '../config/web-origins.js';
-import { SocketEventRateLimiter } from '../special-games/socket-event-rate-limiter.js';
+import { SocketEventRateLimiter } from '../common/socket-event-rate-limiter.js';
 import { BalootService } from './baloot.service.js';
 import type {
   BalootResult,

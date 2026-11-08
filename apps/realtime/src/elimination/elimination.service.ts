@@ -12,8 +12,8 @@ import {
   type EliminationQuestion,
   type EliminationRoundResult,
 } from '@tahaddi/domain';
-import { RedisService } from '../game/redis.service.js';
-import { DatabaseService } from '../game/database.service.js';
+import { EliminationStore } from './elimination.store.js';
+import { DatabaseService } from '../infrastructure/database.service.js';
 import {
   loadEliminationQuestions,
   pickQuestionForDifficulty,
@@ -30,7 +30,7 @@ import type {
 @Injectable()
 export class EliminationService {
   constructor(
-    private readonly redis: RedisService,
+    private readonly redis: EliminationStore,
     private readonly database: DatabaseService,
   ) {}
 

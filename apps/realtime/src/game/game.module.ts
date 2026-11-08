@@ -1,11 +1,11 @@
+import { GameStore } from './game.store.js';
 import { Module } from '@nestjs/common';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module.js';
 import { GameGateway } from './game.gateway.js';
 import { GameService } from './game.service.js';
-import { RedisService } from './redis.service.js';
-import { DatabaseService } from './database.service.js';
 
 @Module({
-  providers: [GameGateway, GameService, RedisService, DatabaseService],
-  exports: [RedisService, DatabaseService],
+  imports: [InfrastructureModule],
+  providers: [GameStore, GameGateway, GameService],
 })
 export class GameModule {}

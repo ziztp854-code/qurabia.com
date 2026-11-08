@@ -1,8 +1,8 @@
 ﻿import { Test, TestingModule } from '@nestjs/testing';
 import type { EliminationPlayer } from '@tahaddi/domain';
 import type { EliminationRoomRuntime } from '../elimination.types.js';
-import { DatabaseService } from '../../game/database.service.js';
-import { RedisService } from '../../game/redis.service.js';
+import { DatabaseService } from '../../infrastructure/database.service.js';
+import { EliminationStore } from '../elimination.store.js';
 import { EliminationService } from '../elimination.service.js';
 
 describe('EliminationService', () => {
@@ -105,7 +105,7 @@ describe('EliminationService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EliminationService,
-        { provide: RedisService, useValue: redis },
+        { provide: EliminationStore, useValue: redis },
         {
           provide: DatabaseService,
           useValue: {

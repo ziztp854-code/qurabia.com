@@ -110,8 +110,8 @@ export const ARCHITECTURE_REGISTRY: ArchitectureNodeRecord[] = [
   {
     id: 'redis', label: 'Redis', kind: 'Database', status: 'ACTIVE',
     description: 'حالة الغرف الساخنة والأقفال وRedis Streams Adapter؛ ليس مصدر النتائج الدائم.',
-    views: ['overview', 'games', 'realtime', 'data'], dependencies: [], evidence: ['apps/realtime/src/game/redis.service.ts', 'apps/realtime/src/redis-io.adapter.ts'],
-    files: [file('State store', 'apps/realtime/src/game/redis.service.ts'), file('Streams adapter', 'apps/realtime/src/redis-io.adapter.ts')],
+    views: ['overview', 'games', 'realtime', 'data'], dependencies: [], evidence: ['apps/realtime/src/infrastructure/redis.service.ts', 'apps/realtime/src/redis-io.adapter.ts'],
+    files: [file('State store', 'apps/realtime/src/infrastructure/redis.service.ts'), file('Streams adapter', 'apps/realtime/src/redis-io.adapter.ts')],
   },
   {
     id: 'database', label: 'PostgreSQL', kind: 'Database', status: 'ACTIVE',

@@ -1,12 +1,14 @@
 require('reflect-metadata');
-const { RedisService } = require('../../../dist/game/redis.service.js');
+const { RedisService } = require('../../../dist/infrastructure/redis.service.js');
+const { LadderStore } = require('../../../dist/ladder/ladder.store.js');
 const { LadderService } = require('../../../dist/ladder/ladder.service.js');
 const { LadderGateway } = require('../../../dist/ladder/ladder.gateway.js');
 const config = { get: key => key === 'REDIS_URL' ? process.env.LADDER_TEST_REDIS_URL : '' };
 const redis = new RedisService(config);
 redis.onModuleInit();
-const service = new LadderService(redis, {});
-const gateway = new LadderGateway(service, redis, config);
+const store = new LadderStore(redis);
+const service = new LadderService(store, {});
+const gateway = new LadderGateway(service, store, config);
 gateway.server = { to: () => ({ emit: () => {} }) };
 gateway.afterInit();
 process.stdout.write('GATEWAY_READY\n');

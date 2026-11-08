@@ -15,7 +15,7 @@ import {
   type RandomSource,
   type Team,
 } from '@tahaddi/domain';
-import { RedisService } from '../game/redis.service.js';
+import { BalootStore } from './baloot.store.js';
 import type {
   BalootBid,
   BalootCard,
@@ -230,7 +230,7 @@ export class BalootService {
   private readonly sessionRooms = new Map<string, string>();
 
   constructor(
-    @Optional() private readonly redis?: RedisService,
+    @Optional() private readonly redis?: BalootStore,
     @Optional() private readonly random: RandomSource = Math.random,
   ) {}
 

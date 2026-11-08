@@ -11,7 +11,8 @@ import { createAdapter } from '@socket.io/redis-streams-adapter';
 import { io, type Socket } from 'socket.io-client';
 import { LadderGateway } from '../ladder.gateway.js';
 import { LadderService } from '../ladder.service.js';
-import { RedisService } from '../../game/redis.service.js';
+import { LadderStore } from '../ladder.store.js';
+import { RedisService } from '../../infrastructure/redis.service.js';
 
 const network =
   process.env.LADDER_NETWORK_TEST === '1' ? describe : describe.skip;
@@ -116,9 +117,10 @@ network('ladder across two realtime servers', () => {
       };
       const urls: string[] = [];
       for (let i = 0; i < 2; i++) {
-        const redis = new RedisService(config as never);
-        redis.onModuleInit();
-        stores.push(redis);
+        const connection = new RedisService(config as never);
+        connection.onModuleInit();
+        stores.push(connection);
+        const redis = new LadderStore(connection);
         const service = new LadderService(redis, database as never);
         services.push(service);
         const gateway = new LadderGateway(service, redis, config as never);

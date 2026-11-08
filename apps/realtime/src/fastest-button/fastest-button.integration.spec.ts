@@ -2,7 +2,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import Redis from 'ioredis';
 import { FastestButtonService } from './fastest-button.service';
-import { RedisService } from '../game/redis.service';
+import { FastestButtonStore } from './fastest-button.store';
+import { RedisService } from '../infrastructure/redis.service';
 import { startFastestRound } from '@tahaddi/domain';
 const url = process.env.FASTEST_TEST_REDIS_URL;
 const integration = url ? describe : describe.skip;
@@ -16,10 +17,10 @@ integration('Fastest Button Redis atomic integration', () => {
   beforeAll(() => {
     store = new RedisService(new ConfigService({ REDIS_URL: url }));
     store.onModuleInit();
-    game = new FastestButtonService(store);
+    game = new FastestButtonService(new FastestButtonStore(store));
     secondStore = new RedisService(new ConfigService({ REDIS_URL: url }));
     secondStore.onModuleInit();
-    secondGame = new FastestButtonService(secondStore);
+    secondGame = new FastestButtonService(new FastestButtonStore(secondStore));
     cleanup = new Redis(url!);
   });
   afterAll(async () => {
@@ -117,7 +118,7 @@ integration('Fastest Button Redis atomic integration', () => {
     await expect(
       game.press(code, current.round!.id, players[0].identity.playerId, 's0'),
     ).rejects.toMatchObject({ code: 'ROUND_CLOSED' });
-    const restarted = new FastestButtonService(store);
+    const restarted = new FastestButtonService(new FastestButtonStore(store));
     expect((await restarted.get(code))?.rounds).toEqual(state.rounds);
   });
   it('rejects early, stale, expired, duplicate and non-member presses', async () => {
@@ -165,7 +166,7 @@ integration('Fastest Button Redis atomic integration', () => {
       ...r,
       round: { ...r.round!, endAt: now - 1 },
     }));
-    const restarted = new FastestButtonService(store);
+    const restarted = new FastestButtonService(new FastestButtonStore(store));
     expect(await restarted.dueRooms()).toContain(code);
     const result = await restarted.tick(code);
     expect(result?.phase).toBe('results');

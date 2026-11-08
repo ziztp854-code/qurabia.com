@@ -9,7 +9,8 @@ import { Server } from 'socket.io';
 import { io, type Socket } from 'socket.io-client';
 import { LadderGateway } from '../ladder.gateway.js';
 import { LadderService } from '../ladder.service.js';
-import { RedisService } from '../../game/redis.service.js';
+import { LadderStore } from '../ladder.store.js';
+import { RedisService } from '../../infrastructure/redis.service.js';
 
 const network =
   process.env.LADDER_NETWORK_TEST === '1' ? describe : describe.skip;
@@ -54,7 +55,8 @@ const waitEvent = <T>(socket: Socket, event: string) =>
 
 network('ladder real network and Redis', () => {
   let redisProcess: ChildProcess;
-  let redis: RedisService;
+  let redis: LadderStore;
+  let connection: RedisService;
   let server: HttpServer;
   let sockets: Server;
   let redisDirectory: string;
@@ -67,7 +69,7 @@ network('ladder real network and Redis', () => {
     await Promise.all(disconnects);
     if (server?.listening)
       await new Promise<void>((resolve) => server.close(() => resolve()));
-    if (redis) await redis.onModuleDestroy();
+    if (redis) await connection.onModuleDestroy();
     if (redisProcess?.pid && redisProcess.exitCode === null) {
       const exited = new Promise<void>((resolve) =>
         redisProcess.once('exit', () => resolve()),
@@ -114,8 +116,9 @@ network('ladder real network and Redis', () => {
       get: (key: string) =>
         key === 'REDIS_URL' ? `redis://127.0.0.1:${redisPort}` : secret,
     };
-    redis = new RedisService(config as never);
-    redis.onModuleInit();
+    connection = new RedisService(config as never);
+    connection.onModuleInit();
+    redis = new LadderStore(connection);
     const questions = Array.from({ length: 22 }, (_, i) => ({
       id: `q${i}`,
       prompt: `ما هو السؤال رقم ${i}؟`,

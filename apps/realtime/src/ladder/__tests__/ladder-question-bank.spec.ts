@@ -1,6 +1,6 @@
 import { loadLadderQuestionCandidates } from '../ladder-question-bank.js';
 import type { LadderRoomRuntime } from '../ladder.types.js';
-import type { DatabaseService } from '../../game/database.service.js';
+import type { DatabaseService } from '../../infrastructure/database.service.js';
 
 function room(overrides: Partial<LadderRoomRuntime> = {}): LadderRoomRuntime {
   return {

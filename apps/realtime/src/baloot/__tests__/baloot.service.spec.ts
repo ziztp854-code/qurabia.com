@@ -1,6 +1,6 @@
 import { BalootService } from '../baloot.service.js';
 import { getLegalPlays, selectTimeoutPlay } from '@tahaddi/domain';
-import type { RedisService } from '../../game/redis.service.js';
+import type { BalootStore } from '../baloot.store.js';
 
 describe('BalootService', () => {
   let service: BalootService;
@@ -114,7 +114,7 @@ describe('BalootService', () => {
       loadBalootRoom: jest.fn().mockResolvedValue(null),
       saveBalootRoom: jest.fn(),
     };
-    Object.assign(service, { redis: redis as unknown as RedisService });
+    Object.assign(service, { redis: redis as unknown as BalootStore });
     jest.useFakeTimers();
     try {
       const pending = service.setReady(

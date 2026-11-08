@@ -15,8 +15,8 @@ import {
   type ScrambledWordsPlayer,
   type ScrambledWordsRoundResult,
 } from '@tahaddi/domain';
-import { RedisService } from '../game/redis.service.js';
-import { DatabaseService } from '../game/database.service.js';
+import { ScrambledWordsStore } from './scrambled-words.store.js';
+import { DatabaseService } from '../infrastructure/database.service.js';
 import { loadScrambledWordsPuzzles } from './scrambled-words-puzzle-bank.js';
 import type {
   CreateScrambledWordsRoomPayload,
@@ -29,7 +29,7 @@ import type {
 @Injectable()
 export class ScrambledWordsService {
   constructor(
-    private readonly redis: RedisService,
+    private readonly redis: ScrambledWordsStore,
     private readonly database: DatabaseService,
   ) {}
 

@@ -5,7 +5,7 @@ import {
   SPECIAL_GAME_META,
   SPECIAL_GAME_ORDER,
 } from '@tahaddi/domain';
-import type { RedisService } from '../game/redis.service.js';
+import type { SpecialGamesStore } from './special-games.store.js';
 import { SpecialGamesService } from './special-games.service.js';
 import type { SpecialGameRoom } from './types.js';
 
@@ -92,7 +92,9 @@ describe('SpecialGamesService', () => {
   function setup() {
     const store = new MemoryRoomStore();
     const io = createIoRecorder();
-    const service = new SpecialGamesService(store as unknown as RedisService);
+    const service = new SpecialGamesService(
+      store as unknown as SpecialGamesStore,
+    );
     service.setServer(io.server as never);
     return { service, store, events: io.events };
   }

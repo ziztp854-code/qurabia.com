@@ -4,7 +4,7 @@ import { FastestRuleError } from '@tahaddi/domain';
 import { createFastestButtonHostAccessToken } from '@tahaddi/contracts';
 import { FastestButtonGateway } from './fastest-button.gateway';
 import { FastestButtonService } from './fastest-button.service';
-import { RedisService } from '../game/redis.service';
+import { RedisService } from '../infrastructure/redis.service';
 import type { Socket } from 'socket.io';
 const secret = 'fastest-button-test-secret-minimum-length';
 function socket(id = 's', hostId?: string): Socket {

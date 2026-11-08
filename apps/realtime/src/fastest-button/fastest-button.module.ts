@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { GameModule } from '../game/game.module.js';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module.js';
 import { FastestButtonGateway } from './fastest-button.gateway.js';
 import { FastestButtonService } from './fastest-button.service.js';
+import { FastestButtonStore } from './fastest-button.store.js';
 @Module({
-  imports: [GameModule],
-  providers: [FastestButtonGateway, FastestButtonService],
+  imports: [InfrastructureModule],
+  providers: [FastestButtonGateway, FastestButtonService, FastestButtonStore],
 })
 export class FastestButtonModule {}

@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import type { ChessRoom } from '@tahaddi/domain';
-import { RedisService } from '../../game/redis.service.js';
+import { ChessStore } from '../chess.store.js';
 import { ChessService } from '../chess.service.js';
 
 describe('ChessService', () => {
   let service: ChessService;
-  let redis: jest.Mocked<RedisService>;
+  let redis: jest.Mocked<ChessStore>;
 
   const mockRedis = {
     loadChessRoom: jest.fn(),
@@ -21,15 +21,15 @@ describe('ChessService', () => {
     releaseSpecialRoomLock: jest.fn(),
     acquireChessRoomLock: jest.fn(),
     releaseChessRoomLock: jest.fn(),
-  } as unknown as jest.Mocked<RedisService>;
+  } as unknown as jest.Mocked<ChessStore>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ChessService, { provide: RedisService, useValue: mockRedis }],
+      providers: [ChessService, { provide: ChessStore, useValue: mockRedis }],
     }).compile();
 
     service = module.get<ChessService>(ChessService);
-    redis = module.get(RedisService);
+    redis = module.get(ChessStore);
     jest.clearAllMocks();
     redis.acquireChessRoomLock.mockResolvedValue(true);
     redis.releaseChessRoomLock.mockResolvedValue(undefined);
@@ -733,8 +733,6 @@ describe('ChessService', () => {
       }
       expect(redis.acquireChessRoomLock.mock.calls).toHaveLength(1);
       expect(redis.releaseChessRoomLock.mock.calls).toHaveLength(1);
-      expect(redis.acquireSpecialRoomLock.mock.calls).toHaveLength(0);
-      expect(redis.releaseSpecialRoomLock.mock.calls).toHaveLength(0);
     });
 
     it('does not release lock when token does not match', async () => {

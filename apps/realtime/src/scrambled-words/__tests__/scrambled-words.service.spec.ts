@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import type { ScrambledWordsPlayer } from '@tahaddi/domain';
 import type { ScrambledWordsRoomRuntime } from '../scrambled-words.types.js';
-import { DatabaseService } from '../../game/database.service.js';
-import { RedisService } from '../../game/redis.service.js';
+import { DatabaseService } from '../../infrastructure/database.service.js';
+import { ScrambledWordsStore } from '../scrambled-words.store.js';
 import { ScrambledWordsService } from '../scrambled-words.service.js';
 
 describe('ScrambledWordsService', () => {
@@ -98,7 +98,7 @@ describe('ScrambledWordsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScrambledWordsService,
-        { provide: RedisService, useValue: redis },
+        { provide: ScrambledWordsStore, useValue: redis },
         {
           provide: DatabaseService,
           useValue: {

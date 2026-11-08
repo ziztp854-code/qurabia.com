@@ -17,7 +17,7 @@ import {
   allowWebSocketRequest,
 } from '../config/web-origins.js';
 import { resolveTokenSecret } from '../config/token-secret.js';
-import { SocketEventRateLimiter } from './socket-event-rate-limiter.js';
+import { SocketEventRateLimiter } from '../common/socket-event-rate-limiter.js';
 import { SpecialGamesService } from './special-games.service.js';
 import type {
   ClientToServerSpecialEvents,

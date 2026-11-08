@@ -1,6 +1,6 @@
 import type { ChessRoom } from '@tahaddi/domain';
 import type { Socket } from 'socket.io';
-import type { RedisService } from '../../game/redis.service.js';
+import type { ChessStore } from '../chess.store.js';
 import {
   CHESS_TRANSPORT_DISCONNECT_DELAY_MS,
   ChessGateway,
@@ -25,7 +25,7 @@ describe('ChessGateway', () => {
       addChessSeatSocket: jest.fn().mockResolvedValue(undefined),
       removeChessSeatSocket: jest.fn().mockResolvedValue(0),
       getChessSeatSockets: jest.fn().mockResolvedValue([]),
-    } as unknown as RedisService);
+    } as unknown as ChessStore);
 
   it.each([
     {

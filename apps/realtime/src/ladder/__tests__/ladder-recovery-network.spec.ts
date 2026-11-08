@@ -3,7 +3,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, rmdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { RedisService } from '../../game/redis.service.js';
+import { LadderStore } from '../ladder.store.js';
+import { RedisService } from '../../infrastructure/redis.service.js';
 import { LadderService } from '../ladder.service.js';
 import { LadderGateway } from '../ladder.gateway.js';
 import type { LadderRoomRuntime } from '../ladder.types.js';
@@ -15,7 +16,8 @@ const pause = (ms: number) =>
 
 network('ladder recovery with isolated Redis', () => {
   let child: ChildProcess;
-  let redis: RedisService;
+  let redis: LadderStore;
+  let connection: RedisService;
   let directory: string;
   let redisUrl: string;
   const gateways: LadderGateway[] = [];
@@ -54,14 +56,15 @@ network('ladder recovery with isolated Redis', () => {
       });
     });
     redisUrl = `redis://127.0.0.1:${port}`;
-    redis = new RedisService({
+    connection = new RedisService({
       get: (key: string) => (key === 'REDIS_URL' ? redisUrl : ''),
     } as never);
-    redis.onModuleInit();
+    connection.onModuleInit();
+    redis = new LadderStore(connection);
   });
   afterEach(async () => {
     gateways.forEach((gateway) => gateway.onModuleDestroy());
-    await redis.onModuleDestroy();
+    await connection.onModuleDestroy();
     if (child?.pid && child.exitCode === null) {
       const exited = new Promise<void>((resolve) =>
         child.once('exit', () => resolve()),

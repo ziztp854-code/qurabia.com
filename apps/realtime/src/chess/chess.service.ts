@@ -10,7 +10,7 @@ import {
   type MovePayload,
   CHESS_TIME_CONTROLS,
 } from '@tahaddi/domain';
-import { RedisService } from '../game/redis.service.js';
+import { ChessStore } from './chess.store.js';
 import type {
   CreateRoomInput,
   JoinRoomInput,
@@ -31,7 +31,7 @@ import {
 
 @Injectable()
 export class ChessService {
-  constructor(private readonly redis: RedisService) {}
+  constructor(private readonly redis: ChessStore) {}
 
   private async loadRoom(pin: string): Promise<ChessRoom | null> {
     return this.redis.loadChessRoom<ChessRoom>(pin);

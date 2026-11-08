@@ -1,4 +1,4 @@
-import type { DatabaseService } from '../game/database.service.js';
+import type { DatabaseService } from '../infrastructure/database.service.js';
 import type { ScrambledWordsPuzzle } from '@tahaddi/domain';
 
 const MAX_PUZZLE_POOL = 120;

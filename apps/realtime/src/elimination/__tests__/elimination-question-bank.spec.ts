@@ -1,4 +1,4 @@
-import type { DatabaseService } from '../../game/database.service.js';
+import type { DatabaseService } from '../../infrastructure/database.service.js';
 import { loadEliminationQuestions } from '../elimination-question-bank.js';
 
 describe('elimination question pack selection', () => {

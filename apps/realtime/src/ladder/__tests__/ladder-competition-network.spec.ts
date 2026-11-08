@@ -9,8 +9,10 @@ import { Server } from 'socket.io';
 import { io, type Socket } from 'socket.io-client';
 import { LadderGateway } from '../ladder.gateway.js';
 import { LadderService } from '../ladder.service.js';
-import { readPrivateCompetitionBank } from '../ladder-private-bank.js';
-import { RedisService } from '../../game/redis.service.js';
+import * as privateBank from '../ladder-private-bank.js';
+import { COMPETITION_FIXTURE } from './competition-fixture.js';
+import { LadderStore } from '../ladder.store.js';
+import { RedisService } from '../../infrastructure/redis.service.js';
 
 const network =
   process.env.LADDER_NETWORK_TEST === '1' ? describe : describe.skip;
@@ -55,7 +57,8 @@ const waitEvent = <T>(socket: Socket, event: string) =>
 
 network('competition over real network and Redis', () => {
   let redisProcess: ChildProcess;
-  let redis: RedisService;
+  let redis: LadderStore;
+  let connection: RedisService;
   let server: HttpServer;
   let sockets: Server;
   let redisDirectory: string;
@@ -63,12 +66,13 @@ network('competition over real network and Redis', () => {
   const disconnects: Promise<void>[] = [];
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     clients.forEach((client) => client.disconnect());
     if (sockets) await sockets.close();
     await Promise.all(disconnects);
     if (server?.listening)
       await new Promise<void>((resolve) => server.close(() => resolve()));
-    if (redis) await redis.onModuleDestroy();
+    if (redis) await connection.onModuleDestroy();
     if (redisProcess?.pid && redisProcess.exitCode === null) {
       const exited = new Promise<void>((resolve) =>
         redisProcess.once('exit', () => resolve()),
@@ -115,8 +119,9 @@ network('competition over real network and Redis', () => {
       get: (key: string) =>
         key === 'REDIS_URL' ? `redis://127.0.0.1:${redisPort}` : secret,
     };
-    redis = new RedisService(config as never);
-    redis.onModuleInit();
+    connection = new RedisService(config as never);
+    connection.onModuleInit();
+    redis = new LadderStore(connection);
     const reservations = await Promise.all(
       Array.from({ length: 8 }, (_, index) =>
         redis.reserveLadderCompetitionPack(
@@ -149,7 +154,10 @@ network('competition over real network and Redis', () => {
         'reservation-0',
       ),
     ).toBe(0);
-    const questions = readPrivateCompetitionBank().sets.flat();
+    jest
+      .spyOn(privateBank, 'readPrivateCompetitionBank')
+      .mockReturnValue(COMPETITION_FIXTURE);
+    const questions = COMPETITION_FIXTURE.sets.flat();
     const database = {
       client: {
         question: {

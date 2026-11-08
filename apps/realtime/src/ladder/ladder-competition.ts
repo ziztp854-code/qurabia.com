@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import type { DatabaseService } from '../game/database.service.js';
+import type { DatabaseService } from '../infrastructure/database.service.js';
 import { readPrivateCompetitionBank } from './ladder-private-bank.js';
 import type { LadderQuestionCandidate } from './ladder-question-selection.js';
 

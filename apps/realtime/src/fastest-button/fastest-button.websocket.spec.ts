@@ -9,7 +9,8 @@ import {
 } from '@tahaddi/contracts';
 import { FastestButtonGateway } from './fastest-button.gateway';
 import { FastestButtonService } from './fastest-button.service';
-import { RedisService } from '../game/redis.service';
+import { FastestButtonStore } from './fastest-button.store';
+import { RedisService } from '../infrastructure/redis.service';
 const enabled = process.env.FASTEST_TEST_REDIS_URL;
 const integration = enabled ? describe : describe.skip;
 const secret = 'fastest-button-websocket-test-secret';
@@ -45,6 +46,7 @@ integration('Fastest Button real multiplayer sockets', () => {
       providers: [
         FastestButtonGateway,
         FastestButtonService,
+        FastestButtonStore,
         RedisService,
         {
           provide: ConfigService,

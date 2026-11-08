@@ -35,7 +35,12 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "env": ["KINGDOMS_TEST_DATABASE_URL", "FASTEST_TEST_REDIS_URL", "OPENCLAW_TEST_DATABASE_URL"]
+      "env": [
+        "KINGDOMS_TEST_DATABASE_URL",
+        "FASTEST_TEST_REDIS_URL",
+        "FEATURE_STORES_TEST_REDIS_URL",
+        "OPENCLAW_TEST_DATABASE_URL"
+      ]
     }
   }
 }

@@ -26,8 +26,8 @@ import {
   allowWebSocketRequest,
 } from '../config/web-origins.js';
 import { resolveTokenSecret } from '../config/token-secret.js';
-import { RedisService } from '../game/redis.service.js';
-import { SocketEventRateLimiter } from '../special-games/socket-event-rate-limiter.js';
+import { RedisService } from '../infrastructure/redis.service.js';
+import { SocketEventRateLimiter } from '../common/socket-event-rate-limiter.js';
 import { FastestButtonService } from './fastest-button.service.js';
 type Membership = {
   code: string;

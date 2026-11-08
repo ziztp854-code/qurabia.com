@@ -13,8 +13,8 @@ import {
   allowWebSocketOrigin,
   allowWebSocketRequest,
 } from '../config/web-origins.js';
-import { SocketEventRateLimiter } from '../special-games/socket-event-rate-limiter.js';
-import { RedisService } from '../game/redis.service.js';
+import { SocketEventRateLimiter } from '../common/socket-event-rate-limiter.js';
+import { ChessStore } from './chess.store.js';
 import { ChessService } from './chess.service.js';
 import {
   chessPinSchema,
@@ -70,7 +70,7 @@ export class ChessGateway
 
   constructor(
     private readonly chess: ChessService,
-    private readonly redis: RedisService,
+    private readonly redis: ChessStore,
   ) {}
 
   afterInit() {

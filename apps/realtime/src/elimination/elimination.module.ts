@@ -1,11 +1,12 @@
+import { EliminationStore } from './elimination.store.js';
 import { Module } from '@nestjs/common';
 import { EliminationGateway } from './elimination.gateway.js';
 import { EliminationService } from './elimination.service.js';
-import { GameModule } from '../game/game.module.js';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module.js';
 
 @Module({
-  imports: [GameModule],
-  providers: [EliminationGateway, EliminationService],
+  imports: [InfrastructureModule],
+  providers: [EliminationStore, EliminationGateway, EliminationService],
   exports: [EliminationService],
 })
 export class EliminationModule {}

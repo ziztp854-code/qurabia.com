@@ -1,5 +1,5 @@
 import type { LadderRoomRuntime } from './ladder.types.js';
-import type { DatabaseService } from '../game/database.service.js';
+import type { DatabaseService } from '../infrastructure/database.service.js';
 import {
   isValidLadderQuestionCandidate,
   ladderQuestionFingerprint,

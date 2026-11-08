@@ -17,8 +17,8 @@ import {
   allowWebSocketRequest,
 } from '../config/web-origins.js';
 import { resolveTokenSecret } from '../config/token-secret.js';
-import { SocketEventRateLimiter } from '../special-games/socket-event-rate-limiter.js';
-import { RedisService } from '../game/redis.service.js';
+import { SocketEventRateLimiter } from '../common/socket-event-rate-limiter.js';
+import { LadderStore } from './ladder.store.js';
 import { LadderService } from './ladder.service.js';
 import {
   createLadderRoomPayloadSchema,
@@ -92,7 +92,7 @@ export class LadderGateway
 
   constructor(
     private readonly ladder: LadderService,
-    private readonly redis: RedisService,
+    private readonly redis: LadderStore,
     private readonly config: ConfigService,
   ) {}
 

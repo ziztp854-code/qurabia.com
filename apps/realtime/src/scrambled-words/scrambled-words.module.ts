@@ -1,11 +1,16 @@
+import { ScrambledWordsStore } from './scrambled-words.store.js';
 import { Module } from '@nestjs/common';
 import { ScrambledWordsGateway } from './scrambled-words.gateway.js';
 import { ScrambledWordsService } from './scrambled-words.service.js';
-import { GameModule } from '../game/game.module.js';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module.js';
 
 @Module({
-  imports: [GameModule],
-  providers: [ScrambledWordsGateway, ScrambledWordsService],
+  imports: [InfrastructureModule],
+  providers: [
+    ScrambledWordsStore,
+    ScrambledWordsGateway,
+    ScrambledWordsService,
+  ],
   exports: [ScrambledWordsService],
 })
 export class ScrambledWordsModule {}

@@ -10,7 +10,7 @@ import {
   type SpecialGameMode,
 } from '@tahaddi/domain';
 import { Server } from 'socket.io';
-import { RedisService } from '../game/redis.service.js';
+import { SpecialGamesStore } from './special-games.store.js';
 import {
   resolveInfiltratorRound,
   selectInfiltratorId,
@@ -62,7 +62,7 @@ function buildSecureRiskDeck() {
 export class SpecialGamesService {
   private io!: SpecialIoServer;
 
-  constructor(private readonly redis: RedisService) {}
+  constructor(private readonly redis: SpecialGamesStore) {}
 
   private parallelBank(room: SpecialGameRoom) {
     if (room.mode === 'quote-master')

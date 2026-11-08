@@ -3,7 +3,7 @@ import { COMPETITION_FIXTURE } from './competition-fixture.js';
 import * as privateBank from '../ladder-private-bank.js';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import type { DatabaseService } from '../../game/database.service.js';
+import type { DatabaseService } from '../../infrastructure/database.service.js';
 
 describe('reviewed competition questions', () => {
   const REVIEWED_COMPETITION_QUESTIONS = COMPETITION_FIXTURE.sets[0];

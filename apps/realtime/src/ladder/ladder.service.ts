@@ -6,8 +6,8 @@ import type {
   LadderRoomSnapshot,
   LadderTeam,
 } from '@tahaddi/domain';
-import { RedisService } from '../game/redis.service.js';
-import { DatabaseService } from '../game/database.service.js';
+import { LadderStore } from './ladder.store.js';
+import { DatabaseService } from '../infrastructure/database.service.js';
 import type {
   CreateLadderRoomPayload,
   JoinLadderRoomPayload,
@@ -45,7 +45,7 @@ export class LadderService {
     token: string;
   }>();
   constructor(
-    private readonly redis: RedisService,
+    private readonly redis: LadderStore,
     private readonly database: DatabaseService,
   ) {}
 
