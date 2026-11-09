@@ -7,6 +7,9 @@ import {
   LiveFinaleExperience,
   type FinalePlayer,
 } from './live-finale-experience';
+import { createResultShareCard } from './result-share-card';
+
+vi.mock('./result-share-card', () => ({ createResultShareCard: vi.fn() }));
 
 vi.mock('next/dynamic', () => ({
   default: () => () => <div aria-hidden="true" data-live-crowning-scene="3d" />,
@@ -64,9 +67,7 @@ describe('LiveFinaleExperience', () => {
   });
 
   it('adds a decorative 3D coronation scene without replacing the accessible result', () => {
-    const { container } = render(
-      <LiveFinaleExperience players={players} soundEnabled={false} />,
-    );
+    const { container } = render(<LiveFinaleExperience players={players} soundEnabled={false} />);
 
     expect(container.querySelector('[data-live-crowning-scene="3d"]')).toHaveAttribute(
       'aria-hidden',
@@ -91,14 +92,56 @@ describe('LiveFinaleExperience', () => {
     expect(screen.getByText('خالد الدوسري').closest('li')).toHaveClass('is-current-player');
   });
 
+  it('exposes the actual rank for each podium position to assistive technology', () => {
+    render(<LiveFinaleExperience players={players} soundEnabled={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'عرض النتيجة الآن' }));
+
+    const podium = screen.getByRole('list', { name: 'منصة الفائزين' });
+    const places = within(podium).getAllByRole('listitem');
+    expect(places.map((place) => place.getAttribute('value'))).toEqual(['2', '1', '3']);
+    expect(places[1]).toHaveAccessibleName('المركز 1، سارة العتيبي، 9,800 نقطة');
+    expect(places[0]).toHaveAccessibleName('المركز 2، محمد القحطاني، 9,200 نقطة');
+  });
+
   it('copies only the personal result without private session details', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
-    render(<LiveFinaleExperience players={players} participantId="player-4" soundEnabled={false} />);
+    render(
+      <LiveFinaleExperience players={players} participantId="player-4" soundEnabled={false} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'عرض النتيجة الآن' }));
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'نسخ نتيجتي' })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'نسخ نتيجتي' }));
+    });
     expect(writeText).toHaveBeenCalledWith('حققت المركز 4 برصيد 8,100 نقطة في تحدّي!');
     expect(screen.getByText('تم نسخ نتيجتك.')).toBeInTheDocument();
+  });
+
+  it('shares a card containing the actual game title and personal result', async () => {
+    const file = new File(['image'], 'tahaddi-result.png', { type: 'image/png' });
+    vi.mocked(createResultShareCard).mockResolvedValueOnce(file);
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+    render(
+      <LiveFinaleExperience
+        players={players}
+        participantId="player-4"
+        quizTitle="تحدي المعرفة"
+        soundEnabled={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'عرض النتيجة الآن' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'مشاركة بطاقة النتيجة' }));
+    });
+    expect(createResultShareCard).toHaveBeenCalledWith({
+      gameTitle: 'تحدي المعرفة',
+      name: 'خالد الدوسري',
+      rank: 4,
+      score: 8100,
+    });
+    expect(share).toHaveBeenCalledWith({ files: [file], title: 'نتيجتي في تحدّي' });
   });
 
   it('shows the live round progress instead of a fixed example', () => {

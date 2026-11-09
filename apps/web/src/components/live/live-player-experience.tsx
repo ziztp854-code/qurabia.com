@@ -2,7 +2,17 @@
 import { formatNumber } from '@/lib/utils';
 
 import Link from 'next/link';
-import { Check, CircleHelp, Crown, Flag, Hourglass, Info, ShieldCheck, UsersRound, X } from 'lucide-react';
+import {
+  Check,
+  CircleHelp,
+  Crown,
+  Flag,
+  Hourglass,
+  Info,
+  ShieldCheck,
+  UsersRound,
+  X,
+} from 'lucide-react';
 import { LiveFinaleExperience } from './live-finale-experience';
 import { LiveQuestionStage } from './live-question-stage';
 import { useLiveGame } from './use-live-game';
@@ -12,11 +22,13 @@ export function LivePlayerExperience({
   participantId,
   accessToken,
   displayName,
+  quizTitle,
 }: {
   sessionId: string;
   participantId: string;
   accessToken: string;
   displayName: string;
+  quizTitle?: string;
 }) {
   const game = useLiveGame({
     sessionId,
@@ -88,6 +100,7 @@ export function LivePlayerExperience({
         <LiveFinaleExperience
           players={snapshot.leaderboard}
           participantId={participantId}
+          quizTitle={quizTitle}
           roundNumber={snapshot.question?.questionNumber}
           totalRounds={snapshot.question?.totalQuestions}
         />
@@ -112,7 +125,8 @@ export function LivePlayerExperience({
               />
             </span>
             <b>
-              {formatNumber(snapshot.question.questionNumber)}/{formatNumber(snapshot.question.totalQuestions)}
+              {formatNumber(snapshot.question.questionNumber)}/
+              {formatNumber(snapshot.question.totalQuestions)}
             </b>
           </div>
           <LiveQuestionStage

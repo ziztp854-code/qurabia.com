@@ -430,6 +430,7 @@ export function LiveHostExperience({
           ) : snapshot.phase === 'FINISHED' ? (
             <LiveFinaleExperience
               players={snapshot.leaderboard}
+              quizTitle={quizTitle}
               soundEnabled={soundEnabled}
               roundNumber={snapshot.question?.questionNumber ?? currentTotalQuestions}
               totalRounds={currentTotalQuestions}

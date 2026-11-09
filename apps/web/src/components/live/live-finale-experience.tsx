@@ -10,13 +10,16 @@ import {
   Check,
   Crown,
   Copy,
+  Download,
   Medal,
   RotateCcw,
+  Share2,
   SkipForward,
   Sparkles,
   Trophy,
   UsersRound,
 } from 'lucide-react';
+import { createResultShareCard } from './result-share-card';
 
 const LiveCrowningScene3D = dynamic(
   () => import('./live-crowning-scene-3d').then((module) => module.LiveCrowningScene3D),
@@ -97,7 +100,11 @@ function playRevealTone(rank: number) {
 
 function RoyalPodiumPlace({ player }: { player: FinalePlayer }) {
   return (
-    <li className={`royal-podium-place is-rank-${player.rank}`}>
+    <li
+      className={`royal-podium-place is-rank-${player.rank}`}
+      value={player.rank}
+      aria-label={`المركز ${formatNumber(player.rank)}، ${player.name}، ${formatNumber(player.score)} نقطة`}
+    >
       <div className="royal-podium-avatar" aria-hidden="true">
         <Crown />
         <span>{getInitials(player.name)}</span>
@@ -193,6 +200,32 @@ export function LiveFinaleExperience({
     setRevealStep(finalStep);
   };
 
+  const shareCard = async (share: boolean) => {
+    if (!personalResult) return;
+    try {
+      const file = await createResultShareCard({
+        gameTitle: quizTitle || 'المسابقة المباشرة',
+        name: personalResult.name,
+        rank: personalResult.rank,
+        score: personalResult.score,
+      });
+      if (share && navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'نتيجتي في تحدّي' });
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setShareMessage(share ? 'المشاركة غير متاحة هنا؛ تم تنزيل البطاقة.' : 'تم تنزيل البطاقة.');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setShareMessage('تعذّر إنشاء البطاقة. حاول مرة أخرى.');
+    }
+  };
+
   if (!isFinal) {
     const revealTitle =
       revealedPlayer?.rank === 1
@@ -230,9 +263,7 @@ export function LiveFinaleExperience({
           <h1 id="finale-title">{revealTitle}</h1>
           <LiveCrowningScene3D
             activeRank={
-              revealedPlayer?.rank === 1 ||
-              revealedPlayer?.rank === 2 ||
-              revealedPlayer?.rank === 3
+              revealedPlayer?.rank === 1 || revealedPlayer?.rank === 2 || revealedPlayer?.rank === 3
                 ? revealedPlayer.rank
                 : undefined
             }
@@ -347,6 +378,16 @@ export function LiveFinaleExperience({
           >
             <Copy aria-hidden="true" /> نسخ نتيجتي
           </button>
+        )}
+        {personalResult && (
+          <>
+            <button type="button" onClick={() => void shareCard(false)}>
+              <Download aria-hidden="true" /> تنزيل بطاقة النتيجة
+            </button>
+            <button type="button" onClick={() => void shareCard(true)}>
+              <Share2 aria-hidden="true" /> مشاركة بطاقة النتيجة
+            </button>
+          </>
         )}
         <Link href="/">
           العودة إلى اللوحة الرئيسية <ArrowLeft aria-hidden="true" />

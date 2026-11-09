@@ -25,7 +25,11 @@ export default async function LivePlayPage({
   const participant = validAccess
     ? await getPrismaClient().liveParticipant.findFirst({
         where: { id: participantId, sessionId },
-        select: { id: true, displayName: true },
+        select: {
+          id: true,
+          displayName: true,
+          session: { select: { quiz: { select: { title: true } } } },
+        },
       })
     : null;
 
@@ -44,6 +48,7 @@ export default async function LivePlayPage({
               participantId={participant.id}
               accessToken={accessToken}
               displayName={participant.displayName}
+              quizTitle={participant.session.quiz.title}
             />
           )}
         </div>
