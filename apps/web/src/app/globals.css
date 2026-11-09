@@ -1,7 +1,6 @@
 @import '../../tokens.css';
 @import 'tailwindcss';
 @import '../components/games/shared/games-shared.css';
-@import '../components/special-games/chess.css';
 
 /* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 */
 /* Hallmark · genre: competitive modern-minimal · macrostructure: Workbench · theme: design.md · enrichment: Tier-A product board · nav: existing SiteLayout · footer: existing SiteLayout */

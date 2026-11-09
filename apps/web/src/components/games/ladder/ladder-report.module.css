@@ -32,10 +32,12 @@
 @media print {
   :global(body > *) { display: none !important; }
   :global(body > [data-ladder-print-root]) { display: block !important; }
-  .printRoot .report { padding: 0; font-size: 10pt; }
+  :global(html), :global(body) { background: #fff !important; overflow: visible !important; }
+  .printRoot .report { width: 100%; max-width: 100%; padding: 4mm; font-size: 10pt; line-height: 1.4; }
   .printRoot .meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .printRoot .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .question { break-inside: avoid; }
+  .question { break-inside: avoid; padding: .5rem .75rem; margin-block: .45rem; }
+  .footer { margin-top: .5rem; padding-top: .35rem; }
 }
 
 /* A white paper surface and dark text remain legible in print and grayscale. */

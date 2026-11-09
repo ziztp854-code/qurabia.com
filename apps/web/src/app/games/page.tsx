@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import '../../styles/game-catalog-refine.css';
+import '../../styles/game-catalog-royal.css';
 import { SiteLayout } from '@/components/layout';
 import { GameCatalogWrapper } from '@/components/game-catalog';
 import { publicGames, toCatalogGames } from '@/data/games';

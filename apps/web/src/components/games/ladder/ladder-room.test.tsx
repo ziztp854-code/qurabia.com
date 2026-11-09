@@ -206,9 +206,8 @@ describe('LadderRoom guest identity recovery', () => {
     render(<LadderRoom />);
     connectSocket();
     emitRoomState({ roomCode: 'AB12CD34', phase: 'waiting', rightTeam: [], leftTeam: [], isHost });
-    const qr = screen.queryByRole('img', { name: /رمز مسح للانضمام إلى غرفة السلم AB12CD34/ });
-    if (isHost) expect(qr).toBeInTheDocument();
-    else expect(qr).not.toBeInTheDocument();
+    if (isHost) expect(await screen.findByRole('img', { name: /رمز مسح للانضمام إلى غرفة السلم AB12CD34/ })).toBeInTheDocument();
+    else expect(screen.queryByRole('img', { name: /رمز مسح للانضمام إلى غرفة السلم AB12CD34/ })).not.toBeInTheDocument();
   });
 
   it('disables player join while the guest identity is invalid', async () => {
@@ -453,7 +452,7 @@ describe('LadderRoom guest identity recovery', () => {
     play.mockRestore(); pause.mockRestore();
   });
 
-  it('shows the winner and answer history after reconnecting to a finished room', () => {
+  it('shows the winner and answer history after reconnecting to a finished room', async () => {
     render(<LadderRoom />);
     connectSocket();
     emitRoomState({ roomCode: 'AB12CD34', phase: 'finished', currentRound: 10, totalRounds: 10,
@@ -463,7 +462,7 @@ describe('LadderRoom guest identity recovery', () => {
         right: { optionId: 'a', correct: true, elapsedMs: 1200, points: 1000 }, left: { optionId: null, correct: false, elapsedMs: null, points: -200 } }] });
     expect(screen.getByText('يفوز خالد')).toBeInTheDocument();
     expect(screen.getByText('الحسم بأعلى مجموع نقاط')).toBeInTheDocument();
-    expect(screen.getByText(/1.2 ثانية/)).toBeInTheDocument();
+    expect(await screen.findByText(/1.2 ثانية/)).toBeInTheDocument();
     expect(screen.getByText('لم يجب')).toBeInTheDocument();
   });
 
