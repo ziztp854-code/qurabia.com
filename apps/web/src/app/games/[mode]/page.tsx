@@ -11,6 +11,7 @@ import { INSTANT_GAME_ORDER, InstantGameRoom, isInstantGameMode } from '@/compon
 import { SiteLayout } from '@/components/layout';
 import { SpecialGameRoom } from '@/components/special-games/special-game-room';
 import { ChessRoom } from '@/components/special-games/chess-room';
+import '@/components/special-games/chess.css';
 import { getCurrentSession } from '@/lib/auth/session';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import { hasPlanFlag } from '@/lib/subscription/entitlements';

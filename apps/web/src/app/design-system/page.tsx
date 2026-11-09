@@ -7,6 +7,7 @@ import { LiveStatus } from '@/components/quiz';
 import { SoundSettings } from '@/components/sound-settings';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ChessBoardSpecimen } from '@/components/special-games/chess-board-specimen';
+import '@/components/special-games/chess.css';
 import { ChessPieceSpecimen } from '@/components/special-games/chess-piece-specimen';
 import {
   Accordion,

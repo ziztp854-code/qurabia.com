@@ -3,6 +3,7 @@
 import { useAiGameQuestions } from '@/components/games/ai-game-question-refresh';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import dynamic from 'next/dynamic';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Play, Swords, Trophy, Copy, Check, UserPlus } from 'lucide-react';
 import { Button, ButtonLink, Card, Input } from '@/components/ui';
@@ -14,9 +15,6 @@ import { useLadderSocket } from './use-ladder-socket';
 import styles from './ladder-room.module.css';
 import { LadderVisual } from './ladder-visual';
 import { QuestionDisplay } from './question-display';
-import { LadderResults } from './ladder-results';
-import { LadderReport } from './ladder-report';
-import { LadderInviteQr } from './ladder-invite-qr';
 import { LadderIntro } from './ladder-intro';
 import {
   clearLadderGuestIdentity,
@@ -28,6 +26,10 @@ import {
   setJoinedLadderRoomCode,
   setHostedLadderRoomCode,
 } from './ladder-session-storage';
+
+const LadderResults = dynamic(() => import('./ladder-results').then((module) => module.LadderResults));
+const LadderReport = dynamic(() => import('./ladder-report').then((module) => module.LadderReport));
+const LadderInviteQr = dynamic(() => import('./ladder-invite-qr').then((module) => module.LadderInviteQr));
 
 type Phase = 'join' | 'waiting' | 'intro' | 'countdown' | 'question' | 'finished';
 type GuestIdentity = { guestId: string; guestToken: string };
@@ -341,7 +343,7 @@ export function LadderRoom({
           {phase === 'join' && (
             <motion.div
               key="intro"
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
             >
