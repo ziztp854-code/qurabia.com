@@ -2,12 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createResultShareCard } from './result-share-card';
 
 describe('createResultShareCard', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   it('renders the game and personal result into a PNG', async () => {
     const fillText = vi.fn();
     const gradient = { addColorStop: vi.fn() };
     const context = {
+      drawImage: vi.fn(),
       fillRect: vi.fn(),
       strokeRect: vi.fn(),
       fillText,
@@ -29,6 +33,13 @@ describe('createResultShareCard', () => {
       arc: vi.fn(),
       fill: vi.fn(),
     };
+    vi.stubGlobal(
+      'Image',
+      class {
+        src = '';
+        decode = vi.fn().mockResolvedValue(undefined);
+      },
+    );
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
       context as unknown as ReturnType<HTMLCanvasElement['getContext']>,
     );
@@ -45,9 +56,10 @@ describe('createResultShareCard', () => {
 
     expect(file.type).toBe('image/png');
     expect(file.name).toBe('tahaddi-result.png');
-    expect(fillText).toHaveBeenCalledWith('تحدي المعرفة', 600, 245, 990);
-    expect(fillText).toHaveBeenCalledWith('سارة', 600, 316, 950);
-    expect(fillText).toHaveBeenCalledWith('المركز 2', 600, 412, 390);
-    expect(fillText).toHaveBeenCalledWith('1,200 نقطة', 600, 506, 740);
+    expect(context.drawImage).toHaveBeenCalled();
+    expect(fillText).toHaveBeenCalledWith('تحدي المعرفة', 600, 242, 960);
+    expect(fillText).toHaveBeenCalledWith('سارة', 600, 310, 900);
+    expect(fillText).toHaveBeenCalledWith('المركز 2', 600, 407, 390);
+    expect(fillText).toHaveBeenCalledWith('1,200 نقطة', 600, 494, 740);
   });
 });
