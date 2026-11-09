@@ -21,6 +21,7 @@ export default defineConfig({
     'voice-effects.spec.ts',
     'tahaddi-reference.spec.ts',
     'tahaddi-surfaces.spec.ts',
+    'knowledge-tower.spec.ts',
     'globe-scene.spec.ts',
     'village-scene.spec.ts',
     'kingdoms-city-scenes.spec.ts',

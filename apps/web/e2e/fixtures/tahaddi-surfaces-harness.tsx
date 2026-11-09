@@ -4,6 +4,7 @@ import '@fontsource-variable/cairo';
 import '../../tokens.css';
 import '../../src/app/globals.css';
 import '../../src/app/voice/voice.css';
+import { KnowledgeTowerRoom } from '../../src/components/special-games/knowledge-tower-room';
 import { VoiceLobby } from '../../src/components/voice/voice-lobby';
 import { AuthShell } from '../../src/components/auth/auth-shell';
 import { CommunityProfilePage } from '../../src/components/community/profile-view';
@@ -11,7 +12,7 @@ import { Input, PasswordInput, Button } from '../../src/components/ui';
 import { profile } from './tahaddi-surfaces-data';
 const mode = new URLSearchParams(location.search).get('surface');
 createRoot(document.getElementById('root')!).render(
-  mode === 'profile' ? (
+  mode === 'knowledge-tower' ? <KnowledgeTowerRoom /> : mode === 'profile' ? (
     <main style={{ maxWidth: 1100, margin: 'auto', padding: 16 }}>
       <CommunityProfilePage accountNumber={124} initialProfile={profile} />
     </main>
