@@ -106,12 +106,57 @@
   opacity: 0.84;
 }
 
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.motionToggle {
+  position: absolute;
+  z-index: 5;
+  inset-inline-end: 1rem;
+  inset-block-end: 1rem;
+  min-block-size: 44px;
+  padding-inline: 0.8rem;
+  border: 1px solid var(--home-border);
+  border-radius: 0.5rem;
+  background: var(--home-panel);
+  color: var(--home-ink);
+  cursor: pointer;
+}
+
+.motionToggle:focus-visible {
+  outline: 2px solid var(--home-gold-bright);
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .motionToggle {
+    inset-block-start: 0.5rem;
+    inset-block-end: auto;
+    font-size: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroVideo,
+  .motionToggle {
+    display: none;
+  }
+}
+
 .stage::after {
   content: '';
   position: absolute;
   z-index: 0;
   inset: 0;
   background:
+    linear-gradient(rgb(0 0 0 / 55%), rgb(0 0 0 / 55%)),
     radial-gradient(
       circle at 50% 35%,
       transparent 0 26%,
@@ -1971,8 +2016,13 @@
 }
 
 @media (max-width: 767px) {
-  .actions { display: flex; flex-wrap: wrap; }
-  .actions a { flex: 1 1 10rem; }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .actions a {
+    flex: 1 1 10rem;
+  }
 }
 
 .mobileDock a {
@@ -1998,17 +2048,27 @@
 }
 @media (prefers-contrast: more) {
   :global(.home-site-layout:has(.prestigeHome) .home-header),
-  .mobileDock { border: 1px solid var(--home-ink); }
-  :global(.home-site-layout:has(.prestigeHome) .home-header::after) { display: none; }
+  .mobileDock {
+    border: 1px solid var(--home-ink);
+  }
+  :global(.home-site-layout:has(.prestigeHome) .home-header::after) {
+    display: none;
+  }
 }
 
 :global(.home-site-layout:has(.prestigeHome) .home-header::after) {
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--home-panel) 35%, transparent), transparent);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--home-panel) 35%, transparent),
+    transparent
+  );
   opacity: 1;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :global(.home-site-layout:has(.prestigeHome) .home-header),
-  .mobileDock { background: var(--home-panel); }
+  .mobileDock {
+    background: var(--home-panel);
+  }
 }
 @media (forced-colors: active) {
   :global(.home-site-layout:has(.prestigeHome) .home-header),
@@ -2020,5 +2080,7 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  :global(.home-site-layout:has(.prestigeHome) .home-header::after) { display: none; }
+  :global(.home-site-layout:has(.prestigeHome) .home-header::after) {
+    display: none;
+  }
 }
