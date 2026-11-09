@@ -161,26 +161,41 @@ export function KnowledgeTowerRoom() {
 
         {phase === 'intro' ? (
           <div className={styles.intro}>
-            <span className={styles.kicker}>
-              <Building2 /> لعبة تسلّق معرفية
-            </span>
-            <h1>برج المعرفة</h1>
-            <p>
-              اصعد اثني عشر طابقاً من الأسئلة العربية المتدرجة. ثلاث أرواح، محطات أمان في الطوابق 4 و8 و12،
-              والوقت يضيق كلما ارتفعت.
-            </p>
-            <ul className={styles.rules}>
-              <li>كل طابق سؤال واحد بأربع خيارات.</li>
-              <li>الإجابة الخاطئة أو انتهاء الوقت تخصم روحاً.</li>
-              <li>بلّغ القمة لتحصد 12,000 نقطة وتتصدّر برجك.</li>
-            </ul>
-            <div className={styles.introActions}>
-              <Button type="button" onClick={startRun}>
-                <Sparkles />
-                ابدأ الصعود
-              </Button>
-              {highScore > 0 ? <small>أفضل رصيد: {formatNumber(highScore)}</small> : null}
+            <div className={styles.introCopy}>
+              <span className={styles.kicker}>
+                <Building2 aria-hidden="true" size={18} /> لعبة فردية · معرفة وسرعة
+              </span>
+              <h1>برج المعرفة</h1>
+              <p className={styles.introLead}>كل إجابة صحيحة، خطوة أقرب إلى القمة.</p>
+              <p className={styles.introDescription}>
+                اصعد اثني عشر طابقًا من الأسئلة المتدرجة. اختر إجابتك قبل انتهاء الوقت،
+                واحتفظ بأرواحك حتى الطابق الأخير.
+              </p>
+              <dl className={styles.runFacts}>
+                <div><dt>طوابق التحدي</dt><dd>{formatNumber(KNOWLEDGE_TOWER_FLOORS)}</dd></div>
+                <div><dt>أرواح البداية</dt><dd>{formatNumber(KNOWLEDGE_TOWER_LIVES)}</dd></div>
+                <div><dt>خيارات لكل سؤال</dt><dd>{formatNumber(optionLabels.length)}</dd></div>
+              </dl>
+              <div className={styles.introActions}>
+                <Button type="button" onClick={startRun}>
+                  <Sparkles aria-hidden="true" /> ابدأ الصعود
+                </Button>
+                {highScore > 0 ? <small>أفضل رصيد: {formatNumber(highScore)}</small> : null}
+              </div>
+              <p className={styles.introHint}><Heart aria-hidden="true" size={16} /> الإجابة الخاطئة أو انتهاء الوقت تخصم روحًا.</p>
             </div>
+            <aside className={styles.challengeBrief} aria-labelledby="tower-brief-title">
+              <span className={styles.briefLabel}>دليل الجولة</span>
+              <h2 id="tower-brief-title">اعرف طريقك<br />قبل أن تبدأ.</h2>
+              <p>سؤال واحد في كل طابق. الوقت يتناقص مع تقدّمك، وكل اختيار يصنع الفارق.</p>
+              <h3>محطات الأمان</h3>
+              <ol className={styles.checkpointList}>
+                {KNOWLEDGE_TOWER_CHECKPOINTS.map((floor) => (
+                  <li key={floor}><span>الطابق {formatNumber(floor)}</span><strong>{floor === KNOWLEDGE_TOWER_FLOORS ? 'القمة' : 'محطة أمان'}</strong></li>
+                ))}
+              </ol>
+              <p className={styles.briefNote}>اختر بهدوء. أجب قبل انتهاء الوقت.</p>
+            </aside>
           </div>
         ) : (
           <div className={styles.board}>
@@ -210,7 +225,7 @@ export function KnowledgeTowerRoom() {
                 <span data-ending={seconds <= 8 || undefined}>
                   <Timer /> {formatNumber(seconds)}ث
                 </span>
-                <span>
+                <span role="img" aria-label={`الأرواح المتبقية: ${formatNumber(lives)}`}>
                   {Array.from({ length: KNOWLEDGE_TOWER_LIVES }).map((_, index) => (
                     <Heart
                       key={index}
