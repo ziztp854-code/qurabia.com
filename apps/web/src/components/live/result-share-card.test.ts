@@ -16,6 +16,15 @@ describe('createResultShareCard', () => {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      bezierCurveTo: vi.fn(),
+      roundRect: vi.fn(),
+      closePath: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      rotate: vi.fn(),
+      ellipse: vi.fn(),
       stroke: vi.fn(),
       arc: vi.fn(),
       fill: vi.fn(),
@@ -36,9 +45,9 @@ describe('createResultShareCard', () => {
 
     expect(file.type).toBe('image/png');
     expect(file.name).toBe('tahaddi-result.png');
-    expect(fillText).toHaveBeenCalledWith('تحدي المعرفة', 1090, 230, 560);
-    expect(fillText).toHaveBeenCalledWith('سارة', 1090, 368, 560);
-    expect(fillText).toHaveBeenCalledWith('2', 300, 390, 245);
-    expect(fillText).toHaveBeenCalledWith('1,200 نقطة', 1090, 480, 560);
+    expect(fillText).toHaveBeenCalledWith('تحدي المعرفة', 600, 245, 990);
+    expect(fillText).toHaveBeenCalledWith('سارة', 600, 316, 950);
+    expect(fillText).toHaveBeenCalledWith('المركز 2', 600, 412, 390);
+    expect(fillText).toHaveBeenCalledWith('1,200 نقطة', 600, 506, 740);
   });
 });
