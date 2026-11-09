@@ -1,14 +1,36 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMotionActivity } from '@/components/motion/use-motion-activity';
 import styles from './prestige-home.module.css';
 
 export function PrestigeStage({ children }: { children: ReactNode }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const lionRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [motionEnabled, setMotionEnabled] = useState(true);
   useMotionActivity(frameRef);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    const video = videoRef.current;
+    if (!frame || !video) return;
+    const syncPlayback = () => {
+      if (motionEnabled && frame.dataset.motionActive === 'true') {
+        void video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    };
+    const observer = new MutationObserver(syncPlayback);
+    observer.observe(frame, { attributes: true, attributeFilter: ['data-motion-active'] });
+    syncPlayback();
+    return () => {
+      observer.disconnect();
+      video.pause();
+    };
+  }, [motionEnabled]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -57,6 +79,24 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
         priority
         sizes="100vw"
       />
+      <video
+        ref={videoRef}
+        className={styles.heroVideo}
+        src="/home/challenge-intro.mp4"
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden="true"
+      />
+      <button
+        type="button"
+        className={styles.motionToggle}
+        onClick={() => setMotionEnabled((enabled) => !enabled)}
+        aria-pressed={!motionEnabled}
+      >
+        {motionEnabled ? 'إيقاف حركة الخلفية' : 'تشغيل حركة الخلفية'}
+      </button>
       <div className={styles.particles} aria-hidden="true" data-layer="particles">
         {Array.from({ length: 10 }, (_, index) => (
           <span key={index} />
