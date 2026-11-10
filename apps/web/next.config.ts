@@ -6,7 +6,10 @@ import { withWorkflow } from 'workflow/next';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { resolveSentryBuildRelease } from './src/lib/observability/sentry-release';
-import voiceCloudOrigins from '../../config/voice-cloud-origins.json';
+import {
+  buildWebSecurityHeaders,
+  embeddedGameSecurityHeaders,
+} from '../../config/web-security.mjs';
 
 function loadEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) return;
@@ -30,16 +33,11 @@ function loadEnvFile(filePath: string) {
   }
 }
 
-if (
-  process.env.VERCEL !== '1' &&
-  process.env.NODE_ENV !== 'production' &&
-  process.env.MAMLUK_LOCAL_BUILD !== '1'
-) {
+if (process.env.NODE_ENV !== 'production' && process.env.MAMLUK_LOCAL_BUILD !== '1') {
   loadEnvFile(path.resolve(process.cwd(), '../../.env'));
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
-const onVercel = process.env.VERCEL === '1';
 const sentrySourceMapsToken = process.env.SENTRY_SOURCE_MAPS_AUTH_TOKEN?.trim();
 let buildRevision: string;
 try {
@@ -54,114 +52,7 @@ const sentryRelease = resolveSentryBuildRelease(process.env, buildRevision);
 // Share the same fallback with build workers even in source archives without Git.
 process.env.NEXT_PUBLIC_SENTRY_RELEASE = sentryRelease;
 
-function toOrigin(value: string | undefined): string | null {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-  try {
-    return new URL(trimmed).origin;
-  } catch {
-    return null;
-  }
-}
-
-function toWebSocketOrigin(origin: string): string {
-  return origin.replace(/^http/, 'ws');
-}
-
-/**
- * Content-Security-Policy for the web app. Keep in sync with the policy in
- * `vercel.json`, which is what Vercel serves; this function covers every
- * other host (Render, Docker, on-prem) so a deployment never ships without
- * a CSP.
- *
- *  - `connect-src` is derived from NEXT_PUBLIC_REALTIME_URL and
- *    NEXT_PUBLIC_SITE_URL (https + wss twins) instead of hardcoded domains.
- *  - Next.js injects inline bootstrap scripts, so `'unsafe-inline'` stays
- *    until a nonce-based policy is introduced.
- *  - `'wasm-unsafe-eval'` covers the Draco/KTX2 decoders used by the 3D
- *    scenes; `'unsafe-eval'` is never allowed in production.
- *  - `worker-src blob:` is required by the three.js loader workers.
- */
-function buildContentSecurityPolicy(): string {
-  const connectSources = new Set([
-    "'self'",
-    'https://tiles.openfreemap.org',
-    'https://elevation-tiles-prod.s3.amazonaws.com',
-  ]);
-  for (const origin of [
-    toOrigin(process.env.NEXT_PUBLIC_REALTIME_URL),
-    toOrigin(process.env.NEXT_PUBLIC_SITE_URL),
-    toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN),
-  ]) {
-    if (!origin) continue;
-    connectSources.add(origin);
-    connectSources.add(toWebSocketOrigin(origin));
-  }
-
-  // A voice session survives App Router navigation to games. The policy belongs
-  // to the initial document, so the configured gateway must work on every entry route.
-  {
-    const origin = toOrigin(process.env.LIVEKIT_URL);
-    if (origin && /^(wss?|https?):/.test(origin)) {
-      const httpOrigin = origin.replace(/^ws/, 'http');
-      connectSources.add(httpOrigin);
-      connectSources.add(toWebSocketOrigin(httpOrigin));
-    }
-    if (process.env.LIVEKIT_MODE === 'cloud')
-      for (const cloudOrigin of voiceCloudOrigins) connectSources.add(cloudOrigin);
-  }
-
-  return [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
-    `connect-src ${[...connectSources].join(' ')}`,
-    "worker-src 'self' blob:",
-    "frame-src 'self'",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    ...(toOrigin(process.env.NEXT_PUBLIC_SITE_URL)?.startsWith('http://')
-      ? []
-      : ['upgrade-insecure-requests']),
-  ].join('; ');
-}
-
-/**
- * Security headers applied to every response.
- *  - HSTS (2 years) with subdomains and preload.
- *  - X-Frame-Options DENY: block clickjacking on every route.
- *  - X-Content-Type-Options nosniff: block MIME sniffing.
- *  - Referrer-Policy strict-origin-when-cross-origin: sane default.
- *  - Permissions-Policy: allow same-origin audio for persistent voice across games.
- *  - COOP / DNS prefetch / cross-domain policies: match `vercel.json`.
- *  - CSP: only emitted on production builds that do not run on Vercel
- *    (Vercel already injects it from `vercel.json`; emitting it twice would
- *    enforce the intersection of both policies).
- */
-const securityHeaders = [
-  {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload',
-  },
-  { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  {
-    key: 'Permissions-Policy',
-    value:
-      'camera=(), microphone=(self), speaker-selection=(self), geolocation=(), interest-cohort=()',
-  },
-  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-  { key: 'X-DNS-Prefetch-Control', value: 'off' },
-  { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
-  ...(isProduction && !onVercel
-    ? [{ key: 'Content-Security-Policy', value: buildContentSecurityPolicy() }]
-    : []),
-];
+const securityHeaders = buildWebSecurityHeaders(process.env);
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease },
@@ -194,19 +85,7 @@ const nextConfig: NextConfig = {
       {
         // Only this standalone mini-game may be embedded by our own farm panel.
         source: '/games/sultan-farm/index.html',
-        headers: [
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          {
-            key: 'Permissions-Policy',
-            value:
-              'camera=(), microphone=(), speaker-selection=(), geolocation=(), interest-cohort=()',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'",
-          },
-        ],
+        headers: embeddedGameSecurityHeaders,
       },
       {
         source: '/models/:path*',

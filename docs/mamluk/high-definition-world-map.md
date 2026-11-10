@@ -134,7 +134,7 @@ disabled, without introducing artificial actions.
   session integration, hook, component, styles and focused regressions.
 - `apps/web/src/app/games/kingdoms/world-map/page.tsx`: default overview entry.
 - `packages/mamluk-maplibre-adapter/`: sprite atlas, optional symbols, metrics and tests.
-- `apps/web/tokens.css`, `apps/web/next.config.ts`, `vercel.json`: palette/terrain CSP.
+- `apps/web/tokens.css`, `apps/web/next.config.ts`, `config/web-security.mjs`: palette/terrain CSP.
 - `scripts/prepare-maplibre-workers.mjs`: existing Cairo font/license preparation.
 - HD Playwright config/spec and isolated fixture seeder.
 - Core/backend, gameplay, Prisma and package manifests have no release diff.

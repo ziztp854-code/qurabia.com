@@ -1,5 +1,7 @@
 # Tahaddi Live room effects
 
+> هذا المستند سجل تاريخي لتنفيذ الميزة وتحققها. تعليمات الاستضافة والإصدار الحالية في [دليل النشر على Render](../realtime-deployment.md). أُوقفت إعدادات نشر Vercel ومشغّل هجراته الخاص.
+
 Implemented for `/voice`, the existing Next.js/React voice product. The independent
 `/community-voice` mesh pilot is unchanged. Baseline: commit
 `6ff010afcd68d2a8da5959cefd9b40b1237281e4`. No deployment or database migration.

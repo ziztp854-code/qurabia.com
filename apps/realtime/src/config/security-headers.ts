@@ -53,8 +53,8 @@ export function buildContentSecurityPolicy(
  * Security headers applied to every response. Vercel already injects HSTS at
  * the edge, but we set it again here so the headers are also visible on
  * non-Vercel deploys (e.g. local Docker, on-prem) and on the Socket.IO
- * long-poll transport. Keep this in sync with `vercel.json` and
- * `apps/web/next.config.ts`.
+ * long-poll transport. Web documents use the corresponding policy in
+ * `config/web-security.mjs` via `apps/web/next.config.ts`.
  */
 export function buildSecurityHeaders(
   allowedOrigins: readonly string[],

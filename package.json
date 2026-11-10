@@ -28,8 +28,7 @@
     "blender:export:all": "node scripts/blender.mjs export-all",
     "blender:watch": "node scripts/blender.mjs watch",
     "blender:preview": "node scripts/blender.mjs preview",
-    "release:check": "node scripts/assert-clean-vercel-release.mjs",
-    "deploy:vercel:preview": "pnpm release:check && vercel deploy --yes",
+    "release:check": "node scripts/assert-clean-release.mjs",
     "loadtest:smoke": "k6 run tests/load/http-smoke.js",
     "loadtest:realtime": "k6 run tests/load/realtime-handshake.js",
     "loadtest:all": "pnpm loadtest:smoke && pnpm loadtest:realtime",
@@ -51,7 +50,8 @@
     "db:studio": "prisma studio",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
-    "index:submit": "node scripts/submit-search-indexing.mjs"
+    "index:submit": "node scripts/submit-search-indexing.mjs",
+    "build:web:production": "node scripts/build-web-production.mjs"
   },
   "devDependencies": {
     "@livekit/rtc-node": "1.1.0",

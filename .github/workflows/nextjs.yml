@@ -126,7 +126,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Verify production gate and decoded voice signal measurement
-        run: node --test scripts/vercel-ci-gate.test.mjs scripts/voice-audio-signal.test.mjs
+        run: node --test scripts/production-ci-gate.test.mjs scripts/build-web-production.test.mjs scripts/voice-cloud-policy.test.mjs scripts/voice-audio-signal.test.mjs
 
       - name: Test
         # Unit requests use fixed origins; runtime URLs remain set for browser tests.

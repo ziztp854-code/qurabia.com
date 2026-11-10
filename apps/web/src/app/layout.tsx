@@ -1,14 +1,12 @@
 import { APP_CONFIG } from '@tahaddi/config';
 import '@fontsource-variable/alexandria';
 import '@fontsource-variable/cairo';
-import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { PresenceBeacon } from '@/components/presence/presence-beacon';
 import { VoiceSessionProvider } from '@/components/voice/voice-session-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { MotionProvider } from '@/components/motion/motion-provider';
-import { SpeedInsights } from '@/components/speed-insights';
 import { buildSiteVerificationMetadata } from '@/lib/metadata/discovery';
 import { SHARE_IMAGE, SHARE_IMAGE_URL, SITE_URL } from '@/lib/metadata/site';
 import './globals.css';
@@ -162,12 +160,6 @@ export default function RootLayout({
             <VoiceSessionProvider>{children}</VoiceSessionProvider>
           </MotionProvider>
         </ThemeProvider>
-        {process.env.VERCEL === '1' ? (
-          <>
-            <SpeedInsights />
-            <Analytics />
-          </>
-        ) : null}
       </body>
     </html>
   );

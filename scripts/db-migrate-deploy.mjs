@@ -13,18 +13,18 @@
  *  - غياب `DATABASE_URL`            → طباعة تنبيه والخروج بصفر.
  *  - فشل اختبار اتصال TCP          → طباعة تنبيه والخروج بصفر.
  *  - نجاح الاتصال                   → تنفيذ `prisma migrate deploy` كالمعتاد.
- *  - داخل Vercel (VERCEL=1)         → تجاهل اختبار TCP وتنفيذ الأمر مباشرة.
- *  - Vercel preview/development     → تخطّي الهجرة ما لم يُضبط RUN_DB_MIGRATE=1،
- *                                     حتى لا تلمس بنية preview قاعدة الإنتاج.
+ *  - إنتاج                       → تنفيذ الأمر مباشرة دون اختبار TCP.
+ *  - معاينة/تجهيز                → تخطّي الهجرة ما لم يُضبط RUN_DB_MIGRATE=1.
  *
  * ترحيلات الإنتاج تُشغّل في Render قبل نشر خدمة الزمن الحقيقي.
  */
 
 import { spawnSync } from 'node:child_process';
 import net from 'node:net';
+import { deploymentEnvironment } from '../config/deployment-context.mjs';
 
 const url = process.env.DATABASE_URL?.trim();
-const vercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
+const deployment = deploymentEnvironment();
 
 function logSkip(reason) {
   console.warn(
@@ -38,16 +38,15 @@ if (process.env.SKIP_DB_MIGRATE === '1') {
   logSkip('SKIP_DB_MIGRATE=1 مضبوط في البيئة');
 }
 
-const vercelEnv = process.env.VERCEL_ENV;
-if (vercel && vercelEnv && vercelEnv !== 'production' && process.env.RUN_DB_MIGRATE !== '1') {
-  logSkip(`بناء Vercel من نوع ${vercelEnv} (اضبط RUN_DB_MIGRATE=1 للتجاوز)`);
+if (['preview', 'staging'].includes(deployment) && process.env.RUN_DB_MIGRATE !== '1') {
+  logSkip(`بناء ${deployment} (اضبط RUN_DB_MIGRATE=1 للتجاوز)`);
 }
 
 if (!url) {
   logSkip('DATABASE_URL غير معرَّف');
 }
 
-if (!vercel) {
+if (deployment !== 'production') {
   let parsed;
   try {
     parsed = new URL(url);

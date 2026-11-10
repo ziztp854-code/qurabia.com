@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { nextHeaderRules } from '@/test/next-header-rules';
 
 const require = createRequire(import.meta.url);
 const { JSDOM } = require('jsdom');
@@ -183,26 +184,23 @@ describe('Sultan farm management mini-game', () => {
     expect(state.coins).toBe(305);
     expect(state.dailyStreak).toBe(2);
   });
-  it('allows same-origin embedding only for the mini-game and keeps the rest of the site protected', () => {
-    const config = require('../../../../../vercel.json');
-    const global = config.headers.find((rule: { source: string }) => rule.source === '/(.*)');
-    const game = config.headers.find(
+  it('allows same-origin embedding only for the mini-game and keeps the rest of the site protected', async () => {
+    const headers = await nextHeaderRules();
+    const global = headers.find((rule: { source: string }) => rule.source === '/:path*');
+    const game = headers.find(
       (rule: { source: string }) => rule.source === '/games/sultan-farm/index.html',
     );
-    expect(global.headers.find((h: { key: string }) => h.key === 'X-Frame-Options').value).toBe(
+    expect(global?.headers.find((h: { key: string }) => h.key === 'X-Frame-Options')?.value).toBe(
       'DENY',
     );
-    expect(game.headers.find((h: { key: string }) => h.key === 'X-Frame-Options').value).toBe(
+    expect(game?.headers.find((h: { key: string }) => h.key === 'X-Frame-Options')?.value).toBe(
       'SAMEORIGIN',
     );
-    const policy = game.headers.find(
+    const policy = game?.headers.find(
       (h: { key: string }) => h.key === 'Content-Security-Policy',
-    ).value;
+    )?.value;
     expect(policy).toContain("frame-ancestors 'self'");
     expect(policy).toContain("connect-src 'none'");
-    const nextConfig = readFileSync(require.resolve('../../../next.config.ts'), 'utf8');
-    expect(nextConfig).toContain("source: '/games/sultan-farm/index.html'");
-    expect(nextConfig).toContain(policy);
   });
   it('renders the actual page, plants on click, and saves in a village-specific slot', () => {
     const html = readFileSync(

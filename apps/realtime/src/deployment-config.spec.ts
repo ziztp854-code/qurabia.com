@@ -1,68 +1,29 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-type VercelConfig = {
-  services?: {
-    realtime?: {
-      root?: string;
-      entrypoint?: string;
-      framework?: string;
-    };
-  };
-  rewrites?: Array<{
-    source?: string;
-    destination?: {
-      service?: string;
-    };
-  }>;
-};
-
 type PackageJson = {
   dependencies?: Record<string, string>;
   scripts?: Record<string, string>;
 };
 
-describe('Vercel realtime deployment', () => {
-  const config = JSON.parse(
-    readFileSync(resolve(__dirname, '../../../vercel.json'), 'utf8'),
-  ) as VercelConfig;
+describe('Render realtime deployment', () => {
+  const config = readFileSync(
+    resolve(__dirname, '../../../render.yaml'),
+    'utf8',
+  );
   const rootPackage = JSON.parse(
     readFileSync(resolve(__dirname, '../../../package.json'), 'utf8'),
   ) as PackageJson;
 
-  it('routes realtime handshakes before the web catch-all on the shared domain', () => {
-    expect(config.services?.realtime).toMatchObject({
-      root: '.',
-      entrypoint: 'apps/realtime/vercel-entry.cjs',
-      framework: 'nestjs',
-    });
-    expect(config.rewrites?.slice(0, 4)).toEqual([
-      { source: '/socket.io/(.*)', destination: { service: 'realtime' } },
-      { source: '/health', destination: { service: 'realtime' } },
-      { source: '/realtime/(.*)', destination: { service: 'realtime' } },
-      { source: '/(.*)', destination: { service: 'web' } },
-    ]);
-  });
-
-  it('keeps realtime runtime dependencies visible to the Vercel function packager', () => {
-    const dependencies = rootPackage.dependencies ?? {};
-    const runtimePackages = [
-      '@nestjs/core',
-      '@nestjs/common',
-      '@nestjs/platform-socket.io',
-      '@nestjs/websockets',
-      'ioredis',
-      'socket.io',
-      'zod',
-    ];
-
-    for (const packageName of runtimePackages) {
-      expect(dependencies[packageName]).toEqual(expect.any(String));
-    }
-
-    expect(dependencies['@tahaddi/contracts']).toBe('workspace:*');
-    expect(dependencies['@tahaddi/database']).toBe('workspace:*');
-    expect(dependencies['@tahaddi/domain']).toBe('workspace:*');
+  it('uses the persistent Node runtime with a pre-deploy migration and health check', () => {
+    expect(config).toContain('name: tahaddi-realtime');
+    expect(config).toContain(
+      'preDeployCommand: node scripts/deploy-migrations.mjs',
+    );
+    expect(config).toContain(
+      'startCommand: corepack pnpm --filter @tahaddi/realtime start:prod',
+    );
+    expect(config).toContain('healthCheckPath: /health');
   });
 
   it('keeps monitoring optional and load tests read-only', () => {

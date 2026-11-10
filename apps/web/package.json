@@ -30,8 +30,6 @@
     "@tanstack/react-query": "^5.103.1",
     "@upstash/ratelimit": "^2.1.0",
     "@upstash/redis": "^1.38.4",
-    "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
     "@xyflow/react": "^12.11.6",
     "ai": "^6.0.246",
     "chess.js": "1.4.0",

@@ -62,13 +62,13 @@ docs/           الوثائق والتقارير والملاحظات
 
 ## ملاحظة عن الاعتماديات الجذرية
 
-اعتماديات تشغيل خدمة الزمن الحقيقي (NestJS، Socket.IO، ioredis، Sentry) معلنة في `package.json` الجذري **عن قصد** حتى يراها مُحزّم دوال Vercel، ويحمي ذلك الاختبار `apps/realtime/src/deployment-config.spec.ts`. لا تنقلها إلى `apps/realtime` دون تعديل الاختبار وإعداد النشر.
+تعمل خدمتا `qurabia-web` و`tahaddi-realtime` على Render بعد نجاح CI. راجع [دليل النشر](docs/realtime-deployment.md) لأوامر البناء وربط الخدمات. تُحفظ الاعتماديات المشتركة المستخدمة في أدوات الجذر؛ لا تحذف حزم Node بناءً على اسم مزود استضافة سابق.
 
 ## التكامل المستمر (CI)
 
 - **GitLab CI:** `.gitlab-ci.yml` يشغّل على كل Merge Request وعلى الفرع الافتراضي مهام متوازية: التحقق من Prisma، ESLint، TypeScript، Prettier، الاختبارات، Playwright E2E، والبناء، إضافةً إلى قوالب GitLab للفحص الأمني (SAST، Secret Detection، Dependency Scanning).
 - **تقارير الاختبارات:** نتائج vitest وPlaywright تُنشر بصيغة JUnit، وتغطية jest لخدمة realtime بصيغة Cobertura، فتظهر مباشرة في واجهة الـ Merge Request.
-- **هجرات الإنتاج:** المهمة اليدوية `db:migrate:production` (على `main` فقط) تطبّق `prisma migrate deploy` على قاعدة الإنتاج باستخدام متغير CI المحمي `PRODUCTION_DATABASE_URL`. بناء Vercel للمعاينات (preview) لم يعد ينفّذ الهجرات إلا بضبط `RUN_DB_MIGRATE=1`.
+- **هجرات الإنتاج:** يشغّل Render `node scripts/deploy-migrations.mjs` قبل تشغيل خدمة الزمن الحقيقي. بناء الويب لا يطبق هجرات الإنتاج، ومعاينات الفروع لا تستهدف قاعدة الإنتاج.
 - **GitHub Actions:** `.github/workflows/nextjs.yml` يشغّل نفس السلسلة عند استخدام المرآة على GitHub.
 
 ## نظام التصميم

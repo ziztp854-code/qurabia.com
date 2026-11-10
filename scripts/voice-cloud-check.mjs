@@ -1,4 +1,4 @@
-// Runs on Vercel production builds, before the new Cloud mode becomes live.
+// Runs on production builds, before the new Cloud mode becomes live.
 // Only touches a uniquely named test room and never logs credentials or tokens.
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
@@ -6,8 +6,10 @@ import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { checkCloudAudio } from './voice-cloud-audio-check.mjs';
 import { signalFailureCategory } from './voice-cloud-diagnostic.mjs';
+import { deploymentEnvironment } from '../config/deployment-context.mjs';
+import { buildWebContentSecurityPolicy } from '../config/web-security.mjs';
 
-if (process.env.VERCEL_ENV !== 'production' || process.env.LIVEKIT_MODE !== 'cloud') {
+if (deploymentEnvironment() !== 'production' || process.env.LIVEKIT_MODE !== 'cloud') {
   console.log('[voice-cloud-check] skipped outside production Cloud mode');
   process.exit(0);
 }
@@ -36,9 +38,7 @@ if (
 const origins = JSON.parse(
   await readFile(new URL('../config/voice-cloud-origins.json', import.meta.url), 'utf8'),
 );
-const policy = JSON.parse(
-  await readFile(new URL('../vercel.json', import.meta.url), 'utf8'),
-).headers[0].headers.find((h) => h.key === 'Content-Security-Policy').value;
+const policy = buildWebContentSecurityPolicy(process.env);
 if (
   !origins.includes(endpoint.origin) ||
   origins.some((origin) => !policy.split(/[ ;]/).includes(origin))

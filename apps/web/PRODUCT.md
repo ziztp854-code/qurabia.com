@@ -25,7 +25,7 @@ web
 - يستخدم اللاعبون الهواتف غالبًا أثناء الانضمام والإجابة.
 - يستخدم المضيف لوحة أوسع لإنشاء المحتوى ومراقبة الغرفة والبث.
 - تعتمد الجلسات المباشرة على Next.js وNestJS وSocket.IO، مع PostgreSQL للحالة الدائمة وRedis للتنسيق العابر.
-- سطح التشغيل المعتمد هو Vercel Services لتشغيل Next.js وخدمة الوقت الحقيقي.
+- سطح التشغيل المعتمد هو Render بخدمتين منفصلتين: `qurabia-web` لـNext.js و`tahaddi-realtime` لـNestJS/Socket.IO.
 
 ## Capabilities and Constraints
 

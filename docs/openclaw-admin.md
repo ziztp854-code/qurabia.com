@@ -4,7 +4,7 @@ This integration is separate from the public lobby assistant and the personal Op
 
 ## Boundaries
 
-The dedicated `qurabia-admin` profile runs its own loopback gateway on `19789`, workspace and tool allowlist. Its native plugin in `tools/openclaw-admin-plugin` makes outbound HTTPS requests to Qurabia. Vercel does not connect to the local gateway; no public tunnel or inbound port is needed. Keep the personal profile, credentials, plugins and workspace separate. Agent identity alone does not isolate access.
+The dedicated `qurabia-admin` profile runs its own loopback gateway on `19789`, workspace and tool allowlist. Its native plugin in `tools/openclaw-admin-plugin` makes outbound HTTPS requests to Qurabia. The hosted web service does not connect to the local gateway; no public tunnel or inbound port is needed. Keep the personal profile, credentials, plugins and workspace separate. Agent identity alone does not isolate access.
 
 Only site status, aggregate question statistics, and proposals to change a question to `DRAFT` or `ARCHIVED` are in scope. The connector cannot publish, delete, manage accounts, execute commands, read arbitrary files, call arbitrary URLs or approve its own proposals. Do not grant shell, browser, filesystem, generic HTTP or personal-profile tools to this agent. Do not add the administrative plugin or credential to the public support assistant.
 

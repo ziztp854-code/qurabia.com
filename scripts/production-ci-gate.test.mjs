@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyProductionCi } from './vercel-ci-gate.mjs';
+import { verifyProductionCi } from './production-ci-gate.mjs';
 
 const sha = 'a'.repeat(40);
-const env = { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_SHA: sha };
+const env = { DEPLOY_ENV: 'production', DEPLOY_COMMIT_SHA: sha };
 const success = {
   head_sha: sha,
   head_branch: 'main',
@@ -29,12 +29,12 @@ function clock() {
 
 test('preview builds do not wait for a main push workflow', async () => {
   await verifyProductionCi({
-    env: { VERCEL_ENV: 'preview' },
+    env: { DEPLOY_ENV: 'preview' },
     fetchRuns: () => assert.fail('must skip'),
   });
 });
 test('production fails closed without an exact commit SHA', async () => {
-  await assert.rejects(verifyProductionCi({ env: { VERCEL_ENV: 'production' } }), /SHA/);
+  await assert.rejects(verifyProductionCi({ env: { DEPLOY_ENV: 'production' } }), /SHA/);
 });
 test('the exact production commit can proceed only after CI completes successfully', async () => {
   let calls = 0;
