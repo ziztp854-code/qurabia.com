@@ -37,13 +37,14 @@ test('production verifies the source commit and voice before building dependent 
     env,
     verifyCi: async ({ env: supplied }) => {
       assert.equal(supplied.DEPLOY_ENV, 'production');
+      assert.equal(supplied.LIVEKIT_MODE, 'cloud');
       assert.equal(supplied.RENDER_GIT_COMMIT, env.RENDER_GIT_COMMIT);
       calls.push('CI');
     },
     run: (command, args, options) => {
       assert.equal(options.env.PRIVATE_BINDING, 'retained');
+      assert.equal(options.env.LIVEKIT_MODE, 'cloud');
       if (command === process.execPath) {
-        assert.equal(options.env.LIVEKIT_MODE, 'cloud');
         calls.push('voice');
       } else calls.push(args[2]);
     },

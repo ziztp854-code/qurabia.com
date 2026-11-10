@@ -66,7 +66,7 @@
 corepack pnpm install --frozen-lockfile && node scripts/build-web-production.mjs
 ```
 
-يتحقق الأمر، بالترتيب، من نجاح تشغيل CI الخاص بنفس commit على `main`، ومن اختبارات LiveKit Cloud والإلغاء الصارم ونقل الصوت، ثم يبني الحزم المشتركة والواجهة. أي إخفاق يوقف الإصدار.
+يتحقق الأمر، بالترتيب، من نجاح تشغيل CI الخاص بنفس commit على `main`، ومن اختبارات LiveKit Cloud والإلغاء الصارم ونقل الصوت، ثم يبني الحزم المشتركة والواجهة. يمرر `LIVEKIT_MODE=cloud` للفحص والبناء معًا حتى تكون سياسة المتصفح المنشورة هي السياسة التي فُحصت. أي إخفاق يوقف الإصدار.
 
 تقرأ `scripts/production-ci-gate.mjs` السياق من `DEPLOY_ENV` و`DEPLOY_COMMIT_SHA` عند تحديدهما صراحة. تكتشف Render الإنتاجي تلقائيًا عبر `RENDER=true` و`RENDER_GIT_COMMIT`، وتتجاوز معاينات `IS_PULL_REQUEST=true`. لا يُقبل commit مختلف عن checkout الخاص بـRender. تُحفظ مهلة انتظار CI الحالية (35 دقيقة).
 

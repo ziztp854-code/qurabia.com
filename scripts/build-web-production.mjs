@@ -8,11 +8,12 @@ export async function buildWebProduction({
   verifyCi = verifyProductionCi,
   run = (command, args, options) => execFileSync(command, args, options),
 } = {}) {
-  const production = { ...env, DEPLOY_ENV: 'production' };
+  // The verified media mode must also reach Next's build-time document policy.
+  const production = { ...env, DEPLOY_ENV: 'production', LIVEKIT_MODE: 'cloud' };
   await verifyCi({ env: production });
   run(process.execPath, ['scripts/voice-cloud-check.mjs'], {
     stdio: 'inherit',
-    env: { ...production, LIVEKIT_MODE: 'cloud' },
+    env: production,
   });
   for (const name of [
     '@tahaddi/contracts',
