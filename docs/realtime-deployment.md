@@ -72,8 +72,6 @@ corepack pnpm install --frozen-lockfile && node scripts/build-web-production.mjs
 
 السياسة الفعلية للمتصفح تأتي من `config/web-security.mjs`؛ يستخدمها Next.js وفحص الصوت معًا. نطاقات LiveKit الإقليمية في `config/voice-cloud-origins.json`. لا يوجد ملف إعداد نشر Vercel أو حزم Analytics/Speed Insights في التطبيق.
 
-أثناء انتقال إعداد الخدمة فقط، يبقى `scripts/vercel-ci-gate.mjs` مدخل توافق صغيرًا لأمر البناء السابق؛ يستدعي البوابة الجديدة دون استخدام متغيرات Vercel. يُحذف بعد اعتماد أمر البناء أعلاه في إعدادات الخدمة.
-
 `pnpm release:check` يتحقق من نظافة نسخة Git دون ربطها بمزود استضافة. فحوص قاعدة البيانات الإنتاجية تبقى في `scripts/deploy-migrations.mjs` قبل تشغيل خدمة الزمن الحقيقي. لا تشغّل migrations على قاعدة الإنتاج من معاينات الفروع.
 
 ## متغيرات Render
