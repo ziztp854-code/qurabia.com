@@ -1,54 +1,19 @@
-import {
-  ArrowLeft,
-  Castle,
-  Crown,
-  Gamepad2,
-  Globe2,
-  Headphones,
-  Mic,
-  QrCode,
-  Radio,
-  Trophy,
-  Users,
-  Zap,
-} from 'lucide-react';
-import Image from 'next/image';
+import { Crown } from 'lucide-react';
 import Link from 'next/link';
-import { PrestigeStage } from '@/components/home/prestige-stage';
-import { RoomCodeShortcut } from '@/components/home/room-code-shortcut';
-import { InstallAppButton } from '@/components/pwa/install-app-button';
 import { SiteLayout, type HeaderUser } from '@/components/layout';
 import { ButtonLink } from '@/components/ui';
 import { publicNavigation } from '@/config/navigation';
-import { publicGames } from '@/data/games';
-import type { PlanCode } from '@tahaddi/domain';
+import { HomeHero, type HomeRank } from './home-hero';
+import { HomeLiveSection } from './home-live-section';
+import { HomeGamesSection } from './home-games-section';
+import { HomeWorldSection } from './home-world-section';
 import styles from './prestige-home.module.css';
-import worldStyles from './mamluk-home.module.css';
-import liveStyles from './live-home.module.css';
-import { GradientText } from '@/components/react-bits/gradient-text';
-import { Magnet } from '@/components/react-bits/magnet';
 
-const RANK_EMBLEM: Record<PlanCode, string> = {
-  SPECTATOR: '/ranks/emblem-spectator.png',
-  KNIGHT: '/ranks/emblem-knight.png',
-  PRINCE: '/ranks/emblem-prince.png',
-  SULTAN: '/ranks/emblem-sultan.png',
-};
+export type { HomeRank } from './home-hero';
 
-const featuredGameIds = ['chess', 'baloot', 'millionaire', 'letter-challenge'] as const;
-const featuredGames = featuredGameIds.flatMap((id) => {
-  const game = publicGames.find((item) => item.id === id);
-  return game ? [game] : [];
-});
-const productionGames = publicGames.filter((game) => game.status !== 'soon');
 const mobileNavigation = publicNavigation.filter((item) =>
   ['/', '/games', '/quizzes', '/leaderboard', '/profile'].includes(item.href),
 );
-export type HomeRank = {
-  code: string;
-  name: string;
-  emblem: string;
-};
 
 export function PrestigeHome({
   user,
@@ -60,227 +25,10 @@ export function PrestigeHome({
   return (
     <SiteLayout user={user} variant="home">
       <div className={`${styles.page} prestigeHome`}>
-        <section className={styles.hero} id="top" aria-labelledby="landing-title">
-          <PrestigeStage>
-            <div className={styles.copy}>
-              <h1 id="landing-title">
-                <GradientText>تحدي</GradientText>
-                <span className={styles.heroPromise}>جمعتكم تبدأ بلعبة.</span>
-              </h1>
-              <p className={styles.tagline}>
-                اختر تحدّيك، اجمع أصدقاءك، وشاركهم جولة تستحق المنافسة.
-              </p>
-              {rank ? (
-                <Link
-                  href="/orders"
-                  className={styles.rankBadge}
-                  data-plan={rank.code}
-                  aria-label={`رتبتك ${rank.name} — فتح قاعة الأوسمة`}
-                >
-                  <Image
-                    className={styles.rankBadgeEmblem}
-                    src={RANK_EMBLEM[rank.code as PlanCode]}
-                    alt={`شارة رتبة ${rank.name}`}
-                    width={256}
-                    height={256}
-                  />
-                  <b>{rank.name}</b>
-                </Link>
-              ) : null}
-              <div className={styles.actions}>
-                <ButtonLink href="/games" variant="gold">
-                  <Magnet>
-                    ابدأ اللعب الآن
-                    <ArrowLeft aria-hidden="true" />
-                  </Magnet>
-                </ButtonLink>
-                <ButtonLink href="/join" variant="outline">
-                  انضم برمز
-                  <QrCode aria-hidden="true" />
-                </ButtonLink>
-              </div>
-              <InstallAppButton />
-              <RoomCodeShortcut />
-            </div>
-
-            <div className={styles.values} role="list" aria-label="مزايا المنصة">
-              <span role="listitem">
-                <Zap aria-hidden="true" />
-                <b>تحديات مباشرة</b>
-                <small>العب مع أصدقائك</small>
-              </span>
-              <span role="listitem">
-                <Trophy aria-hidden="true" />
-                <b>منافسة حقيقية</b>
-                <small>اختبر مهاراتك</small>
-              </span>
-              <span role="listitem">
-                <Gamepad2 aria-hidden="true" />
-                <b>غرف خاصة</b>
-                <small>شارك الرمز وابدأ</small>
-              </span>
-            </div>
-          </PrestigeStage>
-        </section>
-
-        <section className={liveStyles.section} id="tahaddi-live" aria-labelledby="live-title">
-          <div className={liveStyles.copy}>
-            <span className={liveStyles.eyebrow}>
-              <Radio aria-hidden="true" /> غرف صوتية حيّة
-            </span>
-            <h2 id="live-title">
-              تحدي <span>لايف</span>
-            </h2>
-            <p className={liveStyles.promise}>هويتنا عربية.. صوت يجمعنا.</p>
-            <p className={liveStyles.description}>
-              مساحتك للحديث والتعارف ومشاركة اللحظة. استكشف الغرف الصوتية، انضم إلى الحوار، واجمع
-              أصدقاءك في غرفة تحمل طابعك.
-            </p>
-            <div className={liveStyles.actions}>
-              <ButtonLink href="/voice" variant="gold">
-                <Headphones aria-hidden="true" /> ادخل تحدي لايف
-                <ArrowLeft aria-hidden="true" />
-              </ButtonLink>
-              <ButtonLink href="/voice?view=mine" variant="outline">
-                <Mic aria-hidden="true" /> غرفي الصوتية
-              </ButtonLink>
-            </div>
-          </div>
-          <div className={liveStyles.deck}>
-            <div className={liveStyles.deckHeading}>
-              <span>
-                <Radio aria-hidden="true" /> لكل صوت مساحة، ولكل لقاء حكاية
-              </span>
-              <span className={liveStyles.wordmark} lang="en" dir="ltr">
-                TAHADDI / LIVE
-              </span>
-            </div>
-            <ul className={liveStyles.steps} aria-label="تجربة تحدي لايف">
-              <li>
-                <span className={liveStyles.stepIcon}>
-                  <Headphones aria-hidden="true" />
-                </span>
-                <div>
-                  <h3>اكتشف غرفتك</h3>
-                  <p>تصفّح الغرف واختر اللقاء الذي يناسب اهتماماتك.</p>
-                </div>
-              </li>
-              <li>
-                <span className={liveStyles.stepIcon}>
-                  <Users aria-hidden="true" />
-                </span>
-                <div>
-                  <h3>شارك الحوار</h3>
-                  <p>استمع، تحدّث، وتواصل مع مجتمع تحدي.</p>
-                </div>
-              </li>
-              <li>
-                <span className={liveStyles.stepIcon}>
-                  <Mic aria-hidden="true" />
-                </span>
-                <div>
-                  <h3>اجمع أصدقاءك</h3>
-                  <p>أنشئ غرفتك وشارك رابطها ليبدأ اللقاء.</p>
-                </div>
-              </li>
-            </ul>
-            <Link className={liveStyles.library} href="/voice?view=favorites">
-              غرفك المفضلة <ArrowLeft aria-hidden="true" />
-            </Link>
-          </div>
-        </section>
-
-        <div className={styles.showcaseGrid} data-home-showcase>
-          <section className={styles.gamesSection} aria-labelledby="featured-title">
-            <div className={styles.sectionHead}>
-              <span aria-hidden="true" />
-              <h2 id="featured-title">اختَر تحدّيك القادم</h2>
-              <span aria-hidden="true" />
-            </div>
-            <p className={styles.sectionIntro}>
-              ذكاء، معرفة، أو منافسة على الطاولة. البداية على ذوقك.
-            </p>
-            <nav className={styles.games} aria-label="ألعاب بارزة">
-              {featuredGames.map((game) => (
-                <Link className={styles.game} href={game.href} key={game.href} data-scroll-reveal>
-                  <Image
-                    src={game.image}
-                    alt={game.imageAlt}
-                    width={320}
-                    height={230}
-                    sizes="(max-width: 767px) 44vw, (max-width: 1100px) 40vw, 20vw"
-                  />
-                  <strong>{game.name}</strong>
-                  <small>{game.category}</small>
-                  <span>العب الآن</span>
-                </Link>
-              ))}
-            </nav>
-            <Link href="/games" className={styles.catalogLink}>
-              استكشف جميع الألعاب <ArrowLeft aria-hidden="true" />
-            </Link>
-            <details className={styles.moreGames}>
-              <summary>المزيد من الألعاب</summary>
-              <nav aria-label="روابط ألعاب الإنتاج">
-                {productionGames.map((game) => (
-                  <Link href={game.href} key={game.id}>
-                    {game.name}
-                  </Link>
-                ))}
-              </nav>
-            </details>
-          </section>
-        </div>
-
-        <section
-          className={worldStyles.section}
-          id="mamluk-world"
-          aria-labelledby="mamluk-title"
-          data-scroll-reveal
-        >
-          <div className={styles.sectionHead}>
-            <span aria-hidden="true" />
-            <h2 id="mamluk-title">عالم المماليك</h2>
-            <span aria-hidden="true" />
-          </div>
-          <figure className={worldStyles.world}>
-            <div className={worldStyles.art}>
-              <Image
-                src="/game-art/kingdoms/village-oasis.webp"
-                alt="قرية محصّنة بقصور وقباب وسط النخيل والأنهار في عالم المماليك"
-                fill
-                sizes="(max-width: 767px) 100vw, (max-width: 1440px) 58vw, 835px"
-              />
-            </div>
-            <figcaption className={worldStyles.copy}>
-              <span className={worldStyles.eyebrow}>
-                <Castle aria-hidden="true" />
-                من قريتك تبدأ الحكاية
-              </span>
-              <h3>
-                ابنِ مملكتك،
-                <br />
-                واكتب تاريخك
-              </h3>
-              <p>طوّر قريتك، كوّن تحالفك، واستكشف خريطة العالم. كل قرار يرسم مستقبل مملكتك.</p>
-              <ul className={worldStyles.features} aria-label="مزايا عالم المماليك">
-                <li>بناء وتطوير</li>
-                <li>تحالفات ومعارك</li>
-                <li>خريطة عالم</li>
-              </ul>
-              <div className={worldStyles.actions}>
-                <ButtonLink href="/games/kingdoms" variant="gold">
-                  ادخل عالم المماليك
-                  <ArrowLeft aria-hidden="true" />
-                </ButtonLink>
-                <ButtonLink href="/games/kingdoms/world-map" variant="outline">
-                  <Globe2 aria-hidden="true" />
-                  استكشف خريطة العالم
-                </ButtonLink>
-              </div>
-            </figcaption>
-          </figure>
-        </section>
+        <HomeHero rank={rank} />
+        <HomeLiveSection />
+        <HomeGamesSection />
+        <HomeWorldSection />
 
         <section className={styles.closingCta} aria-label="استمر في التحدي" data-scroll-reveal>
           <Crown aria-hidden="true" />

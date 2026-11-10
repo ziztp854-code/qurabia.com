@@ -1,0 +1,326 @@
+/* =============================================================================
+   Waiting Room — professional lobby with ready system
+   ============================================================================= */
+
+.waiting-room {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.waiting-room__player-list {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+}
+
+.waiting-room__player-list-title {
+  min-block-size: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--border);
+  color: var(--primary);
+}
+
+.waiting-room__empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+  color: var(--muted-foreground);
+}
+
+.waiting-room__players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.waiting-room__player {
+  min-block-size: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast);
+}
+
+.waiting-room__player[data-current] {
+  background: var(--surface-raised);
+}
+
+.waiting-room__player[data-ready] {
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+}
+
+.waiting-room__player-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.waiting-room__crown {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.waiting-room__you {
+  color: var(--muted-foreground);
+  font-weight: 400;
+  font-size: 0.8em;
+}
+
+.waiting-room__ready-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.waiting-room__ready-badge svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+}
+
+.waiting-room__waiting-badge {
+  color: var(--muted-foreground);
+  opacity: 0.5;
+}
+
+.waiting-room__waiting-badge svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.waiting-room__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.waiting-room__status {
+  min-block-size: 3rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.waiting-room__status[data-ready] {
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* =============================================================================
+   Role Reveal Overlay — infiltrator
+   ============================================================================= */
+
+.role-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--surface-base) 92%, transparent);
+  backdrop-filter: blur(8px);
+  animation: role-reveal-in 0.4s ease-out;
+}
+
+@keyframes role-reveal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.role-reveal__card {
+  max-inline-size: 26rem;
+  width: calc(100% - 2rem);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl, var(--radius-lg));
+  background: var(--surface-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  text-align: center;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.3);
+}
+
+.role-reveal[data-role='infiltrator'] .role-reveal__card {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface-raised));
+}
+
+.role-reveal[data-role='majority'] .role-reveal__card {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface-raised));
+}
+
+.role-reveal__icon {
+  inline-size: 4rem;
+  block-size: 4rem;
+  color: var(--primary);
+}
+
+.role-reveal[data-role='infiltrator'] .role-reveal__icon {
+  color: var(--danger);
+}
+
+.role-reveal__title {
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  margin: 0;
+}
+
+.role-reveal__hint {
+  color: var(--muted-foreground);
+  margin: 0;
+  max-inline-size: 28ch;
+  line-height: 1.6;
+}
+
+/* =============================================================================
+   Infiltrator End Screen (MVP + stats)
+   ============================================================================= */
+
+.infiltrator-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.infiltrator-end__trophy {
+  inline-size: 4rem;
+  block-size: 4rem;
+  color: var(--accent);
+}
+
+.infiltrator-end__header h2 {
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  margin: 0 0 var(--space-2);
+}
+
+.infiltrator-end__duration {
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.infiltrator-end__mvp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  min-inline-size: 16rem;
+}
+
+.infiltrator-end__mvp-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.infiltrator-end__mvp-name {
+  font-size: 1.4rem;
+}
+
+.infiltrator-end__mvp-score {
+  color: var(--accent);
+}
+
+.infiltrator-end__scores {
+  width: 100%;
+  max-inline-size: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.infiltrator-end__scores li {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.infiltrator-end__scores li[data-rank='1'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.infiltrator-end__scores li[data-rank='2'] {
+  border-color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted-foreground) 5%, transparent);
+}
+
+.infiltrator-end__scores li[data-rank='3'] {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--surface-base));
+}
+
+.infiltrator-end__rank {
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.infiltrator-end__pname {
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.infiltrator-end__pscore {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.infiltrator-end__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}

@@ -1,0 +1,109 @@
+/* Semantic theme contract lives in tokens.css; protected cinematic roots opt
+ * out in scoped blocks below. The former duplicate :root re-assertion here is
+ * removed — keep single-theme authority in tokens.css. */
+
+:root[data-theme='dark'] body {
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] body {
+  background:
+    linear-gradient(90deg, rgb(17 24 39 / 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(17 24 39 / 0.025) 1px, transparent 1px),
+    var(--page-bg);
+  background-size: 88px 88px;
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] :where(.site-layout, .auth-page, .dashboard-layout, .host-layout, .broadcast-layout, .instant-game, .mafia-page, .join-page) {
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] :where(.site-layout:not(.home-site-layout) .site-header, .site-layout:not(.home-site-layout) .site-footer, .auth-page .site-header, .auth-page .site-footer, .sidebar, .dashboard-header, .host-layout > header) {
+  border-color: var(--border-default);
+  background: linear-gradient(90deg, rgb(212 175 55 / 0.08), transparent 48%), var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: 0 16px 42px var(--shadow-soft);
+}
+
+:root[data-theme='light'] :where(.site-layout:not(.home-site-layout) .site-header, .site-layout:not(.home-site-layout) .site-footer, .auth-page .site-header, .auth-page .site-footer, .sidebar, .dashboard-header, .host-layout > header) :where(a, button, span, strong, .logo, .brand-logo, .home-logo) {
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] :where(.site-layout:not(.home-site-layout) .desktop-nav a, .site-layout:not(.home-site-layout) .mobile-nav a, .sidebar nav a, .footer-grid a) {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='light'] :where(.site-layout:not(.home-site-layout) .desktop-nav a:hover, .site-layout:not(.home-site-layout) .desktop-nav a[aria-current='page'], .site-layout:not(.home-site-layout) .mobile-nav a:hover, .sidebar nav a:hover, .sidebar nav a[aria-current='page'], .footer-grid a:hover) {
+  color: var(--gold-text);
+  background: rgb(212 175 55 / 0.1);
+}
+
+:root[data-theme='light'] :where(.card, .showcase-card, .competition-card, .category-card, .display-hub__screen, .display-hub__controller, .display-hub__card, .display-hub__note, .question-editor, .question-image-picker, .question-option, .leaderboard-preview, .cta-section, .empty-state, .auth-card, .join-page .card, .dashboard-main .card, .live-lobby, .waiting-list, .player-join, .question-card, .score-display, .room-code, .podium-stage, .podium-empty):not(.cinematic-question):not(.cinematic-results):not(.hall-of-fame) {
+  background: var(--surface-1);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  box-shadow: 0 12px 30px var(--shadow-soft);
+}
+
+:root[data-theme='light'] :where(.card h1, .card h2, .card h3, .section-heading h1, .section-heading h2, .page-header h1, .dashboard-header h1, .display-hub__heading h1, .question-card h1, .leaderboard-page h1, .leaderboard-page h2):not(.cinematic-question *):not(.cinematic-results *):not(.hall-of-fame *) {
+  color: var(--text-primary);
+}
+
+:root[data-theme='light'] :where(.muted, .card p, .empty-state p, .section-heading p, .page-header p, .display-hub__heading p, .question-meta, .waiting-list__header p, .waiting-list__info small, .podium-empty span, .footer-grid p, .footer-grid small, .footer-grid a) {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='light'] :where(input, textarea, select) {
+  background: var(--input-bg);
+  border-color: var(--border-default);
+  color: var(--input-text);
+}
+
+:root[data-theme='light'] :where(input::placeholder, textarea::placeholder) {
+  color: var(--input-placeholder);
+}
+
+:root[data-theme='light'] :where(input:focus, textarea:focus, select:focus, input:focus-visible, textarea:focus-visible, select:focus-visible) {
+  border-color: var(--brand-gold);
+  box-shadow: 0 0 0 3px rgb(212 175 55 / 0.18);
+}
+
+:root[data-theme='light'] :where(.button-secondary, .button-outline, .button-ghost, .page-back-button) {
+  background: var(--surface-1);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] :where(.button-primary, .button-gold),
+:root[data-theme='light'] :where(.button-primary, .button-gold) {
+  background: linear-gradient(135deg, var(--brand-gold-light), var(--brand-gold));
+  border-color: var(--brand-gold-bright);
+  color: var(--text-on-gold);
+}
+
+:root[data-theme='light'] :where(.button-primary:hover:not(:disabled), .button-gold:hover:not(:disabled)) {
+  background: linear-gradient(135deg, #ffe39a, var(--brand-gold-bright));
+  color: var(--text-on-gold);
+}
+
+:root[data-theme='light'] :where(.toast, .notification, .alert) {
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border-color: var(--border-default);
+}
+
+/* These routes remain dark cinematic even when the site preference is light. */
+:root[data-theme='light'] :where(.site-layout:has(.display-hub), .site-layout:has(.cinematic-question), .site-layout:has(.cinematic-results), .site-layout:has(.hall-of-fame)) {
+  color-scheme: dark;
+  background: var(--brand-ink);
+  color: var(--text-on-media);
+}
+
+:root[data-theme='light'] :where(.site-layout:has(.display-hub) .site-header, .site-layout:has(.display-hub) .site-footer, .site-layout:has(.cinematic-question) .site-header, .site-layout:has(.cinematic-results) .site-header, .site-layout:has(.hall-of-fame) .site-header) {
+  background: rgb(5 10 14 / 0.96);
+  border-color: rgb(212 175 55 / 0.23);
+  color: var(--text-on-media);
+}

@@ -1524,8 +1524,7 @@
   margin-block-end: 1.5rem;
 }
 
-.knowledge-card,
-.share-invite-card {
+.knowledge-card {
   position: relative;
   min-block-size: 18rem;
   border: 1px solid var(--border-gold);
@@ -1544,8 +1543,7 @@
   padding: 2rem;
 }
 
-.knowledge-card::after,
-.share-invite-card::after {
+.knowledge-card::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1566,22 +1564,19 @@
   stroke-width: 1.1;
 }
 
-.knowledge-card h3,
-.share-invite-card h3 {
+.knowledge-card h3 {
   margin-block: 0.2rem 0.45rem;
   color: var(--brand-ivory);
   font-size: clamp(1.6rem, 2.5vw, 2.3rem);
 }
 
-.knowledge-card span,
-.share-invite-heading span {
+.knowledge-card span {
   color: var(--brand-gold);
   font-size: 0.8rem;
   font-weight: 700;
 }
 
-.knowledge-card p,
-.share-invite-card p {
+.knowledge-card p {
   color: rgb(254 251 246 / 0.74);
 }
 
@@ -1593,75 +1588,12 @@
   color: var(--brand-gold);
 }
 
-.share-invite-card {
-  padding: 1.6rem;
-}
-
-.share-invite-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.share-invite-heading > svg {
-  inline-size: 2rem;
-  color: var(--brand-gold);
-}
-
-.share-invite-control {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  margin-block-start: 1.2rem;
-  border: 1px solid var(--border-gold);
-  border-radius: 0.65rem;
-  overflow: hidden;
-}
-
-.share-invite-control input {
-  min-block-size: 3rem;
-  padding-inline: 1rem;
-  border: 0;
-  outline: 0;
-  background: rgb(255 255 255 / 0.04);
-  color: var(--brand-ivory);
-  font-size: 0.82rem;
-}
-
-.share-invite-control button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding-inline: 1rem;
-  border: 0;
-  background: var(--gold-gradient);
-  color: var(--brand-ink);
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.share-invite-control button svg {
-  inline-size: 1rem;
-}
-
-.share-invite-divider {
-  display: block;
-  margin-block: 1rem 0.7rem;
-  color: rgb(254 251 246 / 0.65);
-  font-size: 0.76rem;
-  text-align: center;
-}
-
-.share-invite-socials,
 .home-footer-socials {
   display: flex;
   justify-content: center;
   gap: 0.65rem;
 }
 
-.share-invite-socials a,
-.share-invite-socials button,
 .home-footer-socials a {
   position: relative;
   z-index: 1;
@@ -1680,15 +1612,12 @@
     color 160ms ease;
 }
 
-.share-invite-socials a:hover,
-.share-invite-socials button:hover,
 .home-footer-socials a:hover {
   background: var(--brand-gold);
   color: var(--brand-ink);
   transform: translateY(-2px);
 }
 
-.share-invite-socials svg,
 .home-footer-socials svg {
   inline-size: 1.15rem;
 }
@@ -1950,15 +1879,6 @@
     block-size: 4rem;
   }
 
-  .share-invite-control {
-    grid-template-columns: 1fr;
-  }
-
-  .share-invite-control button {
-    min-block-size: 2.8rem;
-    justify-content: center;
-  }
-
   .ivory-home .games-grid,
   .ivory-home .categories-section .card-grid.four {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2081,8 +2001,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .share-invite-socials a,
-  .share-invite-socials button,
   .home-footer-socials a {
     transition: none;
   }
@@ -3020,8 +2938,7 @@
 .cinematic-home .competition-card,
 .cinematic-home .leaderboard-preview,
 .cinematic-home .cta-section,
-.cinematic-home .knowledge-card,
-.cinematic-home .share-invite-card {
+.cinematic-home .knowledge-card {
   border-color: var(--cinema-white-line);
   border-radius: 0.65rem;
   background:
@@ -3034,7 +2951,6 @@
 }
 
 .cinematic-home .knowledge-card h3,
-.cinematic-home .share-invite-card h3,
 .cinematic-home .feature-content h3,
 .cinematic-home .category-card h3,
 .cinematic-home .competition-card h3,
@@ -3044,7 +2960,6 @@
 }
 
 .cinematic-home .knowledge-card p,
-.cinematic-home .share-invite-card p,
 .cinematic-home .competition-card p,
 .cinematic-home .category-card p {
   color: var(--cinema-soft);
@@ -3253,48 +3168,6 @@
     radial-gradient(ellipse at 58% 44%, transparent 0 20rem, rgb(3 7 13 / 0.08) 33rem, rgb(3 7 13 / 0.82) 100%),
     linear-gradient(90deg, rgb(3 7 13 / 0.98) 0%, rgb(3 7 13 / 0.76) 24%, rgb(3 7 13 / 0.08) 45%, transparent 64%, rgb(3 7 13 / 0.34) 100%),
     linear-gradient(180deg, rgb(3 7 13 / 0.02), transparent 56%, rgb(3 7 13 / 0.9));
-}
-
-.landing-scene-3d {
-  position: absolute;
-  inset-block: 0;
-  left: 30%;
-  right: -8%;
-  z-index: 0;
-  display: none;
-  min-block-size: 100%;
-  opacity: 0;
-  filter: saturate(1.18) brightness(1.12) contrast(1.13);
-  pointer-events: none;
-}
-
-.landing-scene-3d::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(100deg, transparent 0 38%, rgb(248 244 238 / 0.09) 45%, transparent 53%),
-    radial-gradient(circle at 63% 42%, rgb(245 184 61 / 0.18), transparent 22rem),
-    radial-gradient(circle at 86% 30%, rgb(0 217 255 / 0.14), transparent 20rem);
-  mix-blend-mode: screen;
-  opacity: 0.62;
-  animation: landing-stage-sheen 5.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-}
-
-.landing-scene-3d canvas {
-  display: block;
-  inline-size: 100% !important;
-  block-size: 100% !important;
-}
-
-.landing-scene-3d__fallback {
-  inline-size: 100%;
-  block-size: 100%;
-  background:
-    linear-gradient(118deg, transparent 0 41%, rgb(212 175 55 / 0.1) 41.2% 41.5%, transparent 41.8%),
-    linear-gradient(242deg, transparent 0 61%, rgb(242 232 213 / 0.05) 61.2% 61.5%, transparent 61.8%),
-    var(--brand-ink);
 }
 
 .landing-hero__inner {
@@ -4008,8 +3881,7 @@
   color: var(--brand-ink);
 }
 
-:root[data-theme='light'] .landing-hero::before,
-:root[data-theme='light'] .landing-scene-3d::after {
+:root[data-theme='light'] .landing-hero::before {
   opacity: 0.28;
 }
 
@@ -4023,10 +3895,6 @@
   background:
     radial-gradient(ellipse at 72% 28%, rgb(212 175 55 / 0.18), transparent 18rem),
     linear-gradient(90deg, transparent, rgb(242 232 213 / 0.2) 28%, rgb(242 232 213 / 0.55));
-}
-
-:root[data-theme='light'] .landing-scene-3d {
-  filter: saturate(0.86) brightness(1.32);
 }
 
 :root[data-theme='light'] .landing-hero h1 {
@@ -4155,16 +4023,6 @@
     transform: translateX(50%);
   }
 
-  .landing-scene-3d {
-    inset-inline: 0;
-    inset-block-start: 0;
-    inset-block-end: auto;
-    block-size: min(46rem, calc(100svh - 1rem));
-    min-block-size: 0;
-    opacity: 0.46;
-    mask-image: linear-gradient(180deg, black 0 58%, transparent 100%);
-  }
-
   .landing-hero__inner {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
@@ -4221,9 +4079,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .landing-hero::before,
-  .landing-scene-3d::after,
-  .landing-game-rail__item,
-  .landing-path {
+.landing-game-rail__item,
+.landing-path {
     animation: none !important;
   }
 }

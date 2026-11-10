@@ -3,20 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@/components/theme-provider';
 import HomePage from './page';
 
-vi.mock('@/components/motion/reveal', () => ({
-  Reveal: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
-}));
-
-vi.mock('@/components/home/landing-scene-3d', () => ({
-  LandingScene3D: () => <div data-testid="landing-scene-3d" />,
-}));
-
-vi.mock('@/app/quizzes/actions', () => ({
-  getPublicQuizzes: vi.fn().mockResolvedValue({ status: 'success', quizzes: [] }),
-}));
-
 vi.mock('@/lib/auth/session', () => ({
   getCurrentSession: vi.fn().mockResolvedValue(null),
 }));

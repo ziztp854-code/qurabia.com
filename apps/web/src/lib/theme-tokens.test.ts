@@ -3,7 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const tokens = readFileSync('tokens.css', 'utf8');
-const globals = readFileSync('src/app/globals.css', 'utf8');
+// Follow the section imports so theme checks still inspect the actual cascade.
+const globals = readFileSync('src/app/globals.css', 'utf8').replace(
+  /@import ['"](\.\.\/styles\/sections\/[^'"]+)['"];/g,
+  (_, file: string) => readFileSync(join('src/app', file), 'utf8'),
+);
 const internalStyles = readFileSync('src/styles/brand-internal.css', 'utf8');
 const homeStyles = readFileSync('src/styles/home-luxury.css', 'utf8');
 const gameCatalogStyles = readFileSync('src/styles/game-catalog.css', 'utf8');
@@ -118,9 +122,7 @@ describe('theme color tokens', () => {
   });
 
   it('does not let the hardcoded hex debt grow outside tokens.css', () => {
-    const cssFiles = [
-      ...collectCssFiles('src'),
-    ];
+    const cssFiles = [...collectCssFiles('src')];
     const total = cssFiles.reduce((sum, file) => sum + countHex(readFileSync(file, 'utf8')), 0);
     expect(total).toBeLessThanOrEqual(HARDCODED_HEX_BUDGET);
   });

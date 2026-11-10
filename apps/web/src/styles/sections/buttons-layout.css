@@ -1,0 +1,282 @@
+/* Buttons */
+.button {
+  min-block-size: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.95rem;
+  padding-inline: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 100ms cubic-bezier(0, 0, 0.2, 1),
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.button:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.button svg {
+  inline-size: 1.1em;
+  block-size: 1.1em;
+}
+.button-primary {
+  background: linear-gradient(135deg, var(--primary), var(--info));
+  color: var(--primary-foreground);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+.button-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 88%, white);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--primary) 40%, transparent),
+    var(--shadow-sm);
+}
+.button-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+.button-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--secondary) 90%, var(--foreground));
+}
+.button-outline {
+  background: rgb(0 0 0 / 0.36);
+  border-color: color-mix(in srgb, var(--foreground) 24%, transparent);
+}
+.button-outline:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+.button-ghost {
+  background: transparent;
+  color: var(--foreground);
+}
+.button-ghost:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+.button-danger {
+  background: color-mix(in srgb, var(--danger) 78%, black);
+  color: var(--danger-foreground);
+}
+.button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 82%, black);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--danger) 35%, transparent),
+    var(--shadow-sm);
+}
+.button-success {
+  background: var(--success);
+  color: var(--success-foreground);
+}
+.button-success:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--success) 88%, white);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--success) 35%, transparent),
+    var(--shadow-sm);
+}
+.button-gold {
+  background: linear-gradient(135deg, #ffb000, #ffb40c);
+  /* Theme-invariant bright gradient, so the ink must not follow --gold-foreground
+   * (ivory in light theme would fail); --text-on-gold stays dark in both themes. */
+  color: var(--text-on-gold);
+  box-shadow:
+    0 10px 0 rgb(0 0 0 / 0.42),
+    0 0 34px color-mix(in srgb, var(--gold) 34%, transparent);
+}
+.button-gold:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gold) 88%, white);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--gold) 45%, transparent),
+    var(--shadow-sm);
+}
+.button-link {
+  background: transparent;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+.button-sm {
+  min-block-size: 2.25rem;
+  padding-inline: 0.8rem;
+  font-size: 0.85rem;
+}
+.button-md {
+  min-block-size: 2.75rem;
+}
+.button-lg {
+  min-block-size: 3.35rem;
+  padding-inline: 1.5rem;
+  font-size: 1.05rem;
+}
+.button-icon {
+  inline-size: 2.75rem;
+  padding: 0;
+}
+.button-full {
+  inline-size: 100%;
+}
+
+.skip-link {
+  position: fixed;
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.75rem;
+  z-index: calc(var(--z-header) + 1);
+  transform: translateY(-160%);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+  transition: transform 0.2s var(--ease-out);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Header and layouts */
+.site-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-header);
+  backdrop-filter: blur(22px) saturate(145%);
+  background:
+    linear-gradient(90deg, rgb(0 212 255 / 0.08), transparent 44%, rgb(255 176 0 / 0.06)),
+    rgb(0 0 0 / 0.68);
+  border-block-end: 0;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 0.42);
+}
+.header-inner {
+  min-block-size: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 1.25rem;
+}
+.logo > span {
+  inline-size: 2.35rem;
+  block-size: 2.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.8rem;
+  color: var(--gold-foreground);
+  background: linear-gradient(
+    135deg,
+    var(--gold),
+    color-mix(in srgb, var(--gold) 82%, var(--foreground))
+  );
+  box-shadow: 0 0 28px color-mix(in srgb, var(--gold) 28%, transparent);
+}
+.logo svg {
+  inline-size: 1.2rem;
+}
+.desktop-nav,
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.header-actions {
+  position: relative;
+  z-index: 2;
+}
+@media (min-width: 1025px) {
+  .logo,
+  .header-actions {
+    flex: 0 0 auto;
+  }
+}
+.desktop-nav a {
+  padding: 0.55rem 0.8rem;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+.desktop-nav a:hover {
+  color: var(--foreground);
+}
+.mobile-menu-button {
+  display: none;
+}
+.mobile-nav {
+  display: none;
+  padding: 0 1rem 1rem;
+}
+.mobile-nav a {
+  min-block-size: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding-inline: 0.7rem;
+  border-radius: var(--radius-md);
+}
+.mobile-nav a:hover {
+  background: var(--muted);
+}
+
+.profile-menu {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.profile-menu-trigger.button {
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  border: 1px solid var(--border-bright);
+  background: var(--surface-raised);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--background) 28%, transparent);
+}
+
+.profile-menu-trigger.button:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+
+.profile-menu-trigger svg {
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+}
+.mobile-nav svg {
+  inline-size: 1.1rem;
+}
+.site-footer {
+  border-block-start: 1px solid var(--border);
+  padding-block: 3.5rem;
+  background: color-mix(in srgb, var(--card) 70%, var(--background));
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--space-12);
+}
+.footer-grid > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+.footer-grid p,
+.footer-grid small,
+.footer-grid a {
+  color: var(--muted-foreground);
+}
+.footer-grid .site-owner {
+  color: var(--foreground);
+  font-weight: 600;
+}

@@ -1,0 +1,403 @@
+/* Host control-room final cascade. Keep after the base games/host rules. */
+.host-stage {
+  grid-template-columns: minmax(0, 1.35fr) minmax(19rem, 0.65fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+.host-main {
+  min-inline-size: 0;
+}
+
+.host-main-header {
+  align-items: center;
+  padding: clamp(1.1rem, 2.4vw, 1.6rem);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 12% 0,
+      color-mix(in srgb, var(--accent) 24%, transparent),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 88% 10%,
+      color-mix(in srgb, var(--primary) 18%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(135deg, rgb(16 8 26 / 0.94), rgb(6 2 10 / 0.98));
+  box-shadow: var(--shadow-lg);
+}
+
+.host-main-header > div {
+  min-inline-size: 0;
+}
+
+.host-main-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.host-main-header .button {
+  flex: none;
+  min-inline-size: 10rem;
+}
+
+.host-command-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+}
+
+.host-command-strip span {
+  min-block-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: var(--radius-full);
+  padding: 0.35rem 0.75rem;
+  background: color-mix(in srgb, var(--primary) 9%, transparent);
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.host-alert,
+.host-stats {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.host-alert {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-raised));
+  color: var(--foreground);
+}
+
+.host-alert svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--danger);
+}
+
+.host-alert strong,
+.host-alert span {
+  display: block;
+}
+
+.host-alert span {
+  margin-block-start: 0.15rem;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+.host-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.host-stat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  min-inline-size: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface-raised) 86%, transparent),
+    color-mix(in srgb, var(--primary) 7%, transparent)
+  );
+  box-shadow: var(--shadow-sm);
+}
+
+.host-stat svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--gold);
+}
+
+.host-stat strong,
+.host-stat span {
+  display: block;
+}
+
+.host-stat strong {
+  color: var(--foreground);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.host-stat span {
+  margin-block-start: 0.2rem;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.host-sidebar {
+  max-block-size: calc(100dvh - 2rem);
+  overflow: auto;
+  padding-inline-end: 0.15rem;
+}
+
+.host-panel--cta {
+  display: grid;
+  gap: 1rem;
+}
+
+.host-quiz-row {
+  grid-template-columns: 2.2rem minmax(0, 1fr) minmax(4.5rem, auto);
+  padding: 0.9rem;
+}
+
+.host-quiz-row__actions {
+  justify-content: end;
+}
+
+@media (max-width: 64rem) {
+  .host-sidebar {
+    max-block-size: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 48rem) {
+  .host-main-header__actions {
+    justify-content: stretch;
+  }
+
+  .host-main-header .button,
+  .host-stats {
+    inline-size: 100%;
+  }
+
+  .host-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .host-stat {
+    padding: 0.9rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .host-stage {
+    gap: 1rem;
+  }
+
+  .host-main-header,
+  .host-panel,
+  .host-live-wrapper {
+    border-radius: var(--radius-lg);
+  }
+
+  .host-main-header,
+  .host-panel {
+    padding: 1rem;
+  }
+
+  .host-quiz-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* Host control-room prestige polish: clearer hierarchy, calmer panels, stronger operation surface. */
+.host-stage {
+  position: relative;
+  align-items: start;
+}
+
+.host-stage::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 80% 8%,
+      color-mix(in srgb, var(--gold) 12%, transparent),
+      transparent 24rem
+    ),
+    radial-gradient(
+      circle at 10% 20%,
+      color-mix(in srgb, var(--primary) 10%, transparent),
+      transparent 26rem
+    );
+}
+
+.host-main-header {
+  border: 1px solid color-mix(in srgb, var(--gold) 22%, var(--border));
+  border-radius: calc(var(--radius-xl) + 0.35rem);
+}
+
+.host-main-header::after {
+  content: '';
+  position: absolute;
+  inset: auto clamp(1rem, 4vw, 2rem) 0;
+  block-size: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--gold) 64%, transparent),
+    transparent
+  );
+}
+
+.host-main-header h1 {
+  max-inline-size: 11ch;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.host-main-header p {
+  max-inline-size: 58ch;
+  color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground));
+  font-size: clamp(0.95rem, 1.5vw, 1.08rem);
+  line-height: 1.9;
+}
+
+.host-command-strip span {
+  border-color: color-mix(in srgb, var(--gold) 26%, var(--border));
+  background: color-mix(in srgb, var(--surface-raised) 74%, var(--gold) 8%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.08) inset;
+}
+
+.host-main-header__actions .button {
+  min-block-size: 2.9rem;
+}
+
+.host-stats {
+  gap: clamp(0.75rem, 1.5vw, 1rem);
+}
+
+.host-stat,
+.host-panel,
+.host-live-wrapper {
+  border-color: color-mix(in srgb, var(--gold) 14%, var(--border));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--foreground) 4%, transparent), transparent 42%),
+    var(--surface-raised);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.06) inset,
+    0 18px 38px rgb(0 0 0 / 0.22);
+}
+
+.host-stat {
+  min-block-size: 6.35rem;
+}
+
+.host-stat svg {
+  display: grid;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  padding: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 24%, transparent);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+.host-panel__header {
+  align-items: center;
+  padding-block-end: 0.85rem;
+  border-block-end: 1px solid color-mix(in srgb, var(--gold) 12%, transparent);
+}
+
+.host-panel__title {
+  color: var(--foreground);
+  font-size: 0.98rem;
+}
+
+.host-panel__badge {
+  border-color: color-mix(in srgb, var(--gold) 24%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--gold);
+}
+
+.host-quiz-grid {
+  gap: 0.7rem;
+}
+
+.host-quiz-row {
+  border-color: color-mix(in srgb, var(--foreground) 8%, transparent);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.host-quiz-row:hover {
+  border-color: color-mix(in srgb, var(--gold) 28%, var(--border));
+  background: color-mix(in srgb, var(--surface-raised) 90%, var(--gold) 5%);
+}
+
+.host-quiz-row__number {
+  border-color: color-mix(in srgb, var(--gold) 26%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.host-quiz-row__content h4 {
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+.host-quiz-row__content p {
+  color: color-mix(in srgb, var(--foreground) 66%, var(--muted-foreground));
+}
+
+.host-sidebar {
+  scrollbar-color: color-mix(in srgb, var(--gold) 36%, transparent) transparent;
+}
+
+.host-panel--cta {
+  border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      color-mix(in srgb, var(--primary) 12%, transparent),
+      transparent 16rem
+    ),
+    var(--surface-raised);
+}
+
+@media (max-width: 64rem) {
+  .host-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .host-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .host-main-header {
+    align-items: stretch;
+  }
+
+  .host-main-header h1,
+  .host-main-header p {
+    max-inline-size: 100%;
+  }
+
+  .host-command-strip span {
+    flex: 1 1 9rem;
+    justify-content: center;
+  }
+
+  .host-sidebar {
+    grid-template-columns: 1fr;
+  }
+}

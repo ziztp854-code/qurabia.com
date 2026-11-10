@@ -1,0 +1,264 @@
+/* ============================================
+ * PODIUM & WAITING LIST — Responsive
+ * ============================================ */
+
+@media (max-width: 48rem) {
+  .podium-player {
+    inline-size: min(31%, 10rem);
+  }
+
+  .podium-player > .avatar {
+    inline-size: 3.2rem;
+    block-size: 3.2rem;
+  }
+
+  .podium-1 > .podium-profile > .avatar {
+    inline-size: 4rem;
+    block-size: 4rem;
+  }
+
+  .podium-block {
+    min-block-size: 7rem;
+    font-size: 1.6rem;
+  }
+
+  .podium-1 > .podium-block {
+    min-block-size: 10rem;
+  }
+
+  .podium-2 > .podium-block {
+    min-block-size: 8.5rem;
+  }
+
+  .podium-3 > .podium-block {
+    min-block-size: 7.5rem;
+  }
+
+  .podium-name {
+    font-size: 0.88rem;
+  }
+
+  .podium-score {
+    font-size: 0.78rem;
+  }
+
+  .podium-correct {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .podium-rank-badge {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+
+  .podium-rank-badge svg {
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+  }
+
+  .waiting-list__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .waiting-list__player {
+    flex-wrap: wrap;
+  }
+
+  .question-showcase__answers {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 30rem) {
+  .podium-wrap {
+    min-block-size: 22rem;
+    gap: 0.35rem;
+    padding-block: 3rem 0;
+  }
+
+  .podium-player {
+    inline-size: min(34%, 9rem);
+    gap: 0.25rem;
+  }
+
+  .podium-player > .avatar {
+    inline-size: 2.6rem;
+    block-size: 2.6rem;
+  }
+
+  .podium-1 > .podium-profile > .avatar {
+    inline-size: 3.2rem;
+    block-size: 3.2rem;
+  }
+
+  .podium-profile {
+    gap: 0.2rem;
+  }
+
+  .podium-name {
+    font-size: 0.78rem;
+  }
+
+  .podium-score {
+    font-size: 0.7rem;
+  }
+
+  .podium-correct {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .podium-block {
+    min-block-size: 5.5rem;
+    font-size: 1.3rem;
+    padding: 0.75rem;
+  }
+
+  .podium-1 > .podium-block {
+    min-block-size: 7.5rem;
+  }
+
+  .podium-2 > .podium-block {
+    min-block-size: 6.5rem;
+  }
+
+  .podium-3 > .podium-block {
+    min-block-size: 6rem;
+  }
+
+  .podium-rank-badge {
+    inline-size: 2rem;
+    block-size: 2rem;
+  }
+
+  .podium-rank-badge svg {
+    inline-size: 0.95rem;
+    block-size: 0.95rem;
+  }
+
+  .waiting-list__players {
+    max-block-size: 16rem;
+  }
+
+  .waiting-list__player {
+    padding: 0.6rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .waiting-list__rank {
+    inline-size: 1.6rem;
+    block-size: 1.6rem;
+    font-size: 0.72rem;
+  }
+
+  .waiting-list__avatar {
+    inline-size: 2rem;
+    block-size: 2rem;
+  }
+
+  .waiting-list__info strong {
+    font-size: 0.82rem;
+  }
+
+  .question-showcase {
+    padding: 1.25rem;
+  }
+
+  .question-showcase__number {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    font-size: 1rem;
+  }
+
+  .question-showcase__prompt {
+    font-size: 1.1rem;
+  }
+
+  .question-showcase__answer {
+    padding: 0.85rem 1rem;
+    gap: 0.6rem;
+  }
+
+  .question-showcase__answer-letter {
+    inline-size: 1.8rem;
+    block-size: 1.8rem;
+    font-size: 0.75rem;
+  }
+
+  .question-showcase__answer-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .podium-player {
+    inline-size: min(24%, 14rem);
+  }
+
+  .podium-block {
+    min-block-size: 9rem;
+  }
+
+  .podium-1 > .podium-block {
+    min-block-size: 15rem;
+  }
+
+  .podium-1 > .podium-profile > .avatar {
+    inline-size: 6.5rem;
+    block-size: 6.5rem;
+  }
+
+  .podium-name {
+    font-size: 1.1rem;
+  }
+
+  .podium-score {
+    font-size: 0.95rem;
+  }
+
+  .podium-correct {
+    font-size: 0.85rem;
+  }
+
+  .question-showcase__answers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80rem) {
+  .podium-wrap {
+    gap: clamp(1rem, 4vw, 2.5rem);
+  }
+
+  .podium-player {
+    inline-size: min(22%, 16rem);
+  }
+
+  .podium-block {
+    min-block-size: 10rem;
+    font-size: 2.2rem;
+  }
+
+  .podium-1 > .podium-block {
+    min-block-size: 17rem;
+  }
+
+  .podium-1 > .podium-profile > .avatar {
+    inline-size: 7.5rem;
+    block-size: 7.5rem;
+  }
+
+  .podium-name {
+    font-size: 1.2rem;
+  }
+
+  .podium-score {
+    font-size: 1rem;
+  }
+
+  .podium-correct {
+    font-size: 0.9rem;
+  }
+}
