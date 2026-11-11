@@ -295,10 +295,12 @@ export async function createVoiceRoom(
   const room = await db.$transaction(async (tx) => {
     // Serialize quota checks across app instances without holding a lock while hashing.
     await tx.$queryRaw`SELECT 1 AS acquired FROM pg_advisory_xact_lock(hashtextextended(${`voice-create:${user.id}`}, 0))`;
-    const accounts = await tx.$queryRaw<{ status: string; tokenVersion: number }[]>`
-      SELECT status, "tokenVersion" FROM "User" WHERE id = ${user.id} FOR SHARE`;
+    const accounts = await tx.$queryRaw<{ status: string; tokenVersion: number; role: string }[]>`
+      SELECT status, "tokenVersion", role FROM "User" WHERE id = ${user.id} FOR SHARE`;
     if (!accounts[0] || accounts[0].status !== 'ACTIVE' || accounts[0].tokenVersion !== (user.tokenVersion ?? 0))
       throw new VoiceHttpError(401, 'انتهت صلاحية الجلسة.', 'SESSION_REVOKED');
+    if (!['MODERATOR', 'ADMIN', 'OWNER'].includes(accounts[0].role))
+      throw new VoiceHttpError(403, 'إنشاء البث متاح للمشرفين فقط.', 'FORBIDDEN');
     if (
       (await tx.voiceRoom.count({
         where: { hostId: user.id, active: true },

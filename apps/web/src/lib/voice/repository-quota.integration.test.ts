@@ -58,7 +58,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('commits one message for concurrent requests and never resurrects it after deletion', async () => {
     const owner = { ...host, id: `emoji-replay-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     const snapshot = await createVoiceRoom(owner, input);
     const command = { type: 'message' as const, text: 'هلا 😂', requestId: randomUUID() };
     const results = await Promise.all([
@@ -81,7 +81,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('resolves exclusive assets server-side and deduplicates reaction commands across clients', async () => {
     const owner = { ...host, id: `emoji-asset-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     const snapshot = await createVoiceRoom(owner, input);
     const pack = await clients[2].voiceEmojiPack.create({
       data: { name: 'حزمة الاختبار', createdBy: owner.id },
@@ -133,13 +133,28 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
       namedClient(`fixture-${fixtureId}`),
     );
     boundary.client = () => context.getStore() ?? clients[2];
-    await clients[2].user.create({ data: { id: host.id, name: host.name } });
+    await clients[2].user.create({ data: { id: host.id, name: host.name, role: 'MODERATOR' } });
   });
   afterAll(async () => {
     try {
       if (clients[2]) await clients[2].user.deleteMany({ where: { id: { in: fixtureUsers } } });
     } finally {
       await Promise.all(clients.map((client) => client.$disconnect()));
+    }
+  });
+
+  it('allows only active moderators, admins and owners to create rooms', async () => {
+    for (const role of ['USER', 'CONTENT_EDITOR', 'MODERATOR', 'ADMIN', 'OWNER'] as const) {
+      const id = `role-${role}-${fixtureId}`;
+      fixtureUsers.push(id);
+      await clients[2].user.create({ data: { id, name: role, role } });
+      const result = createVoiceRoom({ id, name: role, image: null }, input);
+      if (role === 'USER' || role === 'CONTENT_EDITOR') {
+        await expect(result).rejects.toMatchObject({ status: 403, code: 'FORBIDDEN' });
+        expect(await clients[2].voiceRoom.count({ where: { hostId: id } })).toBe(0);
+      } else {
+        await expect(result).resolves.toMatchObject({ room: { active: true } });
+      }
     }
   });
 
@@ -199,7 +214,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('rejects a sixth active room but admits a replacement after a room is closed', async () => {
     const owner = { ...host, id: `quota-full-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     const first = await createVoiceRoom(owner, input);
     for (let index = 1; index < 5; index++) await createVoiceRoom(owner, input);
     await expect(createVoiceRoom(owner, input)).rejects.toMatchObject({ status: 409 });
@@ -217,7 +232,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
     }));
     fixtureUsers.push(...owners.map((owner) => owner.id));
     await clients[2].user.createMany({
-      data: owners.map((owner) => ({ id: owner.id, name: owner.name })),
+      data: owners.map((owner) => ({ id: owner.id, name: owner.name, role: 'MODERATOR' as const })),
     });
     let release!: () => void;
     let acquired!: () => void;
@@ -267,7 +282,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('rolls back a failed insert and releases the quota lock for another client', async () => {
     const owner = { ...host, id: `quota-rollback-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     // A valid account passes the session guard. Fail the queue's real FK insert
     // after the room insert, so the transaction must roll the room back.
     const failingClient = clients[0].$extends({
@@ -293,7 +308,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('keeps repeated fresh presence reads off the room write lock', async () => {
     const owner = { ...host, id: `presence-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     const snapshot = await createVoiceRoom(owner, input);
     const reads = await Promise.all(
       Array.from({ length: 8 }, () => getVoiceSnapshot(snapshot.room.id, owner.id, true)),
@@ -313,7 +328,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('does not invalidate user writes for scheduler-only checkpoints but versions real ledger changes', async () => {
     const owner = { ...host, id: `checkpoint-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     const snapshot = await createVoiceRoom(owner, input);
     await withVoiceMediaSnapshot(snapshot.room.id, async (_snapshot, _ledger, checkpoint) => {
       checkpoint.checkedAt = Date.now();
@@ -342,7 +357,7 @@ describe.skipIf(!connectionString)('voice room quota with independent PostgreSQL
   it('skips busy periodic checks while forced permission work still waits for the shared lock', async () => {
     const owner = { ...host, id: `media-lock-${fixtureId}` };
     fixtureUsers.push(owner.id);
-    await clients[2].user.create({ data: { id: owner.id, name: owner.name } });
+    await clients[2].user.create({ data: { id: owner.id, name: owner.name, role: 'MODERATOR' } });
     const snapshot = await createVoiceRoom(owner, input);
     let release!: () => void;
     let acquired!: () => void;

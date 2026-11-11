@@ -66,7 +66,7 @@ async function chatFixture() {
   }));
   fixtureUsers.push(...users.map((user) => user.id));
   await clients[2].user.createMany({
-    data: users.map((user) => ({ id: user.id, name: user.name })),
+    data: users.map((user) => ({ id: user.id, name: user.name, role: 'MODERATOR' as const })),
   });
   const initial = await createVoiceRoom(users[0], input);
   for (const user of users.slice(1)) await joinVoiceRoom(initial.room.id, user, {});
@@ -122,7 +122,7 @@ describe.skipIf(!connectionString)('voice gift latency with independent PostgreS
       namedClient(`fixture-${fixtureId}`),
     );
     boundary.client = () => context.getStore() ?? clients[2];
-    await clients[2].user.create({ data: { id: host.id, name: host.name } });
+    await clients[2].user.create({ data: { id: host.id, name: host.name, role: 'MODERATOR' } });
   });
   afterAll(async () => {
     try {

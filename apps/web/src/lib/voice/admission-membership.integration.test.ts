@@ -57,7 +57,7 @@ describe.skipIf(!url)('membership-bound voice admission with PostgreSQL', () => 
     vi.stubEnv('LIVEKIT_INTERNAL_URL', 'ws://127.0.0.1:7880');
     vi.stubEnv('LIVEKIT_API_KEY', 'local-membership-test');
     vi.stubEnv('LIVEKIT_API_SECRET', 'local-membership-test-secret-32-characters');
-    await db.user.createMany({ data: [host, member].map((u) => ({ id: u.id, name: u.name })) });
+    await db.user.createMany({ data: [host, member].map((u) => ({ id: u.id, name: u.name, role: u.id === host.id ? 'MODERATOR' as const : 'USER' as const })) });
   });
   afterAll(async () => {
     if (db) {

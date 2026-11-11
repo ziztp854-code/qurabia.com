@@ -101,7 +101,7 @@ describe.skipIf(!databaseUrl || !runtimePath)('real voice admission and late spe
       const fixtureUsers = Object.values(identityByPersona);
       userIds.push(...fixtureUsers);
       await database.user.createMany({
-        data: fixtureUsers.map((id) => ({ id, name: 'Local media fixture' })),
+        data: fixtureUsers.map((id) => ({ id, name: 'Local media fixture', role: 'MODERATOR' as const })),
       });
       const host = identities['receiver-a'];
       const listener = identities['receiver-b'];

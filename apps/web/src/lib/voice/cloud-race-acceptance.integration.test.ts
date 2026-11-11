@@ -58,7 +58,7 @@ describe('Cloud delayed revocation acceptance', () => {
     db = createPrismaClient(dbUrl!);
     fixture.database = () => db;
     service = new RoomServiceClient(expectedOrigin.replace('wss:', 'https:'), key!, secret!, { requestTimeout: 8, failover: false });
-    await db.user.createMany({ data: [host, member].map(({ id: userId, name }) => ({ id: userId, name })) });
+    await db.user.createMany({ data: [host, member].map(({ id: userId, name }) => ({ id: userId, name, role: userId === host.id ? 'MODERATOR' as const : 'USER' as const })) });
     roomId = (await createVoiceRoom(host, createRoomSchema.parse({ name: 'Cloud race fixture' }))).room.id;
     await service.createRoom({ name: voiceMediaRoomName(roomId), emptyTimeout: 120, maxParticipants: 4 });
     await joinVoiceRoom(roomId, member, {});

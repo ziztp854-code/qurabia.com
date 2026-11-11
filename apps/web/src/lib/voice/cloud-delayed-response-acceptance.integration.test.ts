@@ -69,7 +69,7 @@ describe('Cloud delayed response acceptance', () => {
     fixture.database = () => db;
     service = new RoomServiceClient(expectedOrigin.replace('wss:', 'https:'), key!, secret!, { requestTimeout: 8, failover: false });
     stage('DATABASE_SETUP');
-    await db.user.createMany({ data: [host, member].map(({ id: userId, name }) => ({ id: userId, name })) });
+    await db.user.createMany({ data: [host, member].map(({ id: userId, name }) => ({ id: userId, name, role: userId === host.id ? 'MODERATOR' as const : 'USER' as const })) });
     roomId = (await createVoiceRoom(host, createRoomSchema.parse({ name: 'Cloud race fixture' }))).room.id;
     stage('CLOUD_CREATE_ROOM');
     try { await service.createRoom({ name: voiceMediaRoomName(roomId), emptyTimeout: 120, maxParticipants: 4 }); }

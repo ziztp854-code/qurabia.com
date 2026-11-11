@@ -38,7 +38,7 @@ describe.skipIf(!url)('durable voice reconciliation on PostgreSQL', () => {
   beforeAll(async () => {
     db = createPrismaClient(url!);
     boundary.client = () => db;
-    await db.user.createMany({ data: [host, member].map(({ id, name }) => ({ id, name })) });
+    await db.user.createMany({ data: [host, member].map(({ id, name }) => ({ id, name, role: id === host.id ? 'MODERATOR' as const : 'USER' as const })) });
     roomId = (await createVoiceRoom(host, createRoomSchema.parse({ name: 'Fixture' }))).room.id;
     await joinVoiceRoom(roomId, member, {});
   });
