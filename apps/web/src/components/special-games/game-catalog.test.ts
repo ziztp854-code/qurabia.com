@@ -67,7 +67,11 @@ describe('game catalog sources', () => {
 
   it('includes every published mode and no upcoming slug in static params', () => {
     const params = generateStaticParams().map(({ mode }) => mode);
-    expect(params).toEqual([...SPECIAL_GAME_ORDER, ...INSTANT_GAME_ORDER]);
+    const removed = ['parallel-world', 'reverse-time', 'infiltrator', 'risk', 'scrambled-words-live'];
+    expect(params).toEqual(
+      [...SPECIAL_GAME_ORDER, ...INSTANT_GAME_ORDER].filter((mode) => !removed.includes(mode)),
+    );
+    for (const mode of removed) expect(params).not.toContain(mode);
     for (const game of UPCOMING_SPECIAL_GAMES) {
       expect(params).not.toContain(game.slug);
     }
