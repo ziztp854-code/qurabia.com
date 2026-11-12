@@ -31,7 +31,7 @@
     "@upstash/ratelimit": "^2.1.0",
     "@upstash/redis": "^1.38.4",
     "@xyflow/react": "^12.11.6",
-    "ai": "^6.0.246",
+    "ai": "^7.0.164",
     "chess.js": "1.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
