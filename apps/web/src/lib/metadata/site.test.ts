@@ -44,10 +44,11 @@ describe('share metadata', () => {
   });
 
   it('keeps the SEO game catalogue aligned with every playable route', () => {
+    const removed = new Set(['parallel-world', 'reverse-time', 'infiltrator', 'risk', 'scrambled-words-live']);
     expect(PUBLIC_GAME_PAGES.map((game) => game.slug)).toEqual([
       'intelligence-test',
-      ...SPECIAL_GAME_ORDER,
-      ...INSTANT_GAME_ORDER,
+      ...SPECIAL_GAME_ORDER.filter((mode) => !removed.has(mode)),
+      ...INSTANT_GAME_ORDER.filter((mode) => !removed.has(mode)),
     ]);
   });
 

@@ -32,9 +32,6 @@
 - لوحة الفئات: https://qurabia.com/games/category-board/
 - السلم (فريقان): https://qurabia.com/games/ladder/
 - القاتل (Mafia): https://qurabia.com/mafia/
-- العالم الموازي: https://qurabia.com/games/parallel-world/
-- الزمن المقلوب: https://qurabia.com/games/reverse-time/
-- الدخيل: https://qurabia.com/games/infiltrator/
 - كلمة وسؤال: https://qurabia.com/games/question-word/
 - ومضة الذاكرة: https://qurabia.com/games/memory-flash/
 - شفرة الحروف: https://qurabia.com/games/word-code/

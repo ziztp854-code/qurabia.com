@@ -117,13 +117,9 @@ describe('JoinQuizForm', () => {
   it.each([
     ['chess', '123456', '/games/chess?join=123456'],
     ['baloot', '123456', '/games/baloot/join/123456'],
-    ['parallel', '123456', '/games/parallel-world?join=123456'],
-    ['reverse', '123456', '/games/reverse-time?join=123456'],
-    ['infiltrator', '123456', '/games/infiltrator?join=123456'],
     ['fastest', '123456', '/games/fastest-button/join/123456'],
     ['ladder', 'AB12CD34', '/games/ladder/join/AB12CD34'],
     ['elimination', 'A7K9PQ', '/games/elimination-live/join/A7K9PQ'],
-    ['scrambled', 'A7K9PQ', '/games/scrambled-words-live/join/A7K9PQ'],
   ])('يوجه رمز %s إلى صفحة اللعبة الصحيحة', async (type, code, path) => {
     const user = userEvent.setup();
     render(<JoinQuizForm />);

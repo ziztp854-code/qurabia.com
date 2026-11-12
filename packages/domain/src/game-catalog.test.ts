@@ -29,15 +29,14 @@ function filterState(partial: Partial<GameFilterState>): GameFilterState {
 }
 
 describe('game-catalog engine', () => {
-  it('excludes removed solo games while retaining live scrambled words', () => {
+  it('excludes removed games', () => {
     const ids = takeCatalog().map((game) => game.id);
-    for (const id of ['word-code', 'spot-difference', 'scrambled-words']) {
+    for (const id of ['word-code', 'spot-difference', 'scrambled-words', 'parallel-world', 'reverse-time', 'infiltrator', 'risk', 'scrambled-words-live']) {
       expect(ids).not.toContain(id);
     }
-    expect(ids).toContain('scrambled-words-live');
   });
   it('classifies shared-screen and online games by player capacity', () => {
-    const groupIds = ['letter-challenge', 'category-board', 'baloot', 'chess', 'risk', 'question-word'];
+    const groupIds = ['letter-challenge', 'category-board', 'baloot', 'chess', 'question-word'];
     const soloIds = ['millionaire', 'knowledge-tower', 'memory-flash', 'color-rush'];
     for (const id of groupIds) {
       expect(getGamePlayMode(INJECTED_GAME_CATALOG.find((game) => game.id === id)!)).toBe('group');
@@ -88,7 +87,7 @@ describe('game-catalog engine', () => {
 
   it('gameMatchesFilters respects kinds/categories/platforms/years/tags', () => {
     const catalog = takeCatalog();
-    const game = catalog.find((g) => g.id === 'parallel-world')!;
+    const game = catalog.find((g) => g.id === 'chess')!;
     expect(game).toBeTruthy();
     const roomsOnly = filterState({ kinds: ['room'] });
     expect(gameMatchesFilters(game, roomsOnly)).toBe(true);
@@ -132,10 +131,10 @@ describe('game-catalog engine', () => {
 
   it('manual sort follows provided order then appends unknown', () => {
     const catalog = takeCatalog();
-    const order = ['color-rush', 'infiltrator'];
+    const order = ['color-rush', 'chess'];
     const sorted = sortGames(catalog, filterState({ sort: 'manual', manualOrder: order }));
     expect(sorted[0]?.id).toBe('color-rush');
-    expect(sorted[1]?.id).toBe('infiltrator');
+    expect(sorted[1]?.id).toBe('chess');
   });
 
   it('buildSearchSuggestions returns games first then categories then tags', () => {

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
   INJECTED_GAME_CATALOG,
+  REMOVED_GAME_MODES,
   isSpecialGameMode,
   SPECIAL_GAME_ORDER,
   type SpecialGameMode,
@@ -27,7 +28,9 @@ export async function generateMetadata({
 }
 
 export function generateStaticParams() {
-  return [...SPECIAL_GAME_ORDER, ...INSTANT_GAME_ORDER].map((mode) => ({ mode }));
+  return [...SPECIAL_GAME_ORDER, ...INSTANT_GAME_ORDER]
+    .filter((mode) => !REMOVED_GAME_MODES.has(mode))
+    .map((mode) => ({ mode }));
 }
 
 export default async function SpecialGamePage({
@@ -38,6 +41,7 @@ export default async function SpecialGamePage({
   searchParams: Promise<{ join?: string }>;
 }) {
   const [{ mode }, query, session] = await Promise.all([params, searchParams, getCurrentSession()]);
+  if (REMOVED_GAME_MODES.has(mode)) notFound();
   if (!isSpecialGameMode(mode) && !isInstantGameMode(mode)) notFound();
 
   // Upcoming games are an early-access privilege: SULTAN plan or staff bypass.

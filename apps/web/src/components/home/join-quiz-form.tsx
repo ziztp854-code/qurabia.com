@@ -11,16 +11,12 @@ const CHESS_ROOM_CODE_RE = /^\d{6}$/;
 const ROOM_TYPES = {
   chess: { label: 'الشطرنج', pattern: /^\d{6}$/, route: '/games/chess?join=', hint: '٦ أرقام' },
   baloot: { label: 'البلوت', pattern: /^\d{6}$/, route: '/games/baloot/join/', hint: '٦ أرقام' },
-  parallel: { label: 'العالم الموازي', pattern: /^\d{6}$/, route: '/games/parallel-world?join=', hint: '٦ أرقام' },
-  reverse: { label: 'الزمن المقلوب', pattern: /^\d{6}$/, route: '/games/reverse-time?join=', hint: '٦ أرقام' },
-  infiltrator: { label: 'الدخيل', pattern: /^\d{6}$/, route: '/games/infiltrator?join=', hint: '٦ أرقام' },
   fastest: { label: 'أسرع كبسة زر', pattern: /^\d{6}$/, route: '/games/fastest-button/join/', hint: '٦ أرقام' },
   ladder: { label: 'السلم', pattern: /^[0-9A-F]{8}$/, route: '/games/ladder/join/', hint: '٨ أحرف أو أرقام من الرمز' },
   elimination: { label: 'حلقة الإقصاء', pattern: /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/, route: '/games/elimination-live/join/', hint: '٦ أحرف أو أرقام من الرمز' },
-  scrambled: { label: 'كلمات مفككة — مباشرة', pattern: /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/, route: '/games/scrambled-words-live/join/', hint: '٦ أحرف أو أرقام من الرمز' },
 } as const;
 type RoomType = 'auto' | keyof typeof ROOM_TYPES;
-const NUMERIC_ROOM_TYPES: readonly RoomType[] = ['chess', 'baloot', 'parallel', 'reverse', 'infiltrator', 'fastest'];
+const NUMERIC_ROOM_TYPES: readonly RoomType[] = ['chess', 'baloot', 'fastest'];
 
 export function JoinQuizForm({
   initialCode = '',
