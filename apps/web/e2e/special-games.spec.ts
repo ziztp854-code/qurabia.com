@@ -11,6 +11,7 @@ test('الألعاب المحذوفة وصفحات الانضمام لم تعد 
     '/games/scrambled-words-live/join/ABC123',
   ]) {
     const response = await request.get(path);
-    expect(response.status(), path).toBe(404);
+    expect(response.status(), path).toBe(200);
+    expect(new URL(response.url()).pathname, path).toMatch(/^\/games\/?$/);
   }
 });

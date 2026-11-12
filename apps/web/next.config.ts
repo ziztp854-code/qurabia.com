@@ -70,7 +70,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   async redirects() {
-    return ['word-code', 'spot-difference', 'scrambled-words'].map((mode) => ({
+    return ['word-code', 'spot-difference', 'scrambled-words', 'parallel-world', 'reverse-time', 'infiltrator', 'risk', 'scrambled-words-live/:path*'].map((mode) => ({
       source: `/games/${mode}`,
       destination: '/games',
       permanent: false,

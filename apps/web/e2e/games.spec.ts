@@ -5,6 +5,7 @@ import {
   REVERSE_TIME_BANK,
   SPECIAL_GAME_META,
   SPECIAL_GAME_ORDER,
+  REMOVED_GAME_MODES,
   SPECTRUM_BANK,
   UPCOMING_SPECIAL_GAMES,
 } from '@tahaddi/domain';
@@ -32,7 +33,7 @@ test('الكتالوج والمسارات والبنوك مشتقة من قوا�
     expect(new URL(response.url()).pathname).toMatch(/^\/games\/?$/);
   }
 
-  for (const mode of SPECIAL_GAME_ORDER) {
+  for (const mode of SPECIAL_GAME_ORDER.filter((mode) => !REMOVED_GAME_MODES.has(mode))) {
     const meta = SPECIAL_GAME_META[mode];
     expect(meta).toMatchObject({
       mode,
@@ -52,7 +53,7 @@ test('الكتالوج والمسارات والبنوك مشتقة من قوا�
     expect((await request.get(`/games/${mode}/`)).status()).toBe(200);
   }
 
-  for (const mode of INSTANT_GAME_ORDER) {
+  for (const mode of INSTANT_GAME_ORDER.filter((mode) => !REMOVED_GAME_MODES.has(mode))) {
     const meta = INSTANT_GAME_META[mode];
     expect(meta).toMatchObject({
       mode,
@@ -186,7 +187,7 @@ test('سطح الألعاب يحافظ على الاستجابة والاتجا�
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
   const gameLink = page.getByRole('link', {
-    name: SPECIAL_GAME_META[SPECIAL_GAME_ORDER[0]].title,
+    name: SPECIAL_GAME_META.chess.title,
     exact: true,
   });
   const targetHref = await gameLink.getAttribute('href');
