@@ -4,7 +4,6 @@ import { SiteLayout, type HeaderUser } from '@/components/layout';
 import { ButtonLink } from '@/components/ui';
 import { publicNavigation } from '@/config/navigation';
 import { HomeHero, type HomeRank } from './home-hero';
-import { HomeLiveSection } from './home-live-section';
 import { HomeGamesSection } from './home-games-section';
 import { HomeWorldSection } from './home-world-section';
 import styles from './prestige-home.module.css';
@@ -26,7 +25,6 @@ export function PrestigeHome({
     <SiteLayout user={user} variant="home">
       <div className={`${styles.page} prestigeHome`}>
         <HomeHero rank={rank} />
-        <HomeLiveSection />
         <HomeGamesSection />
         <HomeWorldSection />
 

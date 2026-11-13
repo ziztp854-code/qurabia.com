@@ -7,7 +7,6 @@ import {
   CircleHelp,
   Shield,
   Images,
-  Mic,
   ArrowRight,
   Coins,
   Hammer,
@@ -132,9 +131,6 @@ export function GameClient({ demo }: { demo: boolean }) {
             <CircleHelp size={17} />
             دليل اللعب
           </button>
-          <Link href="/voice" className={styles.voiceLink}>
-            <Mic size={17} /> مجلس الصوت
-          </Link>
           <Link href="/games" aria-label="العودة إلى الألعاب" className={styles.back}>
             <ArrowRight size={20} />
           </Link>

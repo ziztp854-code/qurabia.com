@@ -70,11 +70,19 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   async redirects() {
-    return ['word-code', 'spot-difference', 'scrambled-words', 'parallel-world', 'reverse-time', 'infiltrator', 'risk', 'scrambled-words-live/:path*'].map((mode) => ({
+    const gameRedirects = ['word-code', 'spot-difference', 'scrambled-words', 'parallel-world', 'reverse-time', 'infiltrator', 'risk', 'scrambled-words-live/:path*'].map((mode) => ({
       source: `/games/${mode}`,
       destination: '/games',
       permanent: false,
     }));
+    return [
+      ...gameRedirects,
+      ...['/voice', '/voice/:roomId([a-zA-Z0-9_-]+)', '/community-voice/:path*', '/admin/voice-emojis/:path*'].map((source) => ({
+        source,
+        destination: '/',
+        permanent: false,
+      })),
+    ];
   },
   async headers() {
     return [
