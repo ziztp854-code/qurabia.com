@@ -1,0 +1,68 @@
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  color: var(--foreground);
+  background: var(--background) url('/game-art/ladder/winner-celebration.webp') center / cover no-repeat;
+}
+.wide, .detail {
+  position: absolute;
+  inset: 0;
+  background: center / cover no-repeat;
+  pointer-events: none;
+}
+.wide { background-image: url('/game-art/ladder/winner-wide.webp'); animation: wide-shot 6s ease-out both; }
+.detail { background-image: url('/game-art/ladder/winner-detail.webp'); animation: detail-shot 3s ease-out both; }
+.scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to left, var(--background) 0%, transparent 75%);
+  opacity: .76;
+  z-index: 1;
+}
+.copy {
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: 6%;
+  top: 17%;
+  width: 47%;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: .6cqw;
+  text-align: start;
+  text-shadow: 0 2px 12px var(--background);
+  animation: reveal .9s ease-out both;
+}
+.eyebrow { color: var(--gold-100); font-size: clamp(.9rem, 2.2cqw, 1.5rem); font-weight: 700; }
+.title { font-size: clamp(1.4rem, 5cqw, 4rem); line-height: 1.25; overflow-wrap: anywhere; }
+.rule { width: 8cqw; height: 2px; background: var(--brand-gold); }
+.score { color: var(--gold-100); font-size: clamp(1rem, 2.6cqw, 2rem); font-weight: 700; }
+.reason { font-size: clamp(.8rem, 1.65cqw, 1.15rem); }
+.dismiss {
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: 6%;
+  bottom: 8%;
+  min-height: 44px;
+  padding: .55rem 1rem;
+  border: 1px solid var(--gold-500);
+  border-radius: .5rem;
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+.dismiss:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+@keyframes reveal { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes detail-shot { 0% { opacity: 1; transform: scale(1.08); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
+@keyframes wide-shot { 0%, 50% { opacity: 1; transform: scale(1.05); } 90% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .copy { animation: none; } .wide, .detail { display: none; } }
+@media (max-width: 60rem) {
+  .scene { height: 100%; background-position: 38% center; }
+  .scene::before { opacity: .9; }
+  .copy { width: 57%; top: 14%; }
+}

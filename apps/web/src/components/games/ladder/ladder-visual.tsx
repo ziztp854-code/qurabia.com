@@ -1,9 +1,29 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { formatNumber } from '@/lib/utils';
 import styles from './ladder-room.module.css';
+import celebration from './winner-celebration.module.css';
+
+function WinnerCelebration({ title, score, reason }: { title: string; score: number; reason: string }) {
+  const [open, setOpen] = useState(true);
+  if (!open) return null;
+  return (
+    <div className={celebration.scene} dir="rtl" data-testid="winner-celebration">
+      <div className={celebration.wide} aria-hidden="true" />
+      <div className={celebration.detail} aria-hidden="true" />
+      <div className={celebration.copy}>
+        <span className={celebration.eyebrow}>بطل السلم</span>
+        <strong className={celebration.title}>{title}</strong>
+        <span className={celebration.rule} aria-hidden="true" />
+        <span className={celebration.score}>{formatNumber(score)} نقطة</span>
+        {reason && <span className={celebration.reason}>{reason}</span>}
+      </div>
+      <button className={celebration.dismiss} type="button" onClick={() => setOpen(false)}>عرض تفاصيل المباراة</button>
+    </div>
+  );
+}
 
 type LadderVisualProps = {
   rightPosition: number;
@@ -40,6 +60,7 @@ export function LadderVisual({ rightPosition, leftPosition, winningPosition, cur
         {finale ? <div className={styles.stageWinner} role="status"><strong data-long={finale.title.length > 16 || undefined}>{finale.title}</strong><span>{finale.detail}</span><small>{finale.reason}</small></div> : children || <span className={styles.stageRound}>الجولة {formatNumber(currentRound)} من {formatNumber(totalRounds)}</span>}
       </div>
       {column('left', leftPosition, leftName, leftScore)}
+      {finale?.winnerSide && <WinnerCelebration key={`${finale.winnerSide}:${finale.title}`} title={finale.title} score={finale.winnerSide === 'right' ? rightScore : leftScore} reason={finale.reason} />}
     </div>
   );
 }

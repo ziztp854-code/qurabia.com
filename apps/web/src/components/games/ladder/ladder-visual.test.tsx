@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { LadderVisual } from './ladder-visual';
 
@@ -57,5 +57,17 @@ describe('LadderVisual', () => {
       winningPosition={10} currentRound={10} totalRounds={10}
       finale={{ title: 'تعادل', detail: '٧٠٠٠ - ٧٠٠٠ نقطة', reason: '' }} />);
     expect(screen.queryByTestId('ladder-winner-crown')).not.toBeInTheDocument();
+  });
+
+  it('shows the actual winning score and lets players reveal the match details', () => {
+    render(<LadderVisual rightPosition={4} leftPosition={3} rightScore={7000} leftScore={6000}
+      winningPosition={10} currentRound={10} totalRounds={10}
+      finale={{ title: 'يفوز خالد', detail: '٧٠٠٠ - ٦٠٠٠ نقطة', reason: 'الحسم بالنقاط', winnerSide: 'right' }} />);
+    const scene = screen.getByTestId('winner-celebration');
+    expect(scene).toHaveTextContent('يفوز خالد');
+    expect(scene).toHaveTextContent('7,000');
+    fireEvent.click(within(scene).getByRole('button', { name: 'عرض تفاصيل المباراة' }));
+    expect(screen.queryByTestId('winner-celebration')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ladder-question-center')).toHaveTextContent('الحسم بالنقاط');
   });
 });
