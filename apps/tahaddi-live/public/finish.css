@@ -1,0 +1,71 @@
+/* Shared finish layer: legibility, compact room shelf, and predictable states. */
+body{font-size:15px}
+.page-heading p{font-size:13px;line-height:1.9}
+.nav-caption{font-size:11px}
+.nav-item{font-size:14px}
+.sidebar-note p{font-size:13px}
+.sidebar-note .button{font-size:13px}
+.sidebar-bottom small{font-size:11px}
+.connection{font-size:11px}
+.spotlight p{font-size:13px}
+.spotlight .button{font-size:12px}
+.spotlight-foot{font-size:10px}
+.invite-card p,.invite-card input,.invite-card .button{font-size:12px}
+.invite-card small{font-size:10px}
+.room-info h3{font-size:15px}
+.room-meta{font-size:11px}
+.room-enter{font-size:12px;min-height:44px}
+.room-type,.art-caption{font-size:10px}
+.filter,.search input{font-size:12px}
+.room-enter,.save-room{transition:background .18s,color .18s}
+.room-card:focus-within{box-shadow:0 0 0 3px #6d4aff24}
+.button:active,.icon-button:active,.nav-item:active,.filter:active,.room-enter:active{filter:brightness(.94)}
+button{touch-action:manipulation}
+.chat-message{font-size:14px}
+.chat-message strong,.chat-message.system{font-size:12px}
+.chat-panel input{font-size:14px}
+.stage-hint{font-size:12px}
+.participant h3{font-size:13px}
+.participant .seat-note{font-size:11px}
+.form-error{line-height:1.8}
+.profile-info span{font-size:12px}
+.app-footer{font-size:10px}
+@media(min-width:1280px){
+  .room-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+  .room-art{height:167px}
+  .room-info{padding:16px 14px}
+  .room-info h3{font-size:14px}
+  .room-meta{font-size:10px}
+  .room-enter{font-size:11px}
+}
+@media(max-width:1000px){
+  .nav-item{font-size:12px}
+  .sidebar-note p{font-size:12px}
+  .sidebar-note .button{font-size:11px}
+  .page-heading p{font-size:12px}
+}
+@media(max-width:700px){
+  .page-heading h1{font-size:26px;line-height:1.6}
+  .page-heading p{font-size:12px;line-height:1.9}
+  .spotlight h2{font-size:27px}
+  .spotlight p{font-size:12px}
+  .spotlight-foot{font-size:10px}
+  .sound-world{left:-145px;opacity:.5}
+  .spotlight{min-height:335px}
+  .room-grid{gap:12px}
+  .room-info h3{font-size:13px;line-height:1.8}
+  .room-meta{font-size:10px}
+  .room-enter{font-size:11px}
+  .room-type,.art-caption{font-size:9px}
+  .filter,.search input{font-size:12px}
+  .search{padding-bottom:6px;margin-top:4px}
+  .filter{padding-inline:14px}
+  input,select,.chat-panel input{font-size:16px}
+  .room-top .button,.stage-controls .button,.gift-open{font-size:12px}
+  .participant h3{font-size:12px}
+  .network-note{font-size:10px}
+  .mobile-nav button{font-size:10px}
+  .stage-header{font-size:12px}
+  .bottom-note{font-size:11px}
+  .app-footer{font-size:10px;line-height:1.9}
+}
