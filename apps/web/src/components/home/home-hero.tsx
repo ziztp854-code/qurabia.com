@@ -30,7 +30,7 @@ export function HomeHero({ rank }: { rank: HomeRank | null }) {
         <RoyalHomeOrnaments />
         <div className={styles.copy}>
           <h1 id="landing-title">
-            <span className="sr-only">تحدي: </span>
+            <span className="sr-only">تحدي </span>
             <RoyalHomeWordmark />
             <span className={styles.heroPromise}>جمعتكم تبدأ بلعبة.</span>
           </h1>
