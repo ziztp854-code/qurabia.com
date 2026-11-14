@@ -231,6 +231,12 @@ describe('game question refresh API', () => {
     expect((await POST(request())).status).toBe(200);
     expect(mocks.generate).toHaveBeenCalledOnce();
   });
+  it('accepts Kimi as the configured provider for other games', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.generate).toHaveBeenCalledOnce();
+  });
   it('creates a private owned ladder pack outside the public tagged bank', async () => {
     vi.stubEnv('KIMI_API_KEY', 'test-kimi');
     mocks.user.mockResolvedValue({

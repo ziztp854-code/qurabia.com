@@ -97,7 +97,12 @@ export function isGameQuestionGenerationConfigured(
     );
   return (
     process.env.XAI_DISABLED !== 'true' &&
-    Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL || process.env.XAI_API_KEY)
+    Boolean(
+      process.env.AI_GATEWAY_API_KEY ||
+      process.env.VERCEL ||
+      process.env.XAI_API_KEY ||
+      process.env.KIMI_API_KEY?.trim(),
+    )
   );
 }
 
@@ -352,6 +357,32 @@ export async function generateFreshGameQuestions(
         logProviderFailure('unorouter', stage, error, finishReason, outputTokens);
         throw error;
       }
+    }
+    if (
+      !process.env.AI_GATEWAY_API_KEY &&
+      !process.env.VERCEL &&
+      !process.env.XAI_API_KEY &&
+      kimiKey
+    ) {
+      const kimi = createOpenAICompatible({
+        name: 'kimi',
+        baseURL: 'https://api.moonshot.ai/v1',
+        apiKey: kimiKey,
+        supportsStructuredOutputs: false,
+      });
+      const result = await generateText({
+        model: kimi('kimi-k3.1-pro'),
+        output: Output.object({ schema: generatedGameQuestionsSchema }),
+        prompt: `${prompt}\nأرجع كائن JSON يحتوي على questions فقط. كل سؤال يحتوي على prompt وanswer وoptions وanswerIndex وcategory وexplanation وletter وslot وdifficulty. قيمة difficulty هي EASY أو MEDIUM أو HARD، وslot رقم من 1 إلى 25.`,
+        maxOutputTokens: 16384,
+        maxRetries: 0,
+        abortSignal: AbortSignal.timeout(80_000),
+      });
+      if (result.finishReason === 'length') throw new Error('Incomplete generation');
+      return validateGameQuestionBatch(
+        input,
+        generatedGameQuestionsSchema.parse(result.output).questions,
+      );
     }
     if (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL) {
       try {

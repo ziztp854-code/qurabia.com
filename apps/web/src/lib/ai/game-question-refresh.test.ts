@@ -62,6 +62,17 @@ describe('fresh game question generation', () => {
       }),
     );
   });
+  it('uses Kimi for other games when it is the configured provider', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    const questions = Array.from({ length: 15 }, (_, index) => question(index + 1));
+    mocks.generateText.mockResolvedValue({ finishReason: 'stop', output: { questions } });
+    expect(await generateFreshGameQuestions({ game: 'millionaire', topic: 'ثقافة عامة' })).toEqual(
+      questions,
+    );
+    expect(mocks.openrouterModel).toHaveBeenCalledWith('kimi-k3.1-pro');
+    expect(mocks.generateText).toHaveBeenCalledOnce();
+  });
   it('keeps the configured disable switch authoritative', async () => {
     vi.stubEnv('XAI_DISABLED', 'true');
     await expect(
