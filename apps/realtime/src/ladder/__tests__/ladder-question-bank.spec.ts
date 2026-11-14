@@ -26,6 +26,58 @@ function room(overrides: Partial<LadderRoomRuntime> = {}): LadderRoomRuntime {
 }
 
 describe('loadLadderQuestionCandidates', () => {
+  it.each([false, true])(
+    'excludes known numbered copies from bank and pack candidates (pack: %s)',
+    async (usePack) => {
+      const prompt =
+        'من هو القائد القرطاجي الشهير الذي قاد جيشه مع الفيلة وعبر جبال الألب لمهاجمة روما؟';
+      const row = (id: string, text: string) => ({
+        id,
+        type: 'MULTIPLE_CHOICE',
+        prompt: text,
+        difficulty: 'EASY',
+        timeLimit: 20,
+        status: 'PUBLISHED',
+        gameTypes: ['LADDER'],
+        category: { id: 'history', name: 'تاريخ' },
+        options: [
+          { id: `${id}-a`, text: 'حنبعل', isCorrect: true },
+          { id: `${id}-b`, text: 'الإسكندر', isCorrect: false },
+          { id: `${id}-c`, text: 'قيصر', isCorrect: false },
+          { id: `${id}-d`, text: 'نابليون', isCorrect: false },
+        ],
+      });
+      const rows = [
+        row('copy-93', `${prompt} (فصل 93)`),
+        row('copy-94', `${prompt} (فصل 94)`),
+        row('original', prompt),
+      ];
+      const before = JSON.stringify(rows);
+      const findMany = jest.fn().mockResolvedValue(rows);
+      const database = {
+        client: {
+          quiz: {
+            findFirst: jest.fn().mockResolvedValue({
+              questions: rows.map((question) => ({ question })),
+            }),
+          },
+          question: { findMany },
+        },
+      } as unknown as DatabaseService;
+      const candidates = await loadLadderQuestionCandidates(
+        database,
+        room({ totalRounds: 1, ...(usePack ? { quizId: 'pack' } : {}) }),
+      );
+      expect(candidates.map((item) => item.id)).toEqual(['original']);
+      expect(candidates[0]?.options[0]).toMatchObject({
+        text: 'حنبعل',
+        isCorrect: true,
+      });
+      expect(JSON.stringify(rows)).toBe(before);
+      if (usePack) expect(findMany).not.toHaveBeenCalled();
+    },
+  );
+
   it('continues past duplicate bank rows to find another valid question', async () => {
     const all = Array.from({ length: 501 }, (_, index) => ({
       id: `q-${index}`,

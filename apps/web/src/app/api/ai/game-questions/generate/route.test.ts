@@ -126,9 +126,18 @@ describe('game question refresh API', () => {
       role: 'ADMIN',
       tokenVersion: 1,
     });
-    expect((await POST(request('ladder'))).status).toBe(200);
+    const response = await POST(request('ladder', 'http://localhost', {
+      topic: 'جغرافيا فقط',
+      excludePrompts: ['سؤال سبق استخدامه؟'],
+    }));
+    expect(response.status).toBe(200);
     expect(mocks.redisSet).toHaveBeenCalledOnce();
-    expect(mocks.selectBank).toHaveBeenCalledOnce();
+    expect(mocks.selectBank).toHaveBeenCalledExactlyOnceWith({
+      excludePrompts: ['سؤال سبق استخدامه؟'],
+    });
+    expect(mocks.quiz).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ title: 'أسئلة البنك: جميع التصنيفات' }),
+    }));
   });
   it('blocks regular users before calling the provider or consuming quota', async () => {
     vi.stubEnv('KIMI_API_KEY', 'test-kimi');

@@ -4,8 +4,12 @@ import { AiGameQuestionRefresh } from './ai-game-question-refresh';
 import { LetterGame } from '@/components/letter-game/letter-game';
 import { LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
-afterEach(() => vi.unstubAllGlobals());
+const push = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+afterEach(() => {
+  vi.unstubAllGlobals();
+  push.mockClear();
+});
 describe('AI game question refresh', () => {
   it('keeps the game visible while hiding the generator when access is denied', () => {
     render(
@@ -14,13 +18,28 @@ describe('AI game question refresh', () => {
       </AiGameQuestionRefresh>,
     );
     expect(screen.getByText('اللعبة متاحة')).toBeInTheDocument();
-    expect(screen.queryByText('جلب أسئلة جديدة بالذكاء الاصطناعي')).not.toBeInTheDocument();
+    expect(screen.queryByText('اختيار أسئلة من بنك السلم')).not.toBeInTheDocument();
   });
-  it('shows the external-provider privacy notice next to the ladder topic field when requested', () => {
+  it('explains all-category ladder selection without asking for a topic and announces provider use', () => {
     render(<AiGameQuestionRefresh game="ladder" showExternalTopicNotice />);
-    const input = screen.getByLabelText('موضوع الأسئلة الجديدة');
-    expect(input).toHaveAccessibleDescription(
-      'يُرسل الموضوع ونصوص أسئلة منشورة من البنك إلى مزوّد الذكاء الاصطناعي لاختيار الأنسب. لا تدخل بيانات شخصية.',
+    fireEvent.click(screen.getByText('اختيار أسئلة من بنك السلم', { selector: 'summary' }));
+    expect(
+      screen.queryByRole('textbox', { name: 'موضوع الأسئلة الجديدة' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/من جميع تصنيفات بنك السلم/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'اختيار أسئلة من البنك' }),
+    ).toHaveAccessibleDescription(
+      'قد تُرسل نصوص بعض الأسئلة المنشورة إلى مزوّد الذكاء الاصطناعي للمساعدة في اختيارها.',
+    );
+  });
+  it('still offers topic input and its privacy notice for other games', () => {
+    render(<AiGameQuestionRefresh game="letter-challenge" showExternalTopicNotice />);
+    fireEvent.click(screen.getByText('جلب أسئلة جديدة بالذكاء الاصطناعي', { selector: 'summary' }));
+    expect(
+      screen.getByRole('textbox', { name: 'موضوع الأسئلة الجديدة' }),
+    ).toHaveAccessibleDescription(
+      'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.',
     );
   });
   it('previews generated questions before applying them to the actual letter game', async () => {
@@ -65,30 +84,35 @@ describe('AI game question refresh', () => {
       answer: 'الأول',
       options: ['الأول', 'الثاني', 'الثالث', 'الرابع'],
       answerIndex: 0,
-      category: 'ثقافة',
+      category: ['ثقافة', 'تاريخ', 'علوم'][index % 3],
       explanation: 'شرح الإجابة الصحيحة',
       letter: '',
       slot: index + 1,
       difficulty: index < 3 ? 'EASY' : index < 6 ? 'MEDIUM' : 'HARD',
     }));
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            ok: true,
-            game: 'ladder',
-            questions,
-            batchId: 'batch',
-            playHref: '/games/ladder/host?quizId=pack',
-          }),
-        }),
-    );
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        game: 'ladder',
+        questions,
+        batchId: 'batch',
+        playHref: '/games/ladder/host?quizId=pack',
+      }),
+    });
+    vi.stubGlobal('fetch', fetch);
     render(<AiGameQuestionRefresh game="ladder" />);
+    fireEvent.click(screen.getByText('اختيار أسئلة من بنك السلم', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'اختيار أسئلة من البنك' }));
     expect(await screen.findByText('10 سؤالًا جديدًا للمراجعة')).toBeInTheDocument();
+    expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual({
+      game: 'ladder',
+      topic: 'ثقافة عامة',
+      excludePrompts: [],
+    });
+    expect(push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'اعتماد الأسئلة لغرفة جديدة' }));
+    expect(push).toHaveBeenCalledWith('/games/ladder/host?quizId=pack');
   });
   it('preserves the current game when generation fails', async () => {
     vi.stubGlobal(

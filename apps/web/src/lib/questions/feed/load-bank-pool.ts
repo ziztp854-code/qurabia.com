@@ -2,23 +2,26 @@ import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
 import type { QuestionFeedGameMode, QuestionFeedResult, QuestionFeedRow } from './types';
 import { QuestionFeedError } from './types';
 
-export async function loadBankTaggedQuestions(
+type BankQuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+type BankPageOptions = { take: number; types?: BankQuestionType[]; afterId?: string | null };
+
+async function loadBankQuestionPage(
   gameMode: QuestionFeedGameMode,
-  options?: { take?: number; types?: Array<'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER'> },
-): Promise<QuestionFeedResult> {
+  { take, types, afterId }: BankPageOptions,
+): Promise<QuestionFeedRow[]> {
   if (!hasDatabaseUrl()) {
     throw new QuestionFeedError('قاعدة البيانات غير مهيأة.', 'UNAVAILABLE');
   }
 
-  const take = Math.min(1_500, Math.max(1, options?.take ?? 400));
   const rows = await getPrismaClient().question.findMany({
     where: {
       status: 'PUBLISHED',
       gameTypes: { has: gameMode },
-      ...(options?.types ? { type: { in: options.types } } : {}),
+      ...(types ? { type: { in: types } } : {}),
       category: { is: { isActive: true } },
+      ...(afterId ? { id: { gt: afterId } } : {}),
     },
-    orderBy: [{ lastEditedAt: 'desc' }, { id: 'asc' }],
+    orderBy: afterId === undefined ? [{ lastEditedAt: 'desc' }, { id: 'asc' }] : [{ id: 'asc' }],
     take,
     select: {
       id: true,
@@ -38,7 +41,7 @@ export async function loadBankTaggedQuestions(
     },
   });
 
-  const feedRows: QuestionFeedRow[] = rows.map((question, index) => ({
+  return rows.map((question, index) => ({
     id: question.id,
     prompt: question.prompt,
     type: question.type,
@@ -58,12 +61,36 @@ export async function loadBankTaggedQuestions(
     })),
     position: index,
   }));
+}
+
+export async function loadBankTaggedQuestions(
+  gameMode: QuestionFeedGameMode,
+  options?: { take?: number; types?: BankQuestionType[] },
+): Promise<QuestionFeedResult> {
+  const take = Math.min(1_500, Math.max(1, options?.take ?? 400));
+  const rows = await loadBankQuestionPage(gameMode, { take, types: options?.types });
 
   return {
     source: 'bank-tags',
     gameMode,
     quizId: null,
     quizTitle: null,
-    rows: feedRows,
+    rows,
   };
+}
+
+/** Read every eligible row in stable keyset pages without retaining the whole bank. */
+export async function* loadBankTaggedQuestionPages(
+  gameMode: QuestionFeedGameMode,
+  options?: { types?: BankQuestionType[] },
+): AsyncGenerator<QuestionFeedRow[]> {
+  const take = 500;
+  let afterId: string | null = null;
+  for (;;) {
+    const rows = await loadBankQuestionPage(gameMode, { take, types: options?.types, afterId });
+    if (rows.length === 0) return;
+    yield rows;
+    if (rows.length < take) return;
+    afterId = rows[rows.length - 1]!.id;
+  }
 }

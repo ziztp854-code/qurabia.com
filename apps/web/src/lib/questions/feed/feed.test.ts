@@ -8,6 +8,7 @@ import { adaptFeedToCategoryBoardLibrary } from './adapters/to-category-board';
 
 const mocks = vi.hoisted(() => ({
   findFirst: vi.fn(),
+  findMany: vi.fn(),
   hasDatabaseUrl: vi.fn(() => true),
 }));
 
@@ -15,6 +16,7 @@ vi.mock('@/lib/auth/prisma', () => ({
   hasDatabaseUrl: () => mocks.hasDatabaseUrl(),
   getPrismaClient: () => ({
     quiz: { findFirst: mocks.findFirst },
+    question: { findMany: mocks.findMany },
   }),
 }));
 
@@ -45,7 +47,41 @@ function baseRow(overrides: Partial<QuestionFeedRow> = {}): QuestionFeedRow {
 describe('question feed', () => {
   beforeEach(() => {
     mocks.findFirst.mockReset();
+    mocks.findMany.mockReset();
     mocks.hasDatabaseUrl.mockReturnValue(true);
+  });
+
+  it('continues whole-bank keyset pagination beyond the old 1500-row boundary', async () => {
+    const { loadBankTaggedQuestionPages } = await import('./load-bank-pool');
+    const question = (index: number) => ({
+      ...baseRow(),
+      id: `q${index.toString().padStart(4, '0')}`,
+      category: { id: 'category', name: index > 1500 ? 'جغرافيا' : 'تاريخ' },
+    });
+    mocks.findMany
+      .mockResolvedValueOnce(Array.from({ length: 500 }, (_, i) => question(i + 1)))
+      .mockResolvedValueOnce(Array.from({ length: 500 }, (_, i) => question(i + 501)))
+      .mockResolvedValueOnce(Array.from({ length: 500 }, (_, i) => question(i + 1001)))
+      .mockResolvedValueOnce([question(1501)]);
+
+    const pages = [];
+    for await (const page of loadBankTaggedQuestionPages('LADDER', { types: ['MULTIPLE_CHOICE'] })) {
+      pages.push(page);
+    }
+    expect(pages.map((page) => page.length)).toEqual([500, 500, 500, 1]);
+    expect(pages[3]?.[0]).toMatchObject({ id: 'q1501', categoryName: 'جغرافيا' });
+    expect(mocks.findMany.mock.calls.map(([query]) => query.where.id?.gt)).toEqual([
+      undefined, 'q0500', 'q1000', 'q1500',
+    ]);
+    expect(mocks.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        status: 'PUBLISHED',
+        gameTypes: { has: 'LADDER' },
+        type: { in: ['MULTIPLE_CHOICE'] },
+        category: { is: { isActive: true } },
+      },
+      orderBy: [{ id: 'asc' }],
+    }));
   });
 
   it('rejects quiz packs whose gameMode does not match', async () => {
