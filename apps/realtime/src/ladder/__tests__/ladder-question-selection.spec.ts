@@ -44,6 +44,40 @@ describe('Ladder question selection policy', () => {
   });
 
   describe('fallback hierarchy and balancing', () => {
+    it('rejects numbered Hannibal copies but keeps the clean original and unrelated chapter questions', () => {
+      const prompt =
+        'من هو القائد القرطاجي الشهير الذي قاد جيشه مع الفيلة وعبر جبال الألب لمهاجمة روما؟';
+      const clean = { ...candidate('original', 'EASY', 'history'), prompt };
+      const duplicate = {
+        ...candidate('copy', 'EASY', 'history'),
+        prompt: `${prompt} (فصل 93)`,
+      };
+      const chapter = {
+        ...candidate('chapter', 'EASY', 'literature'),
+        prompt: 'ما الحدث الرئيسي في الرواية؟ (فصل 93)',
+      };
+      const input = {
+        targetDifficulty: 'EASY' as const,
+        usedQuestionIds: [],
+        recentCategoryIds: [],
+        random: () => 0,
+      };
+      expect(
+        selectLadderQuestionCandidate({ ...input, candidates: [duplicate] }),
+      ).toBeNull();
+      expect(
+        selectLadderQuestionCandidate({
+          ...input,
+          candidates: [duplicate, clean],
+        })?.candidate.id,
+      ).toBe('original');
+      expect(
+        selectLadderQuestionCandidate({ ...input, candidates: [chapter] })
+          ?.candidate.id,
+      ).toBe('chapter');
+      expect(duplicate.prompt).toBe(`${prompt} (فصل 93)`);
+    });
+
     it('rejects placeholder prompts and duplicate option text', () => {
       const placeholder = {
         ...candidate('placeholder', 'EASY', 'science'),

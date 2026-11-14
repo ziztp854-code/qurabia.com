@@ -109,9 +109,17 @@ describe('LadderRoom guest identity recovery', () => {
     const joinButton = screen.getByRole('button', { name: /انضمام برمز/ });
     expect(joinButton).toBeDisabled();
 
-    await user.type(screen.getByLabelText('رمز الغرفة'), 'ab12cd');
-    expect(screen.getByLabelText('رمز الغرفة')).toHaveValue('AB12CD');
+    const codeInput = screen.getByLabelText('رمز الغرفة');
+    const example = codeInput.getAttribute('placeholder')?.match(/\b[A-Z0-9]{8}\b/)?.[0];
+    expect(example).toBe('ABCD1234');
+    await user.type(codeInput, example!.toLowerCase());
+    expect(codeInput).toHaveValue(example);
     expect(joinButton).toBeEnabled();
+    await user.click(joinButton);
+    expect(socketMock.emit).toHaveBeenCalledWith(
+      'ladder:join',
+      expect.objectContaining({ roomCode: example }),
+    );
   });
 
   it.each(['left', 'right'] as const)('automatically joins the invited %s team once when connected', async (team) => {

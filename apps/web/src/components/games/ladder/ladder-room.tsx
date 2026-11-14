@@ -463,7 +463,7 @@ export function LadderRoom({
                     <Input
                       id="ladder-join-code"
                       label="رمز الغرفة"
-                      placeholder="أدخل الرمز (مثلاً: ABCD12)"
+                      placeholder="أدخل الرمز (مثلاً: ABCD1234)"
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                       dir="ltr"

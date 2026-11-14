@@ -55,6 +55,8 @@ export function AiGameQuestionRefresh({
 }) {
   const router = useRouter();
   const id = useId();
+  const isLadder = game === 'ladder';
+  const showLadderProviderNotice = isLadder && showExternalTopicNotice;
   const [topic, setTopic] = useState('ثقافة عامة');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -83,7 +85,7 @@ export function AiGameQuestionRefresh({
 
   async function generate() {
     if (pending.current) return;
-    if (topic.trim().length < 3) {
+    if (!isLadder && topic.trim().length < 3) {
       setError('اكتب موضوعًا من ثلاثة أحرف على الأقل.');
       return;
     }
@@ -99,7 +101,8 @@ export function AiGameQuestionRefresh({
         signal: controller.signal,
         body: JSON.stringify({
           game,
-          topic,
+          // Keep the existing request schema without putting a topic filter on the Ladder bank.
+          topic: isLadder ? 'ثقافة عامة' : topic,
           excludePrompts: [...seen.current].slice(-80).map((prompt) => prompt.slice(0, 240)),
         }),
       });
@@ -154,41 +157,50 @@ export function AiGameQuestionRefresh({
         <section
           className={`game-pack-picker ${styles.refresh}`}
           aria-label={
-            game === 'ladder'
-              ? 'اختيار أسئلة من البنك بالذكاء الاصطناعي'
-              : 'تجديد أسئلة اللعبة بالذكاء الاصطناعي'
+            isLadder ? 'اختيار أسئلة من بنك السلم' : 'تجديد أسئلة اللعبة بالذكاء الاصطناعي'
           }
         >
           <details>
             <summary>
-              {game === 'ladder'
-                ? 'اختيار أسئلة من البنك بالذكاء الاصطناعي'
-                : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
+              {isLadder ? 'اختيار أسئلة من بنك السلم' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
             </summary>
             <div className="stack-form">
               <p>
-                {game === 'ladder'
-                  ? 'اختر موضوعًا ليختار الذكاء الاصطناعي أسئلة منشورة من البنك، ثم راجعها واعتمدها.'
+                {isLadder
+                  ? 'تُختار 10 أسئلة منشورة من جميع تصنيفات بنك السلم، ثم يمكنك مراجعتها واعتمادها.'
                   : 'استخدم هذا الخيار إذا سبق لعب الأسئلة. راجع المجموعة الجديدة ثم اعتمدها لبدء جولة جديدة.'}
               </p>
-              <Input
-                id={id}
-                label="موضوع الأسئلة الجديدة"
-                description={
-                  showExternalTopicNotice
-                    ? game === 'ladder'
-                      ? 'يُرسل الموضوع ونصوص أسئلة منشورة من البنك إلى مزوّد الذكاء الاصطناعي لاختيار الأنسب. لا تدخل بيانات شخصية.'
-                      : 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
-                    : undefined
-                }
-                value={topic}
-                maxLength={120}
-                onChange={(event) => setTopic(event.target.value)}
-                disabled={loading}
-              />
-              <Button type="button" variant="outline" loading={loading} onClick={generate}>
+              {isLadder ? (
+                showLadderProviderNotice && (
+                  <p id={id}>
+                    قد تُرسل نصوص بعض الأسئلة المنشورة إلى مزوّد الذكاء الاصطناعي للمساعدة في
+                    اختيارها.
+                  </p>
+                )
+              ) : (
+                <Input
+                  id={id}
+                  label="موضوع الأسئلة الجديدة"
+                  description={
+                    showExternalTopicNotice
+                      ? 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
+                      : undefined
+                  }
+                  value={topic}
+                  maxLength={120}
+                  onChange={(event) => setTopic(event.target.value)}
+                  disabled={loading}
+                />
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                loading={loading}
+                aria-describedby={showLadderProviderNotice ? id : undefined}
+                onClick={generate}
+              >
                 <Sparkles aria-hidden="true" />
-                {game === 'ladder' ? 'اختيار أسئلة من البنك' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
+                {isLadder ? 'اختيار أسئلة من البنك' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
               </Button>
               {loading ? <p role="status">جارٍ جلب أسئلة جديدة…</p> : null}
               {error ? <p role="alert">{error}</p> : null}

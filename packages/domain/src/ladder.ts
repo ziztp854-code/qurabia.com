@@ -97,3 +97,13 @@ export type LadderRoomSnapshot = {
 export const LADDER_TTL_SECONDS = 3 * 60 * 60;
 export const LADDER_ROOM_LOCK_MILLISECONDS = 10_000;
 export const LADDER_MAX_TEAM_PLAYERS = 1;
+
+const HANNIBAL_QUESTION =
+  'من هو القائد القرطاجي الشهير الذي قاد جيشه مع الفيلة وعبر جبال الألب لمهاجمة روما؟';
+
+/** Exclude the known imported copies, not the clean original or real chapter references. */
+export function isKnownLadderQuestionDuplicate(prompt: string): boolean {
+  const normalized = prompt.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+  const suffix = /\s*\(\s*فصل\s+[0-9٠-٩۰-۹]+\s*\)$/u.exec(normalized);
+  return suffix !== null && normalized.slice(0, suffix.index) === HANNIBAL_QUESTION;
+}

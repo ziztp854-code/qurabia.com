@@ -138,7 +138,9 @@ export async function POST(request: Request) {
   if (!quota.ok) return NextResponse.json({ ok: false, message: quota.message }, { status: 402 });
   try {
     const bankSelection =
-      parsed.data.game === 'ladder' ? await selectLadderBankQuestions(parsed.data) : null;
+      parsed.data.game === 'ladder'
+        ? await selectLadderBankQuestions({ excludePrompts: parsed.data.excludePrompts })
+        : null;
     const questions = bankSelection
       ? bankSelection.map((item) => item.question)
       : await generateFreshGameQuestions(parsed.data);
@@ -163,7 +165,7 @@ export async function POST(request: Request) {
             return tx.quiz.create({
               data: {
                 ownerId: user.id,
-                title: `أسئلة البنك: ${parsed.data.topic}`,
+                title: 'أسئلة البنك: جميع التصنيفات',
                 roomCode,
                 gameMode,
                 status: 'ACTIVE',

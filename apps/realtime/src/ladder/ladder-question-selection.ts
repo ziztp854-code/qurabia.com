@@ -1,3 +1,5 @@
+import { isKnownLadderQuestionDuplicate } from '@tahaddi/domain';
+
 export type LadderDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 export type LadderQuestionCandidate = {
@@ -94,6 +96,7 @@ export function isValidLadderQuestionCandidate(
   return (
     prompt.length >= 8 &&
     !isPlaceholder &&
+    !isKnownLadderQuestionDuplicate(candidate.prompt) &&
     validOptionCount &&
     correctOptions.length === 1 &&
     uniqueOptionIds.size === optionCount &&
