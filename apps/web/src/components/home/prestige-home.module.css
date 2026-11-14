@@ -2084,3 +2084,214 @@
     display: none;
   }
 }
+
+/* Royal landing artwork is a visual theme, not a replacement for live controls. */
+.stage.royalStage {
+  --royal-wine: oklch(25% 0.115 17);
+  --royal-deep: oklch(13.5% 0.04 12);
+  min-block-size: clamp(39rem, 49vw, 44rem);
+  background: var(--royal-deep);
+}
+
+.stage.royalStage::after {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--royal-wine) 48%, transparent),
+    color-mix(in srgb, var(--royal-wine) 56%, transparent) 54%,
+    var(--royal-deep)
+  );
+}
+
+.royalStage .heroContent {
+  grid-template-rows: none;
+  align-content: start;
+  gap: 1.2rem;
+  padding: 1.75rem 1.25rem 4.25rem;
+}
+
+.royalStage .copy {
+  position: relative;
+  z-index: 1;
+}
+
+.royalStage .heroPromise {
+  color: var(--home-ink);
+}
+
+.royalOrnaments {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.royalOrnaments > img {
+  position: absolute;
+  block-size: auto;
+  object-fit: contain;
+}
+
+.royalTrophy {
+  inset-block-end: 6rem;
+  inset-inline-end: clamp(1rem, 4.8vw, 4.5rem);
+  inline-size: min(18vw, 17rem);
+}
+
+.royalLion {
+  inset-block-end: 6rem;
+  inset-inline-start: clamp(0.5rem, 2vw, 2rem);
+  inline-size: min(29.5vw, 27rem);
+}
+
+.royalFabric {
+  inset-block-end: 3.75rem;
+  inset-inline-end: 0.45rem;
+  inline-size: min(11vw, 9.7rem);
+}
+
+.royalWordmark {
+  display: block;
+  inline-size: min(27vw, 24rem);
+  block-size: auto;
+  margin-inline: auto;
+}
+
+.royalStage .values {
+  position: relative;
+  z-index: 1;
+  inline-size: min(100%, 27.5rem);
+  border: 1px solid var(--home-border);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--royal-deep) 83%, transparent);
+}
+
+.royalHoo {
+  position: absolute;
+  z-index: 1;
+  inset-block-end: 7.5rem;
+  inset-inline-start: calc(50% + 15rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0.38rem 0.38rem 0.28rem;
+  border: 1px solid var(--home-gold);
+  border-radius: 0.72rem;
+  background: var(--royal-deep);
+  box-shadow: inset 0 0 0 2px var(--home-border);
+}
+
+.royalHoo img {
+  display: block;
+  inline-size: 7.25rem;
+  block-size: auto;
+  border: 1px solid var(--home-border);
+  border-radius: 0.28rem;
+}
+
+.royalHooCrest {
+  position: absolute;
+  inset-block-start: -0.72rem;
+  inset-inline-start: 50%;
+  display: grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 1rem;
+  transform: translateX(50%);
+  border: 1px solid var(--home-gold);
+  border-radius: 0.38rem;
+  background: var(--royal-deep);
+  color: var(--home-gold-bright);
+  pointer-events: none;
+}
+
+.royalHooName {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  inline-size: 100%;
+  padding-inline: 0.2rem;
+  color: var(--home-ink);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.royalHooName::before,
+.royalHooName::after {
+  inline-size: 0.26rem;
+  block-size: 0.26rem;
+  transform: rotate(45deg);
+  background: var(--home-gold);
+  content: '';
+}
+
+.stage.royalStage .motionToggle {
+  inset-block-start: auto;
+  inset-block-end: 0.65rem;
+}
+
+:global(:root:not([data-theme='light']) .home-site-layout):has(.royalStage)
+  :global(.home-header) {
+  background: oklch(16% 0.06 15);
+}
+
+@media (max-width: 1239px) {
+  .royalHoo {
+    position: relative;
+    inset: auto;
+    margin-block-start: 0.7rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .royalOrnaments {
+    opacity: 0.72;
+  }
+
+  .royalTrophy {
+    inset-inline-end: 0.5rem;
+    inline-size: 15vw;
+  }
+
+  .royalLion {
+    inset-inline-start: 0.35rem;
+    inline-size: 21vw;
+  }
+}
+
+@media (max-width: 767px) {
+  .stage.royalStage {
+    min-block-size: 0;
+  }
+
+  .royalStage .heroContent {
+    gap: 1rem;
+    padding: 2rem 1rem 4.5rem;
+  }
+
+  .royalWordmark {
+    inline-size: min(52vw, 15rem);
+  }
+
+  .royalTrophy,
+  .royalLion,
+  .royalFabric {
+    inset-block-start: 3rem;
+    inset-block-end: auto;
+  }
+
+  .royalTrophy {
+    inset-inline-end: 0.15rem;
+    inline-size: min(21vw, 8rem);
+  }
+
+  .royalLion {
+    inset-inline-start: 0.1rem;
+    inline-size: min(25vw, 9rem);
+  }
+
+  .royalFabric {
+    inset-block-start: calc(2.5rem + min(23vw, 7rem));
+    inline-size: min(15vw, 4rem);
+  }
+}

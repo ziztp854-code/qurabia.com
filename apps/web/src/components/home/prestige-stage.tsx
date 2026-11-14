@@ -5,7 +5,13 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMotionActivity } from '@/components/motion/use-motion-activity';
 import styles from './prestige-home.module.css';
 
-export function PrestigeStage({ children }: { children: ReactNode }) {
+export function PrestigeStage({
+  children,
+  campaign = false,
+}: {
+  children: ReactNode;
+  campaign?: boolean;
+}) {
   const frameRef = useRef<HTMLDivElement>(null);
   const lionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -70,7 +76,11 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className={styles.stage} ref={frameRef} data-home-hero>
+    <div
+      className={campaign ? `${styles.stage} ${styles.royalStage}` : styles.stage}
+      ref={frameRef}
+      data-home-hero
+    >
       <Image
         className={styles.heroBackground}
         src="/home/tahaddi-hero-background-3344x1882.webp"
@@ -97,43 +107,47 @@ export function PrestigeStage({ children }: { children: ReactNode }) {
       >
         {motionEnabled ? 'إيقاف حركة الخلفية' : 'تشغيل حركة الخلفية'}
       </button>
-      <div className={styles.particles} aria-hidden="true" data-layer="particles">
-        {Array.from({ length: 10 }, (_, index) => (
-          <span key={index} />
-        ))}
-      </div>
-      <div className={styles.trophyLayer} aria-hidden="true" data-layer="trophy">
-        <Image
-          src="/home/tahaddi-trophy-ornate-transparent.webp"
-          alt=""
-          width={1024}
-          height={1536}
-          sizes="(max-width: 767px) 54vw, (max-width: 1100px) 23rem, 27vw"
-          priority
-        />
-        <span className={styles.trophyShine} data-layer="shine-trophy" />
-      </div>
-      <div className={styles.lionLayer} ref={lionRef} aria-hidden="true" data-layer="lion">
-        <Image
-          src="/home/tahaddi-lion-transparent-1322x1190.webp"
-          alt=""
-          width={1322}
-          height={1190}
-          sizes="(max-width: 767px) 66vw, (max-width: 1100px) 30rem, 36vw"
-          priority
-        />
-      </div>
-      <div className={styles.crownLayer} aria-hidden="true" data-layer="crown">
-        <Image
-          src="/home/tahaddi-crown-transparent-1024x683.webp"
-          alt=""
-          width={1024}
-          height={683}
-          sizes="(max-width: 767px) 7.5rem, (max-width: 1100px) 11rem, 14vw"
-          priority
-        />
-        <span className={styles.crownShine} data-layer="shine-crown" />
-      </div>
+      {!campaign ? (
+        <>
+          <div className={styles.particles} aria-hidden="true" data-layer="particles">
+            {Array.from({ length: 10 }, (_, index) => (
+              <span key={index} />
+            ))}
+          </div>
+          <div className={styles.trophyLayer} aria-hidden="true" data-layer="trophy">
+            <Image
+              src="/home/tahaddi-trophy-ornate-transparent.webp"
+              alt=""
+              width={1024}
+              height={1536}
+              sizes="(max-width: 767px) 54vw, (max-width: 1100px) 23rem, 27vw"
+              priority
+            />
+            <span className={styles.trophyShine} data-layer="shine-trophy" />
+          </div>
+          <div className={styles.lionLayer} ref={lionRef} aria-hidden="true" data-layer="lion">
+            <Image
+              src="/home/tahaddi-lion-transparent-1322x1190.webp"
+              alt=""
+              width={1322}
+              height={1190}
+              sizes="(max-width: 767px) 66vw, (max-width: 1100px) 30rem, 36vw"
+              priority
+            />
+          </div>
+          <div className={styles.crownLayer} aria-hidden="true" data-layer="crown">
+            <Image
+              src="/home/tahaddi-crown-transparent-1024x683.webp"
+              alt=""
+              width={1024}
+              height={683}
+              sizes="(max-width: 767px) 7.5rem, (max-width: 1100px) 11rem, 14vw"
+              priority
+            />
+            <span className={styles.crownShine} data-layer="shine-crown" />
+          </div>
+        </>
+      ) : null}
       <div className={styles.heroContent} data-layer="content">
         {children}
       </div>

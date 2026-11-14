@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@/components/theme-provider';
 import HomePage from './page';
@@ -35,22 +35,44 @@ describe('HomePage', () => {
     expect(container.querySelector('a[href^="/voice"]')).not.toBeInTheDocument();
   });
 
-  it('يستخدم أصول Hero الرسمية المنفصلة دون الصورة المركبة القديمة', async () => {
+  it('يعرض رسومات الهبوط المنفصلة ويحافظ على الفيديو والدعوة دون رمز عددي', async () => {
     const { container } = await renderHomePage();
     const sources = [...container.querySelectorAll('[data-home-hero] img')].map((image) => {
       const src = image.getAttribute('src') ?? '';
       return new URL(src, 'http://localhost').searchParams.get('url') ?? src;
     });
 
-    expect(sources).toEqual(expect.arrayContaining([
-      '/home/tahaddi-hero-background-3344x1882.webp',
-      '/home/tahaddi-trophy-ornate-transparent.webp',
-      '/home/tahaddi-lion-transparent-1322x1190.webp',
-      '/home/tahaddi-crown-transparent-1024x683.webp',
-    ]));
+    expect(sources).toEqual(
+      expect.arrayContaining([
+        '/home/tahaddi-hero-background-3344x1882.webp',
+        '/home/royal-trophy.webp',
+        '/home/royal-seated-lion.webp',
+        '/home/royal-wordmark.webp',
+        '/home/royal-hoo-qr.png',
+      ]),
+    );
     expect(sources.join(' ')).not.toContain('tahaddi-cinematic-stage.png');
-    expect(container.querySelector('[data-layer="shine-trophy"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-layer="shine-crown"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-layer="lion"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-layer="trophy"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-layer="crown"]')).not.toBeInTheDocument();
+
+    const invite = screen.getByRole('complementary', { name: 'دعوة Hoo Live' });
+    expect(within(invite).getByRole('img', { name: 'رمز QR لدعوة Hoo Live' })).toHaveAttribute(
+      'src',
+      '/home/royal-hoo-qr.png',
+    );
+    expect(within(invite).getByText('Hoo Live')).toBeInTheDocument();
+    expect(within(invite).queryByRole('button')).not.toBeInTheDocument();
+
+    const video = container.querySelector('[data-home-hero] video');
+    expect(video).toHaveAttribute('src', '/home/challenge-intro.mp4');
+    expect(video).toHaveProperty('muted', true);
+    expect(video).toHaveAttribute('loop');
+    fireEvent.click(screen.getByRole('button', { name: 'إيقاف حركة الخلفية' }));
+    expect(screen.getByRole('button', { name: 'تشغيل حركة الخلفية' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('يعرض عالم المماليك بعد الألعاب ويجعل الرتب في قسم الاشتراكات', async () => {

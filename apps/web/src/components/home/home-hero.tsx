@@ -4,9 +4,9 @@ import Link from 'next/link';
 import type { PlanCode } from '@tahaddi/domain';
 import { ButtonLink } from '@/components/ui';
 import { InstallAppButton } from '@/components/pwa/install-app-button';
-import { GradientText } from '@/components/react-bits/gradient-text';
 import { Magnet } from '@/components/react-bits/magnet';
 import { PrestigeStage } from './prestige-stage';
+import { RoyalHomeOrnaments, RoyalHomeQr, RoyalHomeWordmark } from './royal-home-art';
 import { RoomCodeShortcut } from './room-code-shortcut';
 import styles from './prestige-home.module.css';
 
@@ -26,10 +26,12 @@ export type HomeRank = {
 export function HomeHero({ rank }: { rank: HomeRank | null }) {
   return (
     <section className={styles.hero} id="top" aria-labelledby="landing-title">
-      <PrestigeStage>
+      <PrestigeStage campaign>
+        <RoyalHomeOrnaments />
         <div className={styles.copy}>
           <h1 id="landing-title">
-            <GradientText>تحدي</GradientText>
+            <span className="sr-only">تحدي: </span>
+            <RoyalHomeWordmark />
             <span className={styles.heroPromise}>جمعتكم تبدأ بلعبة.</span>
           </h1>
           <p className={styles.tagline}>اختر تحدّيك، اجمع أصدقاءك، وشاركهم جولة تستحق المنافسة.</p>
@@ -83,6 +85,7 @@ export function HomeHero({ rank }: { rank: HomeRank | null }) {
             <small>شارك الرمز وابدأ</small>
           </span>
         </div>
+        <RoyalHomeQr />
       </PrestigeStage>
     </section>
   );
