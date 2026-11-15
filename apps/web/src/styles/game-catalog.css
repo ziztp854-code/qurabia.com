@@ -1520,9 +1520,11 @@
   grid-row: 1;
 }
 
-.gc-wrapper:not(.gc-wrapper--embedded) .gc-card[data-kind='upcoming'] .gc-card-visual {
+.gc-wrapper:not(.gc-wrapper--embedded) .gc-card[data-kind='upcoming'] .gc-card-visual[data-artwork='true'] {
   grid-column: 1;
   grid-row: 2 / 4;
+  inline-size: 100%;
+  min-inline-size: 0;
   block-size: 100%;
   min-block-size: 12rem;
   aspect-ratio: auto;
@@ -1590,7 +1592,7 @@
     grid-row: 1;
   }
 
-  .gc-wrapper:not(.gc-wrapper--embedded) .gc-card[data-kind='upcoming'] .gc-card-visual {
+  .gc-wrapper:not(.gc-wrapper--embedded) .gc-card[data-kind='upcoming'] .gc-card-visual[data-artwork='true'] {
     grid-row: 2;
     block-size: auto;
     aspect-ratio: 16 / 9;
