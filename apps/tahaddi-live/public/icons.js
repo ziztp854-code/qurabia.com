@@ -1,0 +1,36 @@
+const paths = {
+  'chevron-up': '<path d="m6 15 6-6 6 6"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  chat: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 3V11.5A8.5 8.5 0 0 1 9.5 3h3a8.5 8.5 0 0 1 8.5 8.5Z"/><path d="M7 10h8M7 14h5"/>',
+  share: '<path d="M14 3h7v7m0-7L10 14M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
+  play: '<rect x="3" y="3" width="18" height="18" rx="6"/><path d="m10 8 6 4-6 4Z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  gem: '<path d="m3 8 4-5h10l4 5-9 13L3 8Zm0 0h18M7 3l5 18 5-18"/>',
+  headphones: '<path d="M3 14v-3a9 9 0 0 1 18 0v3"/><rect x="3" y="11" width="4" height="9" rx="2"/><rect x="17" y="11" width="4" height="9" rx="2"/>',
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/>',
+  mute: '<path d="M9 9v3a3 3 0 0 0 5 2M9 5a3 3 0 0 1 6 0v4M5 10v2a7 7 0 0 0 12 5m2-7v2M12 19v3M2 2l20 20"/>',
+  video: '<rect x="2" y="5" width="14" height="14" rx="4"/><path d="m16 10 6-4v12l-6-4"/>',
+  'video-off': '<path d="M16 10 22 6v12l-6-4M6 5h6a4 4 0 0 1 4 4v3M16 17a4 4 0 0 1-4 2H6a4 4 0 0 1-4-4V9a4 4 0 0 1 1-2M2 2l20 20"/>',
+  arrow: '<path d="M19 12H5m6-6-6 6 6 6"/>',
+  'arrow-right': '<path d="M5 12h14m-6-6 6 6-6 6"/>',
+  search: '<circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/>',
+  spark: '<path d="m12 2 2.7 6.5L22 12l-7.3 3.5L12 22l-2.7-6.5L2 12l7.3-3.5L12 2Z"/>',
+  link: '<path d="m10 13 4-4M8 16l-2 2a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m4 0 2-2a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(1 0)"/>',
+  send: '<path d="m22 2-7 20-4-9L2 9 22 2ZM11 13l5-5"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13M12 8H7a3 3 0 1 1 3-3l2 3Zm0 0h5a3 3 0 1 0-3-3l-2 3Z"/>',
+  flower: '<path d="M12 21v-8m0 6 5-3M12 7a3 3 0 1 0-5 0 3 3 0 1 0 0 5 3 3 0 1 0 5 0 3 3 0 1 0 0-5Z"/>',
+  crown: '<path d="m3 5 4 6 5-8 5 8 4-6-2 14H5L3 5Zm2 14h14M7 22h10"/>',
+  close: '<path d="m6 6 12 12M18 6 6 18"/>',
+  coffee: '<path d="M4 9h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V9Zm12 1h2a3 3 0 0 1 0 6h-2M6 2v3m4-3v3m4-3v3"/>',
+  music: '<path d="M9 18V5l12-3v13M9 8l12-3"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="15" rx="3" ry="3"/>',
+  game: '<path d="M7 7h10a4 4 0 0 1 4 3l1 7a3 3 0 0 1-5 2l-3-3h-4l-3 3a3 3 0 0 1-5-2l1-7a4 4 0 0 1 4-3ZM7 10v5m-2-2.5h4m7-.5h.01M18 14h.01"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+  people: '<circle cx="9" cy="8" r="3"/><path d="M2 21v-2a7 7 0 0 1 14 0v2M16 5a3 3 0 0 1 0 6m3 4a7 7 0 0 1 3 6"/>',
+};
+export const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.mic}</svg>`;
+export function renderIcons(root = document) {
+  root.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = icon(element.dataset.icon); });
+}

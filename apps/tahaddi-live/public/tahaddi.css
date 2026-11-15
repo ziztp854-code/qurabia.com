@@ -1,0 +1,42 @@
+/* Tahaddi Prestige Live tokens; the original layout and controls remain intact. */
+:root{--bg:#06020a;--paper:#10081a;--ink:#fff8ed;--muted:#c3b2a7;--border:#ffffff1c;--accent:#ffb74d;--accent-soft:#ffb74d14;--teal:#00d4ff;--brand-gold:#d4af37;--surface-strong:#180e24;--cyan:#00d4ff;--gold-shadow:#7b4b16;--light-ink:#201307;--soft-white:#fff8ed}
+[hidden]{display:none!important}
+body{background:radial-gradient(ellipse at 90% 0%,#d4af3710,transparent 40%),var(--bg);color:var(--ink)}
+.sidebar{background:var(--bg);border-color:var(--border)}
+.brand img,.studio-mobile-brand img{filter:none;object-fit:contain}
+.brand,.studio-mobile-brand{color:var(--ink)}
+.brand-en{color:var(--accent);letter-spacing:2px}
+.sidebar-note{background:var(--paper);border-color:var(--border)}
+.sidebar-note .label,.page-heading h1,.section-title h2,.profile-card h1,.room-info h3{color:var(--ink)}
+.nav-item{color:var(--muted)}
+.nav-item.active,.nav-item:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--border)}
+.button.primary,.sidebar-note .button,.chat-panel form .icon-button,.room-enter,.mobile-create{background:var(--accent);color:var(--light-ink);box-shadow:0 3px 0 var(--gold-shadow)}
+.button.primary:hover,.sidebar-note .button:hover,.room-enter:hover{background:var(--brand-gold);color:var(--light-ink)}
+.topbar,.mobile-nav,.app-footer{background:var(--bg);border-color:var(--border)}
+.credit,.connection,.sidebar-bottom small,.room-meta,.app-footer,.nav-caption{color:var(--muted)}
+.page-heading{padding-block:14px 24px}.page-heading h1{font-size:clamp(24px,3vw,40px);max-width:750px}
+.eyebrow,.tag,.section-title .eyebrow{color:var(--accent)}
+.spotlight{background:radial-gradient(ellipse at 15% 50%,#00d4ff14,transparent 50%),var(--surface-strong);border:1px solid var(--border)}
+.spotlight-copy h2,.spotlight-copy p{color:var(--ink)}
+.spotlight .button.white{background:var(--accent);color:var(--light-ink)}
+.sound-core{background:var(--brand-gold);color:var(--light-ink);box-shadow:0 0 80px #d4af371b}.orbit,.orbit:before{border-color:#d4af3733}.orb,.bubble{background:var(--paper);color:var(--accent);border-color:var(--border)}
+.invite-card,.profile-card,.room-card,.empty,dialog{background:var(--paper);color:var(--ink);border-color:var(--border)}
+.invite-card .button.dark{background:var(--accent);color:var(--light-ink)}
+input,select,.search,.filter{background:var(--surface-strong);color:var(--ink);border-color:var(--border)}
+input::placeholder{color:var(--muted)}
+.filter.active{background:var(--accent);color:var(--light-ink)}
+.room-type,.save-room{background:var(--bg);color:var(--ink)}
+.room-art[data-theme]{background:linear-gradient(140deg,var(--surface-strong),#382a17)}
+.art-symbol{background:#d4af3715;color:var(--accent)!important;border-color:#d4af3733}.art-caption{color:var(--ink)}
+.room-layout .stage{background:radial-gradient(ellipse at 50% 15%,#00d4ff12,transparent 55%),var(--paper);border:1px solid var(--border)}
+.room-layout .chat-panel{background:var(--paper);border-color:var(--border)}
+.chat-panel form,.chat-panel input{background:var(--surface-strong);color:var(--ink);border-color:var(--border)}
+.participant .avatar,.self-avatar{background:var(--surface-strong);color:var(--accent);border-color:var(--brand-gold)}
+.participant h3,.presenter-name,.dialog-heading h2,.mode-options label{color:var(--ink)}
+.mode-options label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.stage-controls .button,.room-top .button,.room-reference-tabs{color:var(--ink);border-color:var(--border)}
+.connection b.online,.status-dot{background:var(--cyan)}
+.presenter-ring{border-color:var(--brand-gold);box-shadow:0 0 35px #d4af3720}.presenter-wave b{background:var(--cyan)}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:4px}
+@media(max-width:700px){.page-heading h1{font-size:26px}.page-heading{gap:15px}.spotlight-copy h2{font-size:30px}.spotlight{min-height:340px}.mobile-nav{grid-template-columns:repeat(4,1fr)}.room-layout .chat-panel{background:var(--paper)}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
