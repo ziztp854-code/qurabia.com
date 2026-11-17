@@ -58,12 +58,14 @@ function database(
     status?: string;
     tokenVersion?: number;
     world?: boolean;
+    authoritative?: boolean;
     ownLocations?: unknown[];
     records?: Record<string, unknown[] | undefined>;
   } = {},
 ) {
   const calls: Prisma.Sql[] = [];
   const tx = {
+    kingdomWorld: { findUnique: vi.fn() },
     user: {
       findUnique: vi.fn(async () => ({
         status: options.status ?? 'ACTIVE',
@@ -83,6 +85,7 @@ function database(
                 revision: 42,
                 geographyVersion: '1',
                 geographySource: options.ownLocations ? 'kingdom-villages-v1' : undefined,
+                authoritative: options.authoritative ?? false,
                 serverTime: new Date(2000),
               },
             ];
@@ -214,6 +217,7 @@ describe('Prisma geographic map repository authorization', () => {
 
   it('returns only bounded owned village locations for authorized map focus', async () => {
     const test = database({
+      authoritative: true,
       ownLocations: [
         {
           villageId: 'v1',
@@ -230,6 +234,7 @@ describe('Prisma geographic map repository authorization', () => {
     expect(sql.values).toContain('viewer');
     expect(sql.text).toContain('LIMIT 100');
     expect(sql.text).not.toMatch(/SELECT\s+(?:\*|w\.state)/i);
+    expect(test.tx.kingdomWorld.findUnique).not.toHaveBeenCalled();
   });
 
   it('rejects invalid bounds and limits and closes the session at the transaction boundary', async () => {

@@ -75,7 +75,7 @@ export default async function WorldMapPage({
         villageLocations={villageLocations}
         initialVillageId={selectedVillage?.villageId}
         focusVillageId={reportVillage}
-        initialOverview={!requestedVillage}
+        initialOverview={!requestedVillage && !selectedVillage}
         initialLocation={
           selectedVillage && {
             longitude: selectedVillage.longitude,

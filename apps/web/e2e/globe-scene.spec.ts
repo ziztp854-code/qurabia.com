@@ -68,16 +68,32 @@ test('mobile atlas controls remain separate from toolbar and details', async ({ 
 async function openGlobe(page: Page, referenceOnly = false) {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  const payload = page.waitForResponse((response) =>
-    response.url().includes('/world-map/viewport?') && response.status() === 200);
+  const payload = completedViewport(page, '/world-map/viewport?');
   const tile = page.waitForResponse((response) =>
     /tiles\.openfreemap\.org\/.*\.pbf/.test(response.url()) && response.status() === 200);
   await page.goto(`/globe${referenceOnly ? '?mode=public' : ''}`);
-  const initialPayload = await (await payload).json() as MapPayload;
+  const { payload: initialPayload } = await payload;
   await tile;
   await expect(page.locator('canvas.maplibregl-canvas[data-map-ready="true"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'عرض الكرة بالكامل', exact: true })).toBeVisible();
   return { initialPayload, errors };
+}
+
+// A viewport requested before the style loads can be cancelled when the globe
+// projection changes its bounds. Capture the first complete response, including
+// its body, while navigation is still in progress.
+function completedViewport(page: Page, urlPart: string) {
+  let payload: MapPayload;
+  const response = page.waitForResponse(async (candidate) => {
+    if (!candidate.url().includes(urlPart) || candidate.status() !== 200) return false;
+    try {
+      payload = await candidate.json() as MapPayload;
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  return response.then((result) => ({ response: result, payload }));
 }
 
 test('public atlas opens with every neutral city before interaction and survives repeated zoom and pan', async ({ page }, testInfo) => {
@@ -88,12 +104,11 @@ test('public atlas opens with every neutral city before interaction and survives
   page.on('request', (request) => {
     if (request.url().includes('/api/kingdoms/world-map/')) requests.push(request.url());
   });
-  const first = page.waitForResponse((response) => response.url().includes(`/viewport?worldId=${worldId}`) && response.status() === 200);
+  const first = completedViewport(page, `/viewport?worldId=${worldId}`);
   // Match the actual anonymous route: start with the entire globe, without a
   // Cairo click, camera jump or any movement to trigger the first data request.
   await page.goto('/globe?mode=atlas');
-  const response = await first;
-  const payload = await response.json() as MapPayload;
+  const { response, payload } = await first;
   expect(payload.bounds.east - payload.bounds.west).toBe(360);
   expect(payload.layers.cities.features).toHaveLength(12);
   expect(response.headers()['x-mamluk-public-settlements']).toBe('1');

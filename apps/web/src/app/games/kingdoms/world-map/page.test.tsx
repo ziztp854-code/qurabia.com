@@ -70,6 +70,18 @@ describe('authenticated geographic atlas page', () => {
     expect(page.props.children[1].props.initialLocation).toBeUndefined();
     expect(page.props.children[1].props.initialVillageId).toBeUndefined();
   });
+  it('opens directly at the player’s first village when no village is requested', async () => {
+    dependencies.list.mockResolvedValue([{ id: 'world', name: 'My world' }]);
+    dependencies.locations.mockResolvedValue([
+      { villageId: 'own', name: 'قريتي', longitude: 31, latitude: 30 },
+    ]);
+    const page = await WorldMapPage();
+    expect(page.props.children[1].props).toMatchObject({
+      initialVillageId: 'own',
+      initialLocation: { longitude: 31, latitude: 30 },
+      initialOverview: false,
+    });
+  });
   it('refuses requested unauthorized worlds and villages instead of reading their coordinates', async () => {
     dependencies.list.mockResolvedValue([{ id: 'own-world', name: 'My world' }]);
     await expect(
@@ -91,6 +103,7 @@ describe('authenticated geographic atlas page', () => {
       initialWorldId: PUBLIC_ATLAS_WORLD.id,
       viewerPlayerId: PUBLIC_ATLAS_VIEWER_ID,
       referenceOnly: true,
+      initialOverview: true,
     });
     expect(dependencies.list).toHaveBeenCalledWith({ id: 'alice', tokenVersion: 3 });
   });

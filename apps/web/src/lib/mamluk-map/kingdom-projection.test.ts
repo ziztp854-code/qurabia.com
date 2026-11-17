@@ -134,6 +134,36 @@ describe('live geographic gameplay projection', () => {
     expect(result.borders[0].sultanateId).toBe('alliance');
     expect(result.city({ ...ownCity, id: 'deleted' })).toBeNull();
   });
+
+  it('preserves the first matching alliance for legacy duplicate memberships', () => {
+    const { enemy, state } = fixture();
+    const memberships = {
+      ...state,
+      alliances: {
+        first: {
+          id: 'first',
+          name: 'التحالف الأول',
+          members: { enemy: 'member' as const },
+          diplomacy: {},
+        },
+        second: {
+          id: 'second',
+          name: 'التحالف الثاني',
+          members: { enemy: 'member' as const },
+          diplomacy: {},
+        },
+      },
+    };
+    const city = state.geography!.cities.find((entry) => entry.value.id === enemy.id)!.value;
+    const projection = new KingdomMapProjection(memberships, 'world', 'viewer', at);
+    expect(projection.city(city)).toMatchObject({
+      ownerPlayerId: 'enemy',
+      ownerSultanateId: 'first',
+      allianceName: 'التحالف الأول',
+      villageBuildings: null,
+      villagePower: null,
+    });
+  });
 });
 
 it('publishes stored village level for every visible settlement and keeps private progression private', () => {
