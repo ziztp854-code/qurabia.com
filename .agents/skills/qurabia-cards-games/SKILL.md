@@ -1,6 +1,6 @@
 ---
 name: qurabia-cards-games
-description: "Use for Qurabia or Tahaddi tasks specifically involving card games. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia card-game presentation, turn state, reconnect behavior, or hidden information."
 ---
 
 # Card Games
@@ -16,6 +16,10 @@ Use for Baloot or other card-based games in Qurabia.
 - reconnect-safe state restoration
 - avoid exposing hidden opponent cards
 - animation must not leak information
+
+## Verification
+
+Verify the affected turn and reconnect states on mobile and RTL; inspect server projections and client payloads for hidden-card leakage.
 
 ## Integration scope
 

@@ -1,6 +1,6 @@
 ---
 name: qurabia-games-directory
-description: "Use for Qurabia or Tahaddi tasks specifically involving games directory. Apply the existing implementation and project conventions within the requested scope."
+description: "Improve the Qurabia games directory, availability states, filtering, or play navigation."
 ---
 
 # Games Directory
@@ -23,6 +23,10 @@ Make browsing games simple.
 - invite-only
 
 Do not invent live player counts.
+
+## Verification
+
+Verify real availability and links, loading and empty states, and keyboard/mobile use; do not invent live counts.
 
 ## Integration scope
 

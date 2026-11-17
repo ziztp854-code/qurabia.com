@@ -151,7 +151,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
     const syncRendererVisibility = useRef<(() => void) | null>(null);
     const labelDensity = useRef<VillageLabelDensity | undefined>(undefined);
     const syncLabels = useCallback((snapshot: CameraSnapshot, active: string | null = current.current.selected) => {
-      const anchors = [...buildingKeys, 'tower', 'gate', ...(current.current.onFacilitySelect ? ['rally', 'siege'] : [])] .map((id) => {
+      const anchors = [...(cityEnabled ? ['knowledge', 'blacksmith'] : []), ...buildingKeys, 'tower', 'gate', ...(current.current.onFacilitySelect ? ['rally', 'siege'] : [])] .map((id) => {
         const area = rect(id as Parameters<typeof getVillageRect>[0]);
         return { id, x: area.x + area.width / 2, y: area.y + area.height / 2 - Math.max(area.height, 44 / snapshot.scale) * .3 };
       });
@@ -161,7 +161,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       const topInset = viewportRect && hud ? Math.max(0, hud.getBoundingClientRect().bottom - viewportRect.top) : 0;
       const overlays = [
         ...(hud ? [hud] : []),
-        ...Array.from(scene?.querySelectorAll<HTMLElement>('header, [aria-label="كاميرا القرية"], [aria-label="مستويات عرض المملكة"], details') ?? []),
+        ...Array.from(scene?.querySelectorAll<HTMLElement>('header, [aria-label="كاميرا القرية"], [aria-label="مستويات عرض المملكة"], [aria-label="استكشاف مناطق القرية"], [aria-label="المبنى المختار"], details') ?? []),
         ...Array.from(scene?.closest('[data-selected]')?.querySelectorAll<HTMLElement>(':scope > details, aside, nav') ?? []),
       ];
       const blockedAreas = viewportRect ? overlays.map((overlay) => {
@@ -618,7 +618,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
                     <span>
                       {cityEnabled && composition === 'portrait' && building === 'mine' ? 'الحديد' : cityEnabled && composition === 'portrait' && building === 'treasury' ? 'الذهب' : presentation.name}
                       <small>
-                        <bdi dir="ltr">Lv.{presentation.level}</bdi>
+                        المستوى <bdi>{presentation.level.toLocaleString('ar-SA')}</bdi>
                       </small>
                     </span>
                     <StatusIcon size={13} aria-hidden="true" />
@@ -651,7 +651,7 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
               </span>
               <span className={styles.label}>
                 <Swords size={15} aria-hidden="true" />
-                <span>الإسطبل<small><bdi dir="ltr">Lv.{props.village.buildings.stable}</bdi></small></span>
+                <span>الإسطبل<small>المستوى <bdi>{props.village.buildings.stable.toLocaleString('ar-SA')}</bdi></small></span>
               </span>
             </button>
             {supplementary.map((region) => (
@@ -679,7 +679,9 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
             {cityEnabled && city.landmarks.filter(landmark=>landmark.id==='granary').map(landmark=><button key={landmark.id} type="button" className={`${styles.hotspot} ${styles.region}`} style={rectStyle(landmark.rect)} aria-label={landmark.name} data-building-region={landmark.id} data-label-id={landmark.id} onClick={()=>selectTarget(landmark.target!)}><span className={styles.label}>{landmark.name}</span></button>)}
             {cityEnabled && city.landmarks.filter(landmark=>landmark.classification==='reserved').map(landmark=>(
               <span key={landmark.id} role="img" aria-label={`${landmark.name}، موقع محجوز داخل القرية`} className={styles.reservedSite}
-                data-reserved-site={landmark.id} style={{ left: landmark.rect.x, top: landmark.rect.y, width: landmark.rect.width, height: landmark.rect.height }} />
+                data-reserved-site={landmark.id} data-label-id={landmark.id} data-label-hidden="true" style={{ left: landmark.rect.x, top: landmark.rect.y, width: landmark.rect.width, height: landmark.rect.height }}>
+                <span aria-hidden="true">{landmark.name}<small>موقع مستقبلي</small></span>
+              </span>
             ))}
             {cityEnabled && city.landmarks.filter(landmark=>landmark.classification==='decoration').map(landmark=><span key={landmark.id} role="img" aria-label={landmark.name} className={styles.decorativeLandmark} style={rectStyle(landmark.rect)} title={landmark.name} />)}
             <button

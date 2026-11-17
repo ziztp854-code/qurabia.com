@@ -1,6 +1,6 @@
 ---
 name: qurabia-court-ranks
-description: "Use for Qurabia or Tahaddi tasks specifically involving court ranks. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on earned court-rank presentation or progression using the existing authoritative rank implementation."
 ---
 
 # Court Ranks
@@ -32,6 +32,10 @@ Represent earned player progression.
 - الفارس: steel / shield
 - الأمير: antique gold + emerald / small crown
 - السلطان: royal black + gold / premium crown geometry
+
+## Verification
+
+Inspect the actual rank definitions and backend thresholds before changing presentation; report discrepancies rather than migrating rank data implicitly.
 
 ## Integration scope
 

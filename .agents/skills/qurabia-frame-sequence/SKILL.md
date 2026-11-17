@@ -1,6 +1,6 @@
 ---
 name: qurabia-frame-sequence
-description: "Use for Qurabia or Tahaddi tasks specifically involving frame sequence. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on frame-sequence playback, fallback, loading, or memory use in Qurabia."
 ---
 
 # Frame Sequence
@@ -23,6 +23,10 @@ Good moments:
 - fallback poster/static frame
 - reduced-motion fallback
 - memory cleanup
+
+## Verification
+
+Verify the poster and reduced-motion fallback, loading failure, responsive sizing, and cleanup; compare performance on the affected device profile.
 
 ## Integration scope
 

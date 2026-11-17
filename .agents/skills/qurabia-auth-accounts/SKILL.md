@@ -1,6 +1,6 @@
 ---
 name: qurabia-auth-accounts
-description: "Use for Qurabia or Tahaddi tasks specifically involving authentication & accounts. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia sign-in, session, account recovery, protected routes, and related account flows."
 ---
 
 # Authentication & Accounts
@@ -27,6 +27,10 @@ Maintain secure, reliable user account flows.
 - Handle expired sessions gracefully.
 - Prevent duplicate submissions.
 - Add loading/error/success states.
+
+## Verification
+
+Trace the affected session and authorization flow on the server; test success, expiry, failure, and retry cases relevant to the change.
 
 ## Integration scope
 

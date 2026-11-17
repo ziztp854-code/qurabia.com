@@ -1,6 +1,6 @@
 ---
 name: qurabia-pwa-mobile
-description: "Use for Qurabia or Tahaddi tasks specifically involving mobile & pwa. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia mobile usability, safe areas, offline behavior, or existing PWA functionality."
 ---
 
 # Mobile & PWA
@@ -9,13 +9,17 @@ description: "Use for Qurabia or Tahaddi tasks specifically involving mobile & p
 Make Qurabia excellent on phones.
 
 ## Requirements
-- 360/390/430 widths
+- 320/360/390/430 widths
 - touch-first interactions
 - safe-area insets
 - responsive dialogs
 - no hover dependency
 - reasonable installability/offline behavior only if PWA exists
 - network loss handling for multiplayer
+
+## Verification
+
+Inspect affected flows at 320px and representative phone widths, including touch, safe areas, keyboard, and network loss where relevant.
 
 ## Integration scope
 

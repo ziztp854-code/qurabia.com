@@ -68,6 +68,63 @@ async function setDetails(page: Page, name: string | RegExp, open = true) {
 const setVillageSettings = (page: Page, open = true) => setDetails(page, /^إعدادات القرية$/, open);
 const setQueues = (page: Page, open = true) => setDetails(page, 'البناء والتدريب', open);
 
+test('district shortcuts focus the city and the overview control restores it', async ({ page }) => {
+  await page.goto('/');
+  const stage = await readyCity(page);
+  const districts = page.getByRole('navigation', { name: 'استكشاف مناطق القرية' });
+  for (const name of ['القصر', 'الجيش', 'المزارع', 'السوق']) {
+    await districts.getByRole('button', { name: `عرض ${name}`, exact: true }).click();
+    await expect(stage).toHaveAttribute('data-camera-state', 'BUILDING_FOCUS');
+    await expect(page.locator('[data-city-scene]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'عرض القرية بالكامل' }).click();
+    await expectOverview(page);
+  }
+});
+
+test('a focused district can open its facility or dismiss its action card', async ({ page }) => {
+  await page.goto('/');
+  await readyCity(page);
+  const districts = page.getByRole('navigation', { name: 'استكشاف مناطق القرية' });
+  await districts.getByRole('button', { name: 'عرض الجيش', exact: true }).click();
+  const card = page.getByRole('region', { name: 'المبنى المختار' });
+  await card.getByRole('button', { name: 'فتح الجيش' }).click();
+  await expect(page.locator('[data-city-scene="barracks"]')).toHaveAttribute('data-phase', 'active');
+  await page.getByRole('button', { name: 'العودة إلى المدينة', exact: true }).click();
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: 'إغلاق بطاقة المنطقة' }).click();
+  await expect(card).not.toBeAttached();
+});
+
+test('district and camera buttons remain separate touch targets', async ({ page }) => {
+  await page.goto('/');
+  await readyCity(page);
+  const groups = [
+    page.getByRole('navigation', { name: 'استكشاف مناطق القرية' }).getByRole('button'),
+    page.getByRole('group', { name: 'كاميرا القرية' }).locator(':scope > button'),
+    page.getByRole('group', { name: 'مستويات عرض المملكة' }).getByRole('button'),
+  ];
+  for (const group of groups) {
+    const bounds = await Promise.all((await group.all()).map((button) => button.boundingBox()));
+    expect(bounds.every((rect) => rect && rect.width >= 44 && rect.height >= 44)).toBe(true);
+    const sorted = bounds.map((rect) => rect!).sort((a, b) => a.x - b.x);
+    for (let index = 1; index < sorted.length; index++) {
+      expect(sorted[index].x - (sorted[index - 1].x + sorted[index - 1].width)).toBeGreaterThan(0);
+    }
+  }
+});
+
+test('reserved sites are identified as future locations when labels are enabled', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) <= 1000, 'Desktop overview has room for both site labels');
+  await page.goto('/');
+  await readyCity(page);
+  await page.getByRole('button', { name: 'إظهار أسماء المباني' }).click();
+  for (const site of ['knowledge', 'blacksmith']) {
+    const label = page.locator(`[data-reserved-site="${site}"]`);
+    await expect(label).toHaveAttribute('data-label-hidden', 'false');
+    await expect(label.getByText('موقع مستقبلي')).toBeVisible();
+  }
+});
+
 test('portrait phone shows tappable iron and gold locations without enabling all labels', async ({
   page,
 }) => {

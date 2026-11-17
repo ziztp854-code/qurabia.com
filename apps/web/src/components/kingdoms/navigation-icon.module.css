@@ -1,0 +1,19 @@
+.icon {
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 24px;
+  block-size: 40px;
+  background-image: url('/game-art/kingdoms/city-hub/navigation-icons.webp');
+  background-size: 500% 100%;
+  background-repeat: no-repeat;
+}
+.icon[data-icon='overview'] { background-position: 0% 50%; }
+.icon[data-icon='reports'] { background-position: 25% 50%; }
+.icon[data-icon='army'] { background-position: 50% 50%; }
+.icon[data-icon='map'] { background-position: 75% 50%; }
+.icon[data-icon='village'] { background-position: 100% 50%; }
+.icon[data-icon='alliances'] {
+  background-image: url('/game-art/kingdoms/city-hub/alliance-icon.webp');
+  background-size: contain;
+  background-position: center;
+}

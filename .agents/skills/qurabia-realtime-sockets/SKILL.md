@@ -1,6 +1,6 @@
 ---
 name: qurabia-realtime-sockets
-description: "Use for Qurabia or Tahaddi tasks specifically involving realtime & socket architecture. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia socket contracts, synchronization, reconnects, or event listener lifecycle."
 ---
 
 # Realtime & Socket Architecture
@@ -25,6 +25,10 @@ Server Event
 → UI/motion reaction
 
 Never let animation timing become game timing.
+
+## Verification
+
+Trace the affected event across client and server; test reconnect, stale or repeated events, and listener cleanup where applicable.
 
 ## Integration scope
 

@@ -1,6 +1,6 @@
 ---
 name: qurabia-design-system
-description: "Use for Qurabia or Tahaddi tasks specifically involving qurabia design system. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia design tokens, shared UI primitives, or Arabic-first component consistency."
 ---
 
 # Qurabia Design System
@@ -42,6 +42,10 @@ Prefer shared primitives for:
 - Functional text must prioritize readability.
 - Rank and subscription styles must not be confused.
 - Responsive behavior must be defined, not accidental.
+
+## Verification
+
+Inspect existing tokens and components first; verify relevant states, RTL, keyboard access, and narrow/desktop layouts without replacing game-specific art direction.
 
 ## Integration scope
 

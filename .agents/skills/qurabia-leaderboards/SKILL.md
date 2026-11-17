@@ -1,6 +1,6 @@
 ---
 name: qurabia-leaderboards
-description: "Use for Qurabia or Tahaddi tasks specifically involving leaderboards. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia leaderboard ranking, ordering, score presentation, or responsive display."
 ---
 
 # Leaderboards
@@ -21,6 +21,10 @@ Data order must update immediately; animation only visualizes it.
 
 ## Performance
 Virtualize large lists if needed.
+
+## Verification
+
+Verify ordering and values against the existing authoritative source, including ties and empty/loading states when relevant.
 
 ## Integration scope
 

@@ -1,6 +1,6 @@
 ---
 name: qurabia-performance
-description: "Use for Qurabia or Tahaddi tasks specifically involving performance. Apply the existing implementation and project conventions within the requested scope."
+description: "Measure and improve Qurabia loading, rendering, networking, or interaction performance."
 ---
 
 # Performance
@@ -23,6 +23,10 @@ description: "Use for Qurabia or Tahaddi tasks specifically involving performanc
 - avoid giant shared bundles
 - prefer transform/opacity for motion
 - profile before adding complexity
+
+## Verification
+
+Capture a repeatable baseline and compare the same route, device profile, and state after the change; report measurements and limitations.
 
 ## Integration scope
 

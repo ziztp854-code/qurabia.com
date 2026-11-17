@@ -1,6 +1,6 @@
 ---
 name: qurabia-code-quality
-description: "Use for Qurabia or Tahaddi tasks specifically involving code quality. Apply the existing implementation and project conventions within the requested scope."
+description: "Refactor or review Qurabia code for maintainability while preserving contracts and behavior."
 ---
 
 # Code Quality
@@ -15,6 +15,10 @@ description: "Use for Qurabia or Tahaddi tasks specifically involving code quali
 - centralize API/event contracts
 - clean up side effects
 - document non-obvious game rules
+
+## Verification
+
+Trace callers and existing tests before changing an interface; run targeted checks and document any observable behavior change.
 
 ## Integration scope
 

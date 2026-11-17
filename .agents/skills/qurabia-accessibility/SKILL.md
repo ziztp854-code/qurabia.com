@@ -1,6 +1,6 @@
 ---
 name: qurabia-accessibility
-description: "Use for Qurabia or Tahaddi tasks specifically involving accessibility. Apply the existing implementation and project conventions within the requested scope."
+description: "Review or improve accessibility of Qurabia interfaces, including keyboard, screen readers, contrast, reduced motion and touch targets."
 ---
 
 # Accessibility
@@ -16,6 +16,10 @@ description: "Use for Qurabia or Tahaddi tasks specifically involving accessibil
 - readable contrast
 - touch target sizing
 - screen-reader labels for rank/subscription icons
+
+## Verification
+
+Exercise keyboard focus and activation, accessible names, and relevant screen-reader semantics; inspect contrast, reduced motion, and touch targets in the affected states.
 
 ## Integration scope
 

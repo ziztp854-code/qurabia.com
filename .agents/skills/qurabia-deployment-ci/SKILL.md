@@ -1,6 +1,6 @@
 ---
 name: qurabia-deployment-ci
-description: "Use for Qurabia or Tahaddi tasks specifically involving deployment & ci. Apply the existing implementation and project conventions within the requested scope."
+description: "Review or change Qurabia deployment configuration, CI checks, release readiness, or rollback plans."
 ---
 
 # Deployment & CI
@@ -24,6 +24,10 @@ Keep production releases safe.
 - rollback path
 - small releases
 - migration compatibility
+
+## Verification
+
+Validate affected configuration and checks without printing secret values; distinguish local validation from deployment and follow repository approval rules.
 
 ## Integration scope
 

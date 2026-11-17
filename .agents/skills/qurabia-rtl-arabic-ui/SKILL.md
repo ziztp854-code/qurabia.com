@@ -1,6 +1,6 @@
 ---
 name: qurabia-rtl-arabic-ui
-description: "Use for Qurabia or Tahaddi tasks specifically involving rtl & arabic ui. Apply the existing implementation and project conventions within the requested scope."
+description: "Review or implement Arabic-first RTL layouts, mixed-direction text, controls, or responsive behavior."
 ---
 
 # RTL & Arabic UI
@@ -16,7 +16,7 @@ Make Qurabia fully Arabic-first and robust in RTL.
 - Keep mixed Arabic/English content stable.
 - Avoid text clipping in buttons/cards.
 - Ensure tables, menus, dialogs, tooltips, and forms work in RTL.
-- Ensure mobile layouts remain usable at 360/390/430 widths.
+- Ensure mobile layouts remain usable at 320/360/390/430 widths.
 
 ## Accessibility
 - semantic HTML
@@ -24,6 +24,10 @@ Make Qurabia fully Arabic-first and robust in RTL.
 - visible focus
 - ARIA where necessary
 - correct reading order
+
+## Verification
+
+Inspect Arabic glyphs, mixed numerals, directional icons, reading order, and text overflow at 320px and a desktop viewport.
 
 ## Integration scope
 

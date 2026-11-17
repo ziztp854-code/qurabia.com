@@ -1,6 +1,6 @@
 ---
 name: qurabia-search-discovery
-description: "Use for Qurabia or Tahaddi tasks specifically involving search & discovery. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on existing Qurabia player, game, or room search and discovery flows."
 ---
 
 # Search & Discovery
@@ -14,6 +14,10 @@ Use when Qurabia supports searching players, rooms, or games.
 - recent/history only if product supports it
 - accessible keyboard navigation
 - Arabic text normalization only when it improves matching and does not corrupt usernames
+
+## Verification
+
+Test query validation, empty/results states, keyboard navigation, and Arabic matching without changing stored identity data.
 
 ## Integration scope
 

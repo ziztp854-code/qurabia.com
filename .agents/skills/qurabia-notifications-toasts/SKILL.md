@@ -1,6 +1,6 @@
 ---
 name: qurabia-notifications-toasts
-description: "Use for Qurabia or Tahaddi tasks specifically involving notifications & toasts. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia notification or toast display, deduplication, actions, and accessible feedback."
 ---
 
 # Notifications & Toasts
@@ -23,6 +23,10 @@ Centralize user feedback.
 - dedupe repeated realtime errors
 - provide action when useful
 - do not use toasts for critical blocking flows that need dialogs
+
+## Verification
+
+Verify live-region semantics, repeated-event deduplication, dismissal, and actionable error recovery for the changed flow.
 
 ## Integration scope
 

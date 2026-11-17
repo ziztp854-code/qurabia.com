@@ -1,6 +1,6 @@
 ---
 name: qurabia-gsap-game-ui
-description: "Use for Qurabia or Tahaddi tasks specifically involving gsap for game ui. Apply the existing implementation and project conventions within the requested scope."
+description: "Use or review GSAP for coordinated Qurabia game UI transitions and cleanup."
 ---
 
 # GSAP for Game UI
@@ -20,6 +20,10 @@ Use GSAP for:
 - no orphaned ScrollTrigger
 - respect reduced motion
 - never make game logic depend on GSAP completion
+
+## Verification
+
+Verify timeline cleanup and reduced-motion behavior; ensure authoritative game state advances independently of animation callbacks.
 
 ## Integration scope
 
