@@ -351,8 +351,14 @@ it('labels approved local levels with the provider-backed Arabic font and leaves
     [
       'case',
       ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
-      ['concat', ['get', 'name'], ' · المستوى ', ['to-string', ['get', 'villageLevel']]],
-      ['get', 'name'],
+      [
+        'concat', ['get', 'name'], ' · المستوى ', ['to-string', ['get', 'villageLevel']],
+        ['case', ['has', 'kingdomName'], ['concat', '\n', ['get', 'kingdomName']], ''],
+      ],
+      [
+        'concat', ['get', 'name'],
+        ['case', ['has', 'kingdomName'], ['concat', '\n', ['get', 'kingdomName']], ''],
+      ],
     ],
   ]);
   presentation.dispose();

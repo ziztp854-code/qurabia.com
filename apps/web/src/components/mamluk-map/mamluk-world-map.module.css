@@ -1,22 +1,30 @@
 .root {
-  /* Keep the atlas's charcoal identity local to this surface. */
+  /* The command desk uses the same midnight and gold palette as the atlas. */
   --map-background: var(--brand-ink);
-  --map-surface: color-mix(in srgb, var(--brand-ink) 90%, var(--gold-900));
-  --map-raised: color-mix(in srgb, var(--brand-ink) 90%, var(--gold-100));
-  --map-text: var(--brand-cream);
-  --map-muted: color-mix(in srgb, var(--brand-cream) 80%, var(--gold-600));
+  --map-surface: var(--brand-navy);
+  --map-raised: var(--brand-navy);
+  --map-text: var(--brand-ivory);
+  --map-muted: var(--brand-cream);
   --map-gold: var(--gold-100);
-  --map-bronze: var(--gold-600);
+  --map-bronze: var(--gold-100);
   --map-border: var(--gold-600);
+  --map-fog: var(--brand-ink);
+  --map-land: var(--brand-navy);
+  --map-ink: var(--brand-cream);
+  --map-sand: var(--brand-navy);
+  --map-miniature-stone: var(--brand-cream);
+  --map-miniature-sand: var(--gold-600);
+  --map-miniature-roof: var(--gold-700);
+  --map-miniature-ink: var(--brand-navy);
   --map-success: var(--success);
   --map-danger: var(--danger);
   --map-city: var(--gold-100);
   --map-territory: var(--gold-600);
-  --map-sultanate-border: var(--gold-700);
+  --map-sultanate-border: var(--gold-100);
   background: var(--map-background);
   color: var(--map-text);
-  border: 1px solid var(--map-border);
-  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--map-border) 65%, transparent);
+  border-radius: 16px;
   overflow: hidden;
   isolation: isolate;
   font-family: var(--font-sans);
@@ -26,8 +34,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  border-block-end: 1px solid var(--map-border);
+  padding: var(--space-5) var(--space-5);
+  background: linear-gradient(110deg, var(--map-background), var(--map-surface));
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
 }
 .modeBar {
   display: flex;
@@ -136,7 +145,8 @@
   inline-size: 48px;
   block-size: 48px;
   padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--map-gold) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--map-gold) 55%, transparent);
+  background: color-mix(in srgb, var(--map-gold) 8%, transparent);
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -147,7 +157,7 @@
 }
 .eyebrow {
   margin: 0 0 4px;
-  color: var(--map-bronze);
+  color: var(--map-gold);
   font-size: 12px;
   font-weight: 700;
 }
@@ -224,7 +234,7 @@
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-5);
   padding: var(--space-3) var(--space-5);
-  background: var(--map-background);
+  background: var(--map-surface);
   border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
   color: var(--map-muted);
   font-size: 12px;
@@ -233,6 +243,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  padding-inline-end: var(--space-4);
+  border-inline-end: 1px solid color-mix(in srgb, var(--map-border) 40%, transparent);
 }
 .sceneCount svg {
   color: var(--map-bronze);
@@ -347,6 +359,7 @@
   min-inline-size: 0;
   block-size: 100%;
   background: var(--map-background);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--map-gold) 25%, transparent);
 }
 .canvas {
   position: absolute;
@@ -363,6 +376,10 @@
   gap: var(--space-2);
   direction: rtl;
   max-inline-size: calc(100% - 40px);
+  pointer-events: none;
+}
+.toolbar > * {
+  pointer-events: auto;
 }
 .control,
 .iconButton {
@@ -372,14 +389,15 @@
   gap: 8px;
   min-block-size: 44px;
   min-inline-size: 44px;
-  border: 1px solid var(--map-border);
-  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--map-border) 75%, transparent);
+  border-radius: 8px;
   background: var(--map-surface);
   color: var(--map-text);
   font: inherit;
   cursor: pointer;
   padding: 8px 12px;
   text-decoration: none;
+  box-shadow: var(--shadow-sm);
 }
 .control[aria-pressed='true'] {
   background: var(--map-gold);
@@ -412,6 +430,10 @@
   display: grid;
   gap: var(--space-2);
   direction: rtl;
+  pointer-events: none;
+}
+.navigation > * {
+  pointer-events: auto;
 }
 .status {
   position: absolute;
@@ -527,9 +549,9 @@
   min-block-size: 0;
   direction: rtl;
   padding: var(--space-5);
-  background: var(--map-surface);
-  border: 1px solid var(--map-border);
-  border-radius: 10px;
+  background: linear-gradient(160deg, var(--map-raised), var(--map-background) 65%);
+  border: 1px solid color-mix(in srgb, var(--map-gold) 55%, transparent);
+  border-radius: 14px;
   box-shadow: var(--shadow-sm);
   overflow-y: auto;
   max-block-size: calc(100% - 40px);
@@ -567,6 +589,11 @@
   block-size: 130px;
   overflow: hidden;
   margin-block: var(--space-3);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--map-gold) 12%, transparent),
+    transparent 72%
+  );
   border-block-end: 1px solid color-mix(in srgb, var(--map-border) 40%, transparent);
 }
 .selectionArt img {
@@ -580,6 +607,7 @@
   color: var(--map-background);
   border-color: var(--map-gold);
   font-weight: 700;
+  box-shadow: none;
 }
 .selectionHeader .iconButton {
   margin-inline-start: auto;
@@ -976,6 +1004,207 @@
 }
 .armyLegend [data-mission='return'] {
   color: var(--map-success);
+}
+
+/* Command desk: keep the map and the location dossier as separate work areas. */
+.root {
+  border-color: color-mix(in srgb, var(--map-border) 45%, transparent);
+  border-radius: 18px;
+}
+.header {
+  min-block-size: 104px;
+  padding: var(--space-5) clamp(20px, 3vw, 40px);
+  background:
+    linear-gradient(
+      90deg,
+      var(--map-background),
+      transparent 37%,
+      transparent 63%,
+      var(--map-background)
+    ),
+    linear-gradient(0deg, var(--map-background), transparent 90%),
+    url('/game-art/mamluk-map/atlas-banner.webp') center 58% / cover no-repeat,
+    var(--map-background);
+}
+.heading > svg {
+  border-radius: 12px;
+  background: var(--map-background);
+}
+.heading h1 {
+  font-size: clamp(26px, 3vw, 36px);
+}
+.eyebrow {
+  color: var(--map-bronze);
+}
+.modeBar,
+.villageNavigation,
+.sceneOverview,
+.layersDisclosure > summary {
+  background: var(--map-surface);
+}
+.atlasContext {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--map-surface);
+  border-block-end: 1px solid color-mix(in srgb, var(--map-border) 45%, transparent);
+}
+.atlasContext .modeBar,
+.atlasContext .villageNavigation,
+.atlasContext .sceneOverview,
+.atlasContext .layersDisclosure > summary,
+.atlasContext .referenceNotice {
+  border: 0;
+}
+.atlasContext .sceneOverview {
+  flex: 1 1 320px;
+}
+.atlasContext .layersDisclosure[open] {
+  flex-basis: 100%;
+}
+.workspace {
+  background: var(--map-background);
+}
+.mapFrame {
+  background: var(--map-land);
+  box-shadow: none;
+}
+.toolbar .control,
+.toolbar .iconButton,
+.navigation .iconButton,
+.status {
+  box-shadow: var(--shadow-sm);
+}
+.control,
+.iconButton {
+  background: var(--map-surface);
+}
+.control[aria-pressed='true'],
+.managementLink,
+.targetSelection .confirmTarget,
+.destinationActions .destinationReview {
+  background: var(--map-gold);
+  border-color: var(--map-gold);
+  color: var(--brand-ink);
+}
+.panel {
+  background: var(--map-surface);
+  box-shadow: none;
+}
+.details dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.details dt svg {
+  flex: none;
+  color: var(--map-gold);
+}
+.selectionArt {
+  border: 1px solid color-mix(in srgb, var(--map-border) 24%, transparent);
+  border-radius: 12px;
+  background: var(--map-background);
+}
+.legend,
+.armyLegend {
+  background: var(--map-background);
+}
+.armyLegend [data-mission] {
+  color: var(--map-text);
+}
+@media (min-width: 1001px) {
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 330px);
+    gap: var(--space-3);
+    padding: var(--space-3);
+    box-sizing: border-box;
+  }
+  .mapFrame {
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .panel {
+    position: relative;
+    inset: auto;
+    inline-size: auto;
+    max-block-size: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+  }
+}
+@media (max-width: 1000px) {
+  .header {
+    min-block-size: 0;
+    padding: var(--space-4);
+  }
+  .heading h1 {
+    font-size: 24px;
+  }
+  .atlasContext .modeBar,
+  .atlasContext .villageNavigation,
+  .atlasContext .layersDisclosure > summary,
+  .atlasContext .sceneOverview {
+    padding-inline: var(--space-3);
+  }
+  .atlasContext .sceneOverview > p {
+    display: none;
+  }
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    block-size: auto;
+    min-block-size: 0;
+  }
+  .mapFrame {
+    flex: none;
+    block-size: auto;
+    min-block-size: max(430px, 60dvh);
+    padding-block-end: max(240px, 35dvh);
+    box-sizing: border-box;
+  }
+  .toolbar {
+    position: relative;
+    inset: auto;
+    max-inline-size: none;
+    padding: var(--space-3);
+  }
+  .navigation {
+    position: relative;
+    inset: auto;
+    margin-inline: var(--space-3);
+    flex-wrap: wrap;
+  }
+  .status {
+    position: relative;
+    inset: auto;
+    inline-size: fit-content;
+    max-inline-size: calc(100% - 24px);
+    margin: var(--space-3);
+    box-sizing: border-box;
+  }
+  .panel {
+    position: relative;
+    inset: auto;
+    inline-size: 100%;
+    max-block-size: 42dvh;
+    border-radius: 0;
+    border-inline: 0;
+    border-block-end: 0;
+  }
+  .selectionHeader {
+    flex-wrap: wrap;
+  }
+  .selectionHeader > div {
+    flex: 1 1 120px;
+    min-inline-size: 0;
+  }
+  .selectionHeader h2 {
+    overflow-wrap: normal;
+  }
+  .mapFrame :global(.maplibregl-ctrl-bottom-right) {
+    inset-block-end: 0;
+  }
 }
 .armyLegend p {
   flex-basis: 100%;

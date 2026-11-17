@@ -297,10 +297,26 @@ class SettlementArtwork implements SettlementPresentation {
             'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.85, 8, 1.3, 14, 1.8],
             'text-offset': [0, 2],
             'text-field': [
-              'case',
-              ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
-              ['concat', ['get', 'name'], ' · ', ['to-string', ['get', 'villageLevel']]],
-              ['get', 'name'],
+              'step',
+              ['zoom'],
+              [
+                'case',
+                ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+                ['concat', ['get', 'name'], ' · ', ['to-string', ['get', 'villageLevel']]],
+                ['get', 'name'],
+              ],
+              12,
+              [
+                'concat',
+                ['get', 'name'],
+                [
+                  'case',
+                  ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
+                  ['concat', ' · ', ['to-string', ['get', 'villageLevel']]],
+                  '',
+                ],
+                ['case', ['has', 'kingdomName'], ['concat', '\n', ['get', 'kingdomName']], ''],
+              ],
             ],
           },
         };
@@ -370,8 +386,18 @@ function settlementLayer(
         [
           'case',
           ['>', ['coalesce', ['get', 'villageLevel'], 0], 0],
-          ['concat', ['get', 'name'], ' · المستوى ', ['to-string', ['get', 'villageLevel']]],
-          ['get', 'name'],
+          [
+            'concat',
+            ['get', 'name'],
+            ' · المستوى ',
+            ['to-string', ['get', 'villageLevel']],
+            ['case', ['has', 'kingdomName'], ['concat', '\n', ['get', 'kingdomName']], ''],
+          ],
+          [
+            'concat',
+            ['get', 'name'],
+            ['case', ['has', 'kingdomName'], ['concat', '\n', ['get', 'kingdomName']], ''],
+          ],
         ],
       ],
       'text-font': ['Noto Sans Regular'],
