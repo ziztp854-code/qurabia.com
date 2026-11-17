@@ -33,7 +33,9 @@ function villageDetails(properties: Feature['properties'], viewerPlayerId: strin
     field(
       'المالك',
       own
-        ? 'أنت'
+        ? typeof properties.kingdomName === 'string' && properties.kingdomName
+          ? `${properties.kingdomName} (أنت)`
+          : 'أنت'
         : properties.ownerPlayerId === null
           ? 'مستقلة'
           : typeof properties.kingdomName === 'string' && properties.kingdomName
@@ -71,9 +73,11 @@ function featureLabel(feature: Feature, layer: SelectableLayer): string {
   const name = title(feature, layer);
   if (layer !== 'cities') return name;
   const level = feature.properties.villageLevel;
+  const owner = feature.properties.kingdomName;
+  const ownerLabel = typeof owner === 'string' && owner ? `، اللاعب ${owner}` : '';
   return typeof level === 'number' && Number.isInteger(level) && level >= 1
-    ? `${name}، المستوى ${number(level)}`
-    : name;
+    ? `${name}${ownerLabel}، المستوى ${number(level)}`
+    : `${name}${ownerLabel}`;
 }
 
 /** Presentation allowlist. Neither click metadata nor arbitrary properties enter the panel. */

@@ -410,143 +410,147 @@ function WorldScene({
           </select>
         </label>
       </header>
-      {!referenceOnly && (
-        <div className={styles.modeBar}>
-          {onModeChange ? (
-            <label>
-              وضع الخريطة
-              <select
-                value={mode}
-                onChange={(event) => onModeChange(event.target.value as MapMode)}
-              >
-                {Object.entries(modeLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <span>{mode === 'WORLD' ? modeLabels.WORLD : 'اختيار هدف الحملة'}</span>
-          )}
-          {mode === 'SELECT_SETTLEMENT_TARGET' && (
-            <p>
-              اختيار أرض الاستيطان متاح في نموذج الإحداثيات الحالي؛ لا تتوفر معاينة جغرافية معتمدة
-              للأرض الخالية.
-            </p>
-          )}
-          {locationFailure === focusVillageId && locationFailure && (
-            <p role="alert">
-              تعذر تحديد موقع القرية.
-              <button
-                type="button"
-                className={styles.control}
-                onClick={() => setLocationAttempt((attempt) => attempt + 1)}
-              >
-                أعد تحديد الموقع
-              </button>
-            </p>
-          )}
-        </div>
-      )}
-      {!referenceOnly && Boolean(villageLocations?.length) && (
-        <nav className={styles.villageNavigation} aria-label="قراي">
-          <span className={styles.villageCaption}>
-            <Castle size={18} aria-hidden="true" /> قراي
-          </span>
-          <div className={styles.villageLinks}>
-            {villageLocations?.map((village) => (
-              <Link
-                key={village.villageId}
-                href={geographicMapHref(worldId, village.villageId)}
-                aria-current={village.villageId === initialVillageId ? 'location' : undefined}
-              >
-                <MapPin size={16} aria-hidden="true" />
-                {village.name}
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
-      {referenceOnly && (
-        <p className={styles.referenceNotice}>
-          لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.
-        </p>
-      )}
-      <div className={styles.sceneOverview} aria-label="المشهد الحالي">
-        <div className={styles.sceneCount}>
-          <MapPin size={16} aria-hidden="true" />
-          <span>
-            {number(overviewVillageCount ?? scenePayload?.layers.cities.features.length ?? 0)}
-          </span>
-          {referenceOnly ? 'مدينة في المشهد' : 'قرية في المشهد'}
-        </div>
+      <div className={styles.atlasContext}>
         {!referenceOnly && (
-          <div className={styles.sceneCount}>
-            <Flag size={16} aria-hidden="true" />
-            <span>
-              {overviewPayload && !scenePayload
-                ? '—'
-                : number(ownerGroups.filter((owner) => owner.ownerPlayerId !== null).length)}
-            </span>
-            ممالك ظاهرة
+          <div className={styles.modeBar}>
+            {onModeChange ? (
+              <label>
+                وضع الخريطة
+                <select
+                  value={mode}
+                  onChange={(event) => onModeChange(event.target.value as MapMode)}
+                >
+                  {Object.entries(modeLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <span>{mode === 'WORLD' ? modeLabels.WORLD : 'اختيار هدف الحملة'}</span>
+            )}
+            {mode === 'SELECT_SETTLEMENT_TARGET' && (
+              <p>
+                اختيار أرض الاستيطان متاح في نموذج الإحداثيات الحالي؛ لا تتوفر معاينة جغرافية معتمدة
+                للأرض الخالية.
+              </p>
+            )}
+            {locationFailure === focusVillageId && locationFailure && (
+              <p role="alert">
+                تعذر تحديد موقع القرية.
+                <button
+                  type="button"
+                  className={styles.control}
+                  onClick={() => setLocationAttempt((attempt) => attempt + 1)}
+                >
+                  أعد تحديد الموقع
+                </button>
+              </p>
+            )}
           </div>
         )}
-        <p>اسحب للاستكشاف · قرّب لرؤية الحدود · اختر موقعًا للتفاصيل</p>
-      </div>
-      {!referenceOnly && (
-        <details className={styles.layersDisclosure}>
-          <summary>
-            <Layers size={18} aria-hidden="true" />
-            حدود الممالك
-          </summary>
-          <section className={styles.ownerLegend} aria-label="حدود الممالك">
-            <div className={styles.ownerHeading}>
-              <Layers size={20} aria-hidden="true" />
-              <div>
-                <h2>حدود الممالك</h2>
-                <p>كل لون يجمع قرى اللاعب وحدودها. اختر راية لتفقد حدودها.</p>
-              </div>
+        {!referenceOnly && Boolean(villageLocations?.length) && (
+          <nav className={styles.villageNavigation} aria-label="قراي">
+            <span className={styles.villageCaption}>
+              <Castle size={18} aria-hidden="true" /> قراي
+            </span>
+            <div className={styles.villageLinks}>
+              {villageLocations?.map((village) => (
+                <Link
+                  key={village.villageId}
+                  href={geographicMapHref(worldId, village.villageId)}
+                  aria-current={village.villageId === initialVillageId ? 'location' : undefined}
+                >
+                  <MapPin size={16} aria-hidden="true" />
+                  {village.name}
+                </Link>
+              ))}
             </div>
-            {ownerGroups.length ? (
-              <ul className={styles.ownerList}>
-                {ownerGroups.map((owner) => (
-                  <li
-                    key={owner.ownerPlayerId ?? 'neutral'}
-                    style={{ '--owner-color': owner.color } as CSSProperties}
-                  >
-                    {owner.cityId ? (
-                      <button
-                        type="button"
-                        aria-label={`استكشف حدود ${owner.label}`}
-                        aria-pressed={owner.selected}
-                        onClick={() => focusSelection({ layer: 'cities', id: owner.cityId! }, 11)}
-                      >
-                        <span className={styles.ownerSwatch} aria-hidden="true">
-                          <Flag size={14} />
+          </nav>
+        )}
+        {referenceOnly && (
+          <p className={styles.referenceNotice}>
+            لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.
+          </p>
+        )}
+        <div className={styles.sceneOverview} aria-label="المشهد الحالي">
+          <div className={styles.sceneCount}>
+            <MapPin size={16} aria-hidden="true" />
+            <span>
+              {number(overviewVillageCount ?? scenePayload?.layers.cities.features.length ?? 0)}
+            </span>
+            {referenceOnly ? 'مدينة في المشهد' : 'قرية في المشهد'}
+          </div>
+          {!referenceOnly && (
+            <div className={styles.sceneCount}>
+              <Flag size={16} aria-hidden="true" />
+              <span>
+                {overviewPayload && !scenePayload
+                  ? '—'
+                  : number(ownerGroups.filter((owner) => owner.ownerPlayerId !== null).length)}
+              </span>
+              ممالك ظاهرة
+            </div>
+          )}
+          <p>اسحب للاستكشاف · قرّب لرؤية الحدود · اختر موقعًا للتفاصيل</p>
+        </div>
+        {!referenceOnly && (
+          <details className={styles.layersDisclosure}>
+            <summary>
+              <Layers size={18} aria-hidden="true" />
+              حدود الممالك
+            </summary>
+            <section className={styles.ownerLegend} aria-label="حدود الممالك">
+              <div className={styles.ownerHeading}>
+                <Layers size={20} aria-hidden="true" />
+                <div>
+                  <h2>حدود الممالك</h2>
+                  <p>كل لون يجمع قرى اللاعب وحدودها. اختر راية لتفقد حدودها.</p>
+                </div>
+              </div>
+              {ownerGroups.length ? (
+                <ul className={styles.ownerList}>
+                  {ownerGroups.map((owner) => (
+                    <li
+                      key={owner.ownerPlayerId ?? 'neutral'}
+                      style={{ '--owner-color': owner.color } as CSSProperties}
+                    >
+                      {owner.cityId ? (
+                        <button
+                          type="button"
+                          aria-label={`استكشف حدود ${owner.label}`}
+                          aria-pressed={owner.selected}
+                          onClick={() => focusSelection({ layer: 'cities', id: owner.cityId! }, 11)}
+                        >
+                          <span className={styles.ownerSwatch} aria-hidden="true">
+                            <Flag size={14} />
+                          </span>
+                          <span>{owner.label}</span>
+                          <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
+                          <Target size={16} aria-hidden="true" />
+                        </button>
+                      ) : (
+                        <span className={styles.ownerItem}>
+                          <span className={styles.ownerSwatch} aria-hidden="true">
+                            <Flag size={14} />
+                          </span>
+                          <span>{owner.label}</span>
+                          <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
                         </span>
-                        <span>{owner.label}</span>
-                        <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
-                        <Target size={16} aria-hidden="true" />
-                      </button>
-                    ) : (
-                      <span className={styles.ownerItem}>
-                        <span className={styles.ownerSwatch} aria-hidden="true">
-                          <Flag size={14} />
-                        </span>
-                        <span>{owner.label}</span>
-                        <span className={styles.ownerCount}>{number(owner.count)} نطاق</span>
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.boundaryEmpty}>تظهر حدود الممالك مع القرى المتاحة في المشهد.</p>
-            )}
-          </section>
-        </details>
-      )}
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.boundaryEmpty}>
+                  تظهر حدود الممالك مع القرى المتاحة في المشهد.
+                </p>
+              )}
+            </section>
+          </details>
+        )}
+      </div>
       <div className={styles.workspace} data-picking-destination={isPickingDestination}>
         <div className={styles.mapFrame}>
           <div

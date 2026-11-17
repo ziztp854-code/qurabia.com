@@ -46,6 +46,7 @@ describe('approved map selection', () => {
       constructionStatus: 'BUILDING', kingdomName: 'مملكة النيل', allianceName: 'العهد' } };
     const own = findSelection(payload([village]), { layer: 'cities', id: 'cairo' }, 'viewer');
     expect(own?.kind).toBe('قرية');
+    expect(own?.details).toContainEqual({ label: 'المالك', value: 'مملكة النيل (أنت)' });
     expect(own?.details).toEqual(expect.arrayContaining([
       { label: 'المستوى', value: '١٢' }, { label: 'الرتبة', value: 'قرية مزدهرة' },
       { label: 'القوة', value: '٨٧٠' }, { label: 'السكان', value: '١٬٢٣٠' },
@@ -63,7 +64,7 @@ describe('approved map selection', () => {
     expect(listSelectableFeatures(payload([village]))).toContainEqual({
       layer: 'cities',
       id: 'cairo',
-      label: 'القاهرة، المستوى ١٢',
+      label: 'القاهرة، اللاعب مملكة النيل، المستوى ١٢',
     });
   });
   it('presents a city only from its approved properties and real coordinates', () => {

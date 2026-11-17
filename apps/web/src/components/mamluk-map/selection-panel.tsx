@@ -1,12 +1,38 @@
 'use client';
 
-import { Castle, ChevronDown, ChevronUp, Flag, MapPin, Search, Shield, X } from 'lucide-react';
+import {
+  Award,
+  Castle,
+  ChartNoAxesColumn,
+  ChevronDown,
+  ChevronUp,
+  Crown,
+  Flag,
+  Hourglass,
+  MapPin,
+  Search,
+  Shield,
+  Swords,
+  Users,
+  X,
+} from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { SelectionDetails, SelectionKey } from './selection';
 import styles from './mamluk-world-map.module.css';
 import { VillageRelocation, type VillageRelocationProps } from './village-relocation';
+
+const detailIcons: Readonly<Record<string, typeof Castle>> = {
+  المالك: Crown,
+  المملكة: Castle,
+  التحالف: Shield,
+  المستوى: ChartNoAxesColumn,
+  الرتبة: Award,
+  القوة: Swords,
+  السكان: Users,
+  الحالة: Hourglass,
+};
 
 interface SelectionPanelProps {
   readonly selection: SelectionDetails | null;
@@ -178,12 +204,18 @@ export function SelectionPanel({
             )}
             {!referenceOnly && (
               <dl className={styles.details}>
-                {selection.details.map((detail) => (
-                  <div key={detail.label}>
-                    <dt>{detail.label}</dt>
-                    <dd>{detail.value}</dd>
-                  </div>
-                ))}
+                {selection.details.map((detail) => {
+                  const DetailIcon = detailIcons[detail.label];
+                  return (
+                    <div key={detail.label}>
+                      <dt>
+                        {DetailIcon && <DetailIcon size={17} aria-hidden="true" />}
+                        {detail.label}
+                      </dt>
+                      <dd>{detail.value}</dd>
+                    </div>
+                  );
+                })}
               </dl>
             )}
             <div className={styles.coordinates}>

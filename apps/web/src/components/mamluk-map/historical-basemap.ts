@@ -108,7 +108,7 @@ export function createHistoricalBasemap(c: MapColors): StyleSpecification {
         type: 'raster',
         source: 'naturalEarth',
         maxzoom: 7,
-        paint: { 'raster-opacity': 0.32, 'raster-saturation': -0.7, 'raster-fade-duration': 0 },
+        paint: { 'raster-opacity': 0.16, 'raster-saturation': -0.7, 'raster-fade-duration': 0 },
       },
       {
         id: 'atlas-landcover',

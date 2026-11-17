@@ -53,7 +53,7 @@ function palette(container: HTMLElement): MapPalette {
     route: color('--map-success'),
     siege: color('--map-danger'),
     visible: color('--map-success'),
-    fog: color('--map-background'),
+    fog: color('--map-fog'),
   };
 }
 
@@ -263,18 +263,19 @@ export function useWorldMap(
           if (!cancelled && isFatalMapRuntimeError(event)) setStatus('error');
         });
         const colors = readMapColors(container.current);
+        const miniatureTokens = getComputedStyle(container.current);
         settlements = createSettlementPresentation(
           map,
           {
             label: colors.ink,
             halo: colors.land,
             miniature: {
-              stone: colors.land,
-              sand: colors.sand,
-              roof: colors.gold,
+              stone: miniatureTokens.getPropertyValue('--map-miniature-stone').trim(),
+              sand: miniatureTokens.getPropertyValue('--map-miniature-sand').trim(),
+              roof: miniatureTokens.getPropertyValue('--map-miniature-roof').trim(),
               leaf: colors.forest,
               water: colors.water,
-              ink: colors.ink,
+              ink: miniatureTokens.getPropertyValue('--map-miniature-ink').trim(),
             },
           },
           artworkController.signal,
