@@ -10,7 +10,7 @@ import { getOwnVillageMapLocations, listMamlukMapWorlds } from '@/lib/mamluk-map
 import { PUBLIC_ATLAS_VIEWER_ID, PUBLIC_ATLAS_WORLD } from '@/lib/mamluk-map/public-atlas';
 
 export const metadata: Metadata = {
-  title: 'خريطة العالم | حروب المماليك | قرابية',
+  title: 'أطلس قرابية | خريطة عالم المماليك',
   description: 'خريطة استراتيجية تفاعلية لمصر والشام والحجاز بإحداثيات جغرافية حقيقية.',
 };
 

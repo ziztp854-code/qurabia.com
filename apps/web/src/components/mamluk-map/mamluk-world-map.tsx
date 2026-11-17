@@ -394,21 +394,28 @@ function WorldScene({
             <p className={styles.eyebrow}>
               {referenceOnly
                 ? 'أطلس جغرافي · مدن مصر والشام والحجاز'
-                : 'حروب المماليك · أطلس العالم'}
+                : 'حروب المماليك · خريطة الحملة'}
             </p>
-            <h1>خريطة العالم</h1>
+            <h1>أطلس قرابية</h1>
           </div>
         </div>
-        <label className={styles.worldSelect}>
-          العالم
-          <select value={worldId} onChange={(event) => onWorldChange(event.target.value)}>
-            {worlds.map((world) => (
-              <option key={world.id} value={world.id}>
-                {world.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {worlds.length === 1 ? (
+          <p className={styles.currentWorld}>
+            <span>العالم</span>
+            <strong>{worlds[0].name}</strong>
+          </p>
+        ) : (
+          <label className={styles.worldSelect}>
+            العالم
+            <select value={worldId} onChange={(event) => onWorldChange(event.target.value)}>
+              {worlds.map((world) => (
+                <option key={world.id} value={world.id}>
+                  {world.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </header>
       <div className={styles.atlasContext}>
         {!referenceOnly && (

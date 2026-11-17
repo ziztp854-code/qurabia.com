@@ -658,7 +658,7 @@ describe('strategic world map controls', () => {
     expect(MapSdkFixture.instances[0]?.workerUrlAtCreation).toBe(
       '/maplibre/maplibre-gl-worker.mjs?v=6.11.2',
     );
-    expect(screen.getByRole('heading', { level: 1, name: 'خريطة العالم' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'أطلس قرابية' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'حدود الممالك' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'GeoNames' })).toHaveAttribute(
       'href',

@@ -30,6 +30,13 @@
   font-family: var(--font-sans);
 }
 .header {
+  background:
+    radial-gradient(
+      ellipse at top right,
+      color-mix(in srgb, var(--map-bronze) 18%, transparent),
+      transparent 65%
+    ),
+    var(--map-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -160,6 +167,24 @@
   color: var(--map-gold);
   font-size: 12px;
   font-weight: 700;
+}
+.currentWorld {
+  margin: 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--map-bronze);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--map-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.currentWorld strong {
+  color: var(--map-text);
+}
+.heading .eyebrow {
+  color: var(--map-gold);
 }
 .worldSelect {
   display: grid;
