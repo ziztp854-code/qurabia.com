@@ -598,17 +598,34 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
     validateId(worldId);
     if (viewer.playerId !== this.identity.id)
       throw new KingdomsHttpError(403, 'الخريطة غير متاحة.');
+    return this.withProvisionedSnapshot(worldId, read, true);
+  }
+  /** Focus metadata needs the same authorized snapshot, but no gameplay projection. */
+  async getOwnVillageLocations(worldId: string): Promise<readonly OwnVillageMapLocation[]> {
+    validateId(worldId);
+    return this.withProvisionedSnapshot(
+      worldId,
+      (session) => session.getOwnVillageLocations(),
+      false,
+    );
+  }
+  private async withProvisionedSnapshot<T>(
+    worldId: string,
+    read: (session: PrismaMapReadSession) => Promise<T>,
+    includeGameplay: boolean,
+  ): Promise<T> {
     try {
-      return await this.readSnapshot(worldId, read);
+      return await this.readSnapshot(worldId, read, includeGameplay);
     } catch (error) {
       if (!(error instanceof VillageProvisioningRequired)) throw error;
       await ensureVillageGeography(worldId, this.identity, this.db);
-      return this.readSnapshot(worldId, read);
+      return this.readSnapshot(worldId, read, includeGameplay);
     }
   }
   private async readSnapshot<T>(
     worldId: string,
-    read: (session: WorldMapReadSession) => Promise<T>,
+    read: (session: PrismaMapReadSession) => Promise<T>,
+    includeGameplay: boolean,
   ): Promise<T> {
     return this.db.$transaction(async (tx) => {
       await authorize(tx, this.identity);
@@ -657,7 +674,7 @@ export class PrismaWorldMapRepository implements WorldMapRepository {
         validUntil: serverTime + 15000,
       });
       let gameplay: KingdomMapProjection | undefined;
-      if (row.authoritative && row.geographySource === VILLAGE_GEOGRAPHY_SOURCE) {
+      if (includeGameplay && row.authoritative && row.geographySource === VILLAGE_GEOGRAPHY_SOURCE) {
         const stored = await tx.kingdomWorld.findUnique({
           where: { id: worldId },
           select: { state: true },
@@ -716,9 +733,5 @@ export async function getOwnVillageMapLocations(
   identity: KingdomIdentity,
   db: DatabaseClient = getPrismaClient(),
 ): Promise<readonly OwnVillageMapLocation[]> {
-  return new PrismaWorldMapRepository(identity, db).withSnapshot(
-    worldId,
-    { playerId: identity.id },
-    async (session) => (session as PrismaMapReadSession).getOwnVillageLocations(),
-  );
+  return new PrismaWorldMapRepository(identity, db).getOwnVillageLocations(worldId);
 }

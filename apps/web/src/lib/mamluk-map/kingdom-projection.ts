@@ -27,6 +27,9 @@ export class KingdomMapProjection {
   readonly armies: readonly Army[];
   readonly borders: readonly SultanateTerritory[];
   private readonly view: KingdomsView;
+  private readonly mapVillagesById: ReadonlyMap<string, KingdomsView['map'][number]>;
+  private readonly ownVillagesById: ReadonlyMap<string, Village>;
+  private readonly alliancesByMember: ReadonlyMap<string, KingdomsView['alliances'][number]>;
   private readonly publicPopulations: ReadonlyMap<string, number>;
   private readonly publicLevels: ReadonlyMap<string, number>;
   constructor(
@@ -37,6 +40,21 @@ export class KingdomMapProjection {
   ) {
     const { world: advanced, view } = projectWorldSnapshot(state, viewerId, serverTime);
     this.view = view;
+    // Keep the first match, as Array.find did, even for inconsistent legacy data.
+    const mapVillagesById = new Map<string, KingdomsView['map'][number]>();
+    for (const village of view.map)
+      if (!mapVillagesById.has(village.id)) mapVillagesById.set(village.id, village);
+    this.mapVillagesById = mapVillagesById;
+    const ownVillagesById = new Map<string, Village>();
+    for (const village of view.villages)
+      if (!ownVillagesById.has(village.id)) ownVillagesById.set(village.id, village);
+    this.ownVillagesById = ownVillagesById;
+    const alliancesByMember = new Map<string, KingdomsView['alliances'][number]>();
+    for (const alliance of view.alliances) {
+      for (const memberId of Object.getOwnPropertyNames(alliance.members))
+        if (!alliancesByMember.has(memberId)) alliancesByMember.set(memberId, alliance);
+    }
+    this.alliancesByMember = alliancesByMember;
     this.publicPopulations = new Map(
       Object.values(advanced.villages).map((village) => [village.id, villagePopulation(village)]),
     );
@@ -236,10 +254,10 @@ export class KingdomMapProjection {
         : [];
   }
   city(city: City): City | null {
-    const village = this.view.map.find((v) => v.id === city.id);
+    const village = this.mapVillagesById.get(city.id);
     if (!village) return null;
-    const own = this.view.villages.find((v) => v.id === city.id);
-    const alliance = this.view.alliances.find((a) => Object.hasOwn(a.members, village.ownerId));
+    const own = this.ownVillagesById.get(city.id);
+    const alliance = this.alliancesByMember.get(village.ownerId);
     return {
       ...city,
       name: village.name,

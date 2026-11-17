@@ -1180,6 +1180,9 @@
     inset: auto;
     inline-size: fit-content;
     max-inline-size: calc(100% - 24px);
+    /* Keep the map's height stable when the error state adds its retry button.
+       ResizeObserver otherwise generates moveend and retries a rejected request. */
+    block-size: 76px;
     margin: var(--space-3);
     box-sizing: border-box;
   }

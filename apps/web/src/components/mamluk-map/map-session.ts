@@ -4,7 +4,12 @@ import {
   type MapLibrePort,
   type MapPalette,
 } from '@mamluk/maplibre-adapter';
-import { parseMapPayload, type MapPayload, type MapProjection } from '@mamluk/world-map-core';
+import {
+  parseMapPayload,
+  type BoundingBox,
+  type MapPayload,
+  type MapProjection,
+} from '@mamluk/world-map-core';
 import type {
   AddLayerObject,
   FilterSpecification,
@@ -400,10 +405,37 @@ export function createMapSession(
     return layerVisibility(id, preferences(), localPresentation || retainedSettlement);
   };
   let currentOverview: Overview | null = null;
-  const overview = createWorldOverview(map, worldId, palette, visibilityFor, (payload) => {
-    currentOverview = payload;
-    if (!disposed) callbacks.onOverview?.(payload);
-  });
+  const waitForStyle = (signal: AbortSignal): Promise<void> => {
+    if (signal.aborted) return Promise.reject(new Error('Map request aborted'));
+    if (presentation.port.isStyleLoaded()) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        map.off('style.load', ready);
+        signal.removeEventListener('abort', aborted);
+      };
+      const ready = () => {
+        cleanup();
+        resolve();
+      };
+      const aborted = () => {
+        cleanup();
+        reject(new Error('Map request aborted'));
+      };
+      map.on('style.load', ready);
+      signal.addEventListener('abort', aborted, { once: true });
+    });
+  };
+  const overview = createWorldOverview(
+    map,
+    worldId,
+    palette,
+    visibilityFor,
+    (payload) => {
+      currentOverview = payload;
+      if (!disposed) callbacks.onOverview?.(payload);
+    },
+    waitForStyle,
+  );
   /** The UI preference stays authoritative: presentation never re-shows a hidden group. */
   const applyLayerVisibility = () => {
     if (typeof map.setLayoutProperty !== 'function') return;
@@ -438,7 +470,7 @@ export function createMapSession(
         showLocal(true);
         callbacks.onPresentation?.(true);
         callbacks.onRefreshing?.(false);
-        callbacks.onStatus('ready');
+        callbacks.onStatus(presentation.port.isStyleLoaded() ? 'ready' : 'loading');
         applySelection();
       }
     },
@@ -542,7 +574,8 @@ export function createMapSession(
     }
     applySelection();
     callbacks.onStatus(
-      !currentPayload && !adapter.publicPayload && !currentOverview
+      !presentation.port.isStyleLoaded() ||
+        (!currentPayload && !adapter.publicPayload && !currentOverview)
         ? 'loading'
         : loader.isBroad(adapter.getViewportBounds())
           ? 'zoom'
@@ -623,19 +656,35 @@ export function createMapSession(
       callbacks.onStatus('error');
     }
   }
+  const startupBounds: BoundingBox = adapter.getViewportBounds();
+  let initialStylePending = !presentation.port.isStyleLoaded();
   const onStyleLoad = () => {
-    adapter.clearPublic();
+    const bounds = adapter.getViewportBounds();
+    const unchangedStartup =
+      initialStylePending &&
+      startupBounds.west === bounds.west &&
+      startupBounds.east === bounds.east &&
+      startupBounds.south === bounds.south &&
+      startupBounds.north === bounds.north;
+    initialStylePending = false;
     applyLayerVisibility();
     if (destinationPreview) showDestinationPreview(map, destinationPreview, palette);
+    // The initial request already uses these bounds. Keep it (or its valid
+    // snapshot) instead of cancelling it when the style finishes loading.
+    if (unchangedStartup) {
+      if (currentPayload) callbacks.onStatus('ready');
+      return;
+    }
+    adapter.clearPublic();
     void loader.refresh();
   };
   map.on('style.load', onStyleLoad);
   map.on('moveend', onMove);
   map.on('click', onClick);
-  if (presentation.port.isStyleLoaded()) {
-    applyLayerVisibility();
-    void loader.refresh();
-  }
+  if (presentation.port.isStyleLoaded()) applyLayerVisibility();
+  // Fetch while the style initializes. Viewport snapshots are retained by the
+  // adapter until it can render them; overviews wait before adding sources.
+  void loader.refresh();
   return {
     adapter,
     loader,

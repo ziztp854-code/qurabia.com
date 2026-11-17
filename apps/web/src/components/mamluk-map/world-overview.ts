@@ -1,6 +1,6 @@
 import type { BoundingBox } from '@mamluk/world-map-core';
 import type { GeoJSONSource, Map as LibreMap, MapMouseEvent } from 'maplibre-gl';
-import type { MapPalette } from '@mamluk/maplibre-adapter';
+import { VIEWPORT_DEFAULT_REFRESH_MS, type MapPalette } from '@mamluk/maplibre-adapter';
 import { mapRequest, MapAuthorizationError } from './map-request';
 import { SDK_FEATURE_ID, withFeatureIdentity } from './source-identity';
 
@@ -86,6 +86,7 @@ export function createWorldOverview(
   palette: MapPalette,
   visibilityFor: (layerId: string) => 'visible' | 'none' | undefined = () => undefined,
   onPayload: (payload: Overview | null) => void = () => {},
+  waitForStyle: (signal: AbortSignal) => Promise<void> = async () => {},
 ) {
   let generation = 0,
     disposed = false;
@@ -133,6 +134,15 @@ export function createWorldOverview(
       }
       const next = decodeOverview(await response.json(), worldId);
       if (signal.aborted || disposed || token !== generation) return false;
+      // The HTTP request can run while MapLibre initializes, but sources and
+      // layers cannot be installed until its style is ready.
+      const receivedAt = performance.now();
+      await waitForStyle(signal);
+      if (signal.aborted || disposed || token !== generation) return false;
+      // Overview is membership-scoped and has no server-issued expiry. Never
+      // display a response held longer than the normal refresh interval.
+      if (performance.now() - receivedAt > VIEWPORT_DEFAULT_REFRESH_MS)
+        throw new Error('World overview expired while the map was loading');
       if (
         accepted &&
         (BigInt(next.revision) < BigInt(accepted.revision) ||
