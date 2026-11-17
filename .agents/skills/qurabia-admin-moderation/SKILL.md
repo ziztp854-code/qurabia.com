@@ -1,6 +1,6 @@
 ---
 name: qurabia-admin-moderation
-description: "Use for Qurabia or Tahaddi tasks specifically involving admin & moderation. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on existing Qurabia admin or moderation flows, permissions, and sensitive actions."
 ---
 
 # Admin & Moderation
@@ -14,6 +14,10 @@ Use only if admin/moderation exists or is explicitly requested.
 - role-based access
 - do not expose admin controls by frontend hiding alone
 - protect user data
+
+## Verification
+
+Trace the action through the server authorization boundary; verify permitted and denied cases and audit behavior where the feature supports it.
 
 ## Integration scope
 

@@ -1,6 +1,6 @@
 ---
 name: qurabia-payments-billing
-description: "Use for Qurabia or Tahaddi tasks specifically involving payments & billing. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia billing, checkout, payment webhooks, or server-authoritative entitlements."
 ---
 
 # Payments & Billing
@@ -16,6 +16,10 @@ Keep billing secure and consistent.
 - Persist entitlement changes server-side.
 - Make UI resilient to delayed payment confirmation.
 - Never log secrets or full payment details.
+
+## Verification
+
+Trace the affected payment and entitlement trust boundary; test provider retries and delayed or failed confirmation without exposing secrets.
 
 ## Integration scope
 

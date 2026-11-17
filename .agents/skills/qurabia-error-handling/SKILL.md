@@ -1,6 +1,6 @@
 ---
 name: qurabia-error-handling
-description: "Use for Qurabia or Tahaddi tasks specifically involving error handling. Apply the existing implementation and project conventions within the requested scope."
+description: "Improve Qurabia error states, recovery actions, safe retries, or user-facing failure messages."
 ---
 
 # Error Handling
@@ -23,6 +23,10 @@ Provide predictable failures.
 - retry only when safe
 - prevent duplicate writes
 - provide recovery action
+
+## Verification
+
+Exercise the affected failure and recovery path; verify retries cannot duplicate writes and user messages do not reveal sensitive details.
 
 ## Integration scope
 

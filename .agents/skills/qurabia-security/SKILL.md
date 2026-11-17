@@ -1,6 +1,6 @@
 ---
 name: qurabia-security
-description: "Use for Qurabia or Tahaddi tasks specifically involving security. Apply the existing implementation and project conventions within the requested scope."
+description: "Review or implement security properties in a scoped Qurabia flow, including authorization, validation, and data exposure."
 ---
 
 # Security
@@ -20,6 +20,10 @@ description: "Use for Qurabia or Tahaddi tasks specifically involving security. 
 
 ## Rule
 Frontend checks improve UX; backend checks enforce security.
+
+## Verification
+
+Identify the trust boundary and verify server enforcement with allowed and denied cases; avoid logging sensitive values.
 
 ## Integration scope
 

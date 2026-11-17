@@ -1,0 +1,15 @@
+.icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  inline-size: 24px;
+  block-size: 32px;
+  background-image: url('/game-art/kingdoms/city-hub/control-icons.webp');
+  background-size: 600% 150%;
+  background-repeat: no-repeat;
+}
+.icon[data-icon='labels'] { background-position: 0% 50%; }
+.icon[data-icon='overview'] { background-position: 20% 50%; }
+.icon[data-icon='zoom-out'] { background-position: 40% 50%; }
+.icon[data-icon='zoom-in'] { background-position: 60% 50%; }
+.icon[data-icon='settings'] { background-position: 80% 50%; }
+.icon[data-icon='build'] { background-position: 100% 50%; }

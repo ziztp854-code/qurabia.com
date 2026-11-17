@@ -1,6 +1,6 @@
 ---
 name: qurabia-testing
-description: "Use for Qurabia or Tahaddi tasks specifically involving testing. Apply the existing implementation and project conventions within the requested scope."
+description: "Select and implement meaningful tests for affected Qurabia behavior, contracts, and critical journeys."
 ---
 
 # Testing
@@ -22,6 +22,10 @@ description: "Use for Qurabia or Tahaddi tasks specifically involving testing. A
 - checkout callback if present
 
 Test RTL/mobile-critical UI.
+
+## Verification
+
+Choose the smallest relevant test layer, run targeted tests first, and report coverage and any unavailable integration dependencies.
 
 ## Integration scope
 

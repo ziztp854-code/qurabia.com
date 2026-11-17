@@ -5,13 +5,8 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Settings2,
-  Maximize,
   Pause,
   Play,
-  Tags,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 import { Button, Select } from '@/components/ui';
 import { buildingKeys } from '@/lib/kingdoms/types';
@@ -27,6 +22,7 @@ import type {
 } from '@/lib/kingdoms/village/types';
 import { VillageActivity } from './village-activity';
 import { VillageIncomingAlert } from '../incoming-alert';
+import { ControlIcon } from '../control-icon';
 import { hostileThreats, presentIncomingThreats, villageIncoming } from '@/lib/kingdoms/incoming-threats';
 import { VillageDirectory } from './village-directory';
 import { VillageCanvas } from './village-canvas';
@@ -67,6 +63,8 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const [tourRequest, setTourRequest] = useState(0);
   const [quality, setQuality] = useState<VillageQuality>('auto');
   const [labels, setLabels] = useState(!dedicatedNavigation);
+  const [focusedDistrict, setFocusedDistrict] = useState<{ target: VillageSelection; label: string } | null>(null);
+  const [districtsOpen, setDistrictsOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
   const [debug, setDebug] = useState<VillageDebugOptions>({});
@@ -84,7 +82,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
     [debug, paused, active],
   );
   const focusTour = useCallback((target: VillageTarget) => scene.current?.focusOn(target), []);
-  const reset = useCallback(() => scene.current?.reset(), []);
+  const reset = useCallback(() => { setFocusedDistrict(null); scene.current?.reset(); }, []);
   const onReady = useCallback(() => setReady(true), []);
   const incoming = presentIncomingThreats(view.incoming ?? [], view.serverNow);
   const hostile = hostileThreats(villageIncoming(incoming, village.id));
@@ -125,6 +123,32 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         onFacilitySelect={onFacilitySelect}
         onPrefetch={dedicatedNavigation ? (building) => prefetchCityScene(citySceneForBuilding(building)) : undefined}
       />
+      {dedicatedNavigation && focusedDistrict && (
+        <div className={styles.districtAction} role="region" aria-label="المبنى المختار">
+          <button type="button" className={styles.dismissDistrict} aria-label="إغلاق بطاقة المنطقة" onClick={() => setFocusedDistrict(null)}>×</button>
+          <div><span>استكشاف المنطقة</span><strong>{focusedDistrict.label}</strong></div>
+          <button type="button" onClick={() => choose(focusedDistrict.target)}>
+            فتح {focusedDistrict.label}
+          </button>
+        </div>
+      )}
+      {dedicatedNavigation && (
+        <nav className={styles.districts} aria-label="استكشاف مناطق القرية" data-open={districtsOpen}>
+          <button type="button" className={styles.districtToggle} aria-expanded={districtsOpen} onClick={() => setDistrictsOpen((open) => !open)}>مناطق القرية</button>
+          <div className={styles.districtList}>
+            {([
+              ['hall', 'القصر'],
+              ['barracks', 'الجيش'],
+              ['farm', 'المزارع'],
+              ['market', 'السوق'],
+            ] as const).map(([target, label]) => (
+              <button key={target} type="button" aria-label={`عرض ${label}`} disabled={!ready} onClick={() => { setDistrictsOpen(false); setFocusedDistrict({ target, label }); scene.current?.focusOn(target); }}>
+                <span className={styles.districtIcon} data-district-icon={target} aria-hidden="true" /><span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
       <div className={styles.controls} role="group" aria-label="كاميرا القرية">
         <div className={styles.presets} role="group" aria-label="مستويات عرض المملكة">
           <button type="button" onClick={() => dedicatedNavigation ? reset() : scene.current?.zoomTo(2.8)}>المدينة</button>
@@ -138,17 +162,17 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           aria-label="تكبير القرية"
           onClick={() => scene.current?.zoomBy(1.25)}
         >
-          <ZoomIn size={18} aria-hidden="true" />
+          <ControlIcon name="zoom-in" />
         </Button>
         <Button
           variant="outline"
           aria-label="تصغير القرية"
           onClick={() => scene.current?.zoomBy(0.8)}
         >
-          <ZoomOut size={18} aria-hidden="true" />
+          <ControlIcon name="zoom-out" />
         </Button>
         <Button variant="outline" aria-label="عرض القرية بالكامل" title="عرض القرية بالكامل" onClick={reset}>
-          <Maximize size={18} aria-hidden="true" />
+          <ControlIcon name="overview" />
         </Button>
         <Button
           variant="outline"
@@ -157,11 +181,11 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
           title="إظهار أسماء المباني"
           onClick={() => setLabels((shown) => !shown)}
         >
-          <Tags size={18} aria-hidden="true" />
+          <ControlIcon name="labels" />
         </Button>
       </div>
       <details className={styles.preferences}>
-        <summary><Settings2 size={18} aria-hidden="true" /><span>إعدادات القرية</span></summary>
+        <summary><ControlIcon name="settings" /><span>إعدادات القرية</span></summary>
         {dedicatedNavigation && <Button variant="outline" disabled={!ready} onClick={() => setTourRequest((request) => request + 1)}>جولة في المدينة</Button>}
         <VillageProgress village={village} config={view.config} now={view.serverNow}
           onOpenConstruction={() => choose(village.build?.building ?? 'hall')}

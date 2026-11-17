@@ -1,6 +1,6 @@
 ---
 name: qurabia-profile-system
-description: "Use for Qurabia or Tahaddi tasks specifically involving profile system. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia player profiles, privacy controls, ranks, statistics, or profile states."
 ---
 
 # Profile System
@@ -24,6 +24,10 @@ Build a reusable player profile experience.
 - Court rank is more prominent than subscription.
 - Mobile first.
 - Use skeleton/loading and empty states.
+
+## Verification
+
+Verify displayed data and privacy against the server projection; check loading, empty, and mobile states relevant to the change.
 
 ## Integration scope
 

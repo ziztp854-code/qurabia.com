@@ -1,6 +1,6 @@
 ---
 name: qurabia-svg-motion
-description: "Use for Qurabia or Tahaddi tasks specifically involving svg motion. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on accessible SVG motion for Qurabia badges, status, or game feedback."
 ---
 
 # SVG Motion
@@ -25,6 +25,10 @@ Use lightweight vector motion for badges and game feedback.
 - opacity
 
 Keep SVG assets reusable and accessible.
+
+## Verification
+
+Check the accessible name or decorative treatment, reduced-motion fallback, responsive scaling, and animation cleanup where relevant.
 
 ## Integration scope
 

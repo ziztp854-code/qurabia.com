@@ -1,6 +1,6 @@
 ---
 name: qurabia-game-state-machine
-description: "Use for Qurabia or Tahaddi tasks specifically involving game state machine. Apply the existing implementation and project conventions within the requested scope."
+description: "Review or change a Qurabia game flow, state transition, or separation of authoritative and presentation state."
 ---
 
 # Game State Machine
@@ -23,6 +23,10 @@ lobby
 → finished
 
 Use the real game flow for each game; do not force one generic model if it loses meaning.
+
+## Verification
+
+Trace the actual game-specific transitions and contracts; test valid, invalid, and repeated transitions relevant to the change.
 
 ## Integration scope
 

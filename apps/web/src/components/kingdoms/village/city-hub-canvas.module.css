@@ -37,6 +37,29 @@
 .stage[data-city-composition] .hotspot:hover { background: transparent; box-shadow: none; }
 .decorativeLandmark { position: absolute; pointer-events: none; }
 .reservedSite { position: absolute; pointer-events: none; }
+.reservedSite > span {
+  position: absolute;
+  left: calc(50% + var(--label-shift-x, 0px));
+  top: calc(20% + var(--label-shift-y, 0px));
+  display: block;
+  box-sizing: border-box;
+  width: 112px;
+  height: 44px;
+  padding: 4px 8px;
+  border: 1px dashed var(--kingdoms-ui-gold);
+  border-radius: var(--radius-sm);
+  background: var(--kingdoms-ui-background);
+  color: var(--foreground);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  transform: translate(-50%, -100%) scale(calc(1 / var(--camera-scale)));
+  transform-origin: center bottom;
+  visibility: hidden;
+}
+.reservedSite small { display: block; color: var(--kingdoms-ui-gold); font-size: 10px; }
+.stage[data-labels='true'] .reservedSite[data-label-hidden='false'] > span { visibility: visible; }
 .stage[data-camera-state='BUILDING_FOCUS'] .terrain { filter: brightness(1.035); }
 /* Keep the two mountain resource sites identifiable and tappable on portrait phones. */
 @media (max-width: 700px) {
@@ -170,6 +193,15 @@
   background: color-mix(in srgb, var(--kingdoms-ui-background) 91%, transparent);
 }
 .stage[data-city-composition] .label small { font-size: 10px; }
+@media (max-width: 700px) {
+  .stage[data-city-composition='portrait'] .hotspot[data-pinned-resource='true'] .label {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .stage[data-city-composition='portrait'] .hotspot[data-pinned-resource='true'] .label small {
+    font-size: 12px;
+  }
+}
 .stage[data-city-composition] .label > svg { display: none; }
 .stage[data-city-composition] .hotspot[data-label-active='true'] .label,
 .stage[data-city-composition] .hotspot:focus-visible .label { visibility: visible; }

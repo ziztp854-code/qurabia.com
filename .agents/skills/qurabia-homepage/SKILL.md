@@ -1,6 +1,6 @@
 ---
 name: qurabia-homepage
-description: "Use for Qurabia or Tahaddi tasks specifically involving homepage. Apply the existing implementation and project conventions within the requested scope."
+description: "Improve the Qurabia homepage experience, responsive hierarchy, content, or loading performance."
 ---
 
 # Homepage
@@ -25,6 +25,10 @@ Use existing product structure; commonly:
 - subtle motion only
 - clear primary CTA
 - responsive Arabic layout
+
+## Verification
+
+Inspect existing homepage content and design direction; verify desktop and mobile rendering, primary actions, loading, and any changed motion.
 
 ## Integration scope
 

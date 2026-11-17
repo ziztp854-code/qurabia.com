@@ -4,8 +4,8 @@
   flex: 1;
   min-block-size: 0;
   min-inline-size: 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 1px solid var(--kingdoms-ui-gold);
+  border-radius: var(--radius-lg);
   background: var(--kingdoms-ui-background);
   overflow: hidden;
 }
@@ -37,6 +37,93 @@
   font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
 }
+.districtAction {
+  position: absolute;
+  z-index: 6;
+  inset-block-start: var(--space-3);
+  inset-inline-start: 50%;
+  transform: translateX(50%);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  inline-size: max-content;
+  max-inline-size: calc(100% - 24px);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--kingdoms-ui-gold);
+  border-radius: var(--radius-md);
+  background: var(--kingdoms-ui-background);
+  box-shadow: var(--shadow-lg);
+}
+.districtAction > div { display: grid; flex: 1 0 auto; min-inline-size: 0; line-height: 1.3; }
+.districtAction span { color: var(--kingdoms-ui-muted); font-size: .7rem; white-space: nowrap; }
+.districtAction strong { color: var(--foreground); font-size: .875rem; }
+.districtAction button {
+  min-block-size: 44px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--kingdoms-ui-gold);
+  border-radius: var(--radius-sm);
+  background: var(--kingdoms-ui-surface-strong);
+  color: var(--foreground);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.districtAction button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.districtAction .dismissDistrict { min-inline-size: 44px; padding: 0; border-color: transparent; background: transparent; font-size: 1.4rem; }
+.districts {
+  position: absolute;
+  z-index: 5;
+  inset-inline-end: 12px;
+  inset-block-end: 76px;
+  display: flex;
+  align-items: center;
+  max-inline-size: calc(100% - 24px);
+  gap: var(--space-1);
+}
+.districtList { display: flex; gap: var(--space-1); min-inline-size: 0; overflow-x: auto; overscroll-behavior-inline: contain; }
+.districtToggle { display: none; }
+.districtList button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  min-inline-size: 66px;
+  min-block-size: 60px;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--kingdoms-ui-gold);
+  border-radius: var(--radius-md);
+  background: linear-gradient(155deg, var(--kingdoms-ui-surface-strong), var(--kingdoms-ui-background) 65%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kingdoms-ui-gold) 20%, transparent), var(--shadow-sm);
+  color: var(--foreground);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.districtIcon {
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 30px;
+  block-size: 40px;
+  background-image: url('/game-art/kingdoms/city-hub/district-icons.webp');
+  background-size: 400% 100%;
+  background-repeat: no-repeat;
+}
+.districtIcon[data-district-icon='hall'] { background-position: 0% 50%; }
+.districtIcon[data-district-icon='barracks'] { background-position: 33.333% 50%; }
+.districtIcon[data-district-icon='farm'] { background-position: 66.667% 50%; }
+.districtIcon[data-district-icon='market'] { background-position: 100% 50%; }
+.districtList button:hover:enabled { background: var(--surface-strong); color: var(--gold); }
+.districtList button:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
+.districtList button:disabled { opacity: .5; cursor: wait; }
 .controls {
   position: absolute;
   z-index: 4;
@@ -44,19 +131,16 @@
   inset-block-end: 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-items: center;
-  padding: 4px;
-  background: var(--kingdoms-ui-surface);
-  border: 1px solid var(--border-gold);
-  border-radius: 4px;
+  padding: 0;
 }
-.controls button { padding: 0; background: transparent; border: 0; }
-.presets { display: flex; border-inline-end: 1px solid var(--border-gold); }
-.presets button { padding-inline: var(--space-2); color: var(--gold); font: inherit; font-size: .8rem; cursor: pointer; touch-action: manipulation; }
+.controls > button { padding: 0; background: var(--kingdoms-ui-background); border: 1px solid var(--kingdoms-ui-gold); border-radius: var(--radius-sm); }
+.presets { display: flex; gap: var(--space-1); }
+.presets button { flex: 0 0 auto; padding-inline: var(--space-2); border: 1px solid var(--kingdoms-ui-gold); border-radius: var(--radius-sm); background: var(--kingdoms-ui-background); color: var(--gold); font: inherit; font-size: .875rem; font-weight: 700; white-space: nowrap; cursor: pointer; touch-action: manipulation; }
 .presets button:hover { background: var(--kingdoms-ui-background); }
 .presets button:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
-.preferences { position: absolute; z-index: 6; inset-inline-start: 12px; inset-block-end: 12px; max-inline-size: min(420px, calc(100% - 24px)); background: var(--kingdoms-ui-surface); border: 1px solid var(--border-gold); border-radius: 4px; }
+.preferences { position: absolute; z-index: 6; inset-inline-start: 12px; inset-block-end: 12px; max-inline-size: min(420px, calc(100% - 24px)); background: var(--kingdoms-ui-background); border: 1px solid var(--kingdoms-ui-gold); border-radius: var(--radius-md); }
 .preferences > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 0 12px; min-block-size: 44px; font-size: .75rem; color: var(--gold); }
 .preferences[open] { max-block-size: 62dvh; overflow-y: auto; }
 .advancedControls { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
@@ -174,10 +258,13 @@
     padding: 6px 10px;
   }
   .coordinates { display: none; }
-  .controls { gap: 0; inset-inline-end: 8px; }
-  .presets { position: absolute; inset-inline-end: 0; inset-block-end: calc(100% + 8px); background: var(--kingdoms-ui-surface); border: 1px solid var(--border-gold); border-radius: var(--radius-sm); }
+  .districts { inset-inline: 8px; inset-block-end: 116px; max-inline-size: none; }
+  .districtList { inline-size: 100%; }
+  .districtList button { flex: 1 0 4rem; min-inline-size: 4rem; }
+  .controls { inset-inline-end: 8px; }
+  .presets { position: absolute; inset-inline-end: 0; inset-block-end: calc(100% + 8px); max-inline-size: calc(100vw - 72px); overflow-x: auto; }
   .preferences { inset-inline-start: 8px; }
-  .preferences > summary span { display: none; }
+  .preferences > summary > span:not([aria-hidden='true']) { display: none; }
   .settings {
     gap: var(--space-2);
   }
@@ -185,12 +272,23 @@
     flex-basis: 9rem;
   }
 }
+@media (max-width: 360px) {
+  .districts { inset-inline-end: 8px; inset-inline-start: auto; align-items: flex-end; flex-direction: column; }
+  .districtToggle { display: block; min-block-size: 44px; padding-inline: 12px; border: 1px solid var(--kingdoms-ui-gold); border-radius: var(--radius-md); background: var(--kingdoms-ui-background); color: var(--foreground); font: inherit; font-weight: 700; }
+  .districts[data-open='false'] .districtList { display: none; }
+  .districts[data-open='true'] { inset-inline-start: 8px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .scene * {
     scroll-behavior: auto;
     transition: none;
     animation: none;
   }
+}
+@media (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
+  .districtList button { flex-direction: row; min-block-size: 44px; gap: var(--space-1); }
+  .districtIcon { inline-size: 24px; block-size: 32px; }
+  .districts { inset-block-end: 68px; }
 }
 
 .incoming { position: absolute; z-index: 7; inset-block-start: calc(var(--kingdoms-hud-clearance, 52px) + 12px); inset-inline: 12px; pointer-events: none; }

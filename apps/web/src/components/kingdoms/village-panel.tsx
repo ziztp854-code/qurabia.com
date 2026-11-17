@@ -1,6 +1,6 @@
 'use client';
 
-import { Castle, Flag, Hammer, Map, ScrollText, Shield, Swords } from 'lucide-react';
+import { Hammer, Shield, Swords } from 'lucide-react';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { trainingBuilding, trainingDurationMs } from '@/lib/kingdoms/training';
@@ -9,6 +9,8 @@ import type { VillageSelection } from '@/lib/kingdoms/village/types';
 import { CommandForm, ResourceText, date, number, value, type GameProps } from './shared';
 import { type VillageNavigation } from './building-panel';
 import { VillageMap } from './village-map';
+import { NavigationIcon } from './navigation-icon';
+import { ControlIcon } from './control-icon';
 import { ConstructionQueue } from './village/construction-queue';
 import { type RallyMission } from './village/rally-panel';
 import { CityBuildingScene } from './village/city-building-scene';
@@ -120,7 +122,7 @@ export function VillagePanel({
         }
         <details className={villageStyles.queueDrawer} hidden={selectedScene !== null}>
           <summary>
-            <Hammer size={16} aria-hidden="true" />
+            <ControlIcon name="build" />
             البناء والتدريب<bdi>{number(pendingJobs)}</bdi>
           </summary>
           <section
@@ -169,7 +171,7 @@ export function VillagePanel({
         </details>
         <nav aria-label="التنقل من القرية" className={villageStyles.navigation} hidden={selectedScene !== null}>
           <button type="button" aria-label="عرض القرية" aria-pressed={!selected} onClick={close}>
-            <Castle size={20} aria-hidden="true" />
+            <NavigationIcon name="village" />
             <span>القرية</span>
           </button>
           <button
@@ -178,7 +180,7 @@ export function VillagePanel({
             disabled={!onNavigate}
             onClick={() => onNavigate?.('map')}
           >
-            <Map size={20} aria-hidden="true" />
+            <NavigationIcon name="map" />
             <span>العالم</span>
           </button>
           <button
@@ -187,7 +189,7 @@ export function VillagePanel({
             disabled={!onNavigate}
             onClick={() => onNavigate?.('army')}
           >
-            <Swords size={20} aria-hidden="true" />
+            <NavigationIcon name="army" />
             <span>الجيش</span>
           </button>
           <button
@@ -196,7 +198,7 @@ export function VillagePanel({
             disabled={!onNavigate}
             onClick={() => onNavigate?.('reports')}
           >
-            <ScrollText size={20} aria-hidden="true" />
+            <NavigationIcon name="reports" />
             <span>التقارير</span>
           </button>
           <button
@@ -205,7 +207,7 @@ export function VillagePanel({
             disabled={!onNavigate}
             onClick={() => onNavigate?.('alliances')}
           >
-            <Flag size={20} aria-hidden="true" />
+            <NavigationIcon name="alliances" />
             <span>التحالف</span>
           </button>
         </nav>

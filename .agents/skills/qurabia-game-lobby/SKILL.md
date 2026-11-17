@@ -1,6 +1,6 @@
 ---
 name: qurabia-game-lobby
-description: "Use for Qurabia or Tahaddi tasks specifically involving game lobby. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on multiplayer lobby participants, readiness, settings, host changes, or reconnect behavior."
 ---
 
 # Game Lobby
@@ -33,6 +33,10 @@ Create a reusable multiplayer lobby.
 - Handle reconnects.
 - Mobile/touch friendly.
 - Motion must not control state.
+
+## Verification
+
+Test the affected server-authoritative lobby transition, duplicate events, and reconnect state through existing contracts.
 
 ## Integration scope
 

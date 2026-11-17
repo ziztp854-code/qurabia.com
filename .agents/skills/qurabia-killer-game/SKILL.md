@@ -1,6 +1,6 @@
 ---
 name: qurabia-killer-game
-description: "Use for Qurabia or Tahaddi tasks specifically involving killer / social deduction game. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia social-deduction game phases, private role presentation, voting, or reconnects."
 ---
 
 # Killer / Social Deduction Game
@@ -29,6 +29,10 @@ Do not expose hidden roles or private actions in general client state unnecessar
 - winner reveal
 
 Avoid violent or graphic elimination visuals.
+
+## Verification
+
+Trace authorization and projected state for each affected role; test that private roles and actions are not disclosed to other clients.
 
 ## Integration scope
 

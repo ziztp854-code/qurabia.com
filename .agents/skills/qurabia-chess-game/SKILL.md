@@ -1,6 +1,6 @@
 ---
 name: qurabia-chess-game
-description: "Use for Qurabia or Tahaddi tasks specifically involving chess game. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia chess board interaction, legal-move feedback, clocks, or synchronization."
 ---
 
 # Chess Game
@@ -21,6 +21,10 @@ Keep chess interaction clear and fast.
 
 Motion should never obscure the board.
 Do not add decorative board movement that reduces usability.
+
+## Verification
+
+Test legal and rejected moves, turn feedback, and the relevant reconnect or timer behavior through the existing game contract.
 
 ## Integration scope
 

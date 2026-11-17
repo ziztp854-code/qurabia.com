@@ -1,6 +1,6 @@
 ---
 name: qurabia-seo-sharing
-description: "Use for Qurabia or Tahaddi tasks specifically involving seo & social sharing. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on metadata, indexing, canonical URLs, or social previews for public Qurabia pages."
 ---
 
 # SEO & Social Sharing
@@ -17,6 +17,10 @@ Use for public pages only.
 - structured data only when accurate
 
 Do not expose private room/game pages to indexing.
+
+## Verification
+
+Inspect rendered metadata and indexing rules for the affected public route; ensure private room and game data is not exposed.
 
 ## Integration scope
 

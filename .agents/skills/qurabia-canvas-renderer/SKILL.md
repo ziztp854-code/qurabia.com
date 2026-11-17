@@ -1,6 +1,6 @@
 ---
 name: qurabia-canvas-renderer
-description: "Use for Qurabia or Tahaddi tasks specifically involving canvas frame renderer. Apply the existing implementation and project conventions within the requested scope."
+description: "Implement or debug Qurabia canvas rendering for image sequences, resizing, frame loading, and cleanup."
 ---
 
 # Canvas Frame Renderer
@@ -17,6 +17,10 @@ Efficiently render image-frame sequences.
 - cancel stale loads
 - release references on cleanup
 - avoid rendering when frame did not change
+
+## Verification
+
+Check resizing and device pixel ratio, loading/fallback behavior, reduced motion, and cleanup in the affected renderer; measure performance before optimizing.
 
 ## Integration scope
 

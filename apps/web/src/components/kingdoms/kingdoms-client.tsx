@@ -30,6 +30,7 @@ import { ReportsPanel } from './reports-panel';
 import { KingdomOverview } from './kingdom-overview';
 import { VillageResourceStock } from './village-resource-stock';
 import { VillageHero } from './village-hero';
+import { NavigationIcon } from './navigation-icon';
 import { villagePopulation } from '@/lib/kingdoms/population';
 import { unitKeys } from '@/lib/kingdoms/types';
 import type { VillageSelection } from '@/lib/kingdoms/village/types';
@@ -454,8 +455,7 @@ export function KingdomsClient({
               </p>
               <nav className={styles.mobileNavigation} aria-label="تنقل المملكة">
                 {mobileTabs.map(({ key, label }) => {
-                  const Icon = tabIcons[key];
-                  const content = <><Icon size={22} aria-hidden="true" /><span>{label}</span></>;
+                  const content = <><NavigationIcon name={key} /><span>{label}</span></>;
                   if (key === 'map') return (
                     <Link key={key} href={mapHref} aria-label={`انتقل إلى ${label}`} onClick={touchFeedback}>
                       {content}

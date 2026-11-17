@@ -1,6 +1,6 @@
 ---
 name: qurabia-subscriptions
-description: "Use for Qurabia or Tahaddi tasks specifically involving subscriptions. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia subscription presentation, billing state, or server-authoritative entitlements."
 ---
 
 # Subscriptions
@@ -30,6 +30,10 @@ Implement paid membership without pay-to-win.
 - billing/manage subscription views
 
 Use real plan names/prices/features from project configuration or backend.
+
+## Verification
+
+Verify actual plan data and server entitlement state, including pending or expired cases; do not add competitive advantages.
 
 ## Integration scope
 

@@ -1,6 +1,6 @@
 ---
 name: qurabia-question-games
-description: "Use for Qurabia or Tahaddi tasks specifically involving question games. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on Qurabia quiz or question-game timers, answer states, submissions, or score presentation."
 ---
 
 # Question Games
@@ -24,6 +24,10 @@ Lobby
 - clear selected/locked/correct/wrong states
 - accessible keyboard/touch interaction
 - animated score may visualize state but not determine it
+
+## Verification
+
+Test server-authoritative timer and answer transitions, duplicate submission handling, and accessible selected/locked feedback.
 
 ## Integration scope
 

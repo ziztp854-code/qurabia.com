@@ -10,6 +10,16 @@ Read `design.md`, `docs/design-system.md`, relevant local skills, and the affect
 
 Shared standards govern quality and behavior; game-specific tokens and art direction govern identity. The platform shell, Kingdoms village, and Mamluk map may have different palettes, surfaces, ornament, and composition. Do not replace every game with one gold/card template.
 
+## Mandatory realism and clarity standard
+
+This is a permanent acceptance requirement for new or modified visual work across Qurabia, including sites, apps, games, scenes, buildings, icons, and interactive UI. Apply it to the requested surface; it does not authorize unrelated changes. The current user request and root `AGENTS.md` retain precedence.
+
+- Reject cartoon, childlike, toy-like, comic, chibi, cel-shaded, and stylized-cartoon visuals, icons, buttons, and decoration. Use a premium photorealistic direction with high-fidelity 3D where appropriate, realistic materials, coherent professional lighting and shadows, and a polished realistic UI. Do not sacrifice usability or performance for effects.
+- Each function must have its own recognizable, professional, realistic icon and separate button or container. Keep visible spacing between buttons, including those in navigation bars; do not merge or touch their borders. Preserve correct Arabic labels, consistent icon treatment, clear interactive states, accessibility, and small-size legibility.
+- For village scenes, favor an oblique overhead, sufficiently wide view that makes important buildings recognizable and accessible. Avoid crowding, overlapping, or hiding buildings behind trees, decoration, or UI; keep paths organized, future building space clear, and pan and zoom usable.
+- When developing a village scene, keep the palace proportionate and distinctive. Reduce its relative visual size when needed; remove the long central fountain and other decorative water features that obstruct building space. Provide distinct visible sites for the blacksmith, stable, academy, and barracks, make the market, farms, storage, and resource facilities clear, and retain space for future expansion. Do not alter gameplay, authoritative placements, paths, reserved areas, or hit-target correspondence as a visual shortcut.
+- Verify affected desktop and mobile states, RTL, readable contrast, touch targets, asset loading, and performance. A violation in the requested visual surface blocks acceptance: fix it and recheck, or report the result as needing revision or unverified when it cannot be verified. Do not claim tests or inspection that did not occur.
+
 | Surface | Inspect first |
 | --- | --- |
 | Shared identity and UI | `apps/web/tokens.css`, `apps/web/src/app/globals.css`, `apps/web/src/components/ui` |
@@ -23,7 +33,7 @@ Shared standards govern quality and behavior; game-specific tokens and art direc
 - Define primary/secondary accents, restrained gradients when appropriate, text/surface pairs, borders, focus, hover/pressed, disabled, loading, selected, warning, success, and error states. Do not rely on color alone.
 - Use the installed Arabic font system and logical CSS properties. Check joined Arabic glyphs, line height, diacritics, long labels, mixed Arabic/numerals, tabular resource counters, and RTL reading order. Functional text takes priority over ornament.
 - Reuse spacing/radius/type scales, container widths, and z-index tokens. Align to a deliberate grid; use consistent density rather than equally sized generic cards for all content.
-- Use one icon family per surface with consistent stroke, size, and optical alignment. Label icon-only controls; mirror directional navigation only when its meaning requires it.
+- Use a coherent realistic icon family per surface with consistent scale, materials, and optical alignment. Label icon-only controls; mirror directional navigation only when its meaning requires it.
 - Reuse shared buttons, labels, panels, dialogs, tabs, and states before creating variants. Keep keyboard focus, disabled/loading behavior, and accessible names intact.
 - Make light, shadow, material, and depth coherent with the scene. Decoration must support hierarchy and legibility. Add no expensive blur, particles, animation, or postprocessing solely to appear premium.
 - Define mobile and desktop behavior explicitly, including overflow, controls, safe areas, overlays, and long text. Keep touch targets at least 44 × 44 CSS pixels. Respect reduced motion.
@@ -45,7 +55,7 @@ Use existing fixture/regression tooling first, such as `playwright.village-scene
 
 ## Kingdoms and Mamluk art/asset acceptance
 
-- Preserve recognizable building silhouettes, visual tier differences, placement/hit targets, camera direction, ground plane, consistent scale, horizon/perspective, and a coherent light source. Do not move geometry or alter paths to change gameplay.
+- Preserve recognizable building silhouettes, visual tier differences, authoritative placements and hit-target correspondence, camera behavior, ground plane, consistent scale, horizon/perspective, and a coherent light source. Scene presentation may be refined within the requested scope without changing gameplay geometry or paths.
 - Inspect textures, alpha edges, light/shadow contact, repeated/generic imagery, stretched perspective, blocked labels, and distinctive landmarks at normal and maximum supported zoom. Check that scene overlays remain legible without flattening the art.
 - Record original encoded pixel dimensions, delivered dimensions/format/bytes, CSS display dimensions, DPR, and zoom. A larger export of a small original is not new detail. Never claim 4K/8K from filenames, upscaling, viewport size, or CSS size.
 - Preserve high-quality masters where appropriate; serve measured WebP/AVIF variants with correct MIME types, responsive size selection, fallback, and intrinsic aspect ratio. Verify decode/display in supported browsers. Do not eagerly load every high-resolution variant on mobile.
@@ -74,7 +84,7 @@ The final target is **95/100 or higher**. This is an internal judgment backed by
 
 Contrast minimums: WCAG AA 4.5:1 for normal text, 3:1 for large text, and 3:1 for required control/focus boundaries against adjacent surfaces. Sample real colors, including image/gradient backgrounds; a uniform-token calculation cannot prove every composited background.
 
-**Acceptance blockers override any score:** unreadable or clipped essential information, failed core interactions, inaccessible controls/focus, broken RTL, impactful mobile overflow, missing required browser evidence, visibly damaged/stretched essential assets, or material loading/FPS regressions. Report `needs revision` for blockers or scores below 95; report `unverified` for incomplete evidence. Never inflate the score to close the task. A polished but limited pilot may be delivered with its honest score and remaining work.
+**Acceptance blockers override any score:** violations of the mandatory realism and clarity standard, unreadable or clipped essential information, failed core interactions, inaccessible controls/focus, broken RTL, impactful mobile overflow, missing required browser evidence, visibly damaged/stretched essential assets, or material loading/FPS regressions. Report `needs revision` for blockers or scores below 95; report `unverified` for incomplete evidence. Never inflate the score to close the task. A polished but limited pilot may be delivered with its honest score and remaining work.
 
 ## Tool/skill review before adding dependencies
 

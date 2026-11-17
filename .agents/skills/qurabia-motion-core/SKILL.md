@@ -1,6 +1,6 @@
 ---
 name: qurabia-motion-core
-description: "Use for Qurabia or Tahaddi tasks specifically involving motion core. Apply the existing implementation and project conventions within the requested scope."
+description: "Work on shared Qurabia motion tokens, transitions, timing, or reduced-motion behavior."
 ---
 
 # Motion Core
@@ -21,6 +21,10 @@ Provide reusable motion primitives across Qurabia.
 Motion explains state changes.
 CSS for simple micro-interactions.
 GSAP for coordinated timelines and complex SVG/sequence work.
+
+## Verification
+
+Verify cleanup and reduced-motion behavior and confirm animations visualize state without controlling game timing.
 
 ## Integration scope
 
