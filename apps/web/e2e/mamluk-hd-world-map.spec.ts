@@ -50,10 +50,12 @@ async function signIn(page: Page, world: string, local = false) {
   await page.getByLabel('البريد الإلكتروني').fill('mamluk-map@example.test');
   await page.locator('input[name="password"]').fill('MamlukMapTestOnly42!');
   await page.getByRole('button', { name: 'دخول بالبريد', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'خريطة العالم', level: 1 })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'أطلس قرابية', level: 1 })).toBeVisible({
     timeout: 60000,
   });
-  await expect(page.getByRole('combobox', { name: 'العالم', exact: true })).toHaveValue(world);
+  await expect(
+    page.locator(`[data-world-id="${world}"], select:has(option:checked[value="${world}"])`),
+  ).toBeVisible();
   await ready(page);
 }
 async function click(page: Page, name: string) {

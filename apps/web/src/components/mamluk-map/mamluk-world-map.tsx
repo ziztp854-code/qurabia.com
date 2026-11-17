@@ -400,7 +400,7 @@ function WorldScene({
           </div>
         </div>
         {worlds.length === 1 ? (
-          <p className={styles.currentWorld}>
+          <p className={styles.currentWorld} data-world-id={worldId}>
             <span>العالم</span>
             <strong>{worlds[0].name}</strong>
           </p>

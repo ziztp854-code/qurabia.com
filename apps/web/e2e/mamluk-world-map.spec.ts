@@ -85,7 +85,7 @@ async function signIn(page: Page): Promise<void> {
   await page.locator('input[name="password"]').fill('MamlukMapTestOnly42!');
   await page.getByRole('button', { name: 'دخول بالبريد', exact: true }).click();
   await expect(page).toHaveURL(/\/games\/kingdoms\/world-map\/?$/);
-  await expect(page.getByRole('heading', { name: 'خريطة العالم', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'أطلس قرابية', level: 1 })).toBeVisible();
 }
 
 function checkPayload(payload: MapPayload, requestUrl: string): void {
@@ -464,7 +464,7 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
   checkPublicAtlasPayload(payload, response.url());
   expect((await tileResponse).status()).toBe(200);
   await checkPhysicalResources();
-  await expect(page.getByRole('heading', { name: 'خريطة العالم', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'أطلس قرابية', level: 1 })).toBeVisible();
   await expect(
     page.getByText('أطلس جغرافي · مدن مصر والشام والحجاز', { exact: true }),
   ).toBeVisible();
@@ -473,9 +473,11 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'العالم', exact: true })).toHaveValue(
-    publicAtlasWorld,
-  );
+  await expect(
+    page.locator(
+      `[data-world-id="${publicAtlasWorld}"], select:has(option:checked[value="${publicAtlasWorld}"])`,
+    ),
+  ).toBeVisible();
   await expect(page.getByRole('status').filter({ hasText: 'مدن الأطلس الجغرافي' })).toBeVisible();
   await expect(page.getByText('رؤيتك الحالية', { exact: true })).toHaveCount(0);
   await expect(
@@ -626,9 +628,11 @@ test('real globe, authorized panels and bounded loading work on desktop and mobi
     'aria-pressed',
     'true',
   );
-  await expect(page.getByRole('combobox', { name: 'العالم', exact: true })).toHaveValue(
-    fixtureWorld,
-  );
+  await expect(
+    page.locator(
+      `[data-world-id="${fixtureWorld}"], select:has(option:checked[value="${fixtureWorld}"])`,
+    ),
+  ).toBeVisible();
   expect(initial.layers.cities.features.some((feature) => feature.id === 'cairo')).toBe(true);
   expect(initial.layers.castles.features.some((feature) => feature.id === 'cairo-citadel')).toBe(
     true,
