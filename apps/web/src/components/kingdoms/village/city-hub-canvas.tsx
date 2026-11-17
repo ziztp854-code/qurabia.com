@@ -172,7 +172,9 @@ export const CityHubCanvas = forwardRef<VillageSceneHandle, VillageCanvasProps>(
       const visible = new Set(visibleVillageLabels(anchors, snapshot, active, blockedAreas, topInset, labelDensity.current));
       const pinnedPositions = new Map<string, { x: number; y: number }>();
       if (cityEnabled && compositionRef.current === 'portrait') {
-        const occupied = [...blockedAreas, ...anchors.map(({ id }) => {
+        // Reserved sites are non-interactive; prioritize visible resource labels over
+        // reserving touch clearance around these future building locations.
+        const occupied = [...blockedAreas, ...anchors.filter(({ id }) => id !== 'knowledge' && id !== 'blacksmith').map(({ id }) => {
           const area = rect(id as Parameters<typeof getVillageRect>[0]);
           const point = projectPoint({ x: area.x + area.width / 2, y: area.y + area.height / 2 }, snapshot);
           return { x: point.x - 12, y: point.y - 12, width: 24, height: 24 };

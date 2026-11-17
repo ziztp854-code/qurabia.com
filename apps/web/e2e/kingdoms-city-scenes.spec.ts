@@ -66,6 +66,22 @@ const pixelFrame = async (page: Page) => {
 };
 const frameHash = (buffer: Buffer) => createHash('sha256').update(buffer).digest('hex');
 
+test('narrow phone can open a district without covering the village by default', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true, reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  await page.goto('/');
+  await readyHub(page);
+  const nav = page.getByRole('navigation', { name: 'استكشاف مناطق القرية' });
+  const toggle = nav.getByRole('button', { name: 'مناطق القرية' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await nav.getByRole('button', { name: 'عرض القصر' }).click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('region', { name: 'المبنى المختار' })).toBeVisible();
+  await context.close();
+});
+
 for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as const) {
   test(`vacant academy and blacksmith courtyards preserve touch navigation and progress at ${width}x${height}`, async ({ browser, request }, testInfo) => {
     const context = await browser.newContext({ viewport: {width,height}, hasTouch: true, isMobile: width < 1000, deviceScaleFactor: 3, reducedMotion: 'reduce' });
@@ -84,8 +100,8 @@ for (const [width, height] of [[1440,900],[320,568],[390,844],[844,390]] as cons
       }
     }
     const overview = await stage.evaluate((element: HTMLElement) => ({x:element.dataset.cameraX,y:element.dataset.cameraY,zoom:element.dataset.zoom}));
-      await expect(stage.locator('[data-reserved-site] > span')).toHaveCount(0);
-      await expect(stage.locator('[data-sultan-garden-entrance] > *')).toHaveCount(0);
+    await expect(stage.locator('[data-reserved-site] > span')).toHaveCount(2);
+    await expect(stage.locator('[data-sultan-garden-entrance] > *')).toHaveCount(0);
     for (const id of ['knowledge','blacksmith']) {
       const site = stage.locator(`[data-reserved-site="${id}"]`);
       await expect(site).toBeVisible();
@@ -426,11 +442,14 @@ test('phone HTML fallback keeps vacant sites and palace embassy garden barracks 
   await expect(stage).toHaveAttribute('data-pixi-ready','false');
   for(const id of ['knowledge','blacksmith']) {
     const box=(await stage.locator(`[data-reserved-site="${id}"]`).boundingBox())!;
+    // Keep independent taps outside the village's double-tap zoom interval.
+    await page.waitForTimeout(550);
     await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
     await expect(page.locator('[data-city-scene]')).toHaveCount(0);
   }
   for(const [id,scene] of [['hall','palace'],['embassy','embassy'],['barracks','barracks']]) {
     const box=(await stage.locator(`[data-building="${id}"]`).boundingBox())!;
+    await page.waitForTimeout(550);
     await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
     await expect(page.locator(`[data-city-scene="${scene}"]`)).toBeVisible();
     await back(page);

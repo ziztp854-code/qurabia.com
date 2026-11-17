@@ -64,6 +64,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
   const [quality, setQuality] = useState<VillageQuality>('auto');
   const [labels, setLabels] = useState(!dedicatedNavigation);
   const [focusedDistrict, setFocusedDistrict] = useState<{ target: VillageSelection; label: string } | null>(null);
+  const [districtsOpen, setDistrictsOpen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
   const [debug, setDebug] = useState<VillageDebugOptions>({});
@@ -132,7 +133,8 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
         </div>
       )}
       {dedicatedNavigation && (
-        <nav className={styles.districts} aria-label="استكشاف مناطق القرية">
+        <nav className={styles.districts} aria-label="استكشاف مناطق القرية" data-open={districtsOpen}>
+          <button type="button" className={styles.districtToggle} aria-expanded={districtsOpen} onClick={() => setDistrictsOpen((open) => !open)}>مناطق القرية</button>
           <div className={styles.districtList}>
             {([
               ['hall', 'القصر'],
@@ -140,7 +142,7 @@ export function VillageScene({ view, village, selected, onSelect, onWorldMap, on
               ['farm', 'المزارع'],
               ['market', 'السوق'],
             ] as const).map(([target, label]) => (
-              <button key={target} type="button" aria-label={`عرض ${label}`} disabled={!ready} onClick={() => { setFocusedDistrict({ target, label }); scene.current?.focusOn(target); }}>
+              <button key={target} type="button" aria-label={`عرض ${label}`} disabled={!ready} onClick={() => { setDistrictsOpen(false); setFocusedDistrict({ target, label }); scene.current?.focusOn(target); }}>
                 <span className={styles.districtIcon} data-district-icon={target} aria-hidden="true" /><span>{label}</span>
               </button>
             ))}

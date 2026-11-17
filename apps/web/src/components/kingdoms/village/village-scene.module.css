@@ -85,6 +85,7 @@
   gap: var(--space-1);
 }
 .districtList { display: flex; gap: var(--space-1); min-inline-size: 0; overflow-x: auto; overscroll-behavior-inline: contain; }
+.districtToggle { display: none; }
 .districtList button {
   display: flex;
   flex-direction: column;
@@ -270,6 +271,12 @@
   .settings > div {
     flex-basis: 9rem;
   }
+}
+@media (max-width: 360px) {
+  .districts { inset-inline-end: 8px; inset-inline-start: auto; align-items: flex-end; flex-direction: column; }
+  .districtToggle { display: block; min-block-size: 44px; padding-inline: 12px; border: 1px solid var(--kingdoms-ui-gold); border-radius: var(--radius-md); background: var(--kingdoms-ui-background); color: var(--foreground); font: inherit; font-weight: 700; }
+  .districts[data-open='false'] .districtList { display: none; }
+  .districts[data-open='true'] { inset-inline-start: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .scene * {
