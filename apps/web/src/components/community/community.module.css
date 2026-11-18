@@ -334,11 +334,6 @@
 .tabContent {
   min-inline-size: 0;
 }
-.overviewGrid {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: var(--space-5);
-}
 .panel {
   display: grid;
   align-content: start;
@@ -378,40 +373,6 @@
   color: var(--muted-foreground);
   font-size: 0.85rem;
   line-height: 1.9;
-}
-.roomList {
-  display: grid;
-  gap: var(--space-3);
-}
-.roomList > a {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-block-size: 66px;
-  padding: var(--space-3);
-  background: var(--muted);
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-}
-.roomList > a > svg {
-  color: var(--info);
-  flex-shrink: 0;
-}
-.roomList > a > span {
-  display: grid;
-  gap: var(--space-1);
-  min-inline-size: 0;
-}
-.roomList strong {
-  overflow-wrap: anywhere;
-}
-.roomList small {
-  color: var(--muted-foreground);
-}
-.roomList bdi {
-  margin-inline-start: auto;
-  font-size: 0.75rem;
-  color: var(--primary);
 }
 .badgeGrid,
 .cosmeticGrid {
@@ -776,7 +737,6 @@
     padding-inline: var(--space-3);
     flex: 1 1 auto;
   }
-  .overviewGrid,
   .fieldsGrid,
   .previewColumn {
     grid-template-columns: minmax(0, 1fr);

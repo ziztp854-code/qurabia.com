@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog } from '@/components/ui/overlay';
-import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
+import { EntranceEffectPreview } from './entrance-effect';
 import type {
   AdminCommunityData,
   CommunityBadge,

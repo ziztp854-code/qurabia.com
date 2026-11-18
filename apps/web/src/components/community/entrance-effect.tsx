@@ -2,10 +2,9 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import { RealBadgeArtwork, RealEntranceArtwork } from '@/components/community/realistic-art';
+import { RealBadgeArtwork, RealEntranceArtwork } from './realistic-art';
 import type { EntranceTier } from '@/lib/community/contracts';
-import type { EntranceAnnouncement } from './entrance-queue';
-import styles from './voice.module.css';
+import styles from './entrance-effect.module.css';
 
 const TIER_LABELS: Record<EntranceTier, string> = {
   ordinary: 'أهلًا بك',
@@ -70,20 +69,5 @@ export function EntranceEffectPreview({
         )}
       </span>
     </RealEntranceArtwork>
-  );
-}
-
-export function EntranceOverlay({
-  announcement,
-  subdued,
-}: {
-  announcement: EntranceAnnouncement | null;
-  subdued: boolean;
-}) {
-  if (!announcement) return null;
-  return (
-    <div className={styles.entranceOverlay} role="status" aria-live="polite" key={announcement.id}>
-      <EntranceEffectPreview {...announcement} subdued={subdued} />
-    </div>
   );
 }

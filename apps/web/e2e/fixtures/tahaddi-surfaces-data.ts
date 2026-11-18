@@ -22,7 +22,7 @@ export const profile: PublicProfile = {
   isSelf: false,
   cosmetics: [],
   achievements: [],
-  rooms: [{ id: 'sara-room', name: 'جلسة نقاش حرة', roomNumber: 124, role: 'OWNER' }],
+  rooms: [],
   appearance: {
     frameId: null,
     effectId: null,

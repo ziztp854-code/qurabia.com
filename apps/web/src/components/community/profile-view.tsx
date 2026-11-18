@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Award,
   CalendarDays,
-  Radio,
   Settings2,
   Shield,
   Sparkles,
@@ -24,7 +23,7 @@ import {
   previewImageUrl,
 } from './community-ui';
 import { RealFrameArtwork } from './realistic-art';
-import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
+import { EntranceEffectPreview } from './entrance-effect';
 import styles from './community.module.css';
 import material from '@/components/ui/royal-material.module.css';
 import portrait from './profile-portrait.module.css';
@@ -228,64 +227,29 @@ export function CommunityProfilePage({
         aria-label={tabs.find((item) => item.id === tab)?.label}
       >
         {tab === 'overview' && (
-          <div className={styles.overviewGrid}>
-            <article className={styles.panel}>
-              <p className={styles.eyebrow}>ما وراء الاسم</p>
-              <h2>عنّي</h2>
-              <p className={styles.bio}>{profile.bio || 'لم يضف هذا العضو نبذة شخصية بعد.'}</p>
-              <p className={styles.meta}>
-                <CalendarDays size={18} aria-hidden="true" /> انضم في{' '}
-                {new Intl.DateTimeFormat('ar-SA', {
-                  dateStyle: 'long',
-                  calendar: 'gregory',
-                }).format(new Date(profile.joinedAt))}
-              </p>
-              <p className={styles.meta}>
-                <Shield size={18} aria-hidden="true" />
-                {profile.visibility === 'PUBLIC'
-                  ? 'ملف عام'
-                  : profile.visibility === 'MEMBERS'
-                    ? 'للأعضاء المسجلين'
-                    : 'ملف خاص'}
-              </p>
-              {profile.xp === 0 && (
-                <p className={styles.muted}>لم تُسجّل نقاط خبرة لهذا الحساب بعد.</p>
-              )}
-            </article>
-            <article className={styles.panel}>
-              <p className={styles.eyebrow}>المجلس الذي أنتمي إليه</p>
-              <h2>
-                <Radio size={21} aria-hidden="true" /> الغرف
-              </h2>
-              {profile.showRooms && profile.rooms.length ? (
-                <div className={styles.roomList}>
-                  {profile.rooms.map((room) => (
-                    <a
-                      key={room.id}
-                      href={
-                        room.href && /^\/community-voice\//.test(room.href)
-                          ? room.href
-                          : `/community-voice/${encodeURIComponent(room.id)}`
-                      }
-                    >
-                      <Radio size={19} aria-hidden="true" />
-                      <span>
-                        <strong>{room.name}</strong>
-                        <small>{room.role === 'OWNER' ? 'صاحب الغرفة' : 'مشرف الغرفة'}</small>
-                      </span>
-                      <bdi dir="ltr">#{room.roomNumber}</bdi>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.muted}>
-                  {profile.showRooms
-                    ? 'لا توجد غرف معروضة لهذا العضو.'
-                    : 'قائمة الغرف مخفية بحسب إعدادات الخصوصية.'}
-                </p>
-              )}
-            </article>
-          </div>
+          <article className={styles.panel}>
+            <p className={styles.eyebrow}>ما وراء الاسم</p>
+            <h2>عنّي</h2>
+            <p className={styles.bio}>{profile.bio || 'لم يضف هذا العضو نبذة شخصية بعد.'}</p>
+            <p className={styles.meta}>
+              <CalendarDays size={18} aria-hidden="true" /> انضم في{' '}
+              {new Intl.DateTimeFormat('ar-SA', {
+                dateStyle: 'long',
+                calendar: 'gregory',
+              }).format(new Date(profile.joinedAt))}
+            </p>
+            <p className={styles.meta}>
+              <Shield size={18} aria-hidden="true" />
+              {profile.visibility === 'PUBLIC'
+                ? 'ملف عام'
+                : profile.visibility === 'MEMBERS'
+                  ? 'للأعضاء المسجلين'
+                  : 'ملف خاص'}
+            </p>
+            {profile.xp === 0 && (
+              <p className={styles.muted}>لم تُسجّل نقاط خبرة لهذا الحساب بعد.</p>
+            )}
+          </article>
         )}
         {(tab === 'badges' || tab === 'achievements') && (
           <article className={styles.panel}>

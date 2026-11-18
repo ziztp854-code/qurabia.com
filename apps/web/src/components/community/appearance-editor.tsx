@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Check, Eye, LockKeyhole, Save, Settings2, Sparkles } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/button';
-import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
+import { EntranceEffectPreview } from './entrance-effect';
 import type {
   AppearanceSelection,
   CosmeticKind,
@@ -78,7 +78,6 @@ function AppearanceForm({
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? '');
   const [coverUrl, setCoverUrl] = useState(profile.coverUrl ?? '');
   const [visibility, setVisibility] = useState(profile.visibility);
-  const [showRooms, setShowRooms] = useState(profile.showRooms);
   const [showCollection, setShowCollection] = useState(profile.showCollection);
   const [appearance, setAppearance] = useState(profile.appearance);
   const [settings, setSettings] = useState(initialData.settings);
@@ -116,7 +115,6 @@ function AppearanceForm({
           avatarUrl: avatarUrl.trim() || null,
           coverUrl: coverUrl.trim() || null,
           visibility,
-          showRooms,
           showCollection,
           appearance,
           ...settings,
@@ -285,14 +283,6 @@ function AppearanceForm({
               </select>
             </label>
             <div className={styles.checks}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showRooms}
-                  onChange={(event) => setShowRooms(event.target.checked)}
-                />{' '}
-                عرض الغرف التي أملكها أو أديرها
-              </label>
               <label>
                 <input
                   type="checkbox"

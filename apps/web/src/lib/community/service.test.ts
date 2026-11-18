@@ -37,7 +37,6 @@ const mocks = vi.hoisted(() => {
       voicePreference: model(),
       auditLog: model(),
       $transaction: vi.fn(),
-      $queryRaw: vi.fn(),
     },
   };
 });
@@ -123,7 +122,6 @@ beforeEach(() => {
     'auditLog',
   ] as const)
     mocks.db[name].findMany.mockResolvedValue([]);
-  mocks.db.$queryRaw.mockResolvedValue([]);
   mocks.preferences.mockResolvedValue({ following: [], blockedUsers: [], privateProfile: false });
   mocks.socialCounts.mockResolvedValue({ followers: 0, following: 0 });
   mocks.db.voicePreference.upsert.mockResolvedValue({
@@ -387,7 +385,7 @@ describe('community server authority', () => {
     expect(JSON.stringify(identity)).not.toContain('base64');
     expect(identity?.avatarUrl).toContain('/api/community/assets/avatar/123456789');
   });
-  it('hides private uploaded assets from outsiders and never shares private covers', async () => {
+  it('hides private avatars and covers from other members', async () => {
     mocks.session.mockResolvedValue(null);
     mocks.db.user.findUnique.mockResolvedValue({
       ...row(),
@@ -408,34 +406,18 @@ describe('community server authority', () => {
         : {
             ...row(),
             tokenVersion: 3,
-            profile: { visibility: 'PRIVATE', coverUrl: 'data:image/png;base64,AAAA' },
+            profile: {
+              visibility: 'PRIVATE',
+              avatarUrl: 'data:image/png;base64,AAAA',
+              coverUrl: 'data:image/png;base64,AAAA',
+            },
           },
     );
     await expect(getCommunityRaster('cover', '123456789')).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
-    expect(mocks.db.$queryRaw).not.toHaveBeenCalled();
-  });
-
-  it('requires an active mesh room to share a private avatar with another member', async () => {
-    mocks.db.user.findUnique.mockImplementation(async ({ where }) =>
-      where.id === actor.id
-        ? actor
-        : {
-            ...row(),
-            tokenVersion: 3,
-            profile: { visibility: 'PRIVATE', avatarUrl: 'data:image/png;base64,AAAA' },
-          },
-    );
-    mocks.db.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ allowed: 1 }]);
     await expect(getCommunityRaster('avatar', '123456789')).rejects.toMatchObject({
       code: 'NOT_FOUND',
-    });
-    expect(mocks.db.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(mocks.db.$queryRaw.mock.calls[0]?.[0].join('')).toContain('"CommunityVoiceRoom"');
-    await expect(getCommunityRaster('avatar', '123456789')).resolves.toMatchObject({
-      mime: 'image/png',
-      privateAsset: true,
     });
   });
 

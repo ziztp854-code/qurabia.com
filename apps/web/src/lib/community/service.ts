@@ -222,18 +222,10 @@ async function profileFor(row: IdentityRow, viewerId: string | null): Promise<Pu
   const db = getPrismaClient();
   const state = await resolve(row);
   const self = viewerId === row.id;
-  const [counts, targetPreferences, viewerPreferences, rooms] = await Promise.all([
+  const [counts, targetPreferences, viewerPreferences] = await Promise.all([
     profileSocialCounts(row.id),
     getSocialPreferences(row.id),
     viewerId ? getSocialPreferences(viewerId) : null,
-    self || row.profile?.showRooms !== false
-      ? db.$queryRaw<{ id: string; name: string; code: string; role: string }[]>`
-        SELECT r.id,r.name,r.code,CASE WHEN r."ownerId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role,r."createdAt"
-        FROM "CommunityVoiceRoom" r WHERE r.status='OPEN' AND (r."ownerId"=${row.id} OR EXISTS (
-          SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${row.id}
-            AND m->>'role'='MODERATOR' AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000
-        )) ORDER BY "createdAt" DESC LIMIT 20`
-      : [],
   ]);
   const xp = row.profile?.xp ?? 0;
   const planCode = await getDisplayPlanCode(db, row.id, row.role);
@@ -259,13 +251,7 @@ async function profileFor(row: IdentityRow, viewerId: string | null): Promise<Pu
     isSelf: self,
     cosmetics: self || row.profile?.showCollection !== false ? state.owned : [],
     achievements: state.badges.filter((b) => b.category === 'ACHIEVEMENT'),
-    rooms: rooms.map((room) => ({
-      id: room.id,
-      name: room.name,
-      roomNumber: Number(room.code),
-      href: `/community-voice/${encodeURIComponent(room.id)}`,
-      role: room.role,
-    })),
+    rooms: [], // Keep the profile response compatible with clients from before room retirement.
     appearance: state.appearance,
     activeAppearance: state.activeAppearance,
     showRooms: row.profile?.showRooms ?? true,
@@ -642,7 +628,6 @@ export async function getCommunityRaster(kind: string, id: string) {
       select: {
         id: true,
         status: true,
-        tokenVersion: true,
         image: true,
         profile: {
           select: { visibility: true, avatarUrl: true, coverUrl: true, avatarContent: true },
@@ -662,18 +647,8 @@ export async function getCommunityRaster(kind: string, id: string) {
     const visibility = targetPreferences.privateProfile
       ? 'PRIVATE'
       : (row.profile?.visibility ?? 'PUBLIC');
-    if (actor?.id !== row.id && visibility !== 'PUBLIC') {
-      if (!actor) throw new CommunityError('NOT_FOUND', 404);
-      if (visibility === 'PRIVATE') {
-        if (kind === 'cover') throw new CommunityError('NOT_FOUND', 404);
-        const shared = await db.$queryRaw<
-          { allowed: number }[]
-        >`SELECT 1 AS allowed FROM "CommunityVoiceRoom" r WHERE r.status='OPEN'
-          AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${actor.id} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000 AND (m->>'tokenVersion')::int=${actor.tokenVersion})
-          AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${row.id} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000 AND (m->>'tokenVersion')::int=${row.tokenVersion}) LIMIT 1`;
-        if (!shared.length) throw new CommunityError('NOT_FOUND', 404);
-      }
-    }
+    if (actor?.id !== row.id && (visibility === 'PRIVATE' || (visibility === 'MEMBERS' && !actor)))
+      throw new CommunityError('NOT_FOUND', 404);
     value =
       kind === 'cover'
         ? (row.profile?.coverUrl ?? null)
