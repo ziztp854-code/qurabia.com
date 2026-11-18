@@ -6,11 +6,11 @@ export function RoyalHomeWordmark() {
   return (
     <Image
       className={styles.royalWordmark}
-      src="/home/royal-wordmark.webp"
+      src="/home/studio-wordmark.webp"
       alt=""
-      width={625}
-      height={355}
-      sizes="(max-width: 767px) 52vw, 27vw"
+      width={1200}
+      height={306}
+      sizes="(max-width: 767px) 48vw, (max-width: 1239px) 31vw, 384px"
       priority
     />
   );
@@ -20,28 +20,20 @@ export function RoyalHomeOrnaments() {
   return (
     <div className={styles.royalOrnaments} aria-hidden="true">
       <Image
-        className={styles.royalFabric}
-        src="/home/royal-fabric.webp"
-        alt=""
-        width={210}
-        height={150}
-        sizes="(max-width: 767px) 15vw, 11vw"
-      />
-      <Image
         className={styles.royalTrophy}
-        src="/home/royal-trophy.webp"
+        src="/home/studio-trophy.webp"
         alt=""
-        width={480}
-        height={755}
-        sizes="(max-width: 767px) 22vw, 19vw"
+        width={747}
+        height={1200}
+        sizes="(max-width: 767px) 14vw, (max-width: 1239px) 15vw, (max-width: 1540px) 17vw, 250px"
       />
       <Image
         className={styles.royalLion}
-        src="/home/royal-seated-lion.webp"
+        src="/home/studio-lion.webp"
         alt=""
-        width={934}
-        height={1100}
-        sizes="(max-width: 767px) 25vw, 30vw"
+        width={788}
+        height={1200}
+        sizes="(max-width: 767px) 18vw, (max-width: 1540px) 22vw, 328px"
       />
     </div>
   );

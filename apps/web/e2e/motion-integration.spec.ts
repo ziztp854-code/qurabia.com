@@ -288,14 +288,14 @@ test('reduced motion and JavaScript-disabled content remain visible', async ({
   await page.goto('/');
   const heading = page.getByRole('heading', { name: 'تحدي', level: 1 });
   await expect(heading).toBeVisible();
-  await expect(heading.locator('img[src*="royal-wordmark"]')).toBeVisible();
+  await expect(heading.locator('img[src*="studio-wordmark"]')).toBeVisible();
   await expect(runtime(page)).not.toHaveAttribute('data-scroll-runtime', 'active');
   const hero = page.locator('[data-home-hero]');
   const background = hero.locator('video');
-  await expect(background).toHaveAttribute('src', '/home/challenge-intro.mp4');
+  await expect(background).toHaveAttribute('src', '/home/studio-background-loop.mp4');
   await expect(background).toBeHidden();
   await expect(background).toHaveJSProperty('paused', true);
-  await expect(hero.locator('img[src*="tahaddi-hero-background"]')).toBeVisible();
+  await expect(hero.locator('img[src*="studio-background-poster"]')).toBeVisible();
   const motionToggle = hero.locator('button').filter({ hasText: /حركة الخلفية/ });
   await expect(motionToggle).toHaveCount(1);
   await expect(motionToggle).toBeHidden();
@@ -311,7 +311,8 @@ test('reduced motion and JavaScript-disabled content remain visible', async ({
   await fallback.goto('/');
   const fallbackHeading = fallback.getByRole('heading', { name: 'تحدي', level: 1 });
   await expect(fallbackHeading).toBeVisible();
-  await expect(fallbackHeading.locator('img[src*="royal-wordmark"]')).toBeVisible();
+  await expect(fallbackHeading.locator('img[src*="studio-wordmark"]')).toBeVisible();
+  await expect(fallback.locator('[data-home-hero] img[src*="studio-background-poster"]')).toBeVisible();
   await expect(fallback.getByRole('link', { name: 'ابدأ اللعب الآن' })).toBeVisible();
   await fallback.getByRole('link', { name: 'ابدأ اللعب الآن' }).click();
   await expect(fallback.getByRole('heading', { name: 'ساحة الألعاب', level: 1 })).toBeVisible();

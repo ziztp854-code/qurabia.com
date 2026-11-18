@@ -44,10 +44,10 @@ describe('HomePage', () => {
 
     expect(sources).toEqual(
       expect.arrayContaining([
-        '/home/tahaddi-hero-background-3344x1882.webp',
-        '/home/royal-trophy.webp',
-        '/home/royal-seated-lion.webp',
-        '/home/royal-wordmark.webp',
+        '/home/studio-background-poster.webp',
+        '/home/studio-trophy.webp',
+        '/home/studio-lion.webp',
+        '/home/studio-wordmark.webp',
         '/home/royal-hoo-qr.png',
       ]),
     );
@@ -65,9 +65,10 @@ describe('HomePage', () => {
     expect(within(invite).queryByRole('button')).not.toBeInTheDocument();
 
     const video = container.querySelector('[data-home-hero] video');
-    expect(video).toHaveAttribute('src', '/home/challenge-intro.mp4');
+    expect(video).toHaveAttribute('src', '/home/studio-background-loop.mp4');
     expect(video).toHaveProperty('muted', true);
     expect(video).toHaveAttribute('loop');
+    expect(video).toHaveAttribute('preload', 'none');
     fireEvent.click(screen.getByRole('button', { name: 'إيقاف حركة الخلفية' }));
     expect(screen.getByRole('button', { name: 'تشغيل حركة الخلفية' })).toHaveAttribute(
       'aria-pressed',
@@ -77,6 +78,16 @@ describe('HomePage', () => {
 
   it('يعرض عالم المماليك بعد الألعاب ويجعل الرتب في قسم الاشتراكات', async () => {
     const { container } = await renderHomePage();
+    const main = screen.getByRole('main');
+    const sections = within(main).getAllByRole('region');
+    expect(sections).toHaveLength(4);
+    expect(sections.slice(0, 3).map((region) => region.getAttribute('aria-labelledby'))).toEqual([
+      'landing-title',
+      'featured-title',
+      'mamluk-title',
+    ]);
+    expect(sections[3]).toHaveAccessibleName('استمر في التحدي');
+
     const showcase = container.querySelector('[data-home-showcase]');
 
     expect(showcase).toBeInTheDocument();
