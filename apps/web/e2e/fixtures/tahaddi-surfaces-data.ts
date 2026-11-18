@@ -18,6 +18,7 @@ export const profile: PublicProfile = {
   xp: 356,
   followerCount: 124,
   followingCount: 56,
+  gameStats: { played: 128, wins: 47 },
   isFollowing: false,
   isSelf: false,
   cosmetics: [],

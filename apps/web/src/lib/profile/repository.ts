@@ -2,7 +2,26 @@ import 'server-only';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { getSocialPreferences } from '@/lib/community/social-preferences';
 import { ApiHttpError } from '@/lib/http/api';
-import type { ProfileIdentityFields } from './identity';
+import type { ProfileGameStats, ProfileIdentityFields } from './identity';
+
+export async function getProfileGameStats(userId: string): Promise<ProfileGameStats> {
+  const db = getPrismaClient();
+  // Match the live leaderboard's shared first place on tied scores.
+  const [stats] = await db.$queryRaw<{ played: bigint; wins: bigint }[]>`
+    SELECT count(*) AS played,
+      count(*) FILTER (WHERE NOT EXISTS (
+        SELECT 1
+        FROM "LiveParticipant" opponent
+        WHERE opponent."sessionId" = player."sessionId" AND opponent.score > player.score
+      )) AS wins
+    FROM "LiveParticipant" player
+    JOIN "LiveSession" session ON session.id = player."sessionId"
+    WHERE player."userId" = ${userId}
+      AND session.status = 'FINISHED'
+      AND session."startedAt" IS NOT NULL
+  `;
+  return { played: Number(stats?.played ?? 0), wins: Number(stats?.wins ?? 0) };
+}
 
 /** Counts profile follow relationships, excluding inactive or blocked accounts. */
 export async function profileSocialCounts(userId: string) {

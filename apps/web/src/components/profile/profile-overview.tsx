@@ -14,9 +14,11 @@ import {
   PROFILE_IMAGE_MAX_BYTES,
   PROFILE_IMAGE_TYPES,
   profileIdentitySchema,
+  type ProfileGameStats,
   type ProfileIdentity,
 } from '@/lib/profile/identity';
 import { formatNumber } from '@/lib/utils';
+import { ProfileGameRecord } from './profile-game-record';
 import styles from './profile-overview.module.css';
 import material from '@/components/ui/royal-material.module.css';
 
@@ -28,6 +30,7 @@ type Props = {
   planCode: PlanCode;
   followers: number;
   following: number;
+  gameStats: ProfileGameStats;
   joined: string;
 };
 
@@ -59,6 +62,7 @@ export function ProfileOverview({
   planCode,
   followers,
   following,
+  gameStats,
   joined,
 }: Props) {
   const roleBadgeId =
@@ -185,6 +189,7 @@ export function ProfileOverview({
               انضممت في {joined}
             </p>
           </div>
+          <ProfileGameRecord {...gameStats} />
           <nav className={styles.links} aria-label="روابط حسابي">
             <ButtonLink href={`/people/${accountNumber}`} variant="outline">
               ملفي العام

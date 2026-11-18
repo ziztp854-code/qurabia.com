@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => {
     preferences: vi.fn(),
     updatePreferences: vi.fn(),
     socialCounts: vi.fn(),
+  gameStats: vi.fn(),
     db: {
       user: model(),
       profile: model(),
@@ -44,7 +45,10 @@ vi.mock('./social-preferences', () => ({
   getSocialPreferences: mocks.preferences,
   updateFollowPreference: mocks.updatePreferences,
 }));
-vi.mock('@/lib/profile/repository', () => ({ profileSocialCounts: mocks.socialCounts }));
+vi.mock('@/lib/profile/repository', () => ({
+  getProfileGameStats: mocks.gameStats,
+  profileSocialCounts: mocks.socialCounts,
+}));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession: mocks.session }));
 vi.mock('@/lib/auth/prisma', () => ({ getPrismaClient: () => mocks.db }));
 vi.mock('@/lib/auth/rate-limit', () => ({ checkRateLimit: mocks.rate }));
@@ -124,6 +128,7 @@ beforeEach(() => {
     mocks.db[name].findMany.mockResolvedValue([]);
   mocks.preferences.mockResolvedValue({ following: [], blockedUsers: [], privateProfile: false });
   mocks.socialCounts.mockResolvedValue({ followers: 0, following: 0 });
+  mocks.gameStats.mockResolvedValue({ played: 0, wins: 0 });
   mocks.db.voicePreference.upsert.mockResolvedValue({
     state: { following: ['preserved-peer'], privateProfile: false },
     revision: 2,
@@ -249,15 +254,18 @@ describe('community server authority', () => {
       privateProfile: id === 'subject',
     }));
     expect(await getPublicProfile(123456789)).toBeNull();
+    expect(mocks.gameStats).not.toHaveBeenCalled();
     mocks.preferences.mockResolvedValue({
       following: ['subject'],
       blockedUsers: [],
       privateProfile: false,
     });
     mocks.socialCounts.mockResolvedValue({ followers: 7, following: 4 });
+    mocks.gameStats.mockResolvedValue({ played: 12, wins: 4 });
     const profile = await getPublicProfile(123456789);
     expect(profile?.followerCount).toBe(7);
     expect(profile?.followingCount).toBe(4);
+    expect(profile?.gameStats).toEqual({ played: 12, wins: 4 });
     expect(profile?.isFollowing).toBe(true);
   });
   it('updates canonical privacy atomically without replacing existing follow relationships', async () => {

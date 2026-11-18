@@ -1,3 +1,5 @@
+import type { ProfileGameStats } from '@/lib/profile/identity';
+
 export const ENTRANCE_TIERS = ['ordinary', 'silver', 'gold', 'diamond', 'royal', 'legend'] as const;
 export type EntranceTier = (typeof ENTRANCE_TIERS)[number];
 export type ProfileVisibility = 'PUBLIC' | 'MEMBERS' | 'PRIVATE';
@@ -57,6 +59,7 @@ export type PublicProfile = PublicIdentity & {
   xp: number;
   followerCount: number;
   followingCount: number;
+  gameStats: ProfileGameStats;
   isFollowing: boolean;
   isSelf: boolean;
   cosmetics: CommunityCosmetic[];

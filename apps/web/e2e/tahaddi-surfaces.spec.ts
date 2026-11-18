@@ -26,6 +26,9 @@ for (const [width, height] of [
     );
     await page.goto('/?surface=profile');
     await expect(page.getByRole('heading', { name: 'سارة', exact: true })).toBeVisible();
+    const record = page.getByRole('region', { name: 'سجل اللعب' });
+    await expect(record.getByText('128', { exact: true })).toBeVisible();
+    await expect(record.getByText('47', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'متابعة', exact: true }).click();
     await expect(page.getByRole('button', { name: 'إلغاء المتابعة', exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`profile-${width}.png`), fullPage: true });

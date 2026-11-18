@@ -64,6 +64,7 @@ export const fixtureProfile: PublicProfile = {
   xp: 0,
   followerCount: 0,
   followingCount: 0,
+  gameStats: { played: 12, wins: 4 },
   isFollowing: false,
   isSelf: true,
   cosmetics: fixtureCosmetics,

@@ -42,3 +42,5 @@ export type ProfileIdentity = {
 };
 export const PROFILE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 export const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+export type ProfileGameStats = { played: number; wins: number };

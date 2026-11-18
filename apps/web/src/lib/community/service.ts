@@ -4,7 +4,7 @@ import { Prisma } from '@tahaddi/database';
 import { getDisplayPlanCode } from '@/lib/subscription/entitlements';
 import { planDefinition } from '@tahaddi/domain';
 import { getSocialPreferences, updateFollowPreference } from './social-preferences';
-import { profileSocialCounts } from '@/lib/profile/repository';
+import { getProfileGameStats, profileSocialCounts } from '@/lib/profile/repository';
 import { ApiHttpError } from '@/lib/http/api';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { getCurrentSession } from '@/lib/auth/session';
@@ -222,8 +222,9 @@ async function profileFor(row: IdentityRow, viewerId: string | null): Promise<Pu
   const db = getPrismaClient();
   const state = await resolve(row);
   const self = viewerId === row.id;
-  const [counts, targetPreferences, viewerPreferences] = await Promise.all([
+  const [counts, gameStats, targetPreferences, viewerPreferences] = await Promise.all([
     profileSocialCounts(row.id),
+    getProfileGameStats(row.id),
     getSocialPreferences(row.id),
     viewerId ? getSocialPreferences(viewerId) : null,
   ]);
@@ -247,6 +248,7 @@ async function profileFor(row: IdentityRow, viewerId: string | null): Promise<Pu
     xp,
     followerCount: counts.followers,
     followingCount: counts.following,
+    gameStats,
     isFollowing: Boolean(viewerPreferences?.following.includes(row.id)),
     isSelf: self,
     cosmetics: self || row.profile?.showCollection !== false ? state.owned : [],

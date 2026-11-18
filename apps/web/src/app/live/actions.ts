@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { randomBytes } from 'node:crypto';
 import { getPrismaClient, hasDatabaseUrl } from '@/lib/auth/prisma';
-import { requireActiveUser } from '@/lib/auth/session';
+import { getCurrentSession, requireActiveUser } from '@/lib/auth/session';
+import { isSessionUserCurrent } from '@/lib/auth/session-user';
 import {
   advanceLiveSessionManually,
   calculateTimedScore,
@@ -262,14 +263,38 @@ export async function joinLiveSessionByCode(
     });
 
     if (session) {
-      if (session._count.participants >= session.quiz.maxPlayers) {
-        return { status: 'error', message: 'اكتمل عدد اللاعبين المسموح به في هذه الغرفة.' };
-      }
+      const sessionUser = (await getCurrentSession())?.user;
+      const account = sessionUser?.id
+        ? await prisma.user.findUnique({
+            where: { id: sessionUser.id },
+            select: { id: true, role: true, status: true, tokenVersion: true },
+          })
+        : null;
+      const userId =
+        sessionUser && isSessionUserCurrent(sessionUser, account) ? account.id : undefined;
+      const accountSeat = userId ? { sessionId_userId: { sessionId: session.id, userId } } : null;
+      let participant = accountSeat
+        ? await prisma.liveParticipant.findUnique({ where: accountSeat, select: { id: true } })
+        : null;
 
-      const participant = await prisma.liveParticipant.create({
-        data: { sessionId: session.id, displayName },
-        select: { id: true },
-      });
+      if (!participant) {
+        if (session._count.participants >= session.quiz.maxPlayers) {
+          return { status: 'error', message: 'اكتمل عدد اللاعبين المسموح به في هذه الغرفة.' };
+        }
+        try {
+          participant = await prisma.liveParticipant.create({
+            data: { sessionId: session.id, displayName, ...(userId ? { userId } : {}) },
+            select: { id: true },
+          });
+        } catch (error) {
+          if (!accountSeat || !isUniqueConstraintError(error)) throw error;
+          participant = await prisma.liveParticipant.findUnique({
+            where: accountSeat,
+            select: { id: true },
+          });
+          if (!participant) throw error;
+        }
+      }
 
       revalidatePath(`/live/${session.id}/play`);
       revalidatePath('/broadcast');

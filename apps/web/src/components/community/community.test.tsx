@@ -24,6 +24,9 @@ describe('community identity UI', () => {
     render(<CommunityProfilePage accountNumber={123456789} initialProfile={fixtureProfile} />);
     expect(screen.getByRole('heading', { name: 'عضو التجربة' })).toBeInTheDocument();
     expect(screen.getByText('الفارس')).toBeInTheDocument();
+    const record = within(screen.getByRole('region', { name: 'سجل اللعب' }));
+    expect(record.getByText('12')).toBeInTheDocument();
+    expect(record.getByText('4')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'الغرف' })).not.toBeInTheDocument();
     expect(screen.queryByText('fixture-user')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'الإنجازات' }));

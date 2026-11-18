@@ -10,6 +10,7 @@ const props = {
   planCode: 'KNIGHT' as const,
   followers: 12,
   following: 3,
+  gameStats: { played: 0, wins: 0 },
   joined: 'أغسطس ٢٠٢٦',
 };
 beforeEach(() => {
@@ -20,7 +21,10 @@ const open = () => fireEvent.click(screen.getByRole('button', { name: 'تعدي�
 describe('ProfileOverview', () => {
   it('renders real social counts and lets a new account create its identity without admin privileges', () => {
     render(<ProfileOverview {...props} profile={{ ...props.profile, username: null, bio: '' }} />);
-    expect(screen.getAllByRole('definition')).toHaveLength(2);
+    expect(
+      within(screen.getByLabelText('إحصاءات المتابعة')).getAllByRole('definition'),
+    ).toHaveLength(2);
+    expect(within(screen.getByRole('region', { name: 'سجل اللعب' })).getAllByText('0')).toHaveLength(2);
     expect(screen.getByText('أضف اسم مستخدم')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'إضافة صورة شخصية' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'إدارة المنصة' })).not.toBeInTheDocument();

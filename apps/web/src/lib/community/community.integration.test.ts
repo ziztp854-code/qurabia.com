@@ -186,6 +186,50 @@ suite('community with real PostgreSQL migrations and Prisma', () => {
     await expect(updateMyCommunityProfile({ username: mine.profile.username })).rejects.toThrow();
   });
 
+  it('counts only account-linked, completed live matches and credits a tied first place', async () => {
+    const quiz = await db.quiz.create({
+      data: { title: 'مسابقة سجل اللعب', ownerId: owner.id, roomCode: 'STATS01' },
+    });
+    const now = new Date();
+    const rounds = [
+      { code: 'STATWIN', status: 'FINISHED', startedAt: now, score: 200, opponent: 100 },
+      { code: 'STATTIE', status: 'FINISHED', startedAt: now, score: 100, opponent: 100 },
+      { code: 'STATLOS', status: 'FINISHED', startedAt: now, score: 100, opponent: 200 },
+      { code: 'STATRUN', status: 'ACTIVE', startedAt: now, score: 200, opponent: 100 },
+      { code: 'STATEND', status: 'FINISHED', startedAt: null, score: 200, opponent: 100 },
+      { code: 'STATGST', status: 'FINISHED', startedAt: now, score: 200, opponent: 100 },
+    ] as const;
+
+    for (const { code, status, startedAt, score, opponent } of rounds) {
+      await db.liveSession.create({
+        data: {
+          quizId: quiz.id,
+          hostId: owner.id,
+          roomCode: code,
+          status,
+          startedAt,
+          participants: {
+            create: [
+              { userId: code === 'STATGST' ? null : alice.id, displayName: 'Alice', score },
+              { displayName: 'Guest', score: opponent },
+            ],
+          },
+        },
+      });
+    }
+
+    as(alice);
+    expect(await getPublicProfile(alice.accountNumber)).toMatchObject({
+      gameStats: { played: 3, wins: 2 },
+    });
+    expect(await getMyCommunityProfile()).toMatchObject({
+      profile: { gameStats: { played: 3, wins: 2 } },
+    });
+    expect(await getPublicProfile(bob.accountNumber)).toMatchObject({
+      gameStats: { played: 0, wins: 0 },
+    });
+  });
+
   it('checks privacy against the current session and permits unfollowing a newly private target', async () => {
     as(bob);
     await followProfile(alice.accountNumber, true);
