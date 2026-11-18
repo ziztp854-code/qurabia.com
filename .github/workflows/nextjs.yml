@@ -16,23 +16,26 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Keep the protected check name until repository rules can be updated.
   voice-postgres:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/voice_test_ci
-      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/voice_test_ci
-      VOICE_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/voice_test_ci
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/profile_test_ci
+      DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/profile_test_ci
+      PROFILE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/profile_test_ci
+      GAME_FAVORITES_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/favorites_test_ci
+      COMMUNITY_VOICE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/community_voice_test
     services:
       postgres:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: voice_test_ci
+          POSTGRES_DB: profile_test_ci
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d voice_test_ci"
+          --health-cmd "pg_isready -U postgres -d profile_test_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -55,16 +58,36 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare the isolated voice test database
+      - name: Prepare the isolated integration test databases
         # Use Prisma directly so an unreachable database fails this job.
-        run: pnpm exec prisma migrate deploy
+        run: |
+          docker exec "${{ job.services.postgres.id }}" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE favorites_test_ci' -c 'CREATE DATABASE community_voice_test'
+          pnpm exec prisma migrate deploy
+          DATABASE_URL="$GAME_FAVORITES_TEST_DATABASE_URL" DIRECT_URL="$GAME_FAVORITES_TEST_DATABASE_URL" pnpm exec prisma migrate deploy
 
       - name: Build shared packages for the integration runner
         run: pnpm exec turbo build --filter=@tahaddi/database --filter=@tahaddi/contracts --filter=@tahaddi/domain
 
-      - name: Test voice quotas, replay and media authorization with PostgreSQL
+      - name: Test profiles, favorites and community with PostgreSQL
         working-directory: apps/web
-        run: pnpm exec vitest run --config vitest.voice-quota.config.ts
+        run: |
+          suites=(
+            src/lib/profile/repository.database.integration.test.ts
+            src/app/api/game-favorites/route.integration.test.ts
+            src/lib/community/community.integration.test.ts
+          )
+          report="$RUNNER_TEMP/postgres-test-results.json"
+          pnpm exec vitest run "${suites[@]}" --reporter=default --reporter=json --outputFile.json="$report"
+          node - "$report" "${suites[@]}" <<'NODE'
+          const [reportFile, ...suites] = process.argv.slice(2);
+          const { testResults } = require(reportFile);
+          for (const path of suites) {
+            const suite = testResults.find(({ name }) => name.endsWith('/' + path));
+            if (!suite?.assertionResults.some(({ status }) => status === 'passed'))
+              throw new Error(`Required PostgreSQL suite did not run: ${path}`);
+          }
+          NODE
 
   validate-core:
     runs-on: ubuntu-latest
@@ -125,8 +148,8 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
-      - name: Verify production gate and decoded voice signal measurement
-        run: node --test scripts/production-ci-gate.test.mjs scripts/build-web-production.test.mjs scripts/voice-cloud-policy.test.mjs scripts/voice-audio-signal.test.mjs
+      - name: Verify production release gates
+        run: node --test scripts/production-ci-gate.test.mjs scripts/build-web-production.test.mjs
 
       - name: Test
         # Unit requests use fixed origins; runtime URLs remain set for browser tests.
@@ -150,21 +173,13 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter @tahaddi/web exec playwright install chromium
 
-      - name: Verify Tahaddi Live reference room against its standalone fixture
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.tahaddi-reference.config.ts
-
-      - name: Verify Tahaddi Live surfaces against their standalone fixture
+      - name: Verify profile, sign-in and Knowledge Tower against their standalone fixtures
         working-directory: apps/web
         run: pnpm exec playwright test --config playwright.tahaddi-surfaces.config.ts
 
       - name: Playwright end-to-end tests
         working-directory: apps/web
         run: pnpm test:e2e
-
-      - name: Verify voice gifts, reactions and reduced motion
-        working-directory: apps/web
-        run: pnpm exec playwright test --config playwright.voice-effects.config.ts
 
       - name: Verify market controls against the local fixture
         working-directory: apps/web

@@ -35,7 +35,6 @@ import { ThemeToggle } from '../theme-toggle';
 import { AdminVerifiedName, Button, ButtonLink, FloatingPanel } from '../ui';
 import { SignOutButton } from '../auth/sign-out-button';
 
-// Keep App Router navigation so the existing voice session survives page changes.
 function NavigationLink({
   href,
   ...props

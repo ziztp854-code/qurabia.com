@@ -1,13 +1,13 @@
 import 'server-only';
 import { getPrismaClient } from '@/lib/auth/prisma';
-import { getVoicePreferences } from '@/lib/voice/repository';
-import { VoiceHttpError } from '@/lib/voice/http';
+import { getSocialPreferences } from '@/lib/community/social-preferences';
+import { ApiHttpError } from '@/lib/http/api';
 import type { ProfileIdentityFields } from './identity';
 
-/** Counts the same follow relationships used by voice, excluding inactive/blocked accounts. */
+/** Counts profile follow relationships, excluding inactive or blocked accounts. */
 export async function profileSocialCounts(userId: string) {
   const db = getPrismaClient();
-  const prefs = await getVoicePreferences(userId);
+  const prefs = await getSocialPreferences(userId);
   const visible = {
     status: 'ACTIVE' as const,
     id: { notIn: [userId, ...prefs.blockedUsers] },
@@ -45,7 +45,7 @@ export async function saveProfileIdentity(
         where: { id: userId, status: 'ACTIVE' },
         data: { name: fields.displayName, ...(image !== undefined ? { image } : {}) },
       });
-      if (!active.count) throw new VoiceHttpError(401, 'الحساب غير متاح. سجّل الدخول مجددًا.');
+      if (!active.count) throw new ApiHttpError(401, 'الحساب غير متاح. سجّل الدخول مجددًا.');
       const data = {
         ...fields,
         ...(image !== undefined
@@ -56,7 +56,7 @@ export async function saveProfileIdentity(
     });
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002')
-      throw new VoiceHttpError(
+      throw new ApiHttpError(
         409,
         'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.',
         'USERNAME_TAKEN',

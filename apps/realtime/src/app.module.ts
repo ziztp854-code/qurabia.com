@@ -14,7 +14,6 @@ import { LadderModule } from './ladder/ladder.module.js';
 import { ScrambledWordsModule } from './scrambled-words/scrambled-words.module.js';
 import { EliminationModule } from './elimination/elimination.module.js';
 import { KingdomsModule } from './kingdoms/kingdoms.module.js';
-import { VoiceReconciliationModule } from './voice-reconciliation/voice-reconciliation.module.js';
 
 @Module({
   imports: [
@@ -33,7 +32,6 @@ import { VoiceReconciliationModule } from './voice-reconciliation/voice-reconcil
     ScrambledWordsModule,
     EliminationModule,
     KingdomsModule,
-    VoiceReconciliationModule,
   ],
   controllers: [AppController],
   providers: [

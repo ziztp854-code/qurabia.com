@@ -27,7 +27,7 @@ import { RealFrameArtwork } from './realistic-art';
 import { EntranceEffectPreview } from '@/components/community-voice/entrance-effect';
 import styles from './community.module.css';
 import material from '@/components/ui/royal-material.module.css';
-import live from './profile-live.module.css';
+import portrait from './profile-portrait.module.css';
 
 type Tab = 'overview' | 'badges' | 'achievements' | 'collection';
 const tabs: { id: Tab; label: string }[] = [
@@ -124,13 +124,13 @@ export function CommunityProfilePage({
     profile.cosmetics.find((item) => item.id === profile.appearance.glowId);
   const coverUrl = previewImageUrl(background?.assetUrl || profile.coverUrl);
   return (
-    <div className={`${styles.page} v-player ${live.page}`}>
+    <div className={`${styles.page} profile-portrait ${portrait.page}`}>
       <header
-        className={`${styles.profileHero} ${material.surface} ${live.profileHero}`}
+        className={`${styles.profileHero} ${material.surface} ${portrait.profileHero}`}
         data-background-tier={background?.tier}
         data-name-card-tier={nameCard?.tier}
       >
-        <div className={`${styles.cover} ${live.cover}`}>
+        <div className={`${styles.cover} ${portrait.cover}`}>
           {coverUrl && (
             <Image
               src={coverUrl}
@@ -142,14 +142,14 @@ export function CommunityProfilePage({
           )}
           <span className={styles.coverWord}>هويّتك في المجلس</span>
         </div>
-        <div className={`${styles.heroBody} ${live.heroBody}`}>
+        <div className={`${styles.heroBody} ${portrait.heroBody}`}>
           <CommunityAvatar
             name={profile.name}
             src={profile.avatarUrl}
             frame={profile.frame}
             glow={glow}
           />
-          <div className={`${styles.heroName} ${live.heroName}`}>
+          <div className={`${styles.heroName} ${portrait.heroName}`}>
             <p className={styles.eyebrow}>تحدّي لايف / بطاقة عضو</p>
             <h1>{profile.name}</h1>
             {nameCard?.assetUrl && (
@@ -165,7 +165,7 @@ export function CommunityProfilePage({
               {profile.primaryBadge && <BadgeSeal badge={profile.primaryBadge} compact />}
             </div>
           </div>
-          <div className={`${styles.metrics} ${live.metrics}`}>
+          <div className={`${styles.metrics} ${portrait.metrics}`}>
             <div>
               <Users size={18} aria-hidden="true" />
               <strong>{profile.followerCount}</strong>
@@ -186,7 +186,7 @@ export function CommunityProfilePage({
               <span>نقطة خبرة</span>
             </div>
           </div>
-          <div className={`${styles.heroActions} ${live.heroActions}`}>
+          <div className={`${styles.heroActions} ${portrait.heroActions}`}>
             {profile.isSelf ? (
               <ButtonLink href="/profile/appearance" variant="gold">
                 <Settings2 size={18} aria-hidden="true" /> مظهري وإعداداتي
@@ -206,11 +206,11 @@ export function CommunityProfilePage({
             </p>
           </div>
         </div>
-        <div className={live.accountTools}>
+        <div className={portrait.accountTools}>
           <AccountActions accountNumber={profile.accountNumber} />
         </div>
       </header>
-      <nav className={`${styles.tabs} ${live.tabs}`} aria-label="أقسام الملف الشخصي">
+      <nav className={`${styles.tabs} ${portrait.tabs}`} aria-label="أقسام الملف الشخصي">
         {tabs.map((item) => (
           <button
             key={item.id}
@@ -263,9 +263,9 @@ export function CommunityProfilePage({
                     <a
                       key={room.id}
                       href={
-                        room.href && /^\/(?:community-voice|voice)\//.test(room.href)
+                        room.href && /^\/community-voice\//.test(room.href)
                           ? room.href
-                          : `/voice/${encodeURIComponent(room.id)}`
+                          : `/community-voice/${encodeURIComponent(room.id)}`
                       }
                     >
                       <Radio size={19} aria-hidden="true" />

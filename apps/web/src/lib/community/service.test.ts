@@ -6,7 +6,6 @@ import {
   getMyCommunityProfile,
   getPublicProfile,
   getUserIdentity,
-  getUserIdentities,
   updateMyCommunityProfile,
 } from './service';
 const mocks = vi.hoisted(() => {
@@ -36,16 +35,15 @@ const mocks = vi.hoisted(() => {
       profileCosmetic: model(),
       communityBadge: model(),
       voicePreference: model(),
-      voiceRoom: model(),
       auditLog: model(),
       $transaction: vi.fn(),
       $queryRaw: vi.fn(),
     },
   };
 });
-vi.mock('@/lib/voice/repository', () => ({
-  getVoicePreferences: mocks.preferences,
-  updateVoicePreferences: mocks.updatePreferences,
+vi.mock('./social-preferences', () => ({
+  getSocialPreferences: mocks.preferences,
+  updateFollowPreference: mocks.updatePreferences,
 }));
 vi.mock('@/lib/profile/repository', () => ({ profileSocialCounts: mocks.socialCounts }));
 vi.mock('@/lib/auth/session', () => ({ getCurrentSession: mocks.session }));
@@ -122,7 +120,6 @@ beforeEach(() => {
     'userCosmetic',
     'profileCosmetic',
     'communityBadge',
-    'voiceRoom',
     'auditLog',
   ] as const)
     mocks.db[name].findMany.mockResolvedValue([]);
@@ -237,11 +234,7 @@ describe('community server authority', () => {
       expect.objectContaining({ where: { accountNumber: current } }),
     );
     await followProfile(old!, true);
-    expect(mocks.updatePreferences).toHaveBeenCalledWith('actor', {
-      type: 'follow',
-      id: 'subject',
-      enabled: true,
-    });
+    expect(mocks.updatePreferences).toHaveBeenCalledWith('actor', 'subject', true);
     mocks.preferences.mockResolvedValue({ following: [], blockedUsers: [], privateProfile: true });
     expect(await getPublicProfile(old!)).toBeNull();
     await expect(getCommunityRaster('avatar', String(old))).rejects.toMatchObject({
@@ -300,17 +293,6 @@ describe('community server authority', () => {
     expect(raster.mime).toBe('image/webp');
     expect(raster.privateAsset).toBe(true);
   });
-  it('refreshes multiple room identities using one catalog query', async () => {
-    mocks.db.user.findMany.mockResolvedValue([
-      { ...row(), id: 'first' },
-      { ...row(), id: 'second' },
-    ]);
-    const result = await getUserIdentities(['first', 'second', 'first']);
-    expect([...result.keys()]).toEqual(['first', 'second']);
-    expect(mocks.db.user.findMany).toHaveBeenCalledTimes(1);
-    expect(mocks.db.profileCosmetic.findMany).toHaveBeenCalledTimes(1);
-  });
-
   it('exposes only authorized equipped visuals when the collection is hidden', async () => {
     const pieces = [
       { ...item(), id: 'background-royal', kind: 'BACKGROUND' },
@@ -435,6 +417,28 @@ describe('community server authority', () => {
     expect(mocks.db.$queryRaw).not.toHaveBeenCalled();
   });
 
+  it('requires an active mesh room to share a private avatar with another member', async () => {
+    mocks.db.user.findUnique.mockImplementation(async ({ where }) =>
+      where.id === actor.id
+        ? actor
+        : {
+            ...row(),
+            tokenVersion: 3,
+            profile: { visibility: 'PRIVATE', avatarUrl: 'data:image/png;base64,AAAA' },
+          },
+    );
+    mocks.db.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ allowed: 1 }]);
+    await expect(getCommunityRaster('avatar', '123456789')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    expect(mocks.db.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(mocks.db.$queryRaw.mock.calls[0]?.[0].join('')).toContain('"CommunityVoiceRoom"');
+    await expect(getCommunityRaster('avatar', '123456789')).resolves.toMatchObject({
+      mime: 'image/png',
+      privateAsset: true,
+    });
+  });
+
   it('requires stored identity instead of claimed role', async () => {
     await expect(adminCommunityCommand({})).rejects.toMatchObject({ code: 'FORBIDDEN' });
     mocks.db.user.findUnique.mockResolvedValue({ ...actor, tokenVersion: 4 });
@@ -507,25 +511,13 @@ describe('community server authority', () => {
       where.id === actor.id ? actor : { ...row(), profile: { visibility: 'PRIVATE' } },
     );
     expect(await followProfile(123456789, false)).toBeNull();
-    expect(mocks.updatePreferences).toHaveBeenCalledWith(actor.id, {
-      type: 'follow',
-      id: 'subject',
-      enabled: false,
-    });
+    expect(mocks.updatePreferences).toHaveBeenCalledWith(actor.id, 'subject', false);
     await expect(followProfile(123456789, true)).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    expect(mocks.updatePreferences).not.toHaveBeenCalledWith(actor.id, {
-      type: 'follow',
-      id: 'subject',
-      enabled: true,
-    });
+    expect(mocks.updatePreferences).not.toHaveBeenCalledWith(actor.id, 'subject', true);
   });
-  it('uses the existing voice follow graph', async () => {
+  it('uses the existing profile follow graph', async () => {
     await followProfile(123456789, true);
-    expect(mocks.updatePreferences).toHaveBeenCalledWith('actor', {
-      type: 'follow',
-      id: 'subject',
-      enabled: true,
-    });
+    expect(mocks.updatePreferences).toHaveBeenCalledWith('actor', 'subject', true);
   });
   it('ADMIN cannot create or grant protected badges', async () => {
     mocks.db.user.findUnique.mockResolvedValue({ ...actor, role: 'ADMIN' });
@@ -556,19 +548,4 @@ describe('community server authority', () => {
     expect(mocks.db.userBadge.upsert).not.toHaveBeenCalled();
     expect(mocks.db.auditLog.create).not.toHaveBeenCalled();
   });
-});
-
-it('starts the cosmetic catalog read while member identities are still loading', async () => {
-  let release!: (rows: []) => void;
-  mocks.db.user.findMany.mockImplementationOnce(
-    () =>
-      new Promise((resolve) => {
-        release = resolve;
-      }),
-  );
-  mocks.db.profileCosmetic.findMany.mockResolvedValueOnce([]);
-  const pending = getUserIdentities(['self']);
-  expect(mocks.db.profileCosmetic.findMany).toHaveBeenCalled();
-  release([]);
-  expect(await pending).toEqual(new Map());
 });

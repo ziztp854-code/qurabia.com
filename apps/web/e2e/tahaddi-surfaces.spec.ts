@@ -1,34 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { profile, rooms } from './fixtures/tahaddi-surfaces-data';
-const evidence = path.resolve(process.cwd(), '../../docs/visual-evidence/tahaddi-surfaces');
+import { writeFile } from 'node:fs/promises';
+import { profile } from './fixtures/tahaddi-surfaces-data';
 for (const [width, height] of [
   [390, 844],
   [1440, 900],
 ]) {
-  test(`synthetic surfaces ${width}x${height}: discovery sorting, profile follow, login layout`, async ({
+  test(`synthetic surfaces ${width}x${height}: profile follow and login layout`, async ({
     page,
-  }) => {
-    await mkdir(evidence, { recursive: true });
+  }, testInfo) => {
     await page.setViewportSize({ width, height });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.route('**/api/voice/rooms{,/}', (route) => route.fulfill({ json: rooms }));
-    await page.goto('/');
-    await expect(
-      page.getByRole('heading', { name: 'جلسة نقاش حرة', exact: true }).last(),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'جديد', exact: true }).click();
-    await expect(page.locator('.v-room-grid article').first()).toContainText('موسيقى لايف');
-    await page.getByRole('button', { name: 'الأكثر شعبية', exact: true }).click();
-    await expect(page.locator('.v-room-grid article').first()).toContainText('جلسة نقاش حرة');
-    await page.getByRole('button', { name: 'مباشر', exact: true }).click();
-    await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({ path: path.join(evidence, `lobby-${width}.png`), fullPage: true });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
     let followed = false;
     await page.route('**/api/community/profiles/124/follow', async (route) => {
       followed = true;
@@ -46,7 +28,7 @@ for (const [width, height] of [
     await expect(page.getByRole('heading', { name: 'سارة', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'متابعة', exact: true }).click();
     await expect(page.getByRole('button', { name: 'إلغاء المتابعة', exact: true })).toBeVisible();
-    await page.screenshot({ path: path.join(evidence, `profile-${width}.png`), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(`profile-${width}.png`), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
@@ -54,7 +36,7 @@ for (const [width, height] of [
     await expect(page.getByRole('heading', { name: 'تسجيل الدخول', exact: true })).toBeVisible();
     await page.getByLabel('البريد الإلكتروني').fill('fixture@example.test');
     await page.getByLabel('كلمة المرور', { exact: true }).fill('fixture-only');
-    await page.screenshot({ path: path.join(evidence, `login-${width}.png`), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(`login-${width}.png`), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
@@ -64,15 +46,13 @@ for (const [width, height] of [
 
 test('narrow surfaces preserve RTL and no horizontal overflow at enlarged text', async ({
   page,
-}) => {
-  await mkdir(evidence, { recursive: true });
+}, testInfo) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.route('**/api/voice/rooms{,/}', (route) => route.fulfill({ json: rooms }));
   await page.route('**/api/community/profiles/124', (route) =>
     route.fulfill({ json: { ok: true, data: profile } }),
   );
-  for (const surface of ['lobby', 'profile', 'login']) {
-    await page.goto(surface === 'lobby' ? '/' : `/?surface=${surface}`);
+  for (const surface of ['profile', 'login']) {
+    await page.goto(`/?surface=${surface}`);
     await page.getByRole('heading').first().waitFor();
     await page.evaluate(() => document.fonts.ready);
     expect
@@ -94,7 +74,7 @@ test('narrow surfaces preserve RTL and no horizontal overflow at enlarged text',
       });
     });
     await page.screenshot({
-      path: path.join(evidence, `${surface}-320-text200.png`),
+      path: testInfo.outputPath(`${surface}-320-text200.png`),
       fullPage: true,
     });
     expect
@@ -103,36 +83,6 @@ test('narrow surfaces preserve RTL and no horizontal overflow at enlarged text',
         `${surface}320px200%`,
       )
       .toBe(false);
-    if (surface === 'lobby') {
-      const signIn = await page
-        .locator('.v-topbar')
-        .getByRole('link', { name: 'تسجيل الدخول', exact: true })
-        .boundingBox();
-      expect(signIn).not.toBeNull();
-      expect(signIn!.x).toBeGreaterThanOrEqual(0);
-      expect(signIn!.x + signIn!.width).toBeLessThanOrEqual(321);
-      expect(signIn!.width).toBeGreaterThanOrEqual(44);
-      expect(signIn!.height).toBeGreaterThanOrEqual(44);
-      const cards = await page.locator('.v-room-grid article').evaluateAll((elements) =>
-        elements.map((card) => {
-          const title = card.querySelector('h3') as HTMLElement;
-          const count = card.querySelector('.v-card-presence')!;
-          const a = title.getBoundingClientRect(),
-            b = count.getBoundingClientRect();
-          return {
-            clippedX: title.scrollWidth > title.clientWidth + 1,
-            clippedY: title.scrollHeight > title.clientHeight + 1,
-            overlap:
-              a.x < b.right - 1 && a.right > b.x + 1 && a.y < b.bottom - 1 && a.bottom > b.y + 1,
-          };
-        }),
-      );
-      cards.forEach((card) => {
-        expect.soft(card.clippedX).toBe(false);
-        expect.soft(card.clippedY).toBe(false);
-        expect.soft(card.overlap).toBe(false);
-      });
-    }
     if (surface === 'profile') {
       const avatar = page.locator('span[data-size="large"]').first();
       const contained = await avatar.evaluate((element) => {
@@ -182,10 +132,9 @@ test('narrow surfaces preserve RTL and no horizontal overflow at enlarged text',
         );
       });
       await writeFile(
-        path.join(evidence, 'login-text200-inputs.json'),
+        testInfo.outputPath('login-text200-inputs.json'),
         JSON.stringify(inputMeasurements, null, 2),
       );
-      await page.screenshot({ path: path.join(evidence, 'login-320-text200.png'), fullPage: true });
       await expect(page.getByRole('button', { name: 'تسجيل الدخول', exact: true })).toBeEnabled();
     }
   }

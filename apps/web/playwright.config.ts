@@ -12,14 +12,7 @@ export default defineConfig({
   timeout: 30_000,
   testIgnore: [
     'ladder-intro.spec.ts',
-    // Standalone room fixtures use their own loopback servers/configurations.
-    'chat-typing-performance.spec.ts',
-    'live-chat-typing.spec.ts',
-    'live-room-responsive.spec.ts',
-    'voice-polish.spec.ts',
-    'voice-lobby-polish.spec.ts',
-    'voice-effects.spec.ts',
-    'tahaddi-reference.spec.ts',
+    // Standalone fixtures use their own loopback servers/configurations.
     'tahaddi-surfaces.spec.ts',
     'knowledge-tower.spec.ts',
     'globe-scene.spec.ts',

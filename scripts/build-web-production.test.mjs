@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildWebProduction } from './build-web-production.mjs';
 import { verifyProductionCi } from './production-ci-gate.mjs';
 
-test('a failed CI gate cannot run the voice check or any compiler', async () => {
+test('a failed CI gate cannot run any compiler', async () => {
   await assert.rejects(
     buildWebProduction({
       verifyCi: async () => {
@@ -15,43 +15,25 @@ test('a failed CI gate cannot run the voice check or any compiler', async () => 
   );
 });
 
-test('failed voice verification blocks all package compilation', async () => {
-  const calls = [];
-  await assert.rejects(
-    buildWebProduction({
-      verifyCi: async () => {},
-      run: (_command, args) => {
-        calls.push(args);
-        throw new Error('voice failed');
-      },
-    }),
-    /voice failed/,
-  );
-  assert.deepEqual(calls, [['scripts/voice-cloud-check.mjs']]);
-});
-
-test('production verifies the source commit and voice before building dependent packages', async () => {
+test('production verifies the source commit before building dependent packages', async () => {
   const calls = [];
   const env = { RENDER: 'true', RENDER_GIT_COMMIT: 'a'.repeat(40), PRIVATE_BINDING: 'retained' };
   await buildWebProduction({
     env,
     verifyCi: async ({ env: supplied }) => {
       assert.equal(supplied.DEPLOY_ENV, 'production');
-      assert.equal(supplied.LIVEKIT_MODE, 'cloud');
       assert.equal(supplied.RENDER_GIT_COMMIT, env.RENDER_GIT_COMMIT);
       calls.push('CI');
     },
     run: (command, args, options) => {
       assert.equal(options.env.PRIVATE_BINDING, 'retained');
-      assert.equal(options.env.LIVEKIT_MODE, 'cloud');
-      if (command === process.execPath) {
-        calls.push('voice');
-      } else calls.push(args[2]);
+      assert.equal(options.env.DEPLOY_ENV, 'production');
+      assert.equal(command, 'corepack');
+      calls.push(args[2]);
     },
   });
   assert.deepEqual(calls, [
     'CI',
-    'voice',
     '@tahaddi/contracts',
     '@tahaddi/database',
     '@tahaddi/domain',

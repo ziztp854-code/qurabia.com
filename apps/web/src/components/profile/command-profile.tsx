@@ -443,10 +443,6 @@ export function CommandProfile({
           <Sparkles aria-hidden="true" />
           مظهري وخصوصيتي
         </ButtonLink>
-        <ButtonLink href="/voice" variant="outline" className={styles.commandBtn}>
-          <Radio aria-hidden="true" />
-          الغرف الصوتية
-        </ButtonLink>
       </nav>
 
       {permissions.length > 0 ? (

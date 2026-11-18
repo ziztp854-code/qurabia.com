@@ -2,19 +2,19 @@ import { revalidatePath } from 'next/cache';
 import { profileIdentitySchema } from '@/lib/profile/identity';
 import { normalizeProfileImage, readProfileForm } from '@/lib/profile/image';
 import { saveProfileIdentity } from '@/lib/profile/repository';
-import { voiceIdentity, voiceRateLimit } from '@/lib/voice/identity';
-import { jsonFailure, jsonSuccess, VoiceHttpError, voiceOrigin } from '@/lib/voice/http';
+import { requireApiActor, limitApiActor } from '@/lib/auth/api-actor';
+import { jsonFailure, jsonSuccess, ApiHttpError, assertApiOrigin } from '@/lib/http/api';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: Request) {
   try {
-    voiceOrigin(request);
-    const user = await voiceIdentity();
-    await voiceRateLimit(user.id, true, 'profile');
+    assertApiOrigin(request);
+    const user = await requireApiActor();
+    await limitApiActor(user.id, true, 'profile');
     const form = await readProfileForm(request);
     for (const key of ['displayName', 'username', 'bio', 'removeImage', 'image'])
-      if (form.getAll(key).length > 1) throw new VoiceHttpError(400, 'أرسل قيمة واحدة لكل حقل.');
+      if (form.getAll(key).length > 1) throw new ApiHttpError(400, 'أرسل قيمة واحدة لكل حقل.');
     const result = profileIdentitySchema.safeParse({
       displayName: form.get('displayName'),
       username: form.get('username'),
@@ -28,7 +28,7 @@ export async function PATCH(request: Request) {
     const file = form.get('image');
     const remove = form.get('removeImage') === 'true';
     if (file && (typeof file === 'string' || remove))
-      throw new VoiceHttpError(400, 'اختر رفع صورة أو حذفها.');
+      throw new ApiHttpError(400, 'اختر رفع صورة أو حذفها.');
     const photo =
       file && typeof file !== 'string'
         ? await normalizeProfileImage(Buffer.from(await file.arrayBuffer()), file.type)

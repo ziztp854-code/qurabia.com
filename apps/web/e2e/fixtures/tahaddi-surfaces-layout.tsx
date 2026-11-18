@@ -1,4 +1,4 @@
-// Non-live branch stub; this fixture exercises the actual live AuthShell branch.
+// Stand-in for the site logo in the standalone sign-in fixture.
 export function Logo() {
   return <span>تحدي</span>;
 }

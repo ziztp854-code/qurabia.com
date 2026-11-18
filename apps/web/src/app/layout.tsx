@@ -4,7 +4,6 @@ import '@fontsource-variable/cairo';
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { PresenceBeacon } from '@/components/presence/presence-beacon';
-import { VoiceSessionProvider } from '@/components/voice/voice-session-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { MotionProvider } from '@/components/motion/motion-provider';
 import { buildSiteVerificationMetadata } from '@/lib/metadata/discovery';
@@ -157,7 +156,7 @@ export default function RootLayout({
         <ThemeProvider>
           <MotionProvider>
             <PresenceBeacon />
-            <VoiceSessionProvider>{children}</VoiceSessionProvider>
+            {children}
           </MotionProvider>
         </ThemeProvider>
       </body>

@@ -13,7 +13,7 @@ vi.mock('@/lib/auth/prisma', () => ({
     $transaction: mocks.transaction,
   }),
 }));
-vi.mock('@/lib/voice/repository', () => ({ getVoicePreferences: mocks.preferences }));
+vi.mock('@/lib/community/social-preferences', () => ({ getSocialPreferences: mocks.preferences }));
 import { profileSocialCounts, saveProfileIdentity } from './repository';
 beforeEach(() => {
   vi.clearAllMocks();

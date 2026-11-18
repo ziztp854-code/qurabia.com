@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { AtSign, CalendarDays, Camera, Check, Pencil, Radio, ShieldCheck } from 'lucide-react';
+import { AtSign, CalendarDays, Camera, Check, Pencil, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { planDefinition, type PlanCode } from '@tahaddi/domain';
 import { Button, ButtonLink, Dialog, Input, Textarea } from '@/components/ui';
@@ -186,10 +186,6 @@ export function ProfileOverview({
             </p>
           </div>
           <nav className={styles.links} aria-label="روابط حسابي">
-            <ButtonLink href="/voice" variant="outline">
-              <Radio size={18} aria-hidden="true" />
-              الغرف الصوتية
-            </ButtonLink>
             <ButtonLink href={`/people/${accountNumber}`} variant="outline">
               ملفي العام
             </ButtonLink>
@@ -217,7 +213,7 @@ export function ProfileOverview({
         open={open}
         onOpenChange={changeOpen}
         title="تعديل البروفايل"
-        description="الاسم والصورة يظهران للأعضاء في المنصة والغرف الصوتية."
+        description="الاسم والصورة يظهران للأعضاء في المنصة."
         className={styles.dialog}
       >
         <ProfileEditor
