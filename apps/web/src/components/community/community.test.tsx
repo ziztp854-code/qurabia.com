@@ -20,14 +20,11 @@ describe('community identity UI', () => {
     await waitFor(() => expect(copy).toHaveBeenCalledWith('123456789'));
     expect(screen.getByRole('status')).toHaveTextContent('تم نسخ المعرّف.');
   });
-  it('renders actual public data, allows tab navigation and uses a hard voice-room link', () => {
+  it('renders public data and navigates between profile tabs without retired rooms', () => {
     render(<CommunityProfilePage accountNumber={123456789} initialProfile={fixtureProfile} />);
     expect(screen.getByRole('heading', { name: 'عضو التجربة' })).toBeInTheDocument();
     expect(screen.getByText('الفارس')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /مجلس المساء/ })).toHaveAttribute(
-      'href',
-      '/community-voice/fixture-room',
-    );
+    expect(screen.queryByRole('heading', { name: 'الغرف' })).not.toBeInTheDocument();
     expect(screen.queryByText('fixture-user')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'الإنجازات' }));
     expect(screen.getByText('لم تُسجّل إنجازات مكتسبة بعد.')).toBeInTheDocument();
