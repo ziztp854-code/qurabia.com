@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Button, ButtonLink } from '@/components/ui/button';
+import { ProfileGameRecord } from '@/components/profile/profile-game-record';
 import type { PublicProfile } from '@/lib/community/contracts';
 import {
   AccountActions,
@@ -227,29 +228,32 @@ export function CommunityProfilePage({
         aria-label={tabs.find((item) => item.id === tab)?.label}
       >
         {tab === 'overview' && (
-          <article className={styles.panel}>
-            <p className={styles.eyebrow}>ما وراء الاسم</p>
-            <h2>عنّي</h2>
-            <p className={styles.bio}>{profile.bio || 'لم يضف هذا العضو نبذة شخصية بعد.'}</p>
-            <p className={styles.meta}>
-              <CalendarDays size={18} aria-hidden="true" /> انضم في{' '}
-              {new Intl.DateTimeFormat('ar-SA', {
-                dateStyle: 'long',
-                calendar: 'gregory',
-              }).format(new Date(profile.joinedAt))}
-            </p>
-            <p className={styles.meta}>
-              <Shield size={18} aria-hidden="true" />
-              {profile.visibility === 'PUBLIC'
-                ? 'ملف عام'
-                : profile.visibility === 'MEMBERS'
-                  ? 'للأعضاء المسجلين'
-                  : 'ملف خاص'}
-            </p>
-            {profile.xp === 0 && (
-              <p className={styles.muted}>لم تُسجّل نقاط خبرة لهذا الحساب بعد.</p>
-            )}
-          </article>
+          <div className={portrait.intro}>
+            {profile.gameStats && <ProfileGameRecord {...profile.gameStats} />}
+            <article className={styles.panel}>
+              <p className={styles.eyebrow}>ما وراء الاسم</p>
+              <h2>عنّي</h2>
+              <p className={styles.bio}>{profile.bio || 'لم يضف هذا العضو نبذة شخصية بعد.'}</p>
+              <p className={styles.meta}>
+                <CalendarDays size={18} aria-hidden="true" /> انضم في{' '}
+                {new Intl.DateTimeFormat('ar-SA', {
+                  dateStyle: 'long',
+                  calendar: 'gregory',
+                }).format(new Date(profile.joinedAt))}
+              </p>
+              <p className={styles.meta}>
+                <Shield size={18} aria-hidden="true" />
+                {profile.visibility === 'PUBLIC'
+                  ? 'ملف عام'
+                  : profile.visibility === 'MEMBERS'
+                    ? 'للأعضاء المسجلين'
+                    : 'ملف خاص'}
+              </p>
+              {profile.xp === 0 && (
+                <p className={styles.muted}>لم تُسجّل نقاط خبرة لهذا الحساب بعد.</p>
+              )}
+            </article>
+          </div>
         )}
         {(tab === 'badges' || tab === 'achievements') && (
           <article className={styles.panel}>

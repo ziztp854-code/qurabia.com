@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   createPlayerLiveAccessToken: vi.fn(),
   getPrismaClient: vi.fn(),
+  getCurrentSession: vi.fn(),
   hasDatabaseUrl: vi.fn(),
   revalidatePath: vi.fn(),
   setMafiaAccessToken: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('@/lib/auth/prisma', () => ({
   hasDatabaseUrl: mocks.hasDatabaseUrl,
 }));
 vi.mock('@/lib/auth/session', () => ({
+  getCurrentSession: mocks.getCurrentSession,
   requireActiveUser: mocks.requireActiveUser,
 }));
 vi.mock('@/lib/live/access-token', () => ({
@@ -36,6 +38,7 @@ describe('joinLiveSessionByCode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasDatabaseUrl.mockReturnValue(true);
+    mocks.getCurrentSession.mockResolvedValue(null);
     mocks.createPlayerLiveAccessToken.mockReturnValue('signed-player-token');
   });
 
@@ -68,6 +71,42 @@ describe('joinLiveSessionByCode', () => {
     );
     expect(createParticipant).toHaveBeenCalledWith({
       data: { sessionId: 'session-1', displayName: 'نورة' },
+      select: { id: true },
+    });
+  });
+
+  it('links a quiz seat to the authenticated account and reuses it after a concurrent join', async () => {
+    const seat = { id: 'participant-1' };
+    const sessionUser = { id: 'member-1', tokenVersion: 2 };
+    const findUnique = vi.fn().mockResolvedValueOnce(null).mockResolvedValue(seat);
+    const create = vi.fn().mockRejectedValue({ code: 'P2002' });
+    mocks.getCurrentSession.mockResolvedValue({ user: sessionUser });
+    mocks.getPrismaClient.mockReturnValue({
+      liveSession: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'session-1',
+          roomCode: 'A7K9PQ',
+          quiz: { maxPlayers: 20 },
+          _count: { participants: 19 },
+        }),
+      },
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ ...sessionUser, role: 'USER', status: 'ACTIVE' }),
+      },
+      liveParticipant: { findUnique, create },
+    });
+
+    await expect(joinLiveSessionByCode('A7K9PQ', 'نورة')).resolves.toMatchObject({
+      status: 'success',
+      participantId: seat.id,
+    });
+    expect(create).toHaveBeenCalledWith({
+      data: { sessionId: 'session-1', displayName: 'نورة', userId: sessionUser.id },
+      select: { id: true },
+    });
+    expect(findUnique).toHaveBeenCalledTimes(2);
+    expect(findUnique).toHaveBeenLastCalledWith({
+      where: { sessionId_userId: { sessionId: 'session-1', userId: sessionUser.id } },
       select: { id: true },
     });
   });

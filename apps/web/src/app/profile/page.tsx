@@ -9,7 +9,7 @@ import { getPrismaClient } from '@/lib/auth/prisma';
 import { requireActiveUser } from '@/lib/auth/session';
 import { getDisplayPlanCode } from '@/lib/subscription/entitlements';
 import { ProfileOverview } from '@/components/profile/profile-overview';
-import { profileSocialCounts } from '@/lib/profile/repository';
+import { getProfileGameStats, profileSocialCounts } from '@/lib/profile/repository';
 import {
   SPARK_SAMPLE_LIMIT,
   SPARK_WEEKS,
@@ -50,6 +50,7 @@ export default async function ProfilePage() {
     roomDates,
     social,
     communityIdentity,
+    gameStats,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
@@ -109,6 +110,7 @@ export default async function ProfilePage() {
       : Promise.resolve([]),
     profileSocialCounts(user.id),
     getUserIdentity(user.id),
+    getProfileGameStats(user.id),
   ]);
 
   if (!profile) notFound();
@@ -161,6 +163,7 @@ export default async function ProfilePage() {
         planCode={planCode}
         followers={social.followers}
         following={social.following}
+        gameStats={gameStats}
         joined={
           profile
             ? new Intl.DateTimeFormat('ar-SA', {
