@@ -1,12 +1,21 @@
 :global(.home-site-layout:has(.prestigeHome)) {
-  --home-bg: #010304;
-  --home-panel: #05080a;
-  --home-panel-strong: #0a0d10;
-  --home-gold: #d69b22;
-  --home-gold-bright: #ffc64b;
-  --home-ink: #f8f1e3;
-  --home-muted: #bdb29f;
-  --home-border: rgb(214 155 34 / 38%);
+  --home-shell-offset: 0rem;
+  --home-studio-bg: #070d0d;
+  --home-studio-panel: #101818;
+  --home-studio-raised: #152121;
+  --home-studio-gold: #c9a56f;
+  --home-studio-gold-bright: #f3cd91;
+  --home-studio-ink: #faf3e5;
+  --home-studio-muted: #c3c9c1;
+  --home-studio-border: rgb(157 183 171 / 36%);
+  --home-bg: var(--home-studio-bg);
+  --home-panel: var(--home-studio-panel);
+  --home-panel-strong: var(--home-studio-raised);
+  --home-gold: var(--home-studio-gold);
+  --home-gold-bright: var(--home-studio-gold-bright);
+  --home-ink: var(--home-studio-ink);
+  --home-muted: var(--home-studio-muted);
+  --home-border: var(--home-studio-border);
 }
 
 :global(:root[data-theme='light'] .home-site-layout:has(.prestigeHome)) {
@@ -82,14 +91,14 @@
 }
 
 :global(:root[data-theme='light']) .hero {
-  --home-bg: #010304;
-  --home-panel: #05080a;
-  --home-panel-strong: #0a0d10;
-  --home-gold: #d69b22;
-  --home-gold-bright: #ffc64b;
-  --home-ink: #f8f1e3;
-  --home-muted: #bdb29f;
-  --home-border: rgb(214 155 34 / 38%);
+  --home-bg: var(--home-studio-bg);
+  --home-panel: var(--home-studio-panel);
+  --home-panel-strong: var(--home-studio-raised);
+  --home-gold: var(--home-studio-gold);
+  --home-gold-bright: var(--home-studio-gold-bright);
+  --home-ink: var(--home-studio-ink);
+  --home-muted: var(--home-studio-muted);
+  --home-border: var(--home-studio-border);
 }
 
 .stage {
@@ -1234,11 +1243,11 @@
     align-items: center;
     gap: 0.3rem;
     min-block-size: 3rem;
-    padding-inline: 0.4rem;
+    padding-inline: 0.66rem;
     white-space: nowrap;
-    border: 1px solid rgb(214 155 34 / 11%);
+    border: 1px solid transparent;
     border-radius: 999px;
-    background: linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent);
+    background: transparent;
     font-size: 0.88rem;
   }
 
@@ -1273,8 +1282,8 @@
     inline-size: min(calc(100% - 2.5rem), 94rem);
     margin-block-start: 0.5rem;
     overflow: hidden;
-    border: 1px solid rgb(214 155 34 / 24%);
-    border-radius: 1.1rem;
+    border: 1px solid var(--home-border);
+    border-radius: 1.15rem;
   }
 
   .stage {
@@ -2085,28 +2094,34 @@
   }
 }
 
-/* Royal landing artwork is a visual theme, not a replacement for live controls. */
+/* Match the poster and the video framing so motion can start without a jump. */
 .stage.royalStage {
-  --royal-wine: oklch(25% 0.115 17);
-  --royal-deep: oklch(13.5% 0.04 12);
-  min-block-size: clamp(39rem, 49vw, 44rem);
+  --royal-deep: var(--home-studio-bg);
+  min-block-size: clamp(34rem, 46vw, 42rem);
   background: var(--royal-deep);
+  isolation: isolate;
+}
+
+.royalStage .heroBackground,
+.royalStage .heroVideo {
+  opacity: 1;
+  object-position: center bottom;
+}
+
+.royalStage .heroVideo {
+  z-index: 1;
 }
 
 .stage.royalStage::after {
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--royal-wine) 48%, transparent),
-    color-mix(in srgb, var(--royal-wine) 56%, transparent) 54%,
-    var(--royal-deep)
-  );
+  z-index: 2;
+  background: radial-gradient(ellipse at 50% 47%, rgb(3 11 11 / 22%), transparent 72%);
 }
 
 .royalStage .heroContent {
   grid-template-rows: none;
   align-content: start;
-  gap: 1.2rem;
-  padding: 1.75rem 1.25rem 4.25rem;
+  gap: 0.9rem;
+  padding: 1.7rem 1.25rem 3.3rem;
 }
 
 .royalStage .copy {
@@ -2114,8 +2129,61 @@
   z-index: 1;
 }
 
+.royalStage .copy h1 {
+  background: none;
+  filter: none;
+  text-shadow: none;
+}
+
 .royalStage .heroPromise {
+  margin-block-start: 1.15rem;
   color: var(--home-ink);
+  line-height: 1.38;
+  text-shadow: 0 3px 18px rgb(6 18 17 / 85%);
+}
+
+.royalStage .tagline {
+  max-inline-size: 32rem;
+  color: var(--home-muted);
+  font-weight: 630;
+  line-height: 1.65;
+}
+
+.royalStage :global(.button-gold) {
+  color: rgb(22 24 18);
+  border: 1px solid rgb(255 233 194 / 75%);
+  background: linear-gradient(
+    104deg,
+    rgb(248 221 176),
+    var(--home-studio-gold-bright) 74%,
+    rgb(221 177 119)
+  );
+  box-shadow:
+    inset 0 1px rgb(255 255 216 / 54%),
+    0 7px 24px rgb(1 9 9 / 60%);
+}
+
+.royalStage :global(.button-outline) {
+  border-color: var(--home-border);
+  background: linear-gradient(132deg, rgb(52 86 84 / 41%), var(--home-panel));
+  color: var(--home-ink);
+}
+
+.royalStage :global(.home-room-shortcut) {
+  margin-block-start: 0.55rem;
+  background: var(--home-panel);
+  box-shadow:
+    inset 0 1px rgb(216 241 230 / 16%),
+    0 5px 18px rgb(1 7 6 / 48%);
+}
+
+.royalStage :global(.home-room-shortcut input::placeholder) {
+  color: var(--home-muted);
+  opacity: 1;
+}
+
+.royalStage :global(.home-room-shortcut button) {
+  background: var(--home-panel-strong);
 }
 
 .royalOrnaments {
@@ -2131,28 +2199,39 @@
 }
 
 .royalTrophy {
-  inset-block-end: 6rem;
-  inset-inline-end: clamp(1rem, 4.8vw, 4.5rem);
-  inline-size: min(18vw, 17rem);
+  inset-block-end: 3.45rem;
+  inset-inline-end: clamp(1rem, 5.9vw, 5.55rem);
+  inline-size: min(16.2vw, 15.6rem);
 }
 
 .royalLion {
-  inset-block-end: 6rem;
-  inset-inline-start: clamp(0.5rem, 2vw, 2rem);
-  inline-size: min(29.5vw, 27rem);
-}
-
-.royalFabric {
-  inset-block-end: 3.75rem;
-  inset-inline-end: 0.45rem;
-  inline-size: min(11vw, 9.7rem);
+  inset-block-end: 3.7rem;
+  inset-inline-start: clamp(1rem, 4.1vw, 4.4rem);
+  inline-size: min(21.7vw, 20.5rem);
 }
 
 .royalWordmark {
   display: block;
-  inline-size: min(27vw, 24rem);
+  inline-size: min(31vw, 24rem);
+  max-inline-size: 98%;
   block-size: auto;
   margin-inline: auto;
+  filter: drop-shadow(0 6px 14px rgb(1 11 11 / 61%));
+}
+
+@media (min-width: 1240px) {
+  .royalStage .heroContent {
+    padding-block-start: clamp(3.1rem, 4.6vw, 4.4rem);
+  }
+
+  .royalStage .heroPromise {
+    font-size: clamp(2.55rem, 3.52vw, 3.5rem);
+  }
+
+  /* Keep authenticated ranks clear of the portrait and both room actions. */
+  .royalStage .copy:has(.rankBadge) .heroPromise {
+    font-size: clamp(2.2rem, 3vw, 3.1rem);
+  }
 }
 
 .royalStage .values {
@@ -2161,7 +2240,10 @@
   inline-size: min(100%, 27.5rem);
   border: 1px solid var(--home-border);
   border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--royal-deep) 83%, transparent);
+  background: linear-gradient(145deg, rgb(31 56 52 / 94%), var(--home-panel-strong));
+  box-shadow:
+    inset 0 1px rgb(215 239 225 / 13%),
+    0 8px 24px rgb(2 10 10 / 44%);
 }
 
 .royalHoo {
@@ -2174,10 +2256,10 @@
   gap: 0.28rem;
   margin: 0;
   padding: 0.38rem 0.38rem 0.28rem;
-  border: 1px solid var(--home-gold);
+  border: 1px solid var(--home-border);
   border-radius: 0.72rem;
-  background: var(--royal-deep);
-  box-shadow: inset 0 0 0 2px var(--home-border);
+  background: var(--home-panel);
+  box-shadow: 0 8px 22px rgb(2 10 10 / 36%);
 }
 
 .royalHoo img {
@@ -2230,9 +2312,24 @@
   inset-block-end: 0.65rem;
 }
 
-:global(:root:not([data-theme='light']) .home-site-layout):has(.royalStage)
-  :global(.home-header) {
-  background: oklch(16% 0.06 15);
+:global(:root:not([data-theme='light']) .home-site-layout):has(.royalStage) :global(.home-header) {
+  border: 1px solid var(--home-border);
+  background: linear-gradient(106deg, var(--home-panel-strong), var(--home-panel) 62%);
+  box-shadow:
+    0 6px 25px rgb(0 0 0 / 35%),
+    inset 0 1px rgb(218 235 219 / 8%);
+}
+
+@media (forced-colors: none) {
+  :global(:root:not([data-theme='light']) .home-header .home-logo .brand-logo-copy strong) {
+    display: block;
+    inline-size: clamp(4.2rem, 6vw, 5.55rem);
+    block-size: clamp(1.2rem, 1.8vw, 1.65rem);
+    background: url('/home/studio-wordmark.webp') center / contain no-repeat;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+  }
 }
 
 @media (max-width: 1239px) {
@@ -2264,34 +2361,100 @@
     min-block-size: 0;
   }
 
+  .royalStage .heroBackground,
+  .royalStage .heroVideo {
+    block-size: clamp(230px, 61vw, 336px) !important;
+    object-position: center;
+    mask-image: linear-gradient(black 68%, transparent);
+  }
+
   .royalStage .heroContent {
-    gap: 1rem;
-    padding: 2rem 1rem 4.5rem;
+    gap: 0.75rem;
+    padding: 2.7rem 1rem 3.75rem;
+  }
+
+  .royalStage .heroPromise {
+    margin-block-start: 0.78rem;
+    font-size: clamp(1.3rem, 6.15vw, 1.85rem);
   }
 
   .royalWordmark {
-    inline-size: min(52vw, 15rem);
+    inline-size: min(48vw, 13.2rem);
   }
 
   .royalTrophy,
-  .royalLion,
-  .royalFabric {
-    inset-block-start: 3rem;
+  .royalLion {
     inset-block-end: auto;
   }
 
   .royalTrophy {
-    inset-inline-end: 0.15rem;
-    inline-size: min(21vw, 8rem);
+    inset-block-start: 1.56rem;
+    inset-inline-end: 1.1rem;
+    inline-size: min(14vw, 5.1rem);
   }
 
   .royalLion {
-    inset-inline-start: 0.1rem;
-    inline-size: min(25vw, 9rem);
+    inset-block-start: 1.2rem;
+    inset-inline-start: 0.72rem;
+    inline-size: min(17.7vw, 6.45rem);
   }
 
-  .royalFabric {
-    inset-block-start: calc(2.5rem + min(23vw, 7rem));
-    inline-size: min(15vw, 4rem);
+  .royalHoo img {
+    inline-size: 6.25rem;
   }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .royalStage .copy h1 {
+    animation: studio-title 0.8s 0.12s cubic-bezier(0.24, 0.69, 0.29, 1) both;
+  }
+}
+
+@keyframes studio-title {
+  from {
+    opacity: 0.62;
+    translate: 0 9px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (min-width: 1101px) {
+  .sectionHead {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sectionHead > span:first-child {
+    display: none;
+  }
+
+  .sectionIntro {
+    text-align: start;
+  }
+}
+
+.game {
+  --cover-inset: clamp(0.55rem, 1vw, 0.82rem);
+  padding: 0 0 var(--cover-inset);
+}
+
+.game img {
+  border-block-end: 1px solid var(--home-border);
+  border-radius: 0;
+}
+
+.game > :is(strong, small, span) {
+  margin-inline: var(--cover-inset);
+}
+
+.game strong {
+  color: var(--home-ink);
+}
+
+.game > span {
+  inline-size: auto;
+  justify-self: stretch;
+  background: var(--home-panel-strong);
 }

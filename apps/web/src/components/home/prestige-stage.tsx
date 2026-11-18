@@ -83,20 +83,25 @@ export function PrestigeStage({
     >
       <Image
         className={styles.heroBackground}
-        src="/home/tahaddi-hero-background-3344x1882.webp"
+        src={
+          campaign
+            ? '/home/studio-background-poster.webp'
+            : '/home/tahaddi-hero-background-3344x1882.webp'
+        }
         alt=""
         fill
         priority
+        unoptimized={campaign}
         sizes="100vw"
       />
       <video
         ref={videoRef}
         className={styles.heroVideo}
-        src="/home/challenge-intro.mp4"
+        src={campaign ? '/home/studio-background-loop.mp4' : '/home/challenge-intro.mp4'}
         muted
         loop
         playsInline
-        preload="metadata"
+        preload={campaign ? 'none' : 'metadata'}
         aria-hidden="true"
       />
       <button
