@@ -7,9 +7,9 @@ const mocks = vi.hoisted(() => ({
   normalize: vi.fn(),
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
-vi.mock('@/lib/voice/identity', () => ({
-  voiceIdentity: mocks.identity,
-  voiceRateLimit: mocks.limit,
+vi.mock('@/lib/auth/api-actor', () => ({
+  requireApiActor: mocks.identity,
+  limitApiActor: mocks.limit,
 }));
 vi.mock('@/lib/profile/repository', () => ({ saveProfileIdentity: mocks.save }));
 vi.mock('@/lib/profile/image', () => ({
@@ -17,7 +17,7 @@ vi.mock('@/lib/profile/image', () => ({
   normalizeProfileImage: mocks.normalize,
 }));
 import { PATCH } from './route';
-import { VoiceHttpError } from '@/lib/voice/http';
+import { ApiHttpError } from '@/lib/http/api';
 let form: FormData;
 beforeEach(() => {
   vi.clearAllMocks();
@@ -53,7 +53,7 @@ describe('profile update API', () => {
   it('requires the allowed origin and a current session before reading the body', async () => {
     expect((await PATCH(request('https://attacker.example'))).status).toBe(403);
     expect(mocks.form).not.toHaveBeenCalled();
-    mocks.identity.mockRejectedValue(new VoiceHttpError(401, 'session revoked'));
+    mocks.identity.mockRejectedValue(new ApiHttpError(401, 'session revoked'));
     expect((await PATCH(request())).status).toBe(401);
     expect(mocks.save).not.toHaveBeenCalled();
   });
@@ -67,13 +67,13 @@ describe('profile update API', () => {
     expect(mocks.save).not.toHaveBeenCalled();
   });
   it('reports a username conflict and retains the existing profile on image validation failure', async () => {
-    mocks.save.mockRejectedValue(new VoiceHttpError(409, 'مستخدم بالفعل', 'USERNAME_TAKEN'));
+    mocks.save.mockRejectedValue(new ApiHttpError(409, 'مستخدم بالفعل', 'USERNAME_TAKEN'));
     const response = await PATCH(request());
     expect(response.status).toBe(409);
     expect((await response.json()).code).toBe('USERNAME_TAKEN');
     mocks.save.mockClear();
     form.set('image', new File(['invalid'], 'image.png', { type: 'image/png' }));
-    mocks.normalize.mockRejectedValue(new VoiceHttpError(400, 'الصورة تالفة'));
+    mocks.normalize.mockRejectedValue(new ApiHttpError(400, 'الصورة تالفة'));
     expect((await PATCH(request())).status).toBe(400);
     expect(mocks.save).not.toHaveBeenCalled();
   });

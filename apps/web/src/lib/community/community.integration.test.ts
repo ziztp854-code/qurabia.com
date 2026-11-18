@@ -34,12 +34,7 @@ import {
   updateMyCommunityProfile,
 } from './service';
 import { commandVoiceRoom, createVoiceRoom } from '@/lib/community-voice/repository';
-import {
-  getVoicePreferences,
-  createVoiceRoom as createSfuVoiceRoom,
-  joinVoiceRoom as joinSfuVoiceRoom,
-  getVoiceSnapshot as getSfuVoiceSnapshot,
-} from '@/lib/voice/repository';
+import { getSocialPreferences } from './social-preferences';
 
 const connectionString = process.env.COMMUNITY_VOICE_TEST_DATABASE_URL;
 const suite = describe.skipIf(!connectionString);
@@ -164,12 +159,12 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     expect(
       (await db.voiceDirectMessage.findUniqueOrThrow({ where: { id: 'legacy-dm' } })).text,
     ).toBe('رسالة خاصة محفوظة');
-    expect((await getVoicePreferences('legacy-player')).following).toEqual(['legacy-owner']);
+    expect((await getSocialPreferences('legacy-player')).following).toEqual(['legacy-owner']);
     expect(await db.communityVoiceRoom.count()).toBe(0);
     as(null);
     expect(await getPublicProfile(owner.accountNumber)).toBeNull();
     as(owner);
-    expect(await getPublicProfile(owner.accountNumber)).not.toBeNull();
+    expect(await getPublicProfile(owner.accountNumber)).toMatchObject({ rooms: [] });
     expect(owner.accountNumber).toBe(1);
     expect(String(legacy.accountNumber)).toMatch(/^[1-9]\d{8}$/);
     expect(await db.communityBadge.count()).toBeGreaterThanOrEqual(18);
@@ -200,7 +195,7 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     await followProfile(alice.accountNumber, true);
     await followProfile(alice.accountNumber, true);
     expect(
-      (await getVoicePreferences(bob.id)).following.filter((id) => id === alice.id),
+      (await getSocialPreferences(bob.id)).following.filter((id) => id === alice.id),
     ).toHaveLength(1);
     as(alice);
     await updateMyCommunityProfile({ visibility: 'PRIVATE' });
@@ -208,7 +203,7 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     as(bob);
     expect(await getPublicProfile(alice.accountNumber)).toBeNull();
     await followProfile(alice.accountNumber, false);
-    expect((await getVoicePreferences(bob.id)).following).not.toContain(alice.id);
+    expect((await getSocialPreferences(bob.id)).following).not.toContain(alice.id);
     as(null);
     expect(await getPublicProfile(alice.accountNumber)).toBeNull();
     as(alice);
@@ -490,68 +485,4 @@ suite('community and voice with real PostgreSQL migrations and Prisma', () => {
     await commandVoiceRoom(room.id, voiceActor(host), { type: 'close', clientId: hostClient }, db);
   }, 15000);
 
-  it('refreshes granted display identity inside the existing SFU room without changing its roles', async () => {
-    const liveHost = await newUser('sfu-host');
-    const liveGuest = await newUser('sfu-guest');
-    as(owner);
-    await adminCommunityCommand({
-      operation: 'grantBadge',
-      accountNumber: liveGuest.accountNumber,
-      badgeId: 'gold-member',
-    });
-    as(liveGuest);
-    await updateMyCommunityProfile({
-      appearance: { ...appearance, effectId: 'entrance-gold', primaryBadgeId: 'gold-member' },
-    });
-    const created = await createSfuVoiceRoom(
-      {
-        id: liveHost.id,
-        name: 'مضيف الصوت القائم',
-        image: null,
-        tokenVersion: liveHost.tokenVersion,
-      },
-      {
-        name: 'غرفة SFU قائمة',
-        description: 'اختبار زخرفة دون استبدال الصوت',
-        category: 'مجالس',
-        cover: '',
-        seatCount: 6,
-        isPrivate: false,
-        allowMicRequests: true,
-        chatEnabled: true,
-        moderatorsCanManage: true,
-      },
-    );
-    await joinSfuVoiceRoom(
-      created.room.id,
-      {
-        id: liveGuest.id,
-        name: 'ضيف الصوت القائم',
-        image: null,
-        tokenVersion: liveGuest.tokenVersion,
-      },
-      {},
-    );
-    const snapshot = await getSfuVoiceSnapshot(created.room.id, liveHost.id, true);
-    const guest = snapshot.participants.find((member) => member.id === liveGuest.id)!;
-    expect(guest.communityIdentity?.effect?.id).toBe('entrance-gold');
-    expect(guest.accountNumber).toBe(liveGuest.accountNumber);
-    expect(guest.role).toBe('listener');
-    as(owner);
-    await adminCommunityCommand({
-      operation: 'revokeBadge',
-      accountNumber: liveGuest.accountNumber,
-      badgeId: 'gold-member',
-    });
-    const revoked = await getSfuVoiceSnapshot(created.room.id, liveHost.id, true);
-    expect(
-      revoked.participants.find((member) => member.id === liveGuest.id)?.communityIdentity?.effect,
-    ).toBeNull();
-    expect(revoked.participants.find((member) => member.id === liveGuest.id)?.role).toBe(
-      'listener',
-    );
-    expect((await db.voiceRoom.findUniqueOrThrow({ where: { id: created.room.id } })).active).toBe(
-      true,
-    );
-  });
 });

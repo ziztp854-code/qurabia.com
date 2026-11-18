@@ -3,9 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/cairo';
 import '../../tokens.css';
 import '../../src/app/globals.css';
-import '../../src/app/voice/voice.css';
 import { KnowledgeTowerRoom } from '../../src/components/special-games/knowledge-tower-room';
-import { VoiceLobby } from '../../src/components/voice/voice-lobby';
 import { AuthShell } from '../../src/components/auth/auth-shell';
 import { CommunityProfilePage } from '../../src/components/community/profile-view';
 import { Input, PasswordInput, Button } from '../../src/components/ui';
@@ -16,11 +14,10 @@ createRoot(document.getElementById('root')!).render(
     <main style={{ maxWidth: 1100, margin: 'auto', padding: 16 }}>
       <CommunityProfilePage accountNumber={124} initialProfile={profile} />
     </main>
-  ) : mode === 'login' ? (
+  ) : (
     <AuthShell
-      live
       title="تسجيل الدخول"
-      description="أهلًا بك في تحدي لايف. سجّل دخولك للانضمام إلى اللقاء."
+      description="أهلًا بك في تحدي."
       footer={<a href="/auth/sign-up">إنشاء حساب</a>}
     >
       <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
@@ -32,7 +29,5 @@ createRoot(document.getElementById('root')!).render(
         <p>معاينة مرئية محلية — لا تُرسل بيانات دخول</p>
       </form>
     </AuthShell>
-  ) : (
-    <VoiceLobby user={null} />
   ),
 );

@@ -17,9 +17,9 @@ function assertIsolatedDatabase(value: string) {
 let db: DatabaseClient;
 let currentUser = '';
 vi.mock('@/lib/auth/prisma', () => ({ getPrismaClient: () => db }));
-vi.mock('@/lib/voice/identity', () => ({
-  voiceActor: async () => ({ id: currentUser }),
-  voiceRateLimit: async () => {},
+vi.mock('@/lib/auth/api-actor', () => ({
+  requireApiActor: async () => ({ id: currentUser }),
+  limitApiActor: async () => {},
 }));
 
 import { GET, PUT } from './route';

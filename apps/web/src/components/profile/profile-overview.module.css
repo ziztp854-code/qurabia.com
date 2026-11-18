@@ -1,7 +1,4 @@
 .profile {
-  --voice-cyan: var(--admin-verified);
-  --voice-ink: var(--technical-accent-foreground);
-  --voice-gold-light: var(--primary);
   border-radius: var(--radius-xl);
   overflow: hidden;
 }

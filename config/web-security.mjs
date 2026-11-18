@@ -1,5 +1,3 @@
-import voiceCloudOrigins from './voice-cloud-origins.json' with { type: 'json' };
-
 function toOrigin(value) {
   const trimmed = value?.trim();
   if (!trimmed) return null;
@@ -14,7 +12,6 @@ function toWebSocketOrigin(origin) {
   return origin.replace(/^http/, 'ws');
 }
 
-/** The web document and production voice check share this policy. */
 export function buildWebContentSecurityPolicy(env = process.env) {
   const connectSources = new Set([
     "'self'",
@@ -29,19 +26,6 @@ export function buildWebContentSecurityPolicy(env = process.env) {
     if (!origin) continue;
     connectSources.add(origin);
     connectSources.add(toWebSocketOrigin(origin));
-  }
-
-  // A voice session survives App Router navigation to games. The policy belongs
-  // to the initial document, so the configured gateway must work on every entry route.
-  {
-    const origin = toOrigin(env.LIVEKIT_URL);
-    if (origin && /^(wss?|https?):/.test(origin)) {
-      const httpOrigin = origin.replace(/^ws/, 'http');
-      connectSources.add(httpOrigin);
-      connectSources.add(toWebSocketOrigin(httpOrigin));
-    }
-    if (env.LIVEKIT_MODE === 'cloud')
-      for (const cloudOrigin of voiceCloudOrigins) connectSources.add(cloudOrigin);
   }
 
   return [

@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   actor: vi.fn(), rate: vi.fn(), findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn(),
 }));
-vi.mock('@/lib/voice/identity', () => ({ voiceActor: mocks.actor, voiceRateLimit: mocks.rate }));
+vi.mock('@/lib/auth/api-actor', () => ({ requireApiActor: mocks.actor, limitApiActor: mocks.rate }));
 vi.mock('@/lib/auth/prisma', () => ({
   getPrismaClient: () => ({ gameFavorite: { findMany: mocks.findMany, upsert: mocks.upsert, deleteMany: mocks.deleteMany } }),
 }));
 import { GET, PUT } from './route';
-import { VoiceHttpError } from '@/lib/voice/http';
+import { ApiHttpError } from '@/lib/http/api';
 
 function request(body: unknown, origin = 'http://localhost:3000') {
   return new Request('http://localhost:3000/api/game-favorites', {
@@ -24,7 +24,7 @@ describe('game favorites', () => {
     mocks.findMany.mockResolvedValue([{ gameId: 'chess' }]);
   });
   it('requires an active account for reading and writing', async () => {
-    mocks.actor.mockRejectedValue(new VoiceHttpError(401, 'سجّل الدخول'));
+    mocks.actor.mockRejectedValue(new ApiHttpError(401, 'سجّل الدخول'));
     expect((await GET()).status).toBe(401);
     expect((await PUT(request({ gameId: 'chess', favorite: true }))).status).toBe(401);
     expect(mocks.findMany).not.toHaveBeenCalled();

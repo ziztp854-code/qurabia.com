@@ -3,9 +3,9 @@ import { canonicalAccountNumber, PUBLIC_ACCOUNT_NUMBER_PATTERN } from '@/lib/acc
 import { Prisma } from '@tahaddi/database';
 import { getDisplayPlanCode } from '@/lib/subscription/entitlements';
 import { planDefinition } from '@tahaddi/domain';
-import { getVoicePreferences, updateVoicePreferences } from '@/lib/voice/repository';
+import { getSocialPreferences, updateFollowPreference } from './social-preferences';
 import { profileSocialCounts } from '@/lib/profile/repository';
-import { VoiceHttpError } from '@/lib/voice/http';
+import { ApiHttpError } from '@/lib/http/api';
 import { getPrismaClient } from '@/lib/auth/prisma';
 import { getCurrentSession } from '@/lib/auth/session';
 import { isSessionUserCurrent } from '@/lib/auth/session-user';
@@ -218,51 +218,17 @@ export async function getUserIdentity(
   ].slice(0, 4);
   return result;
 }
-/** Bulk counterpart for LiveKit room/profile refreshes; one catalog read, no per-member queries. */
-export async function getUserIdentities(
-  userIds: readonly string[],
-  db: CommunityReader = getPrismaClient(),
-): Promise<Map<string, PublicIdentity>> {
-  const ids = [...new Set(userIds)];
-  if (!ids.length) return new Map();
-  const [rows, cosmetics] = await Promise.all([
-    db.user.findMany({
-      where: { id: { in: ids }, status: 'ACTIVE' },
-      select: identitySelect,
-    }),
-    db.profileCosmetic.findMany({ where: { archived: false }, orderBy: { createdAt: 'asc' } }),
-  ]);
-  const catalog = cosmetics.map(cosmetic);
-  const result = new Map<string, PublicIdentity>();
-  for (const row of rows) {
-    const entry = identity(row, await resolve(row, db, catalog));
-    entry.badges = [
-      ...(entry.primaryBadge ? [entry.primaryBadge] : []),
-      ...entry.badges.filter((b) => b.id !== entry.primaryBadge?.id),
-    ].slice(0, 4);
-    result.set(row.id, entry);
-  }
-  return result;
-}
 async function profileFor(row: IdentityRow, viewerId: string | null): Promise<PublicProfile> {
   const db = getPrismaClient();
   const state = await resolve(row);
   const self = viewerId === row.id;
   const [counts, targetPreferences, viewerPreferences, rooms] = await Promise.all([
     profileSocialCounts(row.id),
-    getVoicePreferences(row.id),
-    viewerId ? getVoicePreferences(viewerId) : null,
+    getSocialPreferences(row.id),
+    viewerId ? getSocialPreferences(viewerId) : null,
     self || row.profile?.showRooms !== false
-      ? db.$queryRaw<{ id: string; name: string; code: string; role: string; system: string }[]>`
-        SELECT r.id,COALESCE(r.state->'settings'->>'name','غرفة صوتية') AS name,r.id AS code,
-          CASE WHEN r."hostId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role,'live' AS system,r."createdAt"
-        FROM "VoiceRoom" r WHERE r.active=true
-          AND (r."hostId"=${row.id} OR EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'participants') m
-            WHERE m->>'id'=${row.id} AND m->>'role'='moderator' AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-90000))
-          AND (r."isPrivate"=false OR ${self} OR EXISTS(SELECT 1 FROM jsonb_array_elements(r.state->'participants') m
-            WHERE m->>'id'=${viewerId ?? ''} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-90000))
-        UNION ALL
-        SELECT r.id,r.name,r.code,CASE WHEN r."ownerId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role,'community' AS system,r."createdAt"
+      ? db.$queryRaw<{ id: string; name: string; code: string; role: string }[]>`
+        SELECT r.id,r.name,r.code,CASE WHEN r."ownerId"=${row.id} THEN 'OWNER' ELSE 'MODERATOR' END AS role,r."createdAt"
         FROM "CommunityVoiceRoom" r WHERE r.status='OPEN' AND (r."ownerId"=${row.id} OR EXISTS (
           SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${row.id}
             AND m->>'role'='MODERATOR' AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000
@@ -296,8 +262,8 @@ async function profileFor(row: IdentityRow, viewerId: string | null): Promise<Pu
     rooms: rooms.map((room) => ({
       id: room.id,
       name: room.name,
-      roomNumber: room.system === 'community' ? Number(room.code) : room.code,
-      href: `/${room.system === 'community' ? 'community-voice' : 'voice'}/${encodeURIComponent(room.id)}`,
+      roomNumber: Number(room.code),
+      href: `/community-voice/${encodeURIComponent(room.id)}`,
       role: room.role,
     })),
     appearance: state.appearance,
@@ -320,8 +286,8 @@ export async function getPublicProfile(
   });
   if (!row || row.status !== 'ACTIVE') return null;
   const self = actor?.id === row.id;
-  const targetPreferences = await getVoicePreferences(row.id);
-  const actorPreferences = actor ? await getVoicePreferences(actor.id) : null;
+  const targetPreferences = await getSocialPreferences(row.id);
+  const actorPreferences = actor ? await getSocialPreferences(actor.id) : null;
   if (
     !self &&
     (targetPreferences.blockedUsers.includes(actor?.id ?? '') ||
@@ -447,7 +413,7 @@ export async function updateMyCommunityProfile(input: unknown) {
         },
       });
       if (!updated.count) throw new CommunityError('CONFLICT', 409);
-      // Reuse the existing voice privacy flag so legacy privacy controls remain authoritative.
+      // Keep the existing privacy flag authoritative for previously saved profile choices.
       fields.visibility = data.visibility === 'PRIVATE' ? 'PUBLIC' : data.visibility;
     }
     if (data.displayName !== undefined)
@@ -481,9 +447,9 @@ export async function followProfile(accountNumber: number, follow: boolean) {
   if (follow && !(await getPublicProfile(accountNumber)))
     throw new CommunityError('NOT_FOUND', 404);
   try {
-    await updateVoicePreferences(actor.id, { type: 'follow', id: target.id, enabled: follow });
+    await updateFollowPreference(actor.id, target.id, follow);
   } catch (error) {
-    if (error instanceof VoiceHttpError) throw new CommunityError(error.code, error.status);
+    if (error instanceof ApiHttpError) throw new CommunityError(error.code, error.status);
     throw error;
   }
   return getPublicProfile(accountNumber);
@@ -685,8 +651,8 @@ export async function getCommunityRaster(kind: string, id: string) {
     });
     if (!row || row.status !== 'ACTIVE') throw new CommunityError('NOT_FOUND', 404);
     const actor = await viewer();
-    const targetPreferences = await getVoicePreferences(row.id);
-    const actorPreferences = actor ? await getVoicePreferences(actor.id) : null;
+    const targetPreferences = await getSocialPreferences(row.id);
+    const actorPreferences = actor ? await getSocialPreferences(actor.id) : null;
     if (
       actor?.id !== row.id &&
       (targetPreferences.blockedUsers.includes(actor?.id ?? '') ||
@@ -705,14 +671,7 @@ export async function getCommunityRaster(kind: string, id: string) {
         >`SELECT 1 AS allowed FROM "CommunityVoiceRoom" r WHERE r.status='OPEN'
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${actor.id} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000 AND (m->>'tokenVersion')::int=${actor.tokenVersion})
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(r.state->'members') m WHERE m->'identity'->>'userId'=${row.id} AND (m->>'lastSeenAt')::numeric > extract(epoch FROM clock_timestamp())*1000-45000 AND (m->>'tokenVersion')::int=${row.tokenVersion}) LIMIT 1`;
-        if (!shared.length) {
-          const liveShared = await db.$queryRaw<
-            { allowed: number }[]
-          >`SELECT 1 AS allowed FROM "VoiceRoom" r WHERE r.active=true
-            AND EXISTS(SELECT 1 FROM jsonb_array_elements(r.state->'participants') m WHERE m->>'id'=${actor.id} AND (m->>'lastSeenAt')::numeric>extract(epoch FROM clock_timestamp())*1000-90000 AND COALESCE((m->>'tokenVersion')::int,0)=${actor.tokenVersion})
-            AND EXISTS(SELECT 1 FROM jsonb_array_elements(r.state->'participants') m WHERE m->>'id'=${row.id} AND (m->>'lastSeenAt')::numeric>extract(epoch FROM clock_timestamp())*1000-90000 AND COALESCE((m->>'tokenVersion')::int,0)=${row.tokenVersion}) LIMIT 1`;
-          if (!liveShared.length) throw new CommunityError('NOT_FOUND', 404);
-        }
+        if (!shared.length) throw new CommunityError('NOT_FOUND', 404);
       }
     }
     value =

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { publicGames } from '@/data/games';
 import { getPrismaClient } from '@/lib/auth/prisma';
-import { voiceActor, voiceRateLimit } from '@/lib/voice/identity';
-import { jsonFailure, jsonSuccess, readVoiceBody, voiceOrigin, VoiceHttpError } from '@/lib/voice/http';
+import { requireApiActor, limitApiActor } from '@/lib/auth/api-actor';
+import { jsonFailure, jsonSuccess, readJsonBody, assertApiOrigin, ApiHttpError } from '@/lib/http/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,8 @@ const favoriteSchema = z.object({ gameId: z.string().min(1).max(80), favorite: z
 
 export async function GET() {
   try {
-    const user = await voiceActor();
-    await voiceRateLimit(user.id, false, 'game-favorites');
+    const user = await requireApiActor();
+    await limitApiActor(user.id, false, 'game-favorites');
     const favorites = await getPrismaClient().gameFavorite.findMany({
       where: { userId: user.id },
       select: { gameId: true },
@@ -25,12 +25,12 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    voiceOrigin(request);
-    const user = await voiceActor();
-    await voiceRateLimit(user.id, true, 'game-favorites');
-    const { gameId, favorite } = await readVoiceBody(request, favoriteSchema);
+    assertApiOrigin(request);
+    const user = await requireApiActor();
+    await limitApiActor(user.id, true, 'game-favorites');
+    const { gameId, favorite } = await readJsonBody(request, favoriteSchema);
     if (!publicGames.some((game) => game.id === gameId && game.status === 'live')) {
-      throw new VoiceHttpError(400, 'اللعبة غير متاحة.', 'INVALID_GAME');
+      throw new ApiHttpError(400, 'اللعبة غير متاحة.', 'INVALID_GAME');
     }
     const favorites = getPrismaClient().gameFavorite;
     if (favorite) {

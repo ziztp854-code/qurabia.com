@@ -56,7 +56,7 @@ async function main() {
         },
         {
           find: 'next/navigation',
-          replacement: path.join(process.cwd(), 'e2e/fixtures/live-room-adapters.tsx'),
+          replacement: path.join(process.cwd(), 'e2e/fixtures/community-next-navigation.ts'),
         },
       ],
     },

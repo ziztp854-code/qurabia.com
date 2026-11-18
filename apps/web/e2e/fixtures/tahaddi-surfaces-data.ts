@@ -1,4 +1,3 @@
-import type { VoiceList } from '../../src/lib/voice/types';
 import type { PublicProfile } from '../../src/lib/community/contracts';
 export const profile: PublicProfile = {
   userId: 'sara',
@@ -34,29 +33,4 @@ export const profile: PublicProfile = {
   },
   showRooms: true,
   showCollection: true,
-};
-export const rooms: VoiceList = {
-  rooms: ['جلسة نقاش حرة', 'تحدي المواهب', 'سوالف بنات', 'موسيقى لايف'].map((name, i) => ({
-    id: `room-${i}`,
-    name,
-    description: 'لقاء مباشر يجمعنا',
-    category: i === 3 ? 'موسيقى' : 'مجالس',
-    cover: `/voice/covers/${['friends', 'gaming', 'discussion', 'oud'][i]}.webp`,
-    seatCount: 9,
-    isPrivate: false,
-    allowMicRequests: true,
-    chatEnabled: true,
-    moderatorsCanManage: true,
-    hostId: `host-${i}`,
-    hostName: ['سارة', 'أحمد', 'نور', 'علي'][i],
-    hostImage: null,
-    createdAt: 1792500000000 + i * 1000,
-    active: true,
-    lockedSeats: [],
-    participantCount: [240, 110, 87, 32][i],
-    listenerCount: [239, 109, 86, 31][i],
-    speakers: [],
-    passwordRequired: false,
-  })),
-  stats: { activeRooms: 4, listeners: 465, participants: 469 },
 };

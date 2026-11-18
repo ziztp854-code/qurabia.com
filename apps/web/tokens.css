@@ -484,45 +484,17 @@
   --royal-material-light: color-mix(in srgb, var(--surface-strong) 80%, transparent);
 }
 
-/* Tahaddi Live — immersive audio LIVE from the generated OpenDesign studio.
-   The original voice token names remain stable for component compatibility. */
-.v-app,
-.v-player,
-.v-room-scope,
-.v-room-scope .v-room-app {
-  --voice-bg: #080a0e;
-  --voice-card: #101319;
-  --voice-raised: #161a22;
-  --voice-gold: #25f4ee;
-  --voice-gold-light: #b3fbf7;
-  --voice-gold-deep: #19c6c1;
-  --voice-purple: #b5aaff;
-  --voice-cyan: #25f4ee;
-  --voice-live: #fe2c7b;
-  --voice-live-strong: #c82462;
-  --voice-text: #f7f8fb;
-  --voice-muted: #aeb4c2;
-  --voice-ink: #080a0e;
-  --voice-border: color-mix(in srgb, var(--voice-muted) 44%, transparent);
-  --voice-line: color-mix(in srgb, var(--voice-muted) 20%, transparent);
-  --voice-glass: color-mix(in srgb, var(--voice-bg) 96%, transparent);
-  --voice-shade: color-mix(in srgb, var(--voice-bg) 98%, transparent);
-  --voice-soft-shade: color-mix(in srgb, var(--voice-bg) 45%, transparent);
-  --voice-glow: color-mix(in srgb, var(--voice-gold) 10%, transparent);
-  --voice-danger: #ff8da9;
-  --voice-success: #7ce4bc;
-  --voice-shadow: 0 16px 50px rgb(0 0 0 / 0.18);
-  --voice-radius-card: 20px;
-  --voice-radius-control: 12px;
-  --voice-gold-gradient: linear-gradient(180deg, var(--voice-gold), var(--voice-gold-deep));
-  --background: var(--voice-bg);
-  --foreground: var(--voice-text);
-  --surface: var(--voice-card);
-  --surface-strong: var(--voice-raised);
-  --muted-foreground: var(--voice-muted);
-  --primary: var(--voice-gold);
-  --primary-foreground: var(--voice-ink);
-  --border: var(--voice-line);
+.profile-portrait {
+  --portrait-bg: #080a0e;
+  --portrait-card: #101319;
+  --portrait-raised: #161a22;
+  --portrait-accent: #25f4ee;
+  --portrait-accent-soft: #b3fbf7;
+  --portrait-text: #f7f8fb;
+  --portrait-muted: #aeb4c2;
+  --portrait-border: color-mix(in srgb, var(--portrait-muted) 44%, transparent);
+  --portrait-line: color-mix(in srgb, var(--portrait-muted) 20%, transparent);
+  --portrait-glow: color-mix(in srgb, var(--portrait-accent) 10%, transparent);
 }
 
 /* Local Alfazaa game panels share scoped palettes without changing site themes. */

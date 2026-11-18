@@ -33,7 +33,6 @@ updates:
           - react-native
           - react-native-*
           - '@react-native/*'
-          - '@livekit/react-native*'
         update-types:
           - minor
           - patch

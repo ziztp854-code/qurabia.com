@@ -7,8 +7,6 @@ vi.mock('@/lib/auth/session', () => ({ getCurrentSession: async () => null }));
 import { profileSocialCounts, saveProfileIdentity } from './repository';
 import { GET } from '@/app/api/profile/avatar/[userId]/route';
 import sharp from 'sharp';
-import { createVoiceRoom, getVoiceSnapshot, listVoiceRooms } from '@/lib/voice/repository';
-import { createRoomSchema } from '@/lib/voice/schemas';
 
 // Opt-in only, restricted to the disposable local database created by the test runner.
 const url = process.env.PROFILE_TEST_DATABASE_URL;
@@ -95,23 +93,6 @@ describe.skipIf(!local)('profile identity on real local PostgreSQL', () => {
     const loser = results[0].status === 'rejected' ? 'racer1' : 'racer2';
     expect((await holder.db!.user.findUniqueOrThrow({ where: { id: loser } })).name).toBe(
       `original-${loser}`,
-    );
-  });
-  it('refreshes an existing room host/participant identity from the edited profile without reconnecting', async () => {
-    const room = await createVoiceRoom(
-      { id: 'self', name: 'اسم قديم', image: null, tokenVersion: 0 },
-      createRoomSchema.parse({ name: 'مجلس الاختبار المحلي' }),
-    );
-    await saveProfileIdentity('self', {
-      displayName: 'اسم الغرفة الجديد',
-      username: 'aziz_voice',
-      bio: '',
-    });
-    const snapshot = await getVoiceSnapshot(room.room.id, 'self');
-    expect(snapshot.room.hostName).toBe('اسم الغرفة الجديد');
-    expect(snapshot.participants.find((p) => p.id === 'self')?.name).toBe('اسم الغرفة الجديد');
-    expect((await listVoiceRooms('self')).rooms.find((r) => r.id === room.room.id)?.hostName).toBe(
-      'اسم الغرفة الجديد',
     );
   });
 });

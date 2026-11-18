@@ -77,6 +77,7 @@ const nextConfig: NextConfig = {
     }));
     return [
       ...gameRedirects,
+      // Preserve bookmarked URLs from retired and hidden features.
       ...['/voice', '/voice/:roomId([a-zA-Z0-9_-]+)', '/community-voice/:path*', '/admin/voice-emojis/:path*'].map((source) => ({
         source,
         destination: '/',
