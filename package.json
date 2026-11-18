@@ -54,7 +54,7 @@
     "build:web:production": "node scripts/build-web-production.mjs"
   },
   "devDependencies": {
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.10",
     "prettier": "^3.9.8",
     "prisma": "^7.10.0",
     "tsx": "^4.23.13",
