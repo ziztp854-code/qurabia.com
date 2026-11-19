@@ -74,35 +74,8 @@
   grid-area: auto;
 }
 
-.hostFinale:global(.royal-finale-screen.royal-finale-ceremony) :global(.royal-ceremony-moment) {
-  align-content: center;
-  min-block-size: clamp(20rem, 39vw, 32rem);
-  block-size: auto;
-  border: 1px solid color-mix(in srgb, var(--royal-gold) 43%, transparent);
-  border-radius: var(--radius-lg);
-  background:
-    linear-gradient(
-      0deg,
-      var(--royal-black),
-      color-mix(in srgb, var(--royal-black) 42%, transparent)
-    ),
-    url('/live/cinematic/finale-stage.webp') center 64% / cover no-repeat;
-}
-
-.hostFinale:global(.royal-finale-screen.royal-finale-ceremony)
-  :global(.royal-ceremony-moment)::before,
-.hostFinale:global(.royal-finale-screen.royal-finale-ceremony)
-  :global(.royal-ceremony-moment)::after {
-  content: none;
-}
-
-.hostFinale:global(.royal-finale-screen.royal-finale-ceremony)
-  :global(.royal-ceremony-moment)
-  > h1 {
-  font-size: clamp(2rem, 6vw, 4.2rem);
-}
-
 .spotlight {
+  --shot-accent: var(--royal-gold-bright);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -132,12 +105,35 @@
     url('/live/cinematic/finale-stage.webp') center 64% / cover no-repeat;
 }
 
-.winnerReveal .spotlight {
+.sequence .spotlight {
   min-block-size: clamp(20rem, 39vw, 32rem);
 }
 
-.winnerReveal .spotlight::before {
-  animation: host-winner-lights 1250ms cubic-bezier(0.17, 0.75, 0.34, 1) both;
+.spotlight[data-rank='2'] {
+  --shot-accent: var(--gold-100);
+}
+
+.spotlight[data-rank='3'] {
+  --shot-accent: var(--gold-400);
+}
+
+.sequence .spotlight[data-rank='1']::before {
+  animation: host-winner-lights 1000ms cubic-bezier(0.17, 0.75, 0.34, 1) both;
+}
+
+.sequence .spotlight[data-rank='1']::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 38%,
+    color-mix(in srgb, var(--shot-accent) 20%, transparent) 50%,
+    transparent 62%
+  );
+  animation: host-winner-sweep 660ms ease-out both;
 }
 
 .spotlightCopy {
@@ -149,7 +145,7 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: var(--royal-gold-bright);
+  color: var(--shot-accent);
   font-size: clamp(0.9rem, 2vw, 1.18rem);
   font-weight: 800;
 }
@@ -176,7 +172,7 @@
   gap: 0.1rem 0.65rem;
   padding-block-start: 0.55rem;
   border-block-start: 1px solid color-mix(in srgb, var(--royal-gold) 37%, transparent);
-  color: var(--royal-gold-bright);
+  color: var(--shot-accent);
 }
 
 .score strong {
@@ -191,30 +187,55 @@
   font-weight: 700;
 }
 
-.trophy {
+.stageObject {
   display: grid;
   place-items: center;
   min-inline-size: 0;
 }
 
-.trophy img {
+.stageObject img {
   display: block;
   inline-size: min(100%, clamp(6.5rem, 14vw, 11rem));
   block-size: auto;
   filter: drop-shadow(0 0.75rem 0.45rem var(--royal-black));
 }
 
-.winnerReveal .trophy,
-.winnerReveal .spotlightCopy > * {
-  animation: host-winner-enter 560ms cubic-bezier(0.2, 0.65, 0.3, 1) both;
+.rankMedallion {
+  display: grid;
+  place-items: center;
+  inline-size: min(100%, clamp(4rem, 15vw, 12rem));
+  aspect-ratio: 1;
+  border: 1px solid var(--shot-accent);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse at 45% 18%,
+      color-mix(in srgb, var(--shot-accent) 27%, transparent),
+      transparent 70%
+    ),
+    var(--royal-black);
+  box-shadow: inset 0 0 0 0.3rem color-mix(in srgb, var(--shot-accent) 20%, transparent);
+  color: var(--shot-accent);
+  font: 800 clamp(1.9rem, 7vw, 5rem)/1 var(--font-alexandria);
 }
 
-.winnerReveal .spotlightCopy > h1 {
-  animation-delay: 100ms;
+.rankMedallion svg {
+  inline-size: 40%;
+  block-size: 40%;
+  stroke-width: 1.4;
 }
 
-.winnerReveal .score {
-  animation-delay: 220ms;
+.sequence .spotlightCopy > *,
+.sequence .stageObject {
+  animation: host-winner-enter 520ms cubic-bezier(0.18, 0.73, 0.33, 1) both;
+}
+
+.sequence .spotlightCopy > h1 {
+  animation-delay: 110ms;
+}
+
+.sequence .score {
+  animation-delay: 235ms;
 }
 
 .hostFinale:global(.royal-finale-screen.royal-finale-ceremony) :global(.royal-skip-button) {
@@ -315,12 +336,24 @@
 
 @keyframes host-winner-lights {
   from {
-    opacity: 0.45;
     transform: scale(1.045);
   }
   to {
-    opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes host-winner-sweep {
+  from {
+    opacity: 0;
+    transform: translateX(-64%);
+  }
+  33% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(65%);
   }
 }
 
@@ -366,11 +399,7 @@
     grid-template-columns: minmax(0, 1fr) minmax(3.25rem, 0.38fr);
   }
 
-  .winnerReveal .spotlight {
-    min-block-size: 13rem;
-  }
-
-  .hostFinale:global(.royal-finale-screen.royal-finale-ceremony) :global(.royal-ceremony-moment) {
+  .sequence .spotlight {
     min-block-size: 13rem;
   }
 
@@ -394,9 +423,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .winnerReveal .spotlight::before,
-  .winnerReveal .spotlightCopy > *,
-  .winnerReveal .trophy {
+  .sequence .spotlight[data-rank='1']::before,
+  .sequence .spotlight[data-rank='1']::after,
+  .sequence .spotlightCopy > *,
+  .sequence .stageObject {
     animation: none;
+  }
+
+  .sequence .spotlight[data-rank='1']::after {
+    content: none;
   }
 }
