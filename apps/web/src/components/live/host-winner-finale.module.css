@@ -1,0 +1,436 @@
+.finishedHost:global(.royal-host-dashboard.royal-live) {
+  display: grid;
+  grid-template-rows: none;
+  align-content: start;
+  gap: clamp(0.55rem, 2vw, 1.25rem);
+  block-size: auto;
+  min-block-size: 100svh;
+  overflow: visible;
+}
+
+.hostFinale:global(.royal-finale-screen) {
+  inline-size: min(100%, 76rem);
+  min-inline-size: 0;
+  block-size: auto;
+  min-block-size: 0;
+  margin-inline: auto;
+  border: 1px solid color-mix(in srgb, var(--royal-gold) 36%, transparent);
+  border-radius: var(--radius-lg);
+}
+
+.hostFinale:global(.royal-finale-screen.royal-finale-ceremony) {
+  grid-template-rows: auto auto auto;
+  gap: 0.8rem;
+}
+
+.hostFinale:global(.royal-finale-screen.is-final) {
+  grid-template-columns: minmax(0, 1.7fr) minmax(14rem, 1fr);
+  grid-template-rows: auto auto auto auto;
+  grid-template-areas:
+    'topbar topbar'
+    'heading heading'
+    'podium ranking'
+    'actions ranking';
+  gap: clamp(0.65rem, 1.5vw, 1.2rem);
+}
+
+.finalHeading {
+  grid-area: heading;
+  min-inline-size: 0;
+  color: var(--brand-ivory);
+}
+
+.finalHeading > h1 {
+  margin-block: 0.5rem;
+  text-align: center;
+}
+
+.stageMeta {
+  grid-area: topbar;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  min-inline-size: 0;
+  padding-block: 0.35rem;
+  color: var(--brand-ivory);
+}
+
+.stageMeta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.stageMeta svg {
+  inline-size: 1em;
+  block-size: 1em;
+  color: var(--royal-gold-bright);
+}
+
+.hostFinale:global(.royal-finale-ceremony) .stageMeta {
+  grid-area: auto;
+}
+
+.spotlight {
+  --shot-accent: var(--royal-gold-bright);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.42fr);
+  align-items: center;
+  gap: clamp(0.5rem, 3vw, 2rem);
+  padding: clamp(1rem, 4vw, 3.5rem);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--royal-gold-bright) 53%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--royal-black);
+  color: var(--brand-ivory);
+}
+
+.spotlight::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background:
+    linear-gradient(
+      270deg,
+      var(--royal-black) 0%,
+      color-mix(in srgb, var(--royal-black) 84%, transparent) 37%,
+      color-mix(in srgb, var(--royal-black) 14%, transparent) 72%
+    ),
+    url('/live/cinematic/finale-stage.webp') center 64% / cover no-repeat;
+}
+
+.sequence .spotlight {
+  min-block-size: clamp(20rem, 39vw, 32rem);
+}
+
+.spotlight[data-rank='2'] {
+  --shot-accent: var(--gold-100);
+}
+
+.spotlight[data-rank='3'] {
+  --shot-accent: var(--gold-400);
+}
+
+.sequence .spotlight[data-rank='1']::before {
+  animation: host-winner-lights 1000ms cubic-bezier(0.17, 0.75, 0.34, 1) both;
+}
+
+.sequence .spotlight[data-rank='1']::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 38%,
+    color-mix(in srgb, var(--shot-accent) 20%, transparent) 50%,
+    transparent 62%
+  );
+  animation: host-winner-sweep 660ms ease-out both;
+}
+
+.spotlightCopy {
+  min-inline-size: 0;
+}
+
+.rankLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--shot-accent);
+  font-size: clamp(0.9rem, 2vw, 1.18rem);
+  font-weight: 800;
+}
+
+.rankLabel svg {
+  inline-size: 1.125em;
+  block-size: 1.125em;
+}
+
+.spotlight h1 {
+  margin-block: 0.35em;
+  color: inherit;
+  font-family: var(--font-alexandria);
+  font-size: clamp(1.9rem, 5vw, 4.5rem);
+  font-weight: 850;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+
+.score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.65rem;
+  padding-block-start: 0.55rem;
+  border-block-start: 1px solid color-mix(in srgb, var(--royal-gold) 37%, transparent);
+  color: var(--shot-accent);
+}
+
+.score strong {
+  font-size: clamp(1.65rem, 4vw, 3.1rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.score span {
+  color: var(--brand-ivory);
+  font-weight: 700;
+}
+
+.stageObject {
+  display: grid;
+  place-items: center;
+  min-inline-size: 0;
+}
+
+.stageObject img {
+  display: block;
+  inline-size: min(100%, clamp(6.5rem, 14vw, 11rem));
+  block-size: auto;
+  filter: drop-shadow(0 0.75rem 0.45rem var(--royal-black));
+}
+
+.rankMedallion {
+  display: grid;
+  place-items: center;
+  inline-size: min(100%, clamp(4rem, 15vw, 12rem));
+  aspect-ratio: 1;
+  border: 1px solid var(--shot-accent);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse at 45% 18%,
+      color-mix(in srgb, var(--shot-accent) 27%, transparent),
+      transparent 70%
+    ),
+    var(--royal-black);
+  box-shadow: inset 0 0 0 0.3rem color-mix(in srgb, var(--shot-accent) 20%, transparent);
+  color: var(--shot-accent);
+  font: 800 clamp(1.9rem, 7vw, 5rem)/1 var(--font-alexandria);
+}
+
+.rankMedallion svg {
+  inline-size: 40%;
+  block-size: 40%;
+  stroke-width: 1.4;
+}
+
+.sequence .spotlightCopy > *,
+.sequence .stageObject {
+  animation: host-winner-enter 520ms cubic-bezier(0.18, 0.73, 0.33, 1) both;
+}
+
+.sequence .spotlightCopy > h1 {
+  animation-delay: 110ms;
+}
+
+.sequence .score {
+  animation-delay: 235ms;
+}
+
+.hostFinale:global(.royal-finale-screen.royal-finale-ceremony) :global(.royal-skip-button) {
+  position: static;
+  justify-self: start;
+  min-block-size: 2.75rem;
+  translate: none;
+  transform: none;
+}
+
+.hostPodium {
+  grid-area: podium;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+  align-items: stretch;
+  gap: 0.65rem;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placement {
+  --place-tone: var(--royal-gold-bright);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.35rem;
+  min-inline-size: 0;
+  min-block-size: 6rem;
+  padding: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--place-tone) 40%, transparent);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--place-tone) 13%, transparent), transparent),
+    var(--royal-black);
+  text-align: center;
+  color: var(--brand-ivory);
+  overflow-wrap: anywhere;
+}
+
+.placement[data-rank='2'] {
+  --place-tone: var(--gold-100);
+}
+
+.placement[data-rank='3'] {
+  --place-tone: var(--gold-400);
+}
+
+.placement > span {
+  display: grid;
+  place-items: center;
+  inline-size: 2em;
+  block-size: 2em;
+  border: 1px solid var(--place-tone);
+  border-radius: 50%;
+  color: var(--place-tone);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.placement > bdi {
+  font-weight: 800;
+}
+
+.placement strong {
+  color: var(--place-tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.placement small {
+  color: var(--brand-ivory);
+}
+
+.hostFinale:global(.royal-finale-screen.is-final) :global(.royal-full-ranking li > strong) {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.hostFinale:global(.royal-finale-screen.is-final) :global(.royal-finale-empty) {
+  grid-area: podium;
+}
+
+.hostFinale :global(.royal-finale-actions) {
+  justify-content: start;
+}
+
+@keyframes host-winner-enter {
+  from {
+    opacity: 0.35;
+    transform: translateY(0.55rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes host-winner-lights {
+  from {
+    transform: scale(1.045);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes host-winner-sweep {
+  from {
+    opacity: 0;
+    transform: translateX(-64%);
+  }
+  33% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(65%);
+  }
+}
+
+@media (max-width: 52rem) {
+  .hostFinale:global(.royal-finale-screen.is-final) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: 'topbar' 'heading' 'podium' 'actions' 'ranking';
+  }
+
+  .finishedHost:global(.royal-host-dashboard.royal-live) :global(.royal-host-session-header) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'brand meta' 'actions actions';
+    padding: 0.7rem;
+    gap: 0.6rem;
+  }
+
+  .finishedHost:global(.royal-host-dashboard.royal-live) :global(.royal-host-session-meta) {
+    grid-template-columns: repeat(auto-fit, minmax(min(5.5rem, 100%), 1fr));
+  }
+
+  .finishedHost:global(.royal-host-dashboard.royal-live) :global(.royal-host-session-actions) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .finishedHost:global(.royal-host-dashboard.royal-live)
+    :global(.royal-host-session-actions)
+    :is(a, button) {
+    min-block-size: 2.75rem;
+    min-inline-size: 0;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 34.5rem) {
+  .hostFinale:global(.royal-finale-screen) {
+    padding: 0.6rem;
+  }
+
+  .spotlight {
+    grid-template-columns: minmax(0, 1fr) minmax(3.25rem, 0.38fr);
+  }
+
+  .sequence .spotlight {
+    min-block-size: 13rem;
+  }
+
+  .spotlight h1 {
+    font-size: clamp(1.55rem, 6vw, 2.25rem);
+  }
+
+  .hostPodium {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .placement {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, auto);
+    align-items: center;
+    justify-items: start;
+    gap: 0.55rem;
+    min-block-size: 3rem;
+    padding: 0.45rem 0.55rem;
+    text-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sequence .spotlight[data-rank='1']::before,
+  .sequence .spotlight[data-rank='1']::after,
+  .sequence .spotlightCopy > *,
+  .sequence .stageObject {
+    animation: none;
+  }
+
+  .sequence .spotlight[data-rank='1']::after {
+    content: none;
+  }
+}

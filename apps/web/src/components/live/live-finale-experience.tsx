@@ -3,6 +3,7 @@ import { formatNumber } from '@/lib/utils';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {
   ArrowLeft,
@@ -20,6 +21,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { createResultShareCard } from './result-share-card';
+import styles from './host-winner-finale.module.css';
 
 const LiveCrowningScene3D = dynamic(
   () => import('./live-crowning-scene-3d').then((module) => module.LiveCrowningScene3D),
@@ -98,12 +100,37 @@ function playRevealTone(rank: number) {
   }
 }
 
-function RoyalPodiumPlace({ player }: { player: FinalePlayer }) {
+function RoyalPodiumPlace({
+  player,
+  compact = false,
+}: {
+  player: FinalePlayer;
+  compact?: boolean;
+}) {
+  const label = `المركز ${formatNumber(player.rank)}، ${player.name}، ${formatNumber(player.score)} نقطة`;
+
+  if (compact) {
+    return (
+      <li
+        className={styles.placement}
+        data-rank={player.rank}
+        value={player.rank}
+        aria-label={label}
+      >
+        <span aria-hidden="true">{formatNumber(player.rank)}</span>
+        <bdi>{player.name}</bdi>
+        <strong>
+          {formatNumber(player.score)} <small>نقطة</small>
+        </strong>
+      </li>
+    );
+  }
+
   return (
     <li
       className={`royal-podium-place is-rank-${player.rank}`}
       value={player.rank}
-      aria-label={`المركز ${formatNumber(player.rank)}، ${player.name}، ${formatNumber(player.score)} نقطة`}
+      aria-label={label}
     >
       <div className="royal-podium-avatar" aria-hidden="true">
         <Crown />
@@ -118,6 +145,56 @@ function RoyalPodiumPlace({ player }: { player: FinalePlayer }) {
   );
 }
 
+function HostCrowningFrame({ player }: { player?: FinalePlayer }) {
+  const champion = player?.rank === 1;
+  const rankLabel = champion
+    ? 'المركز الأول'
+    : player?.rank === 2
+      ? 'المركز الثاني'
+      : player?.rank === 3
+        ? 'المركز الثالث'
+        : undefined;
+
+  return (
+    <div
+      className={styles.spotlight}
+      data-rank={player?.rank}
+      role="region"
+      aria-label={champion ? 'إعلان الفائز' : (rankLabel ?? 'افتتاح التتويج')}
+    >
+      <div className={styles.spotlightCopy}>
+        <p className={styles.rankLabel}>
+          {player && !champion ? <Medal aria-hidden="true" /> : <Crown aria-hidden="true" />}
+          {rankLabel ?? 'استعدوا لإعلان الفائزين'}
+        </p>
+        <h1 id="finale-title">{player ? <bdi>{player.name}</bdi> : 'انتهت الجولة'}</h1>
+        {player && (
+          <div className={styles.score}>
+            <strong>{formatNumber(player.score)}</strong>
+            <span>نقطة</span>
+          </div>
+        )}
+      </div>
+      <div className={styles.stageObject} aria-hidden="true">
+        {champion ? (
+          <Image
+            src="/home/studio-trophy.webp"
+            alt=""
+            width={747}
+            height={1200}
+            sizes="(max-width: 550px) 96px, 160px"
+            loading="eager"
+          />
+        ) : (
+          <span className={styles.rankMedallion}>
+            {player ? formatNumber(player.rank) : <Crown />}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function LiveFinaleExperience({
   players,
   participantId,
@@ -126,6 +203,7 @@ export function LiveFinaleExperience({
   quizTitle,
   roundNumber,
   totalRounds,
+  presentation,
 }: {
   players: FinalePlayer[];
   participantId?: string;
@@ -134,6 +212,7 @@ export function LiveFinaleExperience({
   quizTitle?: string;
   roundNumber?: number;
   totalRounds?: number;
+  presentation?: 'host';
 }) {
   const rankedPlayers = useMemo(
     () => [...players].sort((first, second) => first.rank - second.rank),
@@ -146,6 +225,9 @@ export function LiveFinaleExperience({
   const [runId, setRunId] = useState(0);
   const finalStep = revealPlayers.length + 1;
   const isFinal = revealStep === finalStep;
+  const isHost = presentation === 'host';
+  const winner = rankedPlayers[0];
+  const hostClass = isHost ? ` ${styles.hostFinale}` : '';
   const revealedPlayer =
     revealStep > 0 && revealStep <= revealPlayers.length
       ? revealPlayers[revealStep - 1]
@@ -153,13 +235,39 @@ export function LiveFinaleExperience({
   const personalResult = participantId
     ? rankedPlayers.find((player) => player.id === participantId)
     : undefined;
-  const podiumOrder = [rankedPlayers[1], rankedPlayers[0], rankedPlayers[2]].filter(
-    (player): player is FinalePlayer => Boolean(player),
-  );
+  const podiumOrder = isHost
+    ? rankedPlayers.slice(0, 3)
+    : [rankedPlayers[1], rankedPlayers[0], rankedPlayers[2]].filter(
+        (player): player is FinalePlayer => Boolean(player),
+      );
   const hasRoundProgress = roundNumber !== undefined && totalRounds !== undefined;
   const roundProgressLabel = hasRoundProgress
     ? `الجولة ${formatNumber(roundNumber)} من ${formatNumber(totalRounds)}`
     : 'بيانات الجولة غير متاحة';
+  const topbar = isHost ? (
+    <div className={styles.stageMeta}>
+      <strong>النتائج النهائية</strong>
+      <span>
+        <UsersRound aria-hidden="true" /> {formatNumber(rankedPlayers.length)} متسابق
+      </span>
+    </div>
+  ) : (
+    <header className="royal-finale-topbar">
+      <div aria-label={roundProgressLabel}>
+        <span>الجولة</span>
+        <strong>{hasRoundProgress ? formatNumber(roundNumber) : '—'}</strong>
+        <small>من {hasRoundProgress ? formatNumber(totalRounds) : '—'}</small>
+      </div>
+      <span>
+        <Crown aria-hidden="true" /> تحدّي
+      </span>
+      <div>
+        <UsersRound aria-hidden="true" />
+        <strong>{formatNumber(rankedPlayers.length)}</strong>
+        <small>متسابق</small>
+      </div>
+    </header>
+  );
 
   useEffect(() => {
     if (skipped) return;
@@ -238,56 +346,58 @@ export function LiveFinaleExperience({
 
     return (
       <section
-        className="royal-live royal-finale-screen royal-finale-ceremony"
+        className={`royal-live royal-finale-screen royal-finale-ceremony${hostClass}`}
         aria-labelledby="finale-title"
         data-finale-step={revealedPlayer?.rank ?? 'intro'}
       >
-        <header className="royal-finale-topbar">
-          <div aria-label={roundProgressLabel}>
-            <span>الجولة</span>
-            <strong>{hasRoundProgress ? formatNumber(roundNumber) : '—'}</strong>
-            <small>من {hasRoundProgress ? formatNumber(totalRounds) : '—'}</small>
-          </div>
-          <span>
-            <Crown aria-hidden="true" /> تحدّي
-          </span>
-          <div>
-            <UsersRound aria-hidden="true" />
-            <strong>{formatNumber(rankedPlayers.length)}</strong>
-            <small>متسابق</small>
-          </div>
-        </header>
-        <div className="royal-ceremony-moment" role="status" aria-live="polite">
-          <Sparkles aria-hidden="true" />
-          <p>{revealedPlayer ? 'لحظة الإعلان' : 'استعدوا لإعلان الفائزين'}</p>
-          <h1 id="finale-title">{revealTitle}</h1>
-          <LiveCrowningScene3D
-            activeRank={
-              revealedPlayer?.rank === 1 || revealedPlayer?.rank === 2 || revealedPlayer?.rank === 3
-                ? revealedPlayer.rank
-                : undefined
-            }
-          />
-          {revealedPlayer ? (
-            <div className={`royal-reveal-player is-rank-${revealedPlayer.rank}`}>
-              <span aria-hidden="true">{revealedPlayer.rank === 1 ? <Crown /> : <Medal />}</span>
-              {revealedPlayer.rank === 1 && <span className="sr-only">المركز الأول</span>}
-              <i>{getInitials(revealedPlayer.name)}</i>
-              <strong>{revealedPlayer.name}</strong>
-              <b>{formatNumber(revealedPlayer.score)} نقطة</b>
-              {revealedPlayer.correctAnswers !== undefined && (
-                <small aria-label={`${formatNumber(revealedPlayer.correctAnswers)} إجابة صحيحة`}>
-                  <Check aria-hidden="true" /> {formatNumber(revealedPlayer.correctAnswers)} إجابة
-                  صحيحة
-                </small>
-              )}
-            </div>
+        {topbar}
+        <div
+          className={isHost ? styles.sequence : 'royal-ceremony-moment'}
+          role="status"
+          aria-live="polite"
+        >
+          {isHost ? (
+            <HostCrowningFrame key={revealedPlayer?.id ?? 'intro'} player={revealedPlayer} />
           ) : (
-            <div className="royal-ceremony-countdown" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </div>
+            <>
+              <Sparkles aria-hidden="true" />
+              <p>{revealedPlayer ? 'لحظة الإعلان' : 'استعدوا لإعلان الفائزين'}</p>
+              <h1 id="finale-title">{revealTitle}</h1>
+              <LiveCrowningScene3D
+                activeRank={
+                  revealedPlayer?.rank === 1 ||
+                  revealedPlayer?.rank === 2 ||
+                  revealedPlayer?.rank === 3
+                    ? revealedPlayer.rank
+                    : undefined
+                }
+              />
+              {revealedPlayer ? (
+                <div className={`royal-reveal-player is-rank-${revealedPlayer.rank}`}>
+                  <span aria-hidden="true">
+                    {revealedPlayer.rank === 1 ? <Crown /> : <Medal />}
+                  </span>
+                  {revealedPlayer.rank === 1 && <span className="sr-only">المركز الأول</span>}
+                  <i>{getInitials(revealedPlayer.name)}</i>
+                  <strong>{revealedPlayer.name}</strong>
+                  <b>{formatNumber(revealedPlayer.score)} نقطة</b>
+                  {revealedPlayer.correctAnswers !== undefined && (
+                    <small
+                      aria-label={`${formatNumber(revealedPlayer.correctAnswers)} إجابة صحيحة`}
+                    >
+                      <Check aria-hidden="true" /> {formatNumber(revealedPlayer.correctAnswers)}{' '}
+                      إجابة صحيحة
+                    </small>
+                  )}
+                </div>
+              ) : (
+                <div className="royal-ceremony-countdown" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              )}
+            </>
           )}
         </div>
         <button type="button" className="royal-skip-button" onClick={skipToResult}>
@@ -299,37 +409,29 @@ export function LiveFinaleExperience({
 
   return (
     <section
-      className="royal-live royal-finale-screen is-final"
+      className={`royal-live royal-finale-screen is-final${hostClass}`}
       aria-labelledby="finale-title"
       data-finale-step="summary"
     >
-      <header className="royal-finale-topbar">
-        <div aria-label={roundProgressLabel}>
-          <span>الجولة</span>
-          <strong>{hasRoundProgress ? formatNumber(roundNumber) : '—'}</strong>
-          <small>من {hasRoundProgress ? formatNumber(totalRounds) : '—'}</small>
-        </div>
-        <span>
-          <Crown aria-hidden="true" /> تحدّي
-        </span>
-        <div>
-          <UsersRound aria-hidden="true" />
-          <strong>{formatNumber(rankedPlayers.length)}</strong>
-          <small>متسابق</small>
-        </div>
-      </header>
+      {topbar}
 
-      <div className="royal-finale-heading">
-        <Crown aria-hidden="true" />
-        <h1 id="finale-title">المركز الأول</h1>
-        <p>تهانينا للبطل</p>
-        <h2 className="sr-only">الفائزون</h2>
+      <div className={isHost ? styles.finalHeading : 'royal-finale-heading'}>
+        {isHost && winner ? (
+          <HostCrowningFrame player={winner} />
+        ) : (
+          <>
+            <Crown aria-hidden="true" />
+            <h1 id="finale-title">{isHost ? 'النتيجة النهائية' : 'المركز الأول'}</h1>
+            {!isHost && <p>تهانينا للبطل</p>}
+            <h2 className="sr-only">الفائزون</h2>
+          </>
+        )}
       </div>
 
       {rankedPlayers.length > 0 ? (
-        <ol className="royal-podium" aria-label="منصة الفائزين">
+        <ol className={isHost ? styles.hostPodium : 'royal-podium'} aria-label="منصة الفائزين">
           {podiumOrder.map((player) => (
-            <RoyalPodiumPlace key={player.id} player={player} />
+            <RoyalPodiumPlace key={player.id} player={player} compact={isHost} />
           ))}
         </ol>
       ) : (
@@ -339,10 +441,10 @@ export function LiveFinaleExperience({
         </div>
       )}
 
-      {rankedPlayers[0] && (
+      {!isHost && winner && (
         <aside className="royal-winner-thanks" aria-label="إعلان الفائز">
           <Crown aria-hidden="true" />
-          <strong>الفائز: {rankedPlayers[0].name}</strong>
+          <strong>الفائز: {winner.name}</strong>
           <span>شكرًا لكم!</span>
           <p>نراكم في الجولة القادمة</p>
         </aside>
@@ -389,9 +491,11 @@ export function LiveFinaleExperience({
             </button>
           </>
         )}
-        <Link href="/">
-          العودة إلى اللوحة الرئيسية <ArrowLeft aria-hidden="true" />
-        </Link>
+        {!isHost && (
+          <Link href="/">
+            العودة إلى اللوحة الرئيسية <ArrowLeft aria-hidden="true" />
+          </Link>
+        )}
         <button type="button" onClick={replay}>
           <RotateCcw aria-hidden="true" /> إعادة التتويج
         </button>
