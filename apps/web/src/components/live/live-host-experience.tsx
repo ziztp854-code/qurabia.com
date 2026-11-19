@@ -26,6 +26,7 @@ import {
 import { Button, ButtonLink } from '@/components/ui';
 import { RoomCode } from '@/components/quiz';
 import { LiveFinaleExperience } from './live-finale-experience';
+import finaleStyles from './host-winner-finale.module.css';
 import { LiveQuestionStage } from './live-question-stage';
 import { RoyalHostLobby } from './royal-host-lobby';
 import { useLiveGame } from './use-live-game';
@@ -111,6 +112,7 @@ export function LiveHostExperience({
 
   const snapshot = game.snapshot;
   const phase = snapshot?.phase;
+  const finalSnapshot = snapshot?.phase === 'FINISHED' ? snapshot : null;
   const commandsDisabled = game.busy || !game.connected;
   const isConnecting = !snapshot;
   const isLobby = phase === 'LOBBY';
@@ -238,7 +240,7 @@ export function LiveHostExperience({
 
   return (
     <div
-      className="royal-host-dashboard royal-live"
+      className={`royal-host-dashboard royal-live${finalSnapshot ? ` ${finaleStyles.finishedHost}` : ''}`}
       data-phase={phase ?? 'CONNECTING'}
       aria-label="لوحة المضيف المباشرة"
     >
@@ -253,14 +255,16 @@ export function LiveHostExperience({
             <dt>رمز الغرفة</dt>
             <dd dir="ltr">{roomCode}</dd>
           </div>
-          <div>
-            <dt>رقم الجولة</dt>
-            <dd>
-              {currentQuestionNumber === null
-                ? 'لم يبدأ السؤال بعد'
-                : `السؤال ${formatNumber(currentQuestionNumber)} من ${formatNumber(currentTotalQuestions)}`}
-            </dd>
-          </div>
+          {(!finalSnapshot || currentQuestionNumber !== null) && (
+            <div>
+              <dt>رقم الجولة</dt>
+              <dd>
+                {currentQuestionNumber === null
+                  ? 'لم يبدأ السؤال بعد'
+                  : `السؤال ${formatNumber(currentQuestionNumber)} من ${formatNumber(currentTotalQuestions)}`}
+              </dd>
+            </div>
+          )}
           <div>
             <dt>حالة الجولة</dt>
             <dd>{phaseLabel}</dd>
@@ -291,17 +295,19 @@ export function LiveHostExperience({
             <ListChecks />
             قائمة الأسئلة
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-controls="royal-host-live-insights"
-            aria-expanded={showInsights}
-            onClick={() => setInsightsOpen((value) => !value)}
-          >
-            <BarChart3 />
-            إحصاءات البث
-          </Button>
+          {!finalSnapshot && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-controls="royal-host-live-insights"
+              aria-expanded={showInsights}
+              onClick={() => setInsightsOpen((value) => !value)}
+            >
+              <BarChart3 />
+              إحصاءات البث
+            </Button>
+          )}
         </div>
       </header>
 
@@ -321,6 +327,16 @@ export function LiveHostExperience({
         </p>
       )}
 
+      {finalSnapshot ? (
+        <LiveFinaleExperience
+          presentation="host"
+          players={finalSnapshot.leaderboard}
+          quizTitle={quizTitle}
+          soundEnabled={soundEnabled}
+          roundNumber={finalSnapshot.question?.questionNumber ?? currentTotalQuestions}
+          totalRounds={currentTotalQuestions}
+        />
+      ) : (
       <div className="royal-host-dashboard-grid">
         <aside className="royal-host-ranking" aria-label="ترتيب المتسابقين المباشر">
           <div className="royal-host-panel-heading">
@@ -427,14 +443,6 @@ export function LiveHostExperience({
                 )}
               </div>
             </section>
-          ) : snapshot.phase === 'FINISHED' ? (
-            <LiveFinaleExperience
-              players={snapshot.leaderboard}
-              quizTitle={quizTitle}
-              soundEnabled={soundEnabled}
-              roundNumber={snapshot.question?.questionNumber ?? currentTotalQuestions}
-              totalRounds={currentTotalQuestions}
-            />
           ) : snapshot.phase === 'LEADERBOARD' ? (
             <section className="royal-host-finish-card">
               <span>لحظة الترتيب</span>
@@ -671,11 +679,10 @@ export function LiveHostExperience({
           className="royal-host-podium"
           aria-label="منصة أفضل ثلاثة متسابقين"
           aria-live="polite"
-          data-finished={phase === 'FINISHED'}
         >
           <div className="royal-host-panel-heading">
-            <span>{phase === 'FINISHED' ? 'النتيجة النهائية' : 'المنصة المباشرة'}</span>
-            <h2>{phase === 'FINISHED' ? 'الفائز' : 'أفضل ثلاثة متسابقين'}</h2>
+            <span>المنصة المباشرة</span>
+            <h2>أفضل ثلاثة متسابقين</h2>
           </div>
           {topPlayers.length ? (
             <ol>
@@ -711,6 +718,7 @@ export function LiveHostExperience({
         </aside>
       </div>
 
+      )}
       {questionsOpen && (
         <aside
           ref={questionNavigatorRef}

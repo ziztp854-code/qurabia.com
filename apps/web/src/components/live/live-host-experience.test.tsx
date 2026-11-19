@@ -516,10 +516,13 @@ describe('LiveHostExperience auto advance', () => {
       />,
     );
 
-    const podium = screen.getByLabelText('منصة أفضل ثلاثة متسابقين');
-    expect(podium).toHaveAttribute('aria-live', 'polite');
-    expect(within(podium).getByText('الفائز')).toBeVisible();
-    expect(within(podium).getByText('سارة')).toBeVisible();
+    expect(screen.queryByText('سارة')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'عرض النتيجة الآن' }));
+    const winner = screen.getByRole('region', { name: 'إعلان الفائز' });
+    expect(within(winner).getByRole('heading', { name: 'سارة' })).toBeVisible();
+    expect(within(winner).getByText('المركز الأول')).toBeVisible();
+    expect(within(winner).getByText('2,400')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'العودة للمسابقات' })).toHaveAttribute('href', '/host');
   });
 
   it('keeps the finish action available while players are still in the lobby', () => {

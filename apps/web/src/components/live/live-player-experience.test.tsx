@@ -76,8 +76,9 @@ describe('LivePlayerExperience final results', () => {
     );
     act(() => vi.runAllTimers());
 
-    expect(screen.getByRole('heading', { name: 'الفائز' })).toBeInTheDocument();
-    const podium = screen.getByLabelText('منصة أفضل ثلاثة متسابقين');
+    const winner = screen.getByRole('region', { name: 'إعلان الفائز' });
+    expect(within(winner).getByRole('heading', { name: 'سارة العتيبي' })).toBeVisible();
+    const podium = screen.getByLabelText('منصة الفائزين');
     expect(podium).toBeInTheDocument();
     expect(within(podium).getByText('سارة العتيبي')).toBeVisible();
     expect(within(podium).getByText('محمد القحطاني')).toBeVisible();
