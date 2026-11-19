@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: tahaddi-android-oauth-test
+    runtime: node
+    plan: free
+    region: virginia
+    branch: codex/tahaddi-google-staging-20261119
+    autoDeployTrigger: 'off'
+    healthCheckPath: /auth/sign-in/
+    buildCommand: >-
+      corepack pnpm install --frozen-lockfile &&
+      corepack pnpm --filter @tahaddi/contracts --filter @tahaddi/database --filter @tahaddi/domain --filter @mamluk/world-map-core --filter @mamluk/maplibre-adapter build &&
+      CIRCLE_NODE_TOTAL=3 NODE_OPTIONS=--max-old-space-size=4096 corepack pnpm --filter @tahaddi/web build
+    startCommand: >-
+      test -n "$RENDER_EXTERNAL_URL" &&
+      export NEXTAUTH_URL="$RENDER_EXTERNAL_URL" AUTH_URL="$RENDER_EXTERNAL_URL" &&
+      corepack pnpm exec prisma migrate deploy &&
+      exec corepack pnpm --filter @tahaddi/web start --hostname 0.0.0.0
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: DEPLOY_ENV
+        value: staging
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tahaddi-android-oauth-test-db
+          property: connectionString
+
+databases:
+  - name: tahaddi-android-oauth-test-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: '16'
+    ipAllowList: []

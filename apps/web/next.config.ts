@@ -53,6 +53,9 @@ const sentryRelease = resolveSentryBuildRelease(process.env, buildRevision);
 process.env.NEXT_PUBLIC_SENTRY_RELEASE = sentryRelease;
 
 const securityHeaders = buildWebSecurityHeaders(process.env);
+if (process.env.DEPLOY_ENV === 'staging') {
+  securityHeaders.push({ key: 'X-Robots-Tag', value: 'noindex, nofollow' });
+}
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease },
