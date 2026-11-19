@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState, type FormEvent } from 'react';
 import { Button, Alert, Input, PasswordInput, Spinner } from '@/components/ui';
 import { sanitizeCallbackPath } from '@/lib/auth/redirects';
+import { getAndroidGooglePlugin } from '@/lib/auth/android-google-client';
 import { signInSchema } from '@/lib/auth/validation';
 
 const genericMessage = 'تعذّر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.';
@@ -80,7 +81,12 @@ export function SignInForm({
     setError('');
     setPending('google');
     try {
-      await signIn('google', { callbackUrl: next });
+      const androidGoogle = getAndroidGooglePlugin();
+      if (androidGoogle) {
+        await androidGoogle.start({ next });
+      } else {
+        await signIn('google', { callbackUrl: next });
+      }
     } catch {
       setError(googleMessage);
     } finally {

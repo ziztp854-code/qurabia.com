@@ -2,6 +2,8 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import { redeemAndroidGoogleGrant } from './android-google-handoff';
+import { androidGoogleProvider } from './android-google-protocol';
 import { applyLocalAuthBaseUrl } from './local-auth-url';
 import { checkRateLimit } from './rate-limit';
 import { getPrismaClient, hasDatabaseUrl } from './prisma';
@@ -88,6 +90,29 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     }),
+    CredentialsProvider({
+      id: androidGoogleProvider,
+      name: 'الدخول من تطبيق تحدّي',
+      credentials: { code: {}, state: {}, verifier: {} },
+      async authorize(credentials) {
+        if (!credentials || !hasDatabaseUrl()) return null;
+        const prisma = getPrismaClient();
+        const identity = await redeemAndroidGoogleGrant(prisma.verificationToken, credentials);
+        if (!identity) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { id: identity.id },
+          select: {
+            id: true, email: true, name: true, image: true,
+            role: true, status: true, tokenVersion: true,
+          },
+        });
+        if (!user || user.status !== 'ACTIVE' || user.tokenVersion !== identity.tokenVersion) {
+          return null;
+        }
+        return user;
+      },
+    }),
   );
 }
 
@@ -118,7 +143,10 @@ export const authOptions: NextAuthOptions = {
         return true;
       }
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      if (account) {
+        token.androidGoogleAuthenticatedAt = account.provider === 'google' ? Date.now() : undefined;
+      }
       const userId = user?.id ?? token.id;
       if (user?.id) {
         token.id = user.id;
