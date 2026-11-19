@@ -23,3 +23,113 @@
   overscroll-behavior: contain;
   padding-inline-start: var(--space-6);
 }
+
+.inline {
+  max-inline-size: 100%;
+  --question-tools-focus: var(--lc-focus, var(--primary));
+}
+
+.inline > details {
+  position: relative;
+  z-index: 5;
+}
+
+.inline > details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  border: 1px solid var(--lc-stage-edge, var(--border));
+  border-radius: var(--lc-radius-control, var(--radius-md));
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(
+    in srgb,
+    var(--lc-accent, var(--primary)) 8%,
+    var(--lc-surface-1, var(--card))
+  );
+  color: var(--lc-text, var(--foreground));
+  font-size: 0.875rem;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.inline > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.inline > details > summary:is(:hover, :focus-visible),
+.inline > details[open] > summary {
+  border-color: var(--question-tools-focus);
+}
+
+.inline > details > summary:focus-visible {
+  outline-color: var(--question-tools-focus);
+}
+
+.inline > details > summary svg {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--lc-accent, var(--question-tools-focus));
+}
+
+.inline > details[open] > summary svg:last-child {
+  rotate: 180deg;
+}
+
+.inline .form {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  inline-size: min(28rem, 85cqi);
+  max-block-size: min(35rem, 64svh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--lc-border-strong, var(--border));
+  border-radius: var(--lc-radius-card, var(--radius-lg));
+  padding: var(--space-4);
+  background: var(--lc-surface-1, var(--card));
+  box-shadow: var(--shadow-lg);
+}
+
+.inline .form p {
+  margin-block: 0;
+}
+
+.inline .form button {
+  white-space: normal;
+}
+
+.inline .form ol {
+  max-block-size: min(10rem, 16svh);
+}
+
+.feedback {
+  border-inline-start: 2px solid var(--lc-danger, var(--danger));
+  padding-inline-start: var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+.feedback a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  color: var(--question-tools-focus);
+  text-decoration: underline;
+}
+
+@container letter-game (max-width: 35rem) {
+  .inline .form {
+    position: static;
+    inline-size: 100cqi;
+    max-inline-size: 100%;
+    max-block-size: none;
+    margin-block-start: var(--space-2);
+  }
+}
+
+@container letter-game (max-width: 18rem) {
+  .inline > details > summary svg:last-child {
+    display: none;
+  }
+}

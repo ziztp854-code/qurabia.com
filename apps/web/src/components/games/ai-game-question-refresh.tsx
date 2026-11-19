@@ -11,13 +11,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './ai-game-question-refresh.module.css';
-import { Sparkles } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Input } from '@/components/ui';
 import { foldKeyword } from '@/lib/questions/keywords';
 import {
+  AI_QUESTION_COUNTS,
   generatedGameQuestionsSchema,
   generatedGameQuestionSchema,
   type AiQuestionGame,
@@ -31,6 +33,11 @@ type QuestionContext = {
   register: (prompts: string[]) => void;
 };
 const Context = createContext<QuestionContext | null>(null);
+const ControlsContext = createContext<ReactNode>(null);
+
+export function AiGameQuestionControls() {
+  return useContext(ControlsContext);
+}
 
 export function useAiGameQuestions(game: AiQuestionGame, prompts: readonly string[] = []) {
   const context = useContext(Context);
@@ -47,11 +54,15 @@ export function AiGameQuestionRefresh({
   children,
   showExternalTopicNotice = false,
   showGenerator = true,
+  inlineControls = false,
+  signInHref,
 }: {
   game: AiQuestionGame;
   children?: ReactNode;
   showExternalTopicNotice?: boolean;
   showGenerator?: boolean;
+  inlineControls?: boolean;
+  signInHref?: string;
 }) {
   const router = useRouter();
   const id = useId();
@@ -60,6 +71,7 @@ export function AiGameQuestionRefresh({
   const [topic, setTopic] = useState('ثقافة عامة');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const [draft, setDraft] = useState<{
     questions: GeneratedGameQuestion[];
     batchId: string;
@@ -70,9 +82,15 @@ export function AiGameQuestionRefresh({
   const pending = useRef(false);
   const requestController = useRef<AbortController | null>(null);
   useEffect(() => () => requestController.current?.abort(), []);
-  const register = useCallback((prompts: string[]) => {
-    prompts.forEach((prompt) => seen.current.add(prompt));
-  }, []);
+  const register = useCallback(
+    (prompts: string[]) => {
+      for (const prompt of prompts) {
+        if (game === 'letter-challenge') seen.current.delete(prompt);
+        seen.current.add(prompt);
+      }
+    },
+    [game],
+  );
   const context = useMemo(
     () => ({
       game,
@@ -92,8 +110,10 @@ export function AiGameQuestionRefresh({
     pending.current = true;
     setLoading(true);
     setError('');
+    setNeedsSignIn(false);
     const controller = new AbortController();
     requestController.current = controller;
+    const excludePrompts = [...seen.current].slice(-80).map((prompt) => prompt.slice(0, 240));
     try {
       const response = await fetch('/api/ai/game-questions/generate', {
         method: 'POST',
@@ -101,27 +121,37 @@ export function AiGameQuestionRefresh({
         signal: controller.signal,
         body: JSON.stringify({
           game,
-          // Keep the existing request schema without putting a topic filter on the Ladder bank.
+          // The Ladder bank draws from all categories.
           topic: isLadder ? 'ثقافة عامة' : topic,
-          excludePrompts: [...seen.current].slice(-80).map((prompt) => prompt.slice(0, 240)),
+          excludePrompts,
         }),
       });
-      const payload = (await response.json()) as {
+      const payload = (await response.json().catch(() => null)) as {
         ok?: boolean;
         game?: string;
         questions?: unknown;
         batchId?: string;
         playHref?: string;
         message?: string;
-      };
-      if (!response.ok || !payload.ok || payload.game !== game || !payload.batchId)
-        throw new Error(payload.message || 'تعذّر جلب الأسئلة الآن.');
+      } | null;
+      if (!response.ok || !payload?.ok || payload.game !== game || !payload.batchId) {
+        setNeedsSignIn(response.status === 401);
+        throw new Error(payload?.message || 'تعذّر جلب الأسئلة الآن.');
+      }
       const schema =
         game === 'ladder'
           ? z.object({ questions: z.array(generatedGameQuestionSchema).length(10) })
-          : generatedGameQuestionsSchema;
-      const questions = schema.parse({ questions: payload.questions }).questions;
-      const previousPrompts = new Set([...seen.current].map(foldKeyword));
+          : game === 'letter-challenge'
+            ? z.object({
+                questions: z.array(generatedGameQuestionSchema).length(AI_QUESTION_COUNTS[game]),
+              })
+            : generatedGameQuestionsSchema;
+      const parsed = schema.safeParse({ questions: payload.questions });
+      if (!parsed.success) throw new Error('تعذّر جلب مجموعة أسئلة جديدة صالحة. حاول مرة أخرى.');
+      const { questions } = parsed.data;
+      const previousPrompts = new Set(
+        (game === 'letter-challenge' ? excludePrompts : [...seen.current]).map(foldKeyword),
+      );
       if (questions.some((question) => previousPrompts.has(foldKeyword(question.prompt)))) {
         throw new Error('تضمنت المجموعة سؤالًا سبق استخدامه. أعد جلب الأسئلة.');
       }
@@ -151,88 +181,109 @@ export function AiGameQuestionRefresh({
     setDraft(null);
   }
 
-  return (
-    <Context.Provider value={context}>
-      {showGenerator && (
-        <section
-          className={`game-pack-picker ${styles.refresh}`}
-          aria-label={
-            isLadder ? 'اختيار أسئلة من بنك السلم' : 'تجديد أسئلة اللعبة بالذكاء الاصطناعي'
-          }
+  const controls = showGenerator ? (
+    <section
+      className={
+        inlineControls ? `${styles.refresh} ${styles.inline}` : `game-pack-picker ${styles.refresh}`
+      }
+      aria-label={isLadder ? 'اختيار أسئلة من بنك السلم' : 'تجديد أسئلة اللعبة بالذكاء الاصطناعي'}
+    >
+      <details name={inlineControls ? 'letter-question-tools' : undefined}>
+        <summary>
+          {inlineControls && <Sparkles aria-hidden="true" />}
+          {isLadder ? 'اختيار أسئلة من بنك السلم' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
+          {inlineControls && <ChevronDown aria-hidden="true" />}
+        </summary>
+        <form
+          className={`stack-form ${styles.form}`}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void generate();
+          }}
         >
-          <details>
-            <summary>
-              {isLadder ? 'اختيار أسئلة من بنك السلم' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
-            </summary>
-            <div className="stack-form">
-              <p>
-                {isLadder
-                  ? 'تُختار 10 أسئلة منشورة من جميع تصنيفات بنك السلم، ثم يمكنك مراجعتها واعتمادها.'
-                  : 'استخدم هذا الخيار إذا سبق لعب الأسئلة. راجع المجموعة الجديدة ثم اعتمدها لبدء جولة جديدة.'}
+          <p>
+            {isLadder
+              ? 'تُختار 10 أسئلة منشورة من جميع تصنيفات بنك السلم، ثم يمكنك مراجعتها واعتمادها.'
+              : 'اختر موضوعًا وراجع الأسئلة قبل اعتمادها لبدء جولة جديدة.'}
+          </p>
+          {isLadder ? (
+            showLadderProviderNotice && (
+              <p id={id}>
+                قد تُرسل نصوص بعض الأسئلة المنشورة إلى مزوّد الذكاء الاصطناعي للمساعدة في اختيارها.
               </p>
-              {isLadder ? (
-                showLadderProviderNotice && (
-                  <p id={id}>
-                    قد تُرسل نصوص بعض الأسئلة المنشورة إلى مزوّد الذكاء الاصطناعي للمساعدة في
-                    اختيارها.
-                  </p>
-                )
-              ) : (
-                <Input
-                  id={id}
-                  label="موضوع الأسئلة الجديدة"
-                  description={
-                    showExternalTopicNotice
-                      ? 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
-                      : undefined
-                  }
-                  value={topic}
-                  maxLength={120}
-                  onChange={(event) => setTopic(event.target.value)}
-                  disabled={loading}
-                />
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                loading={loading}
-                aria-describedby={showLadderProviderNotice ? id : undefined}
-                onClick={generate}
-              >
-                <Sparkles aria-hidden="true" />
-                {isLadder ? 'اختيار أسئلة من البنك' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
-              </Button>
-              {loading ? <p role="status">جارٍ جلب أسئلة جديدة…</p> : null}
-              {error ? <p role="alert">{error}</p> : null}
-              {active ? (
-                <p role="status">تم اعتماد {active.questions.length} سؤالًا جديدًا لهذه اللعبة.</p>
-              ) : null}
-              {draft ? (
-                <div className="notice-card">
-                  <strong>{draft.questions.length} سؤالًا جديدًا للمراجعة</strong>
-                  <details>
-                    <summary>مراجعة الأسئلة والإجابات</summary>
-                    <ol>
-                      {draft.questions.map((question, index) => (
-                        <li key={index}>
-                          {question.prompt}
-                          <p>الإجابة: {question.answer}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  </details>
-                  <Button type="button" variant="gold" disabled={loading} onClick={approve}>
-                    {game === 'ladder' || game === 'elimination-live'
-                      ? 'اعتماد الأسئلة لغرفة جديدة'
-                      : 'اعتماد الأسئلة وبدء جولة جديدة'}
-                  </Button>
-                </div>
+            )
+          ) : (
+            <Input
+              id={id}
+              label="موضوع الأسئلة الجديدة"
+              description={
+                showExternalTopicNotice
+                  ? game === 'letter-challenge'
+                    ? 'يستلم مزوّد الذكاء الاصطناعي الموضوع ونصوص بعض الأسئلة الحالية لتفادي التكرار. استخدم موضوعًا عامًا.'
+                    : 'قد يحتفظ مزوّد الذكاء الاصطناعي بموضوع الأسئلة ويستخدمه. لا تدخل بيانات شخصية.'
+                  : undefined
+              }
+              value={topic}
+              maxLength={120}
+              onChange={(event) => setTopic(event.target.value)}
+              disabled={loading}
+            />
+          )}
+          <Button
+            type="submit"
+            variant="outline"
+            loading={loading}
+            aria-describedby={showLadderProviderNotice ? id : undefined}
+          >
+            <Sparkles aria-hidden="true" />
+            {isLadder ? 'اختيار أسئلة من البنك' : 'جلب أسئلة جديدة بالذكاء الاصطناعي'}
+          </Button>
+          {loading ? <p role="status">جارٍ جلب أسئلة جديدة…</p> : null}
+          {error ? (
+            <div className={inlineControls ? styles.feedback : undefined}>
+              <p role="alert">{error}</p>
+              {needsSignIn && signInHref ? (
+                <Link href={signInHref}>تسجيل الدخول</Link>
+              ) : inlineControls ? (
+                <p>يمكنك متابعة اللعب بالأسئلة الحالية.</p>
               ) : null}
             </div>
-          </details>
-        </section>
-      )}
-      <div key={active?.batchId ?? 'initial'}>{children}</div>
+          ) : null}
+          {active ? (
+            <p role="status">تم اعتماد {active.questions.length} سؤالًا جديدًا لهذه اللعبة.</p>
+          ) : null}
+          {draft ? (
+            <div className="notice-card">
+              <strong>{draft.questions.length} سؤالًا جديدًا للمراجعة</strong>
+              <details>
+                <summary>مراجعة الأسئلة والإجابات</summary>
+                <ol>
+                  {draft.questions.map((question, index) => (
+                    <li key={index}>
+                      {question.prompt}
+                      <p>الإجابة: {question.answer}</p>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+              <Button type="button" variant="gold" disabled={loading} onClick={approve}>
+                {game === 'ladder' || game === 'elimination-live'
+                  ? 'اعتماد الأسئلة لغرفة جديدة'
+                  : 'اعتماد الأسئلة وبدء جولة جديدة'}
+              </Button>
+            </div>
+          ) : null}
+        </form>
+      </details>
+    </section>
+  ) : null;
+
+  return (
+    <Context.Provider value={context}>
+      <ControlsContext.Provider value={inlineControls ? controls : null}>
+        {!inlineControls && controls}
+        <div key={active?.batchId ?? 'initial'}>{children}</div>
+      </ControlsContext.Provider>
     </Context.Provider>
   );
 }

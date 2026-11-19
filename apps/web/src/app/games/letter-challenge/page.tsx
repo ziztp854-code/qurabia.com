@@ -8,6 +8,7 @@ import { getCurrentSession } from '@/lib/auth/session';
 import {
   adaptFeedToLetterQuestions,
   listQuizPacksForMode,
+  playHrefForPack,
   resolveQuestionFeed,
 } from '@/lib/questions/feed';
 
@@ -19,12 +20,14 @@ export const metadata: Metadata = {
 export default async function LetterChallengePage({
   searchParams,
 }: {
-  searchParams: Promise<{ quizId?: string }>;
+  searchParams: Promise<{ quizId?: string | string[] }>;
 }) {
-  const [{ quizId }, session] = await Promise.all([
+  const [params, session] = await Promise.all([
     searchParams,
     getCurrentSession().catch(() => null),
   ]);
+  const quizId = typeof params.quizId === 'string' ? params.quizId : undefined;
+  const playHref = playHrefForPack('LETTER_CHALLENGE', quizId);
 
   const packs =
     session?.user && hasDatabaseUrl()
@@ -48,14 +51,22 @@ export default async function LetterChallengePage({
 
   return (
     <SiteLayout user={session?.user ? { name: session.user.name, role: session.user.role } : null}>
-      {session?.user ? (
-        <GamePackPicker
-          gameMode="LETTER_CHALLENGE"
-          packs={packs}
-          selectedQuizId={quizId ?? null}
+      <AiGameQuestionRefresh
+        key={quizId ?? 'bank'}
+        game="letter-challenge"
+        inlineControls
+        showExternalTopicNotice
+        signInHref={`/auth/sign-in?next=${encodeURIComponent(playHref)}`}
+      >
+        <LetterGame
+          questions={questions}
+          savedPacks={
+            session?.user && (packs.length > 0 || quizId) ? (
+              <GamePackPicker gameMode="LETTER_CHALLENGE" packs={packs} selectedQuizId={quizId} />
+            ) : undefined
+          }
         />
-      ) : null}
-      <AiGameQuestionRefresh game="letter-challenge"><LetterGame questions={questions} /></AiGameQuestionRefresh>
+      </AiGameQuestionRefresh>
     </SiteLayout>
   );
 }

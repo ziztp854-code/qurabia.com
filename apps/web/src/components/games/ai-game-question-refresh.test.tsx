@@ -34,7 +34,7 @@ describe('AI game question refresh', () => {
     );
   });
   it('still offers topic input and its privacy notice for other games', () => {
-    render(<AiGameQuestionRefresh game="letter-challenge" showExternalTopicNotice />);
+    render(<AiGameQuestionRefresh game="millionaire" showExternalTopicNotice />);
     fireEvent.click(screen.getByText('جلب أسئلة جديدة بالذكاء الاصطناعي', { selector: 'summary' }));
     expect(
       screen.getByRole('textbox', { name: 'موضوع الأسئلة الجديدة' }),
@@ -43,6 +43,14 @@ describe('AI game question refresh', () => {
     );
   });
   it('previews generated questions before applying them to the actual letter game', async () => {
+    const bankQuestions = [
+      ...LETTER_QUESTION_POOL,
+      ...Array.from({ length: 90 }, (_, index) => ({
+        ...LETTER_QUESTION_POOL[0]!,
+        id: `bank-${index}`,
+        prompt: `سؤال إضافي من البنك للحرف أ رقم ${index}`,
+      })),
+    ];
     const questions = LETTER_QUESTION_POOL.map((question, index) => ({
       prompt: `سؤال جديد من الذكاء الاصطناعي ${index}: ${question.prompt}`,
       answer: question.answer,
@@ -60,18 +68,21 @@ describe('AI game question refresh', () => {
     });
     vi.stubGlobal('fetch', fetch);
     render(
-      <AiGameQuestionRefresh game="letter-challenge">
-        <LetterGame />
+      <AiGameQuestionRefresh game="letter-challenge" inlineControls>
+        <LetterGame questions={bankQuestions} />
       </AiGameQuestionRefresh>,
     );
     fireEvent.click(screen.getByText('جلب أسئلة جديدة بالذكاء الاصطناعي', { selector: 'summary' }));
     fireEvent.click(screen.getByRole('button', { name: 'جلب أسئلة جديدة بالذكاء الاصطناعي' }));
     await screen.findByText('50 سؤالًا جديدًا للمراجعة');
-    expect(JSON.parse(fetch.mock.calls[0]![1].body).excludePrompts).toContain(
-      LETTER_QUESTION_POOL[0]!.prompt,
-    );
+    const request = JSON.parse(fetch.mock.calls[0]![1].body);
+    expect(request.excludePrompts).toHaveLength(50);
+    expect(request.excludePrompts).toContain(LETTER_QUESTION_POOL[0]!.prompt);
     expect(screen.queryByRole('heading', { name: questions[0]!.prompt })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'اعتماد الأسئلة وبدء جولة جديدة' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /الحرف أ، خلية متاحة/ })).toHaveFocus(),
+    );
     fireEvent.click(screen.getByRole('button', { name: /الحرف أ، خلية متاحة/ }));
     expect(screen.getByRole('heading', { name: questions[0]!.prompt })).toBeInTheDocument();
     expect(screen.queryByText('أسد')).not.toBeInTheDocument();

@@ -17,7 +17,7 @@ import {
   generatedGameQuestionsSchema,
   type GeneratedGameQuestion,
 } from './game-question-refresh-contract';
-import { LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
+import { BOARD_LETTERS, LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 
 const testUnoKey = randomUUID();
 
@@ -437,5 +437,43 @@ describe('fresh game question generation', () => {
         questions.map((item, index) => (index === 0 ? { ...item, letter: 'ب' } : item)),
       ),
     ).toThrow();
+  });
+
+  it('uses Kimi for letters and retries only the group with a mismatched answer', async () => {
+    vi.stubEnv('XAI_API_KEY', '');
+    vi.stubEnv('KIMI_API_KEY', 'test-kimi');
+    const left = BOARD_LETTERS.slice(0, 13);
+    const right = BOARD_LETTERS.slice(13);
+    function group(letters: readonly string[]) {
+      return LETTER_QUESTION_POOL.filter((item) => letters.includes(item.letter)).map((item) => ({
+        prompt: item.prompt,
+        answer: item.letter === 'أ' ? 'إبريق' : item.answer,
+        letter: item.letter === 'أ' ? 'ا' : item.letter,
+        category: 'ثقافة',
+        explanation: 'توضيح الإجابة الصحيحة.',
+      }));
+    }
+    const first = group(left);
+    const second = group(right);
+    mocks.generateText
+      .mockResolvedValueOnce({
+        output: { questions: [{ ...first[0], answer: 'ماء' }, ...first.slice(1)] },
+      })
+      .mockResolvedValueOnce({ output: { questions: second } })
+      .mockResolvedValueOnce({ output: { questions: first } });
+
+    const questions = await generateFreshGameQuestions({
+      game: 'letter-challenge',
+      topic: 'ثقافة عامة',
+    });
+
+    expect(questions).toHaveLength(50);
+    expect(questions[0]).toMatchObject({ answer: 'إبريق', letter: 'أ', slot: 1, options: [] });
+    expect(questions.at(-1)).toMatchObject({ letter: 'ن', slot: 25 });
+    expect(mocks.openrouterModel).toHaveBeenCalledWith('kimi-k3.1-pro');
+    expect(mocks.generateText).toHaveBeenCalledTimes(3);
+    expect(mocks.generateText.mock.calls[2]![0].prompt).toBe(
+      mocks.generateText.mock.calls[0]![0].prompt,
+    );
   });
 });

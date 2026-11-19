@@ -4,8 +4,8 @@ import type { TeamId } from '@/lib/letter-game/types';
 import styles from './letter-game.module.css';
 
 const TEAM_COPY = {
-  green: { name: 'الفريق الأخضر', goal: 'من الأعلى إلى الأسفل', Icon: Sprout },
-  orange: { name: 'الفريق البرتقالي', goal: 'من اليمين إلى اليسار', Icon: Flame },
+  green: { name: 'الفريق الأخضر', Icon: Sprout },
+  orange: { name: 'الفريق البرتقالي', Icon: Flame },
 } as const;
 
 export function TeamCard({
@@ -17,17 +17,14 @@ export function TeamCard({
   count: number;
   active: boolean;
 }) {
-  const { name, goal, Icon } = TEAM_COPY[team];
+  const { name, Icon } = TEAM_COPY[team];
 
   return (
     <article className={styles.teamCard} data-team={team} data-active={active || undefined}>
       <span className={styles.teamIcon} aria-hidden="true">
         <Icon />
       </span>
-      <span className={styles.teamCopy}>
-        <strong>{name}</strong>
-        <small>{goal}</small>
-      </span>
+      <strong className={styles.teamName}>{name}</strong>
       <span className={styles.teamScore}>
         <strong>{formatNumber(count)}</strong>
         <small>خلية</small>

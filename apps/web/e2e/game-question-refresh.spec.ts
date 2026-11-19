@@ -49,10 +49,7 @@ test('يغير سؤال الحرف ويعتمد مجموعة الذكاء الا
       json: { ok: true, game: 'letter-challenge', questions, batchId: 'browser-batch' },
     });
   });
-  await page
-    .getByText('جلب أسئلة جديدة بالذكاء الاصطناعي', { exact: true })
-    .filter({ hasNot: page.locator('svg') })
-    .click();
+  await page.locator('summary').filter({ hasText: 'جلب أسئلة جديدة بالذكاء الاصطناعي' }).click();
   await page.getByRole('button', { name: 'جلب أسئلة جديدة بالذكاء الاصطناعي' }).click();
   await expect(page.getByText('50 سؤالًا جديدًا للمراجعة')).toBeVisible();
   await expect(page.locator('#active-question-title')).not.toHaveText(questions[0]!.prompt);
