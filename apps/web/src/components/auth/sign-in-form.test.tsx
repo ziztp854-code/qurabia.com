@@ -43,6 +43,21 @@ describe('SignInForm Google button', () => {
     expect(screen.getByRole('button', { name: 'الدخول عبر Google' })).toBeEnabled();
   });
 
+  it('starts Android OAuth in the external browser before making any web sign-in request', async () => {
+    const start = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('Capacitor', { isPluginAvailable: () => true, Plugins: { TahaddiGoogle: { start } } });
+    mocks.query = 'next=%2Forders%3Fpage%3D2';
+    try {
+      render(<SignInForm googleEnabled />);
+      fireEvent.click(screen.getByRole('button', { name: 'الدخول عبر Google' }));
+      await waitFor(() => expect(start).toHaveBeenCalledOnce());
+      expect(start).toHaveBeenCalledWith({ next: '/orders?page=2' });
+      expect(mocks.signIn).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('shows only password login on the stamp holder entry', () => {
     render(<SignInForm showGoogle={false} defaultNext="/orders" />);
     expect(
