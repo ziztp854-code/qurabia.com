@@ -57,18 +57,18 @@ export function HexBoard({
 
   return (
     <section className={styles.boardStage} aria-labelledby="letter-board-title">
-      <h2 id="letter-board-title" className="sr-only">
-        لوحة تحدي الحروف
-      </h2>
-      <div className={styles.boardGoalMap} aria-label="اتجاهات الفوز">
-        <span data-team="green">
-          <ArrowDown aria-hidden="true" />
-          الأخضر: أعلى إلى أسفل
-        </span>
-        <span data-team="orange">
-          <ArrowLeft aria-hidden="true" />
-          البرتقالي: يمين إلى يسار
-        </span>
+      <div className={styles.boardHeader}>
+        <h2 id="letter-board-title">لوحة الحروف</h2>
+        <div className={styles.boardGoalMap} role="group" aria-label="اتجاهات الفوز">
+          <span data-team="green">
+            <ArrowDown aria-hidden="true" />
+            الأخضر من أعلى إلى أسفل
+          </span>
+          <span data-team="orange">
+            <ArrowLeft aria-hidden="true" />
+            البرتقالي من اليمين إلى اليسار
+          </span>
+        </div>
       </div>
       <div className={styles.boardShell}>
         <span className={styles.boardCircuit} aria-hidden="true" />

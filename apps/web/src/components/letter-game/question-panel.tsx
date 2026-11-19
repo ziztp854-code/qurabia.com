@@ -28,6 +28,7 @@ export function QuestionPanel({
       <section
         id="letter-question-panel"
         className={styles.questionPanel}
+        data-team={team}
         data-empty="true"
         tabIndex={-1}
         aria-live="polite"
@@ -42,8 +43,7 @@ export function QuestionPanel({
 
   // The host can reveal the answer early to judge an oral response.
   // It is also revealed automatically when time elapses or the result is locked in.
-  const isAnswerRevealed =
-    timer <= 0 || feedback !== null || isHostRevealRequested;
+  const isAnswerRevealed = timer <= 0 || feedback !== null || isHostRevealRequested;
   const isTimerLow = timer > 0 && timer <= 10;
 
   return (
@@ -110,10 +110,10 @@ export function QuestionPanel({
                 <EyeOff aria-hidden="true" />
                 الإجابة محجوبة
               </span>
-              <span className={styles.answerValue}>{'؟'.repeat(question.answer.length)}</span>
-              <small className={styles.answerHint}>
-                ستظهر الإجابة تلقائياً عند انتهاء العدّ التنازلي
-              </small>
+              <span className={styles.answerValue} aria-hidden="true">
+                ؟؟؟
+              </span>
+              <small className={styles.answerHint}>تنتهي المحاولة بانتهاء الوقت.</small>
             </p>
             <button
               type="button"

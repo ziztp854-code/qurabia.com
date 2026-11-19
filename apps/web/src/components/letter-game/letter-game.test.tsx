@@ -16,7 +16,9 @@ describe('LetterGame', () => {
     expect(screen.queryByText('أخطبوط')).not.toBeInTheDocument();
     expect(screen.getByText('الإجابة محجوبة')).toBeInTheDocument();
     expect(screen.getByText('دور الفريق الأخضر')).toBeInTheDocument();
-    await waitFor(() => expect(document.activeElement).toHaveAttribute('id', 'letter-question-panel'));
+    await waitFor(() =>
+      expect(document.activeElement).toHaveAttribute('id', 'letter-question-panel'),
+    );
     await user.click(screen.getByRole('button', { name: 'إجابة صحيحة' }));
     expect(screen.getByRole('button', { name: /الحرف أ، يملكها الفريق الأخضر/ })).toBeDisabled();
     expect(screen.getByText('دور الفريق البرتقالي')).toBeInTheDocument();
@@ -40,7 +42,9 @@ describe('LetterGame', () => {
 
     await user.click(screen.getByRole('button', { name: /الحرف أ، خلية متاحة/ }));
 
-    expect(screen.getByText('سؤال قادم من بنك تحدي الحروف ويبدأ جوابه بحرف الألف؟')).toBeInTheDocument();
+    expect(
+      screen.getByText('سؤال قادم من بنك تحدي الحروف ويبدأ جوابه بحرف الألف؟'),
+    ).toBeInTheDocument();
   });
 
   it('renders the two teams, the board, and the mobile history control', () => {
@@ -65,7 +69,7 @@ describe('LetterGame', () => {
     // The answer must NOT be revealed while the timer is still running.
     expect(screen.queryByText('الإجابة: أسد')).not.toBeInTheDocument();
     expect(screen.getByText('الإجابة محجوبة')).toBeInTheDocument();
-    expect(screen.getByText('ستظهر الإجابة تلقائياً عند انتهاء العدّ التنازلي')).toBeInTheDocument();
+    expect(screen.getByText('تنتهي المحاولة بانتهاء الوقت.')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /انتظر حكم السؤال الحالي/ })[0]).toBeDisabled();
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute('id', 'letter-question-panel'),

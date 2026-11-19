@@ -29,9 +29,7 @@ describe('QuestionPanel answer reveal', () => {
     expect(screen.queryByText('الإجابة: أسد')).not.toBeInTheDocument();
     expect(screen.getByText('الإجابة محجوبة')).toBeInTheDocument();
     expect(screen.getByText('؟؟؟')).toBeInTheDocument();
-    expect(
-      screen.getByText('ستظهر الإجابة تلقائياً عند انتهاء العدّ التنازلي'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('تنتهي المحاولة بانتهاء الوقت.')).toBeInTheDocument();
     // The reveal badge must not be shown yet.
     expect(screen.queryByText('تم الكشف')).not.toBeInTheDocument();
     // Timer must NOT be in danger state above the 10s threshold.
