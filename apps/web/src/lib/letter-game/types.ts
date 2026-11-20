@@ -14,12 +14,7 @@ export type LetterQuestionCategory =
   | 'objects';
 
 export type LetterQuestionPattern =
-  | 'descriptive'
-  | 'scenario'
-  | 'comparison'
-  | 'definition'
-  | 'curiosity'
-  | 'inference';
+  'descriptive' | 'scenario' | 'comparison' | 'definition' | 'curiosity' | 'inference';
 
 export interface LetterQuestion {
   id: string;
@@ -44,7 +39,7 @@ export interface GameBoard {
   cells: readonly BoardCell[];
 }
 
-export type HistoryResult = 'correct' | 'wrong' | 'skipped' | 'timeout';
+export type HistoryResult = 'correct' | 'wrong' | 'skipped';
 
 export interface GameHistoryEntry {
   id: string;
@@ -60,8 +55,6 @@ export interface LetterGameState {
   selectedCell: string | null;
   currentQuestion: LetterQuestion | null;
   usedQuestionIds: readonly string[];
-  timer: number;
-  expiresAt: number | null;
   winner: TeamId | null;
   winningPath: readonly string[];
   gameStatus: GameStatus;

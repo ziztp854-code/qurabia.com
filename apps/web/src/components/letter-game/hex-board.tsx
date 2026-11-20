@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type KeyboardEvent } from 'react';
-import { ArrowDown, ArrowLeft } from 'lucide-react';
 import type { BoardCell, GameBoard } from '@/lib/letter-game/types';
 import { HexCell } from './hex-cell';
 import styles from './letter-game.module.css';
@@ -10,14 +9,12 @@ export function HexBoard({
   board,
   selectedCell,
   winningPath,
-  lastClaimed,
   canSelect,
   onSelect,
 }: {
   board: GameBoard;
   selectedCell: string | null;
   winningPath: readonly string[];
-  lastClaimed: string | null;
   canSelect: boolean;
   onSelect: (cellId: string) => void;
 }) {
@@ -57,45 +54,27 @@ export function HexBoard({
 
   return (
     <section className={styles.boardStage} aria-labelledby="letter-board-title">
-      <div className={styles.boardHeader}>
-        <h2 id="letter-board-title">لوحة الحروف</h2>
-        <div className={styles.boardGoalMap} role="group" aria-label="اتجاهات الفوز">
-          <span data-team="green">
-            <ArrowDown aria-hidden="true" />
-            الأخضر من أعلى إلى أسفل
-          </span>
-          <span data-team="orange">
-            <ArrowLeft aria-hidden="true" />
-            البرتقالي من اليمين إلى اليسار
-          </span>
-        </div>
-      </div>
+      <h2 id="letter-board-title" className="sr-only">
+        لوحة الحروف
+      </h2>
       <div className={styles.boardShell}>
-        <span className={styles.boardCircuit} aria-hidden="true" />
-        <span className={styles.greenGate} aria-hidden="true" />
-        <span className={styles.orangeGate} aria-hidden="true" />
         <div className={styles.hexBoard} role="group" aria-label="شبكة حروف تحدي الحروف">
           {Array.from({ length: board.rows }, (_, row) => (
             <div className={styles.hexRow} key={row} data-row={row}>
               {board.cells
                 .filter((cell) => cell.row === row)
-                .map((cell) => {
-                  const winningIndex = winningPath.indexOf(cell.id);
-                  return (
-                    <HexCell
-                      key={cell.id}
-                      cell={cell}
-                      selected={selectedCell === cell.id}
-                      winning={winningIndex >= 0}
-                      winningIndex={winningIndex}
-                      lastClaimed={lastClaimed === cell.id}
-                      selectable={canSelect && !cell.owner}
-                      tabIndex={canSelect && activeRovingCell === cell.id ? 0 : -1}
-                      onSelect={onSelect}
-                      onKeyDown={(event) => handleCellKeyDown(event, cell)}
-                    />
-                  );
-                })}
+                .map((cell) => (
+                  <HexCell
+                    key={cell.id}
+                    cell={cell}
+                    selected={selectedCell === cell.id}
+                    winning={winningPath.includes(cell.id)}
+                    selectable={canSelect && !cell.owner}
+                    tabIndex={canSelect && activeRovingCell === cell.id ? 0 : -1}
+                    onSelect={onSelect}
+                    onKeyDown={(event) => handleCellKeyDown(event, cell)}
+                  />
+                ))}
             </div>
           ))}
         </div>

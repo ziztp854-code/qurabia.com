@@ -3,10 +3,9 @@ import { BOARD_LETTERS, getQuestionForLetter } from './questions';
 import type { HistoryResult, LetterGameState, LetterQuestion } from './types';
 
 export type LetterGameAction =
-  | { type: 'select-cell'; cellId: string; now: number; question?: LetterQuestion }
-  | { type: 'replace-question'; question: LetterQuestion; now: number }
-  | { type: 'judge'; result: Exclude<HistoryResult, 'timeout'>; now: number }
-  | { type: 'tick'; now: number }
+  | { type: 'select-cell'; cellId: string; question?: LetterQuestion }
+  | { type: 'replace-question'; question: LetterQuestion }
+  | { type: 'judge'; result: HistoryResult }
   | { type: 'reset' };
 
 export function createInitialLetterGameState(): LetterGameState {
@@ -16,8 +15,6 @@ export function createInitialLetterGameState(): LetterGameState {
     selectedCell: null,
     currentQuestion: null,
     usedQuestionIds: [],
-    timer: 15,
-    expiresAt: null,
     winner: null,
     winningPath: [],
     gameStatus: 'playing',
@@ -39,7 +36,6 @@ function finishQuestion(state: LetterGameState, result: HistoryResult): LetterGa
     correct: 'إجابة صحيحة',
     wrong: 'إجابة خاطئة',
     skipped: 'تم التجاوز',
-    timeout: 'انتهى الوقت',
   };
   const entry = {
     id: `${state.round}-${state.selectedCell}-${result}`,
@@ -55,8 +51,6 @@ function finishQuestion(state: LetterGameState, result: HistoryResult): LetterGa
       board,
       selectedCell: null,
       currentQuestion: null,
-      timer: 15,
-      expiresAt: null,
       winner: state.currentTeam,
       winningPath,
       gameStatus: 'finished',
@@ -70,8 +64,6 @@ function finishQuestion(state: LetterGameState, result: HistoryResult): LetterGa
     board,
     selectedCell: null,
     currentQuestion: null,
-    timer: 15,
-    expiresAt: null,
     gameStatus: 'playing',
     history: [entry, ...state.history],
     round: state.round + 1,
@@ -94,16 +86,11 @@ export function letterGameReducer(
         selectedCell: cell.id,
         currentQuestion: question,
         usedQuestionIds: [...state.usedQuestionIds, question.id],
-        timer: 15,
-        expiresAt: action.now + 15_000,
         gameStatus: 'question',
       };
     }
     case 'replace-question': {
       if (state.gameStatus !== 'question' || !state.currentQuestion) return state;
-      if (state.expiresAt !== null && action.now >= state.expiresAt) {
-        return finishQuestion(state, 'timeout');
-      }
       if (
         action.question.letter !== state.currentQuestion.letter ||
         action.question.id === state.currentQuestion.id ||
@@ -114,22 +101,10 @@ export function letterGameReducer(
         ...state,
         currentQuestion: action.question,
         usedQuestionIds: [...state.usedQuestionIds, action.question.id],
-        timer: 15,
-        expiresAt: action.now + 15_000,
       };
     }
     case 'judge':
-      if (state.expiresAt !== null && action.now >= state.expiresAt) {
-        return finishQuestion(state, 'timeout');
-      }
       return finishQuestion(state, action.result);
-    case 'tick':
-      if (state.gameStatus !== 'question' || state.expiresAt === null) return state;
-      if (action.now >= state.expiresAt) return finishQuestion(state, 'timeout');
-      return {
-        ...state,
-        timer: Math.max(1, Math.ceil((state.expiresAt - action.now) / 1000)),
-      };
     case 'reset':
       return createInitialLetterGameState();
     default:

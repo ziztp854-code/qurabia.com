@@ -58,14 +58,7 @@ export function GameHistory({
 
   return (
     <>
-      <section className={styles.historyDesktop} aria-labelledby="history-title">
-        <div className={styles.historyHeading}>
-          <History aria-hidden="true" />
-          <h2 id="history-title">سجل اللعب</h2>
-        </div>
-        <HistoryList history={history} />
-      </section>
-      <button ref={triggerRef} className={styles.historyTrigger} type="button" onClick={onOpen}>
+      <button ref={triggerRef} className={styles.secondaryControl} type="button" onClick={onOpen}>
         <History aria-hidden="true" />
         <span>فتح سجل اللعب</span>
       </button>
