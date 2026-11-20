@@ -191,7 +191,6 @@ test('villages stay visible through overview and rapid pan while the newest resp
 }, testInfo) => {
   await control(request, { ttlMs: 60000 });
   const { errors } = await open(page);
-  await page.locator('summary', { hasText: 'عرض الخريطة' }).click();
   await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).click();
   await expect
     .poll(() => page.evaluate(() => window.__savedMap!.getProjection().type))
@@ -423,7 +422,6 @@ async function lastKindAfter(page: Page, count: number) {
 
 test('overview switches with hysteresis around the 90 degree limit', async ({ page }) => {
   const { errors } = await open(page);
-  await page.locator('summary', { hasText: 'عرض الخريطة' }).click();
   await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).click();
   await expect
     .poll(() => page.evaluate(() => window.__savedMap!.getProjection().type))
@@ -498,7 +496,6 @@ test('a hidden layer stays hidden through refresh, expiry, recovery and overview
   expect(await visibility()).toBe('none');
 
   // overview round trip
-  await page.locator('summary', { hasText: 'عرض الخريطة' }).click();
   await page.getByRole('button', { name: 'خريطة مسطحة', exact: true }).click();
   const count = await requests(page);
   await setSpan(page, 120);

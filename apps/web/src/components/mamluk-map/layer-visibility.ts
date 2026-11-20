@@ -1,11 +1,14 @@
 import type { MapLayerGroup } from './map-layer-controls';
 
+export const ATLAS_CITY_LABELS = 'mamluk-atlas-city-labels';
+
 export type LayerPreferences = Readonly<Record<MapLayerGroup, boolean>>;
 
 /** Layers owned by each user-facing group; the session's visibility is derived from this. */
 export const LAYER_GROUP_IDS: Readonly<Record<MapLayerGroup, readonly string[]>> = {
   cities: [
     'mamluk-cities',
+    ATLAS_CITY_LABELS,
     'mamluk-cities-owner-markers',
     'mamluk-village-clusters',
     'mamluk-village-cluster-count',

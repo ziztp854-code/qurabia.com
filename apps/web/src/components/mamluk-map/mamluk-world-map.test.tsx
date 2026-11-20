@@ -576,10 +576,9 @@ describe('strategic world map controls', () => {
       />,
     );
     await screen.findByRole('button', { name: 'القاهرة' });
-    expect(screen.getByText('أطلس جغرافي · مدن مصر والشام والحجاز')).toBeInTheDocument();
-    expect(
-      screen.getByText('لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.'),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'أطلس جغرافي' })).toBeInTheDocument();
+    expect(screen.getByText('مدن مصر والشام والحجاز')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'دليل المدن' })).toBeInTheDocument();
     expect(screen.queryByText('رؤيتك الحالية')).not.toBeInTheDocument();
     expect(
       screen.queryByText('تعرض الخريطة المواقع المسموح لك بالاطلاع عليها.'),

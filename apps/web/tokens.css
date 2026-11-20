@@ -28,6 +28,29 @@
   --brand-gold: var(--gold-500);
   --brand-cream: #f2e8d5;
   --brand-ivory: #fefbf6;
+
+  /* Atlas desk, field notes and vector geography. */
+  --atlas-night: #071017;
+  --atlas-desk: #0c1820;
+  --atlas-raised: #132630;
+  --atlas-rim: #6d858b;
+  --atlas-muted: #b9cbd2;
+  --atlas-mint: #a9d7ce;
+  --atlas-brass: #f4cd86;
+  --atlas-paper: #f5efe0;
+  --atlas-ink: #1c302d;
+  --atlas-water: #254957;
+  --atlas-coast: #a2bbbc;
+  --atlas-land: #545f54;
+  --atlas-sand: #8d7453;
+  --atlas-forest: #445f4e;
+  --atlas-relief: #2b3434;
+  --atlas-drawer: #101e27;
+  --atlas-drawer-raised: #182a34;
+  --atlas-drawer-rule: #708288;
+  --atlas-horizon: #102e3c;
+  --atlas-shadow: rgb(2 17 22 / 0.32);
+
   /* Geographic atlas palette: shared by the physical map renderer and its frame. */
   --map-ocean: #6aabf4;
   --map-land: #d8c7a1;

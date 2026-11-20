@@ -38,6 +38,7 @@ import { CLUSTER_LAYERS, settlementClusters } from './settlement-clusters';
 import { createWorldOverview, type Overview } from './world-overview';
 import {
   allLayersVisible,
+  ATLAS_CITY_LABELS,
   layerVisibility,
   managedLayerIds,
   type LayerPreferences,
@@ -93,6 +94,28 @@ function presentationPort(
       before,
     );
   };
+  const unclusteredCities: FilterSpecification = ['!', ['has', 'point_count']];
+  const atlasCityLabels: LayerSpecification = {
+    id: ATLAS_CITY_LABELS,
+    type: 'symbol',
+    source: 'mamluk-cities',
+    minzoom: 4,
+    filter: unclusteredCities,
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-font': ['Noto Sans Regular'],
+      'text-anchor': 'top',
+      'text-offset': [0, 0.85],
+      'text-size': 13,
+      'text-padding': 4,
+    },
+    paint: {
+      'text-color': palette.city,
+      'text-halo-color': palette.fog,
+      'text-halo-width': 1.5,
+    },
+  };
+
   // SDK isStyleLoaded also waits for tiles. Overlay removal must not wait for them.
   let styleReady = initialStyleReady ?? map.isStyleLoaded();
   const onStyleReady = () => {
@@ -118,7 +141,10 @@ function presentationPort(
     const companions =
       id === 'mamluk-territories'
         ? ['mamluk-village-borders', 'mamluk-village-border-halo']
-        : [`${id}-owner-markers`, ...(id === 'mamluk-cities' ? CLUSTER_LAYERS : [])];
+        : [
+            `${id}-owner-markers`,
+            ...(id === 'mamluk-cities' ? [...CLUSTER_LAYERS, ATLAS_CITY_LABELS] : []),
+          ];
     for (const companion of companions) if (map.getLayer(companion)) map.removeLayer(companion);
   };
   const port: MapLibrePort = {
@@ -184,11 +210,26 @@ function presentationPort(
           : presented;
       const filtered =
         layer.id === 'mamluk-cities' && isStyleLayer(owned)
-          ? { ...owned, filter: ['!', ['has', 'point_count']] as FilterSpecification }
+          ? { ...owned, filter: unclusteredCities }
           : owned;
-      addLayer(filtered, layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined);
-      if (layer.id === 'mamluk-cities')
+      addLayer(
+        settlementLabel === 'مدينة' && layer.id === 'mamluk-cities' && filtered.type === 'circle'
+          ? {
+              ...filtered,
+              paint: {
+                'circle-color': palette.city,
+                'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 8, 5],
+                'circle-stroke-color': palette.fog,
+                'circle-stroke-width': 2,
+              },
+            }
+          : filtered,
+        layer.id === 'mamluk-fog' ? 'mamluk-territories' : undefined,
+      );
+      if (layer.id === 'mamluk-cities') {
+        if (settlementLabel === 'مدينة') addLayer(atlasCityLabels);
         for (const cluster of settlementClusters(palette, settlementLabel)) addLayer(cluster);
+      }
       if (layer.id === 'mamluk-territories') {
         if (ownership) {
           for (const border of playerBorderLayers(ownership)) addLayer(border);
@@ -398,6 +439,7 @@ export function createMapSession(
       retainPublicLayers &&
       (id === 'mamluk-cities' ||
         id === 'mamluk-cities-owner-markers' ||
+        id === ATLAS_CITY_LABELS ||
         CLUSTER_LAYERS.includes(id as (typeof CLUSTER_LAYERS)[number]) ||
         id === 'mamluk-territories' ||
         id === 'mamluk-village-borders' ||

@@ -43,8 +43,17 @@ function isBasemapTile(response: Response): boolean {
   );
 }
 
-function monitorPhysicalMapResources(page: Page): () => Promise<void> {
+function monitorPhysicalMapResources(page: Page, referenceOnly = false): () => Promise<void> {
   const loaded = new Set<string>();
+  const obsolete = new Set<string>();
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url());
+    if (
+      /^\/game-art\/mamluk-map\/(atlas-banner|reference-basemap)\.webp$/.test(pathname) ||
+      (referenceOnly && /^\/game-art\/mamluk-map\/(village|castle)\.png$/.test(pathname))
+    )
+      obsolete.add(pathname);
+  });
   page.on('response', (response) => {
     if (response.status() !== 200 || !response.headers()['content-type']?.startsWith('image/'))
       return;
@@ -55,7 +64,6 @@ function monitorPhysicalMapResources(page: Page): () => Promise<void> {
     )
       loaded.add('relief');
     if (url.origin !== 'http://127.0.0.1:3000') return;
-    if (url.pathname === '/game-art/mamluk-map/reference-basemap.webp') loaded.add('reference');
     if (url.pathname === '/game-art/mamluk-map/village.png') loaded.add('village');
     if (url.pathname === '/game-art/mamluk-map/castle.png') loaded.add('castle');
   });
@@ -63,9 +71,10 @@ function monitorPhysicalMapResources(page: Page): () => Promise<void> {
     await expect
       .poll(() => [...loaded].sort(), {
         message:
-          'The browser must load the supplied reference background, real shaded relief and both settlement PNG assets with HTTP 200.',
+          'The browser loads the geographic relief and, for campaigns, the settlement markers.',
       })
-      .toEqual(['castle', 'reference', 'relief', 'village']);
+      .toEqual(referenceOnly ? ['relief'] : ['castle', 'relief', 'village']);
+    expect([...obsolete]).toEqual([]);
     await page.evaluate(
       () =>
         new Promise<void>((resolve) =>
@@ -454,7 +463,7 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
   page,
 }, testInfo) => {
   const checkTraffic = monitorTraffic(page, checkPublicAtlasPayload);
-  const checkPhysicalResources = monitorPhysicalMapResources(page);
+  const checkPhysicalResources = monitorPhysicalMapResources(page, true);
   const initialResponse = page.waitForResponse(isViewport);
   const tileResponse = page.waitForResponse(isBasemapTile);
   await page.goto(`${mapPath}/`);
@@ -465,14 +474,12 @@ test('anonymous public atlas renders real landmarks without game intelligence', 
   expect((await tileResponse).status()).toBe(200);
   await checkPhysicalResources();
   await expect(page.getByRole('heading', { name: 'أطلس قرابية', level: 1 })).toBeVisible();
-  await expect(
-    page.getByText('أطلس جغرافي · مدن مصر والشام والحجاز', { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText('لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.', {
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole('region', { name: 'أطلس جغرافي' })).toBeVisible();
+  await expect(page.getByText('مدن مصر والشام والحجاز', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'تسجيل الدخول لعرض حملتك' })).toHaveAttribute(
+    'href',
+    /next=%2Fgames%2Fkingdoms%2Fworld-map/,
+  );
   await expect(
     page.locator(
       `[data-world-id="${publicAtlasWorld}"], select:has(option:checked[value="${publicAtlasWorld}"])`,

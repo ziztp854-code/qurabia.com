@@ -16,12 +16,49 @@ vi.mock('../theme-toggle', () => ({
 }));
 
 describe('PageBackButton', () => {
-  it('uses app navigation when there is no previous history entry', () => {
-    const length = vi.spyOn(window.history, 'length', 'get').mockReturnValue(1);
-    render(<PageBackButton />);
-    fireEvent.click(screen.getByRole('button', { name: 'رجوع' }));
-    expect(routerPush).toHaveBeenCalledWith('/');
-    length.mockRestore();
+  it('returns home when the tab history only contains about:blank and the current page', () => {
+    const length = vi.spyOn(window.history, 'length', 'get').mockReturnValue(2);
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    vi.stubGlobal('navigation', { canGoBack: false });
+    try {
+      render(<PageBackButton />);
+      fireEvent.click(screen.getByRole('button', { name: 'رجوع' }));
+      expect(routerPush).toHaveBeenCalledWith('/');
+      expect(back).not.toHaveBeenCalled();
+    } finally {
+      length.mockRestore();
+      back.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('preserves the previous internal history entry when the browser can traverse it', () => {
+    routerPush.mockClear();
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    vi.stubGlobal('navigation', { canGoBack: true });
+    try {
+      render(<PageBackButton />);
+      fireEvent.click(screen.getByRole('button', { name: 'رجوع' }));
+      expect(back).toHaveBeenCalledOnce();
+      expect(routerPush).not.toHaveBeenCalled();
+    } finally {
+      back.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('uses a proven same-origin referrer on browsers without the Navigation API', () => {
+    const origin = window.location.origin;
+    const referrer = vi.spyOn(document, 'referrer', 'get').mockReturnValue(origin + '/games/');
+    vi.stubGlobal('navigation', undefined);
+    try {
+      render(<PageBackButton />);
+      fireEvent.click(screen.getByRole('button', { name: 'رجوع' }));
+      expect(routerPush).toHaveBeenCalledWith('/games/');
+    } finally {
+      referrer.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 });
 

@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import type { SelectionDetails, SelectionKey } from './selection';
 import styles from './mamluk-world-map.module.css';
 import { VillageRelocation, type VillageRelocationProps } from './village-relocation';
@@ -39,6 +38,7 @@ interface SelectionPanelProps {
   readonly selectedKey?: SelectionKey | null;
   readonly features: readonly (SelectionKey & { readonly label: string })[];
   readonly overviewVillageCount?: number;
+  readonly sceneStatus?: 'loading' | 'ready' | 'zoom' | 'error';
   readonly onSelect: (key: SelectionKey) => void;
   readonly onClose: () => void;
   readonly referenceOnly?: boolean;
@@ -60,6 +60,7 @@ export function SelectionPanel({
   selectedKey,
   features,
   overviewVillageCount,
+  sceneStatus = 'ready',
   onSelect,
   onClose,
   referenceOnly = false,
@@ -71,6 +72,7 @@ export function SelectionPanel({
   targetSelection,
 }: SelectionPanelProps) {
   const contentId = useId();
+  const count = new Intl.NumberFormat('ar').format(features.length || overviewVillageCount || 0);
   const searchId = useId();
   const [query, setQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(40);
@@ -79,11 +81,24 @@ export function SelectionPanel({
     setVisibleLimit(40);
   }
   const matchingFeatures = features.filter((feature) => feature.label.includes(query.trim()));
+  const emptyListMessage =
+    query.trim() && features.length
+      ? 'لا مواقع تطابق البحث في هذا المشهد.'
+      : {
+          loading: 'جارٍ تحميل المواقع…',
+          ready: 'قرّب الخريطة لاستكشاف المواقع.',
+          zoom: 'قرّب الخريطة لاستكشاف المواقع.',
+          error: 'أعد تحميل الخريطة لعرض المواقع.',
+        }[sceneStatus];
   const panel = useRef<HTMLElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const detailId = selection ? `${selection.layer}:${selection.id}` : null;
   useEffect(() => {
-    if (detailId) title.current?.focus({ preventScroll: true });
+    if (!detailId || !title.current) return;
+    if (window.matchMedia?.('(max-width: 62rem)').matches) {
+      title.current.scrollIntoView?.({ block: 'nearest', behavior: 'instant' });
+    }
+    title.current.focus({ preventScroll: true });
   }, [detailId]);
   const relocationContent = useRef<HTMLDivElement>(null);
   const wasPickingDestination = useRef(false);
@@ -123,7 +138,6 @@ export function SelectionPanel({
       data-expanded={sheetExpanded}
       hidden={pickingDestination}
     >
-      <div className={styles.panelHandle} aria-hidden="true" />
       <button
         type="button"
         className={styles.sheetToggle}
@@ -135,7 +149,9 @@ export function SelectionPanel({
           if (sheetExpanded) onClose();
         }}
       >
-        <span>المواقع في المشهد</span>
+        <MapPin size={18} aria-hidden="true" />
+        <span>{referenceOnly ? 'دليل المدن' : 'المواقع في المشهد'}</span>
+        <bdi className={styles.locationCount}>{count}</bdi>
         {sheetExpanded ? (
           <ChevronDown size={20} aria-hidden="true" />
         ) : (
@@ -182,21 +198,6 @@ export function SelectionPanel({
                 <X size={20} aria-hidden="true" />
               </button>
             </header>
-            {(selection.layer === 'cities' || selection.layer === 'castles') && (
-              <div className={styles.selectionArt} aria-hidden="true">
-                <Image
-                  src={
-                    selection.layer === 'castles'
-                      ? '/game-art/mamluk-map/castle.png'
-                      : '/game-art/mamluk-map/village.png'
-                  }
-                  alt=""
-                  width={240}
-                  height={168}
-                  draggable={false}
-                />
-              </div>
-            )}
             {managementHref && !referenceOnly && (
               <Link className={`${styles.control} ${styles.managementLink}`} href={managementHref}>
                 إدارة القرية
@@ -231,15 +232,13 @@ export function SelectionPanel({
             <p>جارٍ تحديث تفاصيل الموقع…</p>
           </div>
         ) : (
-          <div className={styles.emptySelection}>
-            <MapPin size={28} aria-hidden="true" />
-            <h2>اختر موقعًا على الخريطة</h2>
-            <p>
-              {referenceOnly
-                ? 'اختر مدينة لعرض اسمها وإحداثياتها الجغرافية.'
-                : 'افتح مدينة أو قلعة أو جيشًا للاطلاع على معلوماته المتاحة.'}
-            </p>
-          </div>
+          !referenceOnly && (
+            <div className={styles.emptySelection}>
+              <MapPin size={28} aria-hidden="true" />
+              <h2>اختر موقعًا على الخريطة</h2>
+              <p>اختر موقعًا من الخريطة أو القائمة لعرض تفاصيله.</p>
+            </div>
+          )
         )}
         {relocation && !referenceOnly && (
           <div ref={relocationContent} tabIndex={-1}>
@@ -251,10 +250,8 @@ export function SelectionPanel({
         )}
         <section className={styles.visibleLocations} aria-label="المواقع المتاحة في المشهد">
           <div className={styles.locationsHeading}>
-            <h3>المواقع في المشهد</h3>
-            <span>
-              {new Intl.NumberFormat('ar').format(features.length || overviewVillageCount || 0)}
-            </span>
+            <h2>{referenceOnly ? 'دليل المدن' : 'المواقع في المشهد'}</h2>
+            <bdi className={styles.locationCount}>{count}</bdi>
           </div>
           {overviewVillageCount !== undefined && (
             <p>
@@ -272,7 +269,7 @@ export function SelectionPanel({
                   type="search"
                   value={query}
                   onChange={(event) => changeQuery(event.target.value)}
-                  placeholder="مدينة أو قلعة"
+                  placeholder={referenceOnly ? 'اسم المدينة' : 'مدينة أو قلعة'}
                 />
                 {query && (
                   <button
@@ -306,11 +303,7 @@ export function SelectionPanel({
               ))}
             </ul>
           ) : (
-            <p>
-              {query.trim() && features.length
-                ? 'لا مواقع تطابق البحث في هذا المشهد.'
-                : 'قرّب الخريطة لاستكشاف المواقع.'}
-            </p>
+            <p>{emptyListMessage}</p>
           )}
           {matchingFeatures.length > visibleLimit && (
             <button type="button" onClick={() => setVisibleLimit((limit) => limit + 40)}>
@@ -318,11 +311,9 @@ export function SelectionPanel({
             </button>
           )}
         </section>
-        <p className={styles.panelNote}>
-          {referenceOnly
-            ? 'الأطلس يعرض مواقع مدن حقيقية للمرجع الجغرافي.'
-            : 'تعرض الخريطة المواقع المسموح لك بالاطلاع عليها.'}
-        </p>
+        {!referenceOnly && (
+          <p className={styles.panelNote}>تعرض الخريطة المواقع المسموح لك بالاطلاع عليها.</p>
+        )}
       </div>
     </aside>
   );

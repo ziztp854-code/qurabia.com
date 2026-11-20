@@ -81,6 +81,7 @@ export function useWorldMap(
   initialLocation?: { readonly longitude: number; readonly latitude: number },
   initialVillageId?: string,
   initialOverview = false,
+  referenceOnly = false,
 ) {
   const container = useRef<HTMLDivElement>(null);
   const [visibleLayers, setVisibleLayers] = useState(initialMapLayers);
@@ -196,7 +197,7 @@ export function useWorldMap(
     let cancelled = false;
     let map: LibreMap | null = null;
     let session: ReturnType<typeof createMapSession> | null = null;
-    let settlements: SettlementPresentation | null = null;
+    let settlements: SettlementPresentation | undefined;
     let styleReady = false;
     mapStyleReadyRef.current = false;
     let stopRevisions: (() => void) | undefined;
@@ -230,12 +231,12 @@ export function useWorldMap(
               ? Math.max(
                   0,
                   Math.min(
-                    1.5,
+                    referenceOnly ? 1.85 : 1.5,
                     Math.log2(
                       Math.min(
                         container.current.clientWidth || 1024,
                         container.current.clientHeight || 630,
-                      ) / 256,
+                      ) / (referenceOnly ? 211 : 256),
                     ),
                   ),
                 )
@@ -263,24 +264,26 @@ export function useWorldMap(
           if (!cancelled && isFatalMapRuntimeError(event)) setStatus('error');
         });
         const colors = readMapColors(container.current);
-        const miniatureTokens = getComputedStyle(container.current);
-        settlements = createSettlementPresentation(
-          map,
-          {
-            label: colors.ink,
-            halo: colors.land,
-            miniature: {
-              stone: miniatureTokens.getPropertyValue('--map-miniature-stone').trim(),
-              sand: miniatureTokens.getPropertyValue('--map-miniature-sand').trim(),
-              roof: miniatureTokens.getPropertyValue('--map-miniature-roof').trim(),
-              leaf: colors.forest,
-              water: colors.water,
-              ink: miniatureTokens.getPropertyValue('--map-miniature-ink').trim(),
+        if (!referenceOnly) {
+          const miniatureTokens = getComputedStyle(container.current);
+          settlements = createSettlementPresentation(
+            map,
+            {
+              label: colors.ink,
+              halo: colors.land,
+              miniature: {
+                stone: miniatureTokens.getPropertyValue('--map-miniature-stone').trim(),
+                sand: miniatureTokens.getPropertyValue('--map-miniature-sand').trim(),
+                roof: miniatureTokens.getPropertyValue('--map-miniature-roof').trim(),
+                leaf: colors.forest,
+                water: colors.water,
+                ink: miniatureTokens.getPropertyValue('--map-miniature-ink').trim(),
+              },
             },
-          },
-          artworkController.signal,
-          () => session?.refreshSettlementPresentation(),
-        );
+            artworkController.signal,
+            () => session?.refreshSettlementPresentation(),
+          );
+        }
         // The SDK loads the provider style. Its geographic sources and credits
         // remain intact; the host changes presentation only.
         map.setStyle(createHistoricalBasemap(colors));
@@ -318,26 +321,28 @@ export function useWorldMap(
           },
           settlements,
           styleReady,
-          ownershipPalette(container.current, viewerPlayerId),
+          referenceOnly ? undefined : ownershipPalette(container.current, viewerPlayerId),
         );
         sessionRef.current = session;
         // Static artwork must not delay the authenticated viewport request.
         // Approved circle markers render immediately; sprites upgrade in place.
-        void settlements.ready
+        void settlements?.ready
           .then(() => {
             if (!cancelled) session?.refreshSettlementPresentation();
           })
           .catch(() => {
             // Approved circle markers remain usable when optional artwork cannot load.
           });
-        stopRevisions = watchMapRevisions(
-          worldId,
-          (revision) => session?.loader.requestRevision(revision),
-          {
-            currentRevision: () => session?.loader.currentRevision,
-            onHealth: (healthy) => session?.loader.setRealtimeHealth(healthy),
-          },
-        );
+        if (!referenceOnly) {
+          stopRevisions = watchMapRevisions(
+            worldId,
+            (revision) => session?.loader.requestRevision(revision),
+            {
+              currentRevision: () => session?.loader.currentRevision,
+              onHealth: (healthy) => session?.loader.setRealtimeHealth(healthy),
+            },
+          );
+        }
       } catch {
         if (!cancelled) setStatus('error');
       }
@@ -364,6 +369,7 @@ export function useWorldMap(
     receiveSelection,
     updateDestination,
     initialOverview,
+    referenceOnly,
   ]);
   function startPickingDestination() {
     updateDestination(activeDraft?.destination ?? null, true, false);

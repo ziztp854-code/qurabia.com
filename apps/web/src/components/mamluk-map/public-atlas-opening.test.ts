@@ -33,6 +33,12 @@ it('loads the public atlas on the initial full globe without movement and remain
   expect(fetch.mock.calls[0]![0]).toContain('/viewport?');
   expect(callbacks.onPayload.mock.lastCall?.[0]?.layers.cities.features).toHaveLength(12);
   expect(callbacks.onStatus).toHaveBeenLastCalledWith('ready');
+  expect(map.layers.get('mamluk-cities')).toMatchObject({ type: 'circle' });
+  expect(map.layers.get('mamluk-atlas-city-labels')).toMatchObject({
+    type: 'symbol',
+    source: 'mamluk-cities',
+    filter: ['!', ['has', 'point_count']],
+  });
   expect(map.layers.get('mamluk-village-cluster-count')).toMatchObject({
     layout: { 'text-field': ['concat', ['to-string', ['get', 'point_count_abbreviated']], ' مدينة'] },
   });
