@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 import type { QuestionFeedRow } from './types';
 import { QuestionFeedError, playHrefForPack } from './types';
 import { adaptFeedToLetterQuestions } from './adapters/to-letter';
@@ -162,6 +163,39 @@ describe('question feed', () => {
       answer: 'أبجدية',
       letter: 'أ',
     });
+  });
+
+  it('uses the single correct option as a text answer and derives a missing letter marker', () => {
+    const options = [
+      { id: 'wrong', text: 'بيروت', isCorrect: false, position: 0 },
+      { id: 'correct', text: ' إِربد ', isCorrect: true, position: 1 },
+    ];
+    const questions = adaptFeedToLetterQuestions(
+      [baseRow({ id: 'bank-choice', expectedAnswer: 'بيروت', options })],
+      () => 0,
+    );
+
+    const question = questions.find((item) => item.letter === 'أ');
+    expect(question).toMatchObject({ id: 'bank-choice', answer: 'إِربد', letter: 'أ' });
+    expect(question).not.toHaveProperty('options');
+  });
+
+  it('skips conflicting letter markers and multiple-choice rows without exactly one correct option', () => {
+    const questions = adaptFeedToLetterQuestions(
+      [
+        baseRow({ id: 'wrong-letter', keywords: ['حرف:ب'] }),
+        baseRow({
+          id: 'ambiguous',
+          options: baseRow().options.map((option) => ({ ...option, isCorrect: true })),
+        }),
+        baseRow({ id: 'no-correct-option', expectedAnswer: 'أبجدية', options: [] }),
+        baseRow({ id: 'unsupported-letter', type: 'SHORT_ANSWER', expectedAnswer: 'ورق', options: [] }),
+      ],
+      () => 0,
+    );
+
+    expect(questions).toHaveLength(LETTER_QUESTION_POOL.length);
+    expect(questions).toEqual(expect.arrayContaining([...LETTER_QUESTION_POOL]));
   });
 
   it('maps multiple-choice rows into ladder candidates', () => {

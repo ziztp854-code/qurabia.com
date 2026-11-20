@@ -1,11 +1,16 @@
 import { BOARD_LETTERS, LETTER_QUESTION_POOL } from '@/lib/letter-game/questions';
 import type { LetterQuestion, LetterQuestionCategory } from '@/lib/letter-game/types';
+import { foldKeyword } from '@/lib/questions/keywords';
 import type { QuestionFeedRow } from '../types';
 
-function readAnswerLetter(keywords: readonly string[]) {
-  const marker = keywords.find((keyword) => keyword.startsWith('حرف:'));
-  const letter = marker?.slice('حرف:'.length).trim() ?? '';
-  return BOARD_LETTERS.includes(letter as (typeof BOARD_LETTERS)[number]) ? letter : null;
+const LETTER_MARKER = 'حرف:';
+
+function readAnswer(row: QuestionFeedRow): string | undefined {
+  if (row.type === 'SHORT_ANSWER') return row.expectedAnswer?.trim();
+  if (row.type !== 'MULTIPLE_CHOICE') return undefined;
+
+  const correctOptions = row.options.filter((option) => option.isCorrect);
+  return correctOptions.length === 1 ? correctOptions[0].text.trim() : undefined;
 }
 
 function mapCategory(name: string | undefined): LetterQuestionCategory {
@@ -18,14 +23,30 @@ export function adaptFeedToLetterQuestions(
   rows: readonly QuestionFeedRow[],
   random: () => number = Math.random,
 ): LetterQuestion[] {
-  const candidates = new Map<string, QuestionFeedRow[]>();
+  const candidates = new Map<string, LetterQuestion[]>();
 
   for (const row of rows) {
-    const answer = row.expectedAnswer?.trim();
+    const answer = readAnswer(row);
     if (!answer) continue;
-    const letter = readAnswerLetter(row.keywords);
+    const initial = foldKeyword(answer)[0];
+    const letter = BOARD_LETTERS.find((candidate) => foldKeyword(candidate) === initial);
     if (!letter) continue;
-    candidates.set(letter, [...(candidates.get(letter) ?? []), row]);
+
+    const letterMarkers = row.keywords.filter((keyword) => keyword.startsWith(LETTER_MARKER));
+    if (letterMarkers.some((marker) => foldKeyword(marker.slice(LETTER_MARKER.length)) !== initial)) {
+      continue;
+    }
+
+    const matches = candidates.get(letter) ?? [];
+    matches.push({
+      id: row.id,
+      letter,
+      prompt: row.prompt,
+      answer,
+      category: mapCategory(row.categoryName),
+      pattern: 'definition',
+    });
+    candidates.set(letter, matches);
   }
 
   return BOARD_LETTERS.flatMap((letter) => {
@@ -34,15 +55,6 @@ export function adaptFeedToLetterQuestions(
       return LETTER_QUESTION_POOL.filter((question) => question.letter === letter);
     const index = Math.min(matches.length - 1, Math.floor(Math.max(0, random()) * matches.length));
     // Keep all candidates so the host can replace a question without reloading the page.
-    return [...matches.slice(index), ...matches.slice(0, index)].map(
-      (selected): LetterQuestion => ({
-        id: selected.id,
-        letter,
-        prompt: selected.prompt,
-        answer: selected.expectedAnswer?.trim() ?? '',
-        category: mapCategory(selected.categoryName),
-        pattern: 'definition',
-      }),
-    );
+    return [...matches.slice(index), ...matches.slice(0, index)];
   });
 }
