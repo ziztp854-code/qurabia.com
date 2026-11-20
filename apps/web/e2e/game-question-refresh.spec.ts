@@ -22,14 +22,17 @@ test('يصنف ألعاب الشاشة الواحدة جماعيًا ويفلت�
 });
 
 test('يغير سؤال الحرف ويعتمد مجموعة الذكاء الاصطناعي دون كشف الإجابة', async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-10-12T12:00:00Z'));
+  await page.clock.install();
   await page.goto('/games/letter-challenge');
   await page.getByRole('button', { name: /الحرف أ، خلية متاحة/ }).click();
   const original = await page.locator('#active-question-title').textContent();
-  await page.getByRole('button', { name: 'إظهار الإجابة للمضيف' }).click();
+  await page.clock.fastForward(60_000);
+  await expect(page.locator('#active-question-title')).toHaveText(original!);
+  await expect(page.getByRole('timer')).toHaveCount(0);
+  await page.getByRole('button', { name: 'كشف الجواب' }).click();
   await page.getByRole('button', { name: 'تغيير السؤال', exact: true }).click();
   await expect(page.locator('#active-question-title')).not.toHaveText(original!);
-  await expect(page.getByText('الإجابة محجوبة')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'كشف الجواب', pressed: false })).toBeVisible();
   await expect(page.getByText('دور الفريق الأخضر')).toBeVisible();
 
   const questions = LETTER_QUESTION_POOL.map((question, index) => ({
@@ -56,7 +59,7 @@ test('يغير سؤال الحرف ويعتمد مجموعة الذكاء الا
   await page.getByRole('button', { name: 'اعتماد الأسئلة وبدء جولة جديدة' }).click();
   await page.getByRole('button', { name: /الحرف أ، خلية متاحة/ }).click();
   await expect(page.locator('#active-question-title')).toHaveText(questions[0]!.prompt);
-  await expect(page.getByText('الإجابة محجوبة')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'كشف الجواب', pressed: false })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

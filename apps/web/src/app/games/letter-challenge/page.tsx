@@ -2,7 +2,6 @@ import { AiGameQuestionRefresh } from '@/components/games/ai-game-question-refre
 import type { Metadata } from 'next';
 import { LetterGame } from '@/components/letter-game';
 import { GamePackPicker } from '@/components/games/game-pack-picker';
-import { SiteLayout } from '@/components/layout';
 import { hasDatabaseUrl } from '@/lib/auth/prisma';
 import { getCurrentSession } from '@/lib/auth/session';
 import {
@@ -50,7 +49,7 @@ export default async function LetterChallengePage({
     : undefined;
 
   return (
-    <SiteLayout user={session?.user ? { name: session.user.name, role: session.user.role } : null}>
+    <main id="main-content">
       <AiGameQuestionRefresh
         key={quizId ?? 'bank'}
         game="letter-challenge"
@@ -67,6 +66,6 @@ export default async function LetterChallengePage({
           }
         />
       </AiGameQuestionRefresh>
-    </SiteLayout>
+    </main>
   );
 }

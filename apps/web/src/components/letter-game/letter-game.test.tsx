@@ -8,13 +8,12 @@ describe('LetterGame', () => {
     const user = userEvent.setup();
     render(<LetterGame />);
     await user.click(screen.getByRole('button', { name: /الحرف أ، خلية متاحة/ }));
-    await user.click(screen.getByRole('button', { name: 'إظهار الإجابة للمضيف' }));
+    await user.click(screen.getByRole('button', { name: 'كشف الجواب' }));
     expect(screen.getByText('أسد')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'تغيير السؤال' }));
     expect(screen.getByRole('heading', { name: /ثمانية أذرع/ })).toBeInTheDocument();
     expect(screen.queryByText('أسد')).not.toBeInTheDocument();
     expect(screen.queryByText('أخطبوط')).not.toBeInTheDocument();
-    expect(screen.getByText('الإجابة محجوبة')).toBeInTheDocument();
     expect(screen.getByText('دور الفريق الأخضر')).toBeInTheDocument();
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute('id', 'letter-question-panel'),
@@ -60,16 +59,13 @@ describe('LetterGame', () => {
     ).toHaveLength(1);
   });
 
-  it('opens a question, hides the answer while the timer is running, and awards the cell on correct', async () => {
+  it('opens a question, hides the answer until requested, and awards the cell on correct', async () => {
     const user = userEvent.setup();
     render(<LetterGame />);
 
     await user.click(screen.getByRole('button', { name: /الحرف أ، خلية متاحة/ }));
     expect(screen.getByText(/السافانا الأفريقية/)).toBeInTheDocument();
-    // The answer must NOT be revealed while the timer is still running.
-    expect(screen.queryByText('الإجابة: أسد')).not.toBeInTheDocument();
-    expect(screen.getByText('الإجابة محجوبة')).toBeInTheDocument();
-    expect(screen.getByText('تنتهي المحاولة بانتهاء الوقت.')).toBeInTheDocument();
+    expect(screen.queryByText('أسد')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /انتظر حكم السؤال الحالي/ })[0]).toBeDisabled();
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute('id', 'letter-question-panel'),
@@ -79,7 +75,7 @@ describe('LetterGame', () => {
     expect(screen.getByRole('button', { name: /الحرف أ، يملكها الفريق الأخضر/ })).toBeDisabled();
     expect(screen.getByText('دور الفريق البرتقالي')).toBeInTheDocument();
     // The question panel returns to the empty state once the round is judged.
-    expect(screen.getByText('السؤال سيظهر هنا')).toBeInTheDocument();
+    expect(screen.getByText('اختر حرفًا من اللوحة')).toBeInTheDocument();
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute('id', 'letter-turn-indicator'),
     );

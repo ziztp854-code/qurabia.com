@@ -1,153 +1,92 @@
-import { useState, type CSSProperties } from 'react';
-import { Check, CircleHelp, Eye, EyeOff, FastForward, RefreshCw, X } from 'lucide-react';
-import { formatNumber } from '@/lib/utils';
-import type { HistoryResult, LetterQuestion, TeamId } from '@/lib/letter-game/types';
+import { useState } from 'react';
+import { Check, Eye, FastForward, RefreshCw, X } from 'lucide-react';
+import type { HistoryResult, LetterQuestion } from '@/lib/letter-game/types';
 import styles from './letter-game.module.css';
 
 export function QuestionPanel({
   question,
-  timer,
-  team,
-  feedback,
   onJudge,
   onReplace,
-  canReplace = false,
+  canReplace,
 }: {
   question: LetterQuestion | null;
-  timer: number;
-  team: TeamId;
-  feedback: HistoryResult | null;
-  onJudge: (result: 'correct' | 'wrong' | 'skipped') => void;
-  onReplace?: () => void;
-  canReplace?: boolean;
+  onJudge: (result: HistoryResult) => void;
+  onReplace: () => void;
+  canReplace: boolean;
 }) {
-  const [isHostRevealRequested, setIsHostRevealRequested] = useState(false);
-
-  if (!question) {
-    return (
-      <section
-        id="letter-question-panel"
-        className={styles.questionPanel}
-        data-team={team}
-        data-empty="true"
-        tabIndex={-1}
-        aria-live="polite"
-      >
-        <CircleHelp aria-hidden="true" className={styles.emptyIcon} />
-        <span>اختر حرفًا من اللوحة</span>
-        <h2>السؤال سيظهر هنا</h2>
-        <p>يبدأ جواب كل سؤال بالحرف الذي تختاره. احكم على الإجابة ثم ينتقل الدور.</p>
-      </section>
-    );
-  }
-
-  // The host can reveal the answer early to judge an oral response.
-  // It is also revealed automatically when time elapses or the result is locked in.
-  const isAnswerRevealed = timer <= 0 || feedback !== null || isHostRevealRequested;
-  const isTimerLow = timer > 0 && timer <= 10;
-
+  const [revealed, setRevealed] = useState(false);
   return (
     <section
       id="letter-question-panel"
       className={styles.questionPanel}
-      data-team={team}
-      data-feedback={feedback ?? undefined}
-      data-revealed={isAnswerRevealed ? 'true' : 'false'}
       tabIndex={-1}
       aria-labelledby="active-question-title"
     >
-      <div className={styles.questionTopline}>
-        <span className={styles.letterBadge}>{question.letter}</span>
-        <div
-          className={styles.timer}
-          role="timer"
-          aria-live="off"
-          aria-label={`متبقي ${formatNumber(timer)} ثانية`}
-          data-low={isTimerLow ? 'true' : undefined}
-          data-elapsed={timer <= 0 ? 'true' : undefined}
-          style={{ '--timer-angle': `${Math.max(0, (timer / 15) * 360)}deg` } as CSSProperties}
-        >
-          <strong>{formatNumber(Math.max(0, timer))}</strong>
-          <small>ثانية</small>
-        </div>
-      </div>
-      <span className={styles.questionLabel}>السؤال</span>
-      <h2 id="active-question-title">{question.prompt}</h2>
-      {onReplace ? (
-        <div className={styles.replaceQuestion}>
-          <button
-            type="button"
-            className={styles.answerRevealButton}
-            onClick={onReplace}
-            disabled={!canReplace || timer <= 0 || feedback !== null}
-            aria-describedby="letter-replace-hint"
-          >
-            <RefreshCw aria-hidden="true" />
-            تغيير السؤال
-          </button>
-          <small id="letter-replace-hint">
-            {canReplace
-              ? 'سؤال آخر للحرف نفسه مع بدء الوقت من جديد.'
-              : 'لا يوجد سؤال بديل لهذا الحرف في الحزمة الحالية.'}
-          </small>
-        </div>
-      ) : null}
-
-      <div
-        className={styles.answerSlot}
-        data-revealed={isAnswerRevealed ? 'true' : 'false'}
-        aria-live="polite"
-      >
-        {isAnswerRevealed ? (
-          <p className={styles.hostAnswer}>
-            <span className={styles.answerLabel}>الإجابة:</span>
-            <span className={styles.answerValue}>{question.answer}</span>
-          </p>
-        ) : (
-          <div className={styles.hiddenAnswer}>
-            <p className={styles.hostAnswer} data-hidden="true">
-              <span className={styles.answerLabel}>
-                <EyeOff aria-hidden="true" />
-                الإجابة محجوبة
-              </span>
-              <span className={styles.answerValue} aria-hidden="true">
-                ؟؟؟
-              </span>
-              <small className={styles.answerHint}>تنتهي المحاولة بانتهاء الوقت.</small>
-            </p>
-            <button
-              type="button"
-              className={styles.answerRevealButton}
-              onClick={() => setIsHostRevealRequested(true)}
-            >
-              <Eye aria-hidden="true" />
-              إظهار الإجابة للمضيف
-            </button>
+      <div className={styles.questionBody}>
+        <h2 id="active-question-title">{question?.prompt ?? 'اختر حرفًا من اللوحة'}</h2>
+        {question && (
+          <div className={styles.answer} role="status" aria-live="polite">
+            {revealed ? (
+              <>
+                <span>الجواب</span> <strong>{question.answer}</strong>
+              </>
+            ) : null}
           </div>
         )}
       </div>
-
-      <div className={styles.judgeActions} role="group" aria-label="حكم الإجابة">
-        <button type="button" data-action="correct" onClick={() => onJudge('correct')}>
-          <Check aria-hidden="true" />
-          إجابة صحيحة
-        </button>
-        <button type="button" data-action="wrong" onClick={() => onJudge('wrong')}>
-          <X aria-hidden="true" />
-          إجابة خاطئة
-        </button>
-        <button type="button" data-action="skip" onClick={() => onJudge('skipped')}>
-          <FastForward aria-hidden="true" />
-          تجاوز السؤال
-        </button>
-      </div>
-
-      {isAnswerRevealed ? (
-        <span className={styles.revealBadge} aria-hidden="true">
-          <Eye aria-hidden="true" />
-          تم الكشف
-        </span>
-      ) : null}
+      {question && (
+        <div className={styles.questionControls}>
+          <div className={styles.questionUtilities}>
+            <button
+              className={styles.revealControl}
+              type="button"
+              onClick={(event) => {
+                setRevealed(true);
+                event.currentTarget.focus({ preventScroll: true });
+              }}
+              aria-pressed={revealed}
+            >
+              <Eye aria-hidden="true" />
+              كشف الجواب
+            </button>
+            {canReplace && (
+              <button className={styles.secondaryControl} type="button" onClick={onReplace}>
+                <RefreshCw aria-hidden="true" />
+                تغيير السؤال
+              </button>
+            )}
+          </div>
+          <div className={styles.judgeActions} role="group" aria-label="حكم الإجابة">
+            <button
+              type="button"
+              data-action="correct"
+              aria-label="إجابة صحيحة"
+              onClick={() => onJudge('correct')}
+            >
+              <Check aria-hidden="true" />
+              صحيحة
+            </button>
+            <button
+              type="button"
+              data-action="wrong"
+              aria-label="إجابة خاطئة"
+              onClick={() => onJudge('wrong')}
+            >
+              <X aria-hidden="true" />
+              خاطئة
+            </button>
+            <button
+              type="button"
+              data-action="skip"
+              aria-label="تجاوز السؤال"
+              onClick={() => onJudge('skipped')}
+            >
+              <FastForward aria-hidden="true" />
+              تجاوز
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

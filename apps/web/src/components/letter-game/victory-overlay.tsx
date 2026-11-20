@@ -40,7 +40,6 @@ export function VictoryOverlay({
         aria-describedby="letter-victory-description"
         onKeyDown={handleDialogKeyDown}
       >
-        <span className={styles.victoryPulse} aria-hidden="true" />
         <Route aria-hidden="true" />
         <span>اكتمل المسار</span>
         <h2 id="letter-victory-title">فاز {name}</h2>
