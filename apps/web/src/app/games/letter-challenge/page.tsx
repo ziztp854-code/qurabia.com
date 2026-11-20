@@ -41,7 +41,7 @@ export default async function LetterChallengePage({
         gameMode: 'LETTER_CHALLENGE',
         quizId,
         ownerId: session?.user?.id,
-        bankTypes: ['SHORT_ANSWER'],
+        bankTypes: ['SHORT_ANSWER', 'MULTIPLE_CHOICE'],
         bankTake: 1_500,
       })
         .then((feed) => adaptFeedToLetterQuestions(feed.rows))
