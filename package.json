@@ -55,10 +55,10 @@
   },
   "devDependencies": {
     "dotenv": "^17.4.2",
-    "prettier": "^3.9.8",
-    "prisma": "^7.10.0",
-    "tsx": "^4.23.13",
-    "turbo": "^2.10.13",
+    "prettier": "^3.10.1",
+    "prisma": "^7.10.1",
+    "tsx": "^4.23.15",
+    "turbo": "^2.11.11",
     "typescript": "^5.9.3"
   },
   "dependencies": {
