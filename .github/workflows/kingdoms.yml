@@ -132,7 +132,7 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.animation-preview.config.ts --workers=1
       - name: Preserve failed village browser evidence
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: kingdoms-village-failures-${{ github.run_attempt }}
           path: |
@@ -149,7 +149,7 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.abandoned-production.config.ts
       - name: Preserve failed production-player browser evidence
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: kingdoms-production-player-failures-${{ github.run_attempt }}
           path: |
@@ -207,7 +207,7 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.city-scenes.config.ts
       - name: Preserve failed village and city browser evidence
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: kingdoms-village-city-failures-${{ github.run_attempt }}
           path: |
@@ -244,7 +244,7 @@ jobs:
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.living-city-regression.config.ts --update-snapshots=none --repeat-each=10
       - name: Preserve Living City regression evidence
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: living-city-visual-failures-${{ github.run_attempt }}
           path: apps/web/test-results/living-city-regression/
@@ -277,7 +277,7 @@ jobs:
       - name: Capture only intentional overview changes on one worker
         run: pnpm --filter @tahaddi/web exec playwright test --config playwright.living-city-regression.config.ts --grep 'canonical Living City overview' --workers=1 --repeat-each=1 --update-snapshots=all
       - name: Preserve candidates for review before committing references
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: garden-overview-candidates
           path: apps/web/e2e/living-city-regression.spec.ts-snapshots/**/overview-*.png
