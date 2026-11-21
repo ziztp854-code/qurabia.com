@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { SiteLayout } from '@/components/layout';
-import { ButtonLink } from '@/components/ui';
+import { PageBackButton, SiteLayout } from '@/components/layout';
+import Link from 'next/link';
 import { MamlukWorldMap } from '@/components/mamluk-map/mamluk-world-map';
 import { getCurrentSession } from '@/lib/auth/session';
 import { kingdomIdentity } from '@/lib/kingdoms/identity';
@@ -20,7 +20,11 @@ export default async function WorldMapPage({
   const query = await searchParams;
   const requestedWorld = typeof query?.worldId === 'string' ? query.worldId : undefined;
   const requestedVillage = typeof query?.villageId === 'string' ? query.villageId : undefined;
-  const reportVillage = typeof query?.reportVillageId === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(query.reportVillageId) ? query.reportVillageId : undefined;
+  const reportVillage =
+    typeof query?.reportVillageId === 'string' &&
+    /^[a-zA-Z0-9_-]{1,100}$/.test(query.reportVillageId)
+      ? query.reportVillageId
+      : undefined;
   const session = await getCurrentSession();
   let user: { name?: string | null; role?: string | null } | undefined;
   let viewerPlayerId = PUBLIC_ATLAS_VIEWER_ID;
@@ -58,15 +62,18 @@ export default async function WorldMapPage({
   if (requestedVillage && !referenceOnly && villageLocations?.length && !selectedVillage)
     notFound();
   return (
-    <SiteLayout user={user}>
-      {!user && (
-        <p dir="rtl">
-          <ButtonLink href="/auth/sign-in?next=%2Fgames%2Fkingdoms%2Fworld-map" variant="outline">
-            تسجيل الدخول لعرض حملتك
-          </ButtonLink>
-        </p>
-      )}
+    <SiteLayout user={user} showBackButton={false}>
       <MamlukWorldMap
+        pageActions={
+          <>
+            <PageBackButton />
+            {!user && (
+              <Link href="/auth/sign-in?next=%2Fgames%2Fkingdoms%2Fworld-map" prefetch={false}>
+                تسجيل الدخول لعرض حملتك
+              </Link>
+            )}
+          </>
+        }
         key={`${selectedWorld.id}:${viewerPlayerId}`}
         worlds={worlds}
         initialWorldId={selectedWorld.id}

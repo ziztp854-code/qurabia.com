@@ -29,6 +29,7 @@ import {
 } from 'react';
 import { primaryNavigation, publicNavigation } from '@/config/navigation';
 import { siteConfig } from '@/config/site';
+import { LEGACY_SITE_BACK_ENTRY } from '@/lib/legacy-site-history';
 import { cn } from '@/lib/utils';
 import { BrandLogo, BrandMark } from '../brand';
 import { ThemeToggle } from '../theme-toggle';
@@ -338,11 +339,23 @@ export function PageBackButton({ className }: { className?: string }) {
   const router = useRouter();
   const handleBack = useCallback(() => {
     if (typeof window === 'undefined') return;
-    if (window.history.length > 1) {
+    const { navigation } = window as Window & { navigation?: { canGoBack: boolean } };
+    const hasInternalBack = navigation
+      ? navigation.canGoBack
+      : window.history.state?.[LEGACY_SITE_BACK_ENTRY] === true;
+    if (hasInternalBack) {
       window.history.back();
       return;
     }
-    router.push('/');
+
+    // A validated referrer is useful for a full document load without a marked entry.
+    const origin = window.location.origin;
+    const referrer = document.referrer;
+    const previousPath =
+      !navigation && referrer.startsWith(origin + '/') && referrer !== window.location.href
+        ? referrer.slice(origin.length)
+        : '';
+    router.push(previousPath && !previousPath.startsWith('//') ? previousPath : '/');
   }, [router]);
 
   return (
@@ -423,10 +436,12 @@ export function SiteLayout({
   children,
   user = null,
   variant = 'default',
+  showBackButton = true,
 }: {
   children: ReactNode;
   user?: HeaderUser | null;
   variant?: HeaderVariant;
+  showBackButton?: boolean;
 }) {
   return (
     <div className={cn('site-layout', variant === 'home' && 'home-site-layout')}>
@@ -435,7 +450,7 @@ export function SiteLayout({
       </a>
       <Header user={user} variant={variant} />
       {variant === 'home' && <HomeSidebar />}
-      {variant !== 'home' && (
+      {variant !== 'home' && showBackButton && (
         <div className="container page-backbar" aria-label="إجراء الرجوع">
           <PageBackButton />
         </div>

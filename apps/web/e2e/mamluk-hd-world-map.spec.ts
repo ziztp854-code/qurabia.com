@@ -59,15 +59,8 @@ async function signIn(page: Page, world: string, local = false) {
   await ready(page);
 }
 async function click(page: Page, name: string) {
-  const button = page.getByRole('button', { name, exact: true });
-  const options = page
-    .locator('details')
-    .filter({ has: page.locator('summary').filter({ hasText: /^عرض الخريطة$/ }) });
-  if (!(await button.isVisible())) await options.locator('summary').click();
-  await button.click();
+  await page.getByRole('button', { name, exact: true }).click();
   await ready(page);
-  if (await options.evaluate((element) => element.hasAttribute('open')))
-    await options.locator('summary').click();
 }
 async function markCanvas(page: Page) {
   await page

@@ -9,13 +9,22 @@ import {
   Layers,
   Map,
   MapPin,
+  Maximize,
   Minus,
   Plus,
   RefreshCw,
   Shield,
   Target,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useViewClock } from '@/components/kingdoms/use-view-clock';
@@ -33,6 +42,7 @@ import type { VillageRelocationEligibility } from './use-village-relocation';
 import type { MapMode } from './map-mode';
 
 export interface MamlukWorldMapProps {
+  readonly pageActions?: ReactNode;
   readonly mode?: MapMode;
   readonly onModeChange?: (mode: MapMode) => void;
   readonly onConfirmTarget?: (villageId: string) => void;
@@ -106,6 +116,7 @@ export function MamlukWorldMap({
 }
 
 function WorldScene({
+  pageActions,
   worlds,
   worldId,
   viewerPlayerId,
@@ -165,7 +176,14 @@ function WorldScene({
     cancelDestination,
     changeDestination,
     requestManualDestination,
-  } = useWorldMap(worldId, viewerPlayerId, cameraLocation, initialVillageId, initialOverview);
+  } = useWorldMap(
+    worldId,
+    viewerPlayerId,
+    cameraLocation,
+    initialVillageId,
+    initialOverview,
+    referenceOnly,
+  );
   const scenePayload = payload ?? publicPayload;
   const serverTime = useViewClock(
     { serverNow: payload?.serverTime ?? 0 },
@@ -377,9 +395,12 @@ function WorldScene({
   return (
     <section
       className={styles.root}
+      data-atlas-presentation="cinematic"
       dir="rtl"
       aria-label={referenceOnly ? 'أطلس جغرافي' : 'خريطة حروب المماليك'}
       data-map-mode={mode}
+      data-world-id={worlds.length === 1 ? worldId : undefined}
+      data-reference={referenceOnly}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           if (isPickingDestination) cancelDestination();
@@ -388,37 +409,37 @@ function WorldScene({
       }}
     >
       <header className={styles.header}>
+        {pageActions && <div className={styles.pageActions}>{pageActions}</div>}
         <div className={styles.heading}>
           <Compass size={32} aria-hidden="true" />
           <div>
             <p className={styles.eyebrow}>
-              {referenceOnly
-                ? 'أطلس جغرافي · مدن مصر والشام والحجاز'
-                : 'حروب المماليك · خريطة الحملة'}
+              {referenceOnly ? 'مدن مصر والشام والحجاز' : 'حروب المماليك · خريطة الحملة'}
             </p>
             <h1>أطلس قرابية</h1>
           </div>
         </div>
-        {worlds.length === 1 ? (
-          <p className={styles.currentWorld} data-world-id={worldId}>
-            <span>العالم</span>
-            <strong>{worlds[0].name}</strong>
-          </p>
-        ) : (
-          <label className={styles.worldSelect}>
-            العالم
-            <select value={worldId} onChange={(event) => onWorldChange(event.target.value)}>
-              {worlds.map((world) => (
-                <option key={world.id} value={world.id}>
-                  {world.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        {!referenceOnly &&
+          (worlds.length === 1 ? (
+            <p className={styles.currentWorld}>
+              <span>العالم</span>
+              <strong>{worlds[0].name}</strong>
+            </p>
+          ) : (
+            <label className={styles.worldSelect}>
+              العالم
+              <select value={worldId} onChange={(event) => onWorldChange(event.target.value)}>
+                {worlds.map((world) => (
+                  <option key={world.id} value={world.id}>
+                    {world.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
       </header>
-      <div className={styles.atlasContext}>
-        {!referenceOnly && (
+      {!referenceOnly && (
+        <div className={styles.atlasContext}>
           <div className={styles.modeBar}>
             {onModeChange ? (
               <label>
@@ -456,40 +477,33 @@ function WorldScene({
               </p>
             )}
           </div>
-        )}
-        {!referenceOnly && Boolean(villageLocations?.length) && (
-          <nav className={styles.villageNavigation} aria-label="قراي">
-            <span className={styles.villageCaption}>
-              <Castle size={18} aria-hidden="true" /> قراي
-            </span>
-            <div className={styles.villageLinks}>
-              {villageLocations?.map((village) => (
-                <Link
-                  key={village.villageId}
-                  href={geographicMapHref(worldId, village.villageId)}
-                  aria-current={village.villageId === initialVillageId ? 'location' : undefined}
-                >
-                  <MapPin size={16} aria-hidden="true" />
-                  {village.name}
-                </Link>
-              ))}
+          {Boolean(villageLocations?.length) && (
+            <nav className={styles.villageNavigation} aria-label="قراي">
+              <span className={styles.villageCaption}>
+                <Castle size={18} aria-hidden="true" /> قراي
+              </span>
+              <div className={styles.villageLinks}>
+                {villageLocations?.map((village) => (
+                  <Link
+                    key={village.villageId}
+                    href={geographicMapHref(worldId, village.villageId)}
+                    aria-current={village.villageId === initialVillageId ? 'location' : undefined}
+                  >
+                    <MapPin size={16} aria-hidden="true" />
+                    {village.name}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          )}
+          <div className={styles.sceneOverview} aria-label="المشهد الحالي">
+            <div className={styles.sceneCount}>
+              <MapPin size={16} aria-hidden="true" />
+              <span>
+                {number(overviewVillageCount ?? scenePayload?.layers.cities.features.length ?? 0)}
+              </span>
+              قرية في المشهد
             </div>
-          </nav>
-        )}
-        {referenceOnly && (
-          <p className={styles.referenceNotice}>
-            لا توجد حملة متصلة. استكشف مواقع المدن بإحداثياتها الجغرافية.
-          </p>
-        )}
-        <div className={styles.sceneOverview} aria-label="المشهد الحالي">
-          <div className={styles.sceneCount}>
-            <MapPin size={16} aria-hidden="true" />
-            <span>
-              {number(overviewVillageCount ?? scenePayload?.layers.cities.features.length ?? 0)}
-            </span>
-            {referenceOnly ? 'مدينة في المشهد' : 'قرية في المشهد'}
-          </div>
-          {!referenceOnly && (
             <div className={styles.sceneCount}>
               <Flag size={16} aria-hidden="true" />
               <span>
@@ -499,10 +513,7 @@ function WorldScene({
               </span>
               ممالك ظاهرة
             </div>
-          )}
-          <p>اسحب للاستكشاف · قرّب لرؤية الحدود · اختر موقعًا للتفاصيل</p>
-        </div>
-        {!referenceOnly && (
+          </div>
           <details className={styles.layersDisclosure}>
             <summary>
               <Layers size={18} aria-hidden="true" />
@@ -556,57 +567,55 @@ function WorldScene({
               )}
             </section>
           </details>
-        )}
-      </div>
+        </div>
+      )}
       <div className={styles.workspace} data-picking-destination={isPickingDestination}>
         <div className={styles.mapFrame}>
-          <div
-            ref={container}
-            className={styles.canvas}
-            role="region"
-            tabIndex={0}
-            aria-label={referenceOnly ? 'الخريطة الجغرافية' : 'الخريطة الاستراتيجية'}
-            aria-describedby={isPickingDestination ? destinationInstructionsId : undefined}
-          />
-          <div className={styles.toolbar} role="group" aria-label="عرض الخريطة">
+          <div className={styles.toolbar} role="group" aria-label="أدوات عرض الخريطة">
+            <div className={styles.displayChoices} role="group" aria-label="نوع العرض">
+              <button
+                className={styles.control}
+                type="button"
+                aria-pressed={projection === 'globe'}
+                onClick={() => setProjection('globe')}
+              >
+                <Globe size={18} aria-hidden="true" />
+                الكرة الأرضية
+              </button>
+              <button
+                className={styles.control}
+                type="button"
+                aria-pressed={projection === 'mercator'}
+                onClick={() => setProjection('mercator')}
+              >
+                <Map size={18} aria-hidden="true" />
+                خريطة مسطحة
+              </button>
+            </div>
             <MapLayerControls
               layers={visibleLayers}
               onChange={toggleLayer}
               villageWorld={Boolean(villageLocations)}
+              referenceOnly={referenceOnly}
             />
-            <button type="button" className={styles.control} onClick={() => moveCamera('kingdom')}>
-              <Flag size={18} aria-hidden="true" />
-              مملكتي
-            </button>
-            <details className={styles.displayOptions}>
-              <summary className={styles.control}>
-                <Layers size={18} aria-hidden="true" />
-                عرض الخريطة
-              </summary>
-              <div className={styles.displayChoices}>
-                <button
-                  className={styles.control}
-                  type="button"
-                  aria-pressed={projection === 'globe'}
-                  onClick={() => setProjection('globe')}
-                >
-                  <Globe size={18} aria-hidden="true" />
-                  الكرة الأرضية
-                </button>
-                <button
-                  className={styles.control}
-                  type="button"
-                  aria-pressed={projection === 'mercator'}
-                  onClick={() => setProjection('mercator')}
-                >
-                  <Map size={18} aria-hidden="true" />
-                  خريطة مسطحة
-                </button>
-              </div>
-            </details>
-            <button className={styles.control} type="button" onClick={() => moveCamera('overview')}>
-              <Globe size={18} aria-hidden="true" />
-              عرض الكرة بالكامل
+            {!referenceOnly && (
+              <button
+                type="button"
+                className={styles.control}
+                onClick={() => moveCamera('kingdom')}
+              >
+                <Flag size={18} aria-hidden="true" />
+                مملكتي
+              </button>
+            )}
+            <button
+              className={styles.iconButton}
+              type="button"
+              aria-label="عرض الكرة بالكامل"
+              title="عرض الكرة بالكامل"
+              onClick={() => moveCamera('overview')}
+            >
+              <Maximize size={18} aria-hidden="true" />
             </button>
             <button
               className={styles.iconButton}
@@ -618,104 +627,123 @@ function WorldScene({
               <RefreshCw size={18} aria-hidden="true" />
             </button>
           </div>
-          <div className={styles.navigation} role="group" aria-label="التنقل على الخريطة">
-            <button
-              type="button"
-              className={styles.iconButton}
-              aria-label="اضبط اتجاه الشمال"
-              onClick={() => moveCamera('north')}
-            >
-              <Compass size={20} aria-hidden="true" />
-            </button>
-            <button
-              className={styles.iconButton}
-              type="button"
-              aria-label="قرّب الخريطة"
-              onClick={() => moveCamera('in')}
-            >
-              <Plus size={20} aria-hidden="true" />
-            </button>
-            <button
-              className={styles.iconButton}
-              type="button"
-              aria-label="أبعد الخريطة"
-              onClick={() => moveCamera('out')}
-            >
-              <Minus size={20} aria-hidden="true" />
-            </button>
-            <button
-              className={styles.iconButton}
-              type="button"
-              aria-label={initialLocation ? 'انتقل إلى قريتك' : 'انتقل إلى القاهرة'}
-              onClick={() => moveCamera('home')}
-            >
-              <Target size={20} aria-hidden="true" />
-            </button>
-          </div>
-          <div
-            className={`${styles.status} ${status === 'error' ? styles.error : ''}`}
-            role={status === 'error' ? 'alert' : 'status'}
-            data-state={status}
-          >
-            {referenceOnly ? (
-              <MapPin size={16} aria-hidden="true" />
-            ) : (
-              <Eye size={16} aria-hidden="true" />
-            )}
-            <span>{statusMessage}</span>
-            {status === 'error' && (
+          <div className={styles.mapViewport}>
+            <div
+              ref={container}
+              className={styles.canvas}
+              role="region"
+              tabIndex={0}
+              aria-label={referenceOnly ? 'الخريطة الجغرافية' : 'الخريطة الاستراتيجية'}
+              aria-describedby={isPickingDestination ? destinationInstructionsId : undefined}
+            />
+            <div className={styles.navigation} role="group" aria-label="التنقل على الخريطة">
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="اضبط اتجاه الشمال"
+                onClick={() => moveCamera('north')}
+              >
+                <Compass size={20} aria-hidden="true" />
+              </button>
               <button
                 className={styles.iconButton}
                 type="button"
-                aria-label="أعد محاولة تحميل الخريطة"
-                onClick={refresh}
+                aria-label="قرّب الخريطة"
+                onClick={() => moveCamera('in')}
               >
-                <RefreshCw size={18} aria-hidden="true" />
+                <Plus size={20} aria-hidden="true" />
               </button>
+              <button
+                className={styles.iconButton}
+                type="button"
+                aria-label="أبعد الخريطة"
+                onClick={() => moveCamera('out')}
+              >
+                <Minus size={20} aria-hidden="true" />
+              </button>
+              <button
+                className={styles.iconButton}
+                type="button"
+                aria-label={initialLocation ? 'انتقل إلى قريتك' : 'انتقل إلى القاهرة'}
+                onClick={() => moveCamera('home')}
+              >
+                <Target size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <div
+              className={styles.status}
+              role={status === 'error' ? 'alert' : 'status'}
+              data-state={status}
+              data-refreshing={refreshing}
+            >
+              {referenceOnly ? (
+                <MapPin size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )}
+              <span>{statusMessage}</span>
+              {status === 'error' && (
+                <button
+                  className={styles.iconButton}
+                  type="button"
+                  aria-label="أعد محاولة تحميل الخريطة"
+                  onClick={refresh}
+                >
+                  <RefreshCw size={18} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            {isPickingDestination && (
+              <section className={styles.destinationPicker} aria-label="اختيار وجهة القرية">
+                <div className={styles.destinationHeading}>
+                  <MapPin size={22} aria-hidden="true" />
+                  <h2>اختر الوجهة الجديدة</h2>
+                </div>
+                <p id={destinationInstructionsId}>
+                  اضغط على الخريطة لتحديد الوجهة، ثم راجعها قبل الموافقة.
+                </p>
+                <p className={styles.destinationSummary} role="status">
+                  {destination ? (
+                    <>
+                      <span>معاينة الوجهة</span>
+                      <bdi dir="ltr">
+                        {destination.longitude.toFixed(6)} / {destination.latitude.toFixed(6)}
+                      </bdi>
+                    </>
+                  ) : (
+                    'لم تُحدد وجهة بعد. يمكنك أيضًا تحريك الخريطة بالأسهم واستخدام مركزها.'
+                  )}
+                </p>
+                <div className={styles.destinationActions}>
+                  <button
+                    className={`${styles.control} ${styles.destinationReview}`}
+                    type="button"
+                    disabled={!destination}
+                    onClick={reviewDestination}
+                  >
+                    راجع الوجهة
+                  </button>
+                  <button
+                    className={styles.control}
+                    type="button"
+                    onClick={useMapCenterDestination}
+                  >
+                    استخدم مركز الخريطة
+                  </button>
+                  <button
+                    className={styles.control}
+                    type="button"
+                    onClick={requestManualDestination}
+                  >
+                    إدخال الإحداثيات يدويًا
+                  </button>
+                  <button className={styles.control} type="button" onClick={cancelDestination}>
+                    إلغاء اختيار الوجهة
+                  </button>
+                </div>
+              </section>
             )}
           </div>
-          {isPickingDestination && (
-            <section className={styles.destinationPicker} aria-label="اختيار وجهة القرية">
-              <div className={styles.destinationHeading}>
-                <MapPin size={22} aria-hidden="true" />
-                <h2>اختر الوجهة الجديدة</h2>
-              </div>
-              <p id={destinationInstructionsId}>
-                اضغط على الخريطة لتحديد الوجهة، ثم راجعها قبل الموافقة.
-              </p>
-              <p className={styles.destinationSummary} role="status">
-                {destination ? (
-                  <>
-                    <span>معاينة الوجهة</span>
-                    <bdi dir="ltr">
-                      {destination.longitude.toFixed(6)} / {destination.latitude.toFixed(6)}
-                    </bdi>
-                  </>
-                ) : (
-                  'لم تُحدد وجهة بعد. يمكنك أيضًا تحريك الخريطة بالأسهم واستخدام مركزها.'
-                )}
-              </p>
-              <div className={styles.destinationActions}>
-                <button
-                  className={`${styles.control} ${styles.destinationReview}`}
-                  type="button"
-                  disabled={!destination}
-                  onClick={reviewDestination}
-                >
-                  راجع الوجهة
-                </button>
-                <button className={styles.control} type="button" onClick={useMapCenterDestination}>
-                  استخدم مركز الخريطة
-                </button>
-                <button className={styles.control} type="button" onClick={requestManualDestination}>
-                  إدخال الإحداثيات يدويًا
-                </button>
-                <button className={styles.control} type="button" onClick={cancelDestination}>
-                  إلغاء اختيار الوجهة
-                </button>
-              </div>
-            </section>
-          )}
         </div>
         <SelectionPanel
           selection={managementHref && selection ? { ...selection, kind: 'قرية' } : selection}
@@ -726,6 +754,7 @@ function WorldScene({
           pendingTitle={typeof pendingTitle === 'string' ? pendingTitle : undefined}
           features={features}
           overviewVillageCount={overviewVillageCount}
+          sceneStatus={status}
           onSelect={focusSelection}
           onClose={closeSelection}
           targetSelection={
@@ -802,7 +831,7 @@ function WorldScene({
             </span>
           </>
         )}
-        <p className={styles.help}>حرّك الخريطة بالأسهم، أو اختر موقعًا من القائمة.</p>
+        <p className={styles.help}>اسحب الخريطة أو حرّكها بالأسهم.</p>
         <p className={styles.help}>
           إحداثيات المدن: <a href="https://www.geonames.org/">GeoNames</a> ·{' '}
           <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>

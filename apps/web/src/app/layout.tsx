@@ -7,6 +7,7 @@ import { PresenceBeacon } from '@/components/presence/presence-beacon';
 import { ThemeProvider } from '@/components/theme-provider';
 import { MotionProvider } from '@/components/motion/motion-provider';
 import { buildSiteVerificationMetadata } from '@/lib/metadata/discovery';
+import { legacySiteHistoryBootstrap } from '@/lib/legacy-site-history';
 import { SHARE_IMAGE, SHARE_IMAGE_URL, SITE_URL } from '@/lib/metadata/site';
 import './globals.css';
 import '../styles/prestige.css';
@@ -135,6 +136,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <Script id="site-history-bootstrap" strategy="beforeInteractive">
+          {legacySiteHistoryBootstrap}
+        </Script>
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {`(function(){try{var t=localStorage.getItem('tahaddi-theme')||'dark';var d=t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.dataset.theme=d;document.documentElement.style.colorScheme=d}catch(e){}})()`}
         </Script>

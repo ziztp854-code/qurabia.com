@@ -121,7 +121,7 @@ test('public atlas opens with every neutral city before interaction and survives
     expect(payload.layers[layer].features).toEqual([]);
   await expect(page.getByText('مدن الأطلس الجغرافي', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'حدّث الخريطة', exact: true })).toBeEnabled();
-  await expect(page.getByText('١٢', { exact: true })).toBeVisible();
+  await expect(page.getByText('١٢', { exact: true }).filter({ visible: true })).toBeVisible();
   // Mobile starts with the canvas below the header. Scrolling makes the SDK's
   // rendered-feature query observable without changing the map camera.
   await page.locator('canvas.maplibregl-canvas').scrollIntoViewIfNeeded();
@@ -150,7 +150,7 @@ test('public atlas opens with every neutral city before interaction and survives
     expect(await page.evaluate(() => window.__globeFixtureMap === (window as unknown as { originalAtlasMap: unknown }).originalAtlasMap)).toBe(true);
   }
   await page.getByRole('button', { name: 'عرض الكرة بالكامل', exact: true }).click();
-  await expect(page.getByText('١٢', { exact: true })).toBeVisible();
+  await expect(page.getByText('١٢', { exact: true }).filter({ visible: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'حدّث الخريطة', exact: true })).toBeEnabled();
   expect(requests.length).toBeGreaterThan(1);
   expect(requests.every((url) => url.includes('/viewport?'))).toBe(true);
