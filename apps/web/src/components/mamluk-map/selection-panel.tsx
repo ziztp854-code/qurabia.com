@@ -72,7 +72,7 @@ export function SelectionPanel({
   targetSelection,
 }: SelectionPanelProps) {
   const contentId = useId();
-  const count = new Intl.NumberFormat('ar').format(features.length || overviewVillageCount || 0);
+  const count = new Intl.NumberFormat('ar-SA').format(features.length || overviewVillageCount || 0);
   const searchId = useId();
   const [query, setQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(40);

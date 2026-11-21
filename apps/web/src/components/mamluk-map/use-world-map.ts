@@ -231,7 +231,7 @@ export function useWorldMap(
               ? Math.max(
                   0,
                   Math.min(
-                    referenceOnly ? 1.85 : 1.5,
+                    1.5,
                     Math.log2(
                       Math.min(
                         container.current.clientWidth || 1024,
