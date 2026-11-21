@@ -29,6 +29,7 @@ import {
 } from 'react';
 import { primaryNavigation, publicNavigation } from '@/config/navigation';
 import { siteConfig } from '@/config/site';
+import { LEGACY_SITE_BACK_ENTRY } from '@/lib/legacy-site-history';
 import { cn } from '@/lib/utils';
 import { BrandLogo, BrandMark } from '../brand';
 import { ThemeToggle } from '../theme-toggle';
@@ -339,12 +340,15 @@ export function PageBackButton({ className }: { className?: string }) {
   const handleBack = useCallback(() => {
     if (typeof window === 'undefined') return;
     const { navigation } = window as Window & { navigation?: { canGoBack: boolean } };
-    if (navigation?.canGoBack) {
+    const hasInternalBack = navigation
+      ? navigation.canGoBack
+      : window.history.state?.[LEGACY_SITE_BACK_ENTRY] === true;
+    if (hasInternalBack) {
       window.history.back();
       return;
     }
 
-    // The legacy History API also counts blank and cross-origin entries.
+    // A validated referrer is useful for a full document load without a marked entry.
     const origin = window.location.origin;
     const referrer = document.referrer;
     const previousPath =
